@@ -1,0 +1,14 @@
+{
+  "name": "lib",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "classnames": "^2.3.2",
+    "tailwind-merge": "^1.14.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}

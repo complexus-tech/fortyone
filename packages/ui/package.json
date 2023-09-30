@@ -1,20 +1,39 @@
 {
   "name": "ui",
+  "author": "Joseph Mukorivo - https://josemukorivo.com",
   "version": "0.0.0",
-  "main": "./index.tsx",
-  "types": "./index.tsx",
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
   "license": "MIT",
   "scripts": {
-    "lint": "eslint .",
-    "generate:component": "turbo gen react-component"
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.11",
+    "@radix-ui/react-dialog": "^1.0.4",
+    "@radix-ui/react-dropdown-menu": "^2.0.5",
+    "@radix-ui/react-popover": "^1.0.6",
+    "@radix-ui/react-switch": "^1.0.3",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-tooltip": "^1.0.5",
+    "cva": "npm:class-variance-authority@^0.7.0",
+    "date-fns": "^2.29.3",
+    "lib": "workspace:*",
+    "next": "^13.4.19",
+    "react-day-picker": "^8.8.0",
+    "react-icons": "^4.10.1",
+    "react-select": "^5.7.0"
   },
   "devDependencies": {
-    "@turbo/gen": "^1.10.12",
+    "@testing-library/react": "^14.0.0",
+    "@types/jest": "^29.5.4",
     "@types/node": "^20.5.2",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "eslint-config-custom": "workspace:*",
     "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-config": "workspace:*",
     "tsconfig": "workspace:*",
     "typescript": "^4.5.2"
   }
