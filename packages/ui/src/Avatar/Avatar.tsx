@@ -37,7 +37,7 @@ export interface AvatarProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'color'>,
     VariantProps<typeof avatar> {
   src?: string;
-  name: string;
+  name?: string;
 }
 
 const getInitials = (name: string) => {

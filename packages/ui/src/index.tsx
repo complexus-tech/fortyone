@@ -1,6 +1,7 @@
 export * from './Avatar/Avatar';
 export * from './Badge/Badge';
 export * from './Box/Box';
+export * from './Checkbox/Checkbox';
 export * from './Container/Container';
 export * from './Dialog/Dialog';
 // export * from './Divider/Divider';
@@ -17,7 +18,7 @@ export * from './Menu/Menu';
 // export * from './Tabs/Tabs';
 export * from './Text/Text';
 // export * from './TextArea/TextArea';
-// export * from './Tooltip/Tooltip';
+export * from './Tooltip/Tooltip';
 // export * from './Wrapper/Wrapper';
 // export * from './Debug/Debug';
 export * from './Switch/Switch';

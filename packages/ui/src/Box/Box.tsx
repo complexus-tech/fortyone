@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from 'react';
 
-export interface Props extends HTMLAttributes<HTMLDivElement> {
+export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   as?: 'div' | 'form' | 'section' | 'article' | JSXElementConstructor<any>;
   style?: CSSProperties;
@@ -14,7 +14,7 @@ export interface Props extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
 }
 
-export const Box: FC<Props> = ({
+export const Box: FC<BoxProps> = ({
   className = '',
   style = {},
   as: Tag = 'div',

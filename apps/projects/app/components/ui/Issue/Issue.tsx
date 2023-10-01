@@ -1,29 +1,34 @@
 import { GoDotFill } from 'react-icons/go';
 import { TbDots } from 'react-icons/tb';
-import { WiMoonAltThirdQuarter } from 'react-icons/wi';
-import { Avatar, Button, Container, Flex, Text } from 'ui';
+import { Avatar, Button, Checkbox, Container, Flex, Text } from 'ui';
+import { IssueStatusIcon } from '../IssueStatusIcon/IssueStatusIcon';
 
-export const Issue = () => {
+export type IssueStatus =
+  | 'Backlog'
+  | 'Todo'
+  | 'In Progress'
+  | 'Testing'
+  | 'Done'
+  | 'Duplicate'
+  | 'Canceled';
+
+type IssueProps = {
+  status?: IssueStatus;
+  title: string;
+  description?: string;
+};
+export const Issue = ({ title, status = 'Backlog' }: IssueProps) => {
   return (
     <Container className='group border-b hover:bg-gray-50/50 hover:dark:bg-dark-200/50 py-3 dark:border-dark-200 border-gray-50 flex items-center justify-between'>
       <Flex align='center' gap={2} className='relative'>
-        <input
-          defaultChecked
-          type='checkbox'
-          className='accent-primary h-5 aspect-square absolute -left-6 hidden group-hover:inline-block'
-        />
+        <Checkbox className='absolute -left-7 hidden data-[state=checked]:inline-block group-hover:inline-block' />
         <TbDots />
-        <Text color='muted' className='w-[60px] truncate'>
+        <Text color='muted' className='w-[55px] truncate'>
           COM-12
         </Text>
-        <WiMoonAltThirdQuarter className='h-5 text-warning w-auto' />
-        <Text
-          fontWeight='medium'
-          className='whitespace-nowrap text-ellipsis overflow-hidden w-[70vh]'
-        >
-          The quick brown fox jumps over the lazy dog. The quick brown fox jumps
-          over the lazy dog. The quick brown fox jumps over the lazy dog. The
-          quick brown fox jumps over the lazy dog.
+        <IssueStatusIcon status={status} />
+        <Text className='whitespace-nowrap text-ellipsis overflow-hidden w-[70vh]'>
+          {title}
         </Text>
       </Flex>
       <Flex align='center' gap={3}>
@@ -51,6 +56,7 @@ export const Issue = () => {
         <Text color='muted'>Sep 27</Text>
         <Avatar
           name='Joseph Mukorivo'
+          color='gray'
           size='sm'
           src='https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo'
         />

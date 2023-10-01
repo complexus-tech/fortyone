@@ -20,11 +20,11 @@ export const Projects = () => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className='flex items-center gap-1'>
-          <HiViewGrid className='relative h-[1.1rem] text-gray-300/80 dark:text-gray-200 w-auto -top-[0.1px]' />
+          <HiViewGrid className='relative h-[1.1rem] text-gray-300/80 dark:text-gray w-auto -top-[0.1px]' />
           Projects
           <TbCaretDownFilled
             className={cn(
-              'text-gray-300/60 dark:text-gray-200 transition-transform -rotate-90',
+              'text-gray-300/60 dark:text-gray transition-transform -rotate-90',
               {
                 'rotate-0': isOpen,
               }

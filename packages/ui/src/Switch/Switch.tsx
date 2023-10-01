@@ -10,7 +10,7 @@ export const Switch = ({ className = '', children, ...props }: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        'w-[26px] h-[14px] bg-gray-200 dark:bg-dark rounded-full data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary transition',
+        'w-[26px] h-[13px] bg-gray-200 dark:bg-dark rounded-full data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary transition',
         className
       )}
       {...props}
