@@ -1,9 +1,5 @@
-import { HiViewGrid } from 'react-icons/hi';
-import { RiDeleteBin6Line } from 'react-icons/ri';
-import { TbMap } from 'react-icons/tb';
-import { Box, Button, Text } from 'ui';
 import { BodyContainer } from '../../../components/shared';
-import { Issue, IssueHeader } from '../../../components/ui';
+import { Issue, IssueHeader, IssuesToolbar } from '../../../components/ui';
 
 export const Body = () => {
   return (
@@ -20,6 +16,7 @@ export const Body = () => {
       {new Array(2).fill(0).map((_, i) => (
         <Issue
           key={i}
+          priority='High'
           status='Todo'
           title='These issues are at the top of the backlog and are ready to be worked on.'
         />
@@ -29,6 +26,7 @@ export const Body = () => {
         <Issue
           key={i}
           status='In Progress'
+          priority='Urgent'
           title='These issues are being actively worked on.'
         />
       ))}
@@ -37,6 +35,7 @@ export const Body = () => {
         <Issue
           key={i}
           status='Testing'
+          priority='Medium'
           title='These issues are being tested by the QA team.'
         />
       ))}
@@ -45,6 +44,7 @@ export const Body = () => {
         <Issue
           key={i}
           status='Done'
+          priority='Low'
           title='These issues are completed and ready to be deployed.'
         />
       ))}
@@ -56,34 +56,7 @@ export const Body = () => {
           title='These issues are no longer being worked on.'
         />
       ))}
-
-      <Box className='sticky flex gap-2 items-center border border-gray-100 dark:border-dark-100/50 -translate-x-1/2 rounded-lg py-2 z-50 bg-gray-50/70 dark:bg-dark-200/70 backdrop-blur px-2.5 bottom-3 left-1/2 right-1/2 w-max'>
-        <Text color='muted' className='mr-4 ml-2'>
-          2 selected
-        </Text>
-        <Button
-          color='tertiary'
-          variant='outline'
-          leftIcon={<TbMap className='h-[1.15rem] w-auto dark:text-gray' />}
-        >
-          Add to sprint
-        </Button>
-        <Button
-          color='tertiary'
-          variant='outline'
-          leftIcon={<HiViewGrid className='dark:text-gray' />}
-        >
-          Add to project
-        </Button>
-        <Button
-          color='danger'
-          variant='outline'
-          className='border-opacity-30'
-          leftIcon={<RiDeleteBin6Line />}
-        >
-          Delete
-        </Button>
-      </Box>
+      <IssuesToolbar />
     </BodyContainer>
   );
 };

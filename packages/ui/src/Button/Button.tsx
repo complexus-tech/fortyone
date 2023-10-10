@@ -31,7 +31,7 @@ const button = cva(
         primary:
           'border-primary bg-primary ring-primary-200 enabled:hover:bg-primary-200 enabled:hover:border-primary-200 focus:bg-primary-200 focus:border-primary-200',
         danger:
-          'text-danger border-danger bg-danger ring-danger enabled:hover:bg-danger-300 enabled:hover:border-danger-300 focus:bg-danger-300 focus:border-danger-300',
+          'text-danger border-danger bg-danger ring-danger hover:bg-danger/10',
         info: 'text-info border-info bg-info ring-info enabled:hover:bg-info-300 enabled:hover:border-info-300 focus:bg-info-300 focus:border-info-300',
         warning:
           'text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300',
@@ -44,7 +44,7 @@ const button = cva(
         xs: 'pr-2 pl-1 h-[1.85rem] text-[0.95rem] gap-[2px]',
         sm: 'px-2 h-[2.2rem] gap-1',
         md: 'px-3 h-[2.5rem]',
-        lg: 'px-7 py-3 font-semibold',
+        lg: 'px-7 py-3',
       },
       disabled: {
         true: 'opacity-40 cursor-not-allowed',

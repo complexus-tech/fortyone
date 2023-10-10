@@ -30,14 +30,14 @@ const badge = cva(
       size: {
         sm: 'h-5 min-w-[1.25rem] text-[80%] py-2 px-1',
         md: 'h-6 text-[0.8rem] leading-6 p-2',
-        lg: 'h-9 px-3 py-2',
+        lg: 'h-8 p-2 text-base',
       },
     },
     compoundVariants: [
       {
         variant: 'outline',
         color: 'tertiary',
-        className: 'bg-white text-black dark:text-white ',
+        className: 'bg-white text-black dark:text-white dark:bg-dark-200/60',
       },
       {
         variant: 'outline',

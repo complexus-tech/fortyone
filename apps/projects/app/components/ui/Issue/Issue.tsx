@@ -1,7 +1,8 @@
+import Link from 'next/link';
 import { GoDotFill } from 'react-icons/go';
-import { TbDots } from 'react-icons/tb';
 import { Avatar, Button, Checkbox, Container, Flex, Text } from 'ui';
 import { IssueStatusIcon } from '../IssueStatusIcon/IssueStatusIcon';
+import { PriorityIcon } from '../PriorityIcon/PriorityIcon';
 
 export type IssueStatus =
   | 'Backlog'
@@ -12,24 +13,41 @@ export type IssueStatus =
   | 'Duplicate'
   | 'Canceled';
 
+export type IssuePriority =
+  | 'No Priority'
+  | 'Urgent'
+  | 'High'
+  | 'Medium'
+  | 'Low';
+
 type IssueProps = {
   status?: IssueStatus;
   title: string;
   description?: string;
+  priority?: IssuePriority;
 };
-export const Issue = ({ title, status = 'Backlog' }: IssueProps) => {
+export const Issue = ({
+  title,
+  status = 'Backlog',
+  priority = 'No Priority',
+}: IssueProps) => {
   return (
     <Container className='group border-b hover:bg-gray-50/50 hover:dark:bg-dark-200/50 py-3 dark:border-dark-200 border-gray-50 flex items-center justify-between'>
       <Flex align='center' gap={2} className='relative'>
         <Checkbox className='absolute -left-7 hidden data-[state=checked]:inline-block group-hover:inline-block' />
-        <TbDots />
+
+        <PriorityIcon priority={priority} />
+
         <Text color='muted' className='w-[55px] truncate'>
           COM-12
         </Text>
+
         <IssueStatusIcon status={status} />
-        <Text className='whitespace-nowrap text-ellipsis overflow-hidden w-[70vh]'>
-          {title}
-        </Text>
+        <Link href='/issue'>
+          <Text className='whitespace-nowrap text-ellipsis overflow-hidden w-[70vh] hover:opacity-90'>
+            {title}
+          </Text>
+        </Link>
       </Flex>
       <Flex align='center' gap={3}>
         <Flex align='center' gap={1}>

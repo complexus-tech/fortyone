@@ -1,7 +1,7 @@
-import React from 'react';
-import { ComponentProps } from 'react';
+'use client';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from 'lib';
+import React, { ComponentProps } from 'react';
 
 type TabProps = ComponentProps<typeof TabsPrimitive.Trigger> & {
   leftIcon?: React.ReactNode;

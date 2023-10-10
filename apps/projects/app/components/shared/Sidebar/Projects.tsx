@@ -7,7 +7,7 @@ import { Box, Button, Flex } from 'ui';
 import { Project } from './Project';
 
 export const Projects = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   return (
     <Box className='mt-8'>
       <Button

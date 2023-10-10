@@ -23,7 +23,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  'bg-white dark:bg-dark dark:text-gray-200 absolute bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-sm mt-1 py-2',
+  'bg-white dark:bg-dark-100 dark:text-gray-200 absolute bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-sm mt-1 py-2',
   {
     variants: {
       rounded: {
@@ -68,7 +68,7 @@ const Item = forwardRef<
 >(({ children, className, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-200 hover:dark:bg-dark-200 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
       className
     )}
     ref={ref}

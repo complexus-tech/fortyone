@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }): JSX.Element {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
         <main className='grid grid-cols-[220px_auto] h-screen'>
           <Sidebar />
