@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { ReactNode } from 'react';
 import { Box } from 'ui';
 import { Sidebar } from './components/shared';
 import './styles/global.css';
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }): JSX.Element {
   return (
     <html lang='en' suppressHydrationWarning>

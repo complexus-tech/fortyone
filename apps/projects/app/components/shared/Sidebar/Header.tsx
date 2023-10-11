@@ -35,6 +35,7 @@ export const Header = () => {
             <Menu.Group className='mb-2 px-4'>
               <Text>Workspaces</Text>
             </Menu.Group>
+            <Menu.Separator />
             <Menu.Group>
               <Menu.Item className='justify-between'>
                 <span className='flex gap-2 items-center'>
@@ -53,7 +54,7 @@ export const Header = () => {
               <Menu.Item>
                 <Avatar
                   color='secondary'
-                  name='fin Kenya'
+                  name='Fin Kenya'
                   rounded='md'
                   size='sm'
                 />
@@ -109,11 +110,10 @@ export const Header = () => {
             </Button>
           </Menu.Button>
           <Menu.Items align='start'>
-            <Menu.Group className='mb-3 px-4 mt-2'>
-              <Text fontSize='sm' fontWeight='medium'>
-                josemukorivo@gmail.com
-              </Text>
+            <Menu.Group className='mb-3 px-4 mt-1'>
+              <Text>josemukorivo@gmail.com</Text>
             </Menu.Group>
+            <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
                 <TbUser className='h-5 w-auto' />

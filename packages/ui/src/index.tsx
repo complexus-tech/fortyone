@@ -12,6 +12,7 @@ export * from './Flex/Flex';
 // export * from './Input/Input';
 // export * from './InputButton/InputButton';
 export * from './Menu/Menu';
+export * from './ContextMenu/ContextMenu';
 // export * from './ObjectViewer/ObjectViewer';
 // export * from './Select/Select';
 // export * from './Table/Table';

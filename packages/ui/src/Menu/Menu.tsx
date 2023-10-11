@@ -10,6 +10,7 @@ import {
 import { BsCheckLg } from 'react-icons/bs';
 
 import { cn } from 'lib';
+import { TbCheck } from 'react-icons/tb';
 
 type TriggerProps = ComponentProps<typeof DropdownMenu.Trigger>;
 export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
@@ -23,7 +24,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  'bg-white dark:bg-dark-100 dark:text-gray-200 absolute bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-sm mt-1 py-2',
+  'bg-white dark:bg-dark-100 dark:text-gray-200 bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2',
   {
     variants: {
       rounded: {
@@ -45,6 +46,7 @@ export const Items = ({
   children,
   className,
   sideOffset = 4,
+  loop = true,
   rounded,
   ...rest
 }: ContentProps) => {
@@ -54,6 +56,7 @@ export const Items = ({
       <DropdownMenu.Content
         sideOffset={sideOffset}
         className={classes}
+        loop={loop}
         {...rest}
       >
         {children}
@@ -64,11 +67,16 @@ export const Items = ({
 
 const Item = forwardRef<
   ElementRef<typeof DropdownMenu.Item>,
-  ComponentPropsWithoutRef<typeof DropdownMenu.Item>
->(({ children, className, ...rest }, ref) => (
+  ComponentPropsWithoutRef<typeof DropdownMenu.Item> & {
+    active?: boolean;
+  }
+>(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
       'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      {
+        'bg-gray-50/80 dark:bg-dark-50/60': active,
+      },
       className
     )}
     ref={ref}
@@ -84,7 +92,10 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      'flex relative items-center select-none hover:bg-primary focus:bg-primary dark:focus:text-black dark:text-white dark:hover:text-black hover:text-black transition rounded-lg w-full text-left py-2 pr-4 pl-8 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      {
+        'bg-gray-50/80 dark:bg-dark-50/60': checked,
+      },
       className
     )}
     ref={ref}
@@ -95,6 +106,7 @@ const CheckboxItem = forwardRef<
       <span className='absolute left-2 flex h-3.5 w-3.5 items-center justify-center'>
         <DropdownMenu.ItemIndicator>
           <BsCheckLg className='h-5 w-auto' />
+          <TbCheck className='h-5 w-auto' strokeWidth={2.1} />
         </DropdownMenu.ItemIndicator>
       </span>
       {children}

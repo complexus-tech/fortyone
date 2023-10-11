@@ -1,3 +1,4 @@
+import { cn } from 'lib';
 import { BsFillExclamationSquareFill } from 'react-icons/bs';
 import {
   TbAntennaBars1,
@@ -8,25 +9,41 @@ import {
 
 export const PriorityIcon = ({
   priority = 'No Priority',
+  className,
 }: {
   priority?: 'No Priority' | 'Urgent' | 'High' | 'Medium' | 'Low';
+  className?: string;
 }) => {
   return (
     <>
       {priority === 'No Priority' && (
-        <TbAntennaBars1 strokeWidth={2.5} className='h-6 text-gray w-auto' />
+        <TbAntennaBars1
+          strokeWidth={2.5}
+          className={cn('h-6 text-gray w-auto', className)}
+        />
       )}
       {priority === 'Urgent' && (
-        <BsFillExclamationSquareFill className='h-[1.1rem] text-danger w-auto' />
+        <BsFillExclamationSquareFill
+          className={cn('h-[1.1rem] text-danger w-auto', className)}
+        />
       )}
       {priority === 'High' && (
-        <TbAntennaBars4 strokeWidth={2.5} className='h-6 text-gray w-auto' />
+        <TbAntennaBars4
+          strokeWidth={2.5}
+          className={cn('h-6 text-gray w-auto', className)}
+        />
       )}
       {priority === 'Medium' && (
-        <TbAntennaBars3 strokeWidth={2.5} className='h-6 text-gray w-auto' />
+        <TbAntennaBars3
+          strokeWidth={2.5}
+          className={cn('h-6 text-gray w-auto', className)}
+        />
       )}
       {priority === 'Low' && (
-        <TbAntennaBars2 strokeWidth={2.5} className='h-6 text-gray w-auto' />
+        <TbAntennaBars2
+          strokeWidth={2.5}
+          className={cn('h-6 text-gray w-auto', className)}
+        />
       )}
     </>
   );

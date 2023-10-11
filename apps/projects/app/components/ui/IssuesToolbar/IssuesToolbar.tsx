@@ -8,7 +8,7 @@ export const IssuesToolbar = () => {
     <Flex
       gap={2}
       align='center'
-      className='sticky border border-gray-100 dark:border-dark-100/50 -translate-x-1/2 rounded-lg py-2 z-50 bg-gray-50/70 dark:bg-dark-200/70 backdrop-blur px-2.5 bottom-3 left-1/2 right-1/2 w-max'
+      className='sticky border border-gray-100 dark:border-dark-100/50 -translate-x-1/2 rounded-lg py-2 z-50 bg-gray-50/70 dark:bg-dark-200/70 backdrop-blur px-2.5 bottom-6 left-1/2 right-1/2 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20'
     >
       <Text color='muted' className='mr-4 ml-2'>
         2 selected
