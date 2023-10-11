@@ -13,7 +13,7 @@ const text = cva('text-black dark:text-white', {
     color: {
       primary: 'text-primary-200',
       muted: 'text-gray-300/80 dark:text-gray-200/80',
-      danger: 'text-danger',
+      danger: 'text-danger dark:text-danger',
       black: 'text-black',
       white: 'text-white',
       warning: 'text-warning',

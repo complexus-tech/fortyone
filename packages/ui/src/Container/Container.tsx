@@ -1,7 +1,13 @@
 import { cn } from 'lib';
-import { CSSProperties, FC, JSXElementConstructor, ReactNode } from 'react';
+import {
+  CSSProperties,
+  FC,
+  HTMLAttributes,
+  JSXElementConstructor,
+  ReactNode,
+} from 'react';
 
-export interface ContainerProps {
+export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   id?: string;
   style?: CSSProperties;

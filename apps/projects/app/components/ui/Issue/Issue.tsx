@@ -1,9 +1,24 @@
 'use client';
 import { cn } from 'lib';
 import Link from 'next/link';
+import { Fragment } from 'react';
 import { FaCaretRight } from 'react-icons/fa';
+import { FiEdit } from 'react-icons/fi';
 import { GoDotFill } from 'react-icons/go';
-import { TbCheck, TbTrash } from 'react-icons/tb';
+import { HiViewGrid } from 'react-icons/hi';
+import {
+  TbCalendarPlus,
+  TbCheck,
+  TbCopy,
+  TbFolder,
+  TbLink,
+  TbMap,
+  TbPencil,
+  TbStar,
+  TbTag,
+  TbTrash,
+  TbUserShare,
+} from 'react-icons/tb';
 import {
   Avatar,
   Box,
@@ -84,10 +99,95 @@ export const Issue = ({
     },
   ];
 
+  const contextMenu = [
+    {
+      name: 'Main',
+      options: [
+        {
+          label: 'Status',
+          icon: <IssueStatusIcon />,
+        },
+        {
+          label: 'Assignee',
+          icon: <TbUserShare className='h-5 w-auto' />,
+        },
+        {
+          label: 'Priority',
+          icon: <PriorityIcon priority='High' />,
+        },
+        {
+          label: 'Labels',
+          icon: <TbTag className='h-5 w-auto' />,
+        },
+        {
+          label: 'Sprint',
+          icon: <TbMap className='h-5 w-auto' />,
+        },
+        {
+          label: 'Module',
+          icon: <TbFolder className='h-5 w-auto' />,
+        },
+        {
+          label: 'Edit',
+          icon: <TbPencil className='h-5 w-auto' />,
+        },
+        {
+          label: 'Rename',
+          icon: <FiEdit className='h-5 w-auto' />,
+        },
+      ],
+    },
+    {
+      name: 'More',
+      options: [
+        {
+          label: 'Project',
+          icon: <HiViewGrid className='h-5 w-auto' />,
+        },
+        {
+          label: 'Add to sprint',
+          icon: <TbTag className='h-5 w-auto' />,
+        },
+        {
+          label: 'Due Date',
+          icon: <TbCalendarPlus className='h-5 w-auto' />,
+        },
+        {
+          label: 'Start Date',
+          icon: <TbCalendarPlus className='h-5 w-auto' />,
+        },
+        {
+          label: 'Clone',
+          icon: <TbCopy className='h-5 w-auto' />,
+        },
+        {
+          label: 'Favorite',
+          icon: <TbStar className='h-5 w-auto' />,
+        },
+        {
+          label: 'Copy',
+          icon: <TbLink className='h-5 w-auto' />,
+        },
+      ],
+    },
+    {
+      name: 'Danger Zone',
+      options: [
+        {
+          label: 'Delete',
+          icon: <TbTrash className='h-5 w-auto text-danger' />,
+        },
+      ],
+    },
+  ];
+
   return (
     <ContextMenu>
       <ContextMenu.Trigger>
-        <Container className='group border-b hover:bg-gray-50/50 hover:dark:bg-dark-200/50 py-3 dark:border-dark-200 border-gray-50 flex items-center justify-between'>
+        <Container
+          tabIndex={0}
+          className='group border-b focus:bg-gray-50/50 focus:dark:bg-dark-200/50 hover:bg-gray-50/50 hover:dark:bg-dark-200/50 py-3 dark:border-dark-200 border-gray-50 flex items-center justify-between'
+        >
           <Flex align='center' gap={2} className='relative'>
             <Checkbox className='absolute -left-7 hidden data-[state=checked]:inline-block group-hover:inline-block' />
 
@@ -275,58 +375,25 @@ export const Issue = ({
           </Flex>
         </Container>
       </ContextMenu.Trigger>
-      <ContextMenu.Items className='w-64'>
-        <ContextMenu.Group>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Status</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Assignee</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Priority</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Status</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Status</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <IssueStatusIcon status='In Progress' />
-              <Text>Status</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-          <ContextMenu.Item className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <TbTrash />
-              <Text>Delete</Text>
-            </Box>
-            <FaCaretRight className='text-gray' strokeWidth={2.1} />
-          </ContextMenu.Item>
-        </ContextMenu.Group>
+      <ContextMenu.Items className='w-72'>
+        {contextMenu.map(({ name, options }) => (
+          <Fragment key={name}>
+            <ContextMenu.Group key={name}>
+              {options.map(({ label, icon }, idx) => (
+                <ContextMenu.Item key={idx} className='justify-between'>
+                  <Box className='grid grid-cols-[24px_auto] items-center'>
+                    {icon}
+                    <Text>{label}</Text>
+                  </Box>
+                  <FaCaretRight className='text-gray' strokeWidth={2.1} />
+                </ContextMenu.Item>
+              ))}
+            </ContextMenu.Group>
+            {name !== 'Danger Zone' && (
+              <ContextMenu.Separator className='my-2' />
+            )}
+          </Fragment>
+        ))}
       </ContextMenu.Items>
     </ContextMenu>
   );
