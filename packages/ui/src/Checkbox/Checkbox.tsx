@@ -1,5 +1,4 @@
 'use client';
-
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { cn } from 'lib';
 import { forwardRef } from 'react';
@@ -12,7 +11,7 @@ export const Checkbox = forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      'h-5 w-5 rounded border border-gray-200 dark:border-dark-50 data-[state=checked]:border-primary focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary',
+      'h-[1.15rem] w-[1.15rem] rounded border border-gray-200 dark:border-dark-50 data-[state=checked]:border-primary focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary',
       className
     )}
     {...props}
@@ -20,7 +19,7 @@ export const Checkbox = forwardRef<
     <CheckboxPrimitive.Indicator
       className={cn('flex items-center justify-center text-white')}
     >
-      <TbCheck strokeWidth={3} className='h-5 w-auto relative -top-[1px]' />
+      <TbCheck strokeWidth={3} />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));

@@ -57,6 +57,33 @@ const Items = ({
   );
 };
 
+type SubContentProps = ComponentProps<typeof ContextMenuPrimitive.SubContent> &
+  VariantProps<typeof contentClasses>;
+const SubItems = ({
+  children,
+  className,
+  sideOffset = 7.8,
+  alignOffset = -4,
+  loop = true,
+  rounded,
+  ...rest
+}: SubContentProps) => {
+  const classes = cn(contentClasses({ rounded }), className);
+  return (
+    <ContextMenuPrimitive.Portal>
+      <ContextMenuPrimitive.SubContent
+        className={classes}
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
+        loop={loop}
+        {...rest}
+      >
+        {children}
+      </ContextMenuPrimitive.SubContent>
+    </ContextMenuPrimitive.Portal>
+  );
+};
+
 const Item = forwardRef<
   ElementRef<typeof ContextMenuPrimitive.Item>,
   ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Item> & {
@@ -65,7 +92,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.Item
     className={cn(
-      'flex gap-2 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-2 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      'flex gap-2 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-[0.4rem] px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
       {
         'bg-gray-50/80 dark:bg-dark-50/60': active,
       },
@@ -76,6 +103,27 @@ const Item = forwardRef<
   >
     {children}
   </ContextMenuPrimitive.Item>
+));
+
+const SubTrigger = forwardRef<
+  ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
+  ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {
+    active?: boolean;
+  }
+>(({ children, className, active, ...rest }, ref) => (
+  <ContextMenuPrimitive.SubTrigger
+    className={cn(
+      'flex gap-2 items-center select-none data-[state=open]:bg-gray-50/80 data-[state=open]:dark:bg-dark-50/40 focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-2 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      {
+        'bg-gray-50/80 dark:bg-dark-50/60': active,
+      },
+      className
+    )}
+    ref={ref}
+    {...rest}
+  >
+    {children}
+  </ContextMenuPrimitive.SubTrigger>
 ));
 
 type MenuProps = ComponentProps<typeof ContextMenuPrimitive.Root>;
@@ -116,4 +164,7 @@ ContextMenu.Trigger = Trigger;
 ContextMenu.Separator = Separator;
 ContextMenu.Group = Group;
 ContextMenu.Items = Items;
+ContextMenu.SubMenu = ContextMenuPrimitive.Sub;
+ContextMenu.SubTrigger = SubTrigger;
+ContextMenu.SubItems = SubItems;
 ContextMenu.Item = Item;

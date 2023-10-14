@@ -1,0 +1,26 @@
+import { cn } from "lib";
+import type { LinkProps } from "next/link";
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+type NavLinkProps = LinkProps & {
+  active?: boolean;
+  children: ReactNode;
+};
+
+export const NavLink = ({ href, active, children, ...rest }: NavLinkProps) => {
+  return (
+    <Link
+      className={cn(
+        "flex items-center gap-2 rounded-lg px-2 py-2 text-gray-300 outline-none ring-gray transition-colors duration-200 hover:bg-gray-50/70 dark:text-gray-200 dark:hover:bg-dark-200/60",
+        {
+          "bg-gray-50 dark:bg-dark-200": active,
+        },
+      )}
+      href={href}
+      {...rest}
+    >
+      {children}
+    </Link>
+  );
+};

@@ -5,6 +5,7 @@ import {
   ComponentProps,
   ComponentPropsWithoutRef,
   ElementRef,
+  InputHTMLAttributes,
   forwardRef,
 } from 'react';
 import { BsCheckLg } from 'react-icons/bs';
@@ -123,6 +124,17 @@ export const Menu = ({ children, ...rest }: MenuProps) => {
   );
 };
 
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
+const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, ...rest }, ref) => (
+    <input
+      className={cn('bg-transparent py-1 outline-none w-full', className)}
+      ref={ref}
+      {...rest}
+    />
+  )
+);
+
 const Separator = forwardRef<
   ElementRef<typeof DropdownMenu.Separator>,
   ComponentPropsWithoutRef<typeof DropdownMenu.Separator>
@@ -149,4 +161,5 @@ Menu.Separator = Separator;
 Menu.Group = Group;
 Menu.Items = Items;
 Menu.Item = Item;
+Menu.Input = Input;
 Menu.CheckboxItem = CheckboxItem;

@@ -20,6 +20,7 @@ const avatar = cva(
         gray: 'text-black bg-gray',
       },
       size: {
+        xs: 'h-6 text-xs leading-6',
         sm: 'h-7 text-sm leading-7',
         md: 'h-9 text-base leading-9',
         lg: 'h-12 text-lg leading-[3rem]',
@@ -80,6 +81,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
         <TbUser
           className={cn('h-6 w-auto', {
             'h-5': size === 'sm',
+            'h-auto': size === 'xs',
           })}
         />
       )}

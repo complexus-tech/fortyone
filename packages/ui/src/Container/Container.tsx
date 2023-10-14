@@ -34,7 +34,7 @@ export const Container: FC<ContainerProps> = ({
   return (
     <Tag
       className={cn(
-        'mx-auto px-10',
+        'mx-auto px-12',
         {
           'mx-auto px-0': full,
         },
