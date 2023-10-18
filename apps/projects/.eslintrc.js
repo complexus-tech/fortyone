@@ -6,5 +6,6 @@ module.exports = {
     "@typescript-eslint/no-unsafe-assignment": "off",
     "jsx-a11y/no-autofocus": "off",
     "react/function-component-definition": "off",
+    "import/no-extraneous-dependencies": "off",
   },
 };

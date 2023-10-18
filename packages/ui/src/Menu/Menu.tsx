@@ -124,7 +124,7 @@ export const Menu = ({ children, ...rest }: MenuProps) => {
   );
 };
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <input

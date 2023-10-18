@@ -6,3 +6,4 @@ export * from "./nav-link";
 export * from "./priority-icon";
 export * from "./new-issue-button";
 export * from "./new-issue-dialog";
+export * from "./row-wrapper";

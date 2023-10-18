@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { Flex, Text, Tooltip } from "ui";
+import type { Issue as IssueProps } from "@/types/issue";
+import { RowWrapper } from "../row-wrapper";
 import { AssigneesMenu } from "./assignees-menu";
 import { IssueCheckbox } from "./checkbox";
 import { IssueContextMenu } from "./context-menu";
@@ -8,8 +10,6 @@ import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
-import { IssueWrapper } from "./wrapper";
-import type { Issue as IssueProps } from "@/types/issue";
 
 export const Issue = ({
   title,
@@ -18,7 +18,7 @@ export const Issue = ({
 }: IssueProps) => {
   return (
     <IssueContextMenu>
-      <IssueWrapper>
+      <RowWrapper>
         <Flex align="center" className="relative select-none" gap={2}>
           <DragHandle />
           <IssueCheckbox />
@@ -42,7 +42,7 @@ export const Issue = ({
           </Tooltip>
           <AssigneesMenu isSearchEnabled />
         </Flex>
-      </IssueWrapper>
+      </RowWrapper>
     </IssueContextMenu>
   );
 };

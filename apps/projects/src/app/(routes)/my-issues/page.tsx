@@ -1,5 +1,5 @@
-import { MyIssues } from '../../../modules/my-issues/MyIssues';
+import { ViewMyIssues } from "@/modules/my-issues";
 
-export default function Page(): JSX.Element {
-  return <MyIssues />;
+export default function Page() {
+  return <ViewMyIssues />;
 }

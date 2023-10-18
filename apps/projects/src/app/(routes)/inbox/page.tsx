@@ -10,7 +10,7 @@ export default function Page(): JSX.Element {
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "Dashboard",
+              name: "Inbox",
               icon: <TbLayoutDashboard className="h-5 w-auto" />,
             },
           ]}
@@ -28,7 +28,7 @@ export default function Page(): JSX.Element {
         </Flex>
       </HeaderContainer>
       <BodyContainer>
-        <Container className="pt-4">Dashboard page</Container>
+        <Container className="pt-4">Inbox</Container>
       </BodyContainer>
     </>
   );

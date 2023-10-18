@@ -3,9 +3,11 @@ import { IoIosArrowForward } from 'react-icons/io';
 
 import { cn } from 'lib';
 import { Flex } from '../Flex/Flex';
+import { ReactNode } from 'react';
 interface BreadCrumb {
   name: string;
   url?: string;
+  icon?: ReactNode;
 }
 
 export type BreadCrumbsProps = {
@@ -16,7 +18,7 @@ export type BreadCrumbsProps = {
 export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
   return (
     <Flex align='center' gap={2} className={className}>
-      {breadCrumbs.map(({ name, url = '' }, idx) => (
+      {breadCrumbs.map(({ name, icon, url = '' }, idx) => (
         <Link
           key={idx}
           href={url}
@@ -27,6 +29,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
             }
           )}
         >
+          {icon}
           <span className='hover:text-primary'>{name}</span>
           <IoIosArrowForward
             className={cn('h-[0.8rem] w-auto', {

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Container } from "ui";
 
-export const IssueWrapper = ({ children }: { children: ReactNode }) => {
+export const RowWrapper = ({ children }: { children: ReactNode }) => {
   return (
     <Container
       className="group flex

@@ -1,20 +1,21 @@
 export type IssueStatus =
-  | 'Backlog'
-  | 'Todo'
-  | 'In Progress'
-  | 'Testing'
-  | 'Done'
-  | 'Duplicate'
-  | 'Canceled';
+  | "Backlog"
+  | "Todo"
+  | "In Progress"
+  | "Testing"
+  | "Done"
+  | "Duplicate"
+  | "Canceled";
 
 export type IssuePriority =
-  | 'No Priority'
-  | 'Urgent'
-  | 'High'
-  | 'Medium'
-  | 'Low';
+  | "No Priority"
+  | "Urgent"
+  | "High"
+  | "Medium"
+  | "Low";
 
 export type Issue = {
+  id?: number;
   title: string;
   description?: string;
   status?: IssueStatus;

@@ -1,9 +1,9 @@
 import { usePathname } from "next/navigation";
-import { HiChartBar } from "react-icons/hi";
+import { HiChartBar, HiViewGrid } from "react-icons/hi";
 import { HiOutlineInboxArrowDown } from "react-icons/hi2";
-import { TbFocusCentered, TbLayoutDashboard, TbStack2 } from "react-icons/tb";
+import { TbFocusCentered, TbLayoutDashboard } from "react-icons/tb";
 import { Flex } from "ui";
-import { NavLink } from "../../ui";
+import { NavLink } from "@/components/ui";
 
 export const Navigation = () => {
   const pathname = usePathname();
@@ -39,9 +39,9 @@ export const Navigation = () => {
       href: "/my-issues",
     },
     {
-      name: "Views",
-      icon: <TbStack2 className="h-[1.4rem] w-auto dark:text-gray" />,
-      href: "/views",
+      name: "Projects",
+      icon: <HiViewGrid className="h-[1.4rem] w-auto dark:text-gray" />,
+      href: "/projects",
     },
   ];
 
