@@ -12,25 +12,25 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type Repository interface {
+type Store interface {
 	List(ctx context.Context) ([]Issue, error)
 	Get(ctx context.Context, id int) (Issue, error)
 }
 
-type repo struct {
+type store struct {
 	db  *sqlx.DB
 	log *logger.Logger
 }
 
-func NewRepository(log *logger.Logger, db *sqlx.DB) Repository {
-	return &repo{
+func NewStore(log *logger.Logger, db *sqlx.DB) Store {
+	return &store{
 		db:  db,
 		log: log,
 	}
 }
 
 // List returns all known issues.
-func (r *repo) List(ctx context.Context) ([]Issue, error) {
+func (r *store) List(ctx context.Context) ([]Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.issues.List")
 	defer span.End()
 
@@ -74,7 +74,7 @@ func (r *repo) List(ctx context.Context) ([]Issue, error) {
 }
 
 // Get returns the issue with the specified ID.
-func (r *repo) Get(ctx context.Context, id int) (Issue, error) {
+func (r *store) Get(ctx context.Context, id int) (Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.issues.Get")
 	defer span.End()
 

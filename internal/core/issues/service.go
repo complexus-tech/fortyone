@@ -3,7 +3,7 @@ package issues
 import (
 	"context"
 
-	"github.com/complexus-tech/projects-api/internal/repository/issues"
+	"github.com/complexus-tech/projects-api/internal/store/issues"
 	"github.com/complexus-tech/projects-api/internal/web"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/jmoiron/sqlx"
@@ -17,14 +17,14 @@ type Service interface {
 }
 
 type service struct {
-	repo issues.Repository
-	log  *logger.Logger
+	store issues.Store
+	log   *logger.Logger
 }
 
 func NewService(log *logger.Logger, db *sqlx.DB) Service {
 	return &service{
-		repo: issues.NewRepository(log, db),
-		log:  log,
+		store: issues.NewStore(log, db),
+		log:   log,
 	}
 }
 
@@ -34,7 +34,7 @@ func (s *service) List(ctx context.Context) ([]issues.Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.issues.List")
 	defer span.End()
 
-	issues, err := s.repo.List(ctx)
+	issues, err := s.store.List(ctx)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -51,7 +51,7 @@ func (s *service) Get(ctx context.Context, id int) (issues.Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.issues.Get")
 	defer span.End()
 
-	issue, err := s.repo.Get(ctx, id)
+	issue, err := s.store.Get(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		return issues.Issue{}, err
