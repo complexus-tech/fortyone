@@ -18,7 +18,7 @@ import (
 // Handler is the signature used by all application handlers in this service.
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
-type application struct {
+type app struct {
 	mux         *mux.Router
 	mw          []Middleware
 	shutdown    chan os.Signal
@@ -26,9 +26,10 @@ type application struct {
 	strictSlash bool
 }
 
-func NewApp(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *application {
+// New creates an application struct that will handle all requests to the application.
+func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *app {
 	mux := mux.NewRouter()
-	return &application{
+	return &app{
 		mux:         mux,
 		mw:          mw,
 		shutdown:    shutdown,
@@ -39,7 +40,7 @@ func NewApp(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *app
 
 // ServeHTTP implements the http.Handler interface so that App can be used as a Mux.
 // It then calls the ServeHTTP method on the embedded Mux.
-func (a *application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !a.strictSlash {
 		path := a.stripSlash(r.URL.Path)
 		r.URL.Path = path
@@ -47,11 +48,13 @@ func (a *application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mux.ServeHTTP(w, r)
 }
 
-func (a *application) StrictSlash(strictSlash bool) {
+// StripSlash will remove the trailing slash from the URL.
+func (a *app) StrictSlash(strictSlash bool) {
 	a.strictSlash = strictSlash
 }
 
-func (a *application) stripSlash(path string) string {
+// StripSlash will remove the trailing slash from the URL.
+func (a *app) stripSlash(path string) string {
 	if path != "/" && strings.HasSuffix(path, "/") {
 		path = strings.TrimSuffix(path, "/")
 	}
@@ -59,7 +62,7 @@ func (a *application) stripSlash(path string) string {
 }
 
 // Handle will will apply middleware to the handler and then add it to the mux router.
-func (a *application) Handle(method string, pattern string, handler Handler, mw ...Middleware) {
+func (a *app) Handle(method string, pattern string, handler Handler, mw ...Middleware) {
 	// First handler to execute is the one passed in.
 	handler = wrapMiddleware(mw, handler)
 	// Then wrap with the application level middleware.
@@ -93,36 +96,37 @@ func (a *application) Handle(method string, pattern string, handler Handler, mw 
 }
 
 // Get is a shortcut for app.Handle(http.MethodGet, path, handler, mw...)
-func (a *application) Get(path string, handler Handler, mw ...Middleware) {
+func (a *app) Get(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodGet, path, handler, mw...)
 }
 
 // Post is a shortcut for app.Handle(http.MethodPost, path, handler, mw...)
-func (a *application) Post(path string, handler Handler, mw ...Middleware) {
+func (a *app) Post(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPost, path, handler, mw...)
 }
 
 // Put is a shortcut for app.Handle(http.MethodPut, path, handler, mw...)
-func (a *application) Put(path string, handler Handler, mw ...Middleware) {
+func (a *app) Put(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPut, path, handler, mw...)
 }
 
 // Delete is a shortcut for app.Handle(http.MethodDelete, path, handler, mw...)
-func (a *application) Delete(path string, handler Handler, mw ...Middleware) {
+func (a *app) Delete(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodDelete, path, handler, mw...)
 }
 
 // Patch is a shortcut for app.Handle(http.MethodPatch, path, handler, mw...)
-func (a *application) Patch(path string, handler Handler, mw ...Middleware) {
+func (a *app) Patch(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPatch, path, handler, mw...)
 }
 
 // Shutdown will gracefully shutdown the application.
-func (a *application) Shutdown() {
+func (a *app) Shutdown() {
 	a.shutdown <- syscall.SIGTERM
 }
 
-func (a *application) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, trace.Span) {
+// startSpan will start a span for the request and add it to the context.
+func (a *app) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, trace.Span) {
 	ctx := r.Context()
 
 	span := trace.SpanFromContext(ctx)

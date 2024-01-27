@@ -17,8 +17,8 @@ var (
 )
 
 type IssuesHandler interface {
-	get(ctx context.Context, w http.ResponseWriter, r *http.Request) error
-	list(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+	Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+	List(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 }
 
 type issuesHandlers struct {
@@ -35,8 +35,8 @@ func NewIssuesHandlers(log *logger.Logger, db *sqlx.DB) IssuesHandler {
 	}
 }
 
-// get returns the product with the specified ID.
-func (h *issuesHandlers) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// Get returns the issue with the specified ID.
+func (h *issuesHandlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(web.Params(r, "id"))
 	if err != nil {
 		h.log.Error(ctx, "Error")
@@ -50,13 +50,12 @@ func (h *issuesHandlers) get(ctx context.Context, w http.ResponseWriter, r *http
 	return nil
 }
 
-// list returns a list of products.
-func (h *issuesHandlers) list(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// List returns a list of issues.
+func (h *issuesHandlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	issues, err := h.issues.List(ctx)
 	if err != nil {
 		return err
 	}
-
 	web.Respond(ctx, w, issues, http.StatusOK)
 	return nil
 }

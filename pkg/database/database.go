@@ -28,7 +28,8 @@ type Config struct {
 }
 
 // Open opens a database connection. It returns an error if the connection
-// cannot be opened.
+// cannot be opened. The caller is responsible for closing the database
+// connection.
 func Open(cfg Config) (*sqlx.DB, error) {
 	sslMode := "require"
 	if cfg.DisableTLS {

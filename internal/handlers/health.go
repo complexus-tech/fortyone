@@ -13,8 +13,8 @@ import (
 )
 
 type HealthHandler interface {
-	readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
-	liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+	Readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+	Liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 }
 
 type healthCheck struct {
@@ -22,7 +22,7 @@ type healthCheck struct {
 	db  *sqlx.DB
 }
 
-// NewProfHandlers returns a new profHandlers instance.
+// NewHealthHandlers returns a new profHandlers instance.
 func NewHealthHandler(log *logger.Logger, db *sqlx.DB) HealthHandler {
 	return &healthCheck{
 		log: log,
@@ -30,8 +30,8 @@ func NewHealthHandler(log *logger.Logger, db *sqlx.DB) HealthHandler {
 	}
 }
 
-// readiness checks if the db is ready and service is ready to handle requests.
-func (h *healthCheck) readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// Readiness checks if the db is ready and service is ready to handle requests.
+func (h *healthCheck) Readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
@@ -53,7 +53,8 @@ func (h *healthCheck) readiness(ctx context.Context, w http.ResponseWriter, r *h
 	return web.Respond(ctx, w, data, statusCode)
 }
 
-func (h *healthCheck) liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// liveness checks if the service is alive and ready to handle requests.
+func (h *healthCheck) Liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 	host, err := os.Hostname()
 	if err != nil {
