@@ -12,12 +12,16 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
+// config holds the configuration for tracing. This is used to initialize the
+// tracing provider.
 type config struct {
 	service string
 	version string
 	environ string
 }
 
+// New returns a new config instance. This is used to initialize the tracing
+// provider.
 func New(service, version, environ string) *config {
 	return &config{
 		service: service,
@@ -26,6 +30,7 @@ func New(service, version, environ string) *config {
 	}
 }
 
+// StartTracing starts the tracing provider and returns the tracer provider.
 func (c *config) StartTracing() (*trace.TracerProvider, error) {
 	ctx := context.Background()
 	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure())

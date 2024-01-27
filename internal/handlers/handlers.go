@@ -4,20 +4,21 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/complexus-tech/projects-api/internal/web"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/trace"
 )
 
-type APIConfig struct {
+type Config struct {
 	DB       *sqlx.DB
 	Shutdown chan os.Signal
 	Log      *logger.Logger
 	Tracer   trace.Tracer
 }
 
-func API(cfg APIConfig) http.Handler {
+// API returns a new HTTP handler that defines all the API routes.
+func API(cfg Config) http.Handler {
 
 	app := web.NewApp(cfg.Shutdown, cfg.Tracer)
 	app.StrictSlash(false)

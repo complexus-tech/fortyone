@@ -14,7 +14,8 @@ var (
 	ErrDuplicateEntry = errors.New("duplicate entry")
 )
 
-// Config represents a database configuration.
+// Config represents a database configuration. It is used to open a database
+// connection.
 type Config struct {
 	User         string
 	Password     string
@@ -26,7 +27,8 @@ type Config struct {
 	DisableTLS   bool
 }
 
-// Open opens a database connection.
+// Open opens a database connection. It returns an error if the connection
+// cannot be opened.
 func Open(cfg Config) (*sqlx.DB, error) {
 	sslMode := "require"
 	if cfg.DisableTLS {
@@ -53,5 +55,4 @@ func Open(cfg Config) (*sqlx.DB, error) {
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
 
 	return db, nil
-
 }
