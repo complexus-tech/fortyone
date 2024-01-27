@@ -39,29 +39,29 @@ func main() {
 func run(ctx context.Context, log *logger.Logger) error {
 	cfg := struct {
 		Web struct {
-			APIHost         string        `default:"localhost:8000"`
-			ReadTimeout     time.Duration `default:"5s"`
-			WriteTimeout    time.Duration `default:"10s"`
-			IdleTimeout     time.Duration `default:"120s"`
-			ShutdownTimeout time.Duration `default:"30s"`
-			DebugHost       string        `default:"localhost:9000"`
+			APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
+			ReadTimeout     time.Duration `default:"5s" env:"APP_API_READ_TIMEOUT"`
+			WriteTimeout    time.Duration `default:"10s" env:"APP_API_WRITE_TIMEOUT"`
+			IdleTimeout     time.Duration `default:"120s" env:"APP_API_IDLE_TIMEOUT"`
+			ShutdownTimeout time.Duration `default:"30s" env:"APP_API_SHUTDOWN_TIMEOUT"`
+			DebugHost       string        `default:"localhost:9000" env:"APP_API_DEBUG_HOST"`
 		}
 		DB struct {
 			Host         string `default:"localhost"`
 			Port         string `default:"5432"`
-			User         string `default:"complexus"`
-			Password     string `default:"Pa55w0rd"`
-			Name         string `default:"complexus_projects"`
-			MaxIdleConns int    `default:"2"`
-			MaxOpenConns int    `default:"3"`
-			DisableTLS   bool   `default:"true"`
+			User         string `default:"postgres"`
+			Password     string `default:"password"`
+			Name         string `default:"complexus"`
+			MaxIdleConns int    `default:"2" env:"APP_DB_MAX_IDLE_CONNS"`
+			MaxOpenConns int    `default:"3" env:"APP_DB_MAX_OPEN_CONNS"`
+			DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 		}
 	}{}
-
 	err := config.Parse("app", &cfg)
 	if err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
+	fmt.Println(os.Getenv("TEST"))
 
 	db, err := database.Open(database.Config{
 		Host:         cfg.DB.Host,
