@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/complexus-tech/projects-api/internal/store/issues"
-	"github.com/complexus-tech/projects-api/internal/web"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

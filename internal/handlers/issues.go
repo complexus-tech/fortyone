@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/complexus-tech/projects-api/internal/core/issues"
-	"github.com/complexus-tech/projects-api/internal/web"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 )
 
