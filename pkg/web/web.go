@@ -2,13 +2,13 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -19,7 +19,7 @@ import (
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
 type app struct {
-	mux         *mux.Router
+	mux         *http.ServeMux
 	mw          []Middleware
 	shutdown    chan os.Signal
 	tracer      trace.Tracer
@@ -28,7 +28,8 @@ type app struct {
 
 // New creates an application struct that will handle all requests to the application.
 func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *app {
-	mux := mux.NewRouter()
+	// mux := mux.NewRouter()
+	mux := http.NewServeMux()
 	return &app{
 		mux:         mux,
 		mw:          mw,
@@ -88,11 +89,7 @@ func (a *app) Handle(method string, pattern string, handler Handler, mw ...Middl
 	}
 
 	// Add this handler to the mux router.
-	if strings.ToLower(method) == "all" {
-		a.mux.HandleFunc(pattern, h)
-	} else {
-		a.mux.HandleFunc(pattern, h).Methods(method)
-	}
+	a.mux.HandleFunc(fmt.Sprintf("%s %s", method, pattern), h)
 }
 
 // Get is a shortcut for app.Handle(http.MethodGet, path, handler, mw...)
@@ -132,7 +129,7 @@ func (a *app) startSpan(w http.ResponseWriter, r *http.Request) (context.Context
 	span := trace.SpanFromContext(ctx)
 
 	if a.tracer != nil {
-		ctx, span = a.tracer.Start(ctx, "internal.web.handle")
+		ctx, span = a.tracer.Start(ctx, "pkg.web.handle")
 		span.SetAttributes(
 			attribute.String("http.method", r.Method),
 			attribute.String("http.endpoint", r.RequestURI))

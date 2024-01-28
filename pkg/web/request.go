@@ -3,8 +3,6 @@ package web
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 type validator interface {
@@ -13,13 +11,13 @@ type validator interface {
 
 // Params returns the parameters from the request.
 func Params(r *http.Request, key string) string {
-	params := mux.Vars(r)
-	return params[key]
+	return r.PathValue(key)
 }
 
 // Decode decodes the body of a request into a given interface.
 func Decode(r *http.Request, v any) error {
 	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(v); err != nil {
 		return err
 	}

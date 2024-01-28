@@ -32,7 +32,7 @@ func New(cfg Config) http.Handler {
 
 	// Register issues handlers.
 	i := handlers.NewIssuesHandlers(cfg.Log, cfg.DB)
-	app.Get("/issues/{id:[0-9]+}", i.Get)
+	app.Get("/issues/{id}", i.Get)
 	app.Get("/issues", i.List)
 
 	return app

@@ -1,9 +1,8 @@
 module github.com/complexus-tech/projects-api
 
-go 1.21.6
+go 1.22rc2
 
 require (
-	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/josemukorivo/config v1.0.1
