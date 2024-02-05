@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/router"
+	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
@@ -103,7 +103,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	server := http.Server{
 		Addr: cfg.Web.APIHost,
-		Handler: router.New(router.Config{
+		Handler: mux.New(mux.Config{
 			DB:       db,
 			Shutdown: shutdown,
 			Log:      log,

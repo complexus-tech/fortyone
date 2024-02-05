@@ -13,7 +13,7 @@ import (
 
 // Respond sends JSON to the client.
 func Respond(ctx context.Context, w http.ResponseWriter, data any, statusCode int) error {
-	ctx, span := AddSpan(ctx, "internal.web.Respond", attribute.Int("status", statusCode))
+	ctx, span := AddSpan(ctx, "pkg.web.Respond", attribute.Int("status", statusCode))
 	defer span.End()
 	span.AddEvent("serializing response.")
 

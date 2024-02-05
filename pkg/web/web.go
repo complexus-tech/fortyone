@@ -83,6 +83,7 @@ func (a *app) Handle(method string, pattern string, handler Handler, mw ...Middl
 
 		if err := handler(ctx, w, r); err != nil {
 			a.Shutdown()
+
 			return
 		}
 
