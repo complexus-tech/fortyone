@@ -23,14 +23,14 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           key={idx}
           href={url}
           className={cn(
-            'flex items-center gap-2 font-medium capitalize text-gray-300 transition dark:text-gray-200',
+            'flex items-center gap-2 font-medium group capitalize text-gray-300 transition dark:text-gray-200',
             {
               'text-gray dark:text-gray': idx + 1 === breadCrumbs.length,
             }
           )}
         >
-          {icon}
-          <span className='hover:text-primary'>{name}</span>
+          <span className='group-hover:text-primary'>{icon}</span>
+          <span className='group-hover:text-primary'>{name}</span>
           <IoIosArrowForward
             className={cn('h-[0.8rem] w-auto', {
               hidden: idx + 1 === breadCrumbs.length,

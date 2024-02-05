@@ -1,12 +1,7 @@
-import {
-  TbAdjustmentsHorizontal,
-  TbLayoutDashboard,
-  TbMail,
-  TbPinned,
-  TbTrash,
-} from "react-icons/tb";
-import { Box, BreadCrumbs, Button, Flex, Text } from "ui";
+import { TbMail, TbPinned, TbTrash } from "react-icons/tb";
+import { Box, BreadCrumbs, Button, Flex, Text, Tooltip } from "ui";
 import { HiOutlineInboxArrowDown } from "react-icons/hi2";
+import { SlidersHorizontal, Bell } from "lucide-react";
 import { BodyContainer, HeaderContainer } from "@/components/shared";
 import { NewIssueButton, RowWrapper } from "@/components/ui";
 
@@ -109,14 +104,14 @@ export default function Page(): JSX.Element {
           breadCrumbs={[
             {
               name: "Inbox",
-              icon: <TbLayoutDashboard className="h-5 w-auto" />,
+              icon: <Bell className="h-5 w-auto" />,
             },
           ]}
         />
         <Flex gap={2}>
           <Button
             color="tertiary"
-            leftIcon={<TbAdjustmentsHorizontal className="h-5 w-auto" />}
+            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >
@@ -130,32 +125,41 @@ export default function Page(): JSX.Element {
           <Box className="h-full border-r border-gray-100 dark:border-dark-100">
             {notifications.map(({ id, title, description, date }) => (
               <RowWrapper
-                className="group border-l-4 px-6 pt-2 dark:bg-dark-100/10"
+                className="group cursor-pointer px-6 pt-2 transition dark:bg-dark-100/[0.15] dark:hover:bg-dark-100/40 focus:dark:bg-dark-100/40"
                 key={id}
               >
                 <Box className="w-full">
                   <Flex align="center" justify="between">
                     <Text
                       className="truncate opacity-80"
-                      fontSize="lg"
-                      fontWeight="medium"
+                      textOverflow="truncate"
                     >
                       Joseph Mukorivo
                     </Text>
-                    <Flex
-                      align="center"
-                      className="opacity-70 transition group-hover:opacity-100"
-                      gap={3}
-                    >
-                      <TbPinned className="h-5 w-auto dark:text-gray" />
-                      <TbMail className="h-5 w-auto dark:text-gray" />
-                      <TbTrash className="h-5 w-auto dark:text-gray" />
+                    <Flex align="center" className="transition" gap={3}>
+                      <Tooltip title="Pin">
+                        <TbPinned className="h-5 w-auto dark:text-gray dark:hover:text-white" />
+                      </Tooltip>
+                      <Tooltip title="Mark as read">
+                        <TbMail className="h-5 w-auto dark:text-gray dark:hover:text-white" />
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <TbTrash className="h-5 w-auto text-primary" />
+                      </Tooltip>
                     </Flex>
                   </Flex>
 
                   <Flex align="center" className="my-[2px]" justify="between">
-                    <Text className="opacity-80">{title}</Text>
-                    <Text fontSize="sm">{date}</Text>
+                    <Text
+                      className="opacity-80"
+                      fontWeight="medium"
+                      textOverflow="truncate"
+                    >
+                      {title}
+                    </Text>
+                    <Text className="opacity-90" fontSize="sm">
+                      {date}
+                    </Text>
                   </Flex>
 
                   <Text className="truncate" color="muted" fontSize="sm">

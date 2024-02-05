@@ -4,7 +4,7 @@ import { Box } from "ui";
 
 export const BodyContainer = ({ children, className }: BoxProps) => {
   return (
-    <Box className={cn("h-screen overflow-y-auto pt-16", className)}>
+    <Box className={cn("h-[calc(100vh-4rem)] overflow-y-auto relative", className)}>
       {children}
     </Box>
   );

@@ -1,16 +1,16 @@
-'use client';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+"use client";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   ComponentProps,
   ComponentPropsWithoutRef,
   ElementRef,
   HTMLAttributes,
   forwardRef,
-} from 'react';
-import { MdOutlineClose } from 'react-icons/md';
-import { Box } from '../Box/Box';
+} from "react";
+import { MdOutlineClose } from "react-icons/md";
+import { Box } from "../Box/Box";
 
-import { cn } from 'lib';
+import { cn } from "lib";
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
@@ -26,7 +26,7 @@ const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/[0.03] dark:bg-dark/50 backdrop-blur-[1px] flex items-start justify-center',
+      "fixed inset-0 z-50 bg-black/[0.03] dark:bg-dark/50 backdrop-blur-[1px] flex items-start justify-center",
       className
     )}
     {...props}
@@ -36,11 +36,11 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogClose = () => (
   <DialogPrimitive.Close
-    data-testid='close-modal'
-    className='rounded-lg inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200'
+    data-testid="close-modal"
+    className="rounded-lg inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200"
   >
-    <MdOutlineClose className='h-6 w-auto' />
-    <span className='sr-only'>Close</span>
+    <MdOutlineClose className="h-6 w-auto" />
+    <span className="sr-only">Close</span>
   </DialogPrimitive.Close>
 );
 
@@ -48,20 +48,20 @@ const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     hideClose?: boolean;
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: "sm" | "md" | "lg" | "xl";
   }
->(({ className, children, hideClose, size = 'md', ...props }, ref) => (
+>(({ className, children, hideClose, size = "md", ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay>
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          'w-full bg-white/95 mt-[10%] border border-gray-50 shadow-dark/20 dark:shadow-dark dark:border-dark-100 dark:bg-dark-200/95 shadow-lg backdrop-blur rounded-xl overflow-hidden max-w-3xl relative',
+          "w-full bg-white/95 mt-[10%] border border-gray-50 shadow-dark/20 dark:shadow-dark dark:border-dark-100 dark:bg-dark-200/95 shadow-lg backdrop-blur-lg rounded-xl overflow-hidden max-w-3xl relative",
           {
-            'max-w-md': size === 'sm',
-            'max-w-xl': size === 'md',
-            'max-w-4xl': size === 'lg',
-            'max-w-7xl': size === 'xl',
+            "max-w-md": size === "sm",
+            "max-w-xl": size === "md",
+            "max-w-4xl": size === "lg",
+            "max-w-7xl": size === "xl",
           }
         )}
         {...props}
@@ -78,36 +78,36 @@ const DialogHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('py-4', className)} {...props} />
+  <div className={cn("py-4", className)} {...props} />
 );
-DialogHeader.displayName = 'DialogHeader';
+DialogHeader.displayName = "DialogHeader";
 
 const DialogFooter = ({
   className,
-  variant = 'naked',
+  variant = "naked",
   justify,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  variant?: 'naked' | 'bordered';
-  justify?: 'start' | 'end' | 'center' | 'between';
+  variant?: "naked" | "bordered";
+  justify?: "start" | "end" | "center" | "between";
 }) => (
   <div
     className={cn(
-      'flex px-6 pb-[0.8rem]',
+      "flex px-6 pb-[0.8rem]",
       {
-        'border-t border-gray-100 dark:border-dark-100 pt-[0.8rem]':
-          variant !== 'bordered',
-        'justify-start': justify === 'start',
-        'justify-end': justify === 'end',
-        'justify-center': justify === 'center',
-        'justify-between': justify === 'between',
+        "border-t border-gray-100 dark:border-dark-100 pt-[0.8rem]":
+          variant !== "bordered",
+        "justify-start": justify === "start",
+        "justify-end": justify === "end",
+        "justify-center": justify === "center",
+        "justify-between": justify === "between",
       },
       className
     )}
     {...props}
   />
 );
-DialogFooter.displayName = 'DialogFooter';
+DialogFooter.displayName = "DialogFooter";
 
 const DialogTitle = forwardRef<
   ElementRef<typeof DialogPrimitive.Title>,
@@ -116,7 +116,7 @@ const DialogTitle = forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'font-medium leading-none tracking-tight dark:text-white',
+      "font-medium leading-none tracking-tight dark:text-white",
       className
     )}
     {...props}
@@ -131,7 +131,7 @@ const DialogDescription = forwardRef<
   <DialogPrimitive.Description
     ref={ref}
     className={cn(
-      'text-[0.95rem] text-tertiary-300 dark:text-tertiary-100 px-6',
+      "text-[0.95rem] text-tertiary-300 dark:text-tertiary-100 px-6",
       className
     )}
     {...props}
@@ -146,7 +146,7 @@ type BodyProps = ComponentProps<typeof Box>;
 const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
-      'px-6 pt-2 pb-4 dark:text-white max-h-[80vh] overflow-y-auto',
+      "px-6 pt-2 pb-4 dark:text-white max-h-[80vh] overflow-y-auto",
       className
     )}
     {...props}

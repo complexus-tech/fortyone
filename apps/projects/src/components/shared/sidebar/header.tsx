@@ -1,15 +1,7 @@
 import { useState } from "react";
-import {
-  TbCheck,
-  TbLayoutGridAdd,
-  TbLogout2,
-  TbPlus,
-  TbSearch,
-  TbSettings,
-  TbUser,
-  TbUsersPlus,
-} from "react-icons/tb";
+import { TbCheck } from "react-icons/tb";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
+import { LogOut, Plus, Search, Settings, User, UserPlus } from "lucide-react";
 import { NewIssueDialog } from "@/components/ui";
 
 export const Header = () => {
@@ -63,7 +55,7 @@ export const Header = () => {
               <Menu.Item asChild>
                 <Button
                   color="tertiary"
-                  leftIcon={<TbPlus className="h-5 w-auto" />}
+                  leftIcon={<Plus className="h-5 w-auto" />}
                   variant="naked"
                 >
                   Create workspace
@@ -73,18 +65,18 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <TbSettings className="h-5 w-auto" />
+                <Settings className="h-5 w-auto" />
                 Workspace settings
               </Menu.Item>
               <Menu.Item>
-                <TbUsersPlus className="h-5 w-auto" />
+                <UserPlus className="h-5 w-auto" />
                 Invite members
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <TbLogout2 className="h-5 w-auto" />
+                <LogOut className="h-5 w-auto" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -116,18 +108,18 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <TbUser className="h-5 w-auto" />
+                <User className="h-5 w-auto" />
                 View profile
               </Menu.Item>
               <Menu.Item>
-                <TbSettings className="h-5 w-auto" />
+                <Settings className="h-5 w-auto" />
                 Settings
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <TbLogout2 className="h-5 w-auto" />
+                <LogOut className="h-5 w-auto" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -138,7 +130,7 @@ export const Header = () => {
         <Button
           color="tertiary"
           fullWidth
-          leftIcon={<TbLayoutGridAdd className="h-5 w-auto" />}
+          leftIcon={<Plus className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}
@@ -150,7 +142,7 @@ export const Header = () => {
           align="center"
           className="px-[0.6rem]"
           color="tertiary"
-          leftIcon={<TbSearch className="h-5 w-auto" />}
+          leftIcon={<Search className="h-[1.1rem] w-auto" />}
           variant="outline"
         >
           <span className="sr-only">Search</span>

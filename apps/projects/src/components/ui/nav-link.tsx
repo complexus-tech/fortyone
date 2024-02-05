@@ -12,9 +12,9 @@ export const NavLink = ({ href, active, children, ...rest }: NavLinkProps) => {
   return (
     <Link
       className={cn(
-        "flex items-center gap-2 rounded-lg px-2 py-2 text-gray-300 outline-none ring-gray transition-colors duration-200 hover:bg-gray-50/70 dark:text-gray-200 dark:hover:bg-dark-200/60",
+        "group flex items-center gap-2 rounded-lg px-2 py-2 text-gray-300 outline-none ring-gray transition-colors duration-200 hover:bg-gray-50/70 dark:text-gray-200 dark:hover:bg-dark-200/60 dark:hover:text-white",
         {
-          "bg-gray-50 dark:bg-dark-200": active,
+          "bg-gray-50 font-medium dark:bg-dark-200 dark:text-white": active,
         },
       )}
       href={href}

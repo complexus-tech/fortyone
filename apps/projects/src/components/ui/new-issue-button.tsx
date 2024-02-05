@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { TbPlus } from "react-icons/tb";
 import { Button } from "ui";
+import { Plus } from "lucide-react";
 import { NewIssueDialog } from "./new-issue-dialog";
 
 export const NewIssueButton = () => {
@@ -9,7 +9,7 @@ export const NewIssueButton = () => {
   return (
     <>
       <Button
-        leftIcon={<TbPlus className="h-5 w-auto" />}
+        leftIcon={<Plus className="h-5 w-auto" />}
         onClick={() => {
           setIsOpen(true);
         }}

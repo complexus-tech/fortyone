@@ -1,9 +1,8 @@
 "use client";
 import { cn } from "lib";
 import { useState } from "react";
-import { HiViewGrid } from "react-icons/hi";
-import { TbCaretDownFilled, TbPlus } from "react-icons/tb";
 import { Box, Button, Flex } from "ui";
+import { ChevronDown, GalleryVerticalEnd, Plus } from "lucide-react";
 import { Project } from "./project";
 
 export const Projects = () => {
@@ -18,29 +17,28 @@ export const Projects = () => {
         onClick={() => {
           setIsOpen(!isOpen);
         }}
-        size="sm"
         variant="naked"
       >
-        <span className="flex items-center gap-1">
-          <HiViewGrid className="relative -top-[0.1px] h-[1.1rem] w-auto text-gray-300/80 dark:text-gray" />
+        <span className="flex items-center gap-2 font-medium">
+          <GalleryVerticalEnd className="relative h-[1.1rem] w-auto text-gray-300/80 dark:text-gray" />
           Projects
-          <TbCaretDownFilled
+          <ChevronDown
             className={cn(
-              "-rotate-90 text-gray-300/60 transition-transform dark:text-gray",
+              "relative top-[0.2px] h-4 w-auto -rotate-90 text-gray-300/60 transition-transform dark:text-gray",
               {
                 "rotate-0": isOpen,
               },
             )}
+            strokeWidth={3.5}
           />
         </span>
-
-        <TbPlus className="hidden h-5 w-auto justify-self-end text-gray-300/60 group-hover:inline dark:dark:text-gray-200" />
+        <Plus className="hidden h-5 w-auto justify-self-end text-gray-300/60 group-hover:inline dark:dark:text-gray-200" />
       </Button>
       <Flex
         className={cn(
           "h-0 max-h-[55vh] overflow-y-auto transition-all duration-300",
           {
-            "mt-1 h-max": isOpen,
+            "h-max": isOpen,
           },
         )}
         direction="column"

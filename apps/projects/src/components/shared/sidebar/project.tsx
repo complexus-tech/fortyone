@@ -3,20 +3,19 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { PiCaretDownBold } from "react-icons/pi";
-import {
-  TbBoxMultiple,
-  TbClipboardText,
-  TbDots,
-  TbFileText,
-  TbFolder,
-  TbLink,
-  TbMap,
-  TbSettings,
-  TbStar,
-  TbTrash,
-} from "react-icons/tb";
 import { Box, Button, Flex, Menu } from "ui";
+import {
+  ChevronDown,
+  MoreHorizontal,
+  ListTodo,
+  TimerReset,
+  Settings,
+  NotebookTabs,
+  Layers3,
+  Star,
+  Link2,
+  Trash2,
+} from "lucide-react";
 import { NavLink } from "../../ui";
 
 type ProjectProps = {
@@ -33,39 +32,34 @@ export const Project = ({
   const links = [
     {
       name: "Issues",
-      icon: <TbClipboardText className="h-5 w-auto" />,
+      icon: <ListTodo className="h-5 w-auto" />,
       href: "/projects",
     },
     {
       name: "Sprints",
-      icon: <TbMap className="h-5 w-auto" />,
+      icon: <TimerReset className="h-5 w-auto" />,
       href: "/analytics",
     },
     {
       name: "Modules",
-      icon: <TbFolder className="h-5 w-auto" />,
+      icon: <Layers3 className="h-5 w-auto" />,
       href: "/inbox",
     },
     {
-      name: "Views",
-      icon: <TbBoxMultiple className="h-5 w-auto" />,
-      href: "/views",
-    },
-    {
-      name: "Pages",
-      icon: <TbFileText className="h-5 w-auto" />,
+      name: "Wikis",
+      icon: <NotebookTabs className="h-5 w-auto" />,
       href: "/my-issues",
     },
     {
       name: "Settings",
-      icon: <TbSettings className="h-5 w-auto" />,
+      icon: <Settings className="h-5 w-auto" />,
       href: "/my-issues",
     },
   ];
   return (
     <Box>
       <Button
-        className="mt-2 justify-between"
+        className="group mt-2 justify-between"
         color="tertiary"
         fullWidth
         onClick={() => {
@@ -73,37 +67,46 @@ export const Project = ({
         }}
         rightIcon={
           <Flex align="center" gap={1}>
-            <PiCaretDownBold
-              className={cn("-rotate-90", {
-                "rotate-0": isOpen,
-              })}
+            <ChevronDown
+              className={cn(
+                "hidden h-4 w-auto -rotate-90 group-hover:inline-block",
+                {
+                  "rotate-0": isOpen,
+                },
+              )}
+              strokeWidth={3.5}
             />
             <Menu>
               <Menu.Button>
-                <button className="py-2" type="button">
-                  <TbDots className="relative top-[1px] h-5 w-auto" />
+                <button
+                  className={cn("hidden px-1 py-2 group-hover:inline-block", {
+                    "inline-block": isOpen,
+                  })}
+                  type="button"
+                >
+                  <MoreHorizontal className="relative top-[1px] h-4 w-auto" />
                   <span className="sr-only">Project options</span>
                 </button>
               </Menu.Button>
               <Menu.Items align="start">
                 <Menu.Group>
                   <Menu.Item>
-                    <TbStar className="h-[1.15rem] w-auto" />
+                    <Star className="h-[1.15rem] w-auto" />
                     Add to favorites
                   </Menu.Item>
                   <Menu.Item>
-                    <TbLink className="h-5 w-auto" />
+                    <Link2 className="h-5 w-auto" />
                     Copy project link
                   </Menu.Item>
                   <Menu.Item>
-                    <TbSettings className="h-5 w-auto" />
+                    <Settings className="h-5 w-auto" />
                     Settings
                   </Menu.Item>
                 </Menu.Group>
                 <Menu.Separator />
                 <Menu.Group>
                   <Menu.Item className="text-danger">
-                    <TbTrash className="h-5 w-auto" />
+                    <Trash2 className="h-5 w-auto" />
                     Delete project
                   </Menu.Item>
                 </Menu.Group>
@@ -115,14 +118,12 @@ export const Project = ({
       >
         <span className="flex items-center gap-2">
           <span className="text-lg">{projectIcon}</span>
-          <span className="inline-block max-w-[110px] truncate">
-            {projectName}
-          </span>
+          <span className="block max-w-[15ch] truncate">{projectName}</span>
         </span>
       </Button>
       <Flex
         className={cn(
-          "ml-6 h-0 overflow-hidden border-l border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100",
+          "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100",
           {
             "mt-2 h-max": isOpen,
           },

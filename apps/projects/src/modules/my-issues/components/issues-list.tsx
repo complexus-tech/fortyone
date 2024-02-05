@@ -45,14 +45,13 @@ export const IssuesList = ({
   return (
     <BodyContainer className="relative">
       <Tabs defaultValue="assigned">
-        <Box className="sticky top-0 z-10 border-b border-gray-100 bg-dark/90 py-3 backdrop-blur dark:border-dark-100">
+        <Box className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 py-3 backdrop-blur dark:border-dark-100 dark:bg-dark/90">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
             <Tabs.Tab value="subscribed">Subscribed</Tabs.Tab>
           </Tabs.List>
         </Box>
-
         <Tabs.Panel value="assigned">
           {statuses.map((status) => (
             <IssuesGroup issues={issues} key={status} status={status} />
@@ -65,7 +64,6 @@ export const IssuesList = ({
           <ListIssues issues={issues} />
         </Tabs.Panel>
       </Tabs>
-
       <IssuesToolbar />
     </BodyContainer>
   );

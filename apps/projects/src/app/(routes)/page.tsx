@@ -1,5 +1,5 @@
-import { TbAdjustmentsHorizontal, TbLayoutDashboard } from "react-icons/tb";
 import { BreadCrumbs, Button, Container, Flex } from "ui";
+import { Columns3, SlidersHorizontal } from "lucide-react";
 import { BodyContainer, HeaderContainer } from "@/components/shared";
 import { NewIssueButton } from "@/components/ui";
 
@@ -11,14 +11,14 @@ export default function Page(): JSX.Element {
           breadCrumbs={[
             {
               name: "Dashboard",
-              icon: <TbLayoutDashboard className="h-5 w-auto" />,
+              icon: <Columns3 className="h-5 w-auto" />,
             },
           ]}
         />
         <Flex gap={2}>
           <Button
             color="tertiary"
-            leftIcon={<TbAdjustmentsHorizontal className="h-5 w-auto" />}
+            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >

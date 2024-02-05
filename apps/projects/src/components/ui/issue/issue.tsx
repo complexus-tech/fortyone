@@ -18,7 +18,7 @@ export const Issue = ({
 }: IssueProps) => {
   return (
     <IssueContextMenu>
-      <RowWrapper>
+      <RowWrapper className="cursor-pointer">
         <Flex align="center" className="relative select-none" gap={2}>
           <DragHandle />
           <IssueCheckbox />

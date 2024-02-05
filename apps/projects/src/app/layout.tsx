@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-import { Box } from "ui";
-import { Sidebar } from "../components/shared";
 import "../styles/global.css";
+import { Wrapper } from "./wrapper";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Complexus Projects",
@@ -20,10 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <main className="grid h-screen grid-cols-[220px_auto]">
-          <Sidebar />
-          <Box>{children}</Box>
-        </main>
+        <Wrapper>{children}</Wrapper>
       </body>
     </html>
   );
