@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// validator is an interface for validating the request.
 type validator interface {
 	Validate() error
 }

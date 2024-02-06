@@ -36,7 +36,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return err
 	}
-	web.Respond(ctx, w, issue, http.StatusOK)
+	web.Respond(ctx, w, toAppIssue(issue), http.StatusOK)
 	return nil
 }
 
@@ -46,6 +46,6 @@ func (h *Handlers) MyIssues(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
-	web.Respond(ctx, w, issues, http.StatusOK)
+	web.Respond(ctx, w, toAppIssues(issues), http.StatusOK)
 	return nil
 }

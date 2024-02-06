@@ -19,11 +19,13 @@ func BuildRoutes() handlers {
 // It builds all the routes for the application.
 func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
+	// register the heath routes
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)
 
+	// register the issues routes
 	issuesgrp.Routes(issuesgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,

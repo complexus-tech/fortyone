@@ -10,10 +10,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// RouteAdder is an interface that defines a method to add routes to a web.App.
 type RouteAdder interface {
 	BuildAllRoutes(app *web.App, cfg Config)
 }
 
+// Config defines the configuration for the mux.
 type Config struct {
 	DB       *sqlx.DB
 	Shutdown chan os.Signal

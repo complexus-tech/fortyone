@@ -2,6 +2,7 @@ package issues
 
 import (
 	"context"
+	"errors"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -9,16 +10,24 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Set of error variables for issues service.
+var (
+	ErrNotFound = errors.New("issue not found")
+)
+
+// Repository provides access to the issue storage.
 type Repository interface {
 	MyIssues(ctx context.Context) ([]Issue, error)
 	Get(ctx context.Context, id int) (Issue, error)
 }
 
+// Service provides issue-related operations.
 type Service struct {
 	repo Repository
 	log  *logger.Logger
 }
 
+// New constructs a new issues service instance with the provided repository.
 func New(log *logger.Logger, repo Repository) *Service {
 	return &Service{
 		repo: repo,
