@@ -48,6 +48,7 @@ func GetTraceID(ctx context.Context) string {
 	return v.TraceID
 }
 
+// GetTime returns the time from the web values.
 func GetTime(ctx context.Context) time.Time {
 	v, ok := ctx.Value(key).(*Values)
 	if !ok {
@@ -56,6 +57,7 @@ func GetTime(ctx context.Context) time.Time {
 	return v.Now
 }
 
+// AddSpan adds a span to the context and returns the new context and span.
 func AddSpan(ctx context.Context, spanName string, keyValues ...attribute.KeyValue) (context.Context, trace.Span) {
 	v, ok := ctx.Value(key).(*Values)
 	if !ok || v.Tracer == nil {

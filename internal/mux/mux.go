@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
@@ -26,7 +27,7 @@ type Config struct {
 // New returns a new HTTP handler that defines all the API routes.
 func New(cfg Config, ra RouteAdder) http.Handler {
 
-	app := web.New(cfg.Shutdown, cfg.Tracer)
+	app := web.New(cfg.Shutdown, cfg.Tracer, mid.Logger(cfg.Log))
 	app.StrictSlash(false)
 
 	ra.BuildAllRoutes(app, cfg)

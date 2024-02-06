@@ -47,7 +47,18 @@ type Config struct {
 
 func main() {
 
-	log := logger.NewWithText(os.Stderr, slog.LevelInfo, service)
+	var logLevel slog.Level
+
+	switch environ {
+	case "development":
+		logLevel = slog.LevelDebug
+	case "production":
+		logLevel = slog.LevelInfo
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	log := logger.NewWithText(os.Stderr, logLevel, service)
 	ctx := context.Background()
 
 	if err := run(ctx, log); err != nil {
