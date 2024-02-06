@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -101,14 +102,17 @@ func run(ctx context.Context, log *logger.Logger) error {
 	defer traceProvider.Shutdown(ctx)
 	tracer := traceProvider.Tracer(service)
 
+	muxCfg := mux.Config{
+		DB:       db,
+		Shutdown: shutdown,
+		Log:      log,
+		Tracer:   tracer,
+	}
+	apiMux := mux.New(muxCfg, handlers.BuildRoutes())
+
 	server := http.Server{
-		Addr: cfg.Web.APIHost,
-		Handler: mux.New(mux.Config{
-			DB:       db,
-			Shutdown: shutdown,
-			Log:      log,
-			Tracer:   tracer,
-		}),
+		Addr:         cfg.Web.APIHost,
+		Handler:      apiMux,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,

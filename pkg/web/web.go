@@ -18,7 +18,7 @@ import (
 // Handler is the signature used by all application handlers in this service.
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
-type app struct {
+type App struct {
 	mux         *http.ServeMux
 	mw          []Middleware
 	shutdown    chan os.Signal
@@ -27,10 +27,10 @@ type app struct {
 }
 
 // New creates an application struct that will handle all requests to the application.
-func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *app {
+func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
 	// mux := mux.NewRouter()
 	mux := http.NewServeMux()
-	return &app{
+	return &App{
 		mux:         mux,
 		mw:          mw,
 		shutdown:    shutdown,
@@ -41,7 +41,7 @@ func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *app {
 
 // ServeHTTP implements the http.Handler interface so that App can be used as a Mux.
 // It then calls the ServeHTTP method on the embedded Mux.
-func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !a.strictSlash {
 		path := a.stripSlash(r.URL.Path)
 		r.URL.Path = path
@@ -50,12 +50,12 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // StripSlash will remove the trailing slash from the URL.
-func (a *app) StrictSlash(strictSlash bool) {
+func (a *App) StrictSlash(strictSlash bool) {
 	a.strictSlash = strictSlash
 }
 
 // StripSlash will remove the trailing slash from the URL.
-func (a *app) stripSlash(path string) string {
+func (a *App) stripSlash(path string) string {
 	if path != "/" && strings.HasSuffix(path, "/") {
 		path = strings.TrimSuffix(path, "/")
 	}
@@ -63,7 +63,7 @@ func (a *app) stripSlash(path string) string {
 }
 
 // Handle will will apply middleware to the handler and then add it to the mux router.
-func (a *app) Handle(method string, pattern string, handler Handler, mw ...Middleware) {
+func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middleware) {
 	// First handler to execute is the one passed in.
 	handler = wrapMiddleware(mw, handler)
 	// Then wrap with the application level middleware.
@@ -94,37 +94,37 @@ func (a *app) Handle(method string, pattern string, handler Handler, mw ...Middl
 }
 
 // Get is a shortcut for app.Handle(http.MethodGet, path, handler, mw...)
-func (a *app) Get(path string, handler Handler, mw ...Middleware) {
+func (a *App) Get(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodGet, path, handler, mw...)
 }
 
 // Post is a shortcut for app.Handle(http.MethodPost, path, handler, mw...)
-func (a *app) Post(path string, handler Handler, mw ...Middleware) {
+func (a *App) Post(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPost, path, handler, mw...)
 }
 
 // Put is a shortcut for app.Handle(http.MethodPut, path, handler, mw...)
-func (a *app) Put(path string, handler Handler, mw ...Middleware) {
+func (a *App) Put(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPut, path, handler, mw...)
 }
 
 // Delete is a shortcut for app.Handle(http.MethodDelete, path, handler, mw...)
-func (a *app) Delete(path string, handler Handler, mw ...Middleware) {
+func (a *App) Delete(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodDelete, path, handler, mw...)
 }
 
 // Patch is a shortcut for app.Handle(http.MethodPatch, path, handler, mw...)
-func (a *app) Patch(path string, handler Handler, mw ...Middleware) {
+func (a *App) Patch(path string, handler Handler, mw ...Middleware) {
 	a.Handle(http.MethodPatch, path, handler, mw...)
 }
 
 // Shutdown will gracefully shutdown the application.
-func (a *app) Shutdown() {
+func (a *App) Shutdown() {
 	a.shutdown <- syscall.SIGTERM
 }
 
 // startSpan will start a span for the request and add it to the context.
-func (a *app) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, trace.Span) {
+func (a *App) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, trace.Span) {
 	ctx := r.Context()
 
 	span := trace.SpanFromContext(ctx)

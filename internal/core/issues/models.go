@@ -1,8 +1,6 @@
 package issues
 
-import (
-	"time"
-)
+import "time"
 
 type Issue struct {
 	ID          int        `json:"id" db:"id"`

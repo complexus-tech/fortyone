@@ -1,4 +1,4 @@
-package handlers
+package healthgrp
 
 import (
 	"context"
@@ -12,18 +12,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type HealthHandler interface {
-	Readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
-	Liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error
-}
-
 type healthCheck struct {
 	log *logger.Logger
 	db  *sqlx.DB
 }
 
 // NewHealthHandlers returns a new profHandlers instance.
-func NewHealthHandler(log *logger.Logger, db *sqlx.DB) HealthHandler {
+func New(log *logger.Logger, db *sqlx.DB) *healthCheck {
 	return &healthCheck{
 		log: log,
 		db:  db,

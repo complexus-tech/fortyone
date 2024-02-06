@@ -1,10 +1,11 @@
-package issues
+package issuesrepo
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/internal/core/issues"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
@@ -12,29 +13,24 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type Repository interface {
-	List(ctx context.Context) ([]Issue, error)
-	Get(ctx context.Context, id int) (Issue, error)
-}
-
 type repo struct {
 	db  *sqlx.DB
 	log *logger.Logger
 }
 
-func NewStore(log *logger.Logger, db *sqlx.DB) Repository {
+func New(log *logger.Logger, db *sqlx.DB) *repo {
 	return &repo{
 		db:  db,
 		log: log,
 	}
 }
 
-// List returns all known issues.
-func (r *repo) List(ctx context.Context) ([]Issue, error) {
+// MyIssues returns a list of issues.
+func (r *repo) MyIssues(ctx context.Context) ([]issues.Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.issues.List")
 	defer span.End()
 
-	var issues []Issue
+	var issues []issue
 	q := `
 		SELECT
 			id,
@@ -70,16 +66,16 @@ func (r *repo) List(ctx context.Context) ([]Issue, error) {
 		attribute.String("query", q),
 	))
 
-	return issues, nil
+	return toCoreIssues(issues), nil
 }
 
 // Get returns the issue with the specified ID.
-func (r *repo) Get(ctx context.Context, id int) (Issue, error) {
+func (r *repo) Get(ctx context.Context, id int) (issues.Issue, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.issues.Get")
 	defer span.End()
 
 	params := map[string]interface{}{"id": id}
-	var issue Issue
+	var issue issues.Issue
 
 	stmt, err := r.db.PrepareNamedContext(ctx, `
 		SELECT
@@ -92,7 +88,7 @@ func (r *repo) Get(ctx context.Context, id int) (Issue, error) {
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
 		span.RecordError(errors.New("issue not found"), trace.WithAttributes(attribute.Int("issue.id", id)))
-		return Issue{}, err
+		return issues.Issue{}, err
 	}
 	defer stmt.Close()
 
@@ -102,7 +98,7 @@ func (r *repo) Get(ctx context.Context, id int) (Issue, error) {
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to retrieve issue from database: %s", err), "id", id)
 		span.RecordError(errors.New("issue not found"), trace.WithAttributes(attribute.Int("issue.id", id)))
-		return Issue{}, err
+		return issues.Issue{}, err
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Issue #%d retrieved successfully", id), "id", id)
