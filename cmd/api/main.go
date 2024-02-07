@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +17,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/josemukorivo/config"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -42,6 +44,12 @@ type Config struct {
 		MaxIdleConns int    `default:"2" env:"APP_DB_MAX_IDLE_CONNS"`
 		MaxOpenConns int    `default:"3" env:"APP_DB_MAX_OPEN_CONNS"`
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
+	}
+	Cache struct {
+		Host     string `default:"localhost"`
+		Port     string `default:"6379"`
+		Password string `default:""`
+		Name     int    `default:"0"`
 	}
 }
 
@@ -95,12 +103,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error pinging db: %w", err)
 	}
 
-	log.Info(ctx, fmt.Sprintf("connected to db %s.", cfg.DB.Name))
+	log.Info(ctx, fmt.Sprintf("connected to db `%s`.", cfg.DB.Name))
 
 	defer func() {
 		log.Info(ctx, "closing the database connection")
 		db.Close()
 	}()
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
+		Password: cfg.Cache.Password,
+		DB:       cfg.Cache.Name,
+	})
+
+	// Close the redis connection when the main function returns
+	defer rdb.Close()
+
+	if _, err := rdb.Ping(ctx).Result(); err != nil {
+		return fmt.Errorf("error pinging redis: %w", err)
+	}
+	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`.", cfg.Cache.Name))
 
 	shutdown := make(chan os.Signal, 1)
 	// Start Tracing
