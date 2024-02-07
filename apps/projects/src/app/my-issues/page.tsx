@@ -1,4 +1,4 @@
-import { ViewMyIssues } from "@/modules/my-issues";
+import { ViewMyIssues } from "@/app/my-issues";
 
 export default function Page() {
   return <ViewMyIssues />;
