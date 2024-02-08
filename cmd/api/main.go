@@ -100,10 +100,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	if err := db.Ping(); err != nil {
-		return fmt.Errorf("error pinging db: %w", err)
+		return fmt.Errorf("error pinging database: %w", err)
 	}
 
-	log.Info(ctx, fmt.Sprintf("connected to db `%s`.", cfg.DB.Name))
+	log.Info(ctx, fmt.Sprintf("connected to database `%s`", cfg.DB.Name))
 
 	defer func() {
 		log.Info(ctx, "closing the database connection")
@@ -122,7 +122,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
 		return fmt.Errorf("error pinging redis: %w", err)
 	}
-	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`.", cfg.Cache.Name))
+	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
 	shutdown := make(chan os.Signal, 1)
 	// Start Tracing
