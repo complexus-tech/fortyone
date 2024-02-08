@@ -1,7 +1,7 @@
-'use client';
-import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { cn } from 'lib';
-import React, { ComponentProps } from 'react';
+"use client";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { cn } from "lib";
+import React, { ComponentProps } from "react";
 
 type TabProps = ComponentProps<typeof TabsPrimitive.Trigger> & {
   leftIcon?: React.ReactNode;
@@ -19,7 +19,7 @@ const Trigger = ({
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        'relative w-max dark:data-[state=active]:border-dark-50 data-[state=active]:border dark:data-[state=active]:shadow dark:shadow-dark rounded-[0.6rem] border-gray-200/50 text-gray dark:text-gray px-4 py-[0.2rem] hover:dark:text-gray-200 focus:dark:bg-dark-100 focus:outline-0 dark:data-[state=active]:text-gray-50 dark:data-[state=active]:bg-dark-100 data-[state=active]:text-gray-300 data-[state=active]:bg-gray-100/60 data-[state=active]:dark:bg-dark-100 flex items-center gap-2',
+        "relative w-max dark:data-[state=active]:border-dark-50 data-[state=active]:border dark:data-[state=active]:shadow dark:shadow-dark rounded-[0.6rem] border-gray-200/50 text-gray dark:text-gray px-4 py-[0.2rem] hover:dark:text-gray-200 focus:dark:bg-dark-100 focus:outline-0 dark:data-[state=active]:text-gray-100 data-[state=active]:text-gray-300 data-[state=active]:bg-gray-100/60 data-[state=active]:dark:bg-dark-100/60 flex items-center gap-2",
         className
       )}
       {...rest}
@@ -36,7 +36,7 @@ const List = ({ children, className, ...rest }: ListProps) => {
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex flex-wrap w-max mx-12 rounded-[0.6rem] bg-gray-50 dark:bg-dark-200',
+        "flex flex-wrap w-max mx-12 rounded-[0.6rem] bg-gray-50 dark:bg-dark-200/50",
         className
       )}
       {...rest}

@@ -123,7 +123,7 @@ export const Project = ({
       </Button>
       <Flex
         className={cn(
-          "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100",
+          "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100/90",
           {
             "mt-2 h-max": isOpen,
           },
