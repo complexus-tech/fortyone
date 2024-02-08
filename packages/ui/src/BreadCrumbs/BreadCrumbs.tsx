@@ -25,7 +25,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           className={cn(
             "flex items-center gap-2 font-medium group capitalize text-gray-300 transition dark:text-gray-200",
             {
-              "text-gray dark:text-gray": idx + 1 === breadCrumbs.length,
+              "text-gray-250 dark:text-gray": idx + 1 === breadCrumbs.length,
             }
           )}
         >

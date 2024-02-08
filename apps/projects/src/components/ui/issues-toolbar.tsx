@@ -1,7 +1,5 @@
-import { HiViewGrid } from "react-icons/hi";
-import { RiDeleteBin6Line } from "react-icons/ri";
-import { TbMap } from "react-icons/tb";
 import { Button, Flex, Text } from "ui";
+import { TimerReset, GalleryVerticalEnd, Trash2 } from "lucide-react";
 
 export const IssuesToolbar = () => {
   return (
@@ -15,14 +13,16 @@ export const IssuesToolbar = () => {
       </Text>
       <Button
         color="tertiary"
-        leftIcon={<TbMap className="h-[1.15rem] w-auto dark:text-gray" />}
+        leftIcon={<TimerReset className="h-[1.15rem] w-auto dark:text-gray" />}
         variant="outline"
       >
         Add to sprint
       </Button>
       <Button
         color="tertiary"
-        leftIcon={<HiViewGrid className="dark:text-gray" />}
+        leftIcon={
+          <GalleryVerticalEnd className="h-[1.15rem] w-auto dark:text-gray" />
+        }
         variant="outline"
       >
         Add to project
@@ -30,7 +30,7 @@ export const IssuesToolbar = () => {
       <Button
         className="border-opacity-30"
         color="danger"
-        leftIcon={<RiDeleteBin6Line />}
+        leftIcon={<Trash2 className="h-[1.15rem] w-auto" />}
         variant="outline"
       >
         Delete

@@ -144,6 +144,7 @@ export default function Page(): JSX.Element {
               color="tertiary"
               leftIcon={<Star className="h-4 w-auto" />}
               size="sm"
+              variant="outline"
             >
               Favourite
             </Button>
@@ -160,19 +161,9 @@ export default function Page(): JSX.Element {
       <BodyContainer className="overflow-y-hidden">
         <PanelGroup direction="horizontal">
           <Panel defaultSize={74}>
-            <Box className="h-full overflow-y-auto border-r border-gray-100 pb-8 dark:border-dark-200">
+            <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
               <Container className="pt-6">
-                <Text
-                  as="h3"
-                  className="flex items-center gap-2"
-                  color="muted"
-                  fontSize="lg"
-                  fontWeight="medium"
-                >
-                  <Link2 className="h-5 w-auto" strokeWidth={2.5} />
-                  COMP-13
-                </Text>
-                <Text className="mb-6 mt-3" fontSize="3xl">
+                <Text className="mb-6" fontSize="3xl">
                   Change the color of the button to red
                 </Text>
                 <Text className="leading-7" color="muted" fontSize="lg">
@@ -245,18 +236,18 @@ export default function Page(): JSX.Element {
                     <Paperclip className="h-5 w-auto" />
                     Attachements
                   </Text>
-                  <Box className="mb-4 mt-3 flex h-24 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-dashed bg-gray-100 dark:border-dark-100 dark:bg-dark-200/30">
+                  <Box className="mb-4 mt-3 flex h-24 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-dashed border-gray-200 bg-gray-50/50 dark:border-dark-100 dark:bg-dark-200/30">
                     <Text color="muted">Click or drag files here</Text>
                   </Box>
 
                   <Box className="grid grid-cols-5 gap-4">
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
 
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
-                    <Box className="h-28 rounded-xl bg-gray-100 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
+                    <Box className="h-28 rounded-xl bg-gray-50/70 dark:bg-dark-200/50" />
                   </Box>
                 </Box>
 
@@ -275,7 +266,7 @@ export default function Page(): JSX.Element {
                   <Tabs defaultValue="all">
                     <Tabs.List className="mx-0 mb-5">
                       <Tabs.Tab
-                        className="px-2 text-[0.95rem]"
+                        className="text-[0.95rem] font-medium"
                         leftIcon={
                           <History
                             className="h-[1.1rem] w-auto"
@@ -287,7 +278,7 @@ export default function Page(): JSX.Element {
                         All Activities
                       </Tabs.Tab>
                       <Tabs.Tab
-                        className="px-2 text-[0.95rem]"
+                        className="text-[0.95rem] font-medium"
                         leftIcon={
                           <Hourglass className="h-4 w-auto" strokeWidth={2.8} />
                         }
@@ -296,7 +287,7 @@ export default function Page(): JSX.Element {
                         Updates
                       </Tabs.Tab>
                       <Tabs.Tab
-                        className="px-2 text-[0.95rem]"
+                        className="text-[0.95rem] font-medium"
                         leftIcon={
                           <MessageSquareText
                             className="h-[1.1rem] w-auto"
@@ -309,47 +300,49 @@ export default function Page(): JSX.Element {
                       </Tabs.Tab>
                     </Tabs.List>
                     <Tabs.Panel value="all">
-                      <Flex className="relative" direction="column" gap={6}>
+                      <Flex className="relative" direction="column" gap={4}>
                         <Box className="pointer-events-none absolute left-4 top-0 z-0 h-[95%] border-l-[1.5px] border-gray-100 dark:border-dark-200" />
                         {activites.map((activity) => (
                           <Activity key={activity.id} {...activity} />
                         ))}
-                      </Flex>
-                      <Flex align="start">
-                        <Box className="relative mt-6 flex aspect-square items-center bg-white p-[0.3rem] dark:bg-dark">
-                          <Box className="pointer-events-none absolute bottom-10 left-4 z-0 h-[95%] border-l-[1.5px] border-gray-100 dark:border-dark-200" />
-                          <Avatar
-                            name="Joseph Mukorivo"
-                            size="sm"
-                            src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                          />
-                        </Box>
-                        <Flex
-                          className="ml-1 mt-4 min-h-[6rem] w-full rounded-lg border border-gray-100 px-4 py-4 text-[0.95rem] shadow dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
-                          direction="column"
-                          gap={2}
-                          justify="between"
-                        >
-                          <Box
-                            className="outline-none"
-                            contentEditable
-                            spellCheck={false}
-                          >
-                            <Text color="muted">Leave a comment...</Text>
+                        <Flex align="start" className="relative z-[2]">
+                          <Box className="pointer-events-none absolute bottom-0 left-4 h-[calc(100%-3rem)] w-1 bg-white dark:bg-dark" />
+                          <Box className="z-[1] mt-4 flex aspect-square items-center bg-white p-[0.3rem] dark:bg-dark">
+                            <Avatar name="Joseph Mukorivo" size="sm" />
                           </Box>
-
-                          <Flex gap={1} justify="end">
-                            <Button
-                              className="px-3"
-                              color="tertiary"
-                              leftIcon={<Paperclip className="h-4 w-auto" />}
-                              size="sm"
+                          <Flex
+                            className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 px-4 py-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
+                            direction="column"
+                            gap={2}
+                            justify="between"
+                          >
+                            <Box
+                              className="text-gray-250 outline-none"
+                              contentEditable
+                              spellCheck={false}
                             >
-                              <span className="sr-only">Attach files</span>
-                            </Button>
-                            <Button className="px-3" color="tertiary" size="sm">
-                              Comment
-                            </Button>
+                              <Text color="muted">Leave a comment...</Text>
+                            </Box>
+
+                            <Flex gap={1} justify="end">
+                              <Button
+                                className="px-3"
+                                color="tertiary"
+                                leftIcon={<Paperclip className="h-4 w-auto" />}
+                                size="sm"
+                                variant="naked"
+                              >
+                                <span className="sr-only">Attach files</span>
+                              </Button>
+                              <Button
+                                className="px-3"
+                                color="tertiary"
+                                size="sm"
+                                variant="outline"
+                              >
+                                Comment
+                              </Button>
+                            </Flex>
                           </Flex>
                         </Flex>
                       </Flex>
@@ -377,7 +370,7 @@ export default function Page(): JSX.Element {
           <PanelResizeHandle />
           <Panel defaultSize={26} maxSize={35} minSize={25}>
             <Box className="h-full overflow-y-auto bg-gray-50/20 pb-6 dark:bg-dark-200/40">
-              <Box className="flex h-16 items-center border-b border-gray-100 dark:border-dark-200">
+              <Box className="flex h-16 items-center border-b border-gray-50 dark:border-dark-200">
                 <Container className="flex w-full items-center justify-between">
                   <Text color="muted" fontWeight="medium">
                     COMP-13
@@ -415,7 +408,7 @@ export default function Page(): JSX.Element {
                   </Flex>
                 </Container>
               </Box>
-              <Container className="pt-6">
+              <Container className="pt-6 text-gray-300/90">
                 <Text fontWeight="medium">Properties</Text>
                 <Box className="my-3 grid grid-cols-[9rem_auto] items-center gap-3">
                   <Text
@@ -615,6 +608,7 @@ export default function Page(): JSX.Element {
                     color="tertiary"
                     leftIcon={<Plus className="h-5 w-auto" strokeWidth={2} />}
                     size="sm"
+                    variant="outline"
                   >
                     Add
                   </Button>

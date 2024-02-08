@@ -69,7 +69,7 @@ export const Project = ({
           <Flex align="center" gap={1}>
             <ChevronDown
               className={cn(
-                "hidden h-4 w-auto -rotate-90 group-hover:inline-block",
+                "hidden h-4 w-auto -rotate-90 text-gray-300/80 group-hover:inline-block dark:text-gray",
                 {
                   "rotate-0": isOpen,
                 },
@@ -84,7 +84,7 @@ export const Project = ({
                   })}
                   type="button"
                 >
-                  <MoreHorizontal className="relative top-[1px] h-4 w-auto" />
+                  <MoreHorizontal className="relative top-[1px] h-4 w-auto text-gray-300/80 dark:text-gray" />
                   <span className="sr-only">Project options</span>
                 </button>
               </Menu.Button>
