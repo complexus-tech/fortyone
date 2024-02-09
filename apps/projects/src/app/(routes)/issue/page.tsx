@@ -36,6 +36,7 @@ import {
   History,
   MessageSquareText,
   Hourglass,
+  GitCompareArrows,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { BodyContainer, HeaderContainer } from "../../../components/shared";
@@ -348,11 +349,7 @@ export default function Page(): JSX.Element {
                       </Flex>
                     </Tabs.Panel>
                     <Tabs.Panel value="updates">
-                      <Flex
-                        className="relative ml-1"
-                        direction="column"
-                        gap={6}
-                      >
+                      <Flex className="relative" direction="column" gap={4}>
                         <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l-[1.5px] border-gray-100 dark:border-dark-200" />
                         {activites.map((activity) => (
                           <Activity key={activity.id} {...activity} />
@@ -589,7 +586,12 @@ export default function Page(): JSX.Element {
                   </Button>
                 </Box>
                 <Box className="my-3 grid grid-cols-[9rem_auto] items-center gap-3">
-                  <Text className="truncate" color="muted" fontWeight="medium">
+                  <Text
+                    className="flex items-center gap-1 truncate"
+                    color="muted"
+                    fontWeight="medium"
+                  >
+                    <GitCompareArrows className="h-5 w-auto" />
                     Related to
                   </Text>
                   <Button className="px-4" color="tertiary" variant="naked">

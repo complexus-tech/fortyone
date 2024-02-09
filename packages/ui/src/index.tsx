@@ -4,6 +4,7 @@ export * from "./Box/Box";
 export * from "./Checkbox/Checkbox";
 export * from "./Container/Container";
 export * from "./Dialog/Dialog";
+export * from "./Resizable/Resizable";
 export * from "./Divider/Divider";
 // export * from './Document/Document';
 // export * from './DropDown/DropDown';

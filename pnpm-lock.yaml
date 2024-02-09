@@ -185,6 +185,9 @@ importers:
       lib:
         specifier: workspace:*
         version: link:../lib
+      lucide-react:
+        specifier: ^0.321.0
+        version: 0.321.0(react@18.2.0)
       next:
         specifier: ^13.4.19
         version: 13.5.4(react-dom@18.2.0)(react@18.2.0)
@@ -194,6 +197,9 @@ importers:
       react-icons:
         specifier: ^4.10.1
         version: 4.11.0(react@18.2.0)
+      react-resizable-panels:
+        specifier: ^2.0.3
+        version: 2.0.3(react-dom@18.2.0)(react@18.2.0)
       react-select:
         specifier: ^5.7.0
         version: 5.7.7(@types/react@18.2.28)(react-dom@18.2.0)(react@18.2.0)
