@@ -11,7 +11,7 @@ const text = cva("text-black dark:text-white", {
       right: "text-right",
     },
     color: {
-      primary: "text-primary-200",
+      primary: "text-primary dark:text-primary",
       muted: "text-gray-250 dark:text-gray-200/80",
       danger: "text-danger dark:text-danger",
       black: "text-black",

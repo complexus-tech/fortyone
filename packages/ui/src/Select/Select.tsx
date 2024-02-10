@@ -1,6 +1,7 @@
-import { cn } from 'lib';
-import { FC, OptionHTMLAttributes, SelectHTMLAttributes } from 'react';
-import { IoIosArrowDown } from 'react-icons/io';
+import { cn } from "lib";
+import { ChevronDown } from "lucide-react";
+import { FC, OptionHTMLAttributes, SelectHTMLAttributes } from "react";
+import { IoIosArrowDown } from "react-icons/io";
 
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   className?: string;
@@ -29,23 +30,23 @@ export const Select: FC<Props> & StaticComponents = (props) => {
   return (
     <label>
       {label && (
-        <span className='mb-3 block'>
+        <span className="mb-3 block">
           {label}
-          {required && <span className='text-danger'>*</span>}
+          {required && <span className="text-danger">*</span>}
         </span>
       )}
-      <div className='relative flex items-center'>
+      <div className="relative flex items-center">
         <select
           required={required}
           className={cn(
-            'w-full appearance-none rounded-lg border border-gray-100 py-3 px-5 placeholder:text-gray-200 focus:border-gray-100 focus:outline-0 focus:ring focus:ring-primary focus:ring-offset-2 2xl:py-4',
+            "w-full appearance-none rounded-lg border border-gray-100 py-3 px-5 placeholder:text-gray-200 focus:border-gray-100 focus:outline-0 focus:ring focus:ring-primary focus:ring-offset-2 2xl:py-4",
             className
           )}
           {...rest}
         >
           {children}
         </select>
-        <IoIosArrowDown className='pointer-events-none absolute right-3 h-4 w-auto' />
+        <ChevronDown className="pointer-events-none absolute right-3 h-4 w-auto" />
       </div>
     </label>
   );

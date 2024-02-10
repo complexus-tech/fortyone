@@ -1,22 +1,21 @@
-'use client';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { VariantProps, cva } from 'cva';
+"use client";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { VariantProps, cva } from "cva";
 import {
   ComponentProps,
   ComponentPropsWithoutRef,
   ElementRef,
   InputHTMLAttributes,
   forwardRef,
-} from 'react';
-import { BsCheckLg } from 'react-icons/bs';
+} from "react";
 
-import { cn } from 'lib';
-import { TbCheck } from 'react-icons/tb';
+import { cn } from "lib";
+import { Check } from "lucide-react";
 
 type TriggerProps = ComponentProps<typeof DropdownMenu.Trigger>;
 export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
   <DropdownMenu.Trigger
-    className={cn('outline-none', className)}
+    className={cn("outline-none", className)}
     {...rest}
     asChild
   >
@@ -25,17 +24,17 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  'bg-white dark:bg-dark-100 dark:text-gray-200 bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2',
+  "bg-white dark:bg-dark-100 dark:text-gray-200 bg-opacity-80 dark:bg-opacity-50 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2",
   {
     variants: {
       rounded: {
-        sm: 'rounded',
-        md: 'rounded-lg',
-        lg: 'rounded-xl',
+        sm: "rounded",
+        md: "rounded-lg",
+        lg: "rounded-xl",
       },
     },
     defaultVariants: {
-      rounded: 'lg',
+      rounded: "lg",
     },
   }
 );
@@ -74,9 +73,9 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
-        'bg-gray-50/80 dark:bg-dark-50/60': active,
+        "bg-gray-50/80 dark:bg-dark-50/60": active,
       },
       className
     )}
@@ -93,9 +92,9 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      'flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none',
+      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
-        'bg-gray-50/80 dark:bg-dark-50/60': checked,
+        "bg-gray-50/80 dark:bg-dark-50/60": checked,
       },
       className
     )}
@@ -104,10 +103,9 @@ const CheckboxItem = forwardRef<
     {...rest}
   >
     <>
-      <span className='absolute left-2 flex h-3.5 w-3.5 items-center justify-center'>
+      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <DropdownMenu.ItemIndicator>
-          <BsCheckLg className='h-5 w-auto' />
-          <TbCheck className='h-5 w-auto' strokeWidth={2.1} />
+          <Check className="h-5 w-auto" strokeWidth={2.1} />
         </DropdownMenu.ItemIndicator>
       </span>
       {children}
@@ -128,7 +126,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <input
-      className={cn('bg-transparent py-1 outline-none w-full', className)}
+      className={cn("bg-transparent py-1 outline-none w-full", className)}
       ref={ref}
       {...rest}
     />
@@ -141,7 +139,7 @@ const Separator = forwardRef<
 >(({ className, ...rest }, ref) => (
   <DropdownMenu.Separator
     className={cn(
-      'border-gray-100 dark:border-dark-100 border-b my-3',
+      "border-gray-100 dark:border-dark-100 border-b my-3",
       className
     )}
     ref={ref}
@@ -153,7 +151,7 @@ const Group = forwardRef<
   ElementRef<typeof DropdownMenu.Group>,
   ComponentPropsWithoutRef<typeof DropdownMenu.Group>
 >(({ className, ...rest }, ref) => (
-  <DropdownMenu.Group className={cn('px-2', className)} ref={ref} {...rest} />
+  <DropdownMenu.Group className={cn("px-2", className)} ref={ref} {...rest} />
 ));
 
 Menu.Button = Trigger;

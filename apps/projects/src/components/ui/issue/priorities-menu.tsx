@@ -1,8 +1,8 @@
 import { cn } from "lib";
-import { TbCheck } from "react-icons/tb";
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { PriorityIcon } from "../priority-icon";
 import type { IssuePriority } from "@/types/issue";
+import { PriorityIcon } from "../priority-icon";
+import { Check } from "lucide-react";
 
 export const PrioritiesMenu = ({
   priority,
@@ -58,7 +58,7 @@ export const PrioritiesMenu = ({
               </Box>
               <Flex align="center" gap={2}>
                 {pr === priority && (
-                  <TbCheck className="h-5 w-auto" strokeWidth={2.1} />
+                  <Check className="h-5 w-auto" strokeWidth={2.1} />
                 )}
                 <Text color="muted">{idx}</Text>
               </Flex>

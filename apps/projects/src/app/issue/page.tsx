@@ -41,7 +41,7 @@ import {
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { BodyContainer, HeaderContainer } from "../../components/shared";
 import { IssueStatusIcon, PriorityIcon } from "../../components/ui";
-import Tiptap from "./editor";
+import Editor from "./editor";
 
 type ActivityProps = {
   id: number;
@@ -168,19 +168,7 @@ export default function Page(): JSX.Element {
                 <Text className="mb-6" fontSize="3xl" fontWeight="medium">
                   Change the color of the button to red
                 </Text>
-                <Text className="leading-7" color="muted" fontSize="lg">
-                  Change the color of the button to red. This will hold the
-                  description of the issue. It will be a long one so we can test
-                  the overflow of the container.
-                  <br />
-                  <br />
-                  Use the color palette from the design system to change the
-                  color of the button. The pallette is available in the design
-                  system documentation. Use the color palette from the design
-                  system to change the color of the button. The pallette is
-                  available in the design system documentation.
-                </Text>
-                <Tiptap />
+                <Editor />
 
                 <Flex className="mb-4 mt-6" gap={1}>
                   <Badge
@@ -321,7 +309,7 @@ export default function Page(): JSX.Element {
                           >
                             <Box
                               className="text-gray-250 outline-none"
-                              contentEditable
+                              // contentEditable
                               spellCheck={false}
                             >
                               <Text color="muted">Leave a comment...</Text>

@@ -7,10 +7,10 @@ import {
   HTMLAttributes,
   forwardRef,
 } from "react";
-import { MdOutlineClose } from "react-icons/md";
 import { Box } from "../Box/Box";
 
 import { cn } from "lib";
+import { X } from "lucide-react";
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
@@ -39,7 +39,7 @@ const DialogClose = () => (
     data-testid="close-modal"
     className="rounded-lg inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200"
   >
-    <MdOutlineClose className="h-6 w-auto" />
+    <X className="h-6 w-auto" />
     <span className="sr-only">Close</span>
   </DialogPrimitive.Close>
 );

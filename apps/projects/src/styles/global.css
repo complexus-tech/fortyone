@@ -6,3 +6,7 @@ body,
 html {
   @apply text-[13px] text-gray-300 dark:bg-dark dark:text-gray-200;
 }
+
+.ProseMirror-focused {
+  @apply outline-none;
+}

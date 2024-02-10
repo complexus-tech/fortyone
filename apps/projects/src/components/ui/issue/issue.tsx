@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Flex, Text, Tooltip } from "ui";
+import { DatePicker, Flex, Text, Tooltip } from "ui";
 import type { Issue as IssueProps } from "@/types/issue";
 import { RowWrapper } from "../row-wrapper";
 import { AssigneesMenu } from "./assignees-menu";
@@ -37,9 +37,18 @@ export const Issue = ({
         </Flex>
         <Flex align="center" gap={3}>
           <Labels />
-          <Tooltip title="Created on Sep 27, 2021">
-            <Text color="muted">Sep 27</Text>
-          </Tooltip>
+          <DatePicker>
+            <DatePicker.Trigger>
+              <button type="button">
+                <Tooltip title="Created on Sep 27, 2021">
+                  <Text as="span" color="muted">
+                    Sep 27
+                  </Text>
+                </Tooltip>
+              </button>
+            </DatePicker.Trigger>
+            <DatePicker.Calendar />
+          </DatePicker>
           <AssigneesMenu isSearchEnabled />
         </Flex>
       </RowWrapper>

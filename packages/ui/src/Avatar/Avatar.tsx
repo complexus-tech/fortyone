@@ -1,41 +1,41 @@
-import { VariantProps, cva } from 'cva';
-import { cn } from 'lib';
-import { FC, HTMLAttributes } from 'react';
-import { TbUser } from 'react-icons/tb';
+import { VariantProps, cva } from "cva";
+import { cn } from "lib";
+import { User } from "lucide-react";
+import { FC, HTMLAttributes } from "react";
 
 const avatar = cva(
-  'inline-flex justify-center items-center aspect-square overflow-hidden text-center font-medium',
+  "inline-flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
   {
     variants: {
       rounded: {
-        full: 'rounded-full',
-        none: 'rounded-none',
-        sm: 'rounded-sm',
-        md: 'rounded-md',
-        lg: 'rounded-lg',
+        full: "rounded-full",
+        none: "rounded-none",
+        sm: "rounded-sm",
+        md: "rounded-md",
+        lg: "rounded-lg",
       },
       color: {
-        primary: 'text-white bg-primary',
-        secondary: 'text-white bg-secondary',
-        gray: 'text-black bg-gray',
+        primary: "text-white bg-primary",
+        secondary: "text-white bg-secondary",
+        gray: "text-black bg-gray",
       },
       size: {
-        xs: 'h-6 text-xs leading-6',
-        sm: 'h-7 text-sm leading-7',
-        md: 'h-9 text-base leading-9',
-        lg: 'h-12 text-lg leading-[3rem]',
+        xs: "h-6 text-xs leading-6",
+        sm: "h-7 text-sm leading-7",
+        md: "h-9 text-base leading-9",
+        lg: "h-12 text-lg leading-[3rem]",
       },
     },
     defaultVariants: {
-      size: 'md',
-      rounded: 'full',
-      color: 'primary',
+      size: "md",
+      rounded: "full",
+      color: "primary",
     },
   }
 );
 
 export interface AvatarProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'color'>,
+  extends Omit<HTMLAttributes<HTMLDivElement>, "color">,
     VariantProps<typeof avatar> {
   src?: string;
   name?: string;
@@ -43,11 +43,11 @@ export interface AvatarProps
 
 const getInitials = (name: string) => {
   if (!name) {
-    return 'U';
+    return "U";
   }
 
-  const names = name.split(' ');
-  let initials = '';
+  const names = name.split(" ");
+  let initials = "";
 
   initials += names[0][0]; // First initial of the first name
 
@@ -68,20 +68,20 @@ export const Avatar: FC<AvatarProps> = (props) => {
         <img
           src={src}
           alt={name}
-          className={cn('w-full h-auto object-cover', {
-            'rounded-full': rounded === 'full',
-            'rounded-sm': rounded === 'sm',
-            'rounded-md': rounded === 'md',
-            'rounded-lg': rounded === 'lg',
+          className={cn("w-full h-auto object-cover", {
+            "rounded-full": rounded === "full",
+            "rounded-sm": rounded === "sm",
+            "rounded-md": rounded === "md",
+            "rounded-lg": rounded === "lg",
           })}
         />
       )}
       {!src && name && <span title={name}>{getInitials(name)}</span>}
       {!src && !name && (
-        <TbUser
-          className={cn('h-6 w-auto', {
-            'h-5': size === 'sm',
-            'h-auto': size === 'xs',
+        <User
+          className={cn("h-6 w-auto", {
+            "h-5": size === "sm",
+            "h-auto": size === "xs",
           })}
         />
       )}
@@ -89,4 +89,4 @@ export const Avatar: FC<AvatarProps> = (props) => {
   );
 };
 
-Avatar.displayName = 'Avatar';
+Avatar.displayName = "Avatar";

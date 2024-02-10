@@ -4,6 +4,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { cn } from "lib";
 import { Flex } from "../Flex/Flex";
 import { ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 interface BreadCrumb {
   name: string;
   url?: string;
@@ -31,7 +32,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
         >
           {icon && <span className="group-hover:text-primary">{icon}</span>}
           <span className="group-hover:text-primary">{name}</span>
-          <IoIosArrowForward
+          <ChevronRight
             className={cn("h-[0.8rem] w-auto", {
               hidden: idx + 1 === breadCrumbs.length,
             })}

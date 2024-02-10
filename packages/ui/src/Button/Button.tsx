@@ -1,6 +1,7 @@
 import type { VariantProps } from "cva";
 import { cva } from "cva";
 import { cn } from "lib";
+import { Loader } from "lucide-react";
 import Link from "next/link";
 import {
   forwardRef,
@@ -8,7 +9,6 @@ import {
   type JSXElementConstructor,
   type ReactElement,
 } from "react";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 const button = cva(
   "flex w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
@@ -188,7 +188,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <Tag className={classes} disabled={disabled} ref={ref} {...rest}>
             {loading ? (
               <>
-                <AiOutlineLoading3Quarters className="animate-spin" />
+                <Loader className="animate-spin h-5 w-auto" />
                 {loadingText || "Loading..."}
               </>
             ) : (
