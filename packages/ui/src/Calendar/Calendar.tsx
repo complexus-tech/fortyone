@@ -26,7 +26,7 @@ export const Calendar = ({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "px-4 py-5 rounded-xl border-[1.5px] border-gray-100 dark:border-gray-300 bg-white z-50 dark:bg-blue-dark w-80",
+        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-gray-300/80 bg-white z-50 dark:bg-dark/70 backdrop-blur w-80",
         className
       )}
       classNames={{
@@ -45,10 +45,9 @@ export const Calendar = ({
         head_cell: "w-10 font-semibold text-[1rem]",
         row: "flex w-full mt-2",
         cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
-        day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white",
-        day_selected: "bg-primary text-primary rounded-lg",
-        day_today:
-          "bg-accent text-accent-foreground border border-gray-50 dark:border-gray-300/60",
+        day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
+        day_selected: "bg-primary border-primary text-primary rounded-lg",
+        day_today: "border border-gray-100 dark:border-dark-50",
         day_outside: "opacity-50",
         day_disabled: "opacity-50",
         day_range_middle: "aria-selected:bg-primary aria-selected:text-white",

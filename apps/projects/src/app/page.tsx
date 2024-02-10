@@ -41,7 +41,7 @@ const Activity = ({
   timestamp,
 }: ActivityProps) => (
   <Flex align="center" className="z-[1]" gap={1}>
-    <Box className="flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-200/80">
+    <Box className="flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark">
       <Avatar
         name="Joseph Mukorivo"
         size="sm"
@@ -61,6 +61,15 @@ const Activity = ({
 );
 
 export default function Page(): JSX.Element {
+  // const { theme } = useTheme();
+  const theme = "dark";
+  const darkColors = {
+    0: "rgb(255 255 255 / 20%)",
+    8: "#7BC96F",
+    4: "#C6E48B",
+    12: "#239A3B",
+    32: "#ff7b00",
+  };
   const activites: ActivityProps[] = [
     {
       id: 1,
@@ -206,11 +215,16 @@ export default function Page(): JSX.Element {
             <HeatMap
               className="w-full"
               legendCellSize={20}
+              panelColors={theme === "dark" ? darkColors : undefined}
               rectProps={{
-                rx: 10,
+                rx: 3,
               }}
               rectSize={15}
               startDate={new Date("2023/01/01")}
+              style={{
+                color: theme === "dark" ? "#ffffff" : undefined,
+                backgroundColor: theme === "dark" ? "#000000" : undefined,
+              }}
               value={generateContributions(365)}
               weekLabels={["", "Mon", "", "Wed", "", "Fri", ""]}
             />

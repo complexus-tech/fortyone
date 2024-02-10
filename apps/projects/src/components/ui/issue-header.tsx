@@ -16,7 +16,7 @@ export const IssueHeader = ({
 }: IssueHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Container className="select-none bg-gray-50 py-1 dark:bg-dark-200">
+    <Container className="select-none bg-gray-50 py-1 dark:bg-dark-200/70">
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
           <IssueStatusIcon status={status} />
