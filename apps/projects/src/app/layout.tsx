@@ -10,8 +10,14 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
+// const poppins = Poppins({
+//   subsets: ["latin"],
+//   display: "swap",
+//   weight: ["100", "200", "300", "400", "500", "600"],
+// });
+
 export const metadata: Metadata = {
-  title: "Complexus Projects",
+  title: "Complexus",
   description: "Complexus Projects",
 };
 

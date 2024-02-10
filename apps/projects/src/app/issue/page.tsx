@@ -39,8 +39,9 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { BodyContainer, HeaderContainer } from "../../../components/shared";
-import { IssueStatusIcon, PriorityIcon } from "../../../components/ui";
+import { BodyContainer, HeaderContainer } from "../../components/shared";
+import { IssueStatusIcon, PriorityIcon } from "../../components/ui";
+import Tiptap from "./editor";
 
 type ActivityProps = {
   id: number;
@@ -164,7 +165,7 @@ export default function Page(): JSX.Element {
           <Panel defaultSize={74}>
             <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
               <Container className="pt-6">
-                <Text className="mb-6" fontSize="3xl">
+                <Text className="mb-6" fontSize="3xl" fontWeight="medium">
                   Change the color of the button to red
                 </Text>
                 <Text className="leading-7" color="muted" fontSize="lg">
@@ -179,6 +180,7 @@ export default function Page(): JSX.Element {
                   system to change the color of the button. The pallette is
                   available in the design system documentation.
                 </Text>
+                <Tiptap />
 
                 <Flex className="mb-4 mt-6" gap={1}>
                   <Badge
