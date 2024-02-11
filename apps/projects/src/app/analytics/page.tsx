@@ -1,6 +1,6 @@
 import { BreadCrumbs, Button, Container, Flex } from "ui";
 import { Activity, SlidersHorizontal } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
+import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
 
 export default function Page(): JSX.Element {

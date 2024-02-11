@@ -2,7 +2,7 @@ import { TbMail, TbPinned, TbTrash } from "react-icons/tb";
 import { Box, BreadCrumbs, Button, Flex, Text, Tooltip } from "ui";
 import { HiOutlineInboxArrowDown } from "react-icons/hi2";
 import { SlidersHorizontal, Bell } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
+import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { NewIssueButton, RowWrapper } from "@/components/ui";
 
 type Notification = {

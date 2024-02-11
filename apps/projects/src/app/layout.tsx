@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "../styles/global.css";
-import { Wrapper } from "./wrapper";
+import { MainLayout } from "@/components/layout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Wrapper>{children}</Wrapper>
+        <MainLayout>{children}</MainLayout>
       </body>
     </html>
   );

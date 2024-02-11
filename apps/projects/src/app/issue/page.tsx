@@ -39,7 +39,7 @@ import {
   Hourglass,
   GitCompareArrows,
 } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
+import { BodyContainer, HeaderContainer } from "@/components/layout";
 import type { ActivityProps } from "@/components/ui";
 import { IssueStatusIcon, PriorityIcon, Activity } from "@/components/ui";
 import { Editor } from "./editor";

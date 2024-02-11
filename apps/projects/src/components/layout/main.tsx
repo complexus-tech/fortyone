@@ -1,10 +1,9 @@
 "use client";
-
 import type { ReactNode } from "react";
 import { ResizablePanel } from "ui";
 import { Sidebar } from "@/components/shared";
 
-export const Wrapper = ({ children }: { children: ReactNode }) => {
+export const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
     <ResizablePanel direction="horizontal">
       <ResizablePanel.Panel defaultSize={17} maxSize={20} minSize={15}>

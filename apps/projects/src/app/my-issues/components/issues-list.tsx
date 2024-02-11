@@ -2,7 +2,7 @@
 import { Box, Tabs } from "ui";
 import { cn } from "lib";
 import type { IssueStatus, Issue as IssueType } from "@/types/issue";
-import { BodyContainer } from "@/components/shared";
+import { BodyContainer } from "@/components/layout";
 import { Issue, IssueHeader, IssuesToolbar } from "@/components/ui";
 
 const ListIssues = ({ issues }: { issues: IssueType[] }) => {

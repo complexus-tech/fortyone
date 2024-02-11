@@ -1,8 +1,8 @@
 "use client";
 import { Box, BreadCrumbs, Button, Container, Flex } from "ui";
 import { Columns3, SlidersHorizontal } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
 import { NewIssueButton } from "@/components/ui";
+import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { Activities, Contributions, MyIssues, Overview } from "./components";
 
 export default function Page(): JSX.Element {

@@ -1,7 +1,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { SlidersHorizontal, ListTodo } from "lucide-react";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
 import { IssuesList } from "./components";
 

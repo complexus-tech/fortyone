@@ -2,7 +2,7 @@
 import { TbLayoutDashboard, TbPlus } from "react-icons/tb";
 import { BreadCrumbs, Button, Container, Flex, Input, Text, Tooltip } from "ui";
 import Link from "next/link";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
+import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
 import { IssueCheckbox } from "@/components/ui/issue/checkbox";
