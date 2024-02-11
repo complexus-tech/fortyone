@@ -12,6 +12,7 @@ import {
   Tabs,
   Text,
   Tooltip,
+  ResizablePanel,
 } from "ui";
 import {
   Bell,
@@ -38,45 +39,10 @@ import {
   Hourglass,
   GitCompareArrows,
 } from "lucide-react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { BodyContainer, HeaderContainer } from "../../components/shared";
-import { IssueStatusIcon, PriorityIcon } from "../../components/ui";
-import Editor from "./editor";
-
-type ActivityProps = {
-  id: number;
-  user: string;
-  action: string;
-  prevValue: string;
-  newValue: string;
-  timestamp: string;
-};
-const Activity = ({
-  user,
-  action,
-  prevValue,
-  newValue,
-  timestamp,
-}: ActivityProps) => (
-  <Flex align="center" className="z-[1]" gap={1}>
-    <Box className="flex aspect-square items-center bg-white p-[0.3rem] dark:bg-dark">
-      <Avatar
-        name="Joseph Mukorivo"
-        size="sm"
-        src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-      />
-    </Box>
-    <Text className="ml-2" fontWeight="medium">
-      {user}
-    </Text>
-    <Text color="muted">{action}</Text>
-    <Text fontWeight="medium">{prevValue}</Text>
-    <Text color="muted">to</Text>
-    <Text fontWeight="medium">{newValue}</Text>
-    <Text color="muted">·</Text>
-    <Text color="muted">{timestamp}</Text>
-  </Flex>
-);
+import { BodyContainer, HeaderContainer } from "@/components/shared";
+import type { ActivityProps } from "@/components/ui";
+import { IssueStatusIcon, PriorityIcon, Activity } from "@/components/ui";
+import { Editor } from "./editor";
 
 export default function Page(): JSX.Element {
   const activites: ActivityProps[] = [
@@ -161,8 +127,8 @@ export default function Page(): JSX.Element {
         </Flex>
       </HeaderContainer>
       <BodyContainer className="overflow-y-hidden">
-        <PanelGroup direction="horizontal">
-          <Panel defaultSize={74}>
+        <ResizablePanel direction="horizontal">
+          <ResizablePanel.Panel defaultSize={74}>
             <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
               <Container className="pt-6">
                 <Text className="mb-6" fontSize="3xl" fontWeight="medium">
@@ -353,9 +319,9 @@ export default function Page(): JSX.Element {
                 </Box>
               </Container>
             </Box>
-          </Panel>
-          <PanelResizeHandle />
-          <Panel defaultSize={26} maxSize={35} minSize={25}>
+          </ResizablePanel.Panel>
+          <ResizablePanel.Handle />
+          <ResizablePanel.Panel defaultSize={26} maxSize={35} minSize={25}>
             <Box className="h-full overflow-y-auto bg-gray-50/20 pb-6 dark:bg-dark-200/40">
               <Box className="flex h-16 items-center border-b border-gray-50 dark:border-dark-200">
                 <Container className="flex w-full items-center justify-between">
@@ -607,8 +573,8 @@ export default function Page(): JSX.Element {
                 </Flex>
               </Container>
             </Box>
-          </Panel>
-        </PanelGroup>
+          </ResizablePanel.Panel>
+        </ResizablePanel>
       </BodyContainer>
     </>
   );

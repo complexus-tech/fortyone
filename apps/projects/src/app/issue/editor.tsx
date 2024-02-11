@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
-const Editor = () => {
+export const Editor = () => {
   const editor = useEditor({
     extensions: [StarterKit],
     content: `
@@ -20,5 +20,3 @@ const Editor = () => {
     />
   );
 };
-
-export default Editor;

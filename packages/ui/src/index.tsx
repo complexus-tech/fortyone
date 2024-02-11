@@ -23,7 +23,7 @@ export * from "./Tabs/Tabs";
 export * from "./Text/Text";
 export * from "./TextArea/TextArea";
 export * from "./Tooltip/Tooltip";
-// export * from './Wrapper/Wrapper';
+export * from "./Wrapper/Wrapper";
 // export * from './Debug/Debug';
 export * from "./Switch/Switch";
 // export * from './Calendar/Calendar';

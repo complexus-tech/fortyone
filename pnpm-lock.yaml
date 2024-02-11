@@ -93,9 +93,6 @@ importers:
       react-icons:
         specifier: ^4.11.0
         version: 4.11.0(react@18.2.0)
-      react-resizable-panels:
-        specifier: ^2.0.3
-        version: 2.0.3(react-dom@18.2.0)(react@18.2.0)
       tailwind-config:
         specifier: workspace:*
         version: link:../../packages/tailwind-config

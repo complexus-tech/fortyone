@@ -1,16 +1,17 @@
 "use client";
 
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import type { ReactNode } from "react";
+import { ResizablePanel } from "ui";
 import { Sidebar } from "@/components/shared";
 
-export const Wrapper = ({ children }: { children: React.ReactNode }) => {
+export const Wrapper = ({ children }: { children: ReactNode }) => {
   return (
-    <PanelGroup direction="horizontal">
-      <Panel defaultSize={17} maxSize={20} minSize={15}>
+    <ResizablePanel direction="horizontal">
+      <ResizablePanel.Panel defaultSize={17} maxSize={20} minSize={15}>
         <Sidebar />
-      </Panel>
-      <PanelResizeHandle />
-      <Panel defaultSize={83}>{children}</Panel>
-    </PanelGroup>
+      </ResizablePanel.Panel>
+      <ResizablePanel.Handle />
+      <ResizablePanel.Panel defaultSize={83}>{children}</ResizablePanel.Panel>
+    </ResizablePanel>
   );
 };
