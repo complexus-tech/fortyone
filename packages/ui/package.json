@@ -18,6 +18,8 @@
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.5",
+    "@tiptap/react": "^2.2.2",
+    "@tiptap/starter-kit": "^2.2.2",
     "cva": "npm:class-variance-authority@^0.7.0",
     "date-fns": "^2.29.3",
     "lib": "workspace:*",

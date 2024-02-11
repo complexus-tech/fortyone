@@ -1,9 +1,17 @@
 "use client";
-import { TbPlus } from "react-icons/tb";
-import { Button, Badge, Dialog, Flex, Switch, Text } from "ui";
+import { useState, type Dispatch, type SetStateAction } from "react";
+import {
+  Button,
+  Badge,
+  Dialog,
+  Flex,
+  Switch,
+  Text,
+  ContentEditable,
+  TextEditor,
+} from "ui";
 import { CgArrowsExpandRight } from "react-icons/cg";
-import { IoIosArrowForward } from "react-icons/io";
-import type { Dispatch, SetStateAction } from "react";
+import { ChevronRight, Plus } from "lucide-react";
 
 export const NewIssueDialog = ({
   isOpen,
@@ -12,13 +20,15 @@ export const NewIssueDialog = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
+  const [title, setTitle] = useState("");
+
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content hideClose size="lg">
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Badge color="tertiary">COMP-1</Badge>
-            <IoIosArrowForward className="h-3 w-auto opacity-40" />
+            <ChevronRight className="h-4 w-auto opacity-40" strokeWidth={3} />
             <Text color="muted">New issue</Text>
           </Dialog.Title>
           <Flex gap={4}>
@@ -35,18 +45,20 @@ export const NewIssueDialog = ({
             <Dialog.Close />
           </Flex>
         </Dialog.Header>
-        <Dialog.Body>
-          <textarea
-            autoComplete="off"
-            className="w-full resize-none bg-transparent py-2 text-2xl outline-none"
+        <Dialog.Body className="pt-0">
+          <ContentEditable
+            className="mb-1 py-2 text-2xl"
             placeholder="Issue title"
-            spellCheck={false}
+            setValue={setTitle}
+            value={title}
           />
-          <textarea
-            className="mb-4 min-h-[5rem] w-full resize-none bg-transparent text-lg text-gray-200/80 outline-none"
-            placeholder="Issue description"
+          <TextEditor
+            content={`
+          <h1>Test heading</h1>
+          `}
           />
-          <Flex gap={1}>
+
+          <Flex className="mt-4" gap={1}>
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>
@@ -57,10 +69,10 @@ export const NewIssueDialog = ({
         <Dialog.Footer className="flex items-center justify-between gap-2">
           <Text color="muted">
             <label className="flex items-center gap-2" htmlFor="more">
-              Create more <Switch />
+              Create more <Switch id="more" />
             </label>
           </Text>
-          <Button leftIcon={<TbPlus className="h-5 w-auto" />} size="md">
+          <Button leftIcon={<Plus className="h-5 w-auto" />} size="md">
             Create issue
           </Button>
         </Dialog.Footer>

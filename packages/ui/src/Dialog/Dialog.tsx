@@ -26,7 +26,7 @@ const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/[0.03] dark:bg-dark/50 backdrop-blur-[0.5px] flex items-start justify-center",
+      "fixed inset-0 z-50 bg-black/20 dark:bg-dark/50 flex items-start justify-center",
       className
     )}
     {...props}
@@ -56,11 +56,11 @@ const DialogContent = forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "w-full bg-white mt-[10%] border border-gray-50 shadow-dark/20 dark:shadow-dark dark:border-dark-100 dark:bg-dark-200 shadow-lg rounded-xl overflow-hidden max-w-3xl relative",
+          "w-full bg-gray-50/80 mt-[10%] border border-gray-100 shadow-dark/20 dark:shadow-dark dark:border-dark-100 dark:bg-dark-200/80 backdrop-blur shadow-lg rounded-xl overflow-hidden max-w-3xl relative",
           {
             "max-w-md": size === "sm",
             "max-w-xl": size === "md",
-            "max-w-4xl": size === "lg",
+            "max-w-5xl": size === "lg",
             "max-w-7xl": size === "xl",
           }
         )}

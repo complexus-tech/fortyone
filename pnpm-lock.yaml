@@ -63,12 +63,6 @@ importers:
       '@tiptap/pm':
         specifier: ^2.2.2
         version: 2.2.2
-      '@tiptap/react':
-        specifier: ^2.2.2
-        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)(react-dom@18.2.0)(react@18.2.0)
-      '@tiptap/starter-kit':
-        specifier: ^2.2.2
-        version: 2.2.2(@tiptap/pm@2.2.2)
       '@uiw/react-heat-map':
         specifier: ^2.2.1
         version: 2.2.1(@babel/runtime@7.23.2)(react-dom@18.2.0)(react@18.2.0)
@@ -192,6 +186,12 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.0.5
         version: 1.0.7(@types/react-dom@18.2.13)(@types/react@18.2.28)(react-dom@18.2.0)(react@18.2.0)
+      '@tiptap/react':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)(react-dom@18.2.0)(react@18.2.0)
+      '@tiptap/starter-kit':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/pm@2.2.2)
       cva:
         specifier: npm:class-variance-authority@^0.7.0
         version: /class-variance-authority@0.7.0

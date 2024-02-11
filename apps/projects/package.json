@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@tiptap/pm": "^2.2.2",
-    "@tiptap/react": "^2.2.2",
-    "@tiptap/starter-kit": "^2.2.2",
     "@uiw/react-heat-map": "^2.2.1",
     "install": "^0.13.0",
     "lib": "workspace:*",

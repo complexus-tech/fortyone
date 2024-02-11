@@ -1,3 +1,3 @@
 export * from "./main";
-export * from "./header";
+export * from "./header-container";
 export * from "./body";
