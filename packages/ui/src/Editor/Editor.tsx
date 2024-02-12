@@ -24,7 +24,7 @@ export const TextEditor = ({ content = "" }: { content?: string }) => {
       }),
     ],
     content,
-    editable: false,
+    editable: true,
   }) as Editor;
   return (
     <>

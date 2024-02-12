@@ -54,7 +54,7 @@ export const NewIssueDialog = ({
           />
           <TextEditor
             content={`
-          <h1>Test heading</h1>
+          <p>Project description will be here.</p>
           `}
           />
 
