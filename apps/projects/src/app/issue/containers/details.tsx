@@ -15,13 +15,19 @@ export const MainDetails = () => {
         </Text>
         <TextEditor
           content="
-            <h1>Test heading</h1>
-            <p>Test paragraph</p>
+          <h3>Jira Issue Description Example</h3>
+          <p>This is a sample HTML text for a Jira issue description. It can include various elements such as headings, paragraphs, lists, and more.</p>
+          <h2>Steps to Reproduce:</h2>
+          <ol>
+              <li>Open the application.</li>
+              <li>Go to the settings page.</li>
+              <li>Change the language to French.</li>
+              <li>Save the settings.</li>
+          </ol>
             "
         />
         <Reactions />
         <SubissuesButton />
-
         <Divider className="my-4" />
         <Attachments />
         <Divider className="mb-6 mt-8" />

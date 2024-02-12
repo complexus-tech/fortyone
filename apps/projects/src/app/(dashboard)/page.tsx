@@ -1,34 +1,18 @@
 "use client";
-import { Box, BreadCrumbs, Button, Container, Flex } from "ui";
-import { Columns3, SlidersHorizontal } from "lucide-react";
-import { NewIssueButton } from "@/components/ui";
-import { BodyContainer, HeaderContainer } from "@/components/layout";
-import { Activities, Contributions, MyIssues, Overview } from "./components";
+import { Box, Container } from "ui";
+import { BodyContainer } from "@/components/layout";
+import {
+  Activities,
+  Contributions,
+  Header,
+  MyIssues,
+  Overview,
+} from "./components";
 
 export default function Page(): JSX.Element {
   return (
     <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "Dashboard",
-              icon: <Columns3 className="h-5 w-auto" />,
-            },
-          ]}
-        />
-        <Flex gap={2}>
-          <Button
-            color="tertiary"
-            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            Display
-          </Button>
-          <NewIssueButton />
-        </Flex>
-      </HeaderContainer>
+      <Header />
       <BodyContainer>
         <Container className="py-4">
           <Overview />

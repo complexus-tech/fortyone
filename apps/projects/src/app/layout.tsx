@@ -11,7 +11,7 @@ const font = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Complexus",
+  title: "Projects",
   description: "Complexus Projects",
 };
 

@@ -47,7 +47,7 @@ export const Contributions = () => {
         <HeatMap
           className="w-full dark:!text-white"
           legendCellSize={20}
-          panelColors={darkColors}
+          // panelColors={darkColors}
           rectProps={{
             rx: 3,
           }}

@@ -1,7 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-const config = require('tailwind-config/tailwind.config');
+const config = require("tailwind-config/tailwind.config");
 
 module.exports = {
   ...config,
-  darkMode: 'media',
+  darkMode: "media",
+  plugins: [require("@tailwindcss/typography")],
 };

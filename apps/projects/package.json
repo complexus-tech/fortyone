@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tiptap/extension-underline": "^2.2.2",
     "@tiptap/pm": "^2.2.2",
     "@uiw/react-heat-map": "^2.2.1",
     "install": "^0.13.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^13.5.6",
+    "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^20.11.17",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
