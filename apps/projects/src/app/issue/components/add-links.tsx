@@ -22,7 +22,7 @@ export const AddLinks = () => {
         </Button>
       </Flex>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content size="md" hideClose>
+        <Dialog.Content hideClose size="md">
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
             <Dialog.Title>
               <Text fontSize="xl">Add link to issue</Text>
