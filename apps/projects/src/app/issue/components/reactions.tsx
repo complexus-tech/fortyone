@@ -3,7 +3,7 @@ import { SmilePlus } from "lucide-react";
 
 export const Reactions = () => {
   return (
-    <Flex className="mb-4 mt-6" gap={1}>
+    <Flex className="mb-4 mt-10" gap={1}>
       <Badge color="tertiary" rounded="full" size="lg" variant="outline">
         👍🏼 1
       </Badge>

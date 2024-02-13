@@ -1,31 +1,35 @@
 "use client";
 
-import { EditorContent, useEditor, BubbleMenu, Editor } from "@tiptap/react";
+import { useState } from "react";
+import { EditorContent, BubbleMenu, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
+import UnderlineExt from "@tiptap/extension-underline";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
-import Link from "@tiptap/extension-link";
+import LinkExt from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 import { BubbleMenu as CustomBubbleMenu } from "./BubbleMenu";
-import { useState } from "react";
 
-export const TextEditor = ({ content = "" }: { content?: string }) => {
+export const TextEditor = ({
+  editor,
+  placeholder = "",
+}: {
+  editor: Editor | null;
+  placeholder?: string;
+}) => {
+  const extensions = [
+    StarterKit,
+    UnderlineExt,
+    TaskItem,
+    TaskList,
+    LinkExt,
+    Placeholder.configure({ placeholder }),
+  ];
+  extensions.forEach((ext) => {
+    editor?.extensionManager.extensions.push(ext);
+  });
   const [isLinkOpen, setIsLinkOpen] = useState(false);
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-    ],
-    content,
-    editable: true,
-  }) as Editor;
+
   return (
     <>
       {editor && (
@@ -47,7 +51,7 @@ export const TextEditor = ({ content = "" }: { content?: string }) => {
         </BubbleMenu>
       )}
       <EditorContent
-        className="prose prose-lg prose-slate leading-7 prose-a:text-primary dark:prose-invert prose-headings:font-medium dark:prose-pre:bg-dark-200/80 prose-pre:text-lg"
+        className="prose prose-lg max-w-full prose-slate leading-7 prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-dark-200 prose-pre:bg-gray-50 dark:prose-pre:bg-dark-200/80 prose-pre:text-[1.1rem]"
         editor={editor}
         placeholder="Issue description"
       />

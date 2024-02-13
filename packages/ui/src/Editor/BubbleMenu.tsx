@@ -227,7 +227,7 @@ export const BubbleMenu = ({
           <span className="opacity-30">|</span>
           <Button
             active
-            className="bg-gray-200 border-gray-200"
+            className="border-gray-200"
             size="xs"
             type="button"
             color="tertiary"

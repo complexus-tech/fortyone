@@ -7,5 +7,8 @@ module.exports = {
     "jsx-a11y/no-autofocus": "off",
     "react/function-component-definition": "off",
     "import/no-extraneous-dependencies": "off",
+    "import/no-named-as-default": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
   },
 };

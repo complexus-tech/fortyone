@@ -60,12 +60,27 @@ importers:
 
   apps/projects:
     dependencies:
+      '@tiptap/extension-link':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)
+      '@tiptap/extension-task-item':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)
+      '@tiptap/extension-task-list':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)
       '@tiptap/extension-underline':
         specifier: ^2.2.2
         version: 2.2.2(@tiptap/core@2.2.2)
       '@tiptap/pm':
         specifier: ^2.2.2
         version: 2.2.2
+      '@tiptap/react':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)(react-dom@18.2.0)(react@18.2.0)
+      '@tiptap/starter-kit':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/pm@2.2.2)
       '@uiw/react-heat-map':
         specifier: ^2.2.1
         version: 2.2.1(@babel/runtime@7.23.2)(react-dom@18.2.0)(react@18.2.0)
@@ -193,6 +208,9 @@ importers:
         specifier: ^1.0.5
         version: 1.0.7(@types/react-dom@18.2.13)(@types/react@18.2.28)(react-dom@18.2.0)(react@18.2.0)
       '@tiptap/extension-link':
+        specifier: ^2.2.2
+        version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)
+      '@tiptap/extension-placeholder':
         specifier: ^2.2.2
         version: 2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2)
       '@tiptap/extension-task-item':
@@ -1952,6 +1970,16 @@ packages:
       '@tiptap/core': ^2.0.0
     dependencies:
       '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
+    dev: false
+
+  /@tiptap/extension-placeholder@2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2):
+    resolution: {integrity: sha512-dPN15nVu+HlONJSCiKjEl9n5/61CltTLSefhyRVQJeE7lmtMUGrsErUdOYMxGskehDQWIQW1VM0OiF63ln/3sA==}
+    peerDependencies:
+      '@tiptap/core': ^2.0.0
+      '@tiptap/pm': ^2.0.0
+    dependencies:
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
+      '@tiptap/pm': 2.2.2
     dev: false
 
   /@tiptap/extension-strike@2.2.2(@tiptap/core@2.2.2):
