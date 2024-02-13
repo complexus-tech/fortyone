@@ -1,15 +1,6 @@
 "use client";
-import { useState, type Dispatch, type SetStateAction } from "react";
-import {
-  Button,
-  Badge,
-  Dialog,
-  Flex,
-  Switch,
-  Text,
-  ContentEditable,
-  TextEditor,
-} from "ui";
+import { type Dispatch, type SetStateAction } from "react";
+import { Button, Badge, Dialog, Flex, Switch, Text, TextEditor } from "ui";
 import { ChevronRight, Maximize2, Plus } from "lucide-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -18,6 +9,9 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import TextExt from "@tiptap/extension-text";
 
 export const NewIssueDialog = ({
   isOpen,
@@ -26,7 +20,16 @@ export const NewIssueDialog = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const [title, setTitle] = useState("");
+  const titleEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      TextExt,
+      Placeholder.configure({ placeholder: "Enter title..." }),
+    ],
+    content: "This is a sample title.",
+    editable: true,
+  });
 
   const editor = useEditor({
     extensions: [
@@ -69,14 +72,12 @@ export const NewIssueDialog = ({
           </Flex>
         </Dialog.Header>
         <Dialog.Body className="pt-0">
-          <ContentEditable
-            className="mb-1 py-2 text-2xl"
-            placeholder="Issue title"
-            setValue={setTitle}
-            value={title}
+          <TextEditor
+            asTitle
+            className="text-2xl font-medium"
+            editor={titleEditor}
           />
           <TextEditor editor={editor} />
-
           <Flex className="mt-4" gap={1}>
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>
