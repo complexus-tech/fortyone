@@ -6,6 +6,11 @@ import {
   useRef,
   useState,
 } from "react";
+import "@tiptap/starter-kit";
+import "@tiptap/extension-underline";
+import "@tiptap/extension-task-item";
+import "@tiptap/extension-task-list";
+import "@tiptap/extension-link";
 import {
   Bold,
   Code,

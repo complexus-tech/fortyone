@@ -10,8 +10,14 @@ import {
   ContentEditable,
   TextEditor,
 } from "ui";
-import { CgArrowsExpandRight } from "react-icons/cg";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Maximize2, Plus } from "lucide-react";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 
 export const NewIssueDialog = ({
   isOpen,
@@ -22,6 +28,23 @@ export const NewIssueDialog = ({
 }) => {
   const [title, setTitle] = useState("");
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Link.configure({
+        autolink: true,
+      }),
+      Placeholder.configure({ placeholder: "Issue description" }),
+    ],
+    content: "",
+    editable: true,
+  });
+
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content hideClose size="lg">
@@ -31,7 +54,7 @@ export const NewIssueDialog = ({
             <ChevronRight className="h-4 w-auto opacity-40" strokeWidth={3} />
             <Text color="muted">New issue</Text>
           </Dialog.Title>
-          <Flex gap={4}>
+          <Flex gap={2}>
             <Button
               className="px-[0.35rem] dark:hover:bg-dark-100"
               color="tertiary"
@@ -39,7 +62,7 @@ export const NewIssueDialog = ({
               size="xs"
               variant="naked"
             >
-              <CgArrowsExpandRight className="h-[1.2rem] w-auto" />
+              <Maximize2 className="h-[1.2rem] w-auto" />
               <span className="sr-only">Expand issue to full screen</span>
             </Button>
             <Dialog.Close />
@@ -52,11 +75,7 @@ export const NewIssueDialog = ({
             setValue={setTitle}
             value={title}
           />
-          <TextEditor
-            content={`
-          <p>Project description will be here.</p>
-          `}
-          />
+          <TextEditor editor={editor} />
 
           <Flex className="mt-4" gap={1}>
             <Badge color="tertiary">COMP-1</Badge>

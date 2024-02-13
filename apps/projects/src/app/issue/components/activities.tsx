@@ -1,7 +1,14 @@
-import { Avatar, Box, Button, Flex, Tabs, Text } from "ui";
+import { Avatar, Box, Button, Flex, Tabs, Text, TextEditor } from "ui";
 import { Paperclip, History, MessageSquareText, Hourglass } from "lucide-react";
-import type { ActivityProps } from "@/components/ui";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 import { Activity } from "@/components/ui";
+import type { ActivityProps } from "@/components/ui";
 
 export const Activities = () => {
   const activites: ActivityProps[] = [
@@ -38,6 +45,23 @@ export const Activities = () => {
       timestamp: "1 hour ago",
     },
   ];
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Link.configure({
+        autolink: true,
+      }),
+      Placeholder.configure({ placeholder: "Leave a comment..." }),
+    ],
+    content: "",
+    editable: true,
+  });
   return (
     <Box>
       <Text
@@ -92,19 +116,12 @@ export const Activities = () => {
                 <Avatar name="Joseph Mukorivo" size="sm" />
               </Box>
               <Flex
-                className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 px-4 py-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
+                className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
                 direction="column"
                 gap={2}
                 justify="between"
               >
-                <Box
-                  className="text-gray-250 outline-none"
-                  // contentEditable
-                  spellCheck={false}
-                >
-                  <Text color="muted">Leave a comment...</Text>
-                </Box>
-
+                <TextEditor className="prose-base" editor={editor} />
                 <Flex gap={1} justify="end">
                   <Button
                     className="px-3"

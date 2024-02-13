@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import { cn } from "lib";
-import { Check } from "lucide-react";
+import { Check, Search } from "lucide-react";
 
 type TriggerProps = ComponentProps<typeof DropdownMenu.Trigger>;
 export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
@@ -125,11 +125,17 @@ export const Menu = ({ children, ...rest }: MenuProps) => {
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
-    <input
-      className={cn("bg-transparent py-1 outline-none w-full", className)}
-      ref={ref}
-      {...rest}
-    />
+    <div className="flex items-center gap-1">
+      <Search className="h-[1.15rem] w-auto relative -left-1 text-gray" />
+      <input
+        className={cn(
+          "bg-transparent py-[0.15rem] outline-none w-full",
+          className
+        )}
+        ref={ref}
+        {...rest}
+      />
+    </div>
   )
 );
 

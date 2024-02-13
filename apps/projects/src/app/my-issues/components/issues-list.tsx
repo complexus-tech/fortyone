@@ -3,7 +3,7 @@ import { Box, Tabs } from "ui";
 import { cn } from "lib";
 import type { IssueStatus, Issue as IssueType } from "@/types/issue";
 import { BodyContainer } from "@/components/layout";
-import { Issue, IssueHeader, IssuesToolbar } from "@/components/ui";
+import { Issue, IssuesHeader, IssuesToolbar } from "@/components/ui";
 
 const ListIssues = ({ issues }: { issues: IssueType[] }) => {
   return (
@@ -29,7 +29,7 @@ const IssuesGroup = ({
         hidden: filteredIssues.length === 0,
       })}
     >
-      <IssueHeader count={filteredIssues.length} status={status} />
+      <IssuesHeader count={filteredIssues.length} status={status} />
       <ListIssues issues={filteredIssues} />
     </Box>
   );

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { TbPlus } from "react-icons/tb";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
+import { Plus } from "lucide-react";
 import type { IssueStatus } from "../../types/issue";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { NewIssueDialog } from "./new-issue-dialog";
@@ -10,7 +10,7 @@ type IssueHeaderProps = {
   status?: IssueStatus;
   count: number;
 };
-export const IssueHeader = ({
+export const IssuesHeader = ({
   count,
   status = "Backlog",
 }: IssueHeaderProps) => {
@@ -27,7 +27,7 @@ export const IssueHeader = ({
           <Button
             className="p-0"
             color="tertiary"
-            leftIcon={<TbPlus className="h-5 w-auto dark:text-gray-200" />}
+            leftIcon={<Plus className="h-5 w-auto dark:text-gray-200" />}
             onClick={() => {
               setIsOpen(true);
             }}

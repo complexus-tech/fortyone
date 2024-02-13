@@ -1,10 +1,14 @@
-import { Box, Container, Divider, Text, TextEditor } from "ui";
+import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
 import {
   Activities,
   Attachments,
@@ -36,17 +40,31 @@ export const MainDetails = () => {
       Link.configure({
         autolink: true,
       }),
+      Placeholder.configure({ placeholder: "Issue description" }),
     ],
     content,
     editable: true,
   });
+
+  const titleEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      Text,
+      Placeholder.configure({ placeholder: "Enter title..." }),
+    ],
+    content: "This is a sample title.",
+    editable: true,
+  });
   return (
     <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
-      <Container className="pt-6">
-        <Text className="mb-6" fontSize="3xl" fontWeight="medium">
-          Change the color of the button to red
-        </Text>
-        <TextEditor editor={editor} placeholder="Test" />
+      <Container className="pt-7">
+        <TextEditor
+          asTitle
+          className="relative -left-1 text-3xl font-medium"
+          editor={titleEditor}
+        />
+        <TextEditor editor={editor} />
         <Reactions />
         <SubissuesButton />
         <Divider className="my-4" />

@@ -10,6 +10,7 @@ export * from "./Calendar/Calendar";
 export * from "./DatePicker/DatePicker";
 export * from "./ContentEditable/ContentEditable";
 export * from "./Editor/Editor";
+export * from "./Command/Command";
 // export * from './Document/Document';
 // export * from './DropDown/DropDown';
 export * from "./Flex/Flex";

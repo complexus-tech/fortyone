@@ -1,14 +1,17 @@
 import { TbCheck } from "react-icons/tb";
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { IssueStatusIcon } from "../issue-status-icon";
+import { cn } from "lib";
 import type { IssueStatus } from "@/types/issue";
+import { IssueStatusIcon } from "../issue-status-icon";
 
 export const StatusesMenu = ({
   status,
-  isSearchEnabled,
+  isSearchEnabled = true,
+  asIcon = true,
 }: {
   status: IssueStatus;
   isSearchEnabled?: boolean;
+  asIcon?: boolean;
 }) => {
   const statuses: IssueStatus[] = [
     "Backlog",
@@ -23,22 +26,26 @@ export const StatusesMenu = ({
     <Menu>
       <Menu.Button>
         <Button
-          className="h-max p-0 hover:bg-transparent focus:bg-transparent dark:hover:bg-transparent dark:focus:bg-transparent"
+          className={cn("gap-3 px-3", {
+            "h-max p-0 hover:bg-transparent focus:bg-transparent dark:hover:bg-transparent dark:focus:bg-transparent":
+              asIcon,
+          })}
           color="tertiary"
           leftIcon={<IssueStatusIcon status={status} />}
-          size="sm"
+          size={asIcon ? "sm" : "md"}
           variant="naked"
         >
-          <span className="sr-only">Change status</span>
+          <span className="sr-only">Change priority</span>
+          {asIcon ? null : status}
         </Button>
       </Menu.Button>
       <Menu.Items align="center" className="w-64">
         {isSearchEnabled ? (
           <>
-            <Menu.Group className="mb-2 px-4">
-              <Menu.Input autoFocus placeholder="Change status" />
+            <Menu.Group className="px-4">
+              <Menu.Input autoFocus placeholder="Change status..." />
             </Menu.Group>
-            <Menu.Separator />
+            <Menu.Separator className="my-2" />
           </>
         ) : null}
         <Menu.Group>
