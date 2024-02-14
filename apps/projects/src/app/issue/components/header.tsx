@@ -1,4 +1,4 @@
-import { Bell, Link2, ChevronUp, ChevronDown, Star } from "lucide-react";
+import { Bell, ChevronUp, ChevronDown, Star } from "lucide-react";
 import { BreadCrumbs, Button, Flex, Text } from "ui";
 import { HeaderContainer } from "@/components/layout";
 
@@ -12,7 +12,6 @@ export const Header = () => {
             { name: "Web design" },
             {
               name: "COM-12",
-              icon: <Link2 className="h-5 w-auto" strokeWidth={2} />,
             },
           ]}
         />
