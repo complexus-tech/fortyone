@@ -12,6 +12,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import { PrioritiesMenu } from "./issue/priorities-menu";
 
 export const NewIssueDialog = ({
   isOpen,
@@ -79,6 +80,7 @@ export const NewIssueDialog = ({
           />
           <TextEditor editor={editor} />
           <Flex className="mt-4" gap={1}>
+            <PrioritiesMenu asIcon={false} priority="Urgent" />
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>

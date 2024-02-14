@@ -1,5 +1,11 @@
 import { cn } from "lib";
-import { SignalMedium } from "lucide-react";
+import {
+  AlertCircle,
+  Ban,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+} from "lucide-react";
 import type { IssuePriority } from "@/types/issue";
 
 export const PriorityIcon = ({
@@ -12,32 +18,33 @@ export const PriorityIcon = ({
   return (
     <>
       {priority === "No Priority" && (
-        <SignalMedium
-          className={cn("h-6 w-auto text-gray", className)}
+        <Ban
+          className={cn("h-[1.15rem] w-auto text-gray", className)}
           strokeWidth={2.5}
         />
       )}
       {priority === "Urgent" && (
-        <SignalMedium
-          className={cn("h-[1.1rem] w-auto text-danger", className)}
+        <AlertCircle
+          className={cn("h-[1.15rem] w-auto text-danger", className)}
+          strokeWidth={2.5}
         />
       )}
       {priority === "High" && (
-        <SignalMedium
-          className={cn("h-6 w-auto text-gray", className)}
-          strokeWidth={2.5}
+        <SignalHigh
+          className={cn("relative -top-[2px] h-6 w-auto text-gray", className)}
+          strokeWidth={2.6}
         />
       )}
       {priority === "Medium" && (
         <SignalMedium
-          className={cn("h-6 w-auto text-gray", className)}
-          strokeWidth={2.5}
+          className={cn("relative -top-[2px] h-6 w-auto text-gray", className)}
+          strokeWidth={2.6}
         />
       )}
       {priority === "Low" && (
-        <SignalMedium
-          className={cn("h-6 w-auto text-gray", className)}
-          strokeWidth={2.5}
+        <SignalLow
+          className={cn("relative -top-[2px] h-6 w-auto text-gray", className)}
+          strokeWidth={2.6}
         />
       )}
     </>

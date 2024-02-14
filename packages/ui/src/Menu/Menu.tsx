@@ -126,7 +126,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <div className="flex items-center gap-1">
-      <Search className="h-[1.15rem] w-auto relative -left-1 text-gray" />
+      <Search
+        className="h-[1.15rem] w-auto relative -left-1 text-gray"
+        strokeWidth={2.5}
+      />
       <input
         className={cn(
           "bg-transparent py-[0.15rem] outline-none w-full",

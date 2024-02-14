@@ -47,7 +47,7 @@ export const Calendar = ({
         cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
         day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
         day_selected: "bg-primary border-primary text-primary rounded-lg",
-        day_today: "border border-gray-100 dark:border-dark-50",
+        day_today: "border border-gray-200 dark:border-dark-50",
         day_outside: "opacity-50",
         day_disabled: "opacity-50",
         day_range_middle: "aria-selected:bg-primary aria-selected:text-white",

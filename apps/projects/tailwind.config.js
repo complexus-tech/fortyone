@@ -3,6 +3,6 @@ const config = require("tailwind-config/tailwind.config");
 
 module.exports = {
   ...config,
-  darkMode: "media",
+  darkMode: "class",
   plugins: [require("@tailwindcss/typography")],
 };

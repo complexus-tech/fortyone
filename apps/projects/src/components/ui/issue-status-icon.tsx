@@ -1,4 +1,4 @@
-import { Circle } from "lucide-react";
+import { CheckCircle2, Circle, CircleDashed, XCircle } from "lucide-react";
 import { cn } from "lib";
 import type { IssueStatus } from "../../types/issue";
 
@@ -12,42 +12,45 @@ export const IssueStatusIcon = ({
   return (
     <>
       {status === "Backlog" && (
-        <Circle
+        <CircleDashed
           className={cn("h-[1.15rem] w-auto text-gray", className)}
-          strokeWidth={2.3}
+          strokeWidth={2.5}
         />
       )}
       {status === "Todo" && (
-        <Circle className={cn("h-[1.15rem] w-auto text-gray/60", className)} />
+        <Circle
+          className={cn("h-[1.15rem] w-auto text-gray", className)}
+          strokeWidth={2.5}
+        />
       )}
       {status === "In Progress" && (
         <Circle
           className={cn("h-[1.15rem] w-auto text-warning", className)}
-          strokeWidth={2.3}
+          strokeWidth={2.5}
         />
       )}
       {status === "Testing" && (
         <Circle
           className={cn("h-[1.15rem] w-auto text-info", className)}
-          strokeWidth={2.3}
+          strokeWidth={2.5}
         />
       )}
       {status === "Done" && (
-        <Circle
+        <CheckCircle2
           className={cn("h-[1.15rem] w-auto text-success", className)}
-          strokeWidth={2.3}
+          strokeWidth={2.5}
         />
       )}
       {status === "Canceled" && (
-        <Circle
-          className={cn("h-5 w-auto text-danger", className)}
-          strokeWidth={2.3}
+        <XCircle
+          className={cn("h-[1.15rem] w-auto text-danger", className)}
+          strokeWidth={2.5}
         />
       )}
       {status === "Duplicate" && (
-        <Circle
-          className={cn("h-5 w-auto text-warning", className)}
-          strokeWidth={2.3}
+        <XCircle
+          className={cn("h-[1.15rem] w-auto text-dark-50", className)}
+          strokeWidth={2.5}
         />
       )}
     </>
