@@ -8,8 +8,8 @@ import { Issue, IssuesHeader, IssuesToolbar } from "@/components/ui";
 const ListIssues = ({ issues }: { issues: IssueType[] }) => {
   return (
     <>
-      {issues.map(({ id, status, title }) => (
-        <Issue key={id} status={status} title={title} />
+      {issues.map(({ id, status, priority, title }) => (
+        <Issue key={id} priority={priority} status={status} title={title} />
       ))}
     </>
   );

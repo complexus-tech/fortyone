@@ -1,8 +1,8 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
+import { Check } from "lucide-react";
 import type { IssueStatus } from "@/types/issue";
 import { IssueStatusIcon } from "../issue-status-icon";
-import { Check } from "lucide-react";
 
 export const StatusesMenu = ({
   status,

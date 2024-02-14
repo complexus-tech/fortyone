@@ -80,7 +80,7 @@ export const NewIssueDialog = ({
           />
           <TextEditor editor={editor} />
           <Flex className="mt-4" gap={1}>
-            <PrioritiesMenu asIcon={false} priority="Urgent" />
+            <PrioritiesMenu priority="Urgent" />
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>
             <Badge color="tertiary">COMP-1</Badge>

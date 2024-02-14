@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 import { Box, Button, Container, Divider, Text, DatePicker } from "ui";
-import { Calendar, Plus, CalendarCheck2 } from "lucide-react";
-import { PrioritiesMenu, StatusesMenu, AssigneesMenu } from "@/components/ui";
+import { Calendar, CalendarCheck2 } from "lucide-react";
+import {
+  PrioritiesMenu,
+  StatusesMenu,
+  AssigneesMenu,
+  ModulesMenu,
+  SprintsMenu,
+} from "@/components/ui";
 import { Labels } from "@/components/ui/issue/labels";
 import { AddLinks, OptionsHeader } from "../components";
 
@@ -73,30 +79,8 @@ export const Options = () => {
             </DatePicker>
           }
         />
-        <Option
-          label="Sprint"
-          value={
-            <Button
-              color="tertiary"
-              leftIcon={<Plus className="h-5 w-auto" />}
-              variant="naked"
-            >
-              Add sprint
-            </Button>
-          }
-        />
-        <Option
-          label="Module"
-          value={
-            <Button
-              color="tertiary"
-              leftIcon={<Plus className="h-5 w-auto" />}
-              variant="naked"
-            >
-              Add module
-            </Button>
-          }
-        />
+        <Option label="Sprint" value={<SprintsMenu />} />
+        <Option label="Module" value={<ModulesMenu />} />
         <Option
           label="Parent"
           value={
