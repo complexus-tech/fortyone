@@ -20,7 +20,7 @@ export const Input: FC<InputProps> = (props) => {
   return (
     <label className="relative block">
       {label && (
-        <span className="mb-2 block">
+        <span className="mb-[0.35rem] block">
           {label}
           {required && <span className="text-danger">*</span>}
         </span>
@@ -30,7 +30,7 @@ export const Input: FC<InputProps> = (props) => {
         required={required}
         value={value}
         className={cn(
-          "w-full rounded-lg border dark:bg-dark-300/50 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 h-[2.8rem] leading-[2.8rem] focus:outline-0 focus:ring focus:ring-primary focus:ring-offset-2 read-only:focus:ring-0",
+          "w-full rounded-lg border bg-white/70 dark:bg-dark-300/50 border-gray-200 dark:border-dark-100 dark:ring-offset-dark px-4 h-[2.6rem] leading-[2.6rem] focus:outline-0 focus:ring-[3px] focus:ring-gray-200 dark:focus:ring-dark-50 focus:ring-offset-2 read-only:focus:ring-0",
           className
         )}
         {...rest}

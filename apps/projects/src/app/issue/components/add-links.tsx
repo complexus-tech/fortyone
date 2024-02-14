@@ -28,25 +28,26 @@ export const AddLinks = () => {
               <Text fontSize="xl">Add link to issue</Text>
             </Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="flex flex-col gap-3 pb-6">
+          <Dialog.Body className="flex flex-col gap-5 pb-6">
             <Input label="URL" placeholder="https://..." required type="url" />
-            <Input label="Title" placeholder="Enter title..." required />
+            <Input label="Title" placeholder="Enter title..." />
+
+            <Flex align="center" className="mt-4" gap={2} justify="end">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsOpen(false);
+                }}
+                size="md"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button leftIcon={<Plus className="h-5 w-auto" />} size="md">
+                Add link
+              </Button>
+            </Flex>
           </Dialog.Body>
-          <Dialog.Footer className="flex items-center justify-end gap-2">
-            <Button
-              color="tertiary"
-              onClick={() => {
-                setIsOpen(false);
-              }}
-              size="md"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button leftIcon={<Plus className="h-5 w-auto" />} size="md">
-              Add link
-            </Button>
-          </Dialog.Footer>
         </Dialog.Content>
       </Dialog>
     </>
