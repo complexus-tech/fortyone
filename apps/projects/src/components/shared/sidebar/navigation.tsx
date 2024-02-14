@@ -1,7 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import { cn } from "lib";
-import { Activity, Bell, Columns3, ListTodo, TimerReset } from "lucide-react";
+import { Activity, Bell, Bolt, Columns3, TimerReset } from "lucide-react";
 import { NavLink } from "@/components/ui";
 
 export const Navigation = () => {
@@ -24,7 +24,7 @@ export const Navigation = () => {
     },
     {
       name: "My issues",
-      icon: <ListTodo className="h-5 w-auto" />,
+      icon: <Bolt className="h-5 w-auto" />,
       href: "/my-issues",
     },
     {

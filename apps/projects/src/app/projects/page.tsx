@@ -1,7 +1,8 @@
 "use client";
-import { TbLayoutDashboard, TbPlus } from "react-icons/tb";
-import { BreadCrumbs, Button, Container, Flex, Input, Text, Tooltip } from "ui";
+
+import { BreadCrumbs, Button, Container, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
+import { Plus, Settings2 } from "lucide-react";
 import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
@@ -44,13 +45,19 @@ export default function Page(): JSX.Element {
           breadCrumbs={[
             {
               name: "All Projects",
-              icon: <TbLayoutDashboard className="h-5 w-auto" />,
             },
           ]}
         />
         <Flex gap={3}>
-          <Input placeholder="Search projects" />
-          <Button leftIcon={<TbPlus className="h-5 w-auto" />}>
+          <Button
+            color="tertiary"
+            leftIcon={<Settings2 className="h-4 w-auto" />}
+            size="sm"
+            variant="outline"
+          >
+            Display
+          </Button>
+          <Button leftIcon={<Plus className="h-5 w-auto" />} size="sm">
             New project
           </Button>
         </Flex>

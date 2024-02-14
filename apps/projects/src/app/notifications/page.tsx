@@ -1,9 +1,6 @@
-import { TbMail, TbPinned, TbTrash } from "react-icons/tb";
-import { Box, BreadCrumbs, Button, Flex, Text, Tooltip } from "ui";
-import { HiOutlineInboxArrowDown } from "react-icons/hi2";
-import { SlidersHorizontal, Bell } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/layout";
-import { NewIssueButton, RowWrapper } from "@/components/ui";
+import { Box } from "ui";
+import { BodyContainer } from "@/components/layout";
+import { Card, Message } from "./components";
 
 type Notification = {
   id: number;
@@ -98,88 +95,15 @@ export default function Page(): JSX.Element {
   ];
 
   return (
-    <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "Inbox",
-              icon: <Bell className="h-5 w-auto" />,
-            },
-          ]}
-        />
-        <Flex gap={2}>
-          <Button
-            color="tertiary"
-            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            Display
-          </Button>
-          <NewIssueButton />
-        </Flex>
-      </HeaderContainer>
-      <BodyContainer>
-        <Box className="grid h-full grid-cols-[350px_auto]">
-          <Box className="h-full border-r border-gray-100 dark:border-dark-100">
-            {notifications.map(({ id, title, description, date }) => (
-              <RowWrapper
-                className="group cursor-pointer px-6 pt-2 transition dark:bg-dark-100/[0.15] dark:hover:bg-dark-100/40 focus:dark:bg-dark-100/40"
-                key={id}
-              >
-                <Box className="w-full">
-                  <Flex align="center" justify="between">
-                    <Text
-                      className="truncate opacity-80"
-                      textOverflow="truncate"
-                    >
-                      Joseph Mukorivo
-                    </Text>
-                    <Flex align="center" className="transition" gap={3}>
-                      <Tooltip title="Pin">
-                        <TbPinned className="h-5 w-auto dark:text-gray dark:hover:text-white" />
-                      </Tooltip>
-                      <Tooltip title="Mark as read">
-                        <TbMail className="h-5 w-auto dark:text-gray dark:hover:text-white" />
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <TbTrash className="h-5 w-auto text-primary" />
-                      </Tooltip>
-                    </Flex>
-                  </Flex>
-
-                  <Flex align="center" className="my-[2px]" justify="between">
-                    <Text
-                      className="opacity-80"
-                      fontWeight="medium"
-                      textOverflow="truncate"
-                    >
-                      {title}
-                    </Text>
-                    <Text className="opacity-90" fontSize="sm">
-                      {date}
-                    </Text>
-                  </Flex>
-
-                  <Text className="truncate" color="muted" fontSize="sm">
-                    {description}
-                  </Text>
-                </Box>
-              </RowWrapper>
-            ))}
-          </Box>
-          <Flex align="center" className="h-full" justify="center">
-            <Flex align="center" direction="column">
-              <HiOutlineInboxArrowDown
-                className="h-28 w-auto dark:text-gray"
-                strokeWidth={0.8}
-              />
-              <Text color="muted">Select a notification to read.</Text>
-            </Flex>
-          </Flex>
+    <BodyContainer className="h-screen">
+      <Box className="grid h-full grid-cols-[350px_auto]">
+        <Box className="h-full border-r border-gray-100 dark:border-dark-100">
+          {notifications.map(({ id }) => (
+            <Card key={id} />
+          ))}
         </Box>
-      </BodyContainer>
-    </>
+        <Message />
+      </Box>
+    </BodyContainer>
   );
 }

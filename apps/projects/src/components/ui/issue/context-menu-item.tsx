@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { FaCaretRight } from 'react-icons/fa';
-import { Box, ContextMenu, Flex, Text } from 'ui';
+import { ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
+import { Box, ContextMenu, Flex, Text } from "ui";
 
 export const ContextMenuItem = ({
   label,
@@ -17,54 +17,57 @@ export const ContextMenuItem = ({
     <>
       {subMenu ? (
         <ContextMenu.SubMenu>
-          <ContextMenu.SubTrigger className='justify-between'>
-            <Box className='grid grid-cols-[24px_auto] items-center'>
-              <span className='text-gray-300/70 dark:text-gray-200 flex'>
+          <ContextMenu.SubTrigger className="justify-between">
+            <Box className="grid grid-cols-[24px_auto] items-center">
+              <span className="flex text-gray-300/70 dark:text-gray-200">
                 {icon}
               </span>
               <Text>{label}</Text>
             </Box>
-            <Flex align='center' gap={3}>
+            <Flex align="center" gap={3}>
               {shortCut ? (
-                <Flex className='text-gray text-sm'>{shortCut}</Flex>
+                <Flex className="text-sm text-gray">{shortCut}</Flex>
               ) : null}
-              <FaCaretRight className='text-gray' strokeWidth={2.1} />
+              <ChevronRight
+                className="h-4 w-auto text-gray"
+                strokeWidth={2.8}
+              />
             </Flex>
           </ContextMenu.SubTrigger>
-          <ContextMenu.SubItems className='min-w-[10rem]' rounded='md'>
+          <ContextMenu.SubItems className="min-w-[10rem]" rounded="md">
             <ContextMenu.Group>
               {subMenu.map(
                 ({ label: subLabel, icon: subIcon, shortCut: subShortCut }) => (
                   <ContextMenu.Item
-                    className='justify-between py-1.5 mb-1'
+                    className="mb-1 justify-between py-1.5"
                     key={label}
                   >
-                    <Box className='grid grid-cols-[24px_auto] gap-1 items-center'>
-                      <span className='text-gray-300/70 dark:text-gray-200 flex'>
+                    <Box className="grid grid-cols-[24px_auto] items-center gap-1">
+                      <span className="flex text-gray-300/70 dark:text-gray-200">
                         {subIcon}
                       </span>
-                      <Text className='text-[0.95rem] max-w-[10rem] truncate'>
+                      <Text className="max-w-[10rem] truncate text-[0.95rem]">
                         {subLabel}
                       </Text>
                     </Box>
                     {subShortCut ? (
-                      <Flex className='text-gray'>{subShortCut}</Flex>
+                      <Flex className="text-gray">{subShortCut}</Flex>
                     ) : null}
                   </ContextMenu.Item>
-                )
+                ),
               )}
             </ContextMenu.Group>
           </ContextMenu.SubItems>
         </ContextMenu.SubMenu>
       ) : (
-        <ContextMenu.Item className='justify-between'>
-          <Box className='grid grid-cols-[24px_auto] gap-[2px] items-center'>
-            <span className='text-gray-300/70 dark:text-gray-200 flex'>
+        <ContextMenu.Item className="justify-between">
+          <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
+            <span className="flex text-gray-300/70 dark:text-gray-200">
               {icon}
             </span>
-            <Text className='max-w-[10rem] truncate'>{label}</Text>
+            <Text className="max-w-[10rem] truncate">{label}</Text>
           </Box>
-          {shortCut ? <Flex className='text-gray'>{shortCut}</Flex> : null}
+          {shortCut ? <Flex className="text-gray">{shortCut}</Flex> : null}
         </ContextMenu.Item>
       )}
     </>

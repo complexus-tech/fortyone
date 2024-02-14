@@ -68,6 +68,9 @@ export const Avatar: FC<AvatarProps> = (props) => {
         <img
           src={src}
           alt={name}
+          onError={(e) => {
+            e.currentTarget.src = "/avatar.png";
+          }}
           className={cn("w-full h-auto object-cover", {
             "rounded-full": rounded === "full",
             "rounded-sm": rounded === "sm",

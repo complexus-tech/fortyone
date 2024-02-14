@@ -1,9 +1,5 @@
-import { BreadCrumbs, Button, Flex } from "ui";
-import { SlidersHorizontal, ListTodo } from "lucide-react";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { HeaderContainer } from "@/components/layout";
-import { NewIssueButton } from "@/components/ui";
-import { IssuesList } from "./components";
+import { Header, IssuesList } from "./components";
 
 export default function Page() {
   const issues: Issue[] = [
@@ -110,25 +106,7 @@ export default function Page() {
   ];
   return (
     <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            { icon: <ListTodo className="h-5 w-auto" />, name: "My issues" },
-            { name: "Assigned" },
-          ]}
-        />
-        <Flex gap={2}>
-          <NewIssueButton />
-          <Button
-            color="tertiary"
-            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            Display
-          </Button>
-        </Flex>
-      </HeaderContainer>
+      <Header />
       <IssuesList issues={issues} statuses={statuses} />
     </>
   );

@@ -1,8 +1,8 @@
-import { TbCheck } from "react-icons/tb";
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
 import type { IssueStatus } from "@/types/issue";
 import { IssueStatusIcon } from "../issue-status-icon";
+import { Check } from "lucide-react";
 
 export const StatusesMenu = ({
   status,
@@ -61,7 +61,7 @@ export const StatusesMenu = ({
               </Box>
               <Flex align="center" gap={2}>
                 {st === status && (
-                  <TbCheck className="h-5 w-auto" strokeWidth={2.1} />
+                  <Check className="h-5 w-auto" strokeWidth={2.1} />
                 )}
                 <Text color="muted">{idx}</Text>
               </Flex>

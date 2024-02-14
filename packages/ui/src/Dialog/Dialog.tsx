@@ -34,10 +34,13 @@ const DialogOverlay = forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-const DialogClose = () => (
+const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
-    className="rounded-lg absolute right-5 top-4 inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200"
+    className={cn(
+      "rounded-lg inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200",
+      className
+    )}
   >
     <X className="h-6 w-auto" />
     <span className="sr-only">Close</span>
@@ -67,7 +70,7 @@ const DialogContent = forwardRef<
         {...props}
       >
         {children}
-        {!hideClose && <DialogClose />}
+        {!hideClose && <DialogClose className="top-4 right-4 absolute" />}
       </DialogPrimitive.Content>
     </DialogOverlay>
   </DialogPortal>

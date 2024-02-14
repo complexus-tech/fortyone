@@ -1,7 +1,7 @@
-import { RiDraggable } from 'react-icons/ri';
+import { GripVertical } from "lucide-react";
 
 export const DragHandle = () => {
   return (
-    <RiDraggable className='absolute h-5 w-auto -left-[2.9rem] text-gray cursor-move hidden group-hover:inline-block' />
+    <GripVertical className="absolute -left-[2.9rem] hidden h-5 w-auto cursor-move text-gray group-hover:inline-block" />
   );
 };

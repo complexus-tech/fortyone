@@ -1,11 +1,5 @@
 import { cn } from "lib";
-import { BsFillExclamationSquareFill } from "react-icons/bs";
-import {
-  TbAntennaBars1,
-  TbAntennaBars2,
-  TbAntennaBars3,
-  TbAntennaBars4,
-} from "react-icons/tb";
+import { SignalMedium } from "lucide-react";
 import type { IssuePriority } from "@/types/issue";
 
 export const PriorityIcon = ({
@@ -18,30 +12,30 @@ export const PriorityIcon = ({
   return (
     <>
       {priority === "No Priority" && (
-        <TbAntennaBars1
+        <SignalMedium
           className={cn("h-6 w-auto text-gray", className)}
           strokeWidth={2.5}
         />
       )}
       {priority === "Urgent" && (
-        <BsFillExclamationSquareFill
+        <SignalMedium
           className={cn("h-[1.1rem] w-auto text-danger", className)}
         />
       )}
       {priority === "High" && (
-        <TbAntennaBars4
+        <SignalMedium
           className={cn("h-6 w-auto text-gray", className)}
           strokeWidth={2.5}
         />
       )}
       {priority === "Medium" && (
-        <TbAntennaBars3
+        <SignalMedium
           className={cn("h-6 w-auto text-gray", className)}
           strokeWidth={2.5}
         />
       )}
       {priority === "Low" && (
-        <TbAntennaBars2
+        <SignalMedium
           className={cn("h-6 w-auto text-gray", className)}
           strokeWidth={2.5}
         />

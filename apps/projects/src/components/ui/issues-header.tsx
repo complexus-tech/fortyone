@@ -16,7 +16,7 @@ export const IssuesHeader = ({
 }: IssueHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Container className="select-none bg-gray-50 py-1 dark:bg-dark-200/70">
+    <Container className="select-none bg-gray-50 py-2 dark:bg-dark-200/70">
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
           <IssueStatusIcon status={status} />
@@ -25,13 +25,14 @@ export const IssuesHeader = ({
         </Flex>
         <Tooltip side="left" title="Add issue">
           <Button
-            className="p-0"
+            // className="p-0"
             color="tertiary"
             leftIcon={<Plus className="h-5 w-auto dark:text-gray-200" />}
             onClick={() => {
               setIsOpen(true);
             }}
-            variant="naked"
+            size="sm"
+            variant="outline"
           >
             <span className="sr-only">Add issue</span>
           </Button>

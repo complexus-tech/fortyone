@@ -1,12 +1,5 @@
+import { Circle } from "lucide-react";
 import { cn } from "lib";
-import {
-  TbBrandParsinta,
-  TbCircleCheckFilled,
-  TbCircleDashed,
-  TbCircleXFilled,
-  TbProgress,
-  TbWashDryclean,
-} from "react-icons/tb";
 import type { IssueStatus } from "../../types/issue";
 
 export const IssueStatusIcon = ({
@@ -19,40 +12,40 @@ export const IssueStatusIcon = ({
   return (
     <>
       {status === "Backlog" && (
-        <TbCircleDashed
-          className={cn("h-5 w-auto text-gray", className)}
+        <Circle
+          className={cn("h-[1.15rem] w-auto text-gray", className)}
           strokeWidth={2.3}
         />
       )}
       {status === "Todo" && (
-        <TbWashDryclean className={cn("h-5 w-auto text-gray/60", className)} />
+        <Circle className={cn("h-[1.15rem] w-auto text-gray/60", className)} />
       )}
       {status === "In Progress" && (
-        <TbProgress
-          className={cn("h-5 w-auto text-warning", className)}
+        <Circle
+          className={cn("h-[1.15rem] w-auto text-warning", className)}
           strokeWidth={2.3}
         />
       )}
       {status === "Testing" && (
-        <TbBrandParsinta
-          className={cn("h-5 w-auto text-info", className)}
+        <Circle
+          className={cn("h-[1.15rem] w-auto text-info", className)}
           strokeWidth={2.3}
         />
       )}
       {status === "Done" && (
-        <TbCircleCheckFilled
-          className={cn("h-5 w-auto text-success", className)}
+        <Circle
+          className={cn("h-[1.15rem] w-auto text-success", className)}
           strokeWidth={2.3}
         />
       )}
       {status === "Canceled" && (
-        <TbCircleXFilled
+        <Circle
           className={cn("h-5 w-auto text-danger", className)}
           strokeWidth={2.3}
         />
       )}
       {status === "Duplicate" && (
-        <TbCircleXFilled
+        <Circle
           className={cn("h-5 w-auto text-warning", className)}
           strokeWidth={2.3}
         />

@@ -1,7 +1,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { Settings2 } from "lucide-react";
-import { NewIssueButton } from "@/components/ui";
 import { HeaderContainer } from "@/components/layout";
+import { NewIssueButton } from "@/components/ui";
 
 export const Header = () => {
   return (
@@ -9,8 +9,9 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Dashboard",
+            name: "My issues",
           },
+          { name: "Assigned" },
         ]}
       />
       <Flex gap={2}>

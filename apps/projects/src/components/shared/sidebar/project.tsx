@@ -7,7 +7,6 @@ import { Box, Button, Flex, Menu } from "ui";
 import {
   ChevronDown,
   MoreHorizontal,
-  ListTodo,
   TimerReset,
   Settings,
   NotebookTabs,
@@ -15,6 +14,7 @@ import {
   Star,
   Link2,
   Trash2,
+  Bolt,
 } from "lucide-react";
 import { NavLink } from "../../ui";
 
@@ -32,7 +32,7 @@ export const Project = ({
   const links = [
     {
       name: "Issues",
-      icon: <ListTodo className="h-5 w-auto" />,
+      icon: <Bolt className="h-5 w-auto" />,
       href: "/projects",
     },
     {

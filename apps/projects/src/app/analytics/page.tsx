@@ -1,5 +1,5 @@
 import { BreadCrumbs, Button, Container, Flex } from "ui";
-import { Activity, SlidersHorizontal } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
 
@@ -11,14 +11,13 @@ export default function Page(): JSX.Element {
           breadCrumbs={[
             {
               name: "Analytics",
-              icon: <Activity className="h-5 w-auto" />,
             },
           ]}
         />
         <Flex gap={2}>
           <Button
             color="tertiary"
-            leftIcon={<SlidersHorizontal className="h-4 w-auto" />}
+            leftIcon={<Settings2 className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >

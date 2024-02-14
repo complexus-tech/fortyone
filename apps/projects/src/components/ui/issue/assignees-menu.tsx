@@ -1,6 +1,6 @@
-import { TbCheck } from "react-icons/tb";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
+import { Check } from "lucide-react";
 
 export const AssigneesMenu = ({
   isSearchEnabled = true,
@@ -83,7 +83,7 @@ export const AssigneesMenu = ({
               </Flex>
               <Flex align="center" gap={1}>
                 {idx === 1 && (
-                  <TbCheck className="h-5 w-auto" strokeWidth={2.1} />
+                  <Check className="h-5 w-auto" strokeWidth={2.1} />
                 )}
                 <Text color="muted">{idx}</Text>
               </Flex>

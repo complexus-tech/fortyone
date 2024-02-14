@@ -1,21 +1,21 @@
 import type { ReactNode } from "react";
 import { Fragment } from "react";
-import { FiEdit } from "react-icons/fi";
-import { HiViewGrid } from "react-icons/hi";
-import {
-  TbBellPlus,
-  TbCalendarPlus,
-  TbCopy,
-  TbFolder,
-  TbLink,
-  TbMap,
-  TbPencil,
-  TbStar,
-  TbTag,
-  TbTrash,
-  TbUserShare,
-} from "react-icons/tb";
 import { Avatar, Box, ContextMenu } from "ui";
+import {
+  BellPlus,
+  FilePenLine,
+  Layers3,
+  Pencil,
+  Tags,
+  Trash2,
+  User,
+  Clipboard,
+  Star,
+  Calendar,
+  CalendarCheck2,
+  GalleryVerticalEnd,
+  TimerReset,
+} from "lucide-react";
 import { IssueStatusIcon } from "../issue-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { ContextMenuItem } from "./context-menu-item";
@@ -63,7 +63,7 @@ export const contextMenu = [
       },
       {
         label: "Assignee",
-        icon: <TbUserShare className="h-5 w-auto" />,
+        icon: <User className="h-5 w-auto" />,
         shortCut: "⌘+[",
         subMenu: [
           {
@@ -103,23 +103,23 @@ export const contextMenu = [
       },
       {
         label: "Labels",
-        icon: <TbTag className="h-5 w-auto" />,
+        icon: <Tags className="h-5 w-auto" />,
       },
       {
         label: "Sprint",
-        icon: <TbMap className="h-5 w-auto" />,
+        icon: <TimerReset className="h-5 w-auto" />,
       },
       {
         label: "Module",
-        icon: <TbFolder className="h-5 w-auto" />,
+        icon: <Layers3 className="h-5 w-auto" />,
       },
       {
         label: "Edit",
-        icon: <TbPencil className="h-5 w-auto" />,
+        icon: <Pencil className="h-5 w-auto" />,
       },
       {
         label: "Rename",
-        icon: <FiEdit className="h-5 w-auto" />,
+        icon: <FilePenLine className="h-5 w-auto" />,
       },
     ],
   },
@@ -128,35 +128,35 @@ export const contextMenu = [
     options: [
       {
         label: "Project",
-        icon: <HiViewGrid className="h-5 w-auto" />,
+        icon: <GalleryVerticalEnd className="h-5 w-auto" />,
       },
       {
         label: "Add to sprint",
-        icon: <TbTag className="h-5 w-auto" />,
-      },
-      {
-        label: "Due Date",
-        icon: <TbCalendarPlus className="h-5 w-auto" />,
+        icon: <TimerReset className="h-5 w-auto" />,
       },
       {
         label: "Start Date",
-        icon: <TbCalendarPlus className="h-5 w-auto" />,
+        icon: <Calendar className="h-5 w-auto" />,
+      },
+      {
+        label: "Due Date",
+        icon: <CalendarCheck2 className="h-5 w-auto" />,
       },
       {
         label: "Clone",
-        icon: <TbCopy className="h-5 w-auto" />,
+        icon: <Clipboard className="h-5 w-auto" />,
       },
       {
         label: "Favorite",
-        icon: <TbStar className="h-5 w-auto" />,
+        icon: <Star className="h-5 w-auto" />,
       },
       {
         label: "Copy",
-        icon: <TbLink className="h-5 w-auto" />,
+        icon: <Clipboard className="h-5 w-auto" />,
       },
       {
         label: "Subscribe",
-        icon: <TbBellPlus className="h-5 w-auto" />,
+        icon: <BellPlus className="h-5 w-auto" />,
       },
     ],
   },
@@ -165,7 +165,7 @@ export const contextMenu = [
     options: [
       {
         label: "Delete",
-        icon: <TbTrash className="h-5 w-auto text-danger" />,
+        icon: <Trash2 className="h-5 w-auto text-danger" />,
       },
     ],
   },

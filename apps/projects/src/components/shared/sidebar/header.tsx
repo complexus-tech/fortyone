@@ -1,7 +1,14 @@
 import { useState } from "react";
-import { TbCheck } from "react-icons/tb";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
-import { LogOut, Plus, Search, Settings, User, UserPlus } from "lucide-react";
+import {
+  Check,
+  LogOut,
+  Plus,
+  Search,
+  Settings,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { NewIssueDialog } from "@/components/ui";
 
 export const Header = () => {
@@ -38,10 +45,7 @@ export const Header = () => {
                   />
                   Complexus
                 </span>
-                <TbCheck
-                  className="h-5 w-auto text-primary"
-                  strokeWidth={2.1}
-                />
+                <Check className="h-5 w-auto text-primary" strokeWidth={2.1} />
               </Menu.Item>
               <Menu.Item>
                 <Avatar
