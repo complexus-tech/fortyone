@@ -18,7 +18,7 @@ export const Project = ({
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
         <Hexagon className="h-[1.2rem] w-auto" />
-        <Link className="flex items-center gap-5" href="/issue">
+        <Link className="flex items-center gap-5" href="/projects/web/issues">
           <Text className="w-[215px] truncate hover:opacity-90">{name}</Text>
           <Text className="max-w-lg truncate hover:opacity-90" color="muted">
             {description}

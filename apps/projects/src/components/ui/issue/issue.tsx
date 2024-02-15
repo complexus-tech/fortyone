@@ -45,7 +45,7 @@ export const Issue = ({
             </StatusesMenu.Trigger>
             <StatusesMenu.Items status={status} />
           </StatusesMenu>
-          <Link href="/issue">
+          <Link href="/projects/web/issues/test-123-issue">
             <Text className="overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
               {title}
             </Text>
