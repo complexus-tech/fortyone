@@ -3,8 +3,10 @@ import Link from "next/link";
 import { DatePicker, Flex, Text, Tooltip } from "ui";
 import type { Issue as IssueProps } from "@/types/issue";
 import { RowWrapper } from "../row-wrapper";
+import { IssueStatusIcon } from "../issue-status-icon";
+import { PriorityIcon } from "../priority-icon";
 import { AssigneesMenu } from "./assignees-menu";
-import { IssueCheckbox } from "./checkbox";
+import { TableCheckbox } from "./checkbox";
 import { IssueContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
@@ -21,14 +23,28 @@ export const Issue = ({
       <RowWrapper className="cursor-pointer">
         <Flex align="center" className="relative select-none" gap={2}>
           <DragHandle />
-          <IssueCheckbox />
-          <PrioritiesMenu isSearchEnabled priority={priority} />
+          <TableCheckbox />
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <button className="block" type="button">
+                <PriorityIcon priority={priority} />
+              </button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items priority={priority} />
+          </PrioritiesMenu>
           <Tooltip title="Issue ID: COM-12">
             <Text className="w-[55px] truncate" color="muted">
               COM-12
             </Text>
           </Tooltip>
-          <StatusesMenu isSearchEnabled status={status} />
+          <StatusesMenu>
+            <StatusesMenu.Trigger>
+              <button className="block" type="button">
+                <IssueStatusIcon status={status} />
+              </button>
+            </StatusesMenu.Trigger>
+            <StatusesMenu.Items status={status} />
+          </StatusesMenu>
           <Link href="/issue">
             <Text className="overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
               {title}

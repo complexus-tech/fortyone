@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <Frown className="h-28 w-auto animate-bounce" strokeWidth={1.5} />
+        <Frown className="h-28 w-auto" strokeWidth={1.5} />
         <Text className="mb-4 mt-6" fontSize="3xl" fontWeight="semibold">
           404: Project Detour
         </Text>
@@ -14,7 +14,11 @@ export default function NotFound() {
           While we clear the roadblock, why not explore other routes to
           productivity?
         </Text>
-        <Button href="/" leftIcon={<ChevronLeft className="h-5 w-auto" />}>
+        <Button
+          href="/"
+          leftIcon={<ChevronLeft className="h-5 w-auto" />}
+          variant="outline"
+        >
           Back to dashboard
         </Button>
       </Box>

@@ -1,7 +1,14 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import { cn } from "lib";
-import { Activity, Bell, Bolt, Columns3, TimerReset } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  Bolt,
+  Columns3,
+  TimerReset,
+  GalleryVerticalEnd,
+} from "lucide-react";
 import { NavLink } from "@/components/ui";
 
 export const Navigation = () => {
@@ -28,9 +35,14 @@ export const Navigation = () => {
       href: "/my-issues",
     },
     {
+      name: "Projects",
+      icon: <GalleryVerticalEnd className="h-5 w-auto" />,
+      href: "/projects",
+    },
+    {
       name: "Sprints",
       icon: <TimerReset className="h-5 w-auto" />,
-      href: "/projects",
+      href: "/sprints",
     },
   ];
 

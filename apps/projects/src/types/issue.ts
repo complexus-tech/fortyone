@@ -4,6 +4,7 @@ export type IssueStatus =
   | "In Progress"
   | "Testing"
   | "Done"
+  | "Paused"
   | "Duplicate"
   | "Canceled";
 

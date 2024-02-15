@@ -1,13 +1,8 @@
 "use client";
 
-import { BreadCrumbs, Button, Container, Flex, Text, Tooltip } from "ui";
-import Link from "next/link";
-import { Plus, Settings2 } from "lucide-react";
-import { BodyContainer, HeaderContainer } from "@/components/layout";
-import { RowWrapper } from "@/components/ui/row-wrapper";
-import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
-import { IssueCheckbox } from "@/components/ui/issue/checkbox";
-import { Labels } from "@/components/ui/issue/labels";
+import { Box, Tabs } from "ui";
+import { BodyContainer } from "@/components/layout";
+import { Header, Project } from "./components";
 
 type Project = {
   id: number;
@@ -24,7 +19,7 @@ export default function Page(): JSX.Element {
       id: 1,
       code: "COM-12",
       lead: "John Doe",
-      name: "🇿🇼 Data migration for Fin connect",
+      name: "Data migration for Fin connect",
       description: "The quick brown fox jumps over the lazy dog.",
       date: "Sep 27",
     },
@@ -32,69 +27,31 @@ export default function Page(): JSX.Element {
       id: 2,
       code: "COM-12",
       lead: "John Doe",
-      name: "🇿🇼 Data migration for Fin connect",
-      description: "The quick brown fox jumps over the lazy dog.",
+      name: "Complexus data migration",
+      description: "Complexus migration to Projects 1.0.0",
       date: "Sep 27",
     },
   ];
 
   return (
     <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "All Projects",
-            },
-          ]}
-        />
-        <Flex gap={3}>
-          <Button
-            color="tertiary"
-            leftIcon={<Settings2 className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            Display
-          </Button>
-          <Button leftIcon={<Plus className="h-5 w-auto" />} size="sm">
-            New project
-          </Button>
-        </Flex>
-      </HeaderContainer>
+      <Header />
       <BodyContainer>
-        <Container className="select-none bg-gray-50 py-3 dark:bg-dark-200">
-          <Text fontWeight="medium">Workspace projects</Text>
-        </Container>
-
-        {projects.map(({ id, name, code }) => (
-          <RowWrapper key={id}>
-            <Flex align="center" className="relative select-none" gap={2}>
-              <IssueCheckbox />
-              <Tooltip title="Project ID: COM-12">
-                <Text
-                  align="left"
-                  className="w-[60px]"
-                  color="muted"
-                  textOverflow="truncate"
-                >
-                  {code}
-                </Text>
-              </Tooltip>
-              <Link href="/issue">
-                <Text className="overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
-                  {name}
-                </Text>
-              </Link>
-            </Flex>
-            <Flex align="center" gap={3}>
-              <Labels />
-              <Tooltip title="Created on Sep 27, 2021">
-                <Text color="muted">Sep 27</Text>
-              </Tooltip>
-              <AssigneesMenu isSearchEnabled />
-            </Flex>
-          </RowWrapper>
+        <Tabs defaultValue="all">
+          <Box className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 py-3 backdrop-blur dark:border-dark-100 dark:bg-dark/90">
+            <Tabs.List>
+              <Tabs.Tab value="all">All</Tabs.Tab>
+              <Tabs.Tab value="active">Active</Tabs.Tab>
+              <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
+              <Tabs.Tab value="closed">Closed</Tabs.Tab>
+            </Tabs.List>
+          </Box>
+          <Tabs.Panel value="assigned">Tab</Tabs.Panel>
+          <Tabs.Panel value="created">Tab</Tabs.Panel>
+          <Tabs.Panel value="subscribed">Tab</Tabs.Panel>
+        </Tabs>
+        {projects.map(({ id, name, description }) => (
+          <Project description={description} key={id} name={name} />
         ))}
       </BodyContainer>
     </>

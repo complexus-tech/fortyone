@@ -8,7 +8,9 @@ export * from "./new-issue-button";
 export * from "./new-issue-dialog";
 export * from "./row-wrapper";
 export * from "./activity"
+export * from './new-project-dialog'
 
+export * from "./issue/checkbox"
 export * from "./issue/assignees-menu"
 export * from "./issue/priorities-menu"
 export * from "./issue/statuses-menu"

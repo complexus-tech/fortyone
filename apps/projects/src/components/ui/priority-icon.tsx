@@ -23,6 +23,7 @@ export const PriorityIcon = ({
           strokeWidth={2.5}
         />
       )}
+
       {priority === "Urgent" && (
         <AlertCircle
           className={cn("h-[1.15rem] w-auto text-danger", className)}

@@ -6,10 +6,12 @@ export const AssigneesMenu = ({
   isSearchEnabled = true,
   asIcon = true,
   user,
+  placeholder = "Assign user...",
 }: {
   isSearchEnabled?: boolean;
   asIcon?: boolean;
   user?: string;
+  placeholder?: string;
 }) => {
   const users = [
     {
@@ -64,7 +66,7 @@ export const AssigneesMenu = ({
         {isSearchEnabled ? (
           <>
             <Menu.Group className="px-4">
-              <Menu.Input autoFocus placeholder="Assign user..." />
+              <Menu.Input autoFocus placeholder={placeholder} />
             </Menu.Group>
             <Menu.Separator className="my-2" />
           </>

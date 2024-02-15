@@ -7,6 +7,8 @@ import {
   AssigneesMenu,
   ModulesMenu,
   SprintsMenu,
+  IssueStatusIcon,
+  PriorityIcon,
 } from "@/components/ui";
 import { Labels } from "@/components/ui/issue/labels";
 import { AddLinks, OptionsHeader } from "../components";
@@ -34,11 +36,39 @@ export const Options = () => {
         <Text fontWeight="medium">Properties</Text>
         <Option
           label="Status"
-          value={<StatusesMenu asIcon={false} status="In Progress" />}
+          value={
+            <StatusesMenu>
+              <StatusesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<IssueStatusIcon />}
+                  type="button"
+                  variant="naked"
+                >
+                  Backlog
+                </Button>
+              </StatusesMenu.Trigger>
+              <StatusesMenu.Items />
+            </StatusesMenu>
+          }
         />
         <Option
           label="Priority"
-          value={<PrioritiesMenu asIcon={false} priority="Urgent" />}
+          value={
+            <PrioritiesMenu>
+              <PrioritiesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<PriorityIcon />}
+                  type="button"
+                  variant="naked"
+                >
+                  No Priority
+                </Button>
+              </PrioritiesMenu.Trigger>
+              <PrioritiesMenu.Items />
+            </PrioritiesMenu>
+          }
         />
         <Option
           label="Assignee"

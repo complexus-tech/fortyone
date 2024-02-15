@@ -1,7 +1,22 @@
 "use client";
 import { type Dispatch, type SetStateAction } from "react";
-import { Button, Badge, Dialog, Flex, Switch, Text, TextEditor } from "ui";
-import { ChevronRight, Maximize2, Plus } from "lucide-react";
+import {
+  Button,
+  Badge,
+  Dialog,
+  Flex,
+  Switch,
+  Text,
+  TextEditor,
+  DatePicker,
+} from "ui";
+import {
+  ChevronRight,
+  Maximize2,
+  Plus,
+  CalendarCheck2,
+  Tags,
+} from "lucide-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -12,7 +27,10 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import { StatusesMenu } from "./issue/statuses-menu";
+import { IssueStatusIcon } from "./issue-status-icon";
 import { PrioritiesMenu } from "./issue/priorities-menu";
+import { PriorityIcon } from "./priority-icon";
 
 export const NewIssueDialog = ({
   isOpen,
@@ -28,7 +46,7 @@ export const NewIssueDialog = ({
       TextExt,
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
-    content: "This is a sample title.",
+    content: "",
     editable: true,
   });
 
@@ -80,12 +98,57 @@ export const NewIssueDialog = ({
           />
           <TextEditor editor={editor} />
           <Flex className="mt-4" gap={1}>
-            <PrioritiesMenu priority="Urgent" />
-            <Badge color="tertiary">COMP-1</Badge>
-            <Badge color="tertiary">COMP-1</Badge>
-            <Badge color="tertiary">COMP-1</Badge>
-            <Badge color="tertiary">COMP-1</Badge>
-            <Badge color="tertiary">COMP-1</Badge>
+            <StatusesMenu>
+              <StatusesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<IssueStatusIcon className="h-4" />}
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  Backlog
+                </Button>
+              </StatusesMenu.Trigger>
+              <StatusesMenu.Items />
+            </StatusesMenu>
+            <PrioritiesMenu>
+              <PrioritiesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<PriorityIcon className="h-4" />}
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  No Priority
+                </Button>
+              </PrioritiesMenu.Trigger>
+              <PrioritiesMenu.Items />
+            </PrioritiesMenu>
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  className="px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                  size="xs"
+                  variant="outline"
+                >
+                  Due date
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar />
+            </DatePicker>
+            <Button
+              className="px-2 text-sm"
+              color="tertiary"
+              leftIcon={<Tags className="h-4 w-auto" />}
+              size="xs"
+              variant="outline"
+            >
+              <span className="sr-only">Add labels to the issue</span>
+            </Button>
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-between gap-2">

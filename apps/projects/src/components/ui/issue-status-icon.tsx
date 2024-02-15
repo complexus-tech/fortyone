@@ -1,4 +1,10 @@
-import { CheckCircle2, Circle, CircleDashed, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  CircleDashed,
+  PauseCircle,
+  XCircle,
+} from "lucide-react";
 import { cn } from "lib";
 import type { IssueStatus } from "../../types/issue";
 
@@ -32,6 +38,15 @@ export const IssueStatusIcon = ({
       {status === "Testing" && (
         <Circle
           className={cn("h-[1.15rem] w-auto text-info", className)}
+          strokeWidth={2.5}
+        />
+      )}
+      {status === "Paused" && (
+        <PauseCircle
+          className={cn(
+            "h-[1.15rem] w-auto text-dark-50 dark:text-gray-200",
+            className,
+          )}
           strokeWidth={2.5}
         />
       )}
