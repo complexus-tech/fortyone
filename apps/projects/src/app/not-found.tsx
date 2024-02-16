@@ -14,11 +14,7 @@ export default function NotFound() {
           While we clear the roadblock, why not explore other routes to
           productivity?
         </Text>
-        <Button
-          href="/"
-          leftIcon={<ChevronLeft className="h-5 w-auto" />}
-          variant="outline"
-        >
+        <Button href="/" leftIcon={<ChevronLeft className="h-5 w-auto" />}>
           Back to dashboard
         </Button>
       </Box>

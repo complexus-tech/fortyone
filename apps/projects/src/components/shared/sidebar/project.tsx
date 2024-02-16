@@ -33,7 +33,7 @@ export const Project = ({
     {
       name: "Issues",
       icon: <Bolt className="h-5 w-auto" />,
-      href: "/projects",
+      href: "/projects/web/issues",
     },
     {
       name: "Sprints",
