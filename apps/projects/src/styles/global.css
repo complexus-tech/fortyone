@@ -25,7 +25,7 @@ ul[data-type="taskList"] li {
 }
 
 ul[data-type="taskList"] li input {
-  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-success;
+  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
 }
 
 ul[data-type="taskList"] li > label {

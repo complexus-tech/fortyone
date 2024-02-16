@@ -48,7 +48,7 @@ export const Project = ({
     {
       name: "Wikis",
       icon: <NotebookTabs className="h-5 w-auto" />,
-      href: "/my-issues",
+      href: "/projects/web/wikis",
     },
     {
       name: "Settings",
