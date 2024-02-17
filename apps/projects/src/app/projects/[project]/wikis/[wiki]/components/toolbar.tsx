@@ -11,7 +11,6 @@ import {
   Strikethrough,
   Underline,
   Link,
-  ChevronDown,
   MoreVertical,
   Pencil,
   Trash2,
@@ -23,46 +22,9 @@ import {
   Redo,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
-import { cn } from "lib";
+import { ToggleNode } from "./node";
 
 export const Toolbar = ({ editor }: { editor: Editor | null }) => {
-  const headings = [
-    {
-      name: "Paragraph",
-      level: 0,
-      classes: "",
-    },
-    {
-      name: "Heading 1",
-      level: 1,
-      classes: "text-4xl",
-    },
-    {
-      name: "Heading 2",
-      level: 2,
-      classes: "text-3xl",
-    },
-    {
-      name: "Heading 3",
-      level: 3,
-      classes: "text-2xl",
-    },
-    {
-      name: "Heading 4",
-      level: 4,
-      classes: "text-xl",
-    },
-    {
-      name: "Heading 5",
-      level: 5,
-      classes: "text-lg",
-    },
-    {
-      name: "Heading 6",
-      level: 6,
-      classes: "text-base font-medium text-gray-250 dark:text-gray-200",
-    },
-  ];
   return (
     <Container className="sticky top-0 flex items-center justify-between border-b border-gray-50 bg-white/80  backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
       <Flex align="center" className="py-1.5" gap={2}>
@@ -89,35 +51,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             <Redo className="h-5 w-auto" />
           </Button>
         </Tooltip>
-
-        <Menu>
-          <Menu.Button>
-            <Button
-              color="tertiary"
-              rightIcon={<ChevronDown className="h-4 w-auto" />}
-              size="md"
-              variant="naked"
-            >
-              Paragraph
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="center" className="w-64">
-            <Menu.Group>
-              {headings.map(({ name, level, classes }) => (
-                <Menu.Item
-                  active={editor?.isActive("heading", { level })}
-                  className={cn("justify-between px-3", classes)}
-                  key={name}
-                >
-                  {name}
-                  {/* {editor?.isActive("heading", { level }) && (
-                    <Check className="h-5 w-auto" strokeWidth={2.1} />
-                  )} */}
-                </Menu.Item>
-              ))}
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
+        <ToggleNode editor={editor} />
         <Tooltip title="Bold">
           <Button
             active={editor?.isActive("bold")}

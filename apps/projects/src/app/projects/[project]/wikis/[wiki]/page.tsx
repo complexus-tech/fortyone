@@ -35,6 +35,9 @@ export default function Page(): JSX.Element {
       StarterKit,
       UnderlineExt,
       TaskList,
+      Heading.configure({
+        levels: [1, 2, 3, 4, 5],
+      }),
       TaskItem.configure({
         nested: true,
       }),
@@ -42,12 +45,10 @@ export default function Page(): JSX.Element {
         autolink: true,
       }),
       Placeholder.configure({ placeholder: "Issue description" }),
-      Heading.configure({
-        levels: [1, 2, 3, 4, 5, 6],
-      }),
     ],
     content,
     editable: true,
+    autofocus: true,
   });
 
   return (
@@ -61,7 +62,7 @@ export default function Page(): JSX.Element {
             className="relative -left-1 text-3xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={editor} />
+          <TextEditor editor={editor} hideBubbleMenu />
         </Container>
       </BodyContainer>
     </>

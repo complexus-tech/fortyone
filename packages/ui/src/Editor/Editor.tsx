@@ -8,19 +8,21 @@ import { cn } from "lib";
 
 type TextEditorProps = ComponentPropsWithRef<typeof EditorContent> & {
   asTitle?: boolean;
+  hideBubbleMenu?: boolean;
 };
 
 export const TextEditor = ({
   editor,
   className = "",
   asTitle = false,
+  hideBubbleMenu = false,
   ...rest
 }: TextEditorProps) => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
 
   return (
     <>
-      {editor && !asTitle && (
+      {editor && !asTitle && !hideBubbleMenu && (
         <BubbleMenu
           editor={editor}
           tippyOptions={{
