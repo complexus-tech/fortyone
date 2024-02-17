@@ -41,7 +41,7 @@ export const TextEditor = ({
       <EditorContent
         className={cn(
           {
-            "prose prose-lg max-w-full prose-slate leading-7 prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-dark-200 prose-pre:bg-gray-50 dark:prose-pre:bg-dark-200/80 prose-pre:text-[1.1rem]":
+            "prose prose-lg max-w-full prose-slate leading-7 prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-dark-200 prose-pre:bg-gray-50 dark:prose-pre:text-gray-200 dark:prose-pre:bg-dark-200/80 prose-pre:text-[1.1rem]":
               !asTitle,
           },
           className

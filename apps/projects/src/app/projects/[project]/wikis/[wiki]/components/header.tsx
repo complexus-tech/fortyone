@@ -11,7 +11,7 @@ export const Header = () => {
             { name: "Complexus" },
             { name: "Wikis" },
             {
-              name: "COM-12",
+              name: "Wiki page",
             },
           ]}
         />

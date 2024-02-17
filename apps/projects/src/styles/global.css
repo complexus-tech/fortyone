@@ -53,3 +53,27 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   content: attr(data-placeholder);
   @apply pointer-events-none float-left h-0 text-gray-250/80 dark:text-gray-200/60;
 }
+
+/*** Works on common browsers ***/
+::selection {
+  @apply bg-primary text-dark;
+}
+
+/*** Mozilla based browsers ***/
+::-moz-selection {
+  @apply bg-primary text-dark;
+}
+
+/***For Other Browsers ***/
+::-o-selection {
+  @apply bg-primary text-dark;
+}
+
+::-ms-selection {
+  @apply bg-primary text-dark;
+}
+
+/*** For Webkit ***/
+::-webkit-selection {
+  @apply bg-primary text-dark;
+}
