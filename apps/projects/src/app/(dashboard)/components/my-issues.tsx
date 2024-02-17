@@ -5,6 +5,8 @@ import { RowWrapper } from "@/components/ui";
 import { IssueContextMenu } from "@/components/ui/issue/context-menu";
 import { StatusesMenu } from "@/components/ui/issue/statuses-menu";
 import { PrioritiesMenu } from "@/components/ui/issue/priorities-menu";
+import { IssueStatusIcon } from "@/components/ui/issue-status-icon";
+import { PriorityIcon } from "@/components/ui/priority-icon";
 
 export const MyIssues = () => {
   return (
@@ -46,7 +48,14 @@ export const MyIssues = () => {
                   })}
                 >
                   <Flex align="center" className="relative select-none" gap={2}>
-                    <PrioritiesMenu priority="No Priority" />
+                    <PrioritiesMenu>
+                      <PrioritiesMenu.Trigger>
+                        <button className="block" type="button">
+                          <PriorityIcon priority="No Priority" />
+                        </button>
+                      </PrioritiesMenu.Trigger>
+                      <PrioritiesMenu.Items priority="No Priority" />
+                    </PrioritiesMenu>
                     <Flex align="center" gap={2}>
                       <Text
                         className="w-[55px] truncate"
@@ -55,7 +64,14 @@ export const MyIssues = () => {
                       >
                         COM-12
                       </Text>
-                      <StatusesMenu isSearchEnabled status="Backlog" />
+                      <StatusesMenu>
+                        <StatusesMenu.Trigger>
+                          <button className="block" type="button">
+                            <IssueStatusIcon status="Backlog" />
+                          </button>
+                        </StatusesMenu.Trigger>
+                        <StatusesMenu.Items status="Backlog" />
+                      </StatusesMenu>
                       <Text className="overflow-hidden text-ellipsis whitespace-nowrap pl-2 hover:opacity-90">
                         Design a new homepage
                       </Text>
