@@ -10,7 +10,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
 import TextExt from "@tiptap/extension-text";
-import { Container, TextEditor } from "ui";
+import { Box, Container, TextEditor, Text } from "ui";
 import { BodyContainer } from "@/components/layout";
 import { Header, Toolbar } from "./components";
 
@@ -24,7 +24,7 @@ export default function Page(): JSX.Element {
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Enter Title..." }),
+      Placeholder.configure({ placeholder: "Wiki Title..." }),
     ],
     content: "Complexus app docs",
     editable: true,
@@ -56,14 +56,31 @@ export default function Page(): JSX.Element {
       <Header />
       <BodyContainer className="overflow-y-hidden">
         <Toolbar editor={editor} />
-        <Container className="pt-6">
-          <TextEditor
-            asTitle
-            className="relative -left-1 text-3xl font-medium"
-            editor={titleEditor}
-          />
-          <TextEditor editor={editor} hideBubbleMenu />
-        </Container>
+        <Box className="grid grid-cols-4">
+          <Container className="col-span-3 pt-6">
+            <TextEditor
+              asTitle
+              className="relative -left-1 text-3xl font-medium"
+              editor={titleEditor}
+            />
+            <TextEditor editor={editor} hideBubbleMenu />
+          </Container>
+          <Container className="w-full pl-6 pt-8">
+            <Text
+              className="mb-10"
+              color="muted"
+              fontWeight="medium"
+              transform="uppercase"
+            >
+              Table of contents
+            </Text>
+
+            <Text color="muted">
+              The table of contents will be generated based on the headings in
+              the document.
+            </Text>
+          </Container>
+        </Box>
       </BodyContainer>
     </>
   );

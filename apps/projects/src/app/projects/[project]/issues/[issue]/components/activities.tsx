@@ -106,7 +106,7 @@ export const Activities = () => {
         </Tabs.List>
         <Tabs.Panel value="all">
           <Flex className="relative" direction="column" gap={4}>
-            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-[95%] border-l-[1.5px] border-gray-100 dark:border-dark-200" />
+            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-[95%] border-l border-gray-100 dark:border-dark-200" />
             {activites.map((activity) => (
               <Activity key={activity.id} {...activity} />
             ))}
@@ -147,7 +147,7 @@ export const Activities = () => {
         </Tabs.Panel>
         <Tabs.Panel value="updates">
           <Flex className="relative" direction="column" gap={4}>
-            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l-[1.5px] border-gray-100 dark:border-dark-200" />
+            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-gray-100 dark:border-dark-200" />
             {activites.map((activity) => (
               <Activity key={activity.id} {...activity} />
             ))}
