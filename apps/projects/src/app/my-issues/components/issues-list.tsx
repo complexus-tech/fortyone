@@ -45,7 +45,7 @@ export const IssuesList = ({
   return (
     <BodyContainer className="relative">
       <Tabs defaultValue="assigned">
-        <Box className="sticky top-0 z-10 border-b border-gray-100 py-3 backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
+        <Box className="sticky top-0 z-10 border-b border-gray-100 bg-white/70 py-3 backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>

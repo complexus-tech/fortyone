@@ -30,9 +30,9 @@ module.exports = {
       gray: {
         DEFAULT: "#A1A1A6",
         50: "#f3f4f6",
-        100: "#e2e8f0",
-        200: "#cbd5e1",
-        250: "#4b5563",
+        100: "#e5e7eb",
+        200: "#d1d5db",
+        250: "#9ca3af",
         300: "#27272a",
       },
       dark: {
