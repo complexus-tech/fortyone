@@ -38,7 +38,7 @@ export default function Page(): JSX.Element {
       <Header />
       <BodyContainer>
         <Tabs defaultValue="all">
-          <Box className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 py-3 backdrop-blur dark:border-dark-100 dark:bg-dark/90">
+          <Box className="sticky top-0 z-10 border-b border-gray-100 py-3 backdrop-blur dark:border-dark-200">
             <Tabs.List>
               <Tabs.Tab value="all">All</Tabs.Tab>
               <Tabs.Tab value="active">Active</Tabs.Tab>

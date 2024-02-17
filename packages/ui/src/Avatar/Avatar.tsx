@@ -22,7 +22,7 @@ const avatar = cva(
       size: {
         xs: "h-6 text-xs leading-6",
         sm: "h-7 text-sm leading-7",
-        md: "h-9 text-base leading-9",
+        md: "h-8 text-base leading-8",
         lg: "h-12 text-lg leading-[3rem]",
       },
     },
@@ -82,7 +82,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
       {!src && name && <span title={name}>{getInitials(name)}</span>}
       {!src && !name && (
         <User
-          className={cn("h-6 w-auto", {
+          className={cn("h-5 w-auto", {
             "h-5": size === "sm",
             "h-auto": size === "xs",
           })}

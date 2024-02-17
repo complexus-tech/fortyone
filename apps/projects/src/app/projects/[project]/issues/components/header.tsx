@@ -15,10 +15,13 @@ export const Header = () => {
         ]}
       />
       <Flex gap={2}>
-        <Flex className="mr-2 items-center rounded-lg bg-gray-100/70" gap={1}>
+        <Flex
+          className="mr-2 items-center rounded-lg bg-gray-100/70 dark:bg-dark-300"
+          gap={1}
+        >
           <Tooltip title="Kanban Layout">
             <Button
-              className="border-gray-200 bg-white"
+              className="border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-200"
               color="tertiary"
               leftIcon={<Kanban className="h-5 w-auto" strokeWidth={2.5} />}
               size="sm"

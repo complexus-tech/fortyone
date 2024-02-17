@@ -1,5 +1,5 @@
-import { Bell, ChevronUp, ChevronDown, Star } from "lucide-react";
-import { BreadCrumbs, Button, Flex, Text } from "ui";
+import { Star } from "lucide-react";
+import { Avatar, BreadCrumbs, Button, Flex, Text } from "ui";
 import { HeaderContainer } from "@/components/layout";
 
 export const Header = () => {
@@ -16,33 +16,28 @@ export const Header = () => {
           ]}
         />
         <Flex align="center" gap={2} justify="between">
-          <Text className="mr-2">
-            2 /{" "}
-            <Text as="span" color="muted">
-              8
-            </Text>
+          <Text as="span" color="muted">
+            Saved
           </Text>
-          <Button color="tertiary" size="sm">
-            <ChevronUp className="h-4 w-auto" />
-          </Button>
-          <Button className="mr-2" color="tertiary" disabled size="sm">
-            <ChevronDown className="h-4 w-auto" />
-          </Button>
+          <Avatar
+            name="Joseph Mukorivo"
+            size="md"
+            src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+          />
           <Button
-            className="px-3"
+            className="aspect-square"
             color="tertiary"
             leftIcon={<Star className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >
-            Favourite
+            <span className="sr-only">Favorite</span>
           </Button>
-          <Button
-            className="px-2"
-            leftIcon={<Bell className="h-4 w-auto" />}
-            size="sm"
-          >
-            Subscribe
+          <Button className="px-4" size="sm">
+            Publish
+          </Button>
+          <Button className="px-3" color="tertiary" size="sm" variant="outline">
+            Save draft
           </Button>
         </Flex>
       </Flex>

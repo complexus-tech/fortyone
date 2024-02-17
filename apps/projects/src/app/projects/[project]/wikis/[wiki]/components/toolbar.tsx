@@ -17,9 +17,9 @@ import {
   Link2,
   Copy,
   LockKeyhole,
-  Globe2,
   Undo,
   Redo,
+  Printer,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { ToggleNode } from "./node";
@@ -177,14 +177,11 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
       </Flex>
 
       <Flex align="center" gap={2}>
-        <Button
-          color="tertiary"
-          leftIcon={<Globe2 className="h-[1.1rem] w-auto" />}
-          size="sm"
-          variant="outline"
-        >
-          Make private
-        </Button>
+        <Tooltip title="Print">
+          <Button color="tertiary" size="sm" variant="outline">
+            <Printer className="h-5 w-auto" />
+          </Button>
+        </Tooltip>
         <Menu>
           <Menu.Button>
             <Button

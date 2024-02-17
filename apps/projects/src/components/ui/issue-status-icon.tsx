@@ -64,7 +64,10 @@ export const IssueStatusIcon = ({
       )}
       {status === "Duplicate" && (
         <XCircle
-          className={cn("h-[1.15rem] w-auto text-dark-50", className)}
+          className={cn(
+            "h-[1.15rem] w-auto text-dark-50 dark:text-gray-200/80",
+            className,
+          )}
           strokeWidth={2.5}
         />
       )}
