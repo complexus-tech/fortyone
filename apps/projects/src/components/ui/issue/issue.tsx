@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { DatePicker, Flex, Text, Tooltip } from "ui";
+import { DatePicker, Flex, Text, Tooltip, Avatar } from "ui";
 import type { Issue as IssueProps } from "@/types/issue";
 import { RowWrapper } from "../row-wrapper";
 import { IssueStatusIcon } from "../issue-status-icon";
@@ -65,7 +65,18 @@ export const Issue = ({
             </DatePicker.Trigger>
             <DatePicker.Calendar />
           </DatePicker>
-          <AssigneesMenu isSearchEnabled />
+          <AssigneesMenu>
+            <AssigneesMenu.Trigger>
+              <button className="flex" type="button">
+                <Avatar
+                  name="Joseph Mukorivo"
+                  size="sm"
+                  src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                />
+              </button>
+            </AssigneesMenu.Trigger>
+            <AssigneesMenu.Items />
+          </AssigneesMenu>
         </Flex>
       </RowWrapper>
     </IssueContextMenu>

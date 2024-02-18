@@ -1,7 +1,8 @@
+"use client";
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
 import { User } from "lucide-react";
-import { FC, HTMLAttributes } from "react";
+import { FC, HTMLAttributes, useState } from "react";
 
 const avatar = cva(
   "inline-flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
@@ -61,15 +62,16 @@ const getInitials = (name: string) => {
 export const Avatar: FC<AvatarProps> = (props) => {
   const { className, src, name, color, size, rounded, ...rest } = props;
   const classes = cn(avatar({ rounded, color, size }), className);
+  const [path, setPath] = useState(src);
 
   return (
     <div className={classes} {...rest}>
-      {src && (
+      {path && (
         <img
-          src={src}
+          src={path}
           alt={name}
-          onError={(e) => {
-            e.currentTarget.src = "/avatar.png";
+          onError={(_) => {
+            setPath("");
           }}
           className={cn("w-full h-auto object-cover", {
             "rounded-full": rounded === "full",
@@ -79,8 +81,8 @@ export const Avatar: FC<AvatarProps> = (props) => {
           })}
         />
       )}
-      {!src && name && <span title={name}>{getInitials(name)}</span>}
-      {!src && !name && (
+      {!path && name && <span title={name}>{getInitials(name)}</span>}
+      {!path && !name && (
         <User
           className={cn("h-5 w-auto", {
             "h-5": size === "sm",

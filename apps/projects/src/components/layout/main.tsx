@@ -5,12 +5,12 @@ import { Sidebar } from "@/components/shared";
 
 export const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <ResizablePanel direction="horizontal">
-      <ResizablePanel.Panel defaultSize={17} maxSize={20} minSize={15}>
+    <ResizablePanel autoSaveId="main-layout" direction="horizontal">
+      <ResizablePanel.Panel defaultSize={18} maxSize={20} minSize={16}>
         <Sidebar />
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
-      <ResizablePanel.Panel defaultSize={83}>{children}</ResizablePanel.Panel>
+      <ResizablePanel.Panel defaultSize={82}>{children}</ResizablePanel.Panel>
     </ResizablePanel>
   );
 };

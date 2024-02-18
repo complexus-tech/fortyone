@@ -16,4 +16,5 @@ export * from "./issue/priorities-menu"
 export * from "./issue/statuses-menu"
 export * from "./issue/modules-menu"
 export * from "./issue/sprints-menu"
+export * from "./issue/context-menu"
 

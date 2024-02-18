@@ -4,7 +4,7 @@
 
 body,
 html {
-  @apply text-[13px] text-gray-300 dark:bg-gradient-to-br dark:from-[#141414] dark:to-dark dark:text-gray-200;
+  @apply text-[13px] text-gray-300 dark:bg-gradient-to-br dark:from-[#161616] dark:to-dark dark:text-gray-200;
 }
 
 .ProseMirror-focused {

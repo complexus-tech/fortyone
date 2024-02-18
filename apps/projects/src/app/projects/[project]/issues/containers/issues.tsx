@@ -7,7 +7,7 @@ import { IssuesList } from "../components/issues-list";
 import { KanbanBoard } from "./kanban-board";
 
 export const DisplayIssues = () => {
-  const [layout, setLayout] = useState<Layout>("list");
+  const [layout, setLayout] = useState<Layout>("kanban");
   const issues: Issue[] = [
     {
       id: 1,

@@ -31,7 +31,7 @@ export const KanbanBoard = ({
 }) => {
   return (
     <BodyContainer className="overflow-x-auto bg-gray-50/60 dark:bg-transparent">
-      <Box className="sticky top-0 z-[1] h-[3.5rem] w-max bg-gray-50/60 px-6 backdrop-blur dark:bg-dark-300/80">
+      <Box className="sticky top-0 z-[1] h-[3.5rem] w-max bg-gray-50/60 px-6 backdrop-blur dark:bg-dark-300/60">
         <Flex
           align="center"
           className="h-full shrink-0 overflow-x-auto"

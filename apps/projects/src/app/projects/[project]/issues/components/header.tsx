@@ -31,7 +31,7 @@ export const Header = ({
           <Tooltip title="Kanban Layout">
             <Button
               className={cn("opacity-80", {
-                "border-gray-200 bg-white opacity-100 dark:border-dark-50 dark:bg-dark-200":
+                "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-200":
                   layout === "kanban",
               })}
               color="tertiary"
@@ -48,7 +48,7 @@ export const Header = ({
           <Tooltip title="List Layout">
             <Button
               className={cn("opacity-80", {
-                "border-gray-200 bg-white opacity-100 dark:border-dark-50 dark:bg-dark-200":
+                "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-200":
                   layout === "list",
               })}
               color="tertiary"
