@@ -43,7 +43,7 @@ export const IssuesList = ({
   statuses: IssueStatus[];
 }) => {
   return (
-    <BodyContainer className="relative">
+    <BodyContainer className="overflow-x-auto">
       {statuses.map((status) => (
         <IssuesGroup issues={issues} key={status} status={status} />
       ))}

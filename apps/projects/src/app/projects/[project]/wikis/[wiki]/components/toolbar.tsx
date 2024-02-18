@@ -10,7 +10,6 @@ import {
   Quote,
   Strikethrough,
   Underline,
-  Link,
   MoreVertical,
   Pencil,
   Trash2,
@@ -103,7 +102,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Link className="h-5 w-auto" />
+            <Link2 className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>

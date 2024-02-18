@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { Plus } from "lucide-react";
+import { Button, Container, Flex, Text, Tooltip } from "ui";
 import type { IssueStatus } from "../../types/issue";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { NewIssueDialog } from "./new-issue-dialog";
@@ -16,7 +16,7 @@ export const IssuesHeader = ({
 }: IssueHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Container className="select-none bg-gray-50 py-2 dark:bg-dark-200/70">
+    <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/70">
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
           <IssueStatusIcon status={status} />
@@ -25,7 +25,6 @@ export const IssuesHeader = ({
         </Flex>
         <Tooltip side="left" title="Add issue">
           <Button
-            // className="p-0"
             color="tertiary"
             leftIcon={<Plus className="h-5 w-auto dark:text-gray-200" />}
             onClick={() => {
@@ -38,7 +37,7 @@ export const IssuesHeader = ({
           </Button>
         </Tooltip>
       </Flex>
-      <NewIssueDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+      <NewIssueDialog isOpen={isOpen} setIsOpen={setIsOpen} status={status} />
     </Container>
   );
 };

@@ -27,6 +27,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import type { IssueStatus } from "@/types/issue";
 import { StatusesMenu } from "./issue/statuses-menu";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { PrioritiesMenu } from "./issue/priorities-menu";
@@ -35,9 +36,11 @@ import { PriorityIcon } from "./priority-icon";
 export const NewIssueDialog = ({
   isOpen,
   setIsOpen,
+  status = "Backlog",
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
+  status?: IssueStatus;
 }) => {
   const titleEditor = useEditor({
     extensions: [
@@ -102,15 +105,15 @@ export const NewIssueDialog = ({
               <StatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<IssueStatusIcon className="h-4" />}
+                  leftIcon={<IssueStatusIcon className="h-4" status={status} />}
                   size="xs"
                   type="button"
                   variant="outline"
                 >
-                  Backlog
+                  {status}
                 </Button>
               </StatusesMenu.Trigger>
-              <StatusesMenu.Items />
+              <StatusesMenu.Items status={status} />
             </StatusesMenu>
             <PrioritiesMenu>
               <PrioritiesMenu.Trigger>

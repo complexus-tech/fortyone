@@ -1,9 +1,18 @@
 import { BreadCrumbs, Button, Flex, Tooltip } from "ui";
 import { Kanban, Settings2, TableProperties } from "lucide-react";
+import { cn } from "lib";
+import type { Dispatch, SetStateAction } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
+import type { Layout } from "../types";
 
-export const Header = () => {
+export const Header = ({
+  layout = "kanban",
+  setLayout,
+}: {
+  layout: string;
+  setLayout: Dispatch<SetStateAction<Layout>>;
+}) => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -11,7 +20,7 @@ export const Header = () => {
           {
             name: "Web design",
           },
-          { name: "Assigned" },
+          { name: "Issues" },
         ]}
       />
       <Flex gap={2}>
@@ -21,24 +30,36 @@ export const Header = () => {
         >
           <Tooltip title="Kanban Layout">
             <Button
-              className="border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-200"
+              className={cn("opacity-80", {
+                "border-gray-200 bg-white opacity-100 dark:border-dark-50 dark:bg-dark-200":
+                  layout === "kanban",
+              })}
               color="tertiary"
               leftIcon={<Kanban className="h-5 w-auto" strokeWidth={2.5} />}
+              onClick={() => {
+                setLayout("kanban");
+              }}
               size="sm"
-              variant="outline"
+              variant={layout === "kanban" ? "outline" : "naked"}
             >
               <span className="sr-only">View as kanban board</span>
             </Button>
           </Tooltip>
-          <Tooltip title="Table Layout">
+          <Tooltip title="List Layout">
             <Button
-              className="opacity-80"
+              className={cn("opacity-80", {
+                "border-gray-200 bg-white opacity-100 dark:border-dark-50 dark:bg-dark-200":
+                  layout === "list",
+              })}
               color="tertiary"
               leftIcon={<TableProperties className="h-5 w-auto" />}
+              onClick={() => {
+                setLayout("list");
+              }}
               size="sm"
-              variant="naked"
+              variant={layout === "list" ? "outline" : "naked"}
             >
-              <span className="sr-only">View as table</span>
+              <span className="sr-only">View as list</span>
             </Button>
           </Tooltip>
         </Flex>
