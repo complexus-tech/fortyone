@@ -1,15 +1,28 @@
 "use client";
-import { Box } from "ui";
+import { Box, Button, Flex } from "ui";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Projects } from "./projects";
 
 export const Sidebar = () => {
   return (
-    <Box className="h-screen border-r border-gray-50 px-4 dark:border-dark-200">
-      <Header />
-      <Navigation />
-      <Projects />
+    <Box className="flex h-screen flex-col justify-between border-r border-gray-50 px-4 pb-4 dark:border-dark-200">
+      <Box>
+        <Header />
+        <Navigation />
+        <Projects />
+      </Box>
+      <Flex justify="between">
+        <Button
+          className="px-3 dark:border-dark-100"
+          color="tertiary"
+          rounded="full"
+          size="sm"
+          variant="outline"
+        >
+          Upgrade plan
+        </Button>
+      </Flex>
     </Box>
   );
 };

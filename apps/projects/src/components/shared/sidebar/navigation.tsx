@@ -1,47 +1,47 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import { cn } from "lib";
-import {
-  Activity,
-  Bell,
-  Bolt,
-  Columns3,
-  TimerReset,
-  GalleryVerticalEnd,
-} from "lucide-react";
 import { NavLink } from "@/components/ui";
+import {
+  AnalyticsIcon,
+  DashboardIcon,
+  IssuesIcon,
+  NotificationsIcon,
+  ProjectsIcon,
+  SprintsIcon,
+} from "@/components/icons";
 
 export const Navigation = () => {
   const pathname = usePathname();
   const links = [
     {
       name: "Dashboard",
-      icon: <Columns3 className="h-5 w-auto" />,
+      icon: <DashboardIcon className="h-[1.35rem] w-auto" />,
       href: "/",
     },
     {
       name: "Analytics",
-      icon: <Activity className="h-5 w-auto" />,
+      icon: <AnalyticsIcon className="h-[1.35rem] w-auto" />,
       href: "/analytics",
     },
     {
       name: "Notifications",
-      icon: <Bell className="h-5 w-auto" />,
+      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
       href: "/notifications",
     },
     {
       name: "My issues",
-      icon: <Bolt className="h-5 w-auto" />,
+      icon: <IssuesIcon className="h-[1.4rem] w-auto" />,
       href: "/my-issues",
     },
     {
       name: "Projects",
-      icon: <GalleryVerticalEnd className="h-5 w-auto" />,
+      icon: <ProjectsIcon className="h-5 w-auto" />,
       href: "/projects",
     },
     {
       name: "Sprints",
-      icon: <TimerReset className="h-5 w-auto" />,
+      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
       href: "/sprints",
     },
   ];

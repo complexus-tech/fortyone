@@ -16,7 +16,7 @@ export type IssuePriority =
   | "Low";
 
 export type Issue = {
-  id?: number;
+  id: number;
   title: string;
   description?: string;
   status?: IssueStatus;

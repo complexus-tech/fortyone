@@ -13,11 +13,8 @@ import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 
-export const Issue = ({
-  title,
-  status = "Backlog",
-  priority = "No Priority",
-}: IssueProps) => {
+export const Issue = ({ issue }: { issue: IssueProps }) => {
+  const { title, status = "Backlog", priority = "No Priority" } = issue;
   return (
     <IssueContextMenu>
       <RowWrapper>

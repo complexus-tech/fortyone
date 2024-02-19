@@ -7,15 +7,18 @@ import { Box, Button, Flex, Menu } from "ui";
 import {
   ChevronDown,
   MoreHorizontal,
-  TimerReset,
   Settings,
-  NotebookTabs,
-  Layers3,
   Star,
   Link2,
   Trash2,
-  Bolt,
 } from "lucide-react";
+import {
+  IssuesIcon,
+  ModulesIcon,
+  SettingsIcon,
+  SprintsIcon,
+  WikiIcon,
+} from "@/components/icons";
 import { NavLink } from "../../ui";
 
 type ProjectProps = {
@@ -32,27 +35,27 @@ export const Project = ({
   const links = [
     {
       name: "Issues",
-      icon: <Bolt className="h-5 w-auto" />,
+      icon: <IssuesIcon className="h-[1.4rem] w-auto" />,
       href: "/projects/web/issues",
     },
     {
       name: "Sprints",
-      icon: <TimerReset className="h-5 w-auto" />,
+      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
       href: "/analytics",
     },
     {
       name: "Modules",
-      icon: <Layers3 className="h-5 w-auto" />,
+      icon: <ModulesIcon className="h-[1.3rem] w-auto" />,
       href: "/inbox",
     },
     {
       name: "Wikis",
-      icon: <NotebookTabs className="h-5 w-auto" />,
+      icon: <WikiIcon className="h-5 w-auto" />,
       href: "/projects/web/wikis",
     },
     {
       name: "Settings",
-      icon: <Settings className="h-5 w-auto" />,
+      icon: <SettingsIcon className="h-5 w-auto" />,
       href: "/my-issues",
     },
   ];

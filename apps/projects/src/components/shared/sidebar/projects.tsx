@@ -2,7 +2,8 @@
 import { cn } from "lib";
 import { useState } from "react";
 import { Box, Button, Flex } from "ui";
-import { ChevronDown, GalleryVerticalEnd, Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
+import { ProjectsIcon } from "@/components/icons";
 import { Project } from "./project";
 
 export const Projects = () => {
@@ -20,7 +21,7 @@ export const Projects = () => {
         variant="naked"
       >
         <span className="flex items-center gap-2 font-medium">
-          <GalleryVerticalEnd className="relative h-[1.1rem] w-auto text-gray-300/80 dark:text-gray" />
+          <ProjectsIcon className="relative h-5 w-auto text-gray-300/80 dark:text-gray" />
           Projects
           <ChevronDown
             className={cn(

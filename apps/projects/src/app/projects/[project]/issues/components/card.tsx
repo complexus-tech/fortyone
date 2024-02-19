@@ -15,10 +15,7 @@ import type { Issue } from "@/types/issue";
 export const Card = ({ issue }: { issue: Issue }) => {
   return (
     <IssueContextMenu>
-      <Box
-        className="w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/80 bg-white p-4 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/70 dark:bg-dark-200/50 dark:hover:bg-dark-200/90"
-        draggable
-      >
+      <Box className="w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/80 bg-white p-4 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/70 dark:bg-dark-200/50 dark:hover:bg-dark-200/90">
         <Flex align="center" className="mb-2" gap={2} justify="between">
           <Link className="flex-1" href="/projects/web/issues/test-123-issue">
             <Text className="text-[0.9rem]" color="muted" fontWeight="medium">

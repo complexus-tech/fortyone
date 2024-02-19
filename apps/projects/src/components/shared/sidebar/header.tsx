@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { NewIssueDialog } from "@/components/ui";
+import { NewIssueIcon } from "@/components/icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -134,7 +135,7 @@ export const Header = () => {
         <Button
           color="tertiary"
           fullWidth
-          leftIcon={<Plus className="h-5 w-auto" />}
+          leftIcon={<NewIssueIcon className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}
