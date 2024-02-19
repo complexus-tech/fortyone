@@ -20,8 +20,8 @@ export const Issue = ({
 }: IssueProps) => {
   return (
     <IssueContextMenu>
-      <RowWrapper className="cursor-pointer">
-        <Flex align="center" className="relative select-none" gap={2}>
+      <RowWrapper>
+        <Flex align="center" className="relative flex-1 select-none" gap={2}>
           <DragHandle />
           <TableCheckbox />
           <PrioritiesMenu>
@@ -45,8 +45,8 @@ export const Issue = ({
             </StatusesMenu.Trigger>
             <StatusesMenu.Items status={status} />
           </StatusesMenu>
-          <Link href="/projects/web/issues/test-123-issue">
-            <Text className="overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
+          <Link className="flex-1" href="/projects/web/issues/test-123-issue">
+            <Text className=" overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
               {title}
             </Text>
           </Link>
@@ -70,7 +70,7 @@ export const Issue = ({
               <button className="flex" type="button">
                 <Avatar
                   name="Joseph Mukorivo"
-                  size="sm"
+                  size="xs"
                   src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
                 />
               </button>

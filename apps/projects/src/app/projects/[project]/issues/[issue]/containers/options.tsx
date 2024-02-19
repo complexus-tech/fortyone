@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Box, Button, Container, Divider, Text, DatePicker } from "ui";
+import { Box, Button, Container, Divider, Text, DatePicker, Avatar } from "ui";
 import { Calendar, CalendarCheck2 } from "lucide-react";
 import {
   PrioritiesMenu,
@@ -72,7 +72,28 @@ export const Options = () => {
         />
         <Option
           label="Assignee"
-          value={<AssigneesMenu asIcon={false} user="josemukorivo" />}
+          value={
+            <AssigneesMenu>
+              <AssigneesMenu.Trigger>
+                <Button
+                  className="font-medium"
+                  color="tertiary"
+                  leftIcon={
+                    <Avatar
+                      name="Joseph Mukorivo"
+                      size="xs"
+                      src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                    />
+                  }
+                  type="button"
+                  variant="naked"
+                >
+                  josemukorivo
+                </Button>
+              </AssigneesMenu.Trigger>
+              <AssigneesMenu.Items />
+            </AssigneesMenu>
+          }
         />
         <Option label="Labels" value={<Labels />} />
         <Option

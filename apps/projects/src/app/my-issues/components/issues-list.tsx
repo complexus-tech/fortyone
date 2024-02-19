@@ -29,7 +29,11 @@ const IssuesGroup = ({
         hidden: filteredIssues.length === 0,
       })}
     >
-      <IssuesHeader count={filteredIssues.length} status={status} />
+      <IssuesHeader
+        className="top-[3.68rem]"
+        count={filteredIssues.length}
+        status={status}
+      />
       <ListIssues issues={filteredIssues} />
     </Box>
   );
@@ -45,7 +49,7 @@ export const IssuesList = ({
   return (
     <BodyContainer className="relative">
       <Tabs defaultValue="assigned">
-        <Box className="sticky top-0 z-10 border-b border-gray-100 bg-white/70 py-3 backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 bg-white/70 backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>

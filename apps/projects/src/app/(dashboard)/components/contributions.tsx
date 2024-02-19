@@ -5,7 +5,7 @@ import HeatMap from "@uiw/react-heat-map";
 export const Contributions = () => {
   // const { theme } = useTheme();
   const darkColors = {
-    0: "rgb(255 255 255 / 18%)",
+    0: "rgb(255 255 255 / 5%)",
     8: "#7BC96F",
     4: "#C6E48B",
     12: "#239A3B",
@@ -47,7 +47,7 @@ export const Contributions = () => {
         <HeatMap
           className="w-full dark:!text-white"
           legendCellSize={20}
-          // panelColors={darkColors}
+          panelColors={darkColors}
           rectProps={{
             rx: 3,
           }}

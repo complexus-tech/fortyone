@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
+import { cn } from "lib";
 import type { IssueStatus } from "../../types/issue";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { NewIssueDialog } from "./new-issue-dialog";
@@ -9,14 +10,21 @@ import { NewIssueDialog } from "./new-issue-dialog";
 type IssueHeaderProps = {
   status?: IssueStatus;
   count: number;
+  className?: string;
 };
 export const IssuesHeader = ({
   count,
+  className,
   status = "Backlog",
 }: IssueHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/60">
+    <Container
+      className={cn(
+        "sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/60",
+        className,
+      )}
+    >
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
           <IssueStatusIcon status={status} />

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Box, Flex, Button, Text, Avatar, DatePicker } from "ui";
 import { CalendarCheck2, Tags, Calendar } from "lucide-react";
 import {
@@ -19,9 +20,11 @@ export const Card = ({ issue }: { issue: Issue }) => {
         draggable
       >
         <Flex align="center" className="mb-2" gap={2} justify="between">
-          <Text className="text-[0.93rem]" color="muted" fontWeight="medium">
-            COMP-123
-          </Text>
+          <Link className="flex-1" href="/projects/web/issues/test-123-issue">
+            <Text className="text-[0.9rem]" color="muted" fontWeight="medium">
+              COMP-123
+            </Text>
+          </Link>
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
               <button className="block" type="button">
@@ -35,12 +38,14 @@ export const Card = ({ issue }: { issue: Issue }) => {
             <AssigneesMenu.Items />
           </AssigneesMenu>
         </Flex>
-        <Text className="mb-2.5 line-clamp-2">{issue.title}</Text>
+        <Link className="flex-1" href="/projects/web/issues/test-123-issue">
+          <Text className="mb-2.5 line-clamp-2">{issue.title}</Text>
+        </Link>
         <Flex gap={1} wrap>
           <StatusesMenu>
             <StatusesMenu.Trigger>
               <Button
-                className="bg-white dark:bg-dark-300/50"
+                className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
                 leftIcon={
                   <IssueStatusIcon
@@ -60,7 +65,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>
               <Button
-                className="bg-white dark:bg-dark-300/50"
+                className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
                 leftIcon={
                   <PriorityIcon
@@ -80,10 +85,11 @@ export const Card = ({ issue }: { issue: Issue }) => {
           <DatePicker>
             <DatePicker.Trigger>
               <Button
-                className="bg-white px-2 text-sm dark:bg-dark-300/50"
+                className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
                 leftIcon={<Calendar className="h-4 w-auto" />}
                 size="xs"
+                type="button"
                 variant="outline"
               >
                 Start
@@ -94,7 +100,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
           <DatePicker>
             <DatePicker.Trigger>
               <Button
-                className="bg-white px-2 text-sm dark:bg-dark-300/50"
+                className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
                 leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
                 size="xs"
@@ -106,7 +112,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
             <DatePicker.Calendar />
           </DatePicker>
           <Button
-            className="bg-white dark:bg-dark-300/50"
+            className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
             color="tertiary"
             leftIcon={<Tags className="h-4" />}
             size="xs"
