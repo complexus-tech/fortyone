@@ -1,27 +1,27 @@
 import { Button, Container, Flex, Tooltip, Menu } from "ui";
-import {
-  Bold,
-  Code,
-  Code2,
-  Italic,
-  List,
-  ListChecks,
-  ListOrdered,
-  Quote,
-  Strikethrough,
-  Underline,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Link2,
-  Copy,
-  LockKeyhole,
-  Undo,
-  Redo,
-  Printer,
-} from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { ToggleNode } from "./node";
+import {
+  BoldIcon,
+  CheckListIcon,
+  CodeBlockIcon,
+  CodeIcon,
+  DeleteIcon,
+  DuplicateIcon,
+  EditIcon,
+  FileLockedIcon,
+  ItalicIcon,
+  LinkIcon,
+  MoreVerticalIcon,
+  OrderedListIcon,
+  PrintIcon,
+  QuoteIcon,
+  RedoIcon,
+  StrikeThroughIcon,
+  UnderlineIcon,
+  UndoIcon,
+  UnorderedListIcon,
+} from "@/components/icons";
 
 export const Toolbar = ({ editor }: { editor: Editor | null }) => {
   return (
@@ -35,7 +35,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Undo className="h-5 w-auto" />
+            <UndoIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip hidden={!editor?.can().redo()} title="Redo">
@@ -47,7 +47,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Redo className="h-5 w-auto" />
+            <RedoIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <ToggleNode editor={editor} />
@@ -59,7 +59,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Bold className="h-5 w-auto" />
+            <BoldIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Italic">
@@ -70,7 +70,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Italic className="h-5 w-auto" />
+            <ItalicIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Underline">
@@ -81,7 +81,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Underline className="h-5 w-auto" />
+            <UnderlineIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Strikethrough">
@@ -92,7 +92,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Strikethrough className="h-5 w-auto" />
+            <StrikeThroughIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Link">
@@ -102,7 +102,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Link2 className="h-5 w-auto" />
+            <LinkIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>
@@ -114,7 +114,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <ListOrdered className="h-5 w-auto" />
+            <OrderedListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Unordered list">
@@ -125,7 +125,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <List className="h-5 w-auto" />
+            <UnorderedListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Check list">
@@ -136,7 +136,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <ListChecks className="h-5 w-auto" />
+            <CheckListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Code">
@@ -147,7 +147,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Code className="h-5 w-auto" />
+            <CodeIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>
@@ -159,7 +159,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Quote className="h-5 w-auto" />
+            <QuoteIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Code block">
@@ -170,7 +170,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             size="sm"
             variant="naked"
           >
-            <Code2 className="h-5 w-auto" />
+            <CodeBlockIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
       </Flex>
@@ -178,7 +178,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
       <Flex align="center" gap={2}>
         <Tooltip title="Print">
           <Button color="tertiary" size="sm" variant="outline">
-            <Printer className="h-5 w-auto" />
+            <PrintIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Menu>
@@ -186,7 +186,7 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
             <Button
               className="aspect-square"
               color="tertiary"
-              leftIcon={<MoreVertical className="h-5 w-auto" />}
+              leftIcon={<MoreVerticalIcon className="h-5 w-auto" />}
               size="sm"
               variant="naked"
             >
@@ -196,23 +196,23 @@ export const Toolbar = ({ editor }: { editor: Editor | null }) => {
           <Menu.Items align="end" className="w-48">
             <Menu.Group>
               <Menu.Item>
-                <Pencil className="h-4 w-auto" />
+                <EditIcon className="h-4 w-auto" />
                 Edit
               </Menu.Item>
               <Menu.Item>
-                <Link2 className="h-4 w-auto" />
+                <LinkIcon className="h-4 w-auto" />
                 Copy link
               </Menu.Item>
               <Menu.Item>
-                <Copy className="h-4 w-auto" />
+                <DuplicateIcon className="h-4 w-auto" />
                 Duplicate
               </Menu.Item>
               <Menu.Item>
-                <LockKeyhole className="h-4 w-auto" />
-                Lock wiki
+                <FileLockedIcon className="h-4 w-auto" />
+                Lock
               </Menu.Item>
               <Menu.Item>
-                <Trash2 className="h-4 w-auto text-danger" />
+                <DeleteIcon className="h-4 w-auto text-danger" />
                 Delete
               </Menu.Item>
             </Menu.Group>

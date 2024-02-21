@@ -1,6 +1,6 @@
-import { Star } from "lucide-react";
 import { Avatar, BreadCrumbs, Button, Flex, Text } from "ui";
 import { HeaderContainer } from "@/components/layout";
+import { StarIcon } from "@/components/icons";
 
 export const Header = () => {
   return (
@@ -27,7 +27,7 @@ export const Header = () => {
           <Button
             className="aspect-square"
             color="tertiary"
-            leftIcon={<Star className="h-4 w-auto" />}
+            leftIcon={<StarIcon className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >

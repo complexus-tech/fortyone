@@ -1,10 +1,15 @@
-import { Flex, Text, Tooltip } from "ui";
+import { Flex, Text, Tooltip, Avatar, Button, Menu } from "ui";
 import Link from "next/link";
-import { Calendar, CalendarCheck2, Hexagon } from "lucide-react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
 import { TableCheckbox } from "@/components/ui";
 import { ProjectStatusesMenu } from "./statuses-menu";
+import {
+  CalendarIcon,
+  EditIcon,
+  MoreHorizontalIcon,
+  ProjectsIcon,
+} from "@/components/icons";
 
 export const Project = ({
   name,
@@ -17,7 +22,7 @@ export const Project = ({
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
-        <Hexagon className="h-[1.2rem] w-auto" />
+        <ProjectsIcon className="h-[1.2rem] w-auto" />
         <Link className="flex items-center gap-5" href="/projects/web/issues">
           <Text className="w-[215px] truncate hover:opacity-90">{name}</Text>
           <Text className="max-w-lg truncate hover:opacity-90" color="muted">
@@ -25,26 +30,52 @@ export const Project = ({
           </Text>
         </Link>
       </Flex>
-      <Flex align="center" gap={5}>
+      <Flex align="center" gap={3}>
         <Text className="flex items-center gap-1" fontWeight="medium">
-          <ProjectStatusesMenu asIcon={false} status="In Progress" />
+          <ProjectStatusesMenu asIcon={false} status="Testing" />
         </Text>
         <Tooltip title="Starts on">
           <Text className="flex items-center gap-1" color="muted">
-            <Calendar className="h-5 w-auto" strokeWidth={2} />
-            Sep 27, 2024
+            <CalendarIcon className="h-5 w-auto" strokeWidth={2} />
+            Sep 27
           </Text>
         </Tooltip>
         <Tooltip title="Due on">
           <Text className="flex items-center gap-1" color="muted">
-            <CalendarCheck2
-              className="h-5 w-auto text-primary"
-              strokeWidth={2}
-            />
-            Sep 27, 2024
+            <CalendarIcon className="h-5 w-auto text-primary" strokeWidth={2} />
+            Sep 27
           </Text>
         </Tooltip>
-        <AssigneesMenu isSearchEnabled placeholder="Assign project lead..." />
+        <AssigneesMenu>
+          <AssigneesMenu.Trigger>
+            <button className="flex" type="button">
+              <Avatar
+                name="Joseph Mukorivo"
+                size="xs"
+                src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+              />
+            </button>
+          </AssigneesMenu.Trigger>
+          <AssigneesMenu.Items />
+        </AssigneesMenu>
+        <Menu>
+          <Menu.Button>
+            <Button
+              color="tertiary"
+              leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
+              variant="naked"
+              size="sm"
+            >
+              <span className="sr-only">More options</span>
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="end" className="w-64">
+            <Menu.Group>
+              <Menu.Item>Edit</Menu.Item>
+              <Menu.Item>Delete</Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </Flex>
     </RowWrapper>
   );

@@ -1,10 +1,9 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { Settings2 } from "lucide-react";
 import { cn } from "lib";
 import type { Dispatch, SetStateAction } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
-import { KanbanIcon, TableIcon } from "@/components/icons";
+import { KanbanIcon, TableIcon, PreferencesIcon } from "@/components/icons";
 import type { Layout } from "../types";
 
 export const Header = ({
@@ -62,7 +61,7 @@ export const Header = ({
 
         <Button
           color="tertiary"
-          leftIcon={<Settings2 className="h-4 w-auto" />}
+          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
           size="sm"
           variant="outline"
         >

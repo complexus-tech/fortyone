@@ -1,8 +1,13 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { Plus, Search, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewProjectDialog } from "@/components/ui";
+import {
+  PlusIcon,
+  ProjectsIcon,
+  SearchIcon,
+  PreferencesIcon,
+} from "@/components/icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +18,7 @@ export const Header = () => {
           {
             name: "Projects",
             url: "/projects",
+            icon: <ProjectsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
       />
@@ -21,7 +27,7 @@ export const Header = () => {
           align="center"
           className="px-[0.6rem]"
           color="tertiary"
-          leftIcon={<Search className="h-[1.1rem] w-auto" />}
+          leftIcon={<SearchIcon className="h-[1.1rem] w-auto" />}
           size="sm"
           variant="outline"
         >
@@ -29,14 +35,14 @@ export const Header = () => {
         </Button>
         <Button
           color="tertiary"
-          leftIcon={<Settings2 className="h-4 w-auto" />}
+          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
           size="sm"
           variant="outline"
         >
           Display
         </Button>
         <Button
-          leftIcon={<Plus className="h-5 w-auto" />}
+          leftIcon={<PlusIcon className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(true);
           }}

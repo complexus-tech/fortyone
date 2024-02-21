@@ -1,8 +1,12 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import { HeaderContainer } from "@/components/layout";
-import { NewProjectDialog } from "@/components/ui";
-import { PlusIcon, PreferencesIcon, SearchIcon } from "@/components/icons";
+import {
+  PlusIcon,
+  PreferencesIcon,
+  SearchIcon,
+  SprintsIcon,
+} from "@/components/icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,12 +15,9 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Web",
-            url: "/projects",
-          },
-          {
-            name: "Wikis",
-            url: "/projects/web/wikis",
+            name: "Sprints",
+            url: "/sprints",
+            icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
       />
@@ -46,10 +47,9 @@ export const Header = () => {
           }}
           size="sm"
         >
-          New wiki
+          New sprint
         </Button>
       </Flex>
-      <NewProjectDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </HeaderContainer>
   );
 };

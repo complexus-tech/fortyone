@@ -1,18 +1,18 @@
 import { Avatar, Button, Flex, Text, Tooltip, Menu } from "ui";
 import Link from "next/link";
-import {
-  LockKeyhole,
-  MoreVertical,
-  Star,
-  Pencil,
-  Trash2,
-  Link2,
-} from "lucide-react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { TableCheckbox } from "@/components/ui";
-import { DocsIcon } from "@/components/icons";
+import {
+  DeleteIcon,
+  DocsIcon,
+  EditIcon,
+  FileLockedIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  StarIcon,
+} from "@/components/icons";
 
-export const Wiki = ({ name }: { name: string }) => {
+export const Doc = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
@@ -20,17 +20,17 @@ export const Wiki = ({ name }: { name: string }) => {
         <DocsIcon className="h-[1.2rem] w-auto" />
         <Link
           className="flex items-center gap-5"
-          href="/projects/web/wikis/test1"
+          href="/projects/web/docs/test1"
         >
           <Text className="w-[215px] truncate hover:opacity-90">{name}</Text>
         </Link>
       </Flex>
-      <Flex align="center" gap={3}>
+      <Flex align="center" gap={2}>
         <Tooltip title="Unlock">
           <Button
             className="aspect-square"
             color="tertiary"
-            leftIcon={<LockKeyhole className="h-5 w-auto" />}
+            leftIcon={<FileLockedIcon className="h-5 w-auto" />}
             size="sm"
             variant="naked"
           >
@@ -41,7 +41,7 @@ export const Wiki = ({ name }: { name: string }) => {
           <Button
             className="aspect-square"
             color="tertiary"
-            leftIcon={<Star className="h-5 w-auto" />}
+            leftIcon={<StarIcon className="h-5 w-auto" />}
             size="sm"
             variant="naked"
           >
@@ -59,7 +59,7 @@ export const Wiki = ({ name }: { name: string }) => {
             <Button
               className="aspect-square"
               color="tertiary"
-              leftIcon={<MoreVertical className="h-5 w-auto" />}
+              leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
               size="sm"
               variant="naked"
             >
@@ -69,15 +69,15 @@ export const Wiki = ({ name }: { name: string }) => {
           <Menu.Items align="end" className="w-48">
             <Menu.Group>
               <Menu.Item>
-                <Pencil className="h-4 w-auto" />
+                <EditIcon className="h-4 w-auto" />
                 Edit
               </Menu.Item>
               <Menu.Item>
-                <Trash2 className="h-4 w-auto text-danger" />
+                <DeleteIcon className="h-4 w-auto text-danger" />
                 Delete
               </Menu.Item>
               <Menu.Item>
-                <Link2 className="h-4 w-auto" />
+                <LinkIcon className="h-4 w-auto" />
                 Copy link
               </Menu.Item>
             </Menu.Group>

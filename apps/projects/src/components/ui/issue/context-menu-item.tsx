@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ArrowRightIcon } from "@/components/icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
 
@@ -28,7 +28,7 @@ export const ContextMenuItem = ({
               {shortCut ? (
                 <Flex className="text-sm text-gray">{shortCut}</Flex>
               ) : null}
-              <ChevronRight
+              <ArrowRightIcon
                 className="h-4 w-auto text-gray"
                 strokeWidth={2.8}
               />

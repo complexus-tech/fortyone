@@ -1,3 +1,3 @@
 export * from './header'
-export * from './doc'
+export * from './project'
 export * from './statuses-menu'

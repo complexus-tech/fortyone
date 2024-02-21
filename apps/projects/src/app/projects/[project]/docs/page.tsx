@@ -3,7 +3,7 @@
 import { Box, Container, Flex, Tabs, Text } from "ui";
 import { BodyContainer } from "@/components/layout";
 import { ClockIcon, DocsIcon } from "@/components/icons";
-import { Header, Wiki } from "./components";
+import { Header, Doc } from "./components";
 
 type Project = {
   id: number;
@@ -123,7 +123,7 @@ export default function Page(): JSX.Element {
           <Tabs.Panel value="subscribed">Tab</Tabs.Panel>
         </Tabs>
         {projects.map(({ id, name }) => (
-          <Wiki key={id} name={name} />
+          <Doc key={id} name={name} />
         ))}
       </BodyContainer>
     </>

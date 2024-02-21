@@ -24,7 +24,7 @@ export const ProjectStatusesMenu = ({
     <Menu>
       <Menu.Button>
         <Button
-          className={cn("gap-2", {
+          className={cn("gap-2 px-3", {
             "h-max p-0 hover:bg-transparent focus:bg-transparent dark:hover:bg-transparent dark:focus:bg-transparent":
               asIcon,
           })}

@@ -35,15 +35,14 @@ export const Navigation = () => {
       href: "/projects",
     },
     {
-      name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
-      href: "/notifications",
-    },
-
-    {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
       href: "/sprints",
+    },
+    {
+      name: "Notifications",
+      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
+      href: "/notifications",
     },
   ];
 

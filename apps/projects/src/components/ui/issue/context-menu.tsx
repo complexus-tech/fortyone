@@ -19,6 +19,20 @@ import {
 import { IssueStatusIcon } from "../issue-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { ContextMenuItem } from "./context-menu-item";
+import {
+  BellIcon,
+  CalendarPlusIcon,
+  CopyIcon,
+  DeleteIcon,
+  DuplicateIcon,
+  EditIcon,
+  ModulesIcon,
+  ProjectsIcon,
+  SprintsIcon,
+  StarIcon,
+  TagsIcon,
+  UserIcon,
+} from "@/components/icons";
 
 export const contextMenu = [
   {
@@ -63,7 +77,7 @@ export const contextMenu = [
       },
       {
         label: "Assignee",
-        icon: <User className="h-5 w-auto" />,
+        icon: <UserIcon className="h-5 w-auto" />,
         shortCut: "⌘+[",
         subMenu: [
           {
@@ -103,23 +117,19 @@ export const contextMenu = [
       },
       {
         label: "Labels",
-        icon: <Tags className="h-5 w-auto" />,
+        icon: <TagsIcon className="h-5 w-auto" />,
       },
       {
         label: "Sprint",
-        icon: <TimerReset className="h-5 w-auto" />,
+        icon: <SprintsIcon className="h-5 w-auto" />,
       },
       {
         label: "Module",
-        icon: <Layers3 className="h-5 w-auto" />,
+        icon: <ModulesIcon className="h-5 w-auto" />,
       },
       {
         label: "Edit",
-        icon: <Pencil className="h-5 w-auto" />,
-      },
-      {
-        label: "Rename",
-        icon: <FilePenLine className="h-5 w-auto" />,
+        icon: <EditIcon className="h-5 w-auto" />,
       },
     ],
   },
@@ -128,35 +138,35 @@ export const contextMenu = [
     options: [
       {
         label: "Project",
-        icon: <GalleryVerticalEnd className="h-5 w-auto" />,
+        icon: <ProjectsIcon className="h-5 w-auto" />,
       },
       {
         label: "Add to sprint",
-        icon: <TimerReset className="h-5 w-auto" />,
+        icon: <SprintsIcon className="h-5 w-auto" />,
       },
       {
         label: "Start Date",
-        icon: <Calendar className="h-5 w-auto" />,
+        icon: <CalendarPlusIcon className="h-5 w-auto" />,
       },
       {
         label: "Due Date",
-        icon: <CalendarCheck2 className="h-5 w-auto" />,
+        icon: <CalendarPlusIcon className="h-5 w-auto" />,
       },
       {
-        label: "Clone",
-        icon: <Clipboard className="h-5 w-auto" />,
+        label: "Duplicate",
+        icon: <DuplicateIcon className="h-5 w-auto" />,
       },
       {
         label: "Favorite",
-        icon: <Star className="h-5 w-auto" />,
+        icon: <StarIcon className="h-5 w-auto" />,
       },
       {
         label: "Copy",
-        icon: <Clipboard className="h-5 w-auto" />,
+        icon: <CopyIcon className="h-5 w-auto" />,
       },
       {
         label: "Subscribe",
-        icon: <BellPlus className="h-5 w-auto" />,
+        icon: <BellIcon className="h-5 w-auto" />,
       },
     ],
   },
@@ -165,7 +175,7 @@ export const contextMenu = [
     options: [
       {
         label: "Delete",
-        icon: <Trash2 className="h-5 w-auto text-danger" />,
+        icon: <DeleteIcon className="h-5 w-auto text-danger" />,
       },
     ],
   },

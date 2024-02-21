@@ -42,7 +42,6 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
         </Flex>
         <Flex align="center" gap={3}>
           <Labels />
-
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>
               <button

@@ -7,7 +7,7 @@ import { Projects } from "./projects";
 
 export const Sidebar = () => {
   return (
-    <Box className="flex h-screen flex-col justify-between border-r border-gray-50 px-4 pb-4 dark:border-dark-100/50">
+    <Box className="flex h-screen flex-col justify-between px-4 pb-4">
       <Box>
         <Header />
         <Navigation />
@@ -15,11 +15,9 @@ export const Sidebar = () => {
       </Box>
       <Flex justify="between">
         <Button
-          className="px-3 text-[0.95rem] font-medium dark:border-dark-100"
-          color="tertiary"
+          className="px-3 text-[0.95rem] font-medium transition duration-200 ease-linear dark:bg-opacity-10 hover:dark:bg-opacity-20"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
           rounded="full"
-          variant="outline"
         >
           Upgrade plan
         </Button>

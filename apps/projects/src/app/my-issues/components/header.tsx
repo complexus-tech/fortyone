@@ -1,7 +1,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { Settings2 } from "lucide-react";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
+import { IssuesIcon, PreferencesIcon } from "@/components/icons";
 
 export const Header = () => {
   return (
@@ -10,6 +10,8 @@ export const Header = () => {
         breadCrumbs={[
           {
             name: "My issues",
+            url: "/my-issues",
+            icon: <IssuesIcon className="h-5 w-auto" />,
           },
           { name: "Assigned" },
         ]}
@@ -17,7 +19,7 @@ export const Header = () => {
       <Flex gap={2}>
         <Button
           color="tertiary"
-          leftIcon={<Settings2 className="h-4 w-auto" />}
+          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
           size="sm"
           variant="outline"
         >
