@@ -7,7 +7,7 @@ import { Projects } from "./projects";
 
 export const Sidebar = () => {
   return (
-    <Box className="flex h-screen flex-col justify-between border-r border-gray-50 px-4 pb-4 dark:border-dark-100">
+    <Box className="flex h-screen flex-col justify-between border-r border-gray-50 px-4 pb-4 dark:border-dark-100/50">
       <Box>
         <Header />
         <Navigation />
