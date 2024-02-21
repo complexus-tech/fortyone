@@ -1,5 +1,5 @@
 import { Button, Flex, Text } from "ui";
-import { TimerReset, GalleryVerticalEnd, Trash2 } from "lucide-react";
+import { DeleteIcon, ProjectsIcon, SprintsIcon } from "../icons";
 
 export const IssuesToolbar = () => {
   return (
@@ -13,7 +13,7 @@ export const IssuesToolbar = () => {
       </Text>
       <Button
         color="tertiary"
-        leftIcon={<TimerReset className="h-[1.15rem] w-auto dark:text-gray" />}
+        leftIcon={<SprintsIcon className="h-[1.15rem] w-auto dark:text-gray" />}
         variant="outline"
       >
         Add to sprint
@@ -21,7 +21,7 @@ export const IssuesToolbar = () => {
       <Button
         color="tertiary"
         leftIcon={
-          <GalleryVerticalEnd className="h-[1.15rem] w-auto dark:text-gray" />
+          <ProjectsIcon className="h-[1.15rem] w-auto dark:text-gray" />
         }
         variant="outline"
       >
@@ -30,7 +30,7 @@ export const IssuesToolbar = () => {
       <Button
         className="border-opacity-30"
         color="danger"
-        leftIcon={<Trash2 className="h-[1.15rem] w-auto" />}
+        leftIcon={<DeleteIcon className="h-[1.15rem] w-auto" />}
         variant="outline"
       >
         Delete

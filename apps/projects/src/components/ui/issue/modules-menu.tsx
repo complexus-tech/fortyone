@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { Check, Layers3, Plus } from "lucide-react";
+import { CheckIcon, ModulesIcon, PlusIcon } from "@/components/icons";
 
 export const ModulesMenu = () => {
   const modules = ["Complains", "Clients", "Audit"];
@@ -8,7 +8,7 @@ export const ModulesMenu = () => {
       <Menu.Button>
         <Button
           color="tertiary"
-          leftIcon={<Plus className="h-5 w-auto" />}
+          leftIcon={<PlusIcon className="h-5 w-auto" />}
           size="md"
           variant="naked"
         >
@@ -24,12 +24,12 @@ export const ModulesMenu = () => {
           {modules.map((mod, idx) => (
             <Menu.Item className="justify-between" key={mod}>
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <Layers3 className="h-[1.1rem] w-auto" />
+                <ModulesIcon className="h-[1.1rem] w-auto" />
                 <Text>{mod}</Text>
               </Box>
               <Flex align="center" gap={2}>
                 {mod === "io" && (
-                  <Check className="h-5 w-auto" strokeWidth={2.1} />
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 )}
                 <Text color="muted">{idx}</Text>
               </Flex>

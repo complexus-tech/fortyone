@@ -2,16 +2,22 @@
 import { cn } from "lib";
 import { useState } from "react";
 import { Box, Button, Flex } from "ui";
-import { ArrowDownIcon, PlusIcon, ProjectsIcon } from "@/components/icons";
+import { ArrowDownIcon, PlusIcon } from "@/components/icons";
+import { NewProjectDialog } from "@/components/ui";
+import { useLocalStorage } from "@/hooks";
 import { Project } from "./project";
 
 export const Projects = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>(
+    "projects-dropdown",
+    true,
+  );
   return (
-    <Box className="mt-8">
+    <Box className="mt-4">
       <Button
         align="between"
-        className="group"
+        className="group pl-2.5 pr-1 hover:bg-opacity-50"
         color="tertiary"
         fullWidth
         onClick={() => {
@@ -20,8 +26,7 @@ export const Projects = () => {
         variant="naked"
       >
         <span className="flex items-center gap-2 font-medium">
-          <ProjectsIcon className="relative h-5 w-auto text-gray-300/80 dark:text-gray" />
-          Projects
+          My projects
           <ArrowDownIcon
             className={cn(
               "relative top-[0.2px] h-4 w-auto -rotate-90 text-gray-300/60 transition-transform dark:text-gray",
@@ -32,7 +37,19 @@ export const Projects = () => {
             strokeWidth={3.5}
           />
         </span>
-        <PlusIcon className="hidden h-5 w-auto justify-self-end text-gray-300/60 group-hover:inline dark:dark:text-gray-200" />
+        <Button
+          className="hidden group-hover:inline"
+          color="tertiary"
+          leftIcon={<PlusIcon className="h-5 w-auto" />}
+          onClick={() => {
+            setIsDialogOpen(true);
+          }}
+          size="sm"
+          type="button"
+          variant="naked"
+        >
+          <span className="sr-only">Add new project</span>
+        </Button>
       </Button>
       <Flex
         className={cn(
@@ -47,6 +64,8 @@ export const Projects = () => {
         <Project icon="🇦🇫" name="Data migration" />
         <Project icon="🏀" name="CRM development" />
       </Flex>
+
+      <NewProjectDialog isOpen={isDialogOpen} setIsOpen={setIsDialogOpen} />
     </Box>
   );
 };

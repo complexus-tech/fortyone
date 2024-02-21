@@ -9,7 +9,7 @@ export default function Page(): JSX.Element {
     <>
       <Header />
       <BodyContainer className="overflow-y-hidden">
-        <ResizablePanel direction="horizontal">
+        <ResizablePanel autoSaveId="issue-details" direction="horizontal">
           <ResizablePanel.Panel defaultSize={72}>
             <MainDetails />
           </ResizablePanel.Panel>

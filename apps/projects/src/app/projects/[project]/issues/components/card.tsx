@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { Box, Flex, Button, Text, Avatar, DatePicker } from "ui";
-import { CalendarCheck2, Tags, Calendar } from "lucide-react";
 import {
   PriorityIcon,
   StatusesMenu,
@@ -11,6 +10,7 @@ import {
   AssigneesMenu,
 } from "@/components/ui";
 import type { Issue } from "@/types/issue";
+import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "@/components/icons";
 
 export const Card = ({ issue }: { issue: Issue }) => {
   return (
@@ -84,7 +84,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
               <Button
                 className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
-                leftIcon={<Calendar className="h-4 w-auto" />}
+                leftIcon={<CalendarPlusIcon className="h-4 w-auto" />}
                 size="xs"
                 type="button"
                 variant="outline"
@@ -99,7 +99,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
               <Button
                 className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
                 color="tertiary"
-                leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                leftIcon={<CalendarIcon className="h-4 w-auto" />}
                 size="xs"
                 variant="outline"
               >
@@ -111,7 +111,7 @@ export const Card = ({ issue }: { issue: Issue }) => {
           <Button
             className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
             color="tertiary"
-            leftIcon={<Tags className="h-4" />}
+            leftIcon={<TagsIcon className="h-4 w-auto" />}
             size="xs"
             type="button"
             variant="outline"

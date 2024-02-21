@@ -10,13 +10,6 @@ import {
   TextEditor,
   DatePicker,
 } from "ui";
-import {
-  ChevronRight,
-  Maximize2,
-  Plus,
-  CalendarCheck2,
-  Tags,
-} from "lucide-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -28,6 +21,13 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
 import type { IssueStatus } from "@/types/issue";
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  MaximizeIcon,
+  PlusIcon,
+  TagsIcon,
+} from "../icons";
 import { StatusesMenu } from "./issue/statuses-menu";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { PrioritiesMenu } from "./issue/priorities-menu";
@@ -76,7 +76,7 @@ export const NewIssueDialog = ({
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Badge color="tertiary">COMP-1</Badge>
-            <ChevronRight className="h-4 w-auto opacity-40" strokeWidth={3} />
+            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
             <Text color="muted">New issue</Text>
           </Dialog.Title>
           <Flex gap={2}>
@@ -87,7 +87,7 @@ export const NewIssueDialog = ({
               size="xs"
               variant="naked"
             >
-              <Maximize2 className="h-[1.2rem] w-auto" />
+              <MaximizeIcon className="h-[1.2rem] w-auto" />
               <span className="sr-only">Expand issue to full screen</span>
             </Button>
             <Dialog.Close />
@@ -134,7 +134,7 @@ export const NewIssueDialog = ({
                 <Button
                   className="px-2 text-sm"
                   color="tertiary"
-                  leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   size="xs"
                   variant="outline"
                 >
@@ -146,7 +146,7 @@ export const NewIssueDialog = ({
             <Button
               className="px-2 text-sm"
               color="tertiary"
-              leftIcon={<Tags className="h-4 w-auto" />}
+              leftIcon={<TagsIcon className="h-4 w-auto" />}
               size="xs"
               variant="outline"
             >
@@ -160,7 +160,7 @@ export const NewIssueDialog = ({
               Create more <Switch id="more" />
             </label>
           </Text>
-          <Button leftIcon={<Plus className="h-5 w-auto" />} size="md">
+          <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="md">
             Create issue
           </Button>
         </Dialog.Footer>

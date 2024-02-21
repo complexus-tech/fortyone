@@ -1,6 +1,6 @@
-import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Button, Flex, Text, Dialog, Input } from "ui";
+import { PlusIcon } from "@/components/icons";
 
 export const AddLinks = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +11,7 @@ export const AddLinks = () => {
         <Button
           className="ml-auto"
           color="tertiary"
-          leftIcon={<Plus className="h-5 w-auto" strokeWidth={2} />}
+          leftIcon={<PlusIcon className="h-5 w-auto" strokeWidth={2} />}
           onClick={() => {
             setIsOpen(true);
           }}
@@ -43,7 +43,7 @@ export const AddLinks = () => {
               >
                 Cancel
               </Button>
-              <Button leftIcon={<Plus className="h-5 w-auto" />} size="md">
+              <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="md">
                 Add link
               </Button>
             </Flex>

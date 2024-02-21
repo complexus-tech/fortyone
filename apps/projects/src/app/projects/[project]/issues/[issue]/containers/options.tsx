@@ -1,6 +1,5 @@
-import type { ReactNode } from "react";
 import { Box, Button, Container, Divider, Text, DatePicker, Avatar } from "ui";
-import { Calendar, CalendarCheck2 } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   PrioritiesMenu,
   StatusesMenu,
@@ -11,6 +10,7 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { Labels } from "@/components/ui/issue/labels";
+import { CalendarIcon } from "@/components/icons";
 import { AddLinks, OptionsHeader } from "../components";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
@@ -103,7 +103,7 @@ export const Options = () => {
               <DatePicker.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<Calendar className="h-[1.15rem] w-auto" />}
+                  leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
                   variant="naked"
                 >
                   Sep 27, 2024
@@ -120,7 +120,7 @@ export const Options = () => {
               <DatePicker.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<CalendarCheck2 className="h-[1.15rem] w-auto" />}
+                  leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
                   variant="naked"
                 >
                   Sep 27, 2024

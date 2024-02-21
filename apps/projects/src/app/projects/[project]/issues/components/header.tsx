@@ -1,9 +1,10 @@
-import { BreadCrumbs, Button, Flex, Tooltip } from "ui";
-import { Kanban, Settings2, TableProperties } from "lucide-react";
+import { BreadCrumbs, Button, Flex } from "ui";
+import { Settings2 } from "lucide-react";
 import { cn } from "lib";
 import type { Dispatch, SetStateAction } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
+import { KanbanIcon, TableIcon } from "@/components/icons";
 import type { Layout } from "../types";
 
 export const Header = ({
@@ -24,44 +25,39 @@ export const Header = ({
         ]}
       />
       <Flex gap={2}>
-        <Flex
-          className="mr-2 items-center rounded-lg bg-gray-100/70 dark:bg-dark-300"
-          gap={1}
-        >
-          <Tooltip title="Kanban Layout">
-            <Button
-              className={cn("opacity-80", {
-                "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-200":
-                  layout === "kanban",
-              })}
-              color="tertiary"
-              leftIcon={<Kanban className="h-5 w-auto" strokeWidth={2.5} />}
-              onClick={() => {
-                setLayout("kanban");
-              }}
-              size="sm"
-              variant={layout === "kanban" ? "outline" : "naked"}
-            >
-              <span className="sr-only">View as kanban board</span>
-            </Button>
-          </Tooltip>
-          <Tooltip title="List Layout">
-            <Button
-              className={cn("opacity-80", {
-                "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-200":
-                  layout === "list",
-              })}
-              color="tertiary"
-              leftIcon={<TableProperties className="h-5 w-auto" />}
-              onClick={() => {
-                setLayout("list");
-              }}
-              size="sm"
-              variant={layout === "list" ? "outline" : "naked"}
-            >
-              <span className="sr-only">View as list</span>
-            </Button>
-          </Tooltip>
+        <Flex className="mr-2 items-center gap-0.5 rounded-lg bg-gray-100/50 dark:bg-dark-200/60">
+          <Button
+            className={cn("opacity-60", {
+              "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-300":
+                layout === "kanban",
+            })}
+            color="tertiary"
+            leftIcon={<KanbanIcon className="h-5 w-auto" strokeWidth={2.5} />}
+            onClick={() => {
+              setLayout("kanban");
+            }}
+            size="sm"
+            title="Kanban layout"
+            variant={layout === "kanban" ? "outline" : "naked"}
+          >
+            <span className="sr-only">Board</span>
+          </Button>
+          <Button
+            className={cn("opacity-60", {
+              "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-300":
+                layout === "list",
+            })}
+            color="tertiary"
+            leftIcon={<TableIcon className="h-5 w-auto" />}
+            onClick={() => {
+              setLayout("list");
+            }}
+            size="sm"
+            title="List layout"
+            variant={layout === "list" ? "outline" : "naked"}
+          >
+            <span className="sr-only">List</span>
+          </Button>
         </Flex>
 
         <Button

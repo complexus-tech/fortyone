@@ -1,5 +1,5 @@
-import { Link2, Clipboard, Trash2 } from "lucide-react";
 import { Box, Button, Container, Flex, Text, Tooltip } from "ui";
+import { CopyIcon, DeleteIcon, LinkIcon } from "@/components/icons";
 
 export const OptionsHeader = () => {
   return (
@@ -12,7 +12,7 @@ export const OptionsHeader = () => {
           <Tooltip title="Copy issue link">
             <Button
               color="tertiary"
-              leftIcon={<Link2 className="h-5 w-auto" strokeWidth={2.5} />}
+              leftIcon={<LinkIcon className="h-5 w-auto" strokeWidth={2.5} />}
               variant="naked"
             >
               <span className="sr-only">Copy issue link</span>
@@ -21,7 +21,7 @@ export const OptionsHeader = () => {
           <Tooltip title="Copy issue id">
             <Button
               color="tertiary"
-              leftIcon={<Clipboard className="h-5 w-auto" />}
+              leftIcon={<CopyIcon className="h-5 w-auto" />}
               variant="naked"
             >
               <span className="sr-only">Copy issue id</span>
@@ -30,7 +30,7 @@ export const OptionsHeader = () => {
           <Tooltip title="Delete issue">
             <Button
               color="danger"
-              leftIcon={<Trash2 className="h-5 w-auto" />}
+              leftIcon={<DeleteIcon className="h-5 w-auto" />}
               variant="naked"
             >
               <span className="sr-only">Delete issue</span>

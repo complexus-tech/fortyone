@@ -1,12 +1,17 @@
 "use client";
 import { type Dispatch, type SetStateAction } from "react";
 import { Button, Badge, Dialog, Flex, TextEditor, DatePicker } from "ui";
-import { Plus, CalendarCheck2, Calendar, LayoutGrid } from "lucide-react";
 import { useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import {
+  CalendarPlusIcon,
+  CalendarIcon,
+  PlusIcon,
+  ProjectsIcon,
+} from "../icons";
 
 export const NewProjectDialog = ({
   isOpen,
@@ -51,10 +56,7 @@ export const NewProjectDialog = ({
               className="relative top-[0.1rem] aspect-square"
               color="tertiary"
               leftIcon={
-                <LayoutGrid
-                  className="relative left-[0.15rem] h-5 w-auto text-gray-250"
-                  fill="currentColor"
-                />
+                <ProjectsIcon className="relative left-[0.15rem] h-5 w-auto text-gray-250" />
               }
               size="xs"
               variant="outline"
@@ -74,7 +76,7 @@ export const NewProjectDialog = ({
                 <Button
                   className="px-2 text-sm"
                   color="tertiary"
-                  leftIcon={<Calendar className="h-4 w-auto" />}
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   size="xs"
                   variant="outline"
                 >
@@ -88,7 +90,7 @@ export const NewProjectDialog = ({
                 <Button
                   className="px-2 text-sm"
                   color="tertiary"
-                  leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                  leftIcon={<CalendarPlusIcon className="h-4 w-auto" />}
                   size="xs"
                   variant="outline"
                 >
@@ -102,7 +104,7 @@ export const NewProjectDialog = ({
                 <Button
                   className="px-2 text-sm"
                   color="tertiary"
-                  leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   size="xs"
                   variant="outline"
                 >
@@ -116,7 +118,7 @@ export const NewProjectDialog = ({
                 <Button
                   className="px-2 text-sm"
                   color="tertiary"
-                  leftIcon={<CalendarCheck2 className="h-4 w-auto" />}
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   size="xs"
                   variant="outline"
                 >
@@ -138,7 +140,7 @@ export const NewProjectDialog = ({
           >
             Discard
           </Button>
-          <Button leftIcon={<Plus className="h-5 w-auto" />}>
+          <Button leftIcon={<PlusIcon className="h-5 w-auto" />}>
             Create project
           </Button>
         </Dialog.Footer>

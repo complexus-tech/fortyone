@@ -1,6 +1,6 @@
 import type { Icon } from "@/types/icon";
 
-export const DragIcon = (props: Icon) => {
+export const ArrowUpIcon = (props: Icon) => {
   return (
     <svg
       {...props}
@@ -11,7 +11,7 @@ export const DragIcon = (props: Icon) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M8 6H8.00635M8 12H8.00635M8 18H8.00635M15.9937 6H16M15.9937 12H16M15.9937 18H16"
+        d="M18 15C18 15 13.5811 9.00001 12 9C10.4188 8.99999 6 15 6 15"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"

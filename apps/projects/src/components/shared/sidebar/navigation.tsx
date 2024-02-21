@@ -25,11 +25,6 @@ export const Navigation = () => {
       href: "/analytics",
     },
     {
-      name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
-      href: "/notifications",
-    },
-    {
       name: "My issues",
       icon: <IssuesIcon className="h-[1.4rem] w-auto" />,
       href: "/my-issues",
@@ -39,6 +34,12 @@ export const Navigation = () => {
       icon: <ProjectsIcon className="h-5 w-auto" />,
       href: "/projects",
     },
+    {
+      name: "Notifications",
+      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
+      href: "/notifications",
+    },
+
     {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,

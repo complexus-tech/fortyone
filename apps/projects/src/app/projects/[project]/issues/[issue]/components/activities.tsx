@@ -1,5 +1,4 @@
 import { Avatar, Box, Button, Flex, Tabs, Text, TextEditor } from "ui";
-import { Paperclip, History, MessageSquareText, Hourglass } from "lucide-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -9,6 +8,12 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Activity } from "@/components/ui";
 import type { ActivityProps } from "@/components/ui";
+import {
+  AttachmentIcon,
+  ClockIcon,
+  CommentIcon,
+  UpdatesIcon,
+} from "@/components/icons";
 
 export const Activities = () => {
   const activites: ActivityProps[] = [
@@ -69,7 +74,7 @@ export const Activities = () => {
         className="mb-6 flex items-center gap-1"
         fontWeight="medium"
       >
-        <History className="h-5 w-auto" />
+        <ClockIcon className="h-5 w-auto" />
         Activity feed
       </Text>
 
@@ -78,7 +83,7 @@ export const Activities = () => {
           <Tabs.Tab
             className="text-[0.95rem] font-medium"
             leftIcon={
-              <History className="h-[1.1rem] w-auto" strokeWidth={2.2} />
+              <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
             value="all"
           >
@@ -86,7 +91,7 @@ export const Activities = () => {
           </Tabs.Tab>
           <Tabs.Tab
             className="text-[0.95rem] font-medium"
-            leftIcon={<Hourglass className="h-4 w-auto" strokeWidth={2.8} />}
+            leftIcon={<UpdatesIcon className="h-4 w-auto" strokeWidth={2.8} />}
             value="updates"
           >
             Updates
@@ -94,10 +99,7 @@ export const Activities = () => {
           <Tabs.Tab
             className="text-[0.95rem] font-medium"
             leftIcon={
-              <MessageSquareText
-                className="h-[1.1rem] w-auto"
-                strokeWidth={2.2}
-              />
+              <CommentIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
             value="comments"
           >
@@ -126,7 +128,7 @@ export const Activities = () => {
                   <Button
                     className="px-3"
                     color="tertiary"
-                    leftIcon={<Paperclip className="h-4 w-auto" />}
+                    leftIcon={<AttachmentIcon className="h-4 w-auto" />}
                     size="sm"
                     variant="naked"
                   >

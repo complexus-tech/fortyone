@@ -2,7 +2,6 @@
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { Box, Button, Flex, Menu } from "ui";
 import {
   ArrowDownIcon,
@@ -16,6 +15,7 @@ import {
   StarIcon,
   DocsIcon,
 } from "@/components/icons";
+import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
 type ProjectProps = {
@@ -27,7 +27,10 @@ export const Project = ({
   name: projectName,
   icon: projectIcon,
 }: ProjectProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>(
+    `project-${projectName}-dropdown`,
+    true,
+  );
   const pathname = usePathname();
   const links = [
     {
@@ -69,7 +72,7 @@ export const Project = ({
           <Flex align="center" gap={1}>
             <ArrowDownIcon
               className={cn(
-                "hidden h-4 w-auto -rotate-90 text-gray-300/80 group-hover:inline-block dark:text-gray",
+                "h-4 w-auto -rotate-90 text-gray-300/80 dark:text-gray",
                 {
                   "rotate-0": isOpen,
                 },

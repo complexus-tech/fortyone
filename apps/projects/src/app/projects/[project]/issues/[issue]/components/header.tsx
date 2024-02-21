@@ -1,6 +1,11 @@
-import { Bell, ChevronUp, ChevronDown, Star } from "lucide-react";
 import { BreadCrumbs, Button, Flex, Text } from "ui";
 import { HeaderContainer } from "@/components/layout";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  BellIcon,
+  StarIcon,
+} from "@/components/icons";
 
 export const Header = () => {
   return (
@@ -23,15 +28,15 @@ export const Header = () => {
             </Text>
           </Text>
           <Button color="tertiary" size="sm">
-            <ChevronUp className="h-4 w-auto" />
+            <ArrowUpIcon className="h-4 w-auto" />
           </Button>
           <Button className="mr-2" color="tertiary" disabled size="sm">
-            <ChevronDown className="h-4 w-auto" />
+            <ArrowDownIcon className="h-4 w-auto" />
           </Button>
           <Button
             className="px-3"
             color="tertiary"
-            leftIcon={<Star className="h-4 w-auto" />}
+            leftIcon={<StarIcon className="h-4 w-auto" />}
             size="sm"
             variant="outline"
           >
@@ -39,7 +44,7 @@ export const Header = () => {
           </Button>
           <Button
             className="px-2"
-            leftIcon={<Bell className="h-4 w-auto" />}
+            leftIcon={<BellIcon className="h-[1.15rem] w-auto" />}
             size="sm"
           >
             Subscribe
