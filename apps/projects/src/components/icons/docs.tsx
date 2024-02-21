@@ -1,6 +1,6 @@
 import type { Icon } from "@/types/icon";
 
-export const WikiIcon = (props: Icon) => {
+export const DocsIcon = (props: Icon) => {
   return (
     <svg
       {...props}

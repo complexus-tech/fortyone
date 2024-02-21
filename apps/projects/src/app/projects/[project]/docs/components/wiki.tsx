@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   LockKeyhole,
   MoreVertical,
-  NotepadText,
   Star,
   Pencil,
   Trash2,
@@ -11,13 +10,14 @@ import {
 } from "lucide-react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { TableCheckbox } from "@/components/ui";
+import { DocsIcon } from "@/components/icons";
 
 export const Wiki = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
-        <NotepadText className="h-[1.2rem] w-auto" />
+        <DocsIcon className="h-[1.2rem] w-auto" />
         <Link
           className="flex items-center gap-5"
           href="/projects/web/wikis/test1"

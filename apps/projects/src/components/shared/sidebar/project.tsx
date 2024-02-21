@@ -5,19 +5,16 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { Box, Button, Flex, Menu } from "ui";
 import {
-  ChevronDown,
-  MoreHorizontal,
-  Settings,
-  Star,
-  Link2,
-  Trash2,
-} from "lucide-react";
-import {
+  ArrowDownIcon,
+  DeleteIcon,
   IssuesIcon,
+  LinkIcon,
   ModulesIcon,
+  MoreHorizontalIcon,
   SettingsIcon,
   SprintsIcon,
-  WikiIcon,
+  StarIcon,
+  DocsIcon,
 } from "@/components/icons";
 import { NavLink } from "../../ui";
 
@@ -49,9 +46,9 @@ export const Project = ({
       href: "/inbox",
     },
     {
-      name: "Wikis",
-      icon: <WikiIcon className="h-5 w-auto" />,
-      href: "/projects/web/wikis",
+      name: "Docs",
+      icon: <DocsIcon className="h-5 w-auto" />,
+      href: "/projects/web/docs",
     },
     {
       name: "Settings",
@@ -70,7 +67,7 @@ export const Project = ({
         }}
         rightIcon={
           <Flex align="center" gap={1}>
-            <ChevronDown
+            <ArrowDownIcon
               className={cn(
                 "hidden h-4 w-auto -rotate-90 text-gray-300/80 group-hover:inline-block dark:text-gray",
                 {
@@ -82,34 +79,34 @@ export const Project = ({
             <Menu>
               <Menu.Button>
                 <button
-                  className={cn("hidden px-1 py-2 group-hover:inline-block", {
-                    "inline-block": isOpen,
+                  className={cn("px-1 py-2 opacity-0 group-hover:opacity-100", {
+                    "opacity-100": isOpen,
                   })}
                   type="button"
                 >
-                  <MoreHorizontal className="relative top-[1px] h-4 w-auto text-gray-300/80 dark:text-gray" />
+                  <MoreHorizontalIcon className="relative top-[1px] h-4 w-auto text-gray-300/80 dark:text-gray" />
                   <span className="sr-only">Project options</span>
                 </button>
               </Menu.Button>
               <Menu.Items align="start">
                 <Menu.Group>
                   <Menu.Item>
-                    <Star className="h-[1.15rem] w-auto" />
+                    <StarIcon className="h-[1.15rem] w-auto" />
                     Add to favorites
                   </Menu.Item>
                   <Menu.Item>
-                    <Link2 className="h-5 w-auto" />
+                    <LinkIcon className="h-5 w-auto" />
                     Copy project link
                   </Menu.Item>
                   <Menu.Item>
-                    <Settings className="h-5 w-auto" />
+                    <SettingsIcon className="h-5 w-auto" />
                     Settings
                   </Menu.Item>
                 </Menu.Group>
                 <Menu.Separator />
                 <Menu.Group>
                   <Menu.Item className="text-danger">
-                    <Trash2 className="h-5 w-auto" />
+                    <DeleteIcon className="h-5 w-auto" />
                     Delete project
                   </Menu.Item>
                 </Menu.Group>

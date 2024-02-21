@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
 import type { IssueStatus } from "../../types/issue";
+import { PlusIcon } from "../icons";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { NewIssueDialog } from "./new-issue-dialog";
 
@@ -34,7 +34,9 @@ export const IssuesHeader = ({
         <Tooltip side="left" title="Add issue">
           <Button
             color="tertiary"
-            leftIcon={<Plus className="h-5 w-auto dark:text-gray-200" />}
+            leftIcon={
+              <PlusIcon className="h-[1.2rem] w-auto dark:text-gray-200" />
+            }
             onClick={() => {
               setIsOpen(true);
             }}

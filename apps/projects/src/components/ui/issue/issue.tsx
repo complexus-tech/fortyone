@@ -21,14 +21,6 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
         <Flex align="center" className="relative flex-1 select-none" gap={2}>
           <DragHandle />
           <TableCheckbox />
-          <PrioritiesMenu>
-            <PrioritiesMenu.Trigger>
-              <button className="block" type="button">
-                <PriorityIcon priority={priority} />
-              </button>
-            </PrioritiesMenu.Trigger>
-            <PrioritiesMenu.Items priority={priority} />
-          </PrioritiesMenu>
           <Tooltip title="Issue ID: COM-12">
             <Text className="w-[55px] truncate" color="muted">
               COM-12
@@ -50,6 +42,19 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
         </Flex>
         <Flex align="center" gap={3}>
           <Labels />
+
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <button
+                className="flex select-none items-center gap-1"
+                type="button"
+              >
+                <PriorityIcon priority={priority} />
+                {priority}
+              </button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items priority={priority} />
+          </PrioritiesMenu>
           <DatePicker>
             <DatePicker.Trigger>
               <button type="button">

@@ -2,8 +2,7 @@
 import { cn } from "lib";
 import { useState } from "react";
 import { Box, Button, Flex } from "ui";
-import { ChevronDown, Plus } from "lucide-react";
-import { ProjectsIcon } from "@/components/icons";
+import { ArrowDownIcon, PlusIcon, ProjectsIcon } from "@/components/icons";
 import { Project } from "./project";
 
 export const Projects = () => {
@@ -23,7 +22,7 @@ export const Projects = () => {
         <span className="flex items-center gap-2 font-medium">
           <ProjectsIcon className="relative h-5 w-auto text-gray-300/80 dark:text-gray" />
           Projects
-          <ChevronDown
+          <ArrowDownIcon
             className={cn(
               "relative top-[0.2px] h-4 w-auto -rotate-90 text-gray-300/60 transition-transform dark:text-gray",
               {
@@ -33,7 +32,7 @@ export const Projects = () => {
             strokeWidth={3.5}
           />
         </span>
-        <Plus className="hidden h-5 w-auto justify-self-end text-gray-300/60 group-hover:inline dark:dark:text-gray-200" />
+        <PlusIcon className="hidden h-5 w-auto justify-self-end text-gray-300/60 group-hover:inline dark:dark:text-gray-200" />
       </Button>
       <Flex
         className={cn(

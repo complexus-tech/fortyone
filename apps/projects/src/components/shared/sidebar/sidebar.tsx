@@ -14,10 +14,9 @@ export const Sidebar = () => {
       </Box>
       <Flex justify="between">
         <Button
-          className="px-3 dark:border-dark-100"
+          className="px-3 text-[0.95rem] font-medium dark:border-dark-100"
           color="tertiary"
           rounded="full"
-          size="sm"
           variant="outline"
         >
           Upgrade plan

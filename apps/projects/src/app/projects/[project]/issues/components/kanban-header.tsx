@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
 import { Flex, Button, Text } from "ui";
-import { Plus, Minus } from "lucide-react";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { IssueStatusIcon, NewIssueDialog } from "@/components/ui";
+import { MinimizeIcon, PlusIcon } from "@/components/icons";
 
 export const IssuesKanbanHeader = ({
   status,
@@ -32,7 +32,7 @@ export const IssuesKanbanHeader = ({
         </Flex>
         <span className="flex items-center gap-1">
           <Button color="tertiary" size="sm" variant="naked">
-            <Minus className="h-5 w-auto" />
+            <MinimizeIcon className="h-[1.2rem] w-auto" />
           </Button>
           <Button
             color="tertiary"
@@ -42,7 +42,7 @@ export const IssuesKanbanHeader = ({
             size="sm"
             variant="naked"
           >
-            <Plus className="h-5 w-auto" />
+            <PlusIcon className="h-[1.2rem] w-auto" />
           </Button>
         </span>
       </Flex>

@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
-import {
-  Check,
-  LogOut,
-  Plus,
-  Search,
-  Settings,
-  User,
-  UserPlus,
-} from "lucide-react";
 import { NewIssueDialog } from "@/components/ui";
-import { NewIssueIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  LogoutIcon,
+  NewIssueIcon,
+  PlusIcon,
+  SearchIcon,
+  SettingsIcon,
+  UserIcon,
+  UsersAddIcon,
+} from "@/components/icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +46,10 @@ export const Header = () => {
                   />
                   Complexus
                 </span>
-                <Check className="h-5 w-auto text-primary" strokeWidth={2.1} />
+                <CheckIcon
+                  className="h-5 w-auto text-primary"
+                  strokeWidth={2.1}
+                />
               </Menu.Item>
               <Menu.Item>
                 <Avatar
@@ -60,7 +63,7 @@ export const Header = () => {
               <Menu.Item asChild>
                 <Button
                   color="tertiary"
-                  leftIcon={<Plus className="h-5 w-auto" />}
+                  leftIcon={<PlusIcon className="h-5 w-auto" />}
                   variant="naked"
                 >
                   Create workspace
@@ -70,18 +73,18 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <Settings className="h-5 w-auto" />
+                <SettingsIcon className="h-5 w-auto" />
                 Workspace settings
               </Menu.Item>
               <Menu.Item>
-                <UserPlus className="h-5 w-auto" />
+                <UsersAddIcon className="h-5 w-auto" />
                 Invite members
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <LogOut className="h-5 w-auto" />
+                <LogoutIcon className="h-5 w-auto" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -113,18 +116,18 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <User className="h-5 w-auto" />
+                <UserIcon className="h-5 w-auto" />
                 View profile
               </Menu.Item>
               <Menu.Item>
-                <Settings className="h-5 w-auto" />
+                <SettingsIcon className="h-5 w-auto" />
                 Settings
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <LogOut className="h-5 w-auto" />
+                <LogoutIcon className="h-5 w-auto" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -147,7 +150,7 @@ export const Header = () => {
           align="center"
           className="px-[0.6rem]"
           color="tertiary"
-          leftIcon={<Search className="h-[1.1rem] w-auto" />}
+          leftIcon={<SearchIcon className="h-[1.1rem] w-auto" />}
           variant="outline"
         >
           <span className="sr-only">Search</span>
