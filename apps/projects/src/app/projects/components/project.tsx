@@ -71,8 +71,14 @@ export const Project = ({
           </Menu.Button>
           <Menu.Items align="end" className="w-64">
             <Menu.Group>
-              <Menu.Item>Edit</Menu.Item>
+              <Menu.Item>Settings</Menu.Item>
+              <Menu.Item>Status</Menu.Item>
+              <Menu.Item>Lead</Menu.Item>
+              <Menu.Item>Start date</Menu.Item>
+              <Menu.Item>Due date</Menu.Item>
+              <Menu.Item>Favourite</Menu.Item>
               <Menu.Item>Delete</Menu.Item>
+              <Menu.Item></Menu.Item>
             </Menu.Group>
           </Menu.Items>
         </Menu>
