@@ -1,5 +1,6 @@
 import { Box, Button, Container, Divider, Text, DatePicker, Avatar } from "ui";
 import type { ReactNode } from "react";
+import { CalendarIcon } from "icons";
 import {
   PrioritiesMenu,
   StatusesMenu,
@@ -10,7 +11,6 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { Labels } from "@/components/ui/issue/labels";
-import { CalendarIcon } from "icons";
 import { AddLinks, OptionsHeader } from "../components";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {

@@ -44,7 +44,12 @@ export const Project = ({
             Sep 27, 2024
           </Text>
         </Tooltip>
-        <AssigneesMenu isSearchEnabled placeholder="Assign project lead..." />
+        <AssigneesMenu>
+          <AssigneesMenu.Trigger>
+            <button type="button">user</button>
+          </AssigneesMenu.Trigger>
+          <AssigneesMenu.Items />
+        </AssigneesMenu>
       </Flex>
     </RowWrapper>
   );

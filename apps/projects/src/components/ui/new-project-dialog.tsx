@@ -6,12 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import {
-  CalendarPlusIcon,
-  CalendarIcon,
-  PlusIcon,
-  ProjectsIcon,
-} from "../icons";
+import { CalendarPlusIcon, CalendarIcon, PlusIcon, ProjectsIcon } from "icons";
 
 export const NewProjectDialog = ({
   isOpen,

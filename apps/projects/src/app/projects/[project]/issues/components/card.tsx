@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Box, Flex, Button, Text, Avatar, DatePicker } from "ui";
+import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "icons";
 import {
   PriorityIcon,
   StatusesMenu,
@@ -10,7 +11,6 @@ import {
   AssigneesMenu,
 } from "@/components/ui";
 import type { Issue } from "@/types/issue";
-import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "icons";
 
 export const Card = ({ issue }: { issue: Issue }) => {
   return (

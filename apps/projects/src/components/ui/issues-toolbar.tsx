@@ -1,5 +1,5 @@
 import { Button, Flex, Text } from "ui";
-import { DeleteIcon, ProjectsIcon, SprintsIcon } from "../icons";
+import { DeleteIcon, ProjectsIcon, SprintsIcon } from "icons";
 
 export const IssuesToolbar = () => {
   return (

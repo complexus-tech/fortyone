@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button } from "ui";
-import { PlusIcon } from "../icons";
+import { PlusIcon } from "icons";
 import { NewIssueDialog } from "./new-issue-dialog";
 
 export const NewIssueButton = () => {

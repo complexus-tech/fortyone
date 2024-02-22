@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
+import { PlusIcon } from "icons";
 import type { IssueStatus } from "../../types/issue";
-import { PlusIcon } from "../icons";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { NewIssueDialog } from "./new-issue-dialog";
 

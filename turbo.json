@@ -8,7 +8,7 @@
     },
     "lint": {},
     "dev": {
-      "cache": true,
+      "cache": false,
       "persistent": true
     }
   }

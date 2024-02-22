@@ -1,15 +1,10 @@
 import { Flex, Text, Tooltip, Avatar, Button, Menu } from "ui";
 import Link from "next/link";
+import { CalendarIcon, MoreHorizontalIcon, ProjectsIcon } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
 import { TableCheckbox } from "@/components/ui";
 import { ProjectStatusesMenu } from "./statuses-menu";
-import {
-  CalendarIcon,
-  EditIcon,
-  MoreHorizontalIcon,
-  ProjectsIcon,
-} from "icons";
 
 export const Project = ({
   name,
@@ -63,8 +58,8 @@ export const Project = ({
             <Button
               color="tertiary"
               leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
-              variant="naked"
               size="sm"
+              variant="naked"
             >
               <span className="sr-only">More options</span>
             </Button>
@@ -78,7 +73,7 @@ export const Project = ({
               <Menu.Item>Due date</Menu.Item>
               <Menu.Item>Favourite</Menu.Item>
               <Menu.Item>Delete</Menu.Item>
-              <Menu.Item></Menu.Item>
+              <Menu.Item />
             </Menu.Group>
           </Menu.Items>
         </Menu>

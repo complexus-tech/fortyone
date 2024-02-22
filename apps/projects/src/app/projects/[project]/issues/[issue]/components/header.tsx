@@ -1,5 +1,4 @@
 import { BreadCrumbs, Button, Flex, Text } from "ui";
-import { HeaderContainer } from "@/components/layout";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -8,6 +7,7 @@ import {
   ProjectsIcon,
   IssuesIcon,
 } from "icons";
+import { HeaderContainer } from "@/components/layout";
 
 export const Header = () => {
   return (

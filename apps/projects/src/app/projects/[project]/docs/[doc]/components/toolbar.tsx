@@ -1,6 +1,5 @@
 import { Button, Container, Flex, Tooltip, Menu } from "ui";
 import type { Editor } from "@tiptap/react";
-import { ToggleNode } from "./node";
 import {
   BoldIcon,
   CheckListIcon,
@@ -22,6 +21,7 @@ import {
   UndoIcon,
   UnorderedListIcon,
 } from "icons";
+import { ToggleNode } from "./node";
 
 export const Toolbar = ({ editor }: { editor: Editor | null }) => {
   return (

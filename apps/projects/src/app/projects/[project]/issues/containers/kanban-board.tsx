@@ -14,7 +14,7 @@ const IssuesGroup = ({
 }) => {
   const filteredIssues = issues.filter((issue) => issue.status === status);
   return (
-    <KanbanList key={status} status={status}>
+    <KanbanList key={status}>
       {filteredIssues.map((issue) => (
         <Card issue={issue} key={issue.id} />
       ))}

@@ -23,6 +23,12 @@ importers:
 
   apps/docs:
     dependencies:
+      icons:
+        specifier: workspace:*
+        version: link:../../packages/icons
+      lib:
+        specifier: workspace:*
+        version: link:../../packages/lib
       next:
         specifier: ^13.4.19
         version: 13.5.4(react-dom@18.2.0)(react@18.2.0)
@@ -32,6 +38,9 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
+      tailwind-config:
+        specifier: workspace:*
+        version: link:../../packages/tailwind-config
       ui:
         specifier: workspace:*
         version: link:../../packages/ui
@@ -108,6 +117,9 @@ importers:
       lib:
         specifier: workspace:*
         version: link:../../packages/lib
+      lucide-react:
+        specifier: ^0.336.0
+        version: 0.336.0(react@18.2.0)
       next:
         specifier: ^14.1.0
         version: 14.1.0(react-dom@18.2.0)(react@18.2.0)
@@ -178,12 +190,6 @@ importers:
 
   packages/icons:
     devDependencies:
-      '@testing-library/react':
-        specifier: ^14.0.0
-        version: 14.0.0(react-dom@18.2.0)(react@18.2.0)
-      '@types/jest':
-        specifier: ^29.5.4
-        version: 29.5.5
       '@types/node':
         specifier: ^20.5.2
         version: 20.11.17
@@ -3007,10 +3013,6 @@ packages:
     engines: {node: '>= 6'}
     dev: true
 
-  /caniuse-lite@1.0.30001547:
-    resolution: {integrity: sha512-W7CrtIModMAxobGhz8iXmDfuJiiKg1WADMO/9x7/CLNin5cpSbuBjooyoIUVB5eyCc36QuTVlkVa1iB2S5+/eA==}
-    dev: false
-
   /caniuse-lite@1.0.30001561:
     resolution: {integrity: sha512-NTt0DNoKe958Q0BE0j0c1V9jbUzhBxHIEJy7asmGrpE0yG63KTV7PLHPnK2E1O9RsQrQ081I3NLuXGS6zht3cw==}
     dev: true
@@ -4812,6 +4814,14 @@ packages:
       yallist: 4.0.0
     dev: true
 
+  /lucide-react@0.336.0(react@18.2.0):
+    resolution: {integrity: sha512-e06J4Qrdrk3BP/hf3MnkW3LnymdthfyEtVbdEg0xPQ/olTEKfOfTv03DYmdRm1+XpaNQdCpiHT7Vi6regbxDCQ==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
+    dev: false
+
   /lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
@@ -4926,7 +4936,7 @@ packages:
       '@next/env': 13.5.4
       '@swc/helpers': 0.5.2
       busboy: 1.6.0
-      caniuse-lite: 1.0.30001547
+      caniuse-lite: 1.0.30001589
       postcss: 8.4.31
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)

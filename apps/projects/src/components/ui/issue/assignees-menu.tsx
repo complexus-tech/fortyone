@@ -1,6 +1,6 @@
+import { CheckIcon } from "icons";
 import type { ReactNode } from "react";
 import { Avatar, Flex, Menu, Text } from "ui";
-import { Check } from "lucide-react";
 
 export const AssigneesMenu = ({ children }: { children: ReactNode }) => {
   return <Menu>{children}</Menu>;
@@ -57,7 +57,7 @@ const Items = ({
               <Text className="max-w-[10rem] truncate">{name}</Text>
             </Flex>
             <Flex align="center" gap={1}>
-              {idx === 1 && <Check className="h-5 w-auto" strokeWidth={2.1} />}
+              {idx === 1 && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
               <Text color="muted">{idx}</Text>
             </Flex>
           </Menu.Item>

@@ -20,14 +20,14 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import type { IssueStatus } from "@/types/issue";
 import {
   ArrowRightIcon,
   CalendarIcon,
   MaximizeIcon,
   PlusIcon,
   TagsIcon,
-} from "../icons";
+} from "icons";
+import type { IssueStatus } from "@/types/issue";
 import { StatusesMenu } from "./issue/statuses-menu";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { PrioritiesMenu } from "./issue/priorities-menu";

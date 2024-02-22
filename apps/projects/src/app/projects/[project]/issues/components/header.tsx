@@ -1,7 +1,5 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { cn } from "lib";
-import { HeaderContainer } from "@/components/layout";
-import { NewIssueButton } from "@/components/ui";
 import {
   KanbanIcon,
   TableIcon,
@@ -9,6 +7,8 @@ import {
   ProjectsIcon,
   IssuesIcon,
 } from "icons";
+import { HeaderContainer } from "@/components/layout";
+import { NewIssueButton } from "@/components/ui";
 import type { Layout } from "../types";
 
 export const Header = ({

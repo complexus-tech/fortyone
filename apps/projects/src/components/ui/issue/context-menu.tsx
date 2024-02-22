@@ -2,21 +2,6 @@ import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { Avatar, Box, ContextMenu } from "ui";
 import {
-  BellPlus,
-  FilePenLine,
-  Layers3,
-  Pencil,
-  Tags,
-  Trash2,
-  User,
-  Clipboard,
-  Star,
-  Calendar,
-  CalendarCheck2,
-  GalleryVerticalEnd,
-  TimerReset,
-} from "lucide-react";
-import {
   BellIcon,
   CalendarPlusIcon,
   CopyIcon,
