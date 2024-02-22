@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Flex, Text, Dialog, Input } from "ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon } from "icons";
 
 export const AddLinks = () => {
   const [isOpen, setIsOpen] = useState(false);

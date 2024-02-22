@@ -1,5 +1,5 @@
 import { Box, Button, Container, Flex, Text, Tooltip } from "ui";
-import { CopyIcon, DeleteIcon, LinkIcon } from "@/components/icons";
+import { CopyIcon, DeleteIcon, LinkIcon } from "icons";
 
 export const OptionsHeader = () => {
   return (

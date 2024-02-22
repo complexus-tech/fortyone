@@ -16,9 +16,6 @@ import {
   GalleryVerticalEnd,
   TimerReset,
 } from "lucide-react";
-import { IssueStatusIcon } from "../issue-status-icon";
-import { PriorityIcon } from "../priority-icon";
-import { ContextMenuItem } from "./context-menu-item";
 import {
   BellIcon,
   CalendarPlusIcon,
@@ -32,7 +29,10 @@ import {
   StarIcon,
   TagsIcon,
   UserIcon,
-} from "@/components/icons";
+} from "icons";
+import { IssueStatusIcon } from "../issue-status-icon";
+import { PriorityIcon } from "../priority-icon";
+import { ContextMenuItem } from "./context-menu-item";
 
 export const contextMenu = [
   {

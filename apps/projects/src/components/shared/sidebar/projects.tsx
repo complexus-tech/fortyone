@@ -2,7 +2,7 @@
 import { cn } from "lib";
 import { useState } from "react";
 import { Box, Button, Flex } from "ui";
-import { ArrowDownIcon, PlusIcon } from "@/components/icons";
+import { ArrowDownIcon, PlusIcon } from "icons";
 import { NewProjectDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { Project } from "./project";

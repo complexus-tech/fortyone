@@ -8,7 +8,7 @@ import {
   PreferencesIcon,
   ProjectsIcon,
   IssuesIcon,
-} from "@/components/icons";
+} from "icons";
 import type { Layout } from "../types";
 
 export const Header = ({

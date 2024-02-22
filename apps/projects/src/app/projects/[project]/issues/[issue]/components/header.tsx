@@ -7,7 +7,7 @@ import {
   StarIcon,
   ProjectsIcon,
   IssuesIcon,
-} from "@/components/icons";
+} from "icons";
 
 export const Header = () => {
   return (

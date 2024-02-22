@@ -10,7 +10,7 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { Labels } from "@/components/ui/issue/labels";
-import { CalendarIcon } from "@/components/icons";
+import { CalendarIcon } from "icons";
 import { AddLinks, OptionsHeader } from "../components";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {

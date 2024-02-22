@@ -9,7 +9,7 @@ import {
   EditIcon,
   MoreHorizontalIcon,
   ProjectsIcon,
-} from "@/components/icons";
+} from "icons";
 
 export const Project = ({
   name,

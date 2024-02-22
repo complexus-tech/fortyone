@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from "@/components/icons";
+import { ArrowRightIcon } from "icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
 

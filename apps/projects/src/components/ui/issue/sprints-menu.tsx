@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { CheckIcon, PlusIcon, SprintsIcon } from "@/components/icons";
+import { CheckIcon, PlusIcon, SprintsIcon } from "icons";
 
 export const SprintsMenu = () => {
   const sprints = ["Complains", "Clients", "Audit"];

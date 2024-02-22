@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Flex, Button, Text } from "ui";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { IssueStatusIcon, NewIssueDialog } from "@/components/ui";
-import { MinimizeIcon, PlusIcon } from "@/components/icons";
+import { MinimizeIcon, PlusIcon } from "icons";
 
 export const IssuesKanbanHeader = ({
   status,

@@ -1,7 +1,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
-import { IssuesIcon, PreferencesIcon } from "@/components/icons";
+import { IssuesIcon, PreferencesIcon } from "icons";
 
 export const Header = () => {
   return (

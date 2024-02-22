@@ -1,7 +1,6 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import { cn } from "lib";
-import { NavLink } from "@/components/ui";
 import {
   AnalyticsIcon,
   DashboardIcon,
@@ -9,7 +8,8 @@ import {
   NotificationsIcon,
   ProjectsIcon,
   SprintsIcon,
-} from "@/components/icons";
+} from "icons";
+import { NavLink } from "@/components/ui";
 
 export const Navigation = () => {
   const pathname = usePathname();

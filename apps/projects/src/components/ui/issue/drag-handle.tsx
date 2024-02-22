@@ -1,4 +1,4 @@
-import { DragIcon } from "@/components/icons";
+import { DragIcon } from "icons";
 
 export const DragHandle = () => {
   return (

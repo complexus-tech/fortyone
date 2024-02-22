@@ -21,7 +21,7 @@ import {
   UnderlineIcon,
   UndoIcon,
   UnorderedListIcon,
-} from "@/components/icons";
+} from "icons";
 
 export const Toolbar = ({ editor }: { editor: Editor | null }) => {
   return (

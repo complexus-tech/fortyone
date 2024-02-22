@@ -14,7 +14,7 @@ import {
   SprintsIcon,
   StarIcon,
   DocsIcon,
-} from "@/components/icons";
+} from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 

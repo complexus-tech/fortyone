@@ -1,11 +1,6 @@
 import { BreadCrumbs, Button, Flex } from "ui";
+import { PlusIcon, PreferencesIcon, SearchIcon, SprintsIcon } from "icons";
 import { HeaderContainer } from "@/components/layout";
-import {
-  PlusIcon,
-  PreferencesIcon,
-  SearchIcon,
-  SprintsIcon,
-} from "@/components/icons";
 
 export const Header = () => {
   return (

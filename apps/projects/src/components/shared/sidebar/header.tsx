@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
-import { NewIssueDialog } from "@/components/ui";
 import {
   CheckIcon,
   LogoutIcon,
@@ -10,7 +9,8 @@ import {
   SettingsIcon,
   UserIcon,
   UsersAddIcon,
-} from "@/components/icons";
+} from "icons";
+import { NewIssueDialog } from "@/components/ui";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 import { Box, Button, Flex } from "ui";
-import { ArrowRightIcon } from "@/components/icons";
+import { ArrowRightIcon } from "icons";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Projects } from "./projects";

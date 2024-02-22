@@ -8,12 +8,7 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Activity } from "@/components/ui";
 import type { ActivityProps } from "@/components/ui";
-import {
-  AttachmentIcon,
-  ClockIcon,
-  CommentIcon,
-  UpdatesIcon,
-} from "@/components/icons";
+import { AttachmentIcon, ClockIcon, CommentIcon, UpdatesIcon } from "icons";
 
 export const Activities = () => {
   const activites: ActivityProps[] = [

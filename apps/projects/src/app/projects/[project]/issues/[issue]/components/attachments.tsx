@@ -1,5 +1,5 @@
 import { Box, Text } from "ui";
-import { AttachmentIcon } from "@/components/icons";
+import { AttachmentIcon } from "icons";
 
 export const Attachments = () => {
   return (

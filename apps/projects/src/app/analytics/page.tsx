@@ -1,7 +1,7 @@
 import { BreadCrumbs, Button, Container, Flex } from "ui";
+import { AnalyticsIcon, PreferencesIcon } from "icons";
 import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
-import { AnalyticsIcon, PreferencesIcon } from "@/components/icons";
 
 export default function Page(): JSX.Element {
   return (

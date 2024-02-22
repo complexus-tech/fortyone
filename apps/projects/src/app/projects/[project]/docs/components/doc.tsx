@@ -10,7 +10,7 @@ import {
   LinkIcon,
   MoreHorizontalIcon,
   StarIcon,
-} from "@/components/icons";
+} from "icons";
 
 export const Doc = ({ name }: { name: string }) => {
   return (

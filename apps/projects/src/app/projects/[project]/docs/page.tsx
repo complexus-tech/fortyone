@@ -2,7 +2,7 @@
 
 import { Box, Container, Flex, Tabs, Text } from "ui";
 import { BodyContainer } from "@/components/layout";
-import { ClockIcon, DocsIcon } from "@/components/icons";
+import { ClockIcon, DocsIcon } from "icons";
 import { Header, Doc } from "./components";
 
 type Project = {

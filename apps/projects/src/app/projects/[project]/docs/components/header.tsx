@@ -8,7 +8,7 @@ import {
   PreferencesIcon,
   ProjectsIcon,
   SearchIcon,
-} from "@/components/icons";
+} from "icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);

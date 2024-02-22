@@ -1,6 +1,6 @@
 import { Avatar, BreadCrumbs, Button, Flex, Text } from "ui";
 import { HeaderContainer } from "@/components/layout";
-import { StarIcon } from "@/components/icons";
+import { StarIcon } from "icons";
 
 export const Header = () => {
   return (

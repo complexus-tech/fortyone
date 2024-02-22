@@ -10,7 +10,7 @@ import {
   AssigneesMenu,
 } from "@/components/ui";
 import type { Issue } from "@/types/issue";
-import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "@/components/icons";
+import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "icons";
 
 export const Card = ({ issue }: { issue: Issue }) => {
   return (
