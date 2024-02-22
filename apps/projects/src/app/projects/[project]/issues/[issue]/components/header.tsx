@@ -5,6 +5,8 @@ import {
   ArrowUpIcon,
   BellIcon,
   StarIcon,
+  ProjectsIcon,
+  IssuesIcon,
 } from "@/components/icons";
 
 export const Header = () => {
@@ -13,10 +15,22 @@ export const Header = () => {
       <Flex align="center" className="w-full" justify="between">
         <BreadCrumbs
           breadCrumbs={[
-            { name: "Complexus" },
-            { name: "Web design" },
             {
-              name: "COM-12",
+              name: "All projects",
+              icon: <ProjectsIcon className="h-4 w-auto" />,
+              url: "/projects",
+            },
+            {
+              name: "Web design",
+              icon: "🚀",
+              url: "/projects/web",
+            },
+            {
+              name: "Issues",
+              icon: <IssuesIcon className="h-[1.1rem] w-auto" />,
+            },
+            {
+              name: "Web-12",
             },
           ]}
         />

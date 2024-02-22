@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { IoIosArrowForward } from "react-icons/io";
 
 import { cn } from "lib";
 import { Flex } from "../Flex/Flex";
@@ -27,6 +26,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
             "flex items-center gap-2 font-medium group capitalize text-gray-300 transition dark:text-gray-200",
             {
               "text-gray-250 dark:text-gray": idx + 1 === breadCrumbs.length,
+              "pointer-events-none": !url,
             }
           )}
         >

@@ -11,7 +11,6 @@ export default function Page(): JSX.Element {
           breadCrumbs={[
             {
               name: "Analytics",
-              url: "/analytics",
               icon: <AnalyticsIcon className="h-5 w-auto" />,
             },
           ]}

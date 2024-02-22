@@ -1,1 +1,1 @@
-export type Layout = "list" | "kanban";
+export type Layout = "list" | "kanban" | null;

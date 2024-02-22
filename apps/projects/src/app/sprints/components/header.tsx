@@ -1,5 +1,4 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { useState } from "react";
 import { HeaderContainer } from "@/components/layout";
 import {
   PlusIcon,
@@ -9,14 +8,12 @@ import {
 } from "@/components/icons";
 
 export const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
             name: "Sprints",
-            url: "/sprints",
             icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
@@ -40,13 +37,7 @@ export const Header = () => {
         >
           Display
         </Button>
-        <Button
-          leftIcon={<PlusIcon className="h-5 w-auto" />}
-          onClick={() => {
-            setIsOpen(true);
-          }}
-          size="sm"
-        >
+        <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
           New sprint
         </Button>
       </Flex>

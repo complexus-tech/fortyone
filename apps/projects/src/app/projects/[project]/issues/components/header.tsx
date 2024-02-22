@@ -1,17 +1,22 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { cn } from "lib";
-import type { Dispatch, SetStateAction } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
-import { KanbanIcon, TableIcon, PreferencesIcon } from "@/components/icons";
+import {
+  KanbanIcon,
+  TableIcon,
+  PreferencesIcon,
+  ProjectsIcon,
+  IssuesIcon,
+} from "@/components/icons";
 import type { Layout } from "../types";
 
 export const Header = ({
   layout = "kanban",
   setLayout,
 }: {
-  layout: string;
-  setLayout: Dispatch<SetStateAction<Layout>>;
+  layout: Layout;
+  setLayout: (value: Layout) => void;
 }) => {
   return (
     <HeaderContainer className="justify-between">
@@ -19,8 +24,12 @@ export const Header = ({
         breadCrumbs={[
           {
             name: "Web design",
+            icon: <ProjectsIcon className="h-4 w-auto" />,
           },
-          { name: "Issues" },
+          {
+            name: "Issues",
+            icon: <IssuesIcon className="h-[1.1rem] w-auto" />,
+          },
         ]}
       />
       <Flex gap={2}>

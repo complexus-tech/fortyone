@@ -2,7 +2,13 @@ import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import { HeaderContainer } from "@/components/layout";
 import { NewProjectDialog } from "@/components/ui";
-import { PlusIcon, PreferencesIcon, SearchIcon } from "@/components/icons";
+import {
+  DocsIcon,
+  PlusIcon,
+  PreferencesIcon,
+  ProjectsIcon,
+  SearchIcon,
+} from "@/components/icons";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,12 +17,12 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Web",
-            url: "/projects",
+            name: "Web design",
+            icon: <ProjectsIcon className="h-4 w-auto" />,
           },
           {
-            name: "Wikis",
-            url: "/projects/web/wikis",
+            name: "Docs",
+            icon: <DocsIcon className="h-4 w-auto" />,
           },
         ]}
       />

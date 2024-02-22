@@ -1,13 +1,16 @@
 "use client";
-import { useState } from "react";
 import type { Issue, IssueStatus } from "@/types/issue";
+import { useLocalStorage } from "@/hooks";
 import type { Layout } from "../types";
 import { Header } from "../components/header";
 import { IssuesList } from "../components/issues-list";
 import { KanbanBoard } from "./kanban-board";
 
 export const DisplayIssues = () => {
-  const [layout, setLayout] = useState<Layout>("kanban");
+  const [layout, setLayout] = useLocalStorage<Layout>(
+    "project:issues:layout",
+    "kanban",
+  );
   const issues: Issue[] = [
     {
       id: 1,

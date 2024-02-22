@@ -10,7 +10,6 @@ export const Header = () => {
         breadCrumbs={[
           {
             name: "Dashboard",
-            url: "/",
             icon: <DashboardIcon className="h-[1.35rem] w-auto" />,
           },
         ]}
