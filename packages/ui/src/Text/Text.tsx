@@ -70,6 +70,7 @@ export interface TextProps
     >,
     VariantProps<typeof text> {
   as?: keyof JSX.IntrinsicElements | JSXElementConstructor<any>;
+
   html?: string;
 }
 

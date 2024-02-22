@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   forwardRef,
   type ButtonHTMLAttributes,
-  type JSXElementConstructor,
   type ReactElement,
 } from "react";
 
@@ -138,7 +137,6 @@ interface ButtonProps
   href?: string;
   loadingText?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
-  as?: "button" | "a" | JSXElementConstructor<any>;
   rightIcon?: ReactElement;
   leftIcon?: ReactElement;
 }
@@ -146,7 +144,6 @@ interface ButtonProps
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (props, ref) => {
     const {
-      as: Tag = "button",
       variant,
       color,
       rounded,
@@ -190,7 +187,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {rightIcon}
           </Link>
         ) : (
-          <Tag className={classes} disabled={disabled} ref={ref} {...rest}>
+          <button
+            className={classes}
+            disabled={disabled as boolean}
+            ref={ref}
+            {...rest}
+          >
             {loading ? (
               <>
                 <LoadingIcon className="animate-spin h-5 w-auto" />
@@ -203,7 +205,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 {rightIcon}
               </>
             )}
-          </Tag>
+          </button>
         )}
       </>
     );

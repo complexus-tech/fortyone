@@ -1,31 +1,25 @@
-import { cn } from 'lib';
+import { cn } from "lib";
 import {
   CSSProperties,
   FC,
   HTMLAttributes,
-  JSXElementConstructor,
   ReactNode,
-} from 'react';
+  ComponentType,
+} from "react";
 
 export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   id?: string;
   style?: CSSProperties;
   children?: ReactNode;
-  as?:
-    | 'div'
-    | 'section'
-    | 'nav'
-    | 'header'
-    | 'footer'
-    | JSXElementConstructor<any>;
+  as?: ComponentType<any>;
   full?: boolean;
 }
 
 export const Container: FC<ContainerProps> = ({
-  className = '',
+  className = "",
   style = {},
-  as: Tag = 'div',
+  as: Tag = "div",
   id,
   children,
   full,
@@ -34,9 +28,9 @@ export const Container: FC<ContainerProps> = ({
   return (
     <Tag
       className={cn(
-        'mx-auto px-12',
+        "mx-auto px-12",
         {
-          'mx-auto px-0': full,
+          "mx-auto px-0": full,
         },
         className
       )}

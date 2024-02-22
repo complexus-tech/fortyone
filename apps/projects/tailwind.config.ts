@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import sharedConfig from "tailwind-config";
+import sharedConfig from "tailwind-config/tailwind.config";
 
 const config: Pick<Config, "content" | "presets" | "darkMode"> = {
   darkMode: "media",

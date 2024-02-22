@@ -1,23 +1,23 @@
 import {
   CSSProperties,
+  ComponentType,
   FC,
   HTMLAttributes,
-  JSXElementConstructor,
   ReactNode,
-} from 'react';
+} from "react";
 
 export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
-  as?: 'div' | 'form' | 'section' | 'article' | JSXElementConstructor<any>;
+  as?: ComponentType<any>;
   style?: CSSProperties;
   html?: string;
   children?: ReactNode;
 }
 
 export const Box: FC<BoxProps> = ({
-  className = '',
+  className = "",
   style = {},
-  as: Tag = 'div',
+  as: Tag = "div",
   children,
   html,
   ...rest
