@@ -8,7 +8,7 @@ import {
 } from "react-day-picker";
 
 import { cn } from "lib";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon } from "icons";
 
 export type CalendarProps =
   | DayPickerDefaultProps
@@ -56,8 +56,8 @@ export const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ChevronLeft className="h-5 w-auto" />,
-        IconRight: () => <ChevronRight className="h-5 w-auto" />,
+        IconLeft: () => <ArrowLeftIcon className="h-5 w-auto" />,
+        IconRight: () => <ArrowRightIcon className="h-5 w-auto" />,
       }}
       {...props}
     />

@@ -1,32 +1,31 @@
 "use client";
 
 import * as ResizablePrimitive from "react-resizable-panels";
-import { GripVertical } from "lucide-react";
 
 import { cn } from "lib";
-
-type ResizablePanelGroupProps = React.ComponentProps<
-  typeof ResizablePrimitive.PanelGroup
->;
+import { DragIcon } from "icons";
 
 export const ResizablePanel = ({
+  children,
   className,
   ...props
-}: ResizablePanelGroupProps) => (
+}: ResizablePrimitive.PanelGroupProps) => (
   <ResizablePrimitive.PanelGroup
     className={cn(
       "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
       className
     )}
     {...props}
-  />
+  >
+    {children}
+  </ResizablePrimitive.PanelGroup>
 );
 
 const ResizableHandle = ({
   withHandle,
   className,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+}: ResizablePrimitive.PanelResizeHandleProps & {
   withHandle?: boolean;
 }) => (
   <ResizablePrimitive.PanelResizeHandle
@@ -38,7 +37,7 @@ const ResizableHandle = ({
   >
     {withHandle && (
       <div className="z-10 flex h-4 w-3 items-center justify-center rounded-sm border bg-border">
-        <GripVertical className="h-2.5 w-2.5" />
+        <DragIcon className="h-2.5 w-2.5" />
       </div>
     )}
   </ResizablePrimitive.PanelResizeHandle>

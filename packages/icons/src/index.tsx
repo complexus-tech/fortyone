@@ -57,3 +57,5 @@ export * from "./check-list";
 export * from "./code";
 export * from "./code-block";
 export * from "./quote";
+export * from "./loading";
+export * from "./close";

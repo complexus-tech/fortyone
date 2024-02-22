@@ -1,7 +1,6 @@
+import { ArrowDownIcon } from "icons";
 import { cn } from "lib";
-import { ChevronDown } from "lucide-react";
 import { FC, OptionHTMLAttributes, SelectHTMLAttributes } from "react";
-import { IoIosArrowDown } from "react-icons/io";
 
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   className?: string;
@@ -46,7 +45,7 @@ export const Select: FC<Props> & StaticComponents = (props) => {
         >
           {children}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 h-4 w-auto" />
+        <ArrowDownIcon className="pointer-events-none absolute right-3 h-4 w-auto" />
       </div>
     </label>
   );

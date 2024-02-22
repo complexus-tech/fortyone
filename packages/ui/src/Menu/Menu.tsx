@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import { cn } from "lib";
-import { Check, Search } from "lucide-react";
+import { CheckIcon, SearchIcon } from "icons";
 
 type TriggerProps = ComponentProps<typeof DropdownMenu.Trigger>;
 export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
@@ -105,7 +105,7 @@ const CheckboxItem = forwardRef<
     <>
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <DropdownMenu.ItemIndicator>
-          <Check className="h-5 w-auto" strokeWidth={2.1} />
+          <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
         </DropdownMenu.ItemIndicator>
       </span>
       {children}
@@ -126,7 +126,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <div className="flex items-center gap-1">
-      <Search
+      <SearchIcon
         className="h-[1.15rem] w-auto relative -left-1 text-gray"
         strokeWidth={2.5}
       />

@@ -1,7 +1,7 @@
 import type { VariantProps } from "cva";
 import { cva } from "cva";
+import { LoadingIcon } from "icons";
 import { cn } from "lib";
-import { Loader } from "lucide-react";
 import Link from "next/link";
 import {
   forwardRef,
@@ -193,7 +193,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <Tag className={classes} disabled={disabled} ref={ref} {...rest}>
             {loading ? (
               <>
-                <Loader className="animate-spin h-5 w-auto" />
+                <LoadingIcon className="animate-spin h-5 w-auto" />
                 {loadingText || "Loading..."}
               </>
             ) : (

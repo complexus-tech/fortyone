@@ -10,7 +10,7 @@ import {
 import { Box } from "../Box/Box";
 
 import { cn } from "lib";
-import { X } from "lucide-react";
+import { CloseIcon } from "icons";
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
@@ -42,7 +42,7 @@ const DialogClose = ({ className }: { className?: string }) => (
       className
     )}
   >
-    <X className="h-6 w-auto" />
+    <CloseIcon className="h-6 w-auto" />
     <span className="sr-only">Close</span>
   </DialogPrimitive.Close>
 );

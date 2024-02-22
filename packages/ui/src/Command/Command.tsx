@@ -11,7 +11,7 @@ import {
   forwardRef,
 } from "react";
 import { cva, VariantProps } from "cva";
-import { Search } from "lucide-react";
+import { SearchIcon } from "icons";
 
 type CommandProps = ComponentProps<typeof CommandPrimitive>;
 export const Command = ({ className, ...props }: CommandProps) => (
@@ -30,7 +30,7 @@ const CommandInput = forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
   <div className="flex items-center mb-1.5" cmdk-input-wrapper="">
-    <Search className="h-[1.15rem] w-auto relative left-3 opacity-60" />
+    <SearchIcon className="h-[1.15rem] w-auto relative left-3 opacity-60" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(

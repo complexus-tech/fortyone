@@ -11,26 +11,26 @@ import "@tiptap/extension-underline";
 import "@tiptap/extension-task-item";
 import "@tiptap/extension-task-list";
 import "@tiptap/extension-link";
-import {
-  Bold,
-  Code,
-  Code2,
-  Italic,
-  Link,
-  List,
-  ListChecks,
-  ListOrdered,
-  Quote,
-  Strikethrough,
-  Trash,
-  Underline,
-} from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { Flex } from "../Flex/Flex";
 import { Tooltip } from "../Tooltip/Tooltip";
 import { Button } from "../Button/Button";
 import { Box } from "../Box/Box";
 import { cn } from "lib";
+import {
+  BoldIcon,
+  CheckListIcon,
+  CodeBlockIcon,
+  CodeIcon,
+  DeleteIcon,
+  ItalicIcon,
+  LinkIcon,
+  OrderedListIcon,
+  QuoteIcon,
+  StrikeThroughIcon,
+  UnderlineIcon,
+  UnorderedListIcon,
+} from "icons";
 
 export const BubbleMenu = ({
   editor,
@@ -85,7 +85,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
-            <Bold className="h-5 w-auto" />
+            <BoldIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Italic">
@@ -96,7 +96,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
-            <Italic className="h-5 w-auto" />
+            <ItalicIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Underline">
@@ -107,7 +107,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
           >
-            <Underline className="h-5 w-auto" />
+            <UnderlineIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Strikethrough">
@@ -118,7 +118,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleStrike().run()}
           >
-            <Strikethrough className="h-5 w-auto" />
+            <StrikeThroughIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Link">
@@ -129,7 +129,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => setIsLinkOpen(true)}
           >
-            <Link className="h-5 w-auto" />
+            <LinkIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>
@@ -141,7 +141,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
           >
-            <ListOrdered className="h-5 w-auto" />
+            <OrderedListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Unordered list">
@@ -152,7 +152,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
           >
-            <List className="h-5 w-auto" />
+            <UnorderedListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Check list">
@@ -163,7 +163,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleTaskList().run()}
           >
-            <ListChecks className="h-5 w-auto" />
+            <CheckListIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Code">
@@ -174,7 +174,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleCode().run()}
           >
-            <Code className="h-5 w-auto" />
+            <CodeIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>
@@ -186,7 +186,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
           >
-            <Quote className="h-5 w-auto" />
+            <QuoteIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
         <Tooltip title="Code block">
@@ -197,7 +197,7 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           >
-            <Code2 className="h-5 w-auto" />
+            <CodeBlockIcon className="h-5 w-auto" />
           </Button>
         </Tooltip>
       </Flex>
@@ -236,7 +236,9 @@ export const BubbleMenu = ({
             size="xs"
             type="button"
             color="tertiary"
-            leftIcon={<Trash className="h-4 w-auto relative left-[0.12rem]" />}
+            leftIcon={
+              <DeleteIcon className="h-4 w-auto relative left-[0.12rem]" />
+            }
             onClick={() => {
               editor.chain().focus().unsetLink().run();
               setIsLinkOpen(false);

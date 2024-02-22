@@ -1,6 +1,6 @@
-import type { Icon } from "@/types/icon";
+import type { Icon } from "./types";
 
-export const CheckListIcon = (props: Icon) => {
+export const LoadingIcon = (props: Icon) => {
   return (
     <svg
       {...props}
@@ -11,36 +11,52 @@ export const CheckListIcon = (props: Icon) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M11 6L21 6"
+        d="M12 3V6"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
       />
       <path
-        d="M11 12L21 12"
+        d="M12 18V21"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
       />
       <path
-        d="M11 18L21 18"
+        d="M21 12L18 12"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
       />
       <path
-        d="M3 7.39286C3 7.39286 4 8.04466 4.5 9C4.5 9 6 5.25 8 4"
+        d="M6 12L3 12"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M3 18.3929C3 18.3929 4 19.0447 4.5 20C4.5 20 6 16.25 8 15"
+        d="M18.3635 5.63672L16.2422 7.75804"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
+      />
+      <path
+        d="M7.75706 16.2422L5.63574 18.3635"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18.3635 18.3635L16.2422 16.2422"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7.75706 7.75804L5.63574 5.63672"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
     </svg>
   );
