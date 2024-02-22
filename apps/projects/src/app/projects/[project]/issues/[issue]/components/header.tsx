@@ -41,10 +41,21 @@ export const Header = () => {
               8
             </Text>
           </Text>
-          <Button color="tertiary" size="sm">
+          <Button
+            className="aspect-square"
+            color="tertiary"
+            rounded="xl"
+            size="sm"
+          >
             <ArrowUpIcon className="h-4 w-auto" />
           </Button>
-          <Button className="mr-2" color="tertiary" disabled size="sm">
+          <Button
+            className="mr-2 aspect-square"
+            color="tertiary"
+            disabled
+            rounded="xl"
+            size="sm"
+          >
             <ArrowDownIcon className="h-4 w-auto" />
           </Button>
           <Button

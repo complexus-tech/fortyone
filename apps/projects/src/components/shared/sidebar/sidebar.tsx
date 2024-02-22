@@ -15,7 +15,7 @@ export const Sidebar = () => {
       </Box>
       <Flex justify="between">
         <Button
-          className="px-3 text-[0.95rem] font-medium transition duration-200 ease-linear dark:bg-opacity-10 hover:dark:bg-opacity-20"
+          className="px-3 text-[0.95rem] font-medium transition duration-200 ease-linear dark:bg-opacity-20 hover:dark:bg-opacity-30"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
           rounded="full"
         >

@@ -81,7 +81,7 @@ export const Activities = () => {
       <Tabs defaultValue="all">
         <Tabs.List className="mx-0 mb-5">
           <Tabs.Tab
-            className="text-[0.95rem] font-medium"
+            className="gap-1 px-2"
             leftIcon={
               <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
@@ -90,14 +90,14 @@ export const Activities = () => {
             All Activities
           </Tabs.Tab>
           <Tabs.Tab
-            className="text-[0.95rem] font-medium"
+            className="gap-1 px-2"
             leftIcon={<UpdatesIcon className="h-4 w-auto" strokeWidth={2.8} />}
             value="updates"
           >
             Updates
           </Tabs.Tab>
           <Tabs.Tab
-            className="text-[0.95rem] font-medium"
+            className="gap-1 px-2"
             leftIcon={
               <CommentIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
