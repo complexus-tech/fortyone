@@ -1,27 +1,14 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: "class",
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+import type { Config } from "tailwindcss";
+
+// each package will define it's own content
+const config: Omit<Config, "content"> = {
   theme: {
-    fontFamily: {
-      body: "Figtree, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif",
-      heading:
-        "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif",
-    },
     colors: {
-      white: "#ffffff",
       transparent: "transparent",
       current: "currentColor",
       primary: "#EA6060",
       secondary: "#002F61",
       black: "#1D1D1F",
-      gray: "#A1A1A6",
       white: "#ffffff",
       success: "#22c55e",
       warning: "#eab308",
@@ -54,3 +41,5 @@ module.exports = {
     },
   },
 };
+
+export default config;

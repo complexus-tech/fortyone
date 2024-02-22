@@ -228,7 +228,14 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
-  packages/tailwind-config: {}
+  packages/tailwind-config:
+    devDependencies:
+      tailwindcss:
+        specifier: ^3.4.1
+        version: 3.4.1
+      tsconfig:
+        specifier: workspace:*
+        version: link:../tsconfig
 
   packages/tsconfig: {}
 
@@ -337,6 +344,9 @@ importers:
       tailwind-config:
         specifier: workspace:*
         version: link:../tailwind-config
+      tailwindcss:
+        specifier: ^3.4.1
+        version: 3.4.1
       tsconfig:
         specifier: workspace:*
         version: link:../tsconfig
@@ -2899,7 +2909,7 @@ packages:
       postcss: ^8.1.0
     dependencies:
       browserslist: 4.22.1
-      caniuse-lite: 1.0.30001561
+      caniuse-lite: 1.0.30001589
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.0.0
@@ -3019,7 +3029,6 @@ packages:
 
   /caniuse-lite@1.0.30001589:
     resolution: {integrity: sha512-vNQWS6kI+q6sBlHbh71IIeC+sRwK2N3EDySc/updIGhIee2x5z00J4c1242/5/d6EpEMdOnk/m+6tuk4/tcsqg==}
-    dev: false
 
   /case-anything@2.1.13:
     resolution: {integrity: sha512-zlOQ80VrQ2Ue+ymH5OuM/DlDq64mEm+B9UTdHULv5osUMD6HalNTblf2b1u/m6QecjsnOkBpqVZ+XPwIVsy7Ng==}
