@@ -1,5 +1,5 @@
-export {Overview} from './overview'
-export {Contributions} from './contributions'
-export {MyIssues} from './my-issues'
-export {Activities} from './activities'
-export {Header} from './header'
+export { Overview } from "./overview";
+export { Contributions } from "./contributions";
+export { MyIssues } from "./my-issues";
+export { Activities } from "./activities";
+export { Header } from "./header";

@@ -1,5 +1,5 @@
-import { ChevronDown } from "lucide-react";
 import { Box, Button, Flex, Text, Menu, Wrapper } from "ui";
+import { ArrowDownIcon } from "icons";
 import type { ActivityProps } from "@/components/ui";
 import { Activity } from "@/components/ui";
 
@@ -71,7 +71,7 @@ export const Activities = () => {
           <Menu.Button>
             <Button
               color="tertiary"
-              rightIcon={<ChevronDown className="h-5 w-auto" />}
+              rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
               size="sm"
               variant="outline"
             >

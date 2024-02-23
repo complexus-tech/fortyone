@@ -1,0 +1,28 @@
+import { cn } from "lib";
+import { Box } from "../Box/Box";
+
+export const ProgressBar = ({
+  progress,
+  className,
+}: {
+  progress: number;
+  className?: string;
+}) => {
+  return (
+    <Box
+      className={cn(
+        "h-2 w-full rounded-full bg-gray-100 dark:bg-dark-100",
+        className
+      )}
+    >
+      <Box
+        className={cn("h-full rounded-full bg-danger", {
+          "bg-warning": progress >= 25 && progress < 50,
+          "bg-info": progress >= 50 && progress < 75,
+          "bg-success": progress >= 75,
+        })}
+        style={{ width: `${progress}%` }}
+      />
+    </Box>
+  );
+};

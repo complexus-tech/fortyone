@@ -1,18 +1,16 @@
-"use client";
+import React from "react";
 import Link from "next/link";
 import { Box, Flex, Button, Text, Avatar, DatePicker } from "ui";
 import { CalendarIcon, CalendarPlusIcon, TagsIcon } from "icons";
-import {
-  PriorityIcon,
-  StatusesMenu,
-  PrioritiesMenu,
-  IssueStatusIcon,
-  IssueContextMenu,
-  AssigneesMenu,
-} from "@/components/ui";
-import type { Issue } from "@/types/issue";
+import type { Issue as IssueProps } from "@/types/issue";
+import { IssueStatusIcon } from "../issue-status-icon";
+import { PriorityIcon } from "../priority-icon";
+import { IssueContextMenu } from "./context-menu";
+import { AssigneesMenu } from "./assignees-menu";
+import { StatusesMenu } from "./statuses-menu";
+import { PrioritiesMenu } from "./priorities-menu";
 
-export const Card = ({ issue }: { issue: Issue }) => {
+export const IssueCard = ({ issue }: { issue: IssueProps }) => {
   return (
     <IssueContextMenu>
       <Box className="w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/80 bg-white p-4 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/70 dark:bg-dark-200/50 dark:hover:bg-dark-200/90">

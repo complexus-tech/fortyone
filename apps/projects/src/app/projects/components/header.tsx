@@ -1,8 +1,14 @@
-import { BreadCrumbs, Button, Flex } from "ui";
+import { Avatar, BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
-import { PlusIcon, ProjectsIcon, SearchIcon, PreferencesIcon } from "icons";
+import {
+  PlusIcon,
+  ProjectsIcon,
+  SearchIcon,
+  PreferencesIcon,
+  ArrowDownIcon,
+} from "icons";
 import { HeaderContainer } from "@/components/layout";
-import { NewProjectDialog } from "@/components/ui";
+import { IssueStatusIcon, NewProjectDialog } from "@/components/ui";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +17,7 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Projects",
+            name: "All projects",
             icon: <ProjectsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
@@ -28,12 +34,32 @@ export const Header = () => {
           <span className="sr-only">Search</span>
         </Button>
         <Button
+          className="pl-1"
           color="tertiary"
-          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
+          leftIcon={<Avatar color="naked" />}
+          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"
         >
-          Display
+          Lead
+        </Button>
+        <Button
+          color="tertiary"
+          leftIcon={<IssueStatusIcon className="h-4 w-auto" />}
+          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
+          size="sm"
+          variant="outline"
+        >
+          Status
+        </Button>
+        <Button
+          color="tertiary"
+          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
+          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
+          size="sm"
+          variant="outline"
+        >
+          <span className="sr-only">Preferences</span>
         </Button>
         <Button
           leftIcon={<PlusIcon className="h-5 w-auto" />}

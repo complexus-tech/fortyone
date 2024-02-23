@@ -2,7 +2,7 @@
 
 import { Box, Tabs } from "ui";
 import { BodyContainer } from "@/components/layout";
-import { Header, Project } from "./components";
+import { Header, Sprint } from "./components";
 
 type Project = {
   id: number;
@@ -51,7 +51,7 @@ export default function Page(): JSX.Element {
           <Tabs.Panel value="subscribed">Tab</Tabs.Panel>
         </Tabs>
         {projects.map(({ id, name, description }) => (
-          <Project description={description} key={id} name={name} />
+          <Sprint description={description} key={id} name={name} />
         ))}
       </BodyContainer>
     </>

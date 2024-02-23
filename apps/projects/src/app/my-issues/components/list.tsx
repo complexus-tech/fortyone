@@ -1,49 +1,14 @@
 "use client";
 import { Box, Tabs } from "ui";
-import { cn } from "lib";
-import type { IssueStatus, Issue as IssueType } from "@/types/issue";
+import type { IssueStatus, Issue } from "@/types/issue";
 import { BodyContainer } from "@/components/layout";
-import { Issue, IssuesHeader, IssuesToolbar } from "@/components/ui";
+import { IssuesGroup, IssuesToolbar, IssuesList } from "@/components/ui";
 
-const ListIssues = ({ issues }: { issues: IssueType[] }) => {
-  return (
-    <>
-      {issues.map((issue) => (
-        <Issue issue={issue} key={issue.id} />
-      ))}
-    </>
-  );
-};
-
-const IssuesGroup = ({
-  issues,
-  status,
-}: {
-  issues: IssueType[];
-  status: IssueStatus;
-}) => {
-  const filteredIssues = issues.filter((issue) => issue.status === status);
-  return (
-    <Box
-      className={cn({
-        hidden: filteredIssues.length === 0,
-      })}
-    >
-      <IssuesHeader
-        className="top-[3.68rem]"
-        count={filteredIssues.length}
-        status={status}
-      />
-      <ListIssues issues={filteredIssues} />
-    </Box>
-  );
-};
-
-export const IssuesList = ({
+export const List = ({
   issues,
   statuses,
 }: {
-  issues: IssueType[];
+  issues: Issue[];
   statuses: IssueStatus[];
 }) => {
   return (
@@ -62,10 +27,10 @@ export const IssuesList = ({
           ))}
         </Tabs.Panel>
         <Tabs.Panel value="created">
-          <ListIssues issues={issues} />
+          <IssuesList issues={issues} />
         </Tabs.Panel>
         <Tabs.Panel value="subscribed">
-          <ListIssues issues={issues} />
+          <IssuesList issues={issues} />
         </Tabs.Panel>
       </Tabs>
       <IssuesToolbar />

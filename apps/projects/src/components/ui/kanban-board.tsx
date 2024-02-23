@@ -1,26 +1,8 @@
 import { Box, Flex } from "ui";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { BodyContainer } from "@/components/layout";
-import { KanbanList } from "../components/kanban-list";
-import { Card } from "../components/card";
-import { IssuesKanbanHeader } from "../components/kanban-header";
-
-const IssuesGroup = ({
-  issues,
-  status,
-}: {
-  issues: Issue[];
-  status: IssueStatus;
-}) => {
-  const filteredIssues = issues.filter((issue) => issue.status === status);
-  return (
-    <KanbanList key={status}>
-      {filteredIssues.map((issue) => (
-        <Card issue={issue} key={issue.id} />
-      ))}
-    </KanbanList>
-  );
-};
+import { BodyContainer } from "../layout/body";
+import { IssuesKanbanHeader } from "./kanban-header";
+import { KanbanGroup } from "./kanban-group";
 
 export const KanbanBoard = ({
   statuses,
@@ -44,7 +26,7 @@ export const KanbanBoard = ({
       </Box>
       <Box className="flex w-max gap-x-6 px-7">
         {statuses.map((status) => (
-          <IssuesGroup issues={issues} key={status} status={status} />
+          <KanbanGroup issues={issues} key={status} status={status} />
         ))}
       </Box>
     </BodyContainer>

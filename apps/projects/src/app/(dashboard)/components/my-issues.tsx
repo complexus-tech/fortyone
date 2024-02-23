@@ -1,12 +1,14 @@
-import { Calendar, ChevronDown } from "lucide-react";
 import { Box, Button, Flex, Tabs, Text, Menu, Wrapper } from "ui";
 import { cn } from "lib";
-import { RowWrapper } from "@/components/ui";
-import { IssueContextMenu } from "@/components/ui/issue/context-menu";
-import { StatusesMenu } from "@/components/ui/issue/statuses-menu";
-import { PrioritiesMenu } from "@/components/ui/issue/priorities-menu";
-import { IssueStatusIcon } from "@/components/ui/issue-status-icon";
-import { PriorityIcon } from "@/components/ui/priority-icon";
+import { ArrowDownIcon, CalendarIcon } from "icons";
+import {
+  RowWrapper,
+  StatusesMenu,
+  PriorityIcon,
+  IssueStatusIcon,
+  PrioritiesMenu,
+  IssueContextMenu,
+} from "@/components/ui";
 
 export const MyIssues = () => {
   return (
@@ -17,7 +19,7 @@ export const MyIssues = () => {
           <Menu.Button>
             <Button
               color="tertiary"
-              rightIcon={<ChevronDown className="h-5 w-auto" />}
+              rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
               size="sm"
               variant="outline"
             >
@@ -80,7 +82,7 @@ export const MyIssues = () => {
                   <Flex align="center" gap={3}>
                     <Text className="flex items-center gap-1" color="muted">
                       Sep 27
-                      <Calendar className="h-4 w-auto" />
+                      <CalendarIcon className="h-4 w-auto" />
                     </Text>
                   </Flex>
                 </RowWrapper>

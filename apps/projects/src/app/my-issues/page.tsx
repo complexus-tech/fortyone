@@ -1,5 +1,5 @@
 import type { Issue, IssueStatus } from "@/types/issue";
-import { Header, IssuesList } from "./components";
+import { Header, List } from "./components";
 
 export default function Page() {
   const issues: Issue[] = [
@@ -229,7 +229,7 @@ export default function Page() {
   return (
     <>
       <Header />
-      <IssuesList issues={issues} statuses={statuses} />
+      <List issues={issues} statuses={statuses} />
     </>
   );
 }

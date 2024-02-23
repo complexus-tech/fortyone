@@ -1,5 +1,5 @@
 import { usePathname } from "next/navigation";
-import { Flex } from "ui";
+import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import {
   AnalyticsIcon,
@@ -43,24 +43,35 @@ export const Navigation = () => {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
       href: "/notifications",
+      messages: 2,
     },
   ];
 
   return (
     <Flex direction="column" gap={2}>
-      {links.map(({ name, icon, href }) => (
-        <NavLink active={pathname === href} href={href} key={name}>
-          <span
-            className={cn(
-              "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-white",
-              {
-                "text-gray-300 dark:text-white": pathname === href,
-              },
-            )}
-          >
-            {icon}
+      {links.map(({ name, icon, href, messages }) => (
+        <NavLink
+          active={pathname === href}
+          className={cn({
+            "justify-between": messages,
+          })}
+          href={href}
+          key={name}
+        >
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-white",
+                {
+                  "text-gray-300 dark:text-white": pathname === href,
+                },
+              )}
+            >
+              {icon}
+            </span>
+            {name}
           </span>
-          {name}
+          {messages ? <Badge color="tertiary">{messages}</Badge> : null}
         </NavLink>
       ))}
     </Flex>

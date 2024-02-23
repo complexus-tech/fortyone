@@ -1,10 +1,10 @@
 "use client";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { useLocalStorage } from "@/hooks";
+import { KanbanBoard } from "@/components/ui";
 import type { Layout } from "../types";
 import { Header } from "../components/header";
 import { IssuesList } from "../components/issues-list";
-import { KanbanBoard } from "./kanban-board";
 
 export const DisplayIssues = () => {
   const [layout, setLayout] = useLocalStorage<Layout>(

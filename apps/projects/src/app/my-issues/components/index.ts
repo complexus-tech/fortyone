@@ -1,2 +1,2 @@
-export * from './issues-list'
-export * from './header'
+export * from "./list";
+export * from "./header";

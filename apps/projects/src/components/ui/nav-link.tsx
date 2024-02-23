@@ -5,10 +5,17 @@ import type { ReactNode } from "react";
 
 type NavLinkProps = LinkProps & {
   active?: boolean;
+  className?: string;
   children: ReactNode;
 };
 
-export const NavLink = ({ href, active, children, ...rest }: NavLinkProps) => {
+export const NavLink = ({
+  href,
+  active,
+  className,
+  children,
+  ...rest
+}: NavLinkProps) => {
   return (
     <Link
       className={cn(
@@ -16,6 +23,7 @@ export const NavLink = ({ href, active, children, ...rest }: NavLinkProps) => {
         {
           "bg-gray-50 font-medium dark:bg-dark-200 dark:text-white": active,
         },
+        className,
       )}
       href={href}
       {...rest}
