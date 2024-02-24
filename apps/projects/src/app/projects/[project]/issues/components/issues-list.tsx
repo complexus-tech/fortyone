@@ -13,7 +13,12 @@ export const IssuesList = ({
   return (
     <BodyContainer className="overflow-x-auto">
       {statuses.map((status) => (
-        <IssuesGroup issues={issues} key={status} status={status} />
+        <IssuesGroup
+          className="-top-[1px]"
+          issues={issues}
+          key={status}
+          status={status}
+        />
       ))}
       <IssuesToolbar />
     </BodyContainer>

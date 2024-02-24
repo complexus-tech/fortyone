@@ -53,7 +53,7 @@ export const Projects = () => {
       </Button>
       <Flex
         className={cn(
-          "h-0 max-h-[54vh] overflow-y-auto transition-all duration-300",
+          "h-0 max-h-[54vh] overflow-y-auto pb-2 transition-all duration-300",
           {
             "h-max": isOpen,
           },

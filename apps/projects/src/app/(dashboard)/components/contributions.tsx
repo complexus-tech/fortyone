@@ -3,7 +3,6 @@ import { Box, Text, Wrapper } from "ui";
 import HeatMap from "@uiw/react-heat-map";
 
 export const Contributions = () => {
-  // const { theme } = useTheme();
   const darkColors = {
     0: "rgb(255 255 255 / 5%)",
     8: "#7BC96F",
@@ -45,7 +44,7 @@ export const Contributions = () => {
       </Text>
       <Wrapper className="mt-2">
         <HeatMap
-          className="w-full dark:!text-white"
+          className="hidden w-full dark:!text-white"
           legendCellSize={20}
           panelColors={darkColors}
           rectProps={{

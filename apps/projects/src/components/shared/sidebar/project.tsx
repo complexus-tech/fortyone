@@ -34,6 +34,11 @@ export const Project = ({
   const pathname = usePathname();
   const links = [
     {
+      name: "Overview",
+      icon: <IssuesIcon className="h-[1.35rem] w-auto" />,
+      href: "/projects/web",
+    },
+    {
       name: "Issues",
       icon: <IssuesIcon className="h-[1.35rem] w-auto" />,
       href: "/projects/web/issues",

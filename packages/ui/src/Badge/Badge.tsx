@@ -19,12 +19,12 @@ const badge = cva(
         full: "rounded-full",
       },
       color: {
-        primary: "text-black bg-primary border-primary",
+        primary: "text-white bg-primary border-primary",
         danger: "text-white bg-danger border-danger",
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
         tertiary:
-          "text-gray-300/70 bg-gray-50 dark:bg-dark-100 dark:border-dark-200 dark:text-gray-200",
+          "text-gray-300/70 bg-gray-50 border-gray-100/50 dark:bg-dark-100 dark:border-dark-200 dark:text-gray-200",
         secondary: "text-white bg-secondary border-secondary",
       },
       size: {

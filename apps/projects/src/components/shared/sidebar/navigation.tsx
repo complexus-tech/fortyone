@@ -71,7 +71,11 @@ export const Navigation = () => {
             </span>
             {name}
           </span>
-          {messages ? <Badge color="tertiary">{messages}</Badge> : null}
+          {messages ? (
+            <Badge color="tertiary" rounded="full">
+              {messages}
+            </Badge>
+          ) : null}
         </NavLink>
       ))}
     </Flex>
