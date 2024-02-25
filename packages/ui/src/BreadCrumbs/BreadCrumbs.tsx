@@ -23,7 +23,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           key={idx}
           href={url}
           className={cn(
-            "flex items-center gap-2 font-medium group capitalize text-gray-300 transition dark:text-gray-200",
+            "flex items-center gap-2 font-medium group first-letter:uppercase text-gray-300 transition dark:text-gray-200",
             {
               "text-gray-250 dark:text-gray": idx + 1 === breadCrumbs.length,
               "pointer-events-none": !url,

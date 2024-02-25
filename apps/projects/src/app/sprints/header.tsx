@@ -8,7 +8,7 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Sprints",
+            name: "Active sprints",
             icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}

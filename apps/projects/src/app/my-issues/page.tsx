@@ -1,5 +1,6 @@
 import type { Issue, IssueStatus } from "@/types/issue";
-import { Header, List } from "./components";
+import { Header } from "./header";
+import { List } from "./list";
 
 export default function Page() {
   const issues: Issue[] = [

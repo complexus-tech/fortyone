@@ -1,3 +1,3 @@
-export * from './header'
-export * from './project'
-export * from './statuses-menu'
+export * from "../header";
+export * from "./project";
+export * from "./statuses-menu";

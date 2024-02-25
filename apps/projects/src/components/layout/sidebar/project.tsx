@@ -34,11 +34,6 @@ export const Project = ({
   const pathname = usePathname();
   const links = [
     {
-      name: "Overview",
-      icon: <IssuesIcon className="h-[1.35rem] w-auto" />,
-      href: "/projects/web",
-    },
-    {
       name: "Issues",
       icon: <IssuesIcon className="h-[1.35rem] w-auto" />,
       href: "/projects/web/issues",
@@ -46,12 +41,12 @@ export const Project = ({
     {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
-      href: "/analytics",
+      href: "/projects/web/sprints",
     },
     {
       name: "Modules",
       icon: <ModulesIcon className="h-[1.3rem] w-auto" />,
-      href: "/inbox",
+      href: "/projects/web/modules",
     },
     {
       name: "Docs",

@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { ResizablePanel } from "ui";
-import { Sidebar } from "@/components/shared";
+import { Sidebar } from "./sidebar/sidebar";
 
 export const MainLayout = ({ children }: { children: ReactNode }) => {
   return (

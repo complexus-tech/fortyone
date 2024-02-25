@@ -136,7 +136,7 @@ export const Header = () => {
       </Flex>
       <Flex align="center" className="mb-4" gap={2} justify="between">
         <Button
-          className="shadow"
+          className="shadow-sm"
           color="tertiary"
           fullWidth
           leftIcon={<NewIssueIcon className="h-5 w-auto" />}
@@ -149,7 +149,7 @@ export const Header = () => {
         </Button>
         <Button
           align="center"
-          className="px-[0.6rem] shadow"
+          className="px-[0.6rem] shadow-sm"
           color="tertiary"
           leftIcon={<SearchIcon className="h-[1.1rem] w-auto" />}
           variant="outline"

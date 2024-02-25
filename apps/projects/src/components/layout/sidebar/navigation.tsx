@@ -35,13 +35,13 @@ export const Navigation = () => {
       href: "/projects",
     },
     {
-      name: "Sprints",
+      name: "Active sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
       href: "/sprints",
     },
     {
       name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem] w-auto" />,
+      icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/notifications",
       messages: 2,
     },

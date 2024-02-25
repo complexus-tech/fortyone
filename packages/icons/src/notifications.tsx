@@ -15,13 +15,11 @@ export const NotificationsIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
       <path
         d="M21.5 13.5H16.5743C15.7322 13.5 15.0706 14.2036 14.6995 14.9472C14.2963 15.7551 13.4889 16.5 12 16.5C10.5111 16.5 9.70373 15.7551 9.30054 14.9472C8.92942 14.2036 8.26777 13.5 7.42566 13.5H2.5"
         stroke="currentColor"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   );

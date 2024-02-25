@@ -1,9 +1,18 @@
+"use client";
 import { Avatar, Flex, Text } from "ui";
+import { cn } from "lib";
 import { RowWrapper } from "@/components/ui";
 
-export const Card = () => {
+export const NotificationCard = ({ read }: { read: boolean }) => {
   return (
-    <RowWrapper className="group block cursor-pointer border-l-[3px] border-l-primary/70 px-5 transition dark:border-l-primary/50 dark:bg-dark-100/[0.15] dark:hover:bg-dark-100/40 focus:dark:bg-dark-100/40">
+    <RowWrapper
+      className={cn(
+        "group block cursor-pointer border-l-2 px-5 transition dark:border-dark-100/70 dark:bg-dark-100/[0.15] dark:hover:bg-dark-100/40 focus:dark:bg-dark-100/40",
+        {
+          "border-l-2 border-l-primary/90 dark:border-l-primary/90": !read,
+        },
+      )}
+    >
       <Flex align="center" className="mb-3" gap={1} justify="between">
         <Flex align="center" className="flex-1 gap-1.5">
           <Text

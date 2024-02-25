@@ -35,7 +35,7 @@ const button = cva(
         warning:
           "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
         tertiary:
-          "text-gray-300 dark:text-gray-200 dark:border-dark-100/50 dark:bg-dark-200/50 bg-gray-100 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-50 active:bg-gray-50 dark:hover:bg-dark-100/50",
+          "text-gray-300 dark:text-gray-200 dark:border-dark-100/50 dark:bg-dark-200/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-50 active:bg-gray-50 dark:hover:bg-dark-100/50",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },

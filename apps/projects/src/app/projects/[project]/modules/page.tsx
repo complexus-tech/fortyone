@@ -4,9 +4,9 @@ import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 import { BodyContainer } from "@/components/layout";
 import { IssueStatusIcon } from "@/components/ui";
-import { Header, Project } from "./components";
+import { Header, Module } from "./components";
 
-type Project = {
+type Module = {
   id: number;
   code: string;
   lead: string;
@@ -16,7 +16,7 @@ type Project = {
 };
 
 export default function Page(): JSX.Element {
-  const projects: Project[] = [
+  const modules: Module[] = [
     {
       id: 1,
       code: "COM-12",
@@ -76,8 +76,8 @@ export default function Page(): JSX.Element {
             </Flex>
           </Flex>
         </Container>
-        {projects.map(({ id, name }) => (
-          <Project key={id} name={name} />
+        {modules.map(({ id, name }) => (
+          <Module key={id} name={name} />
         ))}
       </BodyContainer>
     </>

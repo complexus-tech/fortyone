@@ -7,7 +7,7 @@ import {
   Header,
   MyIssues,
   Overview,
-} from "./components";
+} from "@/components/(dashboard)";
 
 export default function Page(): JSX.Element {
   return (
