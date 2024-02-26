@@ -109,9 +109,11 @@ export const Header = () => {
               <span className="sr-only">Joseph Mukorivo</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="start">
+          <Menu.Items align="start" className="w-64 pb-1">
             <Menu.Group className="mb-3 mt-1 px-4">
-              <Text>josemukorivo@gmail.com</Text>
+              <Text color="muted" textOverflow="truncate">
+                josemukorivo@gmail.com
+              </Text>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
@@ -124,7 +126,7 @@ export const Header = () => {
                 Settings
               </Menu.Item>
             </Menu.Group>
-            <Menu.Separator />
+            <Menu.Separator className="mb-1.5" />
             <Menu.Group>
               <Menu.Item>
                 <LogoutIcon className="h-5 w-auto" />

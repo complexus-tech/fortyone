@@ -1,7 +1,7 @@
 "use client";
 
 import { BodyContainer } from "@/components/layout";
-import { SprintCard } from "@/components/sprint/card";
+import { SprintCard } from "@/components/sprints/card";
 import { Header } from "./header";
 
 export default function Page(): JSX.Element {

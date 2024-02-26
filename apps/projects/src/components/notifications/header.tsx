@@ -1,9 +1,13 @@
 "use client";
 import { Button, Flex, Menu, Text } from "ui";
 import {
+  DeleteIcon,
+  FilterIcon,
   MoreVerticalIcon,
+  NotificationsCheckIcon,
   NotificationsIcon,
   NotificationsUnreadIcon,
+  SettingsIcon,
 } from "icons";
 
 export const NotificationsHeader = () => {
@@ -23,63 +27,73 @@ export const NotificationsHeader = () => {
             <Button
               className="aspect-square"
               color="tertiary"
-              leftIcon={
-                <svg
-                  className="h-4 w-auto"
-                  fill="none"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  width="24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M4 5L20 5"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M18 12L6 12"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M8 19L16 19"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                  />
-                </svg>
-              }
+              leftIcon={<FilterIcon className="h-4 w-auto" />}
               size="sm"
             >
               <div className="sr-only">Filter</div>
             </Button>
           </Menu.Button>
-          <Menu.Items className="w-40">
+          <Menu.Items className="w-54">
+            <Menu.Group className="mb-3 mt-1 px-4">
+              <Text color="muted" textOverflow="truncate">
+                Filter notifications
+              </Text>
+            </Menu.Group>
+            <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
                 <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
-                All
+                All notifications
               </Menu.Item>
               <Menu.Item>
                 <NotificationsUnreadIcon className="h-5 w-auto" />
-                Unread
+                Unread notifications
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
         </Menu>
-        <Button
-          color="tertiary"
-          rightIcon={<MoreVerticalIcon className="h-4 w-auto" />}
-          size="sm"
-        >
-          <span className="sr-only">Filter</span>
-        </Button>
+        <Menu>
+          <Menu.Button>
+            <Button
+              color="tertiary"
+              rightIcon={<MoreVerticalIcon className="h-4 w-auto" />}
+              size="sm"
+            >
+              <span className="sr-only">More options</span>
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group className="mb-3 mt-1 px-4">
+              <Text color="muted" textOverflow="truncate">
+                Manage notifications
+              </Text>
+            </Menu.Group>
+            <Menu.Separator className="mb-1.5" />
+            <Menu.Group>
+              <Menu.Item>
+                <NotificationsCheckIcon className="h-5 w-auto" />
+                Mark all as read
+              </Menu.Item>
+              <Menu.Item>
+                <SettingsIcon className="h-5 w-auto" />
+                Notification settings
+              </Menu.Item>
+              <Menu.Separator />
+              <Menu.Item>
+                <DeleteIcon className="h-5 w-auto" />
+                Delete all notifications
+              </Menu.Item>
+              <Menu.Item>
+                <NotificationsCheckIcon className="h-5 w-auto" />
+                Delete read notifications
+              </Menu.Item>
+              <Menu.Item>
+                <NotificationsUnreadIcon className="h-5 w-auto" />
+                Delete unread notifications
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </Flex>
     </Flex>
   );

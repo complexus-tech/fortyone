@@ -20,7 +20,16 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
 import { IssueStatusIcon, TableCheckbox } from "@/components/ui";
 
-export const Project = ({ name }: { name: string }) => {
+export type Project = {
+  id: number;
+  code: string;
+  lead: string;
+  name: string;
+  description: string;
+  date: string;
+};
+
+export const ProjectCard = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
@@ -79,17 +88,22 @@ export const Project = ({ name }: { name: string }) => {
               </Button>
             </Menu.Button>
             <Menu.Items align="end" className="w-64">
+              <Menu.Group className="mb-3 mt-1 px-4">
+                <Text color="muted" textOverflow="truncate">
+                  Manage project
+                </Text>
+              </Menu.Group>
+              <Menu.Separator className="mb-1.5" />
               <Menu.Group>
-                <Menu.Item className="py-2">
+                <Menu.Item>
                   <SettingsIcon className="h-5 w-auto" />
-                  Project settings
+                  Settings
                 </Menu.Item>
-                <Menu.Separator />
-                <Menu.Item className="py-2">
-                  <IssueStatusIcon className="h-5 w-auto" />
+                <Menu.Item>
+                  <IssueStatusIcon className="h-[1.2rem] w-auto" />
                   Status
                 </Menu.Item>
-                <Menu.Item className="py-2">
+                <Menu.Item>
                   <Avatar
                     className="h-5 w-auto"
                     color="naked"
@@ -99,21 +113,20 @@ export const Project = ({ name }: { name: string }) => {
                   />
                   Lead
                 </Menu.Item>
-                <Menu.Separator />
-                <Menu.Item className="py-2">
+                <Menu.Item>
                   <CalendarIcon className="h-5 w-auto" />
                   Start date
                 </Menu.Item>
-                <Menu.Item className="py-2">
+                <Menu.Item>
                   <CalendarIcon className="h-5 w-auto" />
                   Due date
                 </Menu.Item>
-                <Menu.Item className="py-2">
-                  <StarIcon className="h-5 w-auto" />
+                <Menu.Item>
+                  <StarIcon className="h-[1.2rem] w-auto" />
                   Favourite
                 </Menu.Item>
-                <Menu.Item className="py-2">
-                  <DeleteIcon className="h-5 w-auto text-danger" />
+                <Menu.Item>
+                  <DeleteIcon className="h-[1.2rem] w-auto" />
                   Delete
                 </Menu.Item>
               </Menu.Group>

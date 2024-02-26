@@ -10,7 +10,7 @@ import {
 import { HeaderContainer } from "@/components/layout";
 import { IssueStatusIcon, NewProjectDialog } from "@/components/ui";
 
-export const Header = () => {
+export const ProjectsHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <HeaderContainer className="justify-between">

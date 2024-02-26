@@ -20,9 +20,9 @@ export const Navigation = () => {
       href: "/",
     },
     {
-      name: "Analytics",
+      name: "Reports",
       icon: <AnalyticsIcon className="h-[1.35rem] w-auto" />,
-      href: "/analytics",
+      href: "/reports",
     },
     {
       name: "My issues",
