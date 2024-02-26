@@ -1,7 +1,3 @@
-"use client";
-
-import { BodyContainer } from "@/components/layout";
-import { ProjectsHeader } from "@/components/projects/header";
 import { ProjectsList } from "@/components/projects/list";
 import type { Project } from "@/components/projects/project";
 
@@ -25,12 +21,5 @@ export default function Page(): JSX.Element {
     },
   ];
 
-  return (
-    <>
-      <ProjectsHeader />
-      <BodyContainer>
-        <ProjectsList projects={projects} />
-      </BodyContainer>
-    </>
-  );
+  return <ProjectsList projects={projects} />;
 }

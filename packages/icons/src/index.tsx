@@ -63,3 +63,5 @@ export * from "./notifications-unread";
 export * from "./notifications-check";
 export * from "./notifications-empty";
 export * from "./filter";
+export * from "./sidebar-expand";
+export * from "./sidebar-collapse";

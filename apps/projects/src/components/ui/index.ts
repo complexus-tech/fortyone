@@ -13,6 +13,8 @@ export * from "./issues-list";
 export * from "./issues-group";
 export * from "./kanban-board";
 export * from "./kanban-group";
+export * from "./issues-board";
+export * from "./layout-switcher";
 
 export * from "./issue/checkbox";
 export * from "./issue/assignees-menu";

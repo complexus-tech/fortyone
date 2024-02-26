@@ -17,8 +17,8 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
   const { title, status = "Backlog", priority = "No Priority" } = issue;
   return (
     <IssueContextMenu>
-      <RowWrapper>
-        <Flex align="center" className="relative flex-1 select-none" gap={2}>
+      <RowWrapper className="gap-4">
+        <Flex align="center" className="relative shrink select-none" gap={2}>
           <DragHandle />
           <TableCheckbox />
           <Tooltip title="Issue ID: COM-12">
@@ -34,13 +34,11 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
             </StatusesMenu.Trigger>
             <StatusesMenu.Items status={status} />
           </StatusesMenu>
-          <Link className="flex-1" href="/projects/web/issues/test-123-issue">
-            <Text className=" overflow-hidden text-ellipsis whitespace-nowrap hover:opacity-90">
-              {title}
-            </Text>
+          <Link href="/projects/web/issues/test-123-issue">
+            <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
           </Link>
         </Flex>
-        <Flex align="center" gap={3}>
+        <Flex align="center" className="shrink-0" gap={3}>
           <Labels />
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>

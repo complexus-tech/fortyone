@@ -1,16 +1,7 @@
-"use client";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { useLocalStorage } from "@/hooks";
-import { KanbanBoard } from "@/components/ui";
-import type { Layout } from "../types";
-import { Header } from "../components/header";
-import { IssuesList } from "../components/issues-list";
+import { ListIssues } from "./list-issues";
 
-export const DisplayIssues = () => {
-  const [layout, setLayout] = useLocalStorage<Layout>(
-    "project:issues:layout",
-    "kanban",
-  );
+export default function Page() {
   const issues: Issue[] = [
     {
       id: 1,
@@ -235,13 +226,5 @@ export const DisplayIssues = () => {
     "Done",
     "Canceled",
   ];
-  return (
-    <>
-      <Header layout={layout} setLayout={setLayout} />
-      {layout === "list" && <IssuesList issues={issues} statuses={statuses} />}
-      {layout === "kanban" && (
-        <KanbanBoard issues={issues} statuses={statuses} />
-      )}
-    </>
-  );
-};
+  return <ListIssues issues={issues} statuses={statuses} />;
+}

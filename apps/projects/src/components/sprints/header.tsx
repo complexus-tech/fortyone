@@ -1,8 +1,9 @@
+"use client";
 import { BreadCrumbs, Button, Flex } from "ui";
 import { PlusIcon, PreferencesIcon, SearchIcon, SprintsIcon } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "../layout/header-container";
 
-export const Header = () => {
+export const SprintsHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs

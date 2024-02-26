@@ -1,3 +1,4 @@
+"use client";
 import { Avatar, BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import {

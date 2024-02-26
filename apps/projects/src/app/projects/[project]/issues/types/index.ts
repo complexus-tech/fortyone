@@ -1,1 +1,0 @@
-export type Layout = "list" | "kanban" | null;

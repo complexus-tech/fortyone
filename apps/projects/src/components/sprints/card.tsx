@@ -57,7 +57,7 @@ export const SprintCard = ({ name, description }: SprintCardProps) => {
     },
   ];
   return (
-    <Link href="/projects/web/sprints/1">
+    <Link href="/projects/web/sprints/1/issues">
       <RowWrapper className="block py-6">
         <Flex align="start" justify="between">
           <Box>
