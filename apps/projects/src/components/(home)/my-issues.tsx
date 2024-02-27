@@ -1,3 +1,4 @@
+"use client";
 import { Box, Button, Flex, Tabs, Text, Menu, Wrapper } from "ui";
 import { cn } from "lib";
 import { ArrowDownIcon, CalendarIcon } from "icons";

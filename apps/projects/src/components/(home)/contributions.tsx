@@ -1,4 +1,4 @@
-import React from "react";
+"use client";
 import { Box, Text, Wrapper } from "ui";
 import HeatMap from "@uiw/react-heat-map";
 

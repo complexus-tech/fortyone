@@ -1,3 +1,4 @@
+"use client";
 import { Box, Button, Flex, Text, Menu, Wrapper } from "ui";
 import { ArrowDownIcon } from "icons";
 import type { ActivityProps } from "@/components/ui";

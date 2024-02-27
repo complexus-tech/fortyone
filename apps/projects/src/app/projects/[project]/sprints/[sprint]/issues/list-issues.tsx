@@ -14,13 +14,13 @@ import {
 } from "ui";
 import {
   PreferencesIcon,
-  IssuesIcon,
   SprintsIcon,
   MoreVerticalIcon,
   LinkIcon,
   DeleteIcon,
   StarIcon,
   EditIcon,
+  IssueIcon,
 } from "icons";
 import {
   AreaChart,
@@ -108,7 +108,7 @@ export const ListIssues = ({
             },
             {
               name: "Issues",
-              icon: <IssuesIcon className="h-[1.1rem] w-auto" />,
+              icon: <IssueIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
         />

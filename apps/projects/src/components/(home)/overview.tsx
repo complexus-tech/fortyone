@@ -1,3 +1,4 @@
+"use client";
 import { Box, Text, Flex, Wrapper } from "ui";
 import { ArrowUpRight } from "lucide-react";
 

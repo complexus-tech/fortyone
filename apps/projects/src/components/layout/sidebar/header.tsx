@@ -43,6 +43,7 @@ export const Header = () => {
                     name="Complexus Technologies"
                     rounded="md"
                     size="sm"
+                    src="/complexus.png"
                   />
                   Complexus
                 </span>

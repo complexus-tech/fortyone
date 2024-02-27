@@ -1,5 +1,5 @@
+import { ListIssues } from "@/components/projects/issues/list-issues";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { ListIssues } from "./list-issues";
 
 export default function Page() {
   const issues: Issue[] = [

@@ -35,7 +35,7 @@ export const Project = ({
   const links = [
     {
       name: "Issues",
-      icon: <IssueIcon className="h-[1.35rem] w-auto" />,
+      icon: <IssueIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
       href: "/projects/web/issues",
     },
     {
