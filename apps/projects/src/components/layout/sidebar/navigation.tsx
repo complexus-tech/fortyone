@@ -3,7 +3,7 @@ import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import {
   AnalyticsIcon,
-  DashboardIcon,
+  HomeIcon,
   IssuesIcon,
   NotificationsIcon,
   ProjectsIcon,
@@ -15,8 +15,8 @@ export const Navigation = () => {
   const pathname = usePathname();
   const links = [
     {
-      name: "Dashboard",
-      icon: <DashboardIcon className="h-[1.35rem] w-auto" />,
+      name: "Home",
+      icon: <HomeIcon className="h-[1.35rem] w-auto" />,
       href: "/",
     },
     {

@@ -128,7 +128,7 @@ const button = cva(
   }
 );
 
-interface ButtonProps
+export interface ButtonProps
   extends Omit<
       ButtonHTMLAttributes<HTMLButtonElement>,
       "color" | "disabled" | "active"

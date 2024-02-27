@@ -1,5 +1,5 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { DashboardIcon, PreferencesIcon } from "icons";
+import { HomeIcon, PreferencesIcon } from "icons";
 import { NewIssueButton } from "@/components/ui";
 import { HeaderContainer } from "@/components/layout";
 
@@ -9,8 +9,8 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Dashboard",
-            icon: <DashboardIcon className="h-[1.35rem] w-auto" />,
+            name: "Home",
+            icon: <HomeIcon className="h-[1.35rem] w-auto" />,
           },
         ]}
       />
