@@ -1,5 +1,4 @@
 import type { Issue, IssueStatus } from "@/types/issue";
-import { Header } from "./header";
 import { List } from "./list";
 
 export default function Page() {
@@ -227,10 +226,5 @@ export default function Page() {
     "Done",
     "Canceled",
   ];
-  return (
-    <>
-      <Header />
-      <List issues={issues} statuses={statuses} />
-    </>
-  );
+  return <List issues={issues} statuses={statuses} />;
 }

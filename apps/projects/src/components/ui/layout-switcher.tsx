@@ -1,10 +1,10 @@
-import { Button, Flex } from "ui";
+import { Flex } from "ui";
 import { cn } from "lib";
 import { KanbanIcon, TableIcon } from "icons";
 import type { IssuesLayout } from "@/components/ui";
 
 export const LayoutSwitcher = ({
-  layout,
+  layout = "kanban",
   setLayout,
   className,
 }: {
@@ -15,42 +15,38 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "mr-2 items-center gap-0.5 rounded-lg bg-gray-100/50 dark:bg-dark-200/60",
+        "mr-2 h-9 items-center rounded-lg bg-gray-100/50 dark:bg-dark-200/60",
         className,
       )}
     >
-      <Button
-        className={cn("opacity-60", {
-          "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-300":
+      <button
+        className={cn("h-full rounded-lg px-2 py-1", {
+          "border border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-100/80":
             layout === "kanban",
         })}
-        color="tertiary"
-        leftIcon={<KanbanIcon className="h-5 w-auto" strokeWidth={2.5} />}
         onClick={() => {
           setLayout("kanban");
         }}
-        size="sm"
-        title="Kanban layout"
-        variant={layout === "kanban" ? "outline" : "naked"}
+        title="Board"
+        type="button"
       >
+        <KanbanIcon className="h-5 w-auto" strokeWidth={2.5} />
         <span className="sr-only">Board</span>
-      </Button>
-      <Button
-        className={cn("opacity-60", {
-          "border-gray-200 bg-white opacity-100 dark:border-dark-100 dark:bg-dark-300":
+      </button>
+      <button
+        className={cn("h-full rounded-lg px-2 py-1", {
+          "border border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-100/80":
             layout === "list",
         })}
-        color="tertiary"
-        leftIcon={<TableIcon className="h-5 w-auto" />}
         onClick={() => {
           setLayout("list");
         }}
-        size="sm"
-        title="List layout"
-        variant={layout === "list" ? "outline" : "naked"}
+        title="List view"
+        type="button"
       >
+        <TableIcon className="h-5 w-auto" />
         <span className="sr-only">List</span>
-      </Button>
+      </button>
     </Flex>
   );
 };

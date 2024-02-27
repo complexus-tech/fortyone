@@ -15,6 +15,9 @@ export * from "./kanban-board";
 export * from "./kanban-group";
 export * from "./issues-board";
 export * from "./layout-switcher";
+export * from "./side-details-switch";
+export * from "./board-divided-panel";
+export * from "./logo";
 
 export * from "./issue/checkbox";
 export * from "./issue/assignees-menu";

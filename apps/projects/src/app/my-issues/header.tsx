@@ -1,9 +1,15 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { IssuesIcon, PreferencesIcon } from "icons";
 import { HeaderContainer } from "@/components/layout";
-import { NewIssueButton } from "@/components/ui";
+import { NewIssueButton, SideDetailsSwitch } from "@/components/ui";
 
-export const Header = () => {
+export const Header = ({
+  isExpanded,
+  setIsExpanded,
+}: {
+  isExpanded: boolean | null;
+  setIsExpanded: (isExpanded: boolean) => void;
+}) => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -25,6 +31,10 @@ export const Header = () => {
           Display
         </Button>
         <NewIssueButton />
+        <SideDetailsSwitch
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+        />
       </Flex>
     </HeaderContainer>
   );

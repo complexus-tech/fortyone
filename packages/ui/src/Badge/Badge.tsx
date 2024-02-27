@@ -20,6 +20,7 @@ const badge = cva(
       },
       color: {
         primary: "text-white bg-primary border-primary",
+        success: "text-white bg-success border-success",
         danger: "text-white bg-danger border-danger",
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
