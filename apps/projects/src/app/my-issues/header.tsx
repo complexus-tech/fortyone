@@ -21,7 +21,7 @@ export const Header = ({
           { name: "Assigned" },
         ]}
       />
-      <Flex gap={2}>
+      <Flex align="center" gap={2}>
         <Button
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}
@@ -31,6 +31,7 @@ export const Header = ({
           Display
         </Button>
         <NewIssueButton />
+        <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}

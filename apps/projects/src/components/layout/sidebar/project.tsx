@@ -8,12 +8,11 @@ import {
   DeleteIcon,
   IssuesIcon,
   LinkIcon,
-  ModulesIcon,
+  EpicsIcon,
   MoreHorizontalIcon,
   SettingsIcon,
   SprintsIcon,
   StarIcon,
-  DocsIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
@@ -44,15 +43,15 @@ export const Project = ({
       href: "/projects/web/sprints",
     },
     {
-      name: "Modules",
-      icon: <ModulesIcon className="h-[1.3rem] w-auto" />,
-      href: "/projects/web/modules",
+      name: "Epics",
+      icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
+      href: "/projects/web/epics",
     },
-    {
-      name: "Docs",
-      icon: <DocsIcon className="h-5 w-auto" />,
-      href: "/projects/web/docs",
-    },
+    // {
+    //   name: "Docs",
+    //   icon: <DocsIcon className="h-5 w-auto" />,
+    //   href: "/projects/web/docs",
+    // },
     {
       name: "Settings",
       icon: <SettingsIcon className="h-5 w-auto" />,

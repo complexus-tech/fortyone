@@ -10,7 +10,7 @@ export const SideDetailsSwitch = ({
   setIsExpanded: (isExpanded: boolean) => void;
 }) => {
   return (
-    <Tooltip title={isExpanded ? "Hide sprint details" : "Show sprint details"}>
+    <Tooltip title={isExpanded ? "Hide panel" : "Show panel"}>
       <Button
         color="tertiary"
         leftIcon={
@@ -24,10 +24,10 @@ export const SideDetailsSwitch = ({
           setIsExpanded(!isExpanded);
         }}
         size="sm"
-        variant="naked"
+        variant="solid"
       >
         <span className="sr-only">
-          {isExpanded ? "Hide sprint details" : "Show sprint details"}
+          {isExpanded ? "Hide panel" : "Show panel"}
         </span>
       </Button>
     </Tooltip>

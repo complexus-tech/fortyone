@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { CheckIcon, ModulesIcon, PlusIcon } from "icons";
+import { CheckIcon, EpicsIcon, PlusIcon } from "icons";
 
 export const ModulesMenu = () => {
   const modules = ["Complains", "Clients", "Audit"];
@@ -24,7 +24,7 @@ export const ModulesMenu = () => {
           {modules.map((mod, idx) => (
             <Menu.Item className="justify-between" key={mod}>
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <ModulesIcon className="h-[1.1rem] w-auto" />
+                <EpicsIcon className="h-[1.1rem] w-auto" />
                 <Text>{mod}</Text>
               </Box>
               <Flex align="center" gap={2}>

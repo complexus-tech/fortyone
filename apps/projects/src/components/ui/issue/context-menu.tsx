@@ -8,7 +8,7 @@ import {
   DeleteIcon,
   DuplicateIcon,
   EditIcon,
-  ModulesIcon,
+  EpicsIcon,
   ProjectsIcon,
   SprintsIcon,
   StarIcon,
@@ -110,7 +110,7 @@ export const contextMenu = [
       },
       {
         label: "Module",
-        icon: <ModulesIcon className="h-5 w-auto" />,
+        icon: <EpicsIcon className="h-5 w-auto" />,
       },
       {
         label: "Edit",

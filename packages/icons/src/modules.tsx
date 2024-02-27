@@ -1,6 +1,6 @@
 import type { Icon } from "./types";
 
-export const ModulesIcon = (props: Icon) => {
+export const EpicsIcon = (props: Icon) => {
   return (
     <svg
       {...props}

@@ -4,8 +4,7 @@ import {
   SearchIcon,
   PreferencesIcon,
   ArrowDownIcon,
-  ModulesIcon,
-  ProjectsIcon,
+  EpicsIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/layout";
 import { IssueStatusIcon } from "@/components/ui";
@@ -17,11 +16,11 @@ export const Header = () => {
         breadCrumbs={[
           {
             name: "Web design",
-            icon: <ProjectsIcon className="h-[1.15rem] w-auto" />,
+            icon: "🚀",
           },
           {
-            name: "All modules",
-            icon: <ModulesIcon className="h-[1.15rem] w-auto" />,
+            name: "All epics",
+            icon: <EpicsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
       />
