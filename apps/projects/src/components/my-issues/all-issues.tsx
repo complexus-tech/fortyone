@@ -1,0 +1,38 @@
+import { Box, Tabs } from "ui";
+import { BodyContainer } from "@/components/layout";
+import { IssuesGroup, IssuesToolbar, IssuesList } from "@/components/ui";
+import type { IssueStatus, Issue } from "@/types/issue";
+
+export const AllIssues = ({
+  issues,
+  statuses,
+}: {
+  issues: Issue[];
+  statuses: IssueStatus[];
+}) => {
+  return (
+    <BodyContainer className="relative">
+      <Tabs defaultValue="assigned">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 bg-white/70 backdrop-blur-lg dark:border-dark-200 dark:bg-dark-300/30">
+          <Tabs.List>
+            <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
+            <Tabs.Tab value="created">Created</Tabs.Tab>
+            <Tabs.Tab value="subscribed">Subscribed</Tabs.Tab>
+          </Tabs.List>
+        </Box>
+        <Tabs.Panel value="assigned">
+          {statuses.map((status) => (
+            <IssuesGroup issues={issues} key={status} status={status} />
+          ))}
+        </Tabs.Panel>
+        <Tabs.Panel value="created">
+          <IssuesList issues={issues} />
+        </Tabs.Panel>
+        <Tabs.Panel value="subscribed">
+          <IssuesList issues={issues} />
+        </Tabs.Panel>
+      </Tabs>
+      <IssuesToolbar />
+    </BodyContainer>
+  );
+};

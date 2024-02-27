@@ -1,9 +1,12 @@
+"use client";
 import { BreadCrumbs, Button, Flex } from "ui";
-import { HomeIcon, PreferencesIcon } from "icons";
-import { NewIssueButton } from "@/components/ui";
+import { HomeIcon, PlusIcon } from "icons";
+import { useState } from "react";
+import { NewIssueButton, NewProjectDialog } from "@/components/ui";
 import { HeaderContainer } from "@/components/layout";
 
 export const Header = () => {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -17,14 +20,17 @@ export const Header = () => {
       <Flex gap={2}>
         <Button
           color="tertiary"
-          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
+          leftIcon={<PlusIcon className="h-[1.15rem] w-auto" />}
+          onClick={() => {
+            setIsOpen(true);
+          }}
           size="sm"
-          variant="outline"
         >
-          Display
+          New project
         </Button>
         <NewIssueButton />
       </Flex>
+      <NewProjectDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </HeaderContainer>
   );
 };

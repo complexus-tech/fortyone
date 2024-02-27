@@ -4,7 +4,7 @@ import { cn } from "lib";
 import {
   AnalyticsIcon,
   HomeIcon,
-  IssuesIcon,
+  IssueIcon,
   NotificationsIcon,
   ProjectsIcon,
   SprintsIcon,
@@ -16,32 +16,34 @@ export const Navigation = () => {
   const links = [
     {
       name: "Home",
-      icon: <HomeIcon className="h-[1.35rem] w-auto" />,
+      icon: <HomeIcon className="h-[1.3rem] w-auto" />,
       href: "/",
     },
     {
       name: "Reports",
-      icon: <AnalyticsIcon className="h-[1.35rem] w-auto" />,
+      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
       href: "/reports",
     },
     {
       name: "My issues",
-      icon: <IssuesIcon className="h-[1.4rem] w-auto" />,
+      icon: <IssueIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/my-issues",
     },
     {
       name: "Projects",
-      icon: <ProjectsIcon className="h-5 w-auto" />,
+      icon: <ProjectsIcon className="h-[1.18rem] w-auto" />,
       href: "/projects",
     },
     {
       name: "Active sprints",
-      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+      icon: <SprintsIcon className="h-[1.25rem] w-auto" />,
       href: "/sprints",
     },
     {
       name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <NotificationsIcon className="h-[1.25rem] w-auto" strokeWidth={2} />
+      ),
       href: "/notifications",
       messages: 2,
     },

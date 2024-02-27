@@ -1,5 +1,5 @@
 import type { Issue, IssueStatus } from "@/types/issue";
-import { List } from "./list";
+import { ListMyIssues } from "@/components/my-issues/list-issues";
 
 export default function Page() {
   const issues: Issue[] = [
@@ -226,5 +226,5 @@ export default function Page() {
     "Done",
     "Canceled",
   ];
-  return <List issues={issues} statuses={statuses} />;
+  return <ListMyIssues issues={issues} statuses={statuses} />;
 }

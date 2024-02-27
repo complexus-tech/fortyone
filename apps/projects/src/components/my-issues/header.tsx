@@ -1,5 +1,5 @@
 import { BreadCrumbs, Button, Flex } from "ui";
-import { IssuesIcon, PreferencesIcon } from "icons";
+import { IssueIcon, PreferencesIcon } from "icons";
 import { HeaderContainer } from "@/components/layout";
 import { NewIssueButton, SideDetailsSwitch } from "@/components/ui";
 
@@ -16,7 +16,7 @@ export const Header = ({
         breadCrumbs={[
           {
             name: "My issues",
-            icon: <IssuesIcon className="h-5 w-auto" />,
+            icon: <IssueIcon className="h-5 w-auto" strokeWidth={2} />,
           },
           { name: "Assigned" },
         ]}

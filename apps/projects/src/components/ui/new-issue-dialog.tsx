@@ -75,7 +75,9 @@ export const NewIssueDialog = ({
       <Dialog.Content hideClose size="lg">
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
-            <Badge color="tertiary">COMP-1</Badge>
+            <Badge color="tertiary" rounded="sm">
+              COMP-1
+            </Badge>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
             <Text color="muted">New issue</Text>
           </Dialog.Title>

@@ -1,13 +1,13 @@
-import { ArrowLeftIcon } from "icons";
+import { ArrowLeftIcon, IssueMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
-import { ComplexusLogo, NewIssueButton } from "@/components/ui";
+import { NewIssueButton } from "@/components/ui";
 
 export default function NotFound() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <ComplexusLogo className="h-16 w-auto" />
-        <Text className="mb-6 mt-10" fontSize="4xl">
+        <IssueMissingIcon className="h-20 w-auto rotate-12" />
+        <Text className="mb-6 mt-10" fontSize="3xl">
           404: Project Detour
         </Text>
         <Text className="mb-6 max-w-md text-center" color="muted">
@@ -21,7 +21,6 @@ export default function NotFound() {
             color="tertiary"
             href="/"
             leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
-            variant="outline"
           >
             Back to home
           </Button>

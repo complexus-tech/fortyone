@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Container, Flex, Tabs, Text } from "ui";
-import { BodyContainer } from "@/components/layout";
 import { ClockIcon, DocsIcon } from "icons";
+import { BodyContainer } from "@/components/layout";
 import { Header, Doc } from "./components";
 
 type Project = {

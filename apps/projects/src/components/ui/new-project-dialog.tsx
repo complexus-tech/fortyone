@@ -41,7 +41,9 @@ export const NewProjectDialog = ({
       <Dialog.Content hideClose size="lg">
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
-            <Badge color="tertiary">New project</Badge>
+            <Badge color="tertiary" rounded="sm">
+              New project
+            </Badge>
           </Dialog.Title>
           <Dialog.Close />
         </Dialog.Header>
@@ -51,7 +53,7 @@ export const NewProjectDialog = ({
               className="relative top-[0.1rem] aspect-square"
               color="tertiary"
               leftIcon={
-                <ProjectsIcon className="relative left-[0.15rem] h-5 w-auto text-gray-250" />
+                <ProjectsIcon className="relative left-[0.15rem] h-5 w-auto opacity-80" />
               }
               size="xs"
               variant="outline"

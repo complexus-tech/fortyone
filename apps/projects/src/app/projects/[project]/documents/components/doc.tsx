@@ -1,7 +1,5 @@
 import { Avatar, Button, Flex, Text, Tooltip, Menu } from "ui";
 import Link from "next/link";
-import { RowWrapper } from "@/components/ui/row-wrapper";
-import { TableCheckbox } from "@/components/ui";
 import {
   DeleteIcon,
   DocsIcon,
@@ -11,6 +9,8 @@ import {
   MoreHorizontalIcon,
   StarIcon,
 } from "icons";
+import { RowWrapper } from "@/components/ui/row-wrapper";
+import { TableCheckbox } from "@/components/ui";
 
 export const Doc = ({ name }: { name: string }) => {
   return (
@@ -20,7 +20,7 @@ export const Doc = ({ name }: { name: string }) => {
         <DocsIcon className="h-[1.2rem] w-auto" />
         <Link
           className="flex items-center gap-5"
-          href="/projects/web/docs/test1"
+          href="/projects/web/documents/test1"
         >
           <Text className="w-[215px] truncate hover:opacity-90">{name}</Text>
         </Link>

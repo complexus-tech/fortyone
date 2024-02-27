@@ -65,3 +65,5 @@ export * from "./notifications-empty";
 export * from "./filter";
 export * from "./sidebar-expand";
 export * from "./sidebar-collapse";
+export * from "./issue";
+export * from "./issue-missing";

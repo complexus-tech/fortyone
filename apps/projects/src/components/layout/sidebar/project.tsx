@@ -6,13 +6,14 @@ import { Box, Button, Flex, Menu } from "ui";
 import {
   ArrowDownIcon,
   DeleteIcon,
-  IssuesIcon,
+  IssueIcon,
   LinkIcon,
   EpicsIcon,
   MoreHorizontalIcon,
   SettingsIcon,
   SprintsIcon,
   StarIcon,
+  DocsIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
@@ -34,7 +35,7 @@ export const Project = ({
   const links = [
     {
       name: "Issues",
-      icon: <IssuesIcon className="h-[1.35rem] w-auto" />,
+      icon: <IssueIcon className="h-[1.35rem] w-auto" />,
       href: "/projects/web/issues",
     },
     {
@@ -47,11 +48,11 @@ export const Project = ({
       icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
       href: "/projects/web/epics",
     },
-    // {
-    //   name: "Docs",
-    //   icon: <DocsIcon className="h-5 w-auto" />,
-    //   href: "/projects/web/docs",
-    // },
+    {
+      name: "Documents",
+      icon: <DocsIcon className="h-5 w-auto" />,
+      href: "/projects/web/documents",
+    },
     {
       name: "Settings",
       icon: <SettingsIcon className="h-5 w-auto" />,
