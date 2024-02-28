@@ -1,5 +1,11 @@
 import { VariantProps, cva } from "cva";
-import { FC, HTMLAttributes, JSXElementConstructor } from "react";
+import {
+  FC,
+  HTMLAttributes,
+  JSXElementConstructor,
+  ReactNode,
+  createElement,
+} from "react";
 
 import { cn } from "lib";
 
@@ -74,7 +80,7 @@ export interface TextProps
   html?: string;
 }
 
-export const Text: FC<TextProps> = ({
+export const Text = ({
   as: Tag = "p",
   children,
   className,
@@ -88,7 +94,7 @@ export const Text: FC<TextProps> = ({
   decoration,
   textOverflow,
   ...rest
-}) => {
+}: TextProps) => {
   const htmlProps = html
     ? {
         dangerouslySetInnerHTML: { __html: html },

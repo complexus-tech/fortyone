@@ -5,7 +5,7 @@ import {
   BellIcon,
   StarIcon,
   ProjectsIcon,
-  IssuesIcon,
+  IssueIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/layout";
 
@@ -27,7 +27,7 @@ export const Header = () => {
             },
             {
               name: "Issues",
-              icon: <IssuesIcon className="h-[1.1rem] w-auto" />,
+              icon: <IssueIcon className="h-[1.1rem] w-auto" />,
             },
             {
               name: "Web-12",

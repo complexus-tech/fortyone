@@ -56,8 +56,8 @@ export const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ArrowLeftIcon className="h-5 w-auto" />,
-        IconRight: () => <ArrowRightIcon className="h-5 w-auto" />,
+        IconLeft: () => <ArrowLeftIcon className="h-[1.1rem] w-auto" />,
+        IconRight: () => <ArrowRightIcon className="h-[1.1rem] w-auto" />,
       }}
       {...props}
     />

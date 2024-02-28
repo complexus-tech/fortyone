@@ -4,7 +4,8 @@ export const DuplicateIcon = (props: Icon) => {
   return (
     <svg
       {...props}
-      fill="none"
+      fill="currentColor"
+      fillOpacity={0.1}
       height="24"
       viewBox="0 0 24 24"
       width="24"

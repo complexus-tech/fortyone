@@ -7,6 +7,24 @@ html {
   @apply text-[12.8px] text-gray-300 2xl:text-[14px] dark:bg-gradient-to-b dark:from-[#151515] dark:via-dark/85 dark:to-[#151515] dark:text-gray-200;
 }
 
+/* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
+  width: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  @apply bg-white dark:bg-[#666666b3];
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply rounded-[5px] bg-[#666666b3] dark:bg-white;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #666666b3 transparent;
+}
+
 .ProseMirror-focused {
   @apply outline-none;
 }

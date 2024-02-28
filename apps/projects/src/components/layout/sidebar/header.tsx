@@ -23,7 +23,12 @@ export const Header = () => {
               className="pl-1"
               color="tertiary"
               leftIcon={
-                <Avatar name="Complexus Technologies" rounded="md" size="sm" />
+                <Avatar
+                  name="Complexus Technologies"
+                  rounded="md"
+                  size="xs"
+                  src="/complexus.png"
+                />
               }
               size="sm"
               variant="naked"
@@ -42,7 +47,7 @@ export const Header = () => {
                   <Avatar
                     name="Complexus Technologies"
                     rounded="md"
-                    size="sm"
+                    size="xs"
                     src="/complexus.png"
                   />
                   Complexus
@@ -57,7 +62,7 @@ export const Header = () => {
                   color="secondary"
                   name="Fin Kenya"
                   rounded="md"
-                  size="sm"
+                  size="xs"
                 />
                 Fin Kenya
               </Menu.Item>

@@ -108,9 +108,9 @@ export const Activities = () => {
               <Activity key={activity.id} {...activity} />
             ))}
             <Flex align="start" className="relative z-[2]">
-              <Box className="pointer-events-none absolute bottom-0 left-4 h-[calc(100%-3rem)] w-1 bg-white dark:bg-dark" />
-              <Box className="z-[1] mt-4 flex aspect-square items-center bg-white p-[0.3rem] dark:bg-dark">
-                <Avatar name="Joseph Mukorivo" size="sm" />
+              <Box className="pointer-events-none absolute bottom-0 left-4 h-[calc(100%-3rem)] w-1 bg-white dark:bg-dark-300/60" />
+              <Box className="z-[1] mt-4 flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+                <Avatar name="Joseph Mukorivo" size="xs" />
               </Box>
               <Flex
                 className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"

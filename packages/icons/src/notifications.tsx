@@ -4,8 +4,9 @@ export const NotificationsIcon = (props: Icon) => {
   return (
     <svg
       {...props}
-      fill="none"
       height="24"
+      fill="currentColor"
+      fillOpacity={0.1}
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"

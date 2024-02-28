@@ -1,6 +1,6 @@
 "use client";
 import { BreadCrumbs, Button, Flex } from "ui";
-import { PreferencesIcon, IssuesIcon, ArrowDownIcon } from "icons";
+import { PreferencesIcon, IssueIcon, ArrowDownIcon } from "icons";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { useLocalStorage } from "@/hooks";
 import { HeaderContainer } from "@/components/layout";
@@ -41,7 +41,7 @@ export const ListIssues = ({
             },
             {
               name: "Issues",
-              icon: <IssuesIcon className="h-[1.1rem] w-auto" />,
+              icon: <IssueIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
         />

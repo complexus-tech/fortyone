@@ -19,7 +19,7 @@ export const ProjectsHeader = () => {
         breadCrumbs={[
           {
             name: "All projects",
-            icon: <ProjectsIcon className="h-[1.15rem] w-auto" />,
+            icon: <ProjectsIcon className="h-[1.1rem] w-auto" />,
           },
         ]}
       />

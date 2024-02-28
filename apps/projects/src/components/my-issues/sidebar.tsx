@@ -97,7 +97,7 @@ export const Sidebar = () => {
           direction="column"
           justify="center"
         >
-          <IssueIcon className="mt-6 h-20 w-auto rotate-12" />
+          <IssueIcon className="mt-6 h-20 w-auto rotate-12" strokeWidth={1} />
           <Text className="mt-4" fontWeight="medium">
             No issues due soon.
           </Text>

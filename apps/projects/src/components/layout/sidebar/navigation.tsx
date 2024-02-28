@@ -31,7 +31,7 @@ export const Navigation = () => {
     },
     {
       name: "Projects",
-      icon: <ProjectsIcon className="h-[1.18rem] w-auto" />,
+      icon: <ProjectsIcon className="relative left-px h-[1.1rem] w-auto" />,
       href: "/projects",
     },
     {
