@@ -1,10 +1,30 @@
+"use client";
 import type { ReactNode } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { cn } from "lib";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { IssueCard } from "./issue/card";
 
-const List = ({ children }: { children: ReactNode }) => {
+const List = ({
+  children,
+  id,
+}: {
+  children: ReactNode;
+  id: string | number;
+}) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id,
+  });
   return (
-    <div className="flex h-[calc(100vh-7.5rem)] flex-col gap-3 overflow-y-auto pb-6">
+    <div
+      className={cn(
+        "flex h-[calc(100vh-7.5rem)] flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
+        {
+          "bg-white opacity-60 dark:bg-dark-200/60": isOver,
+        },
+      )}
+      ref={setNodeRef}
+    >
       {children}
     </div>
   );
@@ -19,7 +39,7 @@ export const KanbanGroup = ({
 }) => {
   const filteredIssues = issues.filter((issue) => issue.status === status);
   return (
-    <List key={status}>
+    <List id={status} key={status}>
       {filteredIssues.map((issue) => (
         <IssueCard issue={issue} key={issue.id} />
       ))}

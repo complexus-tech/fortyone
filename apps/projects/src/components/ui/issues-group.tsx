@@ -14,6 +14,7 @@ export const IssuesGroup = ({
   className?: string;
 }) => {
   const filteredIssues = issues.filter((issue) => issue.status === status);
+
   return (
     <Box
       className={cn({
@@ -25,7 +26,7 @@ export const IssuesGroup = ({
         count={filteredIssues.length}
         status={status}
       />
-      <IssuesList issues={filteredIssues} />
+      <IssuesList id={status} issues={filteredIssues} />
     </Box>
   );
 };
