@@ -10,6 +10,7 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.1.0",
     "@tiptap/extension-document": "^2.2.2",
     "@tiptap/extension-heading": "^2.2.3",
     "@tiptap/extension-link": "^2.2.2",

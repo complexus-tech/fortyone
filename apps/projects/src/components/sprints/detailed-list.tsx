@@ -1,7 +1,7 @@
 "use client";
 import { BodyContainer } from "../layout/body";
 import { SprintCard } from "./card";
-import { SprintsHeader } from "./header";
+import { ActiveSprintsHeader } from "./header";
 
 const sprints = [
   { id: 1, name: "Sprint 1", description: "Planning for the first sprint." },
@@ -12,7 +12,7 @@ const sprints = [
 export const DetailedSprintList = () => {
   return (
     <>
-      <SprintsHeader />
+      <ActiveSprintsHeader />
       <BodyContainer>
         {sprints.map(({ id, name, description }) => (
           <SprintCard description={description} key={id} name={name} />
