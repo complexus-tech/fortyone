@@ -63,9 +63,9 @@ export const Navigation = () => {
           <span className="flex items-center gap-2">
             <span
               className={cn(
-                "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-white",
+                "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-gray-200",
                 {
-                  "text-gray-300 dark:text-white": pathname === href,
+                  "text-gray-300 dark:text-gray-200": pathname === href,
                 },
               )}
             >

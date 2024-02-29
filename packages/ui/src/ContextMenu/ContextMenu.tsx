@@ -22,7 +22,7 @@ const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-300/80 dark:text-gray-200 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-200 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2",
+  "bg-white/80 dark:bg-dark-200/80 dark:text-gray-200 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2",
   {
     variants: {
       rounded: {
@@ -141,7 +141,7 @@ const Separator = forwardRef<
 >(({ className, ...rest }, ref) => (
   <ContextMenuPrimitive.Separator
     className={cn(
-      "border-gray-100 dark:border-dark-200 border-b my-3",
+      "border-gray-100 dark:border-dark-100 border-b my-3",
       className
     )}
     ref={ref}

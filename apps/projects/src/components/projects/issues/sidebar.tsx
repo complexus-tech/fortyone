@@ -10,7 +10,7 @@ export const Sidebar = () => {
           <IssueIcon className="h-5 w-auto" strokeWidth={2} />
           All issues
         </Text>
-        <Badge color="tertiary" rounded="sm" size="lg">
+        <Badge color="tertiary" rounded="sm">
           Web design
         </Badge>
       </Flex>

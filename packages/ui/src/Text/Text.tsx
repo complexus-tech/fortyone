@@ -1,15 +1,9 @@
 import { VariantProps, cva } from "cva";
-import {
-  FC,
-  HTMLAttributes,
-  JSXElementConstructor,
-  ReactNode,
-  createElement,
-} from "react";
+import { FC, HTMLAttributes, JSXElementConstructor } from "react";
 
 import { cn } from "lib";
 
-const text = cva("text-black dark:text-white", {
+const text = cva("text-gray-300 dark:text-gray-200", {
   variants: {
     align: {
       left: "text-left",
@@ -20,8 +14,8 @@ const text = cva("text-black dark:text-white", {
       primary: "text-primary dark:text-primary",
       muted: "text-gray-250 dark:text-gray-200/80",
       danger: "text-danger dark:text-danger",
-      black: "text-black",
-      white: "text-white",
+      black: "text-gray-300",
+      white: "text-gray-200",
       warning: "text-warning",
       info: "text-info",
       secondary: "text-secondary",

@@ -59,7 +59,7 @@ export const IssuesBoard = ({
         >
           <Flex
             align="center"
-            className="w-max rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-4 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
+            className="w-max rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-3.5 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
             gap={2}
           >
             <IssueStatusIcon status="Backlog" />

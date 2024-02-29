@@ -10,7 +10,7 @@ export const Sidebar = () => {
           <IssueIcon className="h-5 w-auto" strokeWidth={2} />
           My issues
         </Text>
-        <Badge color="tertiary" size="lg">
+        <Badge color="tertiary" rounded="sm">
           Assigned
         </Badge>
       </Flex>
@@ -93,7 +93,7 @@ export const Sidebar = () => {
 
         <Flex
           align="center"
-          className="min-h-80 rounded-xl bg-gray-50/80 px-4 dark:bg-dark-300/80"
+          className="min-h-80 rounded-xl bg-gray-50/80 px-4 dark:bg-dark-200/20"
           direction="column"
           justify="center"
         >
