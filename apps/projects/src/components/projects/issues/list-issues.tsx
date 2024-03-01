@@ -1,6 +1,6 @@
 "use client";
-import { BreadCrumbs, Button, Flex } from "ui";
-import { PreferencesIcon, IssueIcon, ArrowDownIcon } from "icons";
+import { BreadCrumbs, Flex } from "ui";
+import { IssueIcon } from "icons";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { useLocalStorage } from "@/hooks";
 import { HeaderContainer } from "@/components/layout";
@@ -11,6 +11,7 @@ import {
   NewIssueButton,
   SideDetailsSwitch,
   BoardDividedPanel,
+  IssuesFiltersButton,
 } from "@/components/ui";
 import { Sidebar } from "./sidebar";
 
@@ -47,15 +48,7 @@ export const ListIssues = ({
         />
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <Button
-            color="tertiary"
-            leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-            rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            <span className="sr-only">Display</span>
-          </Button>
+          <IssuesFiltersButton />
           <NewIssueButton />
           <span className="text-gray-200 dark:text-dark-100">|</span>
           <SideDetailsSwitch

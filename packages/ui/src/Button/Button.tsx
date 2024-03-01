@@ -35,13 +35,13 @@ const button = cva(
         warning:
           "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
         tertiary:
-          "text-gray-300 dark:text-gray-200 dark:border-dark-100/50 dark:bg-dark-200/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-50 active:bg-gray-50 dark:hover:bg-dark-100/50",
+          "text-gray-300 dark:text-gray-200 dark:border-dark-50/40 dark:bg-dark-100/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-50 active:bg-gray-50 dark:hover:bg-dark-100/50",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
       size: {
         xs: "pr-2 pl-1 h-[1.85rem] text-[0.95rem] gap-[2px]",
-        sm: "px-2 h-[2.2rem] gap-1",
+        sm: "px-2 h-[2.1rem] gap-1",
         md: "px-3 h-[2.5rem]",
         lg: "px-7 py-3",
       },

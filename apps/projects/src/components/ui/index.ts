@@ -18,6 +18,7 @@ export * from "./layout-switcher";
 export * from "./side-details-switch";
 export * from "./board-divided-panel";
 export * from "./logo";
+export * from "./issues-filters-button";
 
 export * from "./issue/checkbox";
 export * from "./issue/assignees-menu";

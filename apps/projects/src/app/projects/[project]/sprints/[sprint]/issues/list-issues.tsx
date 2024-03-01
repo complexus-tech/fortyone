@@ -13,7 +13,6 @@ import {
   Text,
 } from "ui";
 import {
-  PreferencesIcon,
   SprintsIcon,
   MoreVerticalIcon,
   LinkIcon,
@@ -41,6 +40,7 @@ import {
   RowWrapper,
   IssueStatusIcon,
   PriorityIcon,
+  IssuesFiltersButton,
 } from "@/components/ui";
 import { HeaderContainer } from "@/components/layout";
 
@@ -114,14 +114,7 @@ export const ListIssues = ({
         />
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <Button
-            color="tertiary"
-            leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            Display
-          </Button>
+          <IssuesFiltersButton />
           <span className="text-gray-200 dark:text-dark-100">|</span>
           <SideDetailsSwitch
             isExpanded={isExpanded}

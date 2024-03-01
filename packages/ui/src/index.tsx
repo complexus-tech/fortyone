@@ -21,7 +21,7 @@ export * from "./Input/Input";
 export * from "./Menu/Menu";
 export * from "./ContextMenu/ContextMenu";
 // export * from './ObjectViewer/ObjectViewer';
-// export * from './Select/Select';
+export * from "./Select/Select";
 export * from "./Table/Table";
 export * from "./Tabs/Tabs";
 export * from "./Text/Text";

@@ -10,5 +10,6 @@ module.exports = {
     "import/no-named-as-default": "off",
     "@typescript-eslint/no-unsafe-member-access": "off",
     "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
   },
 };

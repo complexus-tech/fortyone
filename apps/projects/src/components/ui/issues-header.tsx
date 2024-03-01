@@ -21,7 +21,7 @@ export const IssuesHeader = ({
   return (
     <Container
       className={cn(
-        "sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/60",
+        "sticky top-0 z-[1] select-none bg-gray-50 py-[0.4rem] backdrop-blur dark:bg-dark-200/60",
         className,
       )}
     >
@@ -35,13 +35,13 @@ export const IssuesHeader = ({
           <Button
             color="tertiary"
             leftIcon={
-              <PlusIcon className="h-[1.2rem] w-auto dark:text-gray-200" />
+              <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
             }
             onClick={() => {
               setIsOpen(true);
             }}
             size="sm"
-            variant="outline"
+            variant="naked"
           >
             <span className="sr-only">Add issue</span>
           </Button>

@@ -1,4 +1,5 @@
-import { BreadCrumbs, Button, Container, Flex } from "ui";
+"use client";
+import { BreadCrumbs, Button, Container, Flex, Select } from "ui";
 import { AnalyticsIcon, PreferencesIcon } from "icons";
 import { BodyContainer, HeaderContainer } from "@/components/layout";
 import { NewIssueButton } from "@/components/ui";
@@ -28,7 +29,20 @@ export default function Page(): JSX.Element {
         </Flex>
       </HeaderContainer>
       <BodyContainer>
-        <Container className="pt-4">Reports page</Container>
+        <Container className="pt-4">
+          Reports page
+          <Select>
+            <Select.Trigger className="w-40">
+              <Select.Input placeholder="Select" />
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Group>
+                <Select.Option value="option1">Option 1</Select.Option>
+                <Select.Option value="option2">Option 2</Select.Option>
+              </Select.Group>
+            </Select.Content>
+          </Select>
+        </Container>
       </BodyContainer>
     </>
   );
