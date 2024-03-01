@@ -1,12 +1,12 @@
 "use client";
-import { Box, Button, Divider, Flex, Popover, Switch, Text } from "ui";
+import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 
 export type IssuesFilter = {
   groupBy: string;
   orderBy: string;
-  showEmptyColumns: boolean;
+  issueType: string;
   showEmptyGroups: boolean;
   showSubIssues: boolean;
   displayColumns: string[];
@@ -16,7 +16,7 @@ export const IssuesFiltersButton = () => {
   const initialFilter: IssuesFilter = {
     groupBy: "Status",
     orderBy: "Priority",
-    showEmptyColumns: false,
+    issueType: "Active",
     showEmptyGroups: false,
     showSubIssues: false,
     displayColumns: [
@@ -32,8 +32,14 @@ export const IssuesFiltersButton = () => {
   };
 
   const [filter, setFilter] = useLocalStorage("filters", initialFilter);
-  const { groupBy, orderBy, showEmptyColumns, showSubIssues, displayColumns } =
-    filter!;
+  const {
+    groupBy,
+    orderBy,
+    issueType,
+    showEmptyGroups,
+    showSubIssues,
+    displayColumns,
+  } = filter!;
 
   const allColumns = [
     "Status",
@@ -46,6 +52,10 @@ export const IssuesFiltersButton = () => {
     "Epic",
     "Labels",
   ];
+
+  const groupByOptions = ["Status", "Assignee", "Priority"];
+  const orderByOptions = ["Priority", "Due date", "Created", "Updated"];
+  const issueTypes = ["Active", "Backlog"];
 
   const isDefaultSetup =
     JSON.stringify(filter) === JSON.stringify(initialFilter);
@@ -66,23 +76,78 @@ export const IssuesFiltersButton = () => {
       <Popover.Content align="end" className="max-w-[24rem]">
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
-          <Button
-            color="tertiary"
-            rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
-            size="sm"
+          <Select
+            onValueChange={(value) => {
+              setFilter({
+                ...filter!,
+                groupBy: value,
+              });
+            }}
+            value={groupBy}
           >
-            {groupBy}
-          </Button>
+            <Select.Trigger className="w-32">
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Group>
+                {groupByOptions.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select.Group>
+            </Select.Content>
+          </Select>
+        </Flex>
+        <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
+          <Text color="muted">Issue type</Text>
+          <Select
+            onValueChange={(value) => {
+              setFilter({
+                ...filter!,
+                issueType: value,
+              });
+            }}
+            value={issueType}
+          >
+            <Select.Trigger className="w-32">
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Group>
+                {issueTypes.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select.Group>
+            </Select.Content>
+          </Select>
         </Flex>
         <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
           <Text color="muted">Order by</Text>
-          <Button
-            color="tertiary"
-            rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
-            size="sm"
+          <Select
+            onValueChange={(value) => {
+              setFilter({
+                ...filter!,
+                orderBy: value,
+              });
+            }}
+            value={orderBy}
           >
-            {orderBy}
-          </Button>
+            <Select.Trigger className="w-32">
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Group>
+                {orderByOptions.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select.Group>
+            </Select.Content>
+          </Select>
         </Flex>
         <Divider className="my-2" />
         <Box className="max-w-[27rem] px-4 py-2">
@@ -94,14 +159,14 @@ export const IssuesFiltersButton = () => {
               className="flex select-none items-center justify-between gap-2"
               htmlFor="more"
             >
-              Show empty columns{" "}
+              Show empty groups
               <Switch
-                checked={showEmptyColumns}
+                checked={showEmptyGroups}
                 id="more"
                 onCheckedChange={(checked) => {
                   setFilter({
                     ...filter!,
-                    showEmptyColumns: checked,
+                    showEmptyGroups: checked,
                   });
                 }}
               />
