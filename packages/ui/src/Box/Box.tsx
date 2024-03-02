@@ -14,14 +14,14 @@ export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
 }
 
-export const Box: FC<BoxProps> = ({
+export const Box = ({
   className = "",
   style = {},
   as: Tag = "div",
   children,
   html,
   ...rest
-}) => {
+}: BoxProps) => {
   const htmlProps = html
     ? {
         dangerouslySetInnerHTML: { __html: html },

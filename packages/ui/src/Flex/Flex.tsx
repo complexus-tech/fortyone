@@ -1,6 +1,6 @@
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
-import { FC, HTMLAttributes, ComponentType } from "react";
+import { HTMLAttributes, ComponentType } from "react";
 
 const flex = cva("flex", {
   variants: {
@@ -81,7 +81,7 @@ interface Props extends HTMLAttributes<HTMLElement>, VariantProps<typeof flex> {
   as?: ComponentType<any>;
 }
 
-export const Flex: FC<Props> = ({
+export const Flex = ({
   as: Tag = "div",
   align,
   justify,
@@ -93,7 +93,7 @@ export const Flex: FC<Props> = ({
   gapY,
   children,
   ...rest
-}) => {
+}: Props) => {
   const classes = cn(
     flex({ align, justify, direction, gap, gapX, gapY, wrap }),
     className

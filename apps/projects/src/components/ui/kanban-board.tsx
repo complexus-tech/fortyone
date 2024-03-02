@@ -1,4 +1,5 @@
 import { Box, Flex } from "ui";
+import { cn } from "lib";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { BodyContainer } from "../layout/body";
 import { IssuesKanbanHeader } from "./kanban-header";
@@ -7,12 +8,19 @@ import { KanbanGroup } from "./kanban-group";
 export const KanbanBoard = ({
   statuses,
   issues,
+  className,
 }: {
   statuses: IssueStatus[];
   issues: Issue[];
+  className?: string;
 }) => {
   return (
-    <BodyContainer className="overflow-x-auto bg-gray-50/60 dark:bg-transparent">
+    <BodyContainer
+      className={cn(
+        "overflow-x-auto bg-gray-50/60 dark:bg-transparent",
+        className,
+      )}
+    >
       <Box className="sticky top-0 z-[1] h-[3.5rem] w-max px-6 backdrop-blur">
         <Flex
           align="center"
@@ -24,7 +32,7 @@ export const KanbanBoard = ({
           ))}
         </Flex>
       </Box>
-      <Box className="flex w-max gap-x-6 px-7">
+      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7 ">
         {statuses.map((status) => (
           <KanbanGroup issues={issues} key={status} status={status} />
         ))}

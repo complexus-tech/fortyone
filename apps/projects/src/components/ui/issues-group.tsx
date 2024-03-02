@@ -17,7 +17,7 @@ export const IssuesGroup = ({
 
   return (
     <Box
-      className={cn({
+      className={cn("pb-6", {
         hidden: filteredIssues.length === 0,
       })}
     >

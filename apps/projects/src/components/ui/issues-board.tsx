@@ -1,11 +1,11 @@
 "use client";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
+import { cn } from "lib";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { BodyContainer } from "../layout/body";
 import { KanbanBoard } from "./kanban-board";
 import { IssuesGroup } from "./issues-group";
-import { IssuesToolbar } from "./issues-toolbar";
 import { IssueStatusIcon } from "./issue-status-icon";
 import { IssueCard } from "./issue/card";
 
@@ -15,26 +15,31 @@ export const IssuesBoard = ({
   layout,
   issues,
   statuses,
+  className,
 }: {
   layout: IssuesLayout;
   issues: Issue[];
   statuses: IssueStatus[];
+  className?: string;
 }) => {
   return (
     <DndContext>
       {layout === "kanban" ? (
-        <KanbanBoard issues={issues} statuses={statuses} />
+        <KanbanBoard
+          className={className}
+          issues={issues}
+          statuses={statuses}
+        />
       ) : (
-        <BodyContainer className="overflow-x-auto">
+        <BodyContainer className={cn("overflow-x-auto", className)}>
           {statuses.map((status) => (
             <IssuesGroup
-              className="-top-[1px]"
+              className="-top-[0.5px]"
               issues={issues}
               key={status}
               status={status}
             />
           ))}
-          <IssuesToolbar />
         </BodyContainer>
       )}
 

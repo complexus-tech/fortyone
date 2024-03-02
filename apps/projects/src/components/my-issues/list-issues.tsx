@@ -1,4 +1,5 @@
 "use client";
+import type { IssuesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import type { IssueStatus, Issue } from "@/types/issue";
@@ -17,12 +18,21 @@ export const ListMyIssues = ({
     "my-issues:expanded",
     true,
   );
+  const [layout, setLayout] = useLocalStorage<IssuesLayout>(
+    "my-issues:issues:layout",
+    "list",
+  );
   return (
     <>
-      <Header isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+      <Header
+        isExpanded={isExpanded}
+        layout={layout}
+        setIsExpanded={setIsExpanded}
+        setLayout={setLayout}
+      />
       <BoardDividedPanel autoSaveId="my-issues:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <AllIssues issues={issues} statuses={statuses} />
+          <AllIssues issues={issues} layout={layout} statuses={statuses} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Sidebar />

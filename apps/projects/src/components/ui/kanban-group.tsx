@@ -18,7 +18,7 @@ const List = ({
   return (
     <div
       className={cn(
-        "flex h-[calc(100vh-7.5rem)] flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
+        "flex h-full flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
         {
           "bg-white opacity-60 dark:bg-dark-200/60": isOver,
         },

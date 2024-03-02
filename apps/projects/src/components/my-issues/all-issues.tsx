@@ -1,23 +1,20 @@
 import { Box, Flex, Tabs, Text } from "ui";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { BodyContainer } from "@/components/layout";
-import {
-  IssuesGroup,
-  IssuesToolbar,
-  IssuesList,
-  IssueStatusIcon,
-} from "@/components/ui";
+import type { IssuesLayout } from "@/components/ui";
+import { IssueStatusIcon, IssuesBoard } from "@/components/ui";
 import type { IssueStatus, Issue } from "@/types/issue";
 
 export const AllIssues = ({
   issues,
   statuses,
+  layout,
 }: {
   issues: Issue[];
   statuses: IssueStatus[];
+  layout: IssuesLayout;
 }) => {
   return (
-    <BodyContainer className="relative">
+    <Box className="h-[calc(100vh-4rem)]">
       <DndContext>
         <Tabs defaultValue="assigned">
           <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 bg-white/70 backdrop-blur-lg dark:border-dark-200 dark:bg-dark-300/30">
@@ -28,15 +25,28 @@ export const AllIssues = ({
             </Tabs.List>
           </Box>
           <Tabs.Panel value="assigned">
-            {statuses.map((status) => (
-              <IssuesGroup issues={issues} key={status} status={status} />
-            ))}
+            <IssuesBoard
+              className="h-[calc(100vh-7.7rem)]"
+              issues={issues}
+              layout={layout}
+              statuses={statuses}
+            />
           </Tabs.Panel>
           <Tabs.Panel value="created">
-            <IssuesList id="created" issues={issues} />
+            <IssuesBoard
+              className="h-[calc(100vh-7.7rem)]"
+              issues={issues}
+              layout={layout}
+              statuses={statuses}
+            />
           </Tabs.Panel>
           <Tabs.Panel value="subscribed">
-            <IssuesList id="subscribed" issues={issues} />
+            <IssuesBoard
+              className="h-[calc(100vh-7.7rem)]"
+              issues={issues}
+              layout={layout}
+              statuses={statuses}
+            />
           </Tabs.Panel>
         </Tabs>
 
@@ -57,7 +67,6 @@ export const AllIssues = ({
           </Flex>
         </DragOverlay>
       </DndContext>
-      <IssuesToolbar />
-    </BodyContainer>
+    </Box>
   );
 };
