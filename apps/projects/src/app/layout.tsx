@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "../styles/global.css";
-import { MainLayout } from "@/components/layout";
 
 const font = Inter({
   subsets: ["latin"],
@@ -22,9 +21,7 @@ export default function RootLayout({
 }): JSX.Element {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={font.className}>
-        <MainLayout>{children}</MainLayout>
-      </body>
+      <body className={font.className}>{children}</body>
     </html>
   );
 }
