@@ -6,7 +6,7 @@ export const SprintRowsHeader = () => {
     <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2.5 backdrop-blur dark:bg-dark-200/60">
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
-          <Badge color="tertiary" rounded="sm" size="lg">
+          <Badge color="tertiary" rounded="sm">
             Active
           </Badge>
         </Flex>
