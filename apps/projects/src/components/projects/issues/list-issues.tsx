@@ -3,7 +3,7 @@ import { BreadCrumbs, Flex } from "ui";
 import { IssueIcon } from "icons";
 import type { Issue, IssueStatus } from "@/types/issue";
 import { useLocalStorage } from "@/hooks";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 import type { IssuesLayout } from "@/components/ui";
 import {
   IssuesBoard,

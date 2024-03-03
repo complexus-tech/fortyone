@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { MainLayout } from "@/components/layout";
+import { ApplicationLayout } from "@/components/layouts";
 
 export const metadata: Metadata = {
   title: "Projects",
@@ -12,5 +12,5 @@ export default function RootLayout({
 }: {
   children: ReactNode;
 }): JSX.Element {
-  return <MainLayout>{children}</MainLayout>;
+  return <ApplicationLayout>{children}</ApplicationLayout>;
 }

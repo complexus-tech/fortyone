@@ -2,7 +2,7 @@
 
 import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
-import { BodyContainer } from "@/components/layout";
+import { BodyContainer } from "@/components/shared";
 import { IssueStatusIcon } from "@/components/ui";
 import { Header, Module } from "./components";
 

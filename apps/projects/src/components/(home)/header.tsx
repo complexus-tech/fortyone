@@ -3,7 +3,7 @@ import { BreadCrumbs, Button, Flex } from "ui";
 import { HomeIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { NewIssueButton, NewProjectDialog } from "@/components/ui";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);

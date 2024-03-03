@@ -6,7 +6,7 @@ import {
   ArrowDownIcon,
   EpicsIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 import { IssueStatusIcon } from "@/components/ui";
 
 export const Header = () => {

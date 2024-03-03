@@ -17,7 +17,7 @@ export const Tooltip = ({
   return (
     <TooltipPrimitive.Provider>
       <TooltipPrimitive.Root delayDuration={300}>
-        <TooltipPrimitive.Trigger>{children}</TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             className={cn(

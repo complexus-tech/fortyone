@@ -62,7 +62,7 @@ export const IssuesFiltersButton = () => {
 
   return (
     <Popover>
-      <Popover.Trigger>
+      <Popover.Trigger asChild>
         <Button
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}

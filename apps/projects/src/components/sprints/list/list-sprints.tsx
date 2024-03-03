@@ -1,6 +1,6 @@
 "use client";
 import { Box, Tabs } from "ui";
-import { BodyContainer } from "@/components/layout";
+import { BodyContainer } from "@/components/shared";
 import { SprintRowsHeader } from "./rows-header";
 import type { Sprint } from "./row";
 import { SprintRow } from "./row";

@@ -7,7 +7,7 @@ import {
   ProjectsIcon,
   SearchIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 import { NewProjectDialog } from "@/components/ui";
 
 export const Header = () => {

@@ -3,7 +3,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
 import { cn } from "lib";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { BodyContainer } from "../layout/body";
+import { BodyContainer } from "../shared/body";
 import { KanbanBoard } from "./kanban-board";
 import { IssuesGroup } from "./issues-group";
 import { IssueStatusIcon } from "./issue-status-icon";

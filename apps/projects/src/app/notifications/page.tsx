@@ -1,4 +1,4 @@
-import { BodyContainer } from "@/components/layout";
+import { BodyContainer } from "@/components/shared";
 import { ListNotifications } from "@/components/notifications/list";
 
 type Notification = {

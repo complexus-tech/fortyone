@@ -1,6 +1,6 @@
 "use client";
 import { ResizablePanel } from "ui";
-import { BodyContainer } from "@/components/layout";
+import { BodyContainer } from "@/components/shared";
 import { Header } from "./components";
 import { MainDetails, Options } from "./containers";
 

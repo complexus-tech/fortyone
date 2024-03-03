@@ -7,7 +7,7 @@ import {
   ArrowDownIcon,
   SprintsIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 
 export const SprintsHeader = () => {
   return (

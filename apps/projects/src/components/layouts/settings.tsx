@@ -1,9 +1,9 @@
-"use client";
+// "use client";
 import type { ReactNode } from "react";
 import { ResizablePanel } from "ui";
-import { Sidebar } from "./sidebar/sidebar";
+import { Sidebar } from "../shared/sidebar/sidebar";
 
-export const MainLayout = ({ children }: { children: ReactNode }) => {
+export const SeetingsLayout = ({ children }: { children: ReactNode }) => {
   return (
     <ResizablePanel autoSaveId="main-layout" direction="horizontal">
       <ResizablePanel.Panel defaultSize={18} maxSize={20} minSize={16}>

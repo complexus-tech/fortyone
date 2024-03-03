@@ -11,7 +11,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
 import TextExt from "@tiptap/extension-text";
 import { Box, Container, TextEditor, Text } from "ui";
-import { BodyContainer } from "@/components/layout";
+import { BodyContainer } from "@/components/shared";
 import { Header, Toolbar } from "./components";
 
 export default function Page(): JSX.Element {

@@ -42,7 +42,7 @@ import {
   PriorityIcon,
   IssuesFiltersButton,
 } from "@/components/ui";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 
 export const ListIssues = ({
   issues,

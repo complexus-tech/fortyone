@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { ResizablePanel } from "ui";
-import { BodyContainer } from "../layout/body";
+import { BodyContainer } from "../shared/body";
 
 export const BoardDividedPanel = ({
   children,

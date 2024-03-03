@@ -1,7 +1,7 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
 import type { Issue, IssueStatus } from "@/types/issue";
-import { BodyContainer } from "../layout/body";
+import { BodyContainer } from "../shared/body";
 import { IssuesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 

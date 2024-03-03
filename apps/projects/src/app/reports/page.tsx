@@ -1,7 +1,7 @@
 "use client";
 import { BreadCrumbs, Button, Container, Flex, Select } from "ui";
 import { AnalyticsIcon, PreferencesIcon } from "icons";
-import { BodyContainer, HeaderContainer } from "@/components/layout";
+import { BodyContainer, HeaderContainer } from "@/components/shared";
 import { NewIssueButton } from "@/components/ui";
 
 export default function Page(): JSX.Element {

@@ -15,15 +15,20 @@ export const Projects = () => {
   );
   return (
     <Box className="mt-4">
-      <Button
-        align="between"
-        className="group pl-2.5 pr-1 hover:bg-opacity-50"
-        color="tertiary"
-        fullWidth
+      <Flex
+        align="center"
+        className="group h-[2.6rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-50/70 focus:bg-gray-50/70 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
+        justify="between"
         onClick={() => {
           setIsOpen(!isOpen);
         }}
-        variant="naked"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            setIsOpen(!isOpen);
+          }
+        }}
+        role="button"
+        tabIndex={0}
       >
         <span className="flex items-center gap-2 font-medium">
           My projects
@@ -50,7 +55,7 @@ export const Projects = () => {
         >
           <span className="sr-only">Add new project</span>
         </Button>
-      </Button>
+      </Flex>
       <Flex
         className={cn(
           "h-0 max-h-[54vh] overflow-y-auto pb-2 transition-all duration-300",

@@ -8,7 +8,7 @@ import {
   PreferencesIcon,
   ArrowDownIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 import { IssueStatusIcon, NewProjectDialog } from "@/components/ui";
 
 export const ProjectsHeader = () => {

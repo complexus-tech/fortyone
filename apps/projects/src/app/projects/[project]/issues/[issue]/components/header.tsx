@@ -7,7 +7,7 @@ import {
   ProjectsIcon,
   IssueIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/layout";
+import { HeaderContainer } from "@/components/shared";
 
 export const Header = () => {
   return (

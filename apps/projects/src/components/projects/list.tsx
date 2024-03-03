@@ -2,7 +2,7 @@
 import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 import { IssueStatusIcon } from "@/components/ui";
-import { BodyContainer } from "../layout";
+import { BodyContainer } from "../shared";
 import type { Project } from "./project";
 import { ProjectCard } from "./project";
 import { ProjectsHeader } from "./header";
