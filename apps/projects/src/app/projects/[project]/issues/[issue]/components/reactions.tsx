@@ -1,5 +1,4 @@
 import { Badge, Flex } from "ui";
-import { SmilePlus } from "lucide-react";
 
 export const Reactions = () => {
   return (
@@ -20,7 +19,7 @@ export const Reactions = () => {
         size="lg"
         variant="outline"
       >
-        <SmilePlus className="h-5 w-auto opacity-80" />
+        Emoji
       </Badge>
     </Flex>
   );

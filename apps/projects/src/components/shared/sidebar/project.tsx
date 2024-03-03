@@ -19,17 +19,19 @@ import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
 type ProjectProps = {
+  id: number;
   name: string;
   icon?: ReactNode;
 };
 
 export const Project = ({
+  id,
   name: projectName,
   icon: projectIcon,
 }: ProjectProps) => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
-    `project-${projectName}-dropdown`,
-    true,
+    `projects:${id}:dropdown`,
+    false,
   );
   const pathname = usePathname();
   const links = [

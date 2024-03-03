@@ -1,6 +1,5 @@
 "use client";
 import { Box, Text, Flex, Wrapper } from "ui";
-import { ArrowUpRight } from "lucide-react";
 
 type CardProps = {
   title: string;
@@ -10,12 +9,24 @@ type CardProps = {
 const Card = ({ title, count, description }: CardProps) => (
   <Wrapper>
     <Flex align="center" justify="between">
-      <Text className="mb-2" color="muted">
-        {title}
-      </Text>
-      <ArrowUpRight className="h-5 w-auto text-primary" />
+      <Text color="muted">{title}</Text>
+      <svg
+        className="h-5 w-auto text-primary"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M7 7h10v10" />
+        <path d="M7 17 17 7" />
+      </svg>
     </Flex>
-    <Text className="mb-2" fontSize="2xl" fontWeight="semibold">
+    <Text className="my-2" fontSize="2xl" fontWeight="semibold">
       {count}
     </Text>
     <Text color="muted">{description}</Text>

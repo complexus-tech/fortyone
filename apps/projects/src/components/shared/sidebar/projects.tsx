@@ -13,6 +13,25 @@ export const Projects = () => {
     "projects-dropdown",
     true,
   );
+
+  const projects = [
+    {
+      id: 1,
+      icon: "🚀",
+      name: "Website design",
+    },
+    {
+      id: 2,
+      icon: "🇦🇫",
+      name: "Data migration",
+    },
+    {
+      id: 3,
+      icon: "🏀",
+      name: "CRM development",
+    },
+  ];
+
   return (
     <Box className="mt-4">
       <Flex
@@ -65,9 +84,9 @@ export const Projects = () => {
         )}
         direction="column"
       >
-        <Project icon="🚀" name="Website design" />
-        <Project icon="🇦🇫" name="Data migration" />
-        <Project icon="🏀" name="CRM development" />
+        {projects.map(({ id, icon, name }) => (
+          <Project icon={icon} id={id} key={id} name={name} />
+        ))}
       </Flex>
 
       <NewProjectDialog isOpen={isDialogOpen} setIsOpen={setIsDialogOpen} />

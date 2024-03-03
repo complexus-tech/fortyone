@@ -1,0 +1,16 @@
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { SettingsLayout } from "@/components/layouts";
+
+export const metadata: Metadata = {
+  title: "Projects",
+  description: "Complexus Projects",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}): JSX.Element {
+  return <SettingsLayout>{children}</SettingsLayout>;
+}

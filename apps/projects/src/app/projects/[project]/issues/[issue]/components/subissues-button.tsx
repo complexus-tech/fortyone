@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { PlusIcon } from "icons";
 import { Button, Flex } from "ui";
 
 export const SubissuesButton = () => {
@@ -6,7 +6,7 @@ export const SubissuesButton = () => {
     <Flex justify="end">
       <Button
         color="tertiary"
-        leftIcon={<Plus className="h-5 w-auto" />}
+        leftIcon={<PlusIcon className="h-5 w-auto" />}
         size="sm"
         variant="naked"
       >

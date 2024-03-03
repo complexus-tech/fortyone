@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
 import {
@@ -10,10 +11,16 @@ import {
   UserIcon,
   UsersAddIcon,
 } from "icons";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { NewIssueDialog } from "@/components/ui";
+import { useLocalStorage } from "@/hooks";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+
   return (
     <>
       <Flex align="center" className="h-16" justify="between">
@@ -79,8 +86,16 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <SettingsIcon className="h-5 w-auto" />
-                Workspace settings
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <SettingsIcon className="h-5 w-auto" />
+                  Workspace settings
+                </Link>
               </Menu.Item>
               <Menu.Item>
                 <UsersAddIcon className="h-5 w-auto" />
