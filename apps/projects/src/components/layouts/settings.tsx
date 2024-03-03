@@ -2,7 +2,7 @@
 import { ArrowLeftIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
+import { Badge, Box, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import { useLocalStorage } from "@/hooks";
 import { BodyContainer } from "../shared";
@@ -195,7 +195,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle className="bg-gray-100/70 dark:bg-dark-100/40" />
       <ResizablePanel.Panel defaultSize={82}>
-        <Container className="max-w-6xl py-12">{children}</Container>
+        <Box className="max-w-6xl px-12 py-12">{children}</Box>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );
