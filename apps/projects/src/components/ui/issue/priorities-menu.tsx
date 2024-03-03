@@ -57,7 +57,7 @@ const Items = ({
 };
 
 const Trigger = ({ children }: { children: ReactNode }) => (
-  <Menu.Button>{children}</Menu.Button>
+  <Menu.Button asChild>{children}</Menu.Button>
 );
 
 PrioritiesMenu.Trigger = Trigger;

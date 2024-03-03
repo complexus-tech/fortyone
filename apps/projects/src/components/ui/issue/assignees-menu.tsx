@@ -7,7 +7,7 @@ export const AssigneesMenu = ({ children }: { children: ReactNode }) => {
 };
 
 const Trigger = ({ children }: { children: ReactNode }) => (
-  <Menu.Button>{children}</Menu.Button>
+  <Menu.Button asChild>{children}</Menu.Button>
 );
 
 const Items = ({
@@ -57,7 +57,9 @@ const Items = ({
               <Text className="max-w-[10rem] truncate">{name}</Text>
             </Flex>
             <Flex align="center" gap={1}>
-              {idx === 1 && <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />}
+              {idx === 1 && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
               <Text color="muted">{idx}</Text>
             </Flex>
           </Menu.Item>

@@ -24,16 +24,20 @@ const PopoverContent = forwardRef<
 ));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-export type DatePickerProps = ComponentPropsWithoutRef<typeof Popover>;
+export type PopoverProps = ComponentPropsWithoutRef<typeof Popover>;
 
-export const DatePicker = (props: DatePickerProps) => {
+export const DatePicker = (props: PopoverProps) => {
   const { children } = props;
   return <Popover {...props}>{children}</Popover>;
 };
 
 type TriggerProps = ComponentPropsWithoutRef<typeof PopoverTrigger>;
-const Trigger = (props: TriggerProps) => {
-  return <PopoverTrigger asChild {...props}></PopoverTrigger>;
+const Trigger = ({ children, ...rest }: TriggerProps) => {
+  return (
+    <PopoverTrigger asChild {...rest}>
+      {children}
+    </PopoverTrigger>
+  );
 };
 
 const CalendarPrimitive = (props: CalendarProps) => {

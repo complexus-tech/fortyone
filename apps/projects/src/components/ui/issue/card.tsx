@@ -37,8 +37,12 @@ export const IssueCard = ({
         >
           <Flex className="mb-1" gap={2} justify="between">
             <Link className="flex-1" href="/projects/web/issues/test-123-issue">
-              <Text className="text-[0.9rem]" color="muted" fontWeight="medium">
-                COMP-123
+              <Text
+                className="w-[12ch] truncate text-[0.9rem]"
+                color="muted"
+                fontWeight="medium"
+              >
+                COM-{issue.id}
               </Text>
             </Link>
             <AssigneesMenu>

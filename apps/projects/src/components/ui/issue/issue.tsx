@@ -33,8 +33,8 @@ export const Issue = ({ issue }: { issue: IssueProps }) => {
             <DragHandle {...listeners} {...attributes} />
             <TableCheckbox />
             <Tooltip title="Issue ID: COM-12">
-              <Text className="w-[55px] truncate" color="muted">
-                COM-12
+              <Text className="w-[8ch] truncate text-[0.96rem]" color="muted">
+                COM-{id}
               </Text>
             </Tooltip>
             <StatusesMenu>

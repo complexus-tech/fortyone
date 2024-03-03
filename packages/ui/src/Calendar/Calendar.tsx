@@ -26,7 +26,7 @@ export const Calendar = ({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-100 bg-white/50 z-50 dark:bg-dark-200/80 backdrop-blur w-80 shadow-lg",
+        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-100 bg-white/50 z-50 dark:bg-dark-200/80 backdrop-blur w-max shadow-lg",
         className
       )}
       classNames={{
@@ -53,6 +53,10 @@ export const Calendar = ({
         day_disabled: "opacity-50",
         day_range_middle: "aria-selected:bg-primary aria-selected:text-white",
         day_hidden: "invisible",
+        dropdown:
+          "appearance-none absolute top-0 bottom-0 w-full m-0 p-0 border-0 bg-transparent left-0 z-[2]",
+        dropdown_year: "relative inline-flex items-center",
+        dropdown_month: "relative inline-flex items-center",
         ...classNames,
       }}
       components={{
