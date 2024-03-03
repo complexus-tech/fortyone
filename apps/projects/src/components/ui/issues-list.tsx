@@ -2,7 +2,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Issue as IssueType } from "@/types/issue";
-import { Issue } from "./issue/issue";
+import { IssueRow } from "./issue/row";
 
 export const IssuesList = ({
   issues,
@@ -22,7 +22,7 @@ export const IssuesList = ({
       ref={setNodeRef}
     >
       {issues.map((issue) => (
-        <Issue issue={issue} key={issue.id} />
+        <IssueRow issue={issue} key={issue.id} />
       ))}
     </div>
   );

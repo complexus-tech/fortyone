@@ -1,4 +1,4 @@
-export * from "./issue/issue";
+export * from "./issue/row";
 export * from "./issues-header";
 export * from "./issue-status-icon";
 export * from "./issues-toolbar";

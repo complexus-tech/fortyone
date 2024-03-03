@@ -15,7 +15,7 @@ import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 
-export const Issue = ({ issue }: { issue: IssueProps }) => {
+export const IssueRow = ({ issue }: { issue: IssueProps }) => {
   const { id, title, status = "Backlog", priority = "No Priority" } = issue;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,

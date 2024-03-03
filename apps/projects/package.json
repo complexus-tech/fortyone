@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "jest",
     "lint": "next lint",
     "lint:fix": "next lint --fix"
   },
@@ -39,15 +40,21 @@
   "devDependencies": {
     "@next/eslint-plugin-next": "^13.5.6",
     "@tailwindcss/typography": "^0.5.10",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.0.0",
+    "@types/jest": "^29.5.4",
     "@types/node": "^20.11.17",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "autoprefixer": "^10.4.16",
     "eslint-config-custom": "workspace:*",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.31",
     "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.7",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
     "typescript": "^4.9.5"
   }
