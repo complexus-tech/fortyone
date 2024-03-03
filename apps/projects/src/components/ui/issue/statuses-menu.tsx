@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Check } from "lucide-react";
 import { Box, Flex, Menu, Text } from "ui";
+import { CheckIcon } from "icons";
 import type { IssueStatus } from "@/types/issue";
 import { IssueStatusIcon } from "../issue-status-icon";
 
@@ -51,7 +51,7 @@ const Items = ({
             </Box>
             <Flex align="center" gap={2}>
               {st === status && (
-                <Check className="h-5 w-auto" strokeWidth={2.1} />
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
               )}
               <Text color="muted">{idx}</Text>
             </Flex>

@@ -61,7 +61,7 @@ export const IssueCard = ({
             <StatusesMenu>
               <StatusesMenu.Trigger>
                 <Button
-                  className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
+                  className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
                   color="tertiary"
                   leftIcon={
                     <IssueStatusIcon
@@ -81,7 +81,7 @@ export const IssueCard = ({
             <PrioritiesMenu>
               <PrioritiesMenu.Trigger>
                 <Button
-                  className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
+                  className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
                   color="tertiary"
                   leftIcon={
                     <PriorityIcon
@@ -101,7 +101,7 @@ export const IssueCard = ({
             <DatePicker>
               <DatePicker.Trigger>
                 <Button
-                  className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
+                  className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-200/30"
                   color="tertiary"
                   leftIcon={<CalendarPlusIcon className="h-4 w-auto" />}
                   size="xs"
@@ -116,7 +116,7 @@ export const IssueCard = ({
             <DatePicker>
               <DatePicker.Trigger>
                 <Button
-                  className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-300/50"
+                  className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-200/30"
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   size="xs"
@@ -128,7 +128,7 @@ export const IssueCard = ({
               <DatePicker.Calendar />
             </DatePicker>
             <Button
-              className="bg-white dark:border-dark-100 dark:bg-dark-300/50"
+              className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
               color="tertiary"
               leftIcon={<TagsIcon className="h-4 w-auto" />}
               size="xs"

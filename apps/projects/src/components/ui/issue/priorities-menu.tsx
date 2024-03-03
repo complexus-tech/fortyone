@@ -1,6 +1,6 @@
 import { Box, Flex, Menu, Text } from "ui";
-import { Check } from "lucide-react";
 import type { ReactNode } from "react";
+import { CheckIcon } from "icons";
 import type { IssuePriority } from "@/types/issue";
 import { PriorityIcon } from "../priority-icon";
 
@@ -45,7 +45,7 @@ const Items = ({
             </Box>
             <Flex align="center" gap={2}>
               {pr === priority && (
-                <Check className="h-5 w-auto" strokeWidth={2.1} />
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
               )}
               <Text color="muted">{idx}</Text>
             </Flex>
