@@ -2,7 +2,7 @@
 import { ArrowLeftIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Badge, Box, Flex, ResizablePanel, Text, Tooltip } from "ui";
+import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import { useLocalStorage } from "@/hooks";
 import { BodyContainer } from "../shared";
@@ -27,12 +27,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       category: "Your account",
       icon: <UserIcon className="h-[1.15rem] w-auto" />,
       items: [
-        { title: "Profile", href: "/settings/profile" },
-        { title: "Preferences", href: "/settings/preferences" },
-        { title: "Notifications", href: "/settings/notifications" },
-        { title: "API", href: "/settings/api" },
-        { title: "Security", href: "/settings/security" },
-        { title: "Delete account", href: "/settings/delete-account" },
+        { title: "Profile", href: "/settings/account" },
+        { title: "Preferences", href: "/settings/account/preferences" },
+        { title: "Notifications", href: "/settings/account/notifications" },
+        { title: "API", href: "/settings/account/api" },
+        { title: "Security", href: "/settings/account/security" },
+        { title: "Delete account", href: "/settings/account/delete" },
       ],
     },
     {
@@ -195,7 +195,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle className="bg-gray-100/70 dark:bg-dark-100/40" />
       <ResizablePanel.Panel defaultSize={82}>
-        <Box className="max-w-6xl px-12 py-12">{children}</Box>
+        <Container className="max-w-[50rem] px-12 py-12">{children}</Container>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );
