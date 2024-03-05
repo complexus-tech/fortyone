@@ -13,6 +13,7 @@ import {
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useHotkeys } from "react-hotkeys-hook";
 import { NewIssueDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 
@@ -20,6 +21,9 @@ export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+  useHotkeys("c", () => {
+    setIsOpen(true);
+  });
 
   return (
     <>
