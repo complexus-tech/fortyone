@@ -13,9 +13,11 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 const Items = ({
   isSearchEnabled = true,
   placeholder = "Assign user...",
+  align,
 }: {
   isSearchEnabled?: boolean;
   placeholder?: string;
+  align?: "start" | "end" | "center";
 }) => {
   const users = [
     {
@@ -39,7 +41,7 @@ const Items = ({
     },
   ];
   return (
-    <Menu.Items className="w-72">
+    <Menu.Items align={align} className="w-72">
       {isSearchEnabled ? (
         <>
           <Menu.Group className="px-4">

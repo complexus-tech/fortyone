@@ -139,12 +139,25 @@ export const Header = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <UserIcon className="h-5 w-auto" />
-                View profile
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/profile/josemukorivo"
+                >
+                  <UserIcon className="h-5 w-auto" />
+                  View profile
+                </Link>
               </Menu.Item>
               <Menu.Item>
-                <SettingsIcon className="h-5 w-auto" />
-                Settings
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings/account"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <SettingsIcon className="h-5 w-auto" />
+                  Settings
+                </Link>
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator className="mb-1.5" />
