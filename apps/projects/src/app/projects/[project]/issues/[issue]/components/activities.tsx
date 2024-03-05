@@ -44,6 +44,39 @@ export const Activities = () => {
       newValue: "Done",
       timestamp: "1 hour ago",
     },
+    {
+      id: 5,
+      user: "josemukorivo",
+      action: "added comment",
+      prevValue: "",
+      newValue: "This is a sample comment.",
+      timestamp: "1 hour ago",
+    },
+    {
+      id: 6,
+      user: "janedoe",
+      action: "added comment",
+      prevValue: "",
+      newValue: "This is another sample comment.",
+      timestamp: "2 hours ago",
+    },
+
+    {
+      id: 7,
+      user: "johnsmith",
+      action: "added comment",
+      prevValue: "",
+      newValue: "This is another sample comment.",
+      timestamp: "2 hours ago",
+    },
+    {
+      id: 8,
+      user: "johndoe",
+      action: "added comment",
+      prevValue: "",
+      newValue: "This is another sample comment.",
+      timestamp: "2 hours ago",
+    },
   ];
 
   const editor = useEditor({
@@ -103,12 +136,14 @@ export const Activities = () => {
         </Tabs.List>
         <Tabs.Panel value="all">
           <Flex className="relative" direction="column" gap={4}>
-            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-[95%] border-l border-gray-100 dark:border-dark-200" />
+            <Box
+              className="pointer-events-none absolute left-4 top-0 z-0 border-l-[1.5px] border-gray-100 dark:border-dark-100/70"
+              style={{ height: 36 * activites.length + 45 }}
+            />
             {activites.map((activity) => (
               <Activity key={activity.id} {...activity} />
             ))}
-            <Flex align="start" className="relative z-[2]">
-              <Box className="pointer-events-none absolute bottom-0 left-4 h-[calc(100%-3rem)] w-1 bg-white dark:bg-dark-300/60" />
+            <Flex align="start">
               <Box className="z-[1] mt-4 flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
                 <Avatar name="Joseph Mukorivo" size="xs" />
               </Box>

@@ -34,6 +34,7 @@
     "lib": "workspace:*",
     "next": "^14.1.0",
     "react-day-picker": "^8.8.0",
+    "react-dropzone": "^14.2.3",
     "react-resizable-panels": "^2.0.3",
     "react-select": "^5.7.0"
   },

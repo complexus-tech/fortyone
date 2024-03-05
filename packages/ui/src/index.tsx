@@ -38,3 +38,4 @@ export * from "./Button/Button";
 // export * from './Logo/Logo';
 // export * from './Image/Image';
 export * from "./ProgressBar/ProgressBar";
+export * from "./DropZone/DropZone";

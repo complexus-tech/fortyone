@@ -30,7 +30,7 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
 
 export const Options = () => {
   return (
-    <Box className="h-full overflow-y-auto bg-gray-50/20 pb-6 dark:bg-dark-200/20">
+    <Box className="h-full overflow-y-auto bg-gray-50/20 pb-6 dark:bg-dark-200/10">
       <OptionsHeader />
       <Container className="px-8 pt-6 text-gray-300/90">
         <Text fontWeight="medium">Properties</Text>

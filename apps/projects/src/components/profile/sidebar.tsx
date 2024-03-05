@@ -34,7 +34,7 @@ export const Sidebar = () => {
               src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
             />
             Joseph Mukorivo
-            <Text as="span" color="muted" fontSize="sm">
+            <Text as="span" color="muted" fontSize="sm" fontWeight="semibold">
               (josemukorivo)
             </Text>
           </Text>

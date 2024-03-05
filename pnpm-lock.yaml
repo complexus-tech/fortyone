@@ -340,6 +340,9 @@ importers:
       react-day-picker:
         specifier: ^8.8.0
         version: 8.8.2(date-fns@2.30.0)(react@18.2.0)
+      react-dropzone:
+        specifier: ^14.2.3
+        version: 14.2.3(react@18.2.0)
       react-resizable-panels:
         specifier: ^2.0.3
         version: 2.0.3(react-dom@18.2.0)(react@18.2.0)

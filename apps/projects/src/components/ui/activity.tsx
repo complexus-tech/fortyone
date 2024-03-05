@@ -17,7 +17,7 @@ export const Activity = ({
   timestamp,
 }: ActivityProps) => (
   <Flex align="center" className="z-[1]" gap={1}>
-    <Box className="flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark">
+    <Box className="flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
       <Avatar
         name="Joseph Mukorivo"
         size="xs"
