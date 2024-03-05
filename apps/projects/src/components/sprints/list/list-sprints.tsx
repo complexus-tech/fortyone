@@ -11,7 +11,7 @@ export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
     <>
       <SprintsHeader />
       <Tabs defaultValue="all">
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 bg-white/70 backdrop-blur-lg dark:border-dark-200 dark:bg-dark-300/30">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 backdrop-blur-lg dark:border-dark-100/40">
           <Tabs.List>
             <Tabs.Tab value="all">All</Tabs.Tab>
             <Tabs.Tab value="active">Active</Tabs.Tab>

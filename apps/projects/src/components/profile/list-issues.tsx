@@ -21,7 +21,7 @@ export const ListUserIssues = ({
     true,
   );
   const [layout, setLayout] = useLocalStorage<IssuesLayout>(
-    `issues::${user}:layout`,
+    `issues:${user}:layout`,
     "list",
   );
   return (

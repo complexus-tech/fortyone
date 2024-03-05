@@ -1,5 +1,6 @@
 "use client";
-import { Avatar, Flex, Text } from "ui";
+import { BreadCrumbs, Flex } from "ui";
+import { UserIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import type { IssuesLayout } from "@/components/ui";
 import {
@@ -22,12 +23,17 @@ export const Header = ({
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
-        <Avatar
-          name="Joseph Mukorivo"
-          size="sm"
-          src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name: "Profile",
+              icon: <UserIcon className="h-4 w-auto" />,
+            },
+            {
+              name: "Joseph Mukorivo",
+            },
+          ]}
         />
-        <Text>User Profile</Text>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />

@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
-import { Check } from "lucide-react";
+import { CheckIcon } from "icons";
 import type { IssueStatus } from "@/types/issue";
 import { IssueStatusIcon } from "../../../../../components/ui/issue-status-icon";
 
@@ -59,7 +59,7 @@ export const ProjectStatusesMenu = ({
               </Box>
               <Flex align="center" gap={2}>
                 {st === status && (
-                  <Check className="h-5 w-auto" strokeWidth={2.1} />
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 )}
                 <Text color="muted">{idx}</Text>
               </Flex>

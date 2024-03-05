@@ -43,12 +43,12 @@ export const Header = () => {
               Complexus
             </Button>
           </Menu.Button>
-          <Menu.Items align="start" className="w-72">
-            <Menu.Group className="mb-2 px-4">
+          <Menu.Items align="start" className="w-72 pt-0">
+            <Menu.Group className="px-4 py-2.5">
               <Text>Workspaces</Text>
             </Menu.Group>
-            <Menu.Separator />
-            <Menu.Group>
+            <Menu.Separator className="my-0" />
+            <Menu.Group className="pt-1.5">
               <Menu.Item className="justify-between">
                 <span className="flex items-center gap-2">
                   <Avatar
@@ -77,13 +77,14 @@ export const Header = () => {
                 <Button
                   color="tertiary"
                   leftIcon={<PlusIcon className="h-5 w-auto" />}
+                  size="sm"
                   variant="naked"
                 >
                   Create workspace
                 </Button>
               </Menu.Item>
             </Menu.Group>
-            <Menu.Separator />
+            <Menu.Separator className="my-2" />
             <Menu.Group>
               <Menu.Item>
                 <Link
@@ -102,10 +103,10 @@ export const Header = () => {
                 Invite members
               </Menu.Item>
             </Menu.Group>
-            <Menu.Separator />
+            <Menu.Separator className="my-2" />
             <Menu.Group>
               <Menu.Item>
-                <LogoutIcon className="h-5 w-auto" />
+                <LogoutIcon className="h-5 w-auto text-danger" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -132,7 +133,12 @@ export const Header = () => {
           </Menu.Button>
           <Menu.Items align="start" className="w-64 pb-1">
             <Menu.Group className="mb-3 mt-1 px-4">
-              <Text color="muted" textOverflow="truncate">
+              <Text
+                className="text-[1.05rem]"
+                color="muted"
+                fontWeight="medium"
+                textOverflow="truncate"
+              >
                 josemukorivo@gmail.com
               </Text>
             </Menu.Group>
@@ -163,7 +169,7 @@ export const Header = () => {
             <Menu.Separator className="mb-1.5" />
             <Menu.Group>
               <Menu.Item>
-                <LogoutIcon className="h-5 w-auto" />
+                <LogoutIcon className="h-5 w-auto text-danger" />
                 Log out
               </Menu.Item>
             </Menu.Group>

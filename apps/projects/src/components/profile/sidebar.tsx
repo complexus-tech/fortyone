@@ -1,22 +1,81 @@
-import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge } from "ui";
-import { IssueIcon } from "icons";
+import { Box, Tabs, Text, Flex, Divider, Avatar, Button, Menu } from "ui";
+import { MoreVerticalIcon, ProjectsIcon, UserIcon } from "icons";
 import { RowWrapper, IssueStatusIcon, PriorityIcon } from "@/components/ui";
 
 export const Sidebar = () => {
+  const overview = [
+    {
+      title: "Email",
+      value: "josemukorivo@gmail.com",
+    },
+    {
+      title: "Location",
+      value: "Harare, Zimbabwe",
+    },
+    {
+      title: "Joined",
+      value: "Jan 16, 2024",
+    },
+    {
+      title: "Teams",
+      value: "Web, Mobile, Design",
+    },
+  ];
+
   return (
-    <Box className="py-8">
-      <Flex align="center" className="mb-6 px-6" justify="between">
-        <Text className="flex items-center gap-2" fontSize="lg">
-          <IssueIcon className="h-5 w-auto" strokeWidth={2} />
-          My issues
-        </Text>
-        <Badge color="tertiary" rounded="sm">
-          Assigned
-        </Badge>
-      </Flex>
-
+    <Box className="py-6">
+      <Box className="mb-6 px-6">
+        <Flex align="center" className="mb-3" justify="between">
+          <Text className="flex items-center gap-1" fontWeight="medium">
+            <Avatar
+              className="mr-1"
+              name="Joseph Mukorivo"
+              size="sm"
+              src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+            />
+            Joseph Mukorivo
+            <Text as="span" color="muted" fontSize="sm">
+              (josemukorivo)
+            </Text>
+          </Text>
+          <Menu>
+            <Menu.Button asChild>
+              <Button
+                color="tertiary"
+                leftIcon={<MoreVerticalIcon className="h-5 w-auto" />}
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">More options</span>
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item>
+                  <UserIcon className="h-4 w-auto" />
+                  Edit Profile
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
+      </Box>
       <Divider className="mb-6" />
-
+      <Box className="px-6">
+        {overview.map(({ title, value }) => (
+          <Flex
+            align="center"
+            className="mb-6"
+            gap={2}
+            justify="between"
+            key={title}
+          >
+            <Text>{title}:</Text>
+            <Text color="muted">{value}</Text>
+          </Flex>
+        ))}
+      </Box>
+      <Divider className="my-6" />
       <Box className="px-6">
         <Text className="mb-4" fontSize="lg">
           Overview
@@ -35,10 +94,7 @@ export const Sidebar = () => {
                   <IssueStatusIcon />
                   <Text color="muted">Backlog</Text>
                 </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
+                <Text color="muted">4</Text>
               </RowWrapper>
             ))}
           </Tabs.Panel>
@@ -49,10 +105,7 @@ export const Sidebar = () => {
                   <span className="block size-2 rounded-full bg-primary" />
                   <Text color="muted">Feature</Text>
                 </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
+                <Text color="muted">4</Text>
               </RowWrapper>
             ))}
           </Tabs.Panel>
@@ -64,10 +117,7 @@ export const Sidebar = () => {
                   <PriorityIcon priority="High" />
                   <Text color="muted">High</Text>
                 </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
+                <Text color="muted">4</Text>
               </RowWrapper>
             ))}
           </Tabs.Panel>
@@ -75,36 +125,14 @@ export const Sidebar = () => {
             {new Array(4).fill(1).map((_, idx) => (
               <RowWrapper className="px-1 py-2" key={idx}>
                 <Flex align="center" gap={2}>
-                  <PriorityIcon priority="High" />
+                  <ProjectsIcon className="h-[1.15rem] w-auto" />
                   <Text color="muted">High</Text>
                 </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
+                <Text color="muted">4</Text>
               </RowWrapper>
             ))}
           </Tabs.Panel>
         </Tabs>
-
-        <Text className="mb-4 mt-6" fontSize="lg">
-          Upcoming due dates
-        </Text>
-
-        <Flex
-          align="center"
-          className="min-h-80 rounded-xl bg-gray-50/80 px-4 dark:bg-dark-200/20"
-          direction="column"
-          justify="center"
-        >
-          <IssueIcon className="mt-6 h-20 w-auto rotate-12" strokeWidth={1} />
-          <Text className="mt-4" fontWeight="medium">
-            No issues due soon.
-          </Text>
-          <Text className="mt-2" color="muted">
-            Issues with due dates will appear here.
-          </Text>
-        </Flex>
       </Box>
     </Box>
   );

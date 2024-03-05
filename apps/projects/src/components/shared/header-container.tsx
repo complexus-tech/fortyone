@@ -6,7 +6,7 @@ export const HeaderContainer = ({ children, className }: ContainerProps) => {
   return (
     <Container
       className={cn(
-        "stick top-0 z-10 flex h-16 w-full items-center border-b border-gray-50 backdrop-blur dark:border-dark-200",
+        "stick top-0 z-10 flex h-16 w-full items-center border-b border-gray-50 backdrop-blur dark:border-dark-100/40",
         className,
       )}
     >

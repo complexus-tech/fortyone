@@ -4,7 +4,7 @@ import { cn } from "lib";
 import { FC, HTMLAttributes, useState } from "react";
 
 const avatar = cva(
-  "inline-flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
+  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
   {
     variants: {
       rounded: {

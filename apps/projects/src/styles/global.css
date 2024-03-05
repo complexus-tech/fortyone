@@ -4,7 +4,7 @@
 
 body,
 html {
-  @apply h-screen overflow-hidden text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-gradient-to-b dark:from-[#171717] dark:to-dark/80 dark:text-gray-200;
+  @apply h-screen overflow-hidden text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-gradient-to-b dark:from-[#191919] dark:to-dark/90 dark:text-gray-200;
 }
 
 /* Chrome, Safari, Edge */

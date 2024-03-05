@@ -32,7 +32,7 @@ const contentClasses = cva(
       },
     },
     defaultVariants: {
-      rounded: "lg",
+      rounded: "md",
     },
   }
 );
