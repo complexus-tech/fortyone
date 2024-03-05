@@ -69,7 +69,7 @@ export const MainDetails = () => {
         <SubissuesButton />
         <Divider className="my-4" />
         <Attachments />
-        <Divider className="mb-6 mt-8" />
+        <Divider className="my-6" />
         <Activities />
       </Container>
     </Box>

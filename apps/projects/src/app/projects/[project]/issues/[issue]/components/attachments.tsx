@@ -2,6 +2,7 @@ import { useDropzone } from "react-dropzone";
 import { Box, DropZone, Text } from "ui";
 import { AttachmentIcon } from "icons";
 import { useCallback, useState } from "react";
+import { cn } from "lib";
 
 interface CustomFile extends File {
   preview?: string;
@@ -31,7 +32,7 @@ export const Attachments = () => {
     <Box>
       <Text
         as="h4"
-        className="mb-1 flex items-center gap-1"
+        className="mb-2 flex items-center gap-1"
         fontWeight="medium"
       >
         <AttachmentIcon className="h-5 w-auto" />
@@ -48,7 +49,11 @@ export const Attachments = () => {
         </DropZone.Root>
       </DropZone>
 
-      <Box className="mt-3 grid grid-cols-5 gap-3">
+      <Box
+        className={cn("grid grid-cols-5 gap-3", {
+          "mt-3": files.length > 0,
+        })}
+      >
         {files.map((file, index) => (
           <Box
             className="relative h-24 overflow-hidden rounded-xl bg-gray-50/70 dark:bg-dark-200/50"
