@@ -46,12 +46,15 @@ export const Calendar = ({
         row: "flex w-full mt-2",
         cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
         day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
-        day_selected: "bg-primary border-primary text-primary rounded-lg",
+        day_selected: "bg-primary border-primary rounded-lg",
         day_today:
           "border border-gray-200 dark:border-dark-50 hover:border-primary",
         day_outside: "opacity-50",
         day_disabled: "opacity-50",
-        day_range_middle: "aria-selected:bg-primary aria-selected:text-white",
+        day_range_start: "rounded-r-none aria-selected:text-white",
+        day_range_end: "rounded-l-none aria-selected:text-white",
+        day_range_middle:
+          "aria-selected:bg-primary/20 dark:aria-selected:bg-primary/10 aria-selected:text-black dark:aria-selected:text-white rounded-none",
         day_hidden: "invisible",
         dropdown:
           "appearance-none absolute top-0 bottom-0 w-full m-0 p-0 border-0 bg-transparent left-0 z-[2]",

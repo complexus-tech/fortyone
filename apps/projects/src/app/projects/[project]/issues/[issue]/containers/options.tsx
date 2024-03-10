@@ -1,5 +1,8 @@
+"use client";
 import { Box, Button, Container, Divider, Text, DatePicker, Avatar } from "ui";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { addDays } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { CalendarIcon } from "icons";
 import {
   PrioritiesMenu,
@@ -29,6 +32,10 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
 };
 
 export const Options = () => {
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: new Date(2022, 0, 20),
+    to: addDays(new Date(2022, 0, 20), 20),
+  });
   return (
     <Box className="h-full overflow-y-auto bg-gray-50/20 pb-6 dark:bg-dark-200/10">
       <OptionsHeader />
@@ -109,7 +116,14 @@ export const Options = () => {
                   Sep 27, 2024
                 </Button>
               </DatePicker.Trigger>
-              <DatePicker.Calendar />
+              <DatePicker.Calendar
+                defaultMonth={date?.from}
+                initialFocus
+                mode="range"
+                numberOfMonths={2}
+                onSelect={setDate}
+                selected={date}
+              />
             </DatePicker>
           }
         />
