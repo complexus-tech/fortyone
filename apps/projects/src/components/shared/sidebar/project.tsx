@@ -61,6 +61,7 @@ export const Project = ({
       href: "/my-issues",
     },
   ];
+
   return (
     <Box className="my-1">
       <Flex
@@ -140,12 +141,18 @@ export const Project = ({
         direction="column"
         gap={2}
       >
-        {links.map(({ name, icon, href }) => (
-          <NavLink active={pathname === href} href={href} key={name}>
-            {icon}
-            {name}
-          </NavLink>
-        ))}
+        {links.map(({ name, icon, href }) => {
+          const isActive =
+            href === "/"
+              ? pathname === href || pathname.startsWith("/dashboard")
+              : pathname.startsWith(href);
+          return (
+            <NavLink active={isActive} href={href} key={name}>
+              {icon}
+              {name}
+            </NavLink>
+          );
+        })}
       </Flex>
     </Box>
   );

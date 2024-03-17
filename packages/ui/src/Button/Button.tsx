@@ -71,6 +71,11 @@ const button = cva(
         color: ["primary", "secondary", "warning", "danger", "info"],
         className: "text-white",
       },
+      {
+        variant: "solid",
+        color: "warning",
+        className: "text-dark",
+      },
       // Outline variant
       {
         variant: "outline",

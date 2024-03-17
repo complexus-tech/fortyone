@@ -14,7 +14,7 @@ export default function Page(): JSX.Element {
       <Avatar
         className="mb-5 h-28"
         name="Joseph Mukorivo"
-        src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+        src="https://images.unsplash.com/photo-1677576874778-df95ea6ff733?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDI4fHRvd0paRnNrcEdnfHxlbnwwfHx8fHw%3D&auto=format&fit=crop&w=800&q=60"
       />
 
       <Input className="mb-4" label="First name" required value="Joseph" />

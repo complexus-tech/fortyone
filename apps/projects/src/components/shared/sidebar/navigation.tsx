@@ -51,35 +51,38 @@ export const Navigation = () => {
 
   return (
     <Flex direction="column" gap={2}>
-      {links.map(({ name, icon, href, messages }) => (
-        <NavLink
-          active={pathname === href}
-          className={cn({
-            "justify-between": messages,
-          })}
-          href={href}
-          key={name}
-        >
-          <span className="flex items-center gap-2">
-            <span
-              className={cn(
-                "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-gray-200",
-                {
-                  "text-gray-300 dark:text-gray-200": pathname === href,
-                },
-              )}
-            >
-              {icon}
+      {links.map(({ name, icon, href, messages }) => {
+        const isActive = pathname === href;
+        return (
+          <NavLink
+            active={isActive}
+            className={cn({
+              "justify-between": messages,
+            })}
+            href={href}
+            key={name}
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "text-gray-300/80 group-hover:text-gray-300 dark:text-gray dark:group-hover:text-gray-200",
+                  {
+                    "text-gray-300 dark:text-gray-200": isActive,
+                  },
+                )}
+              >
+                {icon}
+              </span>
+              {name}
             </span>
-            {name}
-          </span>
-          {messages ? (
-            <Badge color="tertiary" rounded="full">
-              {messages}
-            </Badge>
-          ) : null}
-        </NavLink>
-      ))}
+            {messages ? (
+              <Badge color="tertiary" rounded="full">
+                {messages}
+              </Badge>
+            ) : null}
+          </NavLink>
+        );
+      })}
     </Flex>
   );
 };
