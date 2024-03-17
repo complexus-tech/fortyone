@@ -17,8 +17,8 @@ var (
 
 // Repository provides access to the issue storage.
 type Repository interface {
-	MyIssues(ctx context.Context) ([]Issue, error)
-	Get(ctx context.Context, id int) (Issue, error)
+	MyIssues(ctx context.Context) ([]CoreIssueList, error)
+	Get(ctx context.Context, id int) (CoreSingleIssue, error)
 }
 
 // Service provides issue-related operations.
@@ -36,7 +36,7 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // MyIssues returns a list of issues.
-func (s *Service) MyIssues(ctx context.Context) ([]Issue, error) {
+func (s *Service) MyIssues(ctx context.Context) ([]CoreIssueList, error) {
 	s.log.Info(ctx, "business.core.issues.list")
 	ctx, span := web.AddSpan(ctx, "business.core.issues.List")
 	defer span.End()
@@ -53,7 +53,7 @@ func (s *Service) MyIssues(ctx context.Context) ([]Issue, error) {
 }
 
 // Get returns the issue with the specified ID.
-func (s *Service) Get(ctx context.Context, id int) (Issue, error) {
+func (s *Service) Get(ctx context.Context, id int) (CoreSingleIssue, error) {
 	s.log.Info(ctx, "business.core.issues.Get")
 	ctx, span := web.AddSpan(ctx, "business.core.issues.Get")
 	defer span.End()
@@ -61,7 +61,7 @@ func (s *Service) Get(ctx context.Context, id int) (Issue, error) {
 	issue, err := s.repo.Get(ctx, id)
 	if err != nil {
 		span.RecordError(err)
-		return Issue{}, err
+		return CoreSingleIssue{}, err
 	}
 	return issue, nil
 }
