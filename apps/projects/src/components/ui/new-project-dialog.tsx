@@ -6,7 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import { CalendarPlusIcon, CalendarIcon, PlusIcon, ProjectsIcon } from "icons";
+import { CalendarPlusIcon, CalendarIcon, PlusIcon, ObjectiveIcon } from "icons";
 
 export const NewProjectDialog = ({
   isOpen,
@@ -53,7 +53,7 @@ export const NewProjectDialog = ({
               className="relative top-[0.1rem] aspect-square"
               color="tertiary"
               leftIcon={
-                <ProjectsIcon className="relative left-[0.15rem] h-5 w-auto opacity-80" />
+                <ObjectiveIcon className="relative left-[0.15rem] h-5 w-auto opacity-80" />
               }
               size="xs"
               variant="outline"

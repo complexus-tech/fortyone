@@ -1,12 +1,12 @@
-import { ArrowLeftIcon, IssueMissingIcon } from "icons";
+import { ArrowLeftIcon, StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
-import { NewIssueButton } from "@/components/ui";
+import { NewStoryButton } from "@/components/ui";
 
 export default function NotFound() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <IssueMissingIcon className="h-20 w-auto rotate-12" />
+        <StoryMissingIcon className="h-20 w-auto rotate-12" />
         <Text className="mb-6 mt-10" fontSize="3xl">
           404: Project Detour
         </Text>
@@ -24,12 +24,12 @@ export default function NotFound() {
           >
             Back to home
           </Button>
-          <NewIssueButton
+          <NewStoryButton
             className="dark:bg-opacity-20 dark:hover:bg-opacity-40"
             size="md"
           >
-            Create issue
-          </NewIssueButton>
+            Create story
+          </NewStoryButton>
         </Flex>
       </Box>
     </Box>

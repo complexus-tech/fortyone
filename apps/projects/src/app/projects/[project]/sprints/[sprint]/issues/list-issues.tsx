@@ -19,7 +19,7 @@ import {
   DeleteIcon,
   StarIcon,
   EditIcon,
-  IssueIcon,
+  StoryIcon,
 } from "icons";
 import {
   AreaChart,
@@ -29,29 +29,29 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Issue, IssueStatus } from "@/types/issue";
+import type { Story, StoryStatus } from "@/types/story";
 import { useLocalStorage } from "@/hooks";
-import type { IssuesLayout } from "@/components/ui";
+import type { StoriesLayout } from "@/components/ui";
 import {
-  IssuesBoard,
+  StoriesBoard,
   LayoutSwitcher,
   SideDetailsSwitch,
   BoardDividedPanel,
   RowWrapper,
-  IssueStatusIcon,
+  StoryStatusIcon,
   PriorityIcon,
-  IssuesFiltersButton,
+  StoriesFiltersButton,
 } from "@/components/ui";
 import { HeaderContainer } from "@/components/shared";
 
-export const ListIssues = ({
-  issues,
+export const ListStories = ({
+  stories,
   statuses,
 }: {
-  issues: Issue[];
-  statuses: IssueStatus[];
+  stories: Story[];
+  statuses: StoryStatus[];
 }) => {
-  const [layout, setLayout] = useLocalStorage<IssuesLayout>(
+  const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "project:sprints:layout",
     "kanban",
   );
@@ -107,14 +107,14 @@ export const ListIssues = ({
               icon: <SprintsIcon className="h-4 w-auto" />,
             },
             {
-              name: "Issues",
-              icon: <IssueIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
+              name: "Stories",
+              icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
         />
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <IssuesFiltersButton />
+          <StoriesFiltersButton />
           <span className="text-gray-200 dark:text-dark-100">|</span>
           <SideDetailsSwitch
             isExpanded={isExpanded}
@@ -122,9 +122,9 @@ export const ListIssues = ({
           />
         </Flex>
       </HeaderContainer>
-      <BoardDividedPanel autoSaveId="my-issues:divided-panel">
+      <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <IssuesBoard issues={issues} layout={layout} statuses={statuses} />
+          <StoriesBoard layout={layout} statuses={statuses} stories={stories} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Box className="py-6">
@@ -337,7 +337,7 @@ export const ListIssues = ({
                   {new Array(4).fill(1).map((_, idx) => (
                     <RowWrapper className="px-1 py-2" key={idx}>
                       <Flex align="center" gap={2}>
-                        <IssueStatusIcon />
+                        <StoryStatusIcon />
                         <Text color="muted">Backlog</Text>
                       </Flex>
                       <Flex align="center" gap={2}>

@@ -1,0 +1,77 @@
+import { Box, Container, Divider, TextEditor } from "ui";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import {
+  Activities,
+  Attachments,
+  Reactions,
+  SubstoriesButton,
+} from "../components";
+
+export const MainDetails = () => {
+  const content = `
+          <h4>Jira Story Description Example</h4>
+          <p>This is a sample HTML text for a Jira story description. It can include various elements such as headings, paragraphs, lists, and more.</p>
+          <h4>Steps to Reproduce:</h4>
+          <ol>
+              <li>Open the application.</li>
+              <li>Go to the settings page.</li>
+              <li>Change the language to French.</li>
+              <li>Save the settings.</li>
+          </ol>
+            `;
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Link.configure({
+        autolink: true,
+      }),
+      Placeholder.configure({ placeholder: "Story description" }),
+    ],
+    content,
+    editable: true,
+  });
+
+  const titleEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      Text,
+      Placeholder.configure({ placeholder: "Enter title..." }),
+    ],
+    content: "This is a sample title.",
+    editable: true,
+  });
+  return (
+    <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
+      <Container className="pt-7">
+        <TextEditor
+          asTitle
+          className="relative -left-1 text-3xl font-medium"
+          editor={titleEditor}
+        />
+        <TextEditor editor={editor} />
+        <Reactions />
+        <SubstoriesButton />
+        <Divider className="my-4" />
+        <Attachments />
+        <Divider className="my-6" />
+        <Activities />
+      </Container>
+    </Box>
+  );
+};

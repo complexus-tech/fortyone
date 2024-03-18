@@ -7,7 +7,7 @@ import {
   EpicsIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
-import { IssueStatusIcon } from "@/components/ui";
+import { StoryStatusIcon } from "@/components/ui";
 
 export const Header = () => {
   return (
@@ -47,7 +47,7 @@ export const Header = () => {
         </Button>
         <Button
           color="tertiary"
-          leftIcon={<IssueStatusIcon className="h-4 w-auto" />}
+          leftIcon={<StoryStatusIcon className="h-4 w-auto" />}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"

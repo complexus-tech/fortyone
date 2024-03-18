@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { IssueStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
+import { StoryStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
 
 export type SprintCardProps = {
   name: string;
@@ -18,10 +18,10 @@ export type SprintCardProps = {
 };
 
 export const SprintCard = ({ name, description }: SprintCardProps) => {
-  const recentIssues = [
-    { id: 1, title: "Issue with the login page" },
-    { id: 2, title: "Issue with the login page" },
-    { id: 3, title: "Issue with the login page" },
+  const recentStories = [
+    { id: 1, title: "Story with the login page" },
+    { id: 2, title: "Story with the login page" },
+    { id: 3, title: "Story with the login page" },
   ];
 
   const data = [
@@ -57,7 +57,7 @@ export const SprintCard = ({ name, description }: SprintCardProps) => {
     },
   ];
   return (
-    <Link href="/projects/web/sprints/1/issues">
+    <Link href="/projects/web/sprints/1/stories">
       <RowWrapper className="block py-6">
         <Flex align="start" justify="between">
           <Box>
@@ -166,17 +166,17 @@ export const SprintCard = ({ name, description }: SprintCardProps) => {
           </Box>
           <Box className="pl-5">
             <Text className="mb-2" fontSize="lg" fontWeight="medium">
-              Recent issues
+              Recent stories
             </Text>
-            {recentIssues.map(({ id, title }, idx) => (
+            {recentStories.map(({ id, title }, idx) => (
               <RowWrapper
                 className={cn("px-0 py-2", {
-                  "border-b-0": idx === recentIssues.length - 1,
+                  "border-b-0": idx === recentStories.length - 1,
                 })}
                 key={id}
               >
                 <Flex align="center" gap={1}>
-                  <IssueStatusIcon className="h-[1.1rem] w-auto" />
+                  <StoryStatusIcon className="h-[1.1rem] w-auto" />
                   <Text
                     className="shrink-0 text-[0.95rem]"
                     color="muted"

@@ -17,15 +17,15 @@ import {
   StarIcon,
 } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
-import { IssueStatusIcon, TableCheckbox } from "@/components/ui";
+import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
 export const Module = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
-        <Link className="flex items-center gap-1" href="/projects/web/issues">
+        <Link className="flex items-center gap-1" href="/projects/web/stories">
           <Tooltip title="Project code: WEB">
             <Text className="w-[55px] truncate text-left" color="muted">
               WEB-01
@@ -89,7 +89,7 @@ export const Module = ({ name }: { name: string }) => {
                 </Menu.Item>
                 <Menu.Separator />
                 <Menu.Item className="py-2">
-                  <IssueStatusIcon className="h-5 w-auto" />
+                  <StoryStatusIcon className="h-5 w-auto" />
                   Status
                 </Menu.Item>
                 <Menu.Item className="py-2">

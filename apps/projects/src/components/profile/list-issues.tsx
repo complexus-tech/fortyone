@@ -1,27 +1,27 @@
 "use client";
-import type { IssuesLayout } from "@/components/ui";
+import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import type { IssueStatus, Issue } from "@/types/issue";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
-import { AllIssues } from "./all-issues";
+import { AllStories } from "./all-stories";
+import type { StoryStatus, Story } from "@/types/story";
 
-export const ListUserIssues = ({
-  issues,
+export const ListUserStories = ({
+  stories,
   statuses,
   user,
 }: {
-  issues: Issue[];
-  statuses: IssueStatus[];
+  stories: Story[];
+  statuses: StoryStatus[];
   user: string;
 }) => {
   const [isExpanded, setIsExpanded] = useLocalStorage(
-    `issues:${user}:expanded`,
+    `stories:${user}:expanded`,
     true,
   );
-  const [layout, setLayout] = useLocalStorage<IssuesLayout>(
-    `issues:${user}:layout`,
+  const [layout, setLayout] = useLocalStorage<StoriesLayout>(
+    `stories:${user}:layout`,
     "list",
   );
   return (
@@ -32,9 +32,9 @@ export const ListUserIssues = ({
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
-      <BoardDividedPanel autoSaveId="my-issues:divided-panel">
+      <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <AllIssues issues={issues} layout={layout} statuses={statuses} />
+          <AllStories layout={layout} statuses={statuses} stories={stories} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Sidebar />

@@ -40,7 +40,7 @@ export const NotificationCard = ({ read }: { read: boolean }) => {
           src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
         />
         <Text className="opacity-80" color="muted" textOverflow="truncate">
-          This is from the descition of the issue. This text can very long so be
+          This is from the descition of the story. This text can very long so be
           careful.
         </Text>
       </Flex>

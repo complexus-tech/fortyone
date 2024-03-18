@@ -1,11 +1,11 @@
 import { cn } from "lib";
-import type { IssuePriority } from "@/types/issue";
+import type { StoryPriority } from "@/types/story";
 
 export const PriorityIcon = ({
   priority = "No Priority",
   className,
 }: {
-  priority?: IssuePriority;
+  priority?: StoryPriority;
   className?: string;
 }) => {
   return (

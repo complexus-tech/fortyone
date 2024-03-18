@@ -2,7 +2,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { HomeIcon, PlusIcon } from "icons";
 import { useState } from "react";
-import { NewIssueButton, NewProjectDialog } from "@/components/ui";
+import { NewStoryButton, NewProjectDialog } from "@/components/ui";
 import { HeaderContainer } from "@/components/shared";
 
 export const Header = () => {
@@ -28,7 +28,7 @@ export const Header = () => {
         >
           New project
         </Button>
-        <NewIssueButton />
+        <NewStoryButton />
       </Flex>
       <NewProjectDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </HeaderContainer>

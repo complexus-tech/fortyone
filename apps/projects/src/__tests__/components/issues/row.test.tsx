@@ -1,24 +1,24 @@
 import { render, screen } from "@testing-library/react";
-import type { Issue } from "@/types/issue";
-import { IssueRow } from "@/components/ui";
+import { StoryRow } from "@/components/ui";
+import type { Story } from "@/types/story";
 
-describe("Rendering IssueRow component with issue data", () => {
-  const issue: Issue = {
+describe("Rendering StoryRow component with story data", () => {
+  const story: Story = {
     id: 1,
-    title: "Issue 1",
-    description: "This is issue 1",
+    title: "Story 1",
+    description: "This is story 1",
     status: "In Progress",
   };
-  it("should render the title of the issue", () => {
-    render(<IssueRow issue={issue} />);
-    const title = screen.getByText("Issue 1");
+  it("should render the title of the story", () => {
+    render(<StoryRow story={story} />);
+    const title = screen.getByText("Story 1");
 
     expect(title).toBeInTheDocument();
   });
 
-  it("should NOT render the description of the issue", () => {
-    render(<IssueRow issue={issue} />);
-    const description = screen.queryByText("This is issue 1");
+  it("should NOT render the description of the story", () => {
+    render(<StoryRow story={story} />);
+    const description = screen.queryByText("This is story 1");
 
     expect(description).not.toBeInTheDocument();
   });

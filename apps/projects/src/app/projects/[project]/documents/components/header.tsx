@@ -4,7 +4,7 @@ import {
   DocsIcon,
   PlusIcon,
   PreferencesIcon,
-  ProjectsIcon,
+  ObjectiveIcon,
   SearchIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
@@ -18,7 +18,7 @@ export const Header = () => {
         breadCrumbs={[
           {
             name: "Web design",
-            icon: <ProjectsIcon className="h-4 w-auto" />,
+            icon: <ObjectiveIcon className="h-4 w-auto" />,
           },
           {
             name: "Docs",

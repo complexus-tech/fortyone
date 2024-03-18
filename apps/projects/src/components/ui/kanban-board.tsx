@@ -1,17 +1,17 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
-import type { Issue, IssueStatus } from "@/types/issue";
+import type { Story, StoryStatus } from "@/types/story";
 import { BodyContainer } from "../shared/body";
-import { IssuesKanbanHeader } from "./kanban-header";
+import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 
 export const KanbanBoard = ({
   statuses,
-  issues,
+  stories,
   className,
 }: {
-  statuses: IssueStatus[];
-  issues: Issue[];
+  statuses: StoryStatus[];
+  stories: Story[];
   className?: string;
 }) => {
   return (
@@ -28,13 +28,17 @@ export const KanbanBoard = ({
           gap={6}
         >
           {statuses.map((status) => (
-            <IssuesKanbanHeader issues={issues} key={status} status={status} />
+            <StoriesKanbanHeader
+              stories={stories}
+              key={status}
+              status={status}
+            />
           ))}
         </Flex>
       </Box>
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7 ">
         {statuses.map((status) => (
-          <KanbanGroup issues={issues} key={status} status={status} />
+          <KanbanGroup stories={stories} key={status} status={status} />
         ))}
       </Box>
     </BodyContainer>

@@ -16,7 +16,7 @@ import { Header, Toolbar } from "./components";
 
 export default function Page(): JSX.Element {
   const content = `
-  <div class="tiptap ProseMirror" contenteditable="true" tabindex="0" translate="no" spellcheck="false"><h4>Jira Issue Description Example</h4><p>This is a sample HTML text for a Jira issue description. It can include various elements such as headings, paragraphs, lists, and more.</p><h4>Steps to Reproduce:</h4><ol><li><p>Open the application.</p></li><li><p>Go to the settings page.</p></li><li><p>Change the language to French.</p></li><li><p>Save the settings.</p></li></ol><p><strong>This is my List</strong></p><ul data-type="taskList"><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 1</p></div></li><li data-checked="true"><label contenteditable="false"><input type="checkbox" checked="checked"><span></span></label><div><p>Item 2</p></div></li><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 3</p></div></li></ul></div>
+  <div class="tiptap ProseMirror" contenteditable="true" tabindex="0" translate="no" spellcheck="false"><h4>Jira Story Description Example</h4><p>This is a sample HTML text for a Jira story description. It can include various elements such as headings, paragraphs, lists, and more.</p><h4>Steps to Reproduce:</h4><ol><li><p>Open the application.</p></li><li><p>Go to the settings page.</p></li><li><p>Change the language to French.</p></li><li><p>Save the settings.</p></li></ol><p><strong>This is my List</strong></p><ul data-type="taskList"><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 1</p></div></li><li data-checked="true"><label contenteditable="false"><input type="checkbox" checked="checked"><span></span></label><div><p>Item 2</p></div></li><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 3</p></div></li></ul></div>
             `;
 
   const titleEditor = useEditor({
@@ -44,7 +44,7 @@ export default function Page(): JSX.Element {
       LinkExt.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Issue description" }),
+      Placeholder.configure({ placeholder: "Story description" }),
     ],
     content,
     editable: true,

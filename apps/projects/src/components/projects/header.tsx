@@ -3,13 +3,13 @@ import { Avatar, BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import {
   PlusIcon,
-  ProjectsIcon,
+  ObjectiveIcon,
   SearchIcon,
   PreferencesIcon,
   ArrowDownIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
-import { IssueStatusIcon, NewProjectDialog } from "@/components/ui";
+import { StoryStatusIcon, NewProjectDialog } from "@/components/ui";
 
 export const ProjectsHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +19,7 @@ export const ProjectsHeader = () => {
         breadCrumbs={[
           {
             name: "All projects",
-            icon: <ProjectsIcon className="h-[1.1rem] w-auto" />,
+            icon: <ObjectiveIcon className="h-[1.1rem] w-auto" />,
           },
         ]}
       />
@@ -46,7 +46,7 @@ export const ProjectsHeader = () => {
         </Button>
         <Button
           color="tertiary"
-          leftIcon={<IssueStatusIcon className="h-4 w-auto" />}
+          leftIcon={<StoryStatusIcon className="h-4 w-auto" />}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"

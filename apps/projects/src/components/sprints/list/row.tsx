@@ -8,8 +8,8 @@ import {
   StarIcon,
 } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { AssigneesMenu } from "@/components/ui/issue/assignees-menu";
-import { IssueStatusIcon, TableCheckbox } from "@/components/ui";
+import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
 export type Sprint = {
   id: number;
@@ -27,7 +27,7 @@ export const SprintRow = ({ name }: { name: string }) => {
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/projects/web/sprints/sprint-1/issues"
+          href="/projects/web/sprints/sprint-1/stories"
         >
           <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
@@ -89,7 +89,7 @@ export const SprintRow = ({ name }: { name: string }) => {
                   Settings
                 </Menu.Item>
                 <Menu.Item>
-                  <IssueStatusIcon className="h-[1.2rem] w-auto" />
+                  <StoryStatusIcon className="h-[1.2rem] w-auto" />
                   Status
                 </Menu.Item>
                 <Menu.Item>

@@ -49,7 +49,7 @@ export const Overview = () => {
             count={27}
             description="+5% from last month"
             key={i}
-            title="Issues closed"
+            title="Stories closed"
           />
         ))}
       </Box>

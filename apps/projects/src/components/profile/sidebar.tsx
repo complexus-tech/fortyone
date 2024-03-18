@@ -1,6 +1,6 @@
 import { Box, Tabs, Text, Flex, Divider, Avatar, Button, Menu } from "ui";
-import { MoreVerticalIcon, ProjectsIcon, UserIcon } from "icons";
-import { RowWrapper, IssueStatusIcon, PriorityIcon } from "@/components/ui";
+import { MoreVerticalIcon, ObjectiveIcon, UserIcon } from "icons";
+import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 
 export const Sidebar = () => {
   const overview = [
@@ -91,7 +91,7 @@ export const Sidebar = () => {
             {new Array(4).fill(1).map((_, idx) => (
               <RowWrapper className="px-1 py-2" key={idx}>
                 <Flex align="center" gap={2}>
-                  <IssueStatusIcon />
+                  <StoryStatusIcon />
                   <Text color="muted">Backlog</Text>
                 </Flex>
                 <Text color="muted">4</Text>
@@ -125,7 +125,7 @@ export const Sidebar = () => {
             {new Array(4).fill(1).map((_, idx) => (
               <RowWrapper className="px-1 py-2" key={idx}>
                 <Flex align="center" gap={2}>
-                  <ProjectsIcon className="h-[1.15rem] w-auto" />
+                  <ObjectiveIcon className="h-[1.15rem] w-auto" />
                   <Text color="muted">High</Text>
                 </Flex>
                 <Text color="muted">4</Text>

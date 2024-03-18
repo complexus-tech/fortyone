@@ -1,19 +1,19 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
 import { CheckIcon } from "icons";
-import type { IssueStatus } from "@/types/issue";
-import { IssueStatusIcon } from "@/components/ui";
+import type { StoryStatus } from "@/types/story";
+import { StoryStatusIcon } from "@/components/ui";
 
 export const ProjectStatusesMenu = ({
   status,
   isSearchEnabled = true,
   asIcon = true,
 }: {
-  status: IssueStatus;
+  status: StoryStatus;
   isSearchEnabled?: boolean;
   asIcon?: boolean;
 }) => {
-  const statuses: IssueStatus[] = [
+  const statuses: StoryStatus[] = [
     "Backlog",
     "In Progress",
     "Done",
@@ -29,7 +29,7 @@ export const ProjectStatusesMenu = ({
               asIcon,
           })}
           color="tertiary"
-          leftIcon={<IssueStatusIcon status={status} />}
+          leftIcon={<StoryStatusIcon status={status} />}
           size={asIcon ? "sm" : "sm"}
           variant="naked"
         >
@@ -54,7 +54,7 @@ export const ProjectStatusesMenu = ({
               key={st}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <IssueStatusIcon status={st} />
+                <StoryStatusIcon status={st} />
                 <Text>{st}</Text>
               </Box>
               <Flex align="center" gap={2}>

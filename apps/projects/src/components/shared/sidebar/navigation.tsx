@@ -4,9 +4,9 @@ import { cn } from "lib";
 import {
   AnalyticsIcon,
   HomeIcon,
-  IssueIcon,
+  StoryIcon,
   NotificationsIcon,
-  ProjectsIcon,
+  ObjectiveIcon,
   SprintsIcon,
 } from "icons";
 import { NavLink } from "@/components/ui";
@@ -16,34 +16,32 @@ export const Navigation = () => {
   const links = [
     {
       name: "Home",
-      icon: <HomeIcon className="h-[1.3rem] w-auto" />,
+      icon: <HomeIcon className="h-5 w-auto" />,
       href: "/",
     },
     {
       name: "Reports",
-      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
+      icon: <AnalyticsIcon className="h-5 w-auto" />,
       href: "/reports",
     },
     {
-      name: "My issues",
-      icon: <IssueIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/my-issues",
+      name: "My Work",
+      icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
+      href: "/my-work",
     },
     {
-      name: "Projects",
-      icon: <ProjectsIcon className="relative left-px h-[1.1rem] w-auto" />,
+      name: "Objectives",
+      icon: <ObjectiveIcon className="relative left-px h-5 w-auto" />,
       href: "/projects",
     },
     {
       name: "Active sprints",
-      icon: <SprintsIcon className="h-[1.25rem] w-auto" />,
+      icon: <SprintsIcon className="h-5 w-auto" />,
       href: "/sprints",
     },
     {
       name: "Notifications",
-      icon: (
-        <NotificationsIcon className="h-[1.25rem] w-auto" strokeWidth={2} />
-      ),
+      icon: <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />,
       href: "/notifications",
       messages: 2,
     },

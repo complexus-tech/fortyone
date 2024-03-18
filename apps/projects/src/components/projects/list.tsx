@@ -1,7 +1,7 @@
 "use client";
 import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
-import { IssueStatusIcon } from "@/components/ui";
+import { StoryStatusIcon } from "@/components/ui";
 import { BodyContainer } from "../shared";
 import type { Project } from "./project";
 import { ProjectCard } from "./project";
@@ -15,7 +15,7 @@ export const ProjectsList = ({ projects }: { projects: Project[] }) => {
         <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/60">
           <Flex align="center" justify="between">
             <Flex align="center" gap={2}>
-              <IssueStatusIcon />
+              <StoryStatusIcon />
               <Text fontWeight="medium">In Progress</Text>
               <Text color="muted">3</Text>
             </Flex>

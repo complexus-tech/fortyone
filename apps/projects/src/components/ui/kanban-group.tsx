@@ -2,8 +2,8 @@
 import type { ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
-import type { Issue, IssueStatus } from "@/types/issue";
-import { IssueCard } from "./issue/card";
+import type { Story, StoryStatus } from "@/types/story";
+import { StoryCard } from "./story/card";
 
 const List = ({
   children,
@@ -31,17 +31,17 @@ const List = ({
 };
 
 export const KanbanGroup = ({
-  issues,
+  stories,
   status,
 }: {
-  issues: Issue[];
-  status: IssueStatus;
+  stories: Story[];
+  status: StoryStatus;
 }) => {
-  const filteredIssues = issues.filter((issue) => issue.status === status);
+  const filteredStories = stories.filter((story) => story.status === status);
   return (
     <List id={status} key={status}>
-      {filteredIssues.map((issue) => (
-        <IssueCard issue={issue} key={issue.id} />
+      {filteredStories.map((story) => (
+        <StoryCard story={story} key={story.id} />
       ))}
     </List>
   );

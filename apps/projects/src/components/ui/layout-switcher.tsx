@@ -1,15 +1,15 @@
 import { Flex } from "ui";
 import { cn } from "lib";
 import { KanbanIcon, TableIcon } from "icons";
-import type { IssuesLayout } from "@/components/ui";
+import type { StoriesLayout } from "@/components/ui";
 
 export const LayoutSwitcher = ({
   layout = "kanban",
   setLayout,
   className,
 }: {
-  layout: IssuesLayout;
-  setLayout: (value: IssuesLayout) => void;
+  layout: StoriesLayout;
+  setLayout: (value: StoriesLayout) => void;
   className?: string;
 }) => {
   return (

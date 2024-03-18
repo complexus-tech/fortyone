@@ -2,19 +2,19 @@
 import { useState } from "react";
 import { Flex, Button, Text } from "ui";
 import { MinimizeIcon, PlusIcon } from "icons";
-import type { Issue, IssueStatus } from "@/types/issue";
-import { IssueStatusIcon } from "./issue-status-icon";
-import { NewIssueDialog } from "./new-issue-dialog";
+import type { Story, StoryStatus } from "@/types/story";
+import { StoryStatusIcon } from "./story-status-icon";
+import { NewStoryDialog } from "./new-story-dialog";
 
-export const IssuesKanbanHeader = ({
+export const StoriesKanbanHeader = ({
   status,
-  issues,
+  stories,
 }: {
-  status: IssueStatus;
-  issues: Issue[];
+  status: StoryStatus;
+  stories: Story[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const filteredIssues = issues.filter((issue) => issue.status === status);
+  const filteredStories = stories.filter((story) => story.status === status);
   return (
     <>
       <Flex
@@ -25,10 +25,10 @@ export const IssuesKanbanHeader = ({
         key={status}
       >
         <Flex align="center" gap={2}>
-          <IssueStatusIcon status={status} />
+          <StoryStatusIcon status={status} />
           {status}
           <Text as="span" color="muted">
-            {filteredIssues.length}
+            {filteredStories.length}
           </Text>
         </Flex>
         <span className="flex items-center gap-1">
@@ -47,7 +47,7 @@ export const IssuesKanbanHeader = ({
           </Button>
         </span>
       </Flex>
-      <NewIssueDialog isOpen={isOpen} setIsOpen={setIsOpen} status={status} />
+      <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} status={status} />
     </>
   );
 };

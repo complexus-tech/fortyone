@@ -2,19 +2,22 @@
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
 import {
+  ArrowDownIcon,
   CheckIcon,
   LogoutIcon,
-  NewIssueIcon,
+  NewStoryIcon,
   PlusIcon,
+  ObjectiveIcon,
   SearchIcon,
   SettingsIcon,
+  SprintsIcon,
   UserIcon,
   UsersAddIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
-import { NewIssueDialog } from "@/components/ui";
+import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 
 export const Header = () => {
@@ -181,18 +184,53 @@ export const Header = () => {
         </Menu>
       </Flex>
       <Flex align="center" className="mb-4" gap={2} justify="between">
-        <Button
-          className="shadow-sm"
-          color="tertiary"
-          fullWidth
-          leftIcon={<NewIssueIcon className="h-5 w-auto" />}
-          onClick={() => {
-            setIsOpen(!isOpen);
-          }}
-          variant="outline"
-        >
-          New issue
-        </Button>
+        <Flex className="w-full">
+          <Button
+            className="rounded-r-none shadow-sm"
+            color="tertiary"
+            fullWidth
+            leftIcon={<NewStoryIcon className="h-5 w-auto" />}
+            onClick={() => {
+              setIsOpen(!isOpen);
+            }}
+            variant="outline"
+          >
+            Create Story
+          </Button>
+          <Menu>
+            <Menu.Button>
+              <Button
+                align="center"
+                className="rounded-l-none border-l-0 px-[0.65rem] shadow-sm"
+                color="tertiary"
+                leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
+                variant="outline"
+              >
+                <span className="sr-only">More</span>
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end" className="w-48 pb-1">
+              <Menu.Group className="gap-4 space-y-1">
+                <Menu.Item>
+                  <NewStoryIcon className="h-[1.1rem] w-auto" />
+                  Create story
+                </Menu.Item>
+                <Menu.Item>
+                  <ObjectiveIcon className="h-[1.1rem] w-auto" />
+                  Create project
+                </Menu.Item>
+                <Menu.Item>
+                  <SprintsIcon className="h-[1.1rem] w-auto" />
+                  Create sprint
+                </Menu.Item>
+                <Menu.Item>
+                  <LogoutIcon className="h-[1.1rem] w-auto" />
+                  Create story
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
         <Button
           align="center"
           className="px-[0.6rem] shadow-sm"
@@ -203,7 +241,7 @@ export const Header = () => {
           <span className="sr-only">Search</span>
         </Button>
       </Flex>
-      <NewIssueDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+      <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
   );
 };

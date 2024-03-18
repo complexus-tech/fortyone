@@ -6,7 +6,7 @@ import { Box, Flex, Menu } from "ui";
 import {
   ArrowDownIcon,
   DeleteIcon,
-  IssueIcon,
+  StoryIcon,
   LinkIcon,
   EpicsIcon,
   MoreHorizontalIcon,
@@ -36,9 +36,9 @@ export const Project = ({
   const pathname = usePathname();
   const links = [
     {
-      name: "Issues",
-      icon: <IssueIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
-      href: "/projects/web/issues",
+      name: "Stories",
+      icon: <StoryIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
+      href: "/projects/web/stories",
     },
     {
       name: "Sprints",
@@ -58,7 +58,7 @@ export const Project = ({
     {
       name: "Settings",
       icon: <SettingsIcon className="h-5 w-auto" />,
-      href: "/my-issues",
+      href: "/my-stories",
     },
   ];
 

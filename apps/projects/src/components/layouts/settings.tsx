@@ -14,7 +14,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const goBack = () => {
-    router.push(prevPage || "/my-issues");
+    router.push(prevPage || "/my-stories");
     setPrevPage("");
   };
 

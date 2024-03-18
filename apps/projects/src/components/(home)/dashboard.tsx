@@ -3,7 +3,7 @@ import { BodyContainer } from "../shared/body";
 import { Header } from "./header";
 import { Overview } from "./overview";
 import { Contributions } from "./contributions";
-import { MyIssues } from "./my-issues";
+import { MyStories } from "./my-stories";
 import { Activities } from "./activities";
 
 export const Dashboard = () => {
@@ -15,7 +15,7 @@ export const Dashboard = () => {
           <Overview />
           <Contributions />
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
-            <MyIssues />
+            <MyStories />
             <Activities />
           </Box>
         </Container>
