@@ -35,7 +35,7 @@ export const Navigation = () => {
       href: "/projects",
     },
     {
-      name: "Active sprints",
+      name: "Active Sprints",
       icon: <SprintsIcon className="h-5 w-auto" />,
       href: "/sprints",
     },

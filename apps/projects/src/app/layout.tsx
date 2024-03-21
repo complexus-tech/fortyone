@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "../styles/global.css";
+import { ProgressBar } from "./progress";
 
 const font = Inter({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>{children}</body>
+      <ProgressBar />
     </html>
   );
 }

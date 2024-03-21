@@ -19,10 +19,10 @@ export default function NotFound() {
           <Button
             className="gap-1 pl-2"
             color="tertiary"
-            href="/"
+            href="/my-work"
             leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
           >
-            Back to home
+            Goto my work
           </Button>
           <NewStoryButton
             className="dark:bg-opacity-20 dark:hover:bg-opacity-40"

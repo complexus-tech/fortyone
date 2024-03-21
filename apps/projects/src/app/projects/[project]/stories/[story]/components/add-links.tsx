@@ -22,17 +22,19 @@ export const AddLinks = () => {
         </Button>
       </Flex>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content hideClose size="md">
-          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+        <Dialog.Content hideClose={false}>
+          <Dialog.Header className="flex items-center justify-between px-6 pb-2">
             <Dialog.Title>
-              <Text fontSize="xl">Add link to story</Text>
+              <Text fontSize="lg" fontWeight="medium">
+                Add link to story
+              </Text>
             </Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="flex flex-col gap-5 pb-6">
+          <Dialog.Body className="flex flex-col gap-3 pb-5">
             <Input label="URL" placeholder="https://..." required type="url" />
             <Input label="Title" placeholder="Enter title..." />
 
-            <Flex align="center" className="mt-4" gap={2} justify="end">
+            <Flex align="center" className="mt-2" gap={2} justify="end">
               <Button
                 color="tertiary"
                 onClick={() => {

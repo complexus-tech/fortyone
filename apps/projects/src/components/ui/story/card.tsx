@@ -27,7 +27,7 @@ export const StoryCard = ({
       <StoryContextMenu>
         <Box
           className={cn(
-            "w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/80 bg-white px-4 py-3 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/70 dark:bg-dark-200/50 dark:hover:bg-dark-200/90",
+            "w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/80 bg-white px-4 py-3 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/70 dark:bg-dark-300/80 dark:hover:bg-dark-200/60",
             {
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,

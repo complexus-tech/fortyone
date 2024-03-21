@@ -2,9 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --nprogress-color: #ea6060;
+}
+
 body,
 html {
-  @apply h-screen overflow-hidden text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-gradient-to-br dark:from-[#1a1a1a] dark:to-dark/90 dark:text-gray-200;
+  @apply h-screen w-screen overflow-hidden bg-gradient-to-br text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-dark dark:from-dark-200/70 dark:via-dark dark:via-20% dark:to-dark dark:text-gray-200;
 }
 
 /* Chrome, Safari, Edge */
@@ -23,6 +27,10 @@ html {
 * {
   scrollbar-width: thin;
   scrollbar-color: #666666b3 transparent;
+}
+
+[cmdk-overlay] {
+  @apply fixed inset-0 z-40 block h-screen w-screen bg-black/10 backdrop-blur-[0.5px];
 }
 
 .ProseMirror-focused {
@@ -94,4 +102,34 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 /*** For Webkit ***/
 ::-webkit-selection {
   @apply bg-primary text-dark;
+}
+
+/* CSS color for nprogress */
+/* Make clicks pass-through */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress &:after {
+  display: block;
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#nprogress .bar {
+  @apply fixed left-0 top-0 h-[2px] w-full bg-primary;
+  z-index: 19031 !important;
+}
+
+.nprogress-custom-parent {
+  overflow: hidden;
+  position: relative;
+}
+.nprogress-custom-parent #nprogress .spinner,
+.nprogress-custom-parent #nprogress .bar {
+  position: absolute;
 }

@@ -57,7 +57,7 @@ export const MainDetails = () => {
     editable: true,
   });
   return (
-    <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200">
+    <Box className="h-full overflow-y-auto border-r border-gray-50 pb-8 dark:border-dark-200/60">
       <Container className="pt-7">
         <TextEditor
           asTitle

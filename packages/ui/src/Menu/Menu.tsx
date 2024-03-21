@@ -24,7 +24,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-200/60 dark:text-gray-200 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
+  "bg-white/80 dark:bg-dark-300/60 dark:text-gray-200 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-200 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
   {
     variants: {
       rounded: {
@@ -73,9 +73,9 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-100/50 focus:bg-gray-100/50 rounded-[0.4rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-100 hover:dark:bg-dark-100 hover:bg-gray-100/50 focus:bg-gray-100/50 rounded-[0.4rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
-        "bg-gray-100/80 dark:bg-dark-50/60": active,
+        "bg-gray-100/80 dark:bg-dark-100": active,
       },
       className
     )}

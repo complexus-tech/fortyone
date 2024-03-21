@@ -17,7 +17,7 @@ export const Header = () => {
           breadCrumbs={[
             {
               name: "All projects",
-              icon: <ObjectiveIcon className="h-4 w-auto" />,
+              icon: <ObjectiveIcon className="h-[1.1rem] w-auto" />,
               url: "/projects",
             },
             {

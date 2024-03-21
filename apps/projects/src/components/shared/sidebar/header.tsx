@@ -209,7 +209,7 @@ export const Header = () => {
                 <span className="sr-only">More</span>
               </Button>
             </Menu.Button>
-            <Menu.Items align="end" className="w-48 pb-1">
+            <Menu.Items align="end" className="w-56 pb-1">
               <Menu.Group className="gap-4 space-y-1">
                 <Menu.Item>
                   <NewStoryIcon className="h-[1.1rem] w-auto" />
