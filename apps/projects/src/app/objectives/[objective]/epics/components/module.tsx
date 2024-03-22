@@ -1,4 +1,13 @@
-import { Flex, Text, Avatar, Button, Menu, ProgressBar, Box } from "ui";
+import {
+  Flex,
+  Text,
+  Tooltip,
+  Avatar,
+  Button,
+  Menu,
+  ProgressBar,
+  Box,
+} from "ui";
 import Link from "next/link";
 import {
   CalendarIcon,
@@ -11,30 +20,26 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
-export type Sprint = {
-  id: number;
-  code: string;
-  lead: string;
-  name: string;
-  description: string;
-  date: string;
-};
-
-export const SprintRow = ({ name }: { name: string }) => {
+export const Module = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/objectives/web/sprints/sprint-1/stories"
+          href="/objectives/web/stories"
         >
+          <Tooltip title="Objective code: WEB">
+            <Text className="w-[55px] truncate text-left" color="muted">
+              WEB-01
+            </Text>
+          </Tooltip>
           <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
       </Flex>
       <Flex align="center" gap={5}>
         <Flex align="center" className="w-32" gap={2}>
-          <ProgressBar className="h-1.5 w-24" progress={20} />
+          <ProgressBar className="h-2.5 w-24" progress={20} />
           <Text color="muted" fontWeight="medium">
             20%
           </Text>
@@ -44,7 +49,10 @@ export const SprintRow = ({ name }: { name: string }) => {
           Sep 27, 2024
         </Text>
         <Text className="flex w-32 items-center gap-1" color="muted">
-          <CalendarIcon className="h-5 w-auto text-primary" strokeWidth={2} />
+          <CalendarIcon
+            className="h-[1.15rem] w-auto text-primary"
+            strokeWidth={2}
+          />
           Sep 27, 2024
         </Text>
         <Box className="w-12">
@@ -77,22 +85,17 @@ export const SprintRow = ({ name }: { name: string }) => {
               </Button>
             </Menu.Button>
             <Menu.Items align="end" className="w-64">
-              <Menu.Group className="mb-3 mt-1 px-4">
-                <Text color="muted" textOverflow="truncate">
-                  Manage objective
-                </Text>
-              </Menu.Group>
-              <Menu.Separator className="mb-1.5" />
               <Menu.Group>
-                <Menu.Item>
+                <Menu.Item className="py-2">
                   <SettingsIcon className="h-5 w-auto" />
-                  Settings
+                  Objective settings
                 </Menu.Item>
-                <Menu.Item>
-                  <StoryStatusIcon className="h-[1.2rem] w-auto" />
+                <Menu.Separator />
+                <Menu.Item className="py-2">
+                  <StoryStatusIcon className="h-5 w-auto" />
                   Status
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item className="py-2">
                   <Avatar
                     className="h-5 w-auto"
                     color="naked"
@@ -102,20 +105,21 @@ export const SprintRow = ({ name }: { name: string }) => {
                   />
                   Lead
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Separator />
+                <Menu.Item className="py-2">
                   <CalendarIcon className="h-5 w-auto" />
                   Start date
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item className="py-2">
                   <CalendarIcon className="h-5 w-auto" />
                   Due date
                 </Menu.Item>
-                <Menu.Item>
-                  <StarIcon className="h-[1.2rem] w-auto" />
+                <Menu.Item className="py-2">
+                  <StarIcon className="h-5 w-auto" />
                   Favourite
                 </Menu.Item>
-                <Menu.Item>
-                  <DeleteIcon className="h-[1.2rem] w-auto" />
+                <Menu.Item className="py-2">
+                  <DeleteIcon className="h-5 w-auto text-danger" />
                   Delete
                 </Menu.Item>
               </Menu.Group>

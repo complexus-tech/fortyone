@@ -40,7 +40,7 @@ export const Overview = () => {
         Good afternoon, Joseph.
       </Text>
       <Text color="muted">
-        Here&rsquo;s what&rsquo;s happening with your projects today.
+        Here&rsquo;s what&rsquo;s happening with your objectives today.
       </Text>
 
       <Box className="my-4 grid grid-cols-5 gap-4">

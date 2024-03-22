@@ -8,7 +8,7 @@ export * from "./new-story-button";
 export * from "./new-story-dialog";
 export * from "./row-wrapper";
 export * from "./activity";
-export * from "./new-project-dialog";
+export * from "./new-objective-dialog";
 export * from "./stories-list";
 export * from "./stories-group";
 export * from "./kanban-board";

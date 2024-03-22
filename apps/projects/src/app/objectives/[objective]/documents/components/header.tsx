@@ -1,16 +1,28 @@
-"use client";
 import { BreadCrumbs, Button, Flex } from "ui";
-import { PlusIcon, PreferencesIcon, SearchIcon, SprintsIcon } from "icons";
-import { HeaderContainer } from "../shared/header-container";
+import { useState } from "react";
+import {
+  DocsIcon,
+  PlusIcon,
+  PreferencesIcon,
+  ObjectiveIcon,
+  SearchIcon,
+} from "icons";
+import { HeaderContainer } from "@/components/shared";
+import { NewObjectiveDialog } from "@/components/ui";
 
-export const ActiveSprintsHeader = () => {
+export const Header = () => {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Active Sprints",
-            icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
+            name: "Web design",
+            icon: <ObjectiveIcon className="h-4 w-auto" />,
+          },
+          {
+            name: "Docs",
+            icon: <DocsIcon className="h-4 w-auto" />,
           },
         ]}
       />
@@ -33,10 +45,17 @@ export const ActiveSprintsHeader = () => {
         >
           Display
         </Button>
-        <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
-          New sprint
+        <Button
+          leftIcon={<PlusIcon className="h-5 w-auto" />}
+          onClick={() => {
+            setIsOpen(true);
+          }}
+          size="sm"
+        >
+          New wiki
         </Button>
       </Flex>
+      <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </HeaderContainer>
   );
 };

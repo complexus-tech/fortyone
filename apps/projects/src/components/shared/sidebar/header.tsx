@@ -217,7 +217,7 @@ export const Header = () => {
                 </Menu.Item>
                 <Menu.Item>
                   <ObjectiveIcon className="h-[1.1rem] w-auto" />
-                  Create project
+                  Create objective
                 </Menu.Item>
                 <Menu.Item>
                   <SprintsIcon className="h-[1.1rem] w-auto" />

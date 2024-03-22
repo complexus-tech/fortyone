@@ -25,7 +25,7 @@ export const StoriesToolbar = () => {
         }
         variant="outline"
       >
-        Add to project
+        Add to objective
       </Button>
       <Button
         className="border-opacity-30"

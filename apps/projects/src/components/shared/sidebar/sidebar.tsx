@@ -3,7 +3,7 @@ import { Box, Button, Flex } from "ui";
 import { ArrowRightIcon } from "icons";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
-import { Projects } from "./projects";
+import { Objectives } from "./objectives";
 
 export const Sidebar = () => {
   return (
@@ -11,7 +11,7 @@ export const Sidebar = () => {
       <Box>
         <Header />
         <Navigation />
-        <Projects />
+        <Objectives />
       </Box>
       <Flex justify="between">
         <Button

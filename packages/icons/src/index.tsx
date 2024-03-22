@@ -3,7 +3,7 @@ export * from "./analytics";
 export * from "./dashboard";
 export * from "./stories";
 export * from "./notifications";
-export * from "./projects";
+export * from "./objective";
 export * from "./docs";
 export * from "./settings";
 export * from "./modules";

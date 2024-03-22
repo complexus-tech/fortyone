@@ -26,7 +26,7 @@ export const Sidebar = () => {
             <Tabs.Tab value="status">Status</Tabs.Tab>
             <Tabs.Tab value="labels">Labels</Tabs.Tab>
             <Tabs.Tab value="priority">Priority</Tabs.Tab>
-            <Tabs.Tab value="projects">Projects</Tabs.Tab>
+            <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
           </Tabs.List>
           <Tabs.Panel value="status">
             {new Array(4).fill(1).map((_, idx) => (
@@ -71,7 +71,7 @@ export const Sidebar = () => {
               </RowWrapper>
             ))}
           </Tabs.Panel>
-          <Tabs.Panel value="projects">
+          <Tabs.Panel value="objectives">
             {new Array(4).fill(1).map((_, idx) => (
               <RowWrapper className="px-1 py-2" key={idx}>
                 <Flex align="center" gap={2}>

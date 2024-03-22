@@ -11,21 +11,21 @@ const font = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Complexus: The Collaborative Hub for Seamless Project Management",
+  title: "Complexus: The Collaborative Hub for Seamless Objective Management",
   description:
-    "Simplify workflows, boost collaboration, and deliver projects on time with Complexus. Our intuitive platform empowers teams to visualize progress, gain data-driven insights, and achieve success.",
+    "Simplify workflows, boost collaboration, and deliver objectives on time with Complexus. Our intuitive platform empowers teams to visualize progress, gain data-driven insights, and achieve success.",
   openGraph: {
-    title: "Complexus: Orchestrate Your Projects to Success",
+    title: "Complexus: Orchestrate Your Objectives to Success",
     description:
-      "Simplify workflows, boost collaboration, and deliver on time with Complexus. We offer a collaborative hub for seamless project management.",
+      "Simplify workflows, boost collaboration, and deliver on time with Complexus. We offer a collaborative hub for seamless objective management.",
     url: "https://complexus.app",
   },
   twitter: {
     card: "summary_large_image",
     site: "@complexus_tech",
-    title: "Complexus: Simplify & Succeed in Project Management",
+    title: "Complexus: Simplify & Succeed in Objective Management",
     description:
-      "Effortlessly manage projects with Complexus. Boost team collaboration, track progress, and make data-driven decisions.",
+      "Effortlessly manage objectives with Complexus. Boost team collaboration, track progress, and make data-driven decisions.",
   },
 };
 

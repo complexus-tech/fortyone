@@ -13,7 +13,7 @@ export default function Page(): JSX.Element {
   const notifications: Notification[] = [
     {
       id: 1,
-      title: "Subscribed to your project",
+      title: "Subscribed to your objective",
       description:
         "The quick brown fox jumps over the lazy dog. This is a test message.",
       date: "08:56",
@@ -35,7 +35,7 @@ export default function Page(): JSX.Element {
     },
     {
       id: 4,
-      title: "Subscribed to your project",
+      title: "Subscribed to your objective",
       description:
         "The quick brown fox jumps over the lazy dog. This is a test message.",
       date: "08:56",

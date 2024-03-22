@@ -1,4 +1,13 @@
-import { Flex, Text, Avatar, Button, Menu, ProgressBar, Box } from "ui";
+import {
+  Flex,
+  Text,
+  Tooltip,
+  Avatar,
+  Button,
+  Menu,
+  ProgressBar,
+  Box,
+} from "ui";
 import Link from "next/link";
 import {
   CalendarIcon,
@@ -11,7 +20,7 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
-export type Sprint = {
+export type Objective = {
   id: number;
   code: string;
   lead: string;
@@ -20,15 +29,20 @@ export type Sprint = {
   date: string;
 };
 
-export const SprintRow = ({ name }: { name: string }) => {
+export const ObjectiveCard = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/objectives/web/sprints/sprint-1/stories"
+          href="/objectives/web/stories"
         >
+          <Tooltip title="Objective code: WEB">
+            <Text className="w-[55px] truncate text-left" color="muted">
+              WEB-01
+            </Text>
+          </Tooltip>
           <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
       </Flex>

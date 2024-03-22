@@ -32,7 +32,7 @@ export const Navigation = () => {
     {
       name: "Objectives",
       icon: <ObjectiveIcon className="relative left-px h-5 w-auto" />,
-      href: "/projects",
+      href: "/objectives",
     },
     {
       name: "Active Sprints",

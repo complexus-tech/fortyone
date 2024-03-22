@@ -16,7 +16,7 @@ export const ListMyStories = ({
 }) => {
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "my-stories:expanded",
-    true,
+    false,
   );
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",

@@ -122,7 +122,7 @@ export const contextMenu = [
     name: "More",
     options: [
       {
-        label: "Project",
+        label: "Objective",
         icon: <ObjectiveIcon className="h-5 w-auto" />,
       },
       {

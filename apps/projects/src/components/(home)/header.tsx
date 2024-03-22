@@ -2,7 +2,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { HomeIcon, PlusIcon } from "icons";
 import { useState } from "react";
-import { NewStoryButton, NewProjectDialog } from "@/components/ui";
+import { NewStoryButton, NewObjectiveDialog } from "@/components/ui";
 import { HeaderContainer } from "@/components/shared";
 
 export const Header = () => {
@@ -26,11 +26,11 @@ export const Header = () => {
           }}
           size="sm"
         >
-          New project
+          New objective
         </Button>
         <NewStoryButton />
       </Flex>
-      <NewProjectDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+      <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </HeaderContainer>
   );
 };

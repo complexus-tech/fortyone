@@ -38,7 +38,7 @@ export const StoryCard = ({
           <Flex className="mb-0.5" gap={2} justify="between">
             <Link
               className="flex-1"
-              href="/projects/web/stories/test-123-story"
+              href="/objectives/web/stories/test-123-story"
             >
               <Text
                 className="w-[12ch] truncate text-[0.95rem]"
@@ -61,7 +61,10 @@ export const StoryCard = ({
               <AssigneesMenu.Items />
             </AssigneesMenu>
           </Flex>
-          <Link className="flex-1" href="/projects/web/stories/test-123-story">
+          <Link
+            className="flex-1"
+            href="/objectives/web/stories/test-123-story"
+          >
             <Text className="mb-2 line-clamp-2">{story.title}</Text>
           </Link>
           <Flex gap={1} wrap>
