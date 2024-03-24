@@ -8,7 +8,7 @@ export const Sidebar = () => {
       <Flex align="center" className="mb-6 px-6" justify="between">
         <Text className="flex items-center gap-2" fontSize="lg">
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />
-          My stories
+          My Stories
         </Text>
         <Badge color="tertiary" rounded="sm">
           Assigned

@@ -1,7 +1,7 @@
 import { Button, Menu } from "ui";
-import { ChevronDown, Check } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { cn } from "lib";
+import { ArrowDownIcon, CheckIcon } from "icons";
 
 const headings = [
   {
@@ -48,7 +48,7 @@ export const ToggleNode = ({ editor }: { editor: Editor | null }) => {
         <Button
           className="font-medium"
           color="tertiary"
-          rightIcon={<ChevronDown className="h-4 w-auto" />}
+          rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
           size="md"
           variant="naked"
         >
@@ -77,7 +77,7 @@ export const ToggleNode = ({ editor }: { editor: Editor | null }) => {
               >
                 {name}
                 {isActive ? (
-                  <Check className="h-5 w-auto" strokeWidth={2.1} />
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 ) : null}
               </Menu.Item>
             );

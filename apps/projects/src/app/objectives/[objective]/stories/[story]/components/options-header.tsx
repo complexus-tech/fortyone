@@ -3,7 +3,7 @@ import { CopyIcon, DeleteIcon, LinkIcon } from "icons";
 
 export const OptionsHeader = () => {
   return (
-    <Box className="flex h-16 items-center border-b border-gray-50 dark:border-dark-200/60">
+    <Box className="flex h-16 items-center border-b border-gray-50 dark:border-dark-100">
       <Container className="flex w-full items-center justify-between px-8">
         <Text color="muted" fontWeight="medium">
           COMP-13

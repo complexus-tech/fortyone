@@ -23,8 +23,8 @@ const config: Omit<Config, "content"> = {
         300: "#27272a",
       },
       dark: {
-        DEFAULT: "#161618",
-        50: "#2e2e32",
+        DEFAULT: "#1d1d1d",
+        50: "#383838",
         100: "#2b2b2b",
         200: "#282828",
         300: "#1f1f1f",

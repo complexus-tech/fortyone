@@ -17,7 +17,7 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Web design",
+            name: "Web Design",
             icon: <ObjectiveIcon className="h-4 w-auto" />,
           },
           {

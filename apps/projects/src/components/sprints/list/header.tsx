@@ -15,7 +15,7 @@ export const SprintsHeader = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "All sprints",
+            name: "All Sprints",
             icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
           },
         ]}

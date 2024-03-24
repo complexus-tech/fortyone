@@ -16,12 +16,12 @@ export const Header = () => {
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "All objectives",
+              name: "All Objectives",
               icon: <ObjectiveIcon className="h-[1.1rem] w-auto" />,
               url: "/objectives",
             },
             {
-              name: "Web design",
+              name: "Web Design",
               icon: "🚀",
               url: "/objectives/web",
             },

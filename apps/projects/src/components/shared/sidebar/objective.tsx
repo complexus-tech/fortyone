@@ -133,7 +133,7 @@ export const Objective = ({
       </Flex>
       <Flex
         className={cn(
-          "ml-5 h-0 overflow-hidden border-l border-gray-100 pl-2 transition-all duration-300 dark:border-dark-200",
+          "ml-5 h-0 overflow-hidden border-l border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100",
           {
             "mt-2 h-max": isOpen,
           },

@@ -26,7 +26,7 @@ export const Calendar = ({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-100 bg-white/50 z-50 dark:bg-dark-200/80 backdrop-blur w-max shadow-lg",
+        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-50 bg-white/50 z-50 dark:bg-dark-200/80 backdrop-blur w-max shadow-lg",
         className
       )}
       classNames={{
@@ -37,7 +37,7 @@ export const Calendar = ({
         caption_label: "text-base font-medium",
         nav: "space-x-1 flex items-center",
         nav_button:
-          "h-8 aspect-square border-[1.5px] border-gray-100 dark:border-gray-300 rounded-lg flex items-center justify-center",
+          "h-8 aspect-square border-[1.5px] border-gray-100 dark:border-dark-50 rounded-lg flex items-center justify-center",
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
@@ -63,8 +63,8 @@ export const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ArrowLeftIcon className="h-[1.1rem] w-auto" />,
-        IconRight: () => <ArrowRightIcon className="h-[1.1rem] w-auto" />,
+        IconLeft: () => <ArrowLeftIcon className="h-4 w-auto" />,
+        IconRight: () => <ArrowRightIcon className="h-4 w-auto" />,
       }}
       {...props}
     />

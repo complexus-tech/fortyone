@@ -213,19 +213,19 @@ export const Header = () => {
               <Menu.Group className="gap-4 space-y-1">
                 <Menu.Item>
                   <NewStoryIcon className="h-[1.1rem] w-auto" />
-                  Create story
+                  Create Story
                 </Menu.Item>
                 <Menu.Item>
                   <ObjectiveIcon className="h-[1.1rem] w-auto" />
-                  Create objective
+                  Create Objective
                 </Menu.Item>
                 <Menu.Item>
                   <SprintsIcon className="h-[1.1rem] w-auto" />
-                  Create sprint
+                  Create Sprint
                 </Menu.Item>
                 <Menu.Item>
                   <LogoutIcon className="h-[1.1rem] w-auto" />
-                  Create story
+                  Create Story
                 </Menu.Item>
               </Menu.Group>
             </Menu.Items>

@@ -69,7 +69,7 @@ export const ObjectivesHeader = () => {
           }}
           size="sm"
         >
-          New objective
+          New Objective
         </Button>
       </Flex>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />

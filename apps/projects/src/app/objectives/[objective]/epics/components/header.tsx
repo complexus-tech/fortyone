@@ -15,11 +15,11 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Web design",
+            name: "Web Design",
             icon: "🚀",
           },
           {
-            name: "All epics",
+            name: "All Epics",
             icon: <EpicsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}

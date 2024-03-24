@@ -8,12 +8,12 @@
 
 body,
 html {
-  @apply h-screen w-screen overflow-hidden bg-gradient-to-br text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-dark dark:from-dark-200/60 dark:via-dark dark:via-20% dark:to-dark dark:text-gray-200;
+  @apply h-screen w-screen overflow-hidden bg-white bg-gradient-to-br text-[12.8px] text-gray-300 antialiased 2xl:text-[14px] dark:from-dark-200 dark:via-dark dark:via-25% dark:to-dark dark:text-gray-200;
 }
 
 /* Chrome, Safari, Edge */
 *::-webkit-scrollbar {
-  width: 5px;
+  width: 3px;
 }
 
 *::-webkit-scrollbar-track {
@@ -21,7 +21,7 @@ html {
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply rounded-[5px] bg-[#666666b3] dark:bg-white;
+  @apply rounded-[3px] bg-[#666666b3] dark:bg-white;
 }
 
 * {

@@ -10,7 +10,7 @@ export const SubstoriesButton = () => {
         size="sm"
         variant="naked"
       >
-        Add sub story
+        Add Sub Story
       </Button>
     </Flex>
   );
