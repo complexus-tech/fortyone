@@ -26,7 +26,7 @@ export const Header = () => {
           }}
           size="sm"
         >
-          New objective
+          New Objective
         </Button>
         <NewStoryButton />
       </Flex>

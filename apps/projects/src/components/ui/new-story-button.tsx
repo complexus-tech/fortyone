@@ -22,7 +22,7 @@ export const NewStoryButton = ({
         size={size}
         {...rest}
       >
-        {children || "New story"}
+        {children || "New Story"}
       </Button>
       <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
