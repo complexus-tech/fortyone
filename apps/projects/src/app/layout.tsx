@@ -11,21 +11,24 @@ const font = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Complexus: The Collaborative Hub for Seamless Objective Management",
+  title:
+    "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
   description:
-    "Simplify workflows, boost collaboration, and deliver objectives on time with Complexus. Our intuitive platform empowers teams to visualize progress, gain data-driven insights, and achieve success.",
+    "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
   openGraph: {
-    title: "Complexus: Orchestrate Your Objectives to Success",
+    title:
+      "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
     description:
-      "Simplify workflows, boost collaboration, and deliver on time with Complexus. We offer a collaborative hub for seamless objective management.",
+      "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
     url: "https://complexus.app",
   },
   twitter: {
     card: "summary_large_image",
     site: "@complexus_tech",
-    title: "Complexus: Simplify & Succeed in Objective Management",
+    title:
+      "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
     description:
-      "Effortlessly manage objectives with Complexus. Boost team collaboration, track progress, and make data-driven decisions.",
+      "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
   },
 };
 
