@@ -195,7 +195,7 @@ export const Header = () => {
           </Menu.Items>
         </Menu> */}
       </Flex>
-      <Flex className="mb-3 w-full rounded-lg shadow">
+      <Flex className="mb-3 w-full rounded-lg shadow-sm">
         <Button
           className="rounded-r-none"
           color="tertiary"

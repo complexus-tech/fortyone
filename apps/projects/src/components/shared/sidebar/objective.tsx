@@ -36,6 +36,11 @@ export const Objective = ({
   const pathname = usePathname();
   const links = [
     {
+      name: "Chat",
+      icon: <StoryIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
+      href: "/objectives/web/stories",
+    },
+    {
       name: "Stories",
       icon: <StoryIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
       href: "/objectives/web/stories",

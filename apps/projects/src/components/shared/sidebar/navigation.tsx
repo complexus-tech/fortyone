@@ -9,12 +9,20 @@ import {
   ObjectiveIcon,
   SprintsIcon,
   RoadmapIcon,
+  BellIcon,
 } from "icons";
 import { NavLink } from "@/components/ui";
 
+type MenuItem = {
+  name: string;
+  icon: JSX.Element;
+  href: string;
+  messages?: number;
+};
+
 export const Navigation = () => {
   const pathname = usePathname();
-  const links = [
+  const links: MenuItem[] = [
     {
       name: "Home",
       icon: <HomeIcon className="h-5 w-auto" />,
@@ -26,6 +34,11 @@ export const Navigation = () => {
       href: "/reports",
     },
     {
+      name: "Activity",
+      icon: <BellIcon className="h-5 w-auto -rotate-12" strokeWidth={2} />,
+      href: "/notifications",
+    },
+    {
       name: "My Work",
       icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
       href: "/my-work",
@@ -33,9 +46,10 @@ export const Navigation = () => {
     {
       name: "Messages",
       icon: <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />,
-      href: "/notifications",
-      messages: 2,
+      href: "/chat",
+      messages: 3,
     },
+
     {
       name: "Roadmaps",
       icon: <RoadmapIcon className="h-5 w-auto" strokeWidth={2} />,
@@ -80,7 +94,7 @@ export const Navigation = () => {
               {name}
             </span>
             {messages ? (
-              <Badge color="tertiary" rounded="full">
+              <Badge color="primary" rounded="full" size="sm">
                 {messages}
               </Badge>
             ) : null}
