@@ -37,7 +37,7 @@ export const Options = () => {
     to: addDays(new Date(2022, 0, 20), 20),
   });
   return (
-    <Box className="h-full overflow-y-auto pb-6">
+    <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50/60 pb-6 dark:from-dark-200/30 dark:to-dark">
       <OptionsHeader />
       <Container className="px-8 pt-6 text-gray-300/90">
         <Text fontWeight="medium">Properties</Text>

@@ -15,13 +15,13 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "mr-2 h-[2.1rem] items-center rounded-lg bg-gray-100/50 dark:bg-dark-200/60",
+        "mr-2 h-[2.1rem] items-center rounded-lg bg-gray-50 dark:bg-dark-200/60",
         className,
       )}
     >
       <button
         className={cn("h-full rounded-lg px-2", {
-          "border border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-100/80":
+          "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-100/80":
             layout === "kanban",
         })}
         onClick={() => {
@@ -35,7 +35,7 @@ export const LayoutSwitcher = ({
       </button>
       <button
         className={cn("h-full rounded-lg px-2", {
-          "border border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-100/80":
+          "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-100/80":
             layout === "list",
         })}
         onClick={() => {

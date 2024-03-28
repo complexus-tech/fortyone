@@ -32,7 +32,7 @@ const ResizableHandle = ({
     {...props}
   >
     {children}
-    <Box className="absolute z-10 bottom-0 right-0 top-0 w-[0.2rem] bg-gray-100 opacity-0 transition hover:opacity-100 dark:bg-dark-50" />
+    <Box className="absolute z-10 bottom-0 right-0 top-0 w-[0.15rem] bg-gray-200 opacity-0 transition hover:opacity-100 dark:bg-dark-50" />
   </ResizablePrimitive.PanelResizeHandle>
 );
 

@@ -17,7 +17,7 @@ export const KanbanBoard = ({
   return (
     <BodyContainer
       className={cn(
-        "overflow-x-auto bg-gray-50/60 dark:bg-transparent",
+        "overflow-x-auto bg-gray-50/40 dark:bg-transparent",
         className,
       )}
     >
@@ -29,16 +29,16 @@ export const KanbanBoard = ({
         >
           {statuses.map((status) => (
             <StoriesKanbanHeader
-              stories={stories}
               key={status}
               status={status}
+              stories={stories}
             />
           ))}
         </Flex>
       </Box>
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7 ">
         {statuses.map((status) => (
-          <KanbanGroup stories={stories} key={status} status={status} />
+          <KanbanGroup key={status} status={status} stories={stories} />
         ))}
       </Box>
     </BodyContainer>

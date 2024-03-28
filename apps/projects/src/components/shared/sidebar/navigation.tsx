@@ -8,6 +8,7 @@ import {
   NotificationsIcon,
   ObjectiveIcon,
   SprintsIcon,
+  RoadmapIcon,
 } from "icons";
 import { NavLink } from "@/components/ui";
 
@@ -30,20 +31,25 @@ export const Navigation = () => {
       href: "/my-work",
     },
     {
+      name: "Messages",
+      icon: <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />,
+      href: "/notifications",
+      messages: 2,
+    },
+    {
+      name: "Roadmaps",
+      icon: <RoadmapIcon className="h-5 w-auto" strokeWidth={2} />,
+      href: "/roadmaps",
+    },
+    {
       name: "Objectives",
       icon: <ObjectiveIcon className="relative left-px h-5 w-auto" />,
       href: "/objectives",
     },
     {
-      name: "Active Sprints",
+      name: "Current Sprints",
       icon: <SprintsIcon className="h-5 w-auto" />,
       href: "/sprints",
-    },
-    {
-      name: "Notifications",
-      icon: <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />,
-      href: "/notifications",
-      messages: 2,
     },
   ];
 

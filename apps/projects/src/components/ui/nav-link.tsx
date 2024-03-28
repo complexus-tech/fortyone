@@ -19,9 +19,9 @@ export const NavLink = ({
   return (
     <Link
       className={cn(
-        "group flex items-center gap-2 rounded-lg px-2 py-2 text-gray-300 outline-none transition-colors duration-200 hover:bg-gray-50/70 dark:text-gray-200 dark:hover:bg-dark-200/60 dark:hover:text-white",
+        "group flex items-center gap-2 rounded-lg px-2 py-2 text-gray-300 outline-none transition-colors duration-200 hover:bg-gray-250/5 dark:text-gray-200 dark:hover:bg-dark-200/60 dark:hover:text-white",
         {
-          "bg-gray-50 font-medium dark:bg-dark-200 dark:text-white": active,
+          "bg-gray-250/10 font-medium dark:bg-dark-200 dark:text-white": active,
         },
         className,
       )}

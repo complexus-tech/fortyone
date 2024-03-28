@@ -11,7 +11,6 @@ import {
   SearchIcon,
   SettingsIcon,
   SprintsIcon,
-  UserIcon,
   UsersAddIcon,
 } from "icons";
 import Link from "next/link";
@@ -34,7 +33,7 @@ export const Header = () => {
         <Menu>
           <Menu.Button>
             <Button
-              className="pl-1"
+              className="gap-2 pl-1"
               color="tertiary"
               leftIcon={
                 <Avatar
@@ -43,6 +42,9 @@ export const Header = () => {
                   size="xs"
                   src="/complexus.png"
                 />
+              }
+              rightIcon={
+                <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto" />
               }
               size="sm"
               variant="naked"
@@ -119,8 +121,18 @@ export const Header = () => {
             </Menu.Group>
           </Menu.Items>
         </Menu>
+        <Button
+          align="center"
+          className="px-[0.5rem] shadow"
+          color="tertiary"
+          leftIcon={<SearchIcon className="h-[0.95rem] w-auto" />}
+          size="sm"
+          variant="outline"
+        >
+          <span className="sr-only">Search</span>
+        </Button>
 
-        <Menu>
+        {/* <Menu>
           <Menu.Button>
             <Button
               className="px-1"
@@ -181,65 +193,54 @@ export const Header = () => {
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
-        </Menu>
+        </Menu> */}
       </Flex>
-      <Flex align="center" className="mb-4" gap={2} justify="between">
-        <Flex className="w-full">
-          <Button
-            className="rounded-r-none shadow-sm"
-            color="tertiary"
-            fullWidth
-            leftIcon={<NewStoryIcon className="h-5 w-auto" />}
-            onClick={() => {
-              setIsOpen(!isOpen);
-            }}
-            variant="outline"
-          >
-            Create Story
-          </Button>
-          <Menu>
-            <Menu.Button>
-              <Button
-                align="center"
-                className="rounded-l-none border-l-0 px-[0.65rem] shadow-sm"
-                color="tertiary"
-                leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
-                variant="outline"
-              >
-                <span className="sr-only">More</span>
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end" className="w-56 pb-1">
-              <Menu.Group className="gap-4 space-y-1">
-                <Menu.Item>
-                  <NewStoryIcon className="h-[1.1rem] w-auto" />
-                  Create Story
-                </Menu.Item>
-                <Menu.Item>
-                  <ObjectiveIcon className="h-[1.1rem] w-auto" />
-                  Create Objective
-                </Menu.Item>
-                <Menu.Item>
-                  <SprintsIcon className="h-[1.1rem] w-auto" />
-                  Create Sprint
-                </Menu.Item>
-                <Menu.Item>
-                  <LogoutIcon className="h-[1.1rem] w-auto" />
-                  Create Story
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
+      <Flex className="mb-3 w-full rounded-lg shadow">
         <Button
-          align="center"
-          className="px-[0.6rem] shadow-sm"
+          className="rounded-r-none"
           color="tertiary"
-          leftIcon={<SearchIcon className="h-[1.1rem] w-auto" />}
+          fullWidth
+          leftIcon={<NewStoryIcon className="h-5 w-auto" />}
+          onClick={() => {
+            setIsOpen(!isOpen);
+          }}
           variant="outline"
         >
-          <span className="sr-only">Search</span>
+          Create Story
         </Button>
+        <Menu>
+          <Menu.Button>
+            <Button
+              align="center"
+              className="rounded-l-none border-l-0 px-[0.65rem]"
+              color="tertiary"
+              leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
+              variant="outline"
+            >
+              <span className="sr-only">More</span>
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="end" className="w-56 pb-1">
+            <Menu.Group className="gap-4 space-y-1">
+              <Menu.Item>
+                <NewStoryIcon className="h-[1.1rem] w-auto" />
+                Create Story
+              </Menu.Item>
+              <Menu.Item>
+                <ObjectiveIcon className="h-[1.1rem] w-auto" />
+                Create Objective
+              </Menu.Item>
+              <Menu.Item>
+                <SprintsIcon className="h-[1.1rem] w-auto" />
+                Create Sprint
+              </Menu.Item>
+              <Menu.Item>
+                <LogoutIcon className="h-[1.1rem] w-auto" />
+                Create Story
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </Flex>
       <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
