@@ -4,7 +4,7 @@ import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
 import { StoryStatusIcon } from "@/components/ui";
-import { Header, Module } from "./components";
+import { Header, Theme } from "./components";
 
 type Module = {
   id: number;
@@ -39,7 +39,7 @@ export default function Page(): JSX.Element {
     <>
       <Header />
       <BodyContainer>
-        <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2.5 backdrop-blur dark:bg-dark-200/60">
+        <Container className="sticky top-0 z-[1] select-none bg-gray-50/50 py-2 backdrop-blur dark:bg-dark-300/90">
           <Flex align="center" justify="between">
             <Flex align="center" gap={2}>
               <StoryStatusIcon />
@@ -77,7 +77,7 @@ export default function Page(): JSX.Element {
           </Flex>
         </Container>
         {modules.map(({ id, name }) => (
-          <Module key={id} name={name} />
+          <Theme key={id} name={name} />
         ))}
       </BodyContainer>
     </>

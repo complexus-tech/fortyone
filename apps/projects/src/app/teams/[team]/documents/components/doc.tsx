@@ -4,55 +4,35 @@ import {
   DeleteIcon,
   DocsIcon,
   EditIcon,
-  FileLockedIcon,
   LinkIcon,
   MoreHorizontalIcon,
-  StarIcon,
 } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { TableCheckbox } from "@/components/ui";
 
-export const Doc = ({ name }: { name: string }) => {
+export const Document = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
-      <Flex align="center" className="relative select-none" gap={2}>
+      <Flex align="center" className="relative w-full select-none" gap={2}>
         <TableCheckbox />
-        <DocsIcon className="h-[1.2rem] w-auto" />
+        <DocsIcon className="h-[1.3rem] w-auto shrink-0" />
         <Link
-          className="flex items-center gap-5"
-          href="/objectives/web/documents/test1"
+          className="line-clamp-1 items-center gap-5 text-[1.05rem]"
+          href="/teams/web/documents/test1"
         >
-          <Text className="w-[215px] truncate hover:opacity-90">{name}</Text>
+          {name}
         </Link>
       </Flex>
-      <Flex align="center" gap={2}>
-        <Tooltip title="Unlock">
-          <Button
-            className="aspect-square"
-            color="tertiary"
-            leftIcon={<FileLockedIcon className="h-5 w-auto" />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Favourite</span>
-          </Button>
-        </Tooltip>
-        <Tooltip title="Favourite">
-          <Button
-            className="aspect-square"
-            color="tertiary"
-            leftIcon={<StarIcon className="h-5 w-auto" />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Favourite</span>
-          </Button>
-        </Tooltip>
+      <Flex align="center" className="shrink-0" gap={16}>
         <Tooltip title="Last updated">
-          <Text color="muted">2 days ago</Text>
+          <Text color="muted">Sep 27, 2021</Text>
         </Tooltip>
         <Tooltip title="Creaed by">
-          <Avatar name="John Doe" size="sm" />
+          <Avatar
+            name="John Doe"
+            size="sm"
+            src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+          />
         </Tooltip>
         <Menu>
           <Menu.Button>

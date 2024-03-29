@@ -15,7 +15,11 @@ export const MilestonesHeader = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "All Milestones",
+            name: "Engineering",
+            icon: "🚀",
+          },
+          {
+            name: "Milestones",
             icon: <MilestonesIcon className="h-[1.1rem] w-auto" />,
           },
         ]}

@@ -1,9 +1,9 @@
 "use client";
 
 import { Box, Container, Flex, Tabs, Text } from "ui";
-import { ClockIcon, DocsIcon } from "icons";
+import { DocsIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
-import { Header, Doc } from "./components";
+import { Header, Document } from "./components";
 
 type Objective = {
   id: number;
@@ -15,7 +15,7 @@ type Objective = {
 };
 
 export default function Page(): JSX.Element {
-  const objectives: Objective[] = [
+  const documents: Objective[] = [
     {
       id: 1,
       code: "COM-12",
@@ -32,99 +32,141 @@ export default function Page(): JSX.Element {
       description: "Complexus migration to Objectives 1.0.0",
       date: "Sep 27",
     },
+    {
+      id: 3,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Data migration for Fin connect",
+      description: "The quick brown fox jumps over the lazy dog.",
+      date: "Sep 27",
+    },
+    {
+      id: 4,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Complexus data migration",
+      description: "Complexus migration to Objectives 1.0.0",
+      date: "Sep 27",
+    },
+    {
+      id: 5,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Data migration for Fin connect",
+      description: "The quick brown fox jumps over the lazy dog.",
+      date: "Sep 27",
+    },
+    {
+      id: 6,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Complexus data migration",
+      description: "Complexus migration to Objectives 1.0.0",
+      date: "Sep 27",
+    },
+    {
+      id: 7,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Data migration for Fin connect",
+      description: "The quick brown fox jumps over the lazy dog.",
+      date: "Sep 27",
+    },
+    {
+      id: 8,
+      code: "COM-12",
+      lead: "John Doe",
+      name: "Complexus data migration",
+      description: "Complexus migration to Objectives 1.0.0",
+      date: "Sep 27",
+    },
   ];
 
-  const categories = [
+  const templates = [
     {
       id: 1,
-      name: "Recent",
+      name: "Blank Document",
     },
     {
       id: 2,
-      name: "Favorites",
+      name: "Requirements Document",
     },
     {
       id: 3,
-      name: "Created by me",
+      name: "Technical Design Document",
+    },
+    {
+      id: 4,
+      name: "Objectives and Key Results",
+    },
+    {
+      id: 5,
+      name: "Retrospective Document",
+    },
+    {
+      id: 6,
+      name: "Retrospective Document",
+    },
+    {
+      id: 7,
+      name: "Retrospective Document",
     },
   ];
 
   return (
     <>
       <Header />
-      <BodyContainer>
-        <Container className="pb-4 pt-6">
-          <Box className="grid grid-cols-3 gap-6">
-            {categories.map(({ id, name }) => (
-              <Box
-                className="rounded-xl border border-gray-100/80 bg-gray-50/20 px-4 py-6 dark:border-dark-100/50 dark:bg-dark-200/50"
-                key={id}
-              >
-                <Flex align="center" className="mb-2" justify="between">
+      <BodyContainer className="pt-6">
+        <Container className="pb-3">
+          <Text as="h3" fontSize="2xl">
+            Start from a template
+          </Text>
+          <Box className="mt-2 overflow-x-auto">
+            <Flex className="flex-nowrap p-1" gap={4}>
+              {templates.map(({ id, name }) => (
+                <Flex
+                  align="center"
+                  className="w-[200px] shrink-0 cursor-pointer rounded-lg border border-gray-100/60 bg-gray-50/40 px-3 py-5 shadow-sm transition duration-200 ease-linear dark:border-dark-100 dark:bg-dark-200/40 dark:hover:bg-dark-200/60"
+                  gap={3}
+                  key={id}
+                >
+                  <DocsIcon
+                    className="h-9 w-auto shrink-0 text-info"
+                    strokeWidth={1.4}
+                  />
                   <Text
                     as="h2"
-                    className="pl-3"
-                    fontSize="xl"
+                    className="line-clamp-2"
+                    fontSize="lg"
                     fontWeight="medium"
                   >
                     {name}
                   </Text>
-                  <ClockIcon className="h-6 w-auto" />
                 </Flex>
-                <Flex
-                  align="center"
-                  className="rounded-lg px-2 py-2.5 transition duration-200 ease-linear hover:bg-gray-100/50 dark:hover:bg-dark-100"
-                  gap={2}
-                >
-                  <DocsIcon className="h-6 w-auto shrink-0" />
-                  <Text color="muted" textOverflow="truncate">
-                    Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-                    Cumque, quos.
-                  </Text>
-                </Flex>
-                <Flex
-                  align="center"
-                  className="rounded-lg px-2 py-2.5 transition duration-200 ease-linear dark:hover:bg-dark-100"
-                  gap={2}
-                >
-                  <DocsIcon className="h-6 w-auto shrink-0" />
-                  <Text color="muted" textOverflow="truncate">
-                    Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-                    Cumque, quos.
-                  </Text>
-                </Flex>
-                <Flex
-                  align="center"
-                  className="rounded-lg px-2 py-2.5 transition duration-200 ease-linear dark:hover:bg-dark-100"
-                  gap={2}
-                >
-                  <DocsIcon className="h-6 w-auto shrink-0" />
-                  <Text color="muted" textOverflow="truncate">
-                    Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-                    Cumque, quos.
-                  </Text>
-                </Flex>
-              </Box>
-            ))}
+              ))}
+            </Flex>
           </Box>
         </Container>
 
-        <Tabs defaultValue="all">
-          <Box className="sticky top-0 z-10 border-b border-gray-100 py-3 dark:border-dark-200">
-            <Tabs.List>
-              <Tabs.Tab value="all">All</Tabs.Tab>
-              <Tabs.Tab value="assigned">Private</Tabs.Tab>
-              <Tabs.Tab value="backlog">Archived</Tabs.Tab>
-              <Tabs.Tab value="closed">Private</Tabs.Tab>
-            </Tabs.List>
-          </Box>
-          <Tabs.Panel value="assigned">Tab</Tabs.Panel>
-          <Tabs.Panel value="created">Tab</Tabs.Panel>
-          <Tabs.Panel value="subscribed">Tab</Tabs.Panel>
+        <Tabs defaultValue="my-docs">
+          <Tabs.List className="mb-2.5">
+            <Tabs.Tab value="my-docs">My Documents</Tabs.Tab>
+            <Tabs.Tab value="favourites">Favourites</Tabs.Tab>
+            <Tabs.Tab value="archived">Archive</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="my-docs">
+            <Box className="border-t border-gray-100/60 dark:border-dark-100/80">
+              {documents.map(({ id, name }) => (
+                <Document key={id} name={name} />
+              ))}
+            </Box>
+          </Tabs.Panel>
+          <Tabs.Panel value="favourites">Favourites</Tabs.Panel>
+          <Tabs.Panel value="archived">
+            Archive
+            <Text>Archive</Text>
+          </Tabs.Panel>
         </Tabs>
-        {objectives.map(({ id, name }) => (
-          <Doc key={id} name={name} />
-        ))}
       </BodyContainer>
     </>
   );

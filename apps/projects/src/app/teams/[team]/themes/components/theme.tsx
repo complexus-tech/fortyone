@@ -20,7 +20,7 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
-export const Module = ({ name }: { name: string }) => {
+export const Theme = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
@@ -39,7 +39,7 @@ export const Module = ({ name }: { name: string }) => {
       </Flex>
       <Flex align="center" gap={5}>
         <Flex align="center" className="w-32" gap={2}>
-          <ProgressBar className="h-2.5 w-24" progress={20} />
+          <ProgressBar className="h-1.5 w-24" progress={20} />
           <Text color="muted" fontWeight="medium">
             20%
           </Text>

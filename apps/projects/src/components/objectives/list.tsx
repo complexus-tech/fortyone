@@ -12,7 +12,7 @@ export const ObjectivesList = ({ objectives }: { objectives: Objective[] }) => {
     <>
       <ObjectivesHeader />
       <BodyContainer>
-        <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2 backdrop-blur dark:bg-dark-200/60">
+        <Container className="sticky top-0 z-[1] select-none bg-gray-50/60 py-2 backdrop-blur dark:bg-dark-300/90">
           <Flex align="center" justify="between">
             <Flex align="center" gap={2}>
               <StoryStatusIcon />

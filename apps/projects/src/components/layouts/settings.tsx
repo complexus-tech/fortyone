@@ -144,12 +144,17 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
-      <ResizablePanel.Panel defaultSize={18} maxSize={20} minSize={16}>
+      <ResizablePanel.Panel
+        className="bg-gradient-to-br from-white via-gray-50/80 to-gray-50 dark:from-dark-200 dark:via-dark dark:to-dark"
+        defaultSize={18}
+        maxSize={20}
+        minSize={16}
+      >
         <Box className="flex h-16 items-center px-4">
           <Tooltip
             title={
               <span className="flex items-center gap-1">
-                Close settings
+                Close Settings
                 <Badge color="tertiary" rounded="sm" size="sm">
                   Esc
                 </Badge>
@@ -157,10 +162,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             }
           >
             <button
-              className="group flex items-center gap-3 text-xl font-medium"
-              onClick={() => {
-                goBack();
-              }}
+              className="group flex items-center gap-3 text-lg font-medium"
+              onClick={goBack}
               type="button"
             >
               <ArrowLeftIcon className="h-[1.1rem] w-auto opacity-50 transition group-hover:opacity-100" />
@@ -195,7 +198,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle className="bg-gray-100/70 dark:bg-dark-100/40" />
       <ResizablePanel.Panel defaultSize={82}>
-        <Container className="max-w-[50rem] px-12 py-12">{children}</Container>
+        <Container className="max-w-[48rem] px-12 py-12">{children}</Container>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );

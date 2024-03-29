@@ -27,7 +27,7 @@ export const MilestoneRow = ({ name }: { name: string }) => {
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/objectives/web/milestones/sprint-1/stories"
+          href="/teams/web/milestones/sprint-1/stories"
         >
           <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
