@@ -36,10 +36,7 @@ export const StoryCard = ({
           )}
         >
           <Flex className="mb-0.5" gap={2} justify="between">
-            <Link
-              className="flex-1"
-              href="/objectives/web/stories/test-123-story"
-            >
+            <Link className="flex-1" href="/teams/web/stories/test-123-story">
               <Text
                 className="w-[12ch] truncate text-[0.95rem]"
                 color="muted"

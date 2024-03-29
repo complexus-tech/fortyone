@@ -1,13 +1,13 @@
-import { SprintsList } from "@/components/sprints/list/list-sprints";
-import type { Sprint } from "@/components/sprints/list/row";
+import { MilestonesList } from "@/components/milestones/list/list-milestones";
+import type { Milestone } from "@/components/milestones/list/row";
 
 export default function Page(): JSX.Element {
-  const sprints: Sprint[] = [
+  const milestones: Milestone[] = [
     {
       id: 1,
       code: "COM-12",
       lead: "John Doe",
-      name: "Sprint 1",
+      name: "Milestone 1",
       description: "The quick brown fox jumps over the lazy dog.",
       date: "Sep 27",
     },
@@ -15,11 +15,11 @@ export default function Page(): JSX.Element {
       id: 2,
       code: "COM-12",
       lead: "John Doe",
-      name: "Sprint 2",
+      name: "Milestone 2",
       description: "Complexus migration to Objectives 1.0.0",
       date: "Sep 27",
     },
   ];
 
-  return <SprintsList sprints={sprints} />;
+  return <MilestonesList milestones={milestones} />;
 }

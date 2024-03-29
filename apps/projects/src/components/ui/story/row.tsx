@@ -48,7 +48,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               </StatusesMenu.Trigger>
               <StatusesMenu.Items status={status} />
             </StatusesMenu>
-            <Link href="/objectives/web/stories/test-123-story">
+            <Link href="/teams/web/stories/test-123-story">
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>

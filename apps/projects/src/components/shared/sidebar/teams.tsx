@@ -3,19 +3,16 @@ import { cn } from "lib";
 import { Box, Button, Flex } from "ui";
 import { ArrowDownIcon, PlusIcon, TeamIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
-import { Objective } from "./objective";
+import { Team } from "./team";
 
-export const Objectives = () => {
-  const [isOpen, setIsOpen] = useLocalStorage<boolean>(
-    "objectives-dropdown",
-    true,
-  );
+export const Teams = () => {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("teams-dropdown", true);
 
-  const objectives = [
+  const teams = [
     {
       id: 1,
       icon: "🚀",
-      name: "Product",
+      name: "Engineering",
     },
     {
       id: 2,
@@ -25,7 +22,7 @@ export const Objectives = () => {
     {
       id: 3,
       icon: "🏀",
-      name: "Engineering",
+      name: "Product",
     },
   ];
 
@@ -80,8 +77,8 @@ export const Objectives = () => {
         direction="column"
         gap={1}
       >
-        {objectives.map(({ id, icon, name }) => (
-          <Objective icon={icon} id={id} key={id} name={name} />
+        {teams.map(({ id, icon, name }) => (
+          <Team icon={icon} id={id} key={id} name={name} />
         ))}
       </Flex>
     </Box>

@@ -10,7 +10,7 @@ import {
   ObjectiveIcon,
   SearchIcon,
   SettingsIcon,
-  SprintsIcon,
+  MilestonesIcon,
   UsersAddIcon,
   EpicsIcon,
 } from "icons";
@@ -237,7 +237,7 @@ export const Header = () => {
                 Create Theme
               </Menu.Item>
               <Menu.Item>
-                <SprintsIcon className="h-[1.1rem] w-auto" />
+                <MilestonesIcon className="h-[1.1rem] w-auto" />
                 Create Milestone
               </Menu.Item>
               <Menu.Item>

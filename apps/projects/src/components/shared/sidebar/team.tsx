@@ -11,7 +11,7 @@ import {
   EpicsIcon,
   MoreHorizontalIcon,
   SettingsIcon,
-  SprintsIcon,
+  MilestonesIcon,
   StarIcon,
   DocsIcon,
   ChatIcon,
@@ -20,19 +20,15 @@ import {
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
-type ObjectiveProps = {
+type TeamProps = {
   id: number;
   name: string;
   icon?: ReactNode;
 };
 
-export const Objective = ({
-  id,
-  name: objectiveName,
-  icon: objectiveIcon,
-}: ObjectiveProps) => {
+export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
-    `objectives:${id}:dropdown`,
+    `teams:${id}:dropdown`,
     false,
   );
   const pathname = usePathname();
@@ -40,32 +36,32 @@ export const Objective = ({
     {
       name: "Stories",
       icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
-      href: "/objectives/web/stories",
+      href: "/teams/web/stories",
     },
     {
       name: "Themes",
       icon: <EpicsIcon className="h-5 w-auto" />,
-      href: "/objectives/web/themes",
+      href: "/teams/web/themes",
     },
     {
       name: "Milestones",
-      icon: <SprintsIcon className="h-5 w-auto" />,
-      href: "/objectives/web/milestones",
+      icon: <MilestonesIcon className="h-5 w-auto" />,
+      href: "/teams/web/milestones",
     },
     {
       name: "Documents",
       icon: <DocsIcon className="h-5 w-auto" />,
-      href: "/objectives/web/documents",
+      href: "/teams/web/documents",
     },
     {
       name: "Discussions",
       icon: <ChatIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
-      href: "/objectives/web/discussions",
+      href: "/teams/web/discussions",
     },
     {
       name: "Retrospectives",
       icon: <RetroIcon className="h-5 w-auto" strokeWidth={2} />,
-      href: "/objectives/web/retrospectives",
+      href: "/teams/web/retrospectives",
     },
   ];
 
@@ -87,8 +83,8 @@ export const Objective = ({
         tabIndex={0}
       >
         <span className="flex items-center gap-2">
-          <span className="text-lg">{objectiveIcon}</span>
-          <span className="block max-w-[15ch] truncate">{objectiveName}</span>
+          <span className="text-lg">{teamIcon}</span>
+          <span className="block max-w-[15ch] truncate">{teamName}</span>
         </span>
         <Flex align="center" gap={1}>
           <ArrowDownIcon

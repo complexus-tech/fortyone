@@ -1,7 +1,7 @@
 import { Badge, Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 
-export const SprintRowsHeader = () => {
+export const MilestoneRowsHeader = () => {
   return (
     <Container className="sticky top-0 z-[1] select-none bg-gray-50 py-2.5 backdrop-blur dark:bg-dark-200/60">
       <Flex align="center" justify="between">

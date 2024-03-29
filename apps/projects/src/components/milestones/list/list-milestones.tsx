@@ -1,15 +1,15 @@
 "use client";
 import { Box, Tabs } from "ui";
 import { BodyContainer } from "@/components/shared";
-import { SprintRowsHeader } from "./rows-header";
-import type { Sprint } from "./row";
-import { SprintRow } from "./row";
-import { SprintsHeader } from "./header";
+import { MilestoneRowsHeader } from "./rows-header";
+import type { Milestone } from "./row";
+import { MilestoneRow } from "./row";
+import { MilestonesHeader } from "./header";
 
-export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
+export const MilestonesList = ({ milestones }: { milestones: Milestone[] }) => {
   return (
     <>
-      <SprintsHeader />
+      <MilestonesHeader />
       <Tabs defaultValue="all">
         <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100/60 backdrop-blur-lg dark:border-dark-100/40">
           <Tabs.List>
@@ -21,9 +21,9 @@ export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
         </Box>
         <Tabs.Panel value="all">
           <BodyContainer>
-            <SprintRowsHeader />
-            {sprints.map(({ id, name }) => (
-              <SprintRow key={id} name={name} />
+            <MilestoneRowsHeader />
+            {milestones.map(({ id, name }) => (
+              <MilestoneRow key={id} name={name} />
             ))}
           </BodyContainer>
         </Tabs.Panel>

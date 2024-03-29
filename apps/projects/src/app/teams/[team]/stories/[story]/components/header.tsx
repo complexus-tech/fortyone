@@ -4,7 +4,6 @@ import {
   ArrowUpIcon,
   BellIcon,
   StarIcon,
-  ObjectiveIcon,
   StoryIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
@@ -16,14 +15,9 @@ export const Header = () => {
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "All Objectives",
-              icon: <ObjectiveIcon className="h-[1.1rem] w-auto" />,
-              url: "/objectives",
-            },
-            {
-              name: "Web Design",
+              name: "Engineering",
               icon: "🚀",
-              url: "/objectives/web",
+              url: "/teams/web",
             },
             {
               name: "Stories",

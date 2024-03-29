@@ -9,7 +9,7 @@ import {
   StatusesMenu,
   AssigneesMenu,
   ModulesMenu,
-  SprintsMenu,
+  MilestonesMenu,
   StoryStatusIcon,
   PriorityIcon,
 } from "@/components/ui";
@@ -144,7 +144,7 @@ export const Options = () => {
             </DatePicker>
           }
         />
-        <Option label="Sprint" value={<SprintsMenu />} />
+        <Option label="Milestone" value={<MilestonesMenu />} />
         <Option label="Module" value={<ModulesMenu />} />
         <Option
           label="Parent"

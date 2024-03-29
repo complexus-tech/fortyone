@@ -1,5 +1,5 @@
 import { Avatar, Badge, Box, Flex, ProgressBar, Text } from "ui";
-import { CalendarIcon, SprintsIcon } from "icons";
+import { CalendarIcon, MilestonesIcon } from "icons";
 import Link from "next/link";
 import { cn } from "lib";
 import {
@@ -12,12 +12,12 @@ import {
 } from "recharts";
 import { StoryStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
 
-export type SprintCardProps = {
+export type MilestoneCardProps = {
   name: string;
   description: string;
 };
 
-export const SprintCard = ({ name, description }: SprintCardProps) => {
+export const MilestoneCard = ({ name, description }: MilestoneCardProps) => {
   const recentStories = [
     { id: 1, title: "Story with the login page" },
     { id: 2, title: "Story with the login page" },
@@ -57,7 +57,7 @@ export const SprintCard = ({ name, description }: SprintCardProps) => {
     },
   ];
   return (
-    <Link href="/objectives/web/sprints/1/stories">
+    <Link href="/objectives/web/milestones/1/stories">
       <RowWrapper className="block py-6">
         <Flex align="start" justify="between">
           <Box>
@@ -66,7 +66,7 @@ export const SprintCard = ({ name, description }: SprintCardProps) => {
               fontSize="2xl"
               fontWeight="medium"
             >
-              <SprintsIcon className="relative -left-[2px] h-6 w-auto" />
+              <MilestonesIcon className="relative -left-[2px] h-6 w-auto" />
               {name}
             </Text>
             <Text className="max-w-lg" color="muted">

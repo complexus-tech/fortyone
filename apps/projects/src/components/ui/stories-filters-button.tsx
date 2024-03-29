@@ -26,7 +26,7 @@ export const StoriesFiltersButton = () => {
       "Due date",
       "Created",
       "Updated",
-      "Sprint",
+      "Milestone",
       "Labels",
     ],
   };
@@ -48,7 +48,7 @@ export const StoriesFiltersButton = () => {
     "Due date",
     "Created",
     "Updated",
-    "Sprint",
+    "Milestone",
     "Epic",
     "Labels",
   ];

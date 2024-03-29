@@ -13,7 +13,7 @@ import {
   Text,
 } from "ui";
 import {
-  SprintsIcon,
+  MilestonesIcon,
   MoreVerticalIcon,
   LinkIcon,
   DeleteIcon,
@@ -29,20 +29,20 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Story, StoryStatus } from "@/types/story";
-import { useLocalStorage } from "@/hooks";
+import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
-  StoriesBoard,
   LayoutSwitcher,
+  StoriesFiltersButton,
   SideDetailsSwitch,
   BoardDividedPanel,
+  StoriesBoard,
   RowWrapper,
   StoryStatusIcon,
   PriorityIcon,
-  StoriesFiltersButton,
 } from "@/components/ui";
-import { HeaderContainer } from "@/components/shared";
+import { useLocalStorage } from "@/hooks";
+import type { Story, StoryStatus } from "@/types/story";
 
 export const ListStories = ({
   stories,
@@ -52,11 +52,11 @@ export const ListStories = ({
   statuses: StoryStatus[];
 }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    "objective:sprints:layout",
+    "objective:milestones:layout",
     "kanban",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
-    "objective:sprints:isExpanded",
+    "objective:milestones:isExpanded",
     true,
   );
 
@@ -103,8 +103,8 @@ export const ListStories = ({
               icon: "🚀",
             },
             {
-              name: "Sprints",
-              icon: <SprintsIcon className="h-4 w-auto" />,
+              name: "Milestones",
+              icon: <MilestonesIcon className="h-4 w-auto" />,
             },
             {
               name: "Stories",
@@ -131,8 +131,8 @@ export const ListStories = ({
             <Box className="px-6">
               <Flex align="center" justify="between">
                 <Text className="flex items-center gap-1.5" fontSize="lg">
-                  <SprintsIcon className="relative -top-px h-[1.4rem] w-auto" />
-                  Sprint 1
+                  <MilestonesIcon className="relative -top-px h-[1.4rem] w-auto" />
+                  Milestone 1
                 </Text>
                 <Menu>
                   <Menu.Button>
@@ -202,7 +202,7 @@ export const ListStories = ({
                 gap={2}
                 justify="between"
               >
-                <Text>Sprint Progress</Text>
+                <Text>Milestone Progress</Text>
                 <Text>75%</Text>
               </Flex>
               <ProgressBar progress={75} />

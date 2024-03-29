@@ -1,5 +1,5 @@
 import { Button, Flex, Text } from "ui";
-import { DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import { DeleteIcon, ObjectiveIcon, MilestonesIcon } from "icons";
 
 export const StoriesToolbar = () => {
   return (
@@ -13,7 +13,9 @@ export const StoriesToolbar = () => {
       </Text>
       <Button
         color="tertiary"
-        leftIcon={<SprintsIcon className="h-[1.15rem] w-auto dark:text-gray" />}
+        leftIcon={
+          <MilestonesIcon className="h-[1.15rem] w-auto dark:text-gray" />
+        }
         variant="outline"
       >
         Add to sprint

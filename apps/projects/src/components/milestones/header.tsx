@@ -1,22 +1,16 @@
 "use client";
-import { Avatar, BreadCrumbs, Button, Flex } from "ui";
-import {
-  PlusIcon,
-  SearchIcon,
-  PreferencesIcon,
-  ArrowDownIcon,
-  SprintsIcon,
-} from "icons";
-import { HeaderContainer } from "@/components/shared";
+import { BreadCrumbs, Button, Flex } from "ui";
+import { PlusIcon, PreferencesIcon, SearchIcon, MilestonesIcon } from "icons";
+import { HeaderContainer } from "../shared/header-container";
 
-export const SprintsHeader = () => {
+export const ActiveMilestonesHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "All Sprints",
-            icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
+            name: "Active Milestones",
+            icon: <MilestonesIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
       />
@@ -32,23 +26,12 @@ export const SprintsHeader = () => {
           <span className="sr-only">Search</span>
         </Button>
         <Button
-          className="pl-1"
-          color="tertiary"
-          leftIcon={<Avatar color="naked" />}
-          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
-          size="sm"
-          variant="outline"
-        >
-          Lead
-        </Button>
-        <Button
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"
         >
-          <span className="sr-only">Preferences</span>
+          Display
         </Button>
         <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
           New sprint

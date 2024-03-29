@@ -25,6 +25,6 @@ export * from "./story/assignees-menu";
 export * from "./story/priorities-menu";
 export * from "./story/statuses-menu";
 export * from "./story/modules-menu";
-export * from "./story/sprints-menu";
+export * from "./story/milestones-menu";
 export * from "./story/context-menu";
 export * from "./story/card";

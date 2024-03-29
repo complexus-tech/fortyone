@@ -10,7 +10,7 @@ import {
   EditIcon,
   EpicsIcon,
   ObjectiveIcon,
-  SprintsIcon,
+  MilestonesIcon,
   StarIcon,
   TagsIcon,
   UserIcon,
@@ -105,8 +105,8 @@ export const contextMenu = [
         icon: <TagsIcon className="h-5 w-auto" />,
       },
       {
-        label: "Sprint",
-        icon: <SprintsIcon className="h-5 w-auto" />,
+        label: "Milestone",
+        icon: <MilestonesIcon className="h-5 w-auto" />,
       },
       {
         label: "Module",
@@ -127,7 +127,7 @@ export const contextMenu = [
       },
       {
         label: "Add to sprint",
-        icon: <SprintsIcon className="h-5 w-auto" />,
+        icon: <MilestonesIcon className="h-5 w-auto" />,
       },
       {
         label: "Start Date",

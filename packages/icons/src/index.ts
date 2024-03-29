@@ -1,4 +1,4 @@
-export * from "./sprints";
+export * from "./milestones";
 export * from "./analytics";
 export * from "./dashboard";
 export * from "./stories";
