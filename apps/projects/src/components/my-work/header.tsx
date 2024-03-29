@@ -25,7 +25,7 @@ export const Header = ({
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "My work",
+            name: "My Work",
             icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
           },
           { name: "Assigned" },

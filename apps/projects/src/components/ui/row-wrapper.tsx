@@ -12,7 +12,7 @@ export const RowWrapper = ({
   return (
     <Container
       className={cn(
-        "group flex items-center justify-between border-b-[0.5px] border-gray-50 py-2.5 outline-none hover:bg-gray-50/50 focus:bg-gray-50/50 dark:border-dark-100/70 hover:dark:bg-dark-200/30 focus:dark:bg-dark-200/50",
+        "group flex items-center justify-between border-b-[0.5px] border-gray-50 py-2.5 outline-none hover:bg-gray-50/30 focus:bg-gray-50/50 dark:border-dark-100/70 hover:dark:bg-dark-200/30 focus:dark:bg-dark-200/50",
         className,
       )}
       tabIndex={0}

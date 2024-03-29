@@ -12,6 +12,7 @@ import {
   SettingsIcon,
   SprintsIcon,
   UsersAddIcon,
+  EpicsIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -220,23 +221,28 @@ export const Header = () => {
               <span className="sr-only">More</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="end" className="w-56 pb-1">
+          <Menu.Items align="end" className="w-64 pb-1">
             <Menu.Group className="gap-4 space-y-1">
+              <Menu.Item>
+                <NewStoryIcon className="h-[1.1rem] w-auto" />
+                Continue from Draft
+              </Menu.Item>
+              <Menu.Separator />
               <Menu.Item>
                 <NewStoryIcon className="h-[1.1rem] w-auto" />
                 Create Story
               </Menu.Item>
               <Menu.Item>
-                <ObjectiveIcon className="h-[1.1rem] w-auto" />
-                Create Objective
+                <EpicsIcon className="h-[1.1rem] w-auto" />
+                Create Theme
               </Menu.Item>
               <Menu.Item>
                 <SprintsIcon className="h-[1.1rem] w-auto" />
-                Create Sprint
+                Create Milestone
               </Menu.Item>
               <Menu.Item>
-                <LogoutIcon className="h-[1.1rem] w-auto" />
-                Create Story
+                <ObjectiveIcon className="h-[1.1rem] w-auto" />
+                Create Objective
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>

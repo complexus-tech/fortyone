@@ -4,12 +4,11 @@ import { cn } from "lib";
 import {
   AnalyticsIcon,
   HomeIcon,
-  StoryIcon,
   NotificationsIcon,
   ObjectiveIcon,
   SprintsIcon,
   RoadmapIcon,
-  BellIcon,
+  WorkIcon,
 } from "icons";
 import { NavLink } from "@/components/ui";
 
@@ -25,44 +24,38 @@ export const Navigation = () => {
   const links: MenuItem[] = [
     {
       name: "Home",
-      icon: <HomeIcon className="h-5 w-auto" />,
+      icon: <HomeIcon className="h-[1.3rem] w-auto" />,
       href: "/",
     },
     {
       name: "Reports",
-      icon: <AnalyticsIcon className="h-5 w-auto" />,
+      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
       href: "/reports",
     },
     {
-      name: "Activity",
-      icon: <BellIcon className="h-5 w-auto -rotate-12" strokeWidth={2} />,
-      href: "/notifications",
-    },
-    {
       name: "My Work",
-      icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
+      icon: <WorkIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/my-work",
     },
     {
-      name: "Messages",
-      icon: <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />,
-      href: "/chat",
-      messages: 3,
-    },
-
-    {
       name: "Roadmaps",
-      icon: <RoadmapIcon className="h-5 w-auto" strokeWidth={2} />,
+      icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/roadmaps",
     },
     {
       name: "Objectives",
-      icon: <ObjectiveIcon className="relative left-px h-5 w-auto" />,
+      icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
       href: "/objectives",
     },
     {
-      name: "Current Sprints",
-      icon: <SprintsIcon className="h-5 w-auto" />,
+      name: "Notifications",
+      icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      href: "/notifications",
+      messages: 3,
+    },
+    {
+      name: "Active Milestones",
+      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
       href: "/sprints",
     },
   ];

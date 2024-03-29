@@ -14,6 +14,8 @@ import {
   SprintsIcon,
   StarIcon,
   DocsIcon,
+  ChatIcon,
+  RetroIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
@@ -36,24 +38,19 @@ export const Objective = ({
   const pathname = usePathname();
   const links = [
     {
-      name: "Chat",
-      icon: <StoryIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
-      href: "/objectives/web/stories",
-    },
-    {
       name: "Stories",
-      icon: <StoryIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
+      icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
       href: "/objectives/web/stories",
     },
     {
-      name: "Sprints",
-      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
-      href: "/objectives/web/sprints",
+      name: "Themes",
+      icon: <EpicsIcon className="h-5 w-auto" />,
+      href: "/objectives/web/themes",
     },
     {
-      name: "Epics",
-      icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
-      href: "/objectives/web/epics",
+      name: "Milestones",
+      icon: <SprintsIcon className="h-5 w-auto" />,
+      href: "/objectives/web/milestones",
     },
     {
       name: "Documents",
@@ -61,17 +58,22 @@ export const Objective = ({
       href: "/objectives/web/documents",
     },
     {
-      name: "Settings",
-      icon: <SettingsIcon className="h-5 w-auto" />,
-      href: "/my-stories",
+      name: "Discussions",
+      icon: <ChatIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
+      href: "/objectives/web/discussions",
+    },
+    {
+      name: "Retrospectives",
+      icon: <RetroIcon className="h-5 w-auto" strokeWidth={2} />,
+      href: "/objectives/web/retrospectives",
     },
   ];
 
   return (
-    <Box className="my-1">
+    <Box>
       <Flex
         align="center"
-        className="group h-[2.5rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-50/70 focus:bg-gray-50/70 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
+        className="group h-[2.5rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
         justify="between"
         onClick={() => {
           setIsOpen(!isOpen);
@@ -138,13 +140,13 @@ export const Objective = ({
       </Flex>
       <Flex
         className={cn(
-          "ml-5 h-0 overflow-hidden border-l border-gray-100 pl-2 transition-all duration-300 dark:border-dark-100",
+          "ml-3 h-0 overflow-hidden border-l border-dotted border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-50",
           {
             "mt-2 h-max": isOpen,
           },
         )}
         direction="column"
-        gap={2}
+        gap={1}
       >
         {links.map(({ name, icon, href }) => {
           const isActive =

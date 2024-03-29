@@ -1,14 +1,11 @@
 "use client";
 import { cn } from "lib";
-import { useState } from "react";
 import { Box, Button, Flex } from "ui";
-import { ArrowDownIcon, PlusIcon } from "icons";
-import { NewObjectiveDialog } from "@/components/ui";
+import { ArrowDownIcon, PlusIcon, TeamIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { Objective } from "./objective";
 
 export const Objectives = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     "objectives-dropdown",
     true,
@@ -18,17 +15,17 @@ export const Objectives = () => {
     {
       id: 1,
       icon: "🚀",
-      name: "Website design",
+      name: "Product",
     },
     {
       id: 2,
       icon: "🇦🇫",
-      name: "Data migration",
+      name: "Marketing",
     },
     {
       id: 3,
       icon: "🏀",
-      name: "CRM development",
+      name: "Engineering",
     },
   ];
 
@@ -36,7 +33,7 @@ export const Objectives = () => {
     <Box className="mt-4">
       <Flex
         align="center"
-        className="group h-[2.6rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-50/70 focus:bg-gray-50/70 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
+        className="group mb-1 h-[2.5rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
         justify="between"
         onClick={() => {
           setIsOpen(!isOpen);
@@ -50,10 +47,11 @@ export const Objectives = () => {
         tabIndex={0}
       >
         <span className="flex items-center gap-2 font-medium">
-          My Objectives
+          <TeamIcon className="h-[1.3rem] w-auto" />
+          Workspace Teams
           <ArrowDownIcon
             className={cn(
-              "relative top-[0.2px] h-4 w-auto -rotate-90 text-gray-300/60 transition-transform dark:text-gray",
+              "relative top-[0.2px] h-4 w-auto -rotate-90 transition-transform dark:text-gray",
               {
                 "rotate-0": isOpen,
               },
@@ -65,31 +63,27 @@ export const Objectives = () => {
           className="hidden group-hover:inline"
           color="tertiary"
           leftIcon={<PlusIcon className="h-5 w-auto" />}
-          onClick={() => {
-            setIsDialogOpen(true);
-          }}
           size="sm"
           type="button"
           variant="naked"
         >
-          <span className="sr-only">Add new objective</span>
+          <span className="sr-only">Add new team</span>
         </Button>
       </Flex>
       <Flex
         className={cn(
-          "h-0 max-h-[54vh] overflow-y-auto pb-2 transition-all duration-300",
+          "ml-5 h-0 max-h-[54vh] overflow-hidden overflow-y-auto border-l border-dotted border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-50",
           {
             "h-max": isOpen,
           },
         )}
         direction="column"
+        gap={1}
       >
         {objectives.map(({ id, icon, name }) => (
           <Objective icon={icon} id={id} key={id} name={name} />
         ))}
       </Flex>
-
-      <NewObjectiveDialog isOpen={isDialogOpen} setIsOpen={setIsDialogOpen} />
     </Box>
   );
 };
