@@ -1,12 +1,14 @@
 import type { Icon } from "./types";
 
 export const MoreHorizontalIcon = (props: Icon) => {
+  const { strokeWidth = 4, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
       fill="none"
       height="24"
       viewBox="0 0 24 24"
+      strokeWidth={strokeWidth}
       width="24"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -15,21 +17,18 @@ export const MoreHorizontalIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="4"
       />
       <path
         d="M17.9998 12H18.0088"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="4"
       />
       <path
         d="M5.99981 12H6.00879"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="4"
       />
     </svg>
   );

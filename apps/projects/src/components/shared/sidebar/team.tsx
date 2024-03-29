@@ -89,7 +89,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
         <Flex align="center" gap={1}>
           <ArrowDownIcon
             className={cn(
-              "h-4 w-auto -rotate-90 text-gray-300/80 dark:text-gray",
+              "h-3.5 w-auto -rotate-90 text-gray-300/80 dark:text-gray",
               {
                 "rotate-0": isOpen,
               },
@@ -104,7 +104,10 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
                 })}
                 type="button"
               >
-                <MoreHorizontalIcon className="relative top-[1px] h-4 w-auto text-gray-300/80 dark:text-gray" />
+                <MoreHorizontalIcon
+                  className="relative h-5 w-auto text-gray-300/80 dark:text-gray"
+                  strokeWidth={3}
+                />
                 <span className="sr-only">Objective options</span>
               </button>
             </Menu.Button>

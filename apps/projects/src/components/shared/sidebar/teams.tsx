@@ -44,11 +44,11 @@ export const Teams = () => {
         tabIndex={0}
       >
         <span className="flex items-center gap-2 font-medium">
-          <TeamIcon className="h-[1.3rem] w-auto" />
+          <TeamIcon className="h-5 w-auto opacity-80" />
           Workspace Teams
           <ArrowDownIcon
             className={cn(
-              "relative top-[0.2px] h-4 w-auto -rotate-90 transition-transform dark:text-gray",
+              "relative top-[0.2px] h-3.5 w-auto -rotate-90 transition-transform dark:text-gray",
               {
                 "rotate-0": isOpen,
               },

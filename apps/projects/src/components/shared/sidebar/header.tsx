@@ -132,69 +132,6 @@ export const Header = () => {
         >
           <span className="sr-only">Search</span>
         </Button>
-
-        {/* <Menu>
-          <Menu.Button>
-            <Button
-              className="px-1"
-              color="tertiary"
-              leftIcon={
-                <Avatar
-                  name="Joseph Mukorivo"
-                  size="sm"
-                  src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                />
-              }
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Joseph Mukorivo</span>
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="start" className="w-64 pb-1">
-            <Menu.Group className="mb-3 mt-1 px-4">
-              <Text
-                className="text-[1.05rem]"
-                color="muted"
-                fontWeight="medium"
-                textOverflow="truncate"
-              >
-                josemukorivo@gmail.com
-              </Text>
-            </Menu.Group>
-            <Menu.Separator />
-            <Menu.Group>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href="/profile/josemukorivo"
-                >
-                  <UserIcon className="h-5 w-auto" />
-                  View profile
-                </Link>
-              </Menu.Item>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href="/settings/account"
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <SettingsIcon className="h-5 w-auto" />
-                  Settings
-                </Link>
-              </Menu.Item>
-            </Menu.Group>
-            <Menu.Separator className="mb-1.5" />
-            <Menu.Group>
-              <Menu.Item>
-                <LogoutIcon className="h-5 w-auto text-danger" />
-                Log out
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu> */}
       </Flex>
       <Flex className="mb-3 w-full rounded-lg shadow-sm">
         <Button
@@ -224,24 +161,24 @@ export const Header = () => {
           <Menu.Items align="end" className="w-64 pb-1">
             <Menu.Group className="gap-4 space-y-1">
               <Menu.Item>
-                <NewStoryIcon className="h-[1.1rem] w-auto" />
+                <NewStoryIcon className="h-5 w-auto" />
                 Continue from Draft
               </Menu.Item>
               <Menu.Separator />
               <Menu.Item>
-                <NewStoryIcon className="h-[1.1rem] w-auto" />
+                <NewStoryIcon className="h-5 w-auto" />
                 Create Story
               </Menu.Item>
               <Menu.Item>
-                <EpicsIcon className="h-[1.1rem] w-auto" />
+                <EpicsIcon className="h-5 w-auto" />
                 Create Theme
               </Menu.Item>
               <Menu.Item>
-                <MilestonesIcon className="h-[1.1rem] w-auto" />
+                <MilestonesIcon className="h-5 w-auto" />
                 Create Milestone
               </Menu.Item>
               <Menu.Item>
-                <ObjectiveIcon className="h-[1.1rem] w-auto" />
+                <ObjectiveIcon className="h-5 w-auto" />
                 Create Objective
               </Menu.Item>
             </Menu.Group>
