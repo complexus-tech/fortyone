@@ -1,6 +1,6 @@
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
-import { HTMLAttributes, ComponentType } from "react";
+import { HTMLAttributes, ComponentType, createElement } from "react";
 
 const flex = cva("flex", {
   variants: {
@@ -78,7 +78,7 @@ const flex = cva("flex", {
 });
 
 interface Props extends HTMLAttributes<HTMLElement>, VariantProps<typeof flex> {
-  as?: ComponentType<any>;
+  as?: keyof JSX.IntrinsicElements;
 }
 
 export const Flex = ({
@@ -98,10 +98,9 @@ export const Flex = ({
     flex({ align, justify, direction, gap, gapX, gapY, wrap }),
     className
   );
-
-  return (
-    <Tag className={classes} {...rest}>
-      {children}
-    </Tag>
-  );
+  return createElement(Tag, {
+    className: classes,
+    ...rest,
+    children,
+  });
 };

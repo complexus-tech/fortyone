@@ -1,14 +1,8 @@
-import {
-  CSSProperties,
-  ComponentType,
-  FC,
-  HTMLAttributes,
-  ReactNode,
-} from "react";
+import { CSSProperties, HTMLAttributes, ReactNode, createElement } from "react";
 
 export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
-  as?: ComponentType<any>;
+  as?: keyof JSX.IntrinsicElements;
   style?: CSSProperties;
   html?: string;
   children?: ReactNode;
@@ -28,9 +22,11 @@ export const Box = ({
       }
     : {};
 
-  return (
-    <Tag className={className} style={style} {...rest} {...htmlProps}>
-      {children}
-    </Tag>
-  );
+  return createElement(Tag, {
+    className,
+    style,
+    ...rest,
+    ...htmlProps,
+    children,
+  });
 };

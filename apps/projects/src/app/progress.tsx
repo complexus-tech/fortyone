@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import NProgress from "nprogress";
 
 type PushStateInput = [
-  data: any,
+  data: unknown,
   unused: string,
   url?: string | URL | null | undefined,
 ];
@@ -34,6 +34,7 @@ export const ProgressBar = () => {
 
     mutationObserver.observe(document, { childList: true, subtree: true });
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Proxy is a constructor
     window.history.pushState = new Proxy(window.history.pushState, {
       apply: (target, thisArg, argArray: PushStateInput) => {
         NProgress.done();

@@ -1,5 +1,10 @@
 import { VariantProps, cva } from "cva";
-import { FC, HTMLAttributes, JSXElementConstructor } from "react";
+import {
+  FC,
+  HTMLAttributes,
+  JSXElementConstructor,
+  createElement,
+} from "react";
 
 import { cn } from "lib";
 
@@ -69,8 +74,7 @@ export interface TextProps
       "color"
     >,
     VariantProps<typeof text> {
-  as?: keyof JSX.IntrinsicElements | JSXElementConstructor<any>;
-
+  as?: keyof JSX.IntrinsicElements;
   html?: string;
 }
 
@@ -108,9 +112,11 @@ export const Text = ({
     }),
     className
   );
-  return (
-    <Tag className={classes} {...rest} {...htmlProps}>
-      {children}
-    </Tag>
-  );
+
+  return createElement(Tag, {
+    className: classes,
+    ...rest,
+    ...htmlProps,
+    children,
+  });
 };

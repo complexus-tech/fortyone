@@ -9,7 +9,7 @@ import {
   type ReactElement,
 } from "react";
 
-const button = cva(
+export const buttonVariants = cva(
   "flex w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
   {
     variants: {
@@ -138,7 +138,7 @@ export interface ButtonProps
       ButtonHTMLAttributes<HTMLButtonElement>,
       "color" | "disabled" | "active"
     >,
-    VariantProps<typeof button> {
+    VariantProps<typeof buttonVariants> {
   href?: string;
   loadingText?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
@@ -169,7 +169,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     } = props;
 
     const classes = cn(
-      button({
+      buttonVariants({
         variant,
         color,
         size,

@@ -41,7 +41,7 @@ export const KanbanGroup = ({
   return (
     <List id={status} key={status}>
       {filteredStories.map((story) => (
-        <StoryCard story={story} key={story.id} />
+        <StoryCard key={story.id} story={story} />
       ))}
     </List>
   );

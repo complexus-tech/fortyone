@@ -2,10 +2,10 @@
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
+import type { StoryStatus, Story } from "@/types/story";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { AllStories } from "./all-stories";
-import type { StoryStatus, Story } from "@/types/story";
 
 export const ListUserStories = ({
   stories,
