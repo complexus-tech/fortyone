@@ -18,7 +18,6 @@ export const Sidebar = () => {
           className="px-3 text-[0.95rem] font-medium transition duration-200 ease-linear dark:bg-opacity-20 hover:dark:bg-opacity-30"
           rightIcon={<ArrowRightIcon className="h-3.5 w-auto" />}
           rounded="full"
-          size="sm"
         >
           Upgrade plan
         </Button>
