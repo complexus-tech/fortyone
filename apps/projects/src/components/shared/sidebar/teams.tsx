@@ -48,7 +48,7 @@ export const Teams = () => {
           Workspace Teams
           <ArrowDownIcon
             className={cn(
-              "relative top-[0.2px] h-3.5 w-auto -rotate-90 transition-transform dark:text-gray",
+              "relative top-[0.2px] h-3.5 w-auto -rotate-90 transition-transform",
               {
                 "rotate-0": isOpen,
               },

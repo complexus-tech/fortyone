@@ -12,7 +12,10 @@ export const StoryStatusIcon = ({
     <>
       {status === "Backlog" && (
         <svg
-          className={cn("h-[1.15rem] w-auto text-gray", className)}
+          className={cn(
+            "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+            className,
+          )}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -35,7 +38,10 @@ export const StoryStatusIcon = ({
       )}
       {status === "Todo" && (
         <svg
-          className={cn("h-[1.15rem] w-auto text-gray", className)}
+          className={cn(
+            "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+            className,
+          )}
           fill="none"
           height="24"
           stroke="currentColor"

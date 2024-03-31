@@ -52,16 +52,11 @@ export const Header = () => {
           >
             <ArrowDownIcon className="h-4 w-auto" />
           </Button>
-          <Button
-            className="aspect-square"
-            color="tertiary"
-            rounded="lg"
-            size="sm"
-          >
+          <Button className="aspect-square" color="tertiary" size="sm">
             <StarIcon className="h-4 w-auto" />
             <span className="sr-only">Favourite</span>
           </Button>
-          <Button className="aspect-square" rounded="lg" size="sm">
+          <Button className="aspect-square" color="tertiary" size="sm">
             <BellIcon className="h-5 w-auto" />
             <span className="sr-only">Subscribe</span>
           </Button>

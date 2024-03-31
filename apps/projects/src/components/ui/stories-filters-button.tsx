@@ -32,14 +32,8 @@ export const StoriesFiltersButton = () => {
   };
 
   const [filter, setFilter] = useLocalStorage("filters", initialFilter);
-  const {
-    groupBy,
-    orderBy,
-    storyType,
-    showEmptyGroups,
-    showSubStories,
-    displayColumns,
-  } = filter!;
+  const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
+    filter!;
 
   const allColumns = [
     "Status",
@@ -55,7 +49,6 @@ export const StoriesFiltersButton = () => {
 
   const groupByOptions = ["Status", "Assignee", "Priority"];
   const orderByOptions = ["Priority", "Due date", "Created", "Updated"];
-  const storyTypes = ["Active", "Backlog"];
 
   const isDefaultSetup =
     JSON.stringify(filter) === JSON.stringify(initialFilter);
@@ -91,31 +84,6 @@ export const StoriesFiltersButton = () => {
             <Select.Content>
               <Select.Group>
                 {groupByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </Flex>
-        <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
-          <Text color="muted">Story type</Text>
-          <Select
-            onValueChange={(value) => {
-              setFilter({
-                ...filter!,
-                storyType: value,
-              });
-            }}
-            value={storyType}
-          >
-            <Select.Trigger className="w-32">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Group>
-                {storyTypes.map((option) => (
                   <Select.Option key={option} value={option}>
                     {option}
                   </Select.Option>
