@@ -66,11 +66,11 @@ export const StoriesFiltersButton = () => {
         <Button
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-          rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
+          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"
         >
-          Display
+          View
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem]">

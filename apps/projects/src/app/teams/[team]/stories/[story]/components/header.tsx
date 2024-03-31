@@ -44,7 +44,7 @@ export const Header = () => {
             <ArrowUpIcon className="h-4 w-auto" />
           </Button>
           <Button
-            className="mr-2 aspect-square"
+            className="mr-10 aspect-square"
             color="tertiary"
             disabled
             rounded="xl"
@@ -53,20 +53,17 @@ export const Header = () => {
             <ArrowDownIcon className="h-4 w-auto" />
           </Button>
           <Button
-            className="px-3"
+            className="aspect-square"
             color="tertiary"
-            leftIcon={<StarIcon className="h-4 w-auto" />}
+            rounded="lg"
             size="sm"
-            variant="outline"
           >
-            Favourite
+            <StarIcon className="h-4 w-auto" />
+            <span className="sr-only">Favourite</span>
           </Button>
-          <Button
-            className="px-2"
-            leftIcon={<BellIcon className="h-[1.15rem] w-auto" />}
-            size="sm"
-          >
-            Subscribe
+          <Button className="aspect-square" rounded="lg" size="sm">
+            <BellIcon className="h-5 w-auto" />
+            <span className="sr-only">Subscribe</span>
           </Button>
         </Flex>
       </Flex>

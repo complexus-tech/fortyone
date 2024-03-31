@@ -1,10 +1,13 @@
 import type { Icon } from "./types";
 
 export const SearchIcon = (props: Icon) => {
+  const { strokeWidth = 2, ...rest } = props;
   return (
     <svg
-      {...props}
-      fill="none"
+      {...rest}
+      fill="currentColor"
+      fillOpacity={0.1}
+      strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
@@ -15,13 +18,11 @@ export const SearchIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
       <path
         d="M20 11C20 6.02944 15.9706 2 11 2C6.02944 2 2 6.02944 2 11C2 15.9706 6.02944 20 11 20C15.9706 20 20 15.9706 20 11Z"
         stroke="currentColor"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   );

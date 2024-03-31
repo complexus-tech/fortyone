@@ -8,7 +8,7 @@ import {
 
 import { cn } from "lib";
 
-const text = cva("text-gray-300 dark:text-gray-200", {
+const text = cva("text-gray dark:text-gray-200", {
   variants: {
     align: {
       left: "text-left",
@@ -17,7 +17,7 @@ const text = cva("text-gray-300 dark:text-gray-200", {
     },
     color: {
       primary: "text-primary dark:text-primary",
-      muted: "text-gray-250 dark:text-gray-200/80",
+      muted: "text-gray/80 dark:text-gray-200/80",
       danger: "text-danger dark:text-danger",
       black: "text-gray-300",
       white: "text-gray-200",

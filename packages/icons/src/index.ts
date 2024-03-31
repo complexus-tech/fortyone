@@ -72,3 +72,4 @@ export * from "./chat";
 export * from "./retro";
 export * from "./work";
 export * from "./team";
+export * from "./whiteboard";

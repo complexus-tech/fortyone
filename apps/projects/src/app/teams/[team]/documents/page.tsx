@@ -126,7 +126,7 @@ export default function Page(): JSX.Element {
               {templates.map(({ id, name }) => (
                 <Flex
                   align="center"
-                  className="w-[200px] shrink-0 cursor-pointer rounded-lg border border-gray-100/60 bg-gray-50/40 px-3 py-5 shadow-sm transition duration-200 ease-linear dark:border-dark-100 dark:bg-dark-200/40 dark:hover:bg-dark-200/60"
+                  className="w-[200px] shrink-0 cursor-pointer rounded-lg border-[0.5px] border-gray-100 bg-gray-50/20 px-3 py-5 shadow-sm transition duration-200 ease-linear dark:border-dark-100 dark:bg-dark-200/40 dark:hover:bg-dark-200/60"
                   gap={3}
                   key={id}
                 >
@@ -155,7 +155,7 @@ export default function Page(): JSX.Element {
             <Tabs.Tab value="archived">Archive</Tabs.Tab>
           </Tabs.List>
           <Tabs.Panel value="my-docs">
-            <Box className="border-t border-gray-100/60 dark:border-dark-100/80">
+            <Box className="border-t-[0.5px] border-gray-100/60 dark:border-dark-100/80">
               {documents.map(({ id, name }) => (
                 <Document key={id} name={name} />
               ))}

@@ -25,10 +25,7 @@ export const Theme = ({ name }: { name: string }) => {
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
-        <Link
-          className="flex items-center gap-1"
-          href="/objectives/web/stories"
-        >
+        <Link className="flex items-center gap-1" href="/teams/web/stories">
           <Tooltip title="Objective code: WEB">
             <Text className="w-[55px] truncate text-left" color="muted">
               WEB-01

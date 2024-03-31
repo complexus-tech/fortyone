@@ -8,9 +8,13 @@
 
 body,
 html {
-  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[12.5px] text-gray-300 antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
+  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[12.5px] text-gray antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
 }
 
+svg {
+  shape-rendering: auto;
+  vector-effect: non-scaling-stroke;
+}
 /* Chrome, Safari, Edge */
 *::-webkit-scrollbar {
   width: 3px;
@@ -121,7 +125,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 #nprogress .bar {
-  @apply fixed left-0 top-0 h-[2px] w-full bg-primary;
+  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
   z-index: 19031 !important;
 }
 

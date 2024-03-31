@@ -99,7 +99,7 @@ export const Activities = () => {
     <Box>
       <Text
         as="h4"
-        className="mb-6 flex items-center gap-1"
+        className="mb-4 flex items-center gap-1"
         fontWeight="medium"
       >
         <ClockIcon className="h-5 w-auto" />
@@ -137,7 +137,7 @@ export const Activities = () => {
         <Tabs.Panel value="all">
           <Flex className="relative" direction="column" gap={4}>
             <Box
-              className="pointer-events-none absolute left-4 top-0 z-0 border-l-[1.5px] border-gray-100 dark:border-dark-100/70"
+              className="pointer-events-none absolute left-4 top-0 z-0 border-l border-gray-200 dark:border-dark-100/70"
               style={{ height: 36 * activites.length + 45 }}
             />
             {activites.map((activity) => (
@@ -148,7 +148,7 @@ export const Activities = () => {
                 <Avatar name="Joseph Mukorivo" size="xs" />
               </Box>
               <Flex
-                className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
+                className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
                 direction="column"
                 gap={2}
                 justify="between"

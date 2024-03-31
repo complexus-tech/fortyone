@@ -1,4 +1,4 @@
-import { Box, Container, Divider, TextEditor } from "ui";
+import { Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -10,11 +10,13 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import {
+  Header,
   Activities,
   Attachments,
   Reactions,
   SubstoriesButton,
-} from "../components";
+} from "@/app/teams/[team]/stories/[story]/components";
+import { BodyContainer } from "@/components/shared";
 
 export const MainDetails = () => {
   const content = `
@@ -57,21 +59,24 @@ export const MainDetails = () => {
     editable: true,
   });
   return (
-    <Box className="h-full overflow-y-auto pb-8">
-      <Container className="pt-7">
-        <TextEditor
-          asTitle
-          className="relative -left-1 text-3xl font-medium"
-          editor={titleEditor}
-        />
-        <TextEditor editor={editor} />
-        <Reactions />
-        <SubstoriesButton />
-        <Divider className="my-4" />
-        <Attachments />
-        <Divider className="my-6" />
-        <Activities />
-      </Container>
-    </Box>
+    <>
+      <Header />
+      <BodyContainer className="overflow-y-auto pb-8">
+        <Container className="pt-7">
+          <TextEditor
+            asTitle
+            className="relative -left-1 text-3xl font-medium"
+            editor={titleEditor}
+          />
+          <TextEditor editor={editor} />
+          <Reactions />
+          <SubstoriesButton />
+          <Divider className="my-4" />
+          <Attachments />
+          <Divider className="my-6" />
+          <Activities />
+        </Container>
+      </BodyContainer>
+    </>
   );
 };

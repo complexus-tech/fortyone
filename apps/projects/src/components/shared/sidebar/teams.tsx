@@ -44,7 +44,7 @@ export const Teams = () => {
         tabIndex={0}
       >
         <span className="flex items-center gap-2 font-medium">
-          <TeamIcon className="h-5 w-auto opacity-80" />
+          <TeamIcon className="h-5 w-auto" />
           Workspace Teams
           <ArrowDownIcon
             className={cn(

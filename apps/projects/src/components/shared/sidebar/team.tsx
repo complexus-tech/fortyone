@@ -16,6 +16,7 @@ import {
   DocsIcon,
   ChatIcon,
   RetroIcon,
+  WhiteboardIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
@@ -59,6 +60,11 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       href: "/teams/web/discussions",
     },
     {
+      name: "Whiteboards",
+      icon: <WhiteboardIcon className="h-5 w-auto" strokeWidth={2} />,
+      href: "/teams/web/retrospectives",
+    },
+    {
       name: "Retrospectives",
       icon: <RetroIcon className="h-5 w-auto" strokeWidth={2} />,
       href: "/teams/web/retrospectives",
@@ -88,12 +94,9 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
         </span>
         <Flex align="center" gap={1}>
           <ArrowDownIcon
-            className={cn(
-              "h-3.5 w-auto -rotate-90 text-gray-300/80 dark:text-gray",
-              {
-                "rotate-0": isOpen,
-              },
-            )}
+            className={cn("h-3.5 w-auto -rotate-90", {
+              "rotate-0": isOpen,
+            })}
             strokeWidth={3.5}
           />
           <Menu>
@@ -105,7 +108,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
                 type="button"
               >
                 <MoreHorizontalIcon
-                  className="relative h-5 w-auto text-gray-300/80 dark:text-gray"
+                  className="relative h-5 w-auto"
                   strokeWidth={3}
                 />
                 <span className="sr-only">Objective options</span>

@@ -4,7 +4,7 @@ import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 
 export const Sidebar = () => {
   return (
-    <Box className="py-8">
+    <Box className="py-6">
       <Flex align="center" className="mb-6 px-6" justify="between">
         <Text className="flex items-center gap-2" fontSize="lg">
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />

@@ -10,7 +10,7 @@ import {
 } from "react";
 
 export const buttonVariants = cva(
-  "flex w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
+  "flex text-gray dark:text-gray-200 w-max items-center border-[0.5px] gap-2 transition duration-200 ease-linear focus:outline-0",
   {
     variants: {
       variant: {
@@ -35,7 +35,7 @@ export const buttonVariants = cva(
         warning:
           "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
         tertiary:
-          "text-gray-300 dark:text-gray-200 dark:border-dark-50/50 dark:bg-dark-200/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-50 active:bg-gray-50 dark:hover:bg-dark-50/80",
+          "dark:border-dark-50/50 dark:bg-dark-200/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
@@ -86,7 +86,7 @@ export const buttonVariants = cva(
       {
         variant: "outline",
         color: "tertiary",
-        className: "bg-gray-50/10 border-gray-100/80",
+        className: "bg-white border-gray-100",
       },
       // Naked variant
       {
@@ -115,7 +115,7 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-opacity-100 text-black",
+        className: "bg-opacity-100 text-gray",
       },
       {
         active: true,

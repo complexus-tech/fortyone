@@ -40,7 +40,7 @@ const Root = (props: RootProps) => {
   return (
     <div
       className={cn(
-        "border-[1.5px] border-dashed hover:border-primary/40 transition dark:hover:border-primary/40 border-gray-200 bg-gray-50/50 dark:border-dark-100 rounded-xl dark:bg-dark-200/40 h-24 cursor-pointer flex justify-center items-center p-4",
+        "border-[1px] border-dashed hover:border-primary/80 transition dark:hover:border-primary/40 border-gray-200 bg-gray-50/50 dark:border-dark-100 rounded-xl dark:bg-dark-200/40 h-24 cursor-pointer flex justify-center items-center p-4",
         {
           "bg-gray-50 dark:bg-dark-200/80 hover:border-primary/40 transition dark:hover:border-primary/40":
             isDragActive,

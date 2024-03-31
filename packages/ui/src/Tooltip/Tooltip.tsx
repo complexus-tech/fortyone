@@ -21,7 +21,7 @@ export const Tooltip = ({
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             className={cn(
-              "dark:text-gray-200 z-50 text-gray-300 border border-gray-100 bg-white/60 px-3 text-sm py-[0.35rem] dark:border-dark-100/60 font-medium dark:bg-dark-200/80 backdrop-blur rounded-lg",
+              "dark:text-gray-200 z-50 text-gray border border-gray-100 bg-white/80 px-3 text-sm py-[0.35rem] dark:border-dark-100/60 font-medium dark:bg-dark-200/80 backdrop-blur rounded-lg",
               className
             )}
             sideOffset={sideOffset}

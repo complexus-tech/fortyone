@@ -36,7 +36,7 @@ const SideBar = ({
     <>
       {isExpanded ? (
         <>
-          <ResizablePanel.Handle className="bg-gray-100/70 dark:bg-dark-100" />
+          <ResizablePanel.Handle />
           <ResizablePanel.Panel defaultSize={30} maxSize={40} minSize={26}>
             <BodyContainer className={className}>{children}</BodyContainer>
           </ResizablePanel.Panel>

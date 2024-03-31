@@ -126,7 +126,9 @@ export const Header = () => {
           align="center"
           className="px-[0.5rem] shadow"
           color="tertiary"
-          leftIcon={<SearchIcon className="h-[0.95rem] w-auto" />}
+          leftIcon={
+            <SearchIcon className="h-[0.95rem] w-auto" strokeWidth={3} />
+          }
           size="sm"
           variant="outline"
         >

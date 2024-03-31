@@ -1,11 +1,13 @@
 import type { Icon } from "./types";
 
 export const CheckIcon = (props: Icon) => {
+  const { strokeWidth = 2, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
       fill="none"
       height="24"
+      strokeWidth={strokeWidth}
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
@@ -15,7 +17,6 @@ export const CheckIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   );
