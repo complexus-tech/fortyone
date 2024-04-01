@@ -8,7 +8,7 @@ const config: Omit<Config, "content"> = {
       current: "currentColor",
       primary: "#EA6060",
       secondary: "#002F61",
-      black: "#040404",
+      black: "#0c0c0c",
       white: "#ffffff",
       success: "#22c55e",
       warning: "#eab308",
