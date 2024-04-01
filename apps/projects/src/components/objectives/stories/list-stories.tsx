@@ -60,9 +60,9 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
           <Tabs defaultValue="all">
             <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 backdrop-blur-lg dark:border-dark-100">
               <Tabs.List>
+                <Tabs.Tab value="all">All stories</Tabs.Tab>
                 <Tabs.Tab value="active">Active</Tabs.Tab>
                 <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
-                <Tabs.Tab value="all">All stories</Tabs.Tab>
               </Tabs.List>
             </Box>
             <Tabs.Panel value="all">
