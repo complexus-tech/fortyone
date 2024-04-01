@@ -1,7 +1,7 @@
 "use client";
 import { BreadCrumbs, Flex, Box, Tabs } from "ui";
 import { StoryIcon } from "icons";
-import type { Story, StoryStatus } from "@/types/story";
+import type { Story } from "@/types/story";
 import { useLocalStorage } from "@/hooks";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
@@ -15,13 +15,7 @@ import {
 } from "@/components/ui";
 import { Sidebar } from "./sidebar";
 
-export const ListStories = ({
-  stories,
-  statuses,
-}: {
-  stories: Story[];
-  statuses: StoryStatus[];
-}) => {
+export const ListStories = ({ stories }: { stories: Story[] }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:stories:layout",
     "kanban",
@@ -30,6 +24,9 @@ export const ListStories = ({
     "objective:stories:expanded",
     true,
   );
+
+  const backlog = stories.filter((story) => story.status === "Backlog");
+  const activeIssues = stories.filter((story) => story.status !== "Backlog");
 
   return (
     <>
@@ -63,16 +60,15 @@ export const ListStories = ({
           <Tabs defaultValue="all">
             <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 backdrop-blur-lg dark:border-dark-100">
               <Tabs.List>
-                <Tabs.Tab value="all">All stories</Tabs.Tab>
                 <Tabs.Tab value="active">Active</Tabs.Tab>
                 <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
+                <Tabs.Tab value="all">All stories</Tabs.Tab>
               </Tabs.List>
             </Box>
             <Tabs.Panel value="all">
               <StoriesBoard
                 className="h-[calc(100vh-7.7rem)]"
                 layout={layout}
-                statuses={statuses}
                 stories={stories}
               />
             </Tabs.Panel>
@@ -80,22 +76,20 @@ export const ListStories = ({
               <StoriesBoard
                 className="h-[calc(100vh-7.7rem)]"
                 layout={layout}
-                statuses={statuses}
-                stories={stories}
+                stories={activeIssues}
               />
             </Tabs.Panel>
             <Tabs.Panel value="backlog">
               <StoriesBoard
                 className="h-[calc(100vh-7.7rem)]"
                 layout={layout}
-                statuses={statuses}
-                stories={stories}
+                stories={backlog}
               />
             </Tabs.Panel>
           </Tabs>
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-          <Sidebar />
+          <Sidebar stories={stories} />
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
     </>

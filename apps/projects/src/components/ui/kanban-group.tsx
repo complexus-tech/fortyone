@@ -23,9 +23,9 @@ const List = ({
     <Box>
       <div
         className={cn(
-          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
+          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
-            "bg-gray-100/40 dark:bg-dark-200/60": isOver,
+            "bg-gray-100/40 dark:bg-dark-300/40": isOver,
           },
         )}
         ref={setNodeRef}
@@ -62,8 +62,8 @@ export const KanbanGroup = ({
         <StoryCard key={story.id} story={story} />
       ))}
       <Button
-        className="relative w-[340px]"
-        color="primary"
+        className="relative min-h-[2.35rem] w-[340px]"
+        color="tertiary"
         onClick={() => {
           setIsOpen(true);
         }}

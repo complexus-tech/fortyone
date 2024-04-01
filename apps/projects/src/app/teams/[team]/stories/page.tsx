@@ -1,4 +1,4 @@
-import type { Story, StoryStatus } from "@/types/story";
+import type { Story} from "@/types/story";
 import { ListStories } from "@/components/objectives/stories/list-stories";
 
 export default function Page() {
@@ -56,19 +56,19 @@ export default function Page() {
     {
       id: 9,
       priority: "High",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
       id: 10,
       priority: "Urgent",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
       id: 11,
       priority: "Medium",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
@@ -178,19 +178,19 @@ export default function Page() {
     {
       id: 29,
       priority: "High",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
       id: 30,
       priority: "Urgent",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
       id: 31,
       priority: "Medium",
-      status: "Testing",
+      status: "Backlog",
       title: "These stories are being tested by the QA team.",
     },
     {
@@ -218,13 +218,6 @@ export default function Page() {
       title: "These stories are not assigned to any sprint.",
     },
   ];
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
-  return <ListStories statuses={statuses} stories={stories} />;
+
+  return <ListStories stories={stories} />;
 }

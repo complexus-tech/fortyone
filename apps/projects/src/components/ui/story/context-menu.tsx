@@ -25,9 +25,7 @@ export const contextMenu = [
     options: [
       {
         label: "Status",
-        icon: (
-          <StoryStatusIcon className="text-gray-300/70 dark:text-gray-200" />
-        ),
+        icon: <StoryStatusIcon className="text-gray dark:text-gray-200" />,
         subMenu: [
           {
             label: "Backlog",
@@ -95,7 +93,7 @@ export const contextMenu = [
         label: "Priority",
         icon: (
           <PriorityIcon
-            className="text-gray-300/70 dark:text-gray-200"
+            className="text-gray dark:text-gray-200"
             priority="High"
           />
         ),

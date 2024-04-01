@@ -21,7 +21,7 @@ export const buttonVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-lg",
+        md: "rounded-[0.45rem]",
         lg: "rounded-xl",
         xl: "rounded-3xl",
         full: "rounded-full",

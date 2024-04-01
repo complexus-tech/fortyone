@@ -6,7 +6,7 @@ export const SearchIcon = (props: Icon) => {
     <svg
       {...rest}
       fill="currentColor"
-      fillOpacity={0.1}
+      fillOpacity={0.05}
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"

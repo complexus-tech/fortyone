@@ -22,7 +22,7 @@ const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-300/60 dark:text-gray-200 backdrop-blur text-gray-300 z-50 border border-gray-100 dark:border-dark-200 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2",
+  "bg-white/80 dark:bg-dark-300/60 dark:text-gray-200 backdrop-blur text-gray z-50 border-[0.5px] border-gray-100 dark:border-dark-100 w-max shadow-lg shadow-dark/10 dark:shadow-dark/20 mt-1 py-2",
   {
     variants: {
       rounded: {
@@ -92,7 +92,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.Item
     className={cn(
-      "flex gap-2 items-center select-none focus:dark:bg-dark-100 hover:dark:bg-dark-100 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "flex gap-2 items-center select-none focus:dark:bg-dark-50 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-[0.45rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
         "bg-gray-50/80 dark:bg-dark-100": active,
       },
@@ -113,7 +113,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.SubTrigger
     className={cn(
-      "flex gap-2 items-center select-none data-[state=open]:bg-gray-50/80 data-[state=open]:dark:bg-dark-100 focus:dark:bg-dark-100 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-2 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "flex gap-2 items-center select-none data-[state=open]:bg-gray-50/80 data-[state=open]:dark:bg-dark-50 focus:dark:bg-dark-50 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
         "bg-gray-50/80 dark:bg-dark-100": active,
       },
@@ -141,7 +141,7 @@ const Separator = forwardRef<
 >(({ className, ...rest }, ref) => (
   <ContextMenuPrimitive.Separator
     className={cn(
-      "border-gray-100 dark:border-dark-100 border-b my-3",
+      "border-gray-100 dark:border-dark-100 border-b-[0.5px] my-3",
       className
     )}
     ref={ref}

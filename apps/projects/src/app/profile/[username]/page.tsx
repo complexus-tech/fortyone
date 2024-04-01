@@ -1,5 +1,5 @@
 import { ListUserStories } from "@/components/profile/list-stories";
-import type { Story, StoryStatus } from "@/types/story";
+import type { Story } from "@/types/story";
 
 export default function Page() {
   const stories: Story[] = [
@@ -218,19 +218,6 @@ export default function Page() {
       title: "These stories are not assigned to any sprint.",
     },
   ];
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
-  return (
-    <ListUserStories
-      statuses={statuses}
-      stories={stories}
-      user="josemukorivo"
-    />
-  );
+
+  return <ListUserStories stories={stories} user="josemukorivo" />;
 }

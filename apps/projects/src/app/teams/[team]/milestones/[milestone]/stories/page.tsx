@@ -1,4 +1,4 @@
-import type { Story, StoryStatus } from "@/types/story";
+import type { Story } from "@/types/story";
 import { ListStories } from "./list-stories";
 
 export default function Page() {
@@ -218,13 +218,6 @@ export default function Page() {
       title: "These stories are not assigned to any sprint.",
     },
   ];
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
-  return <ListStories statuses={statuses} stories={stories} />;
+
+  return <ListStories stories={stories} />;
 }

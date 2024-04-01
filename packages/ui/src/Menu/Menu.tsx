@@ -24,7 +24,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-300/60 backdrop-blur z-50 border border-gray-100 dark:border-dark-100 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
+  "bg-white/80 dark:bg-dark-300/60 backdrop-blur z-50 border-[0.5px] border-gray-50 dark:border-dark-100 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
   {
     variants: {
       rounded: {
@@ -127,7 +127,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <div className="flex items-center gap-1">
       <SearchIcon
-        className="h-[1.15rem] w-auto relative -left-1 text-gray"
+        className="h-[1.15rem] w-auto relative -left-1 text-gray dark:text-gray-300"
         strokeWidth={2.5}
       />
       <input

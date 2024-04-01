@@ -7,7 +7,7 @@ import { Teams } from "./teams";
 
 export const Sidebar = () => {
   return (
-    <Box className="flex h-screen flex-col justify-between bg-gradient-to-br from-white via-gray-50 via-30% to-gray-50 px-4 pb-4 dark:from-[#040404] dark:to-[#121212]">
+    <Box className="flex h-screen flex-col justify-between bg-gray-100/50 px-4 pb-4 dark:bg-black">
       <Box>
         <Header />
         <Navigation />

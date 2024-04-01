@@ -43,15 +43,9 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import type { Story, StoryStatus } from "@/types/story";
+import type { Story } from "@/types/story";
 
-export const ListStories = ({
-  stories,
-  statuses,
-}: {
-  stories: Story[];
-  statuses: StoryStatus[];
-}) => {
+export const ListStories = ({ stories }: { stories: Story[] }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:milestones:layout",
     "kanban",
@@ -125,7 +119,7 @@ export const ListStories = ({
       </HeaderContainer>
       <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <StoriesBoard layout={layout} statuses={statuses} stories={stories} />
+          <StoriesBoard layout={layout} stories={stories} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Box className="py-6">

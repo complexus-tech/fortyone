@@ -1,8 +1,10 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
 import { StoryIcon } from "icons";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
+import type { Story } from "@/types/story";
 
-export const Sidebar = () => {
+export const Sidebar = ({ stories }: { stories: Story[] }) => {
+  const totalStories = stories.length;
   return (
     <Box className="py-8">
       <Flex align="center" className="mb-6 px-6" justify="between">
@@ -51,7 +53,7 @@ export const Sidebar = () => {
                 </Flex>
                 <Flex align="center" gap={2}>
                   <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
+                  <Text color="muted">25% of {totalStories}</Text>
                 </Flex>
               </RowWrapper>
             ))}
