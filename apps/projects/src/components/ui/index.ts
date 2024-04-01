@@ -18,7 +18,7 @@ export * from "./layout-switcher";
 export * from "./side-details-switch";
 export * from "./board-divided-panel";
 export * from "./logo";
-export * from "./stories-filters-button";
+export * from "./stories-view-options-button";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";

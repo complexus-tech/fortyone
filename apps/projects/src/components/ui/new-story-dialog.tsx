@@ -27,7 +27,7 @@ import {
   PlusIcon,
   TagsIcon,
 } from "icons";
-import type { StoryStatus } from "@/types/story";
+import type { StoryPriority, StoryStatus } from "@/types/story";
 import { StatusesMenu } from "./story/statuses-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
@@ -37,10 +37,12 @@ export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
   status = "Backlog",
+  priority = "No Priority",
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   status?: StoryStatus;
+  priority?: StoryPriority;
 }) => {
   const titleEditor = useEditor({
     extensions: [
@@ -121,15 +123,17 @@ export const NewStoryDialog = ({
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<PriorityIcon className="h-4" />}
+                  leftIcon={
+                    <PriorityIcon className="h-4" priority={priority} />
+                  }
                   size="xs"
                   type="button"
                   variant="outline"
                 >
-                  No Priority
+                  {priority}
                 </Button>
               </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items />
+              <PrioritiesMenu.Items priority={priority} />
             </PrioritiesMenu>
             <DatePicker>
               <DatePicker.Trigger>

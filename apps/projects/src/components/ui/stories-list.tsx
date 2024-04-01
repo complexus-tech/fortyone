@@ -1,29 +1,13 @@
-"use client";
-import { useDroppable } from "@dnd-kit/core";
-import { cn } from "lib";
+import { Box } from "ui";
 import type { Story as StoryType } from "@/types/story";
 import { StoryRow } from "./story/row";
 
-export const StoriesList = ({
-  stories,
-  id,
-}: {
-  stories: StoryType[];
-  id: string | number;
-}) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id,
-  });
+export const StoriesList = ({ stories }: { stories: StoryType[] }) => {
   return (
-    <div
-      className={cn("border-0 border-transparent transition", {
-        "border border-primary": isOver,
-      })}
-      ref={setNodeRef}
-    >
+    <Box>
       {stories.map((story) => (
         <StoryRow key={story.id} story={story} />
       ))}
-    </div>
+    </Box>
   );
 };

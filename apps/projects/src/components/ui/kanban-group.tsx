@@ -1,9 +1,13 @@
 "use client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
-import type { Story, StoryStatus } from "@/types/story";
+import { Box, Button } from "ui";
+import { PlusIcon } from "icons";
+import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryCard } from "./story/card";
+import type { ViewOptionsGroupBy } from "./stories-view-options-button";
+import { NewStoryDialog } from "./new-story-dialog";
 
 const List = ({
   children,
@@ -16,33 +20,65 @@ const List = ({
     id,
   });
   return (
-    <div
-      className={cn(
-        "flex h-full flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
-        {
-          "bg-white opacity-60 dark:bg-dark-200/60": isOver,
-        },
-      )}
-      ref={setNodeRef}
-    >
-      {children}
-    </div>
+    <Box>
+      <div
+        className={cn(
+          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-lg pb-6 transition",
+          {
+            "bg-gray-100/40 dark:bg-dark-200/60": isOver,
+          },
+        )}
+        ref={setNodeRef}
+      >
+        {children}
+      </div>
+    </Box>
   );
 };
 
 export const KanbanGroup = ({
   stories,
   status,
+  priority,
+  groupBy = "Status",
 }: {
   stories: Story[];
-  status: StoryStatus;
+  status?: StoryStatus;
+  priority?: StoryPriority;
+  groupBy: ViewOptionsGroupBy;
 }) => {
-  const filteredStories = stories.filter((story) => story.status === status);
+  const [isOpen, setIsOpen] = useState(false);
+  const filteredStories =
+    groupBy === "Status"
+      ? stories.filter((story) => story.status === status)
+      : stories.filter((story) => story.priority === priority);
+
   return (
-    <List id={status} key={status}>
+    <List
+      id={(groupBy === "Status" ? status : priority) as string}
+      key={groupBy === "Status" ? status : priority}
+    >
       {filteredStories.map((story) => (
         <StoryCard key={story.id} story={story} />
       ))}
+      <Button
+        className="relative w-[340px]"
+        color="primary"
+        onClick={() => {
+          setIsOpen(true);
+        }}
+        size="sm"
+        variant="naked"
+      >
+        <PlusIcon className="relative -top-[0.3px] h-[1.15rem] w-auto" /> New
+        Story
+      </Button>
+      <NewStoryDialog
+        isOpen={isOpen}
+        priority={priority}
+        setIsOpen={setIsOpen}
+        status={status}
+      />
     </List>
   );
 };

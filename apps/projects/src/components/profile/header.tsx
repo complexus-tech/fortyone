@@ -4,7 +4,7 @@ import { UserIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
-  StoriesFiltersButton,
+  StoriesViewOptionsButton,
   LayoutSwitcher,
   SideDetailsSwitch,
 } from "@/components/ui";
@@ -37,7 +37,7 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesFiltersButton />
+        <StoriesViewOptionsButton />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}

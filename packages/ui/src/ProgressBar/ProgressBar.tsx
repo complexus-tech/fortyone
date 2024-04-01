@@ -11,7 +11,7 @@ export const ProgressBar = ({
   return (
     <Box
       className={cn(
-        "h-2 w-full rounded-full bg-gray-100/50 dark:bg-dark-100",
+        "h-1 w-full rounded-full bg-gray-100/50 dark:bg-dark-100",
         className
       )}
     >

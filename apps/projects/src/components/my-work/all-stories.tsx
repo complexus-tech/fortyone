@@ -1,15 +1,13 @@
 import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import type { StoryStatus, Story } from "@/types/story";
+import type { Story } from "@/types/story";
 
 export const AllStories = ({
   stories,
-  statuses,
   layout,
 }: {
   stories: Story[];
-  statuses: StoryStatus[];
   layout: StoriesLayout;
 }) => {
   return (
@@ -26,7 +24,6 @@ export const AllStories = ({
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
-            statuses={statuses}
             stories={stories}
           />
         </Tabs.Panel>
@@ -34,7 +31,6 @@ export const AllStories = ({
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
-            statuses={statuses}
             stories={stories}
           />
         </Tabs.Panel>
@@ -42,7 +38,6 @@ export const AllStories = ({
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
-            statuses={statuses}
             stories={stories}
           />
         </Tabs.Panel>

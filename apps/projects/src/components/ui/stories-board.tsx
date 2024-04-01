@@ -2,15 +2,14 @@
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
-import { cn } from "lib";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import type { Story, StoryStatus } from "@/types/story";
-import { BodyContainer } from "../shared/body";
+import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { KanbanBoard } from "./kanban-board";
-import { StoriesGroup } from "./stories-group";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
+import type { ViewOptionsGroupBy } from "./stories-view-options-button";
+import { ListBoard } from "./list-board";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -23,6 +22,7 @@ const StoryOverlay = ({
 }) => {
   return (
     <DragOverlay
+      className="pointer-events-none"
       dropAnimation={{
         duration: 300,
         easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
@@ -30,7 +30,7 @@ const StoryOverlay = ({
     >
       {layout === "kanban" ? (
         <StoryCard
-          className="border-gray-200 shadow-lg dark:border-dark-50/60 dark:shadow-dark"
+          className="border-gray-100 shadow-lg dark:border-dark-50/60 dark:shadow-dark"
           story={story!}
         />
       ) : (
@@ -53,13 +53,13 @@ const StoryOverlay = ({
 export const StoriesBoard = ({
   layout,
   stories,
-  statuses,
   className,
+  groupBy = "Priority",
 }: {
   layout: StoriesLayout;
   stories: Story[];
-  statuses: StoryStatus[];
   className?: string;
+  groupBy?: ViewOptionsGroupBy;
 }) => {
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
@@ -70,14 +70,28 @@ export const StoriesBoard = ({
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
-    const newStatus = e.over?.id as StoryStatus | null;
-    if (newStatus) {
-      const index = storiesBoard.findIndex(
-        ({ id }) => id === Number(e.active.id),
-      )!;
-      storiesBoard[index].status = newStatus;
-      setStoriesBoard([...storiesBoard]);
+    if (groupBy === "Status") {
+      const newStatus = e.over?.id as StoryStatus | null;
+      if (newStatus) {
+        const index = storiesBoard.findIndex(
+          ({ id }) => id === Number(e.active.id),
+        )!;
+        storiesBoard[index].status = newStatus;
+        setStoriesBoard([...storiesBoard]);
+      }
     }
+
+    if (groupBy === "Priority") {
+      const newPriority = e.over?.id as StoryPriority | null;
+      if (newPriority) {
+        const index = storiesBoard.findIndex(
+          ({ id }) => id === Number(e.active.id),
+        )!;
+        storiesBoard[index].priority = newPriority;
+        setStoriesBoard([...storiesBoard]);
+      }
+    }
+
     setActiveStory(null);
   };
 
@@ -86,20 +100,15 @@ export const StoriesBoard = ({
       {layout === "kanban" ? (
         <KanbanBoard
           className={className}
-          statuses={statuses}
+          groupBy={groupBy}
           stories={storiesBoard}
         />
       ) : (
-        <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
-          {statuses.map((status) => (
-            <StoriesGroup
-              className="-top-[0.5px]"
-              key={status}
-              status={status}
-              stories={storiesBoard}
-            />
-          ))}
-        </BodyContainer>
+        <ListBoard
+          className={className}
+          groupBy={groupBy}
+          stories={storiesBoard}
+        />
       )}
 
       {typeof window !== "undefined" &&

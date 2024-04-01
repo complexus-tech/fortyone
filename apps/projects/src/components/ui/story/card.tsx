@@ -27,7 +27,7 @@ export const StoryCard = ({
       <StoryContextMenu>
         <Box
           className={cn(
-            "w-[340px] cursor-pointer select-none rounded-lg border border-gray-100/60 bg-white px-4 py-3 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-200 dark:bg-dark-300/40 dark:hover:bg-dark-200/50",
+            "w-[340px] cursor-pointer select-none rounded-lg border-[0.5px] border-gray-100 bg-white px-4 py-3 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-200 dark:bg-dark-300/40 dark:hover:bg-dark-200/50",
             {
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,
@@ -58,10 +58,7 @@ export const StoryCard = ({
               <AssigneesMenu.Items />
             </AssigneesMenu>
           </Flex>
-          <Link
-            className="flex-1"
-            href="/objectives/web/stories/test-123-story"
-          >
+          <Link className="flex-1" href="/teams/web/stories/test-123-story">
             <Text className="mb-2 line-clamp-2">{story.title}</Text>
           </Link>
           <Flex gap={1} wrap>

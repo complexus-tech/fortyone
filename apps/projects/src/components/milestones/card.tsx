@@ -17,7 +17,7 @@ export type MilestoneCardProps = {
   description: string;
 };
 
-export const MilestoneCard = ({ name, description }: MilestoneCardProps) => {
+export const MilestoneCard = ({ name }: MilestoneCardProps) => {
   const recentStories = [
     { id: 1, title: "Story with the login page" },
     { id: 2, title: "Story with the login page" },
@@ -57,25 +57,18 @@ export const MilestoneCard = ({ name, description }: MilestoneCardProps) => {
     },
   ];
   return (
-    <Link href="/objectives/web/milestones/1/stories">
+    <Link href="/teams/web/milestones/1/stories">
       <RowWrapper className="block py-6">
         <Flex align="start" justify="between">
-          <Box>
-            <Text
-              className="mb-2 flex items-center gap-1"
-              fontSize="2xl"
-              fontWeight="medium"
-            >
-              <MilestonesIcon className="relative -left-[2px] h-6 w-auto" />
-              {name}
-            </Text>
-            <Text className="max-w-lg" color="muted">
-              {description || "-"}
-            </Text>
-          </Box>
+          <Text
+            className="flex items-center gap-1"
+            fontSize="2xl"
+            fontWeight="medium"
+          >
+            <MilestonesIcon className="relative -left-[2px] h-6 w-auto" />
+            {name}
+          </Text>
           <Flex align="center" gap={1}>
-            <Text>Lead:</Text>
-            <Avatar name="Joseph Mukorivo" size="sm" />
             <Badge className="mx-4" color="tertiary" rounded="sm">
               5 days left
             </Badge>
@@ -142,23 +135,16 @@ export const MilestoneCard = ({ name, description }: MilestoneCardProps) => {
                 <Tooltip />
                 <Area
                   dataKey="uv"
-                  fill="#8884d8"
+                  fill="#002F61"
                   stackId="1"
-                  stroke="#8884d8"
-                  type="monotone"
-                />
-                <Area
-                  dataKey="pv"
-                  fill="#82ca9d"
-                  stackId="1"
-                  stroke="#82ca9d"
+                  stroke="#002F61"
                   type="monotone"
                 />
                 <Area
                   dataKey="amt"
-                  fill="#ffc658"
+                  fill="#eab308"
                   stackId="1"
-                  stroke="#ffc658"
+                  stroke="#eab308"
                   type="monotone"
                 />
               </AreaChart>

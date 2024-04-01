@@ -1,6 +1,6 @@
 "use client";
-import { BreadCrumbs, Button, Flex } from "ui";
-import { PlusIcon, PreferencesIcon, SearchIcon, MilestonesIcon } from "icons";
+import { BreadCrumbs, Button } from "ui";
+import { PlusIcon, MilestonesIcon } from "icons";
 import { HeaderContainer } from "../shared/header-container";
 
 export const ActiveMilestonesHeader = () => {
@@ -14,29 +14,9 @@ export const ActiveMilestonesHeader = () => {
           },
         ]}
       />
-      <Flex gap={3}>
-        <Button
-          align="center"
-          className="px-[0.6rem]"
-          color="tertiary"
-          leftIcon={<SearchIcon className="h-[1.1rem] w-auto" />}
-          size="sm"
-          variant="outline"
-        >
-          <span className="sr-only">Search</span>
-        </Button>
-        <Button
-          color="tertiary"
-          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-          size="sm"
-          variant="outline"
-        >
-          Display
-        </Button>
-        <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
-          New sprint
-        </Button>
-      </Flex>
+      <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
+        New sprint
+      </Button>
     </HeaderContainer>
   );
 };

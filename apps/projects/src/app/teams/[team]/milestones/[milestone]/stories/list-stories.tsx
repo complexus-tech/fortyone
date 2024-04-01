@@ -20,6 +20,7 @@ import {
   StarIcon,
   EditIcon,
   StoryIcon,
+  DocsIcon,
 } from "icons";
 import {
   AreaChart,
@@ -33,7 +34,7 @@ import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
-  StoriesFiltersButton,
+  StoriesViewOptionsButton,
   SideDetailsSwitch,
   BoardDividedPanel,
   StoriesBoard,
@@ -99,7 +100,7 @@ export const ListStories = ({
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "Web design",
+              name: "Engineering",
               icon: "🚀",
             },
             {
@@ -114,7 +115,7 @@ export const ListStories = ({
         />
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <StoriesFiltersButton />
+          <StoriesViewOptionsButton />
           <span className="text-gray-200 dark:text-dark-100">|</span>
           <SideDetailsSwitch
             isExpanded={isExpanded}
@@ -174,27 +175,11 @@ export const ListStories = ({
                   </Menu.Items>
                 </Menu>
               </Flex>
-              <Text className="my-6" color="muted">
-                Lorem, ipsum dolor sit amet consectetur adipisicing elit. Nihil,
-                hic?
-              </Text>
-              <Flex align="center" gap={2} justify="between">
-                <Flex align="center" gap={2}>
-                  <Badge color="success" rounded="sm">
-                    Current
-                  </Badge>
-                  <Badge color="tertiary" rounded="sm">
-                    21 Feb - 21 Mar
-                  </Badge>
-                </Flex>
-                <Button
-                  color="tertiary"
-                  rightIcon={<Avatar name="Joseph Mukorivo" size="xs" />}
-                  size="sm"
-                  variant="naked"
-                >
-                  josemukorivo
-                </Button>
+              <Flex align="center" className="my-4" gap={2}>
+                <Badge rounded="sm">Current</Badge>
+                <Badge color="tertiary" rounded="sm">
+                  21 Feb - 21 Mar
+                </Badge>
               </Flex>
               <Flex
                 align="center"
@@ -205,18 +190,17 @@ export const ListStories = ({
                 <Text>Milestone Progress</Text>
                 <Text>75%</Text>
               </Flex>
-              <ProgressBar progress={75} />
+              <ProgressBar className="h-1.5" progress={75} />
             </Box>
             <Divider className="mb-6 mt-8" />
             <Box className="px-6">
-              <Text fontSize="lg" fontWeight="medium">
+              <Text as="h3" fontSize="lg" fontWeight="medium">
                 Burndown chart
               </Text>
               <Text className="mb-4" color="muted">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nihil,
-                hic?
+                Burndown chart shows the amount of work remaining in the sprint.
               </Text>
-              <ResponsiveContainer height={120} width="100%">
+              <ResponsiveContainer height={150} width="100%">
                 <AreaChart
                   data={data}
                   margin={{
@@ -231,66 +215,16 @@ export const ListStories = ({
                   <Tooltip />
                   <Area
                     dataKey="uv"
-                    fill="#8884d8"
+                    fill="#002F61"
                     stackId="1"
-                    stroke="#8884d8"
-                    type="monotone"
-                  />
-                  <Area
-                    dataKey="pv"
-                    fill="#82ca9d"
-                    stackId="1"
-                    stroke="#82ca9d"
+                    stroke="#002F61"
                     type="monotone"
                   />
                   <Area
                     dataKey="amt"
-                    fill="#ffc658"
+                    fill="#eab308"
                     stackId="1"
-                    stroke="#ffc658"
-                    type="monotone"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              <Text className="mt-4" fontSize="lg" fontWeight="medium">
-                Velocity chart
-              </Text>
-              <Text className="mb-4" color="muted">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nihil,
-                hic?
-              </Text>
-              <ResponsiveContainer height={120} width="100%">
-                <AreaChart
-                  data={data}
-                  margin={{
-                    top: 0,
-                    right: 0,
-                    left: -13,
-                    bottom: -12,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" fontSize="0.9rem" />
-                  <Tooltip />
-                  <Area
-                    dataKey="uv"
-                    fill="#8884d8"
-                    stackId="1"
-                    stroke="#8884d8"
-                    type="monotone"
-                  />
-                  <Area
-                    dataKey="pv"
-                    fill="#82ca9d"
-                    stackId="1"
-                    stroke="#82ca9d"
-                    type="monotone"
-                  />
-                  <Area
-                    dataKey="amt"
-                    fill="#ffc658"
-                    stackId="1"
-                    stroke="#ffc658"
+                    stroke="#eab308"
                     type="monotone"
                   />
                 </AreaChart>
@@ -362,6 +296,23 @@ export const ListStories = ({
                   ))}
                 </Tabs.Panel>
               </Tabs>
+            </Box>
+            <Divider className="mb-6 mt-8" />
+            <Box className="px-6">
+              <Text as="h3" className="mb-3" fontSize="lg" fontWeight="medium">
+                Documents
+              </Text>
+              <Flex
+                align="center"
+                className="rounded-xl bg-gray-50/80 px-4 py-10 dark:bg-dark-200/20"
+                direction="column"
+                justify="center"
+              >
+                <DocsIcon className="h-20 w-auto rotate-12" strokeWidth={1} />
+                <Text className="mt-4" color="muted">
+                  No documents for this milestone
+                </Text>
+              </Flex>
             </Box>
           </Box>
         </BoardDividedPanel.SideBar>

@@ -11,7 +11,7 @@ import {
   NewStoryButton,
   SideDetailsSwitch,
   BoardDividedPanel,
-  StoriesFiltersButton,
+  StoriesViewOptionsButton,
 } from "@/components/ui";
 import { Sidebar } from "./sidebar";
 
@@ -48,7 +48,7 @@ export const ListStories = ({
         />
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <StoriesFiltersButton />
+          <StoriesViewOptionsButton />
           <NewStoryButton />
           <span className="text-gray-200 dark:text-dark-100">|</span>
           <SideDetailsSwitch

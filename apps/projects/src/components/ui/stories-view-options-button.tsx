@@ -3,37 +3,45 @@ import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 
-export type StoriesFilter = {
-  groupBy: string;
-  orderBy: string;
-  storyType: string;
+export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
+export type ViewOptionsOrderBy =
+  | "Priority"
+  | "Due date"
+  | "Created"
+  | "Updated";
+
+export type StoriesViewOptions = {
+  groupBy: ViewOptionsGroupBy;
+  orderBy: ViewOptionsOrderBy;
   showEmptyGroups: boolean;
   showSubStories: boolean;
   displayColumns: string[];
 };
 
-export const StoriesFiltersButton = () => {
-  const initialFilter: StoriesFilter = {
-    groupBy: "Status",
-    orderBy: "Priority",
-    storyType: "Active",
-    showEmptyGroups: false,
-    showSubStories: false,
-    displayColumns: [
-      "Status",
-      "Assignee",
-      "Priority",
-      "Due date",
-      "Created",
-      "Updated",
-      "Milestone",
-      "Labels",
-    ],
-  };
+export const initialViewOptions: StoriesViewOptions = {
+  groupBy: "Status",
+  orderBy: "Priority",
+  showEmptyGroups: false,
+  showSubStories: false,
+  displayColumns: [
+    "Status",
+    "Assignee",
+    "Priority",
+    "Due date",
+    "Created",
+    "Updated",
+    "Milestone",
+    "Labels",
+  ],
+};
 
-  const [filter, setFilter] = useLocalStorage("filters", initialFilter);
+export const StoriesViewOptionsButton = () => {
+  const [viewOptions, setViewOptions] = useLocalStorage(
+    "view-options",
+    initialViewOptions,
+  );
   const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
-    filter!;
+    viewOptions!;
 
   const allColumns = [
     "Status",
@@ -43,7 +51,7 @@ export const StoriesFiltersButton = () => {
     "Created",
     "Updated",
     "Milestone",
-    "Epic",
+    "Theme",
     "Labels",
   ];
 
@@ -51,7 +59,7 @@ export const StoriesFiltersButton = () => {
   const orderByOptions = ["Priority", "Due date", "Created", "Updated"];
 
   const isDefaultSetup =
-    JSON.stringify(filter) === JSON.stringify(initialFilter);
+    JSON.stringify(viewOptions) === JSON.stringify(initialViewOptions);
 
   return (
     <Popover>
@@ -70,9 +78,9 @@ export const StoriesFiltersButton = () => {
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select
-            onValueChange={(value) => {
-              setFilter({
-                ...filter!,
+            onValueChange={(value: ViewOptionsGroupBy) => {
+              setViewOptions({
+                ...viewOptions!,
                 groupBy: value,
               });
             }}
@@ -95,9 +103,9 @@ export const StoriesFiltersButton = () => {
         <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
           <Text color="muted">Order by</Text>
           <Select
-            onValueChange={(value) => {
-              setFilter({
-                ...filter!,
+            onValueChange={(value: ViewOptionsOrderBy) => {
+              setViewOptions({
+                ...viewOptions!,
                 orderBy: value,
               });
             }}
@@ -132,8 +140,8 @@ export const StoriesFiltersButton = () => {
                 checked={showEmptyGroups}
                 id="more"
                 onCheckedChange={(checked) => {
-                  setFilter({
-                    ...filter!,
+                  setViewOptions({
+                    ...viewOptions!,
                     showEmptyGroups: checked,
                   });
                 }}
@@ -153,15 +161,15 @@ export const StoriesFiltersButton = () => {
                   key={column}
                   onClick={() => {
                     if (isSelected) {
-                      setFilter({
-                        ...filter!,
+                      setViewOptions({
+                        ...viewOptions!,
                         displayColumns: displayColumns.filter(
                           (col) => col !== column,
                         ),
                       });
                     } else {
-                      setFilter({
-                        ...filter!,
+                      setViewOptions({
+                        ...viewOptions!,
                         displayColumns: [...displayColumns, column],
                       });
                     }
@@ -195,8 +203,8 @@ export const StoriesFiltersButton = () => {
               checked={showSubStories}
               id="more"
               onCheckedChange={(checked) => {
-                setFilter({
-                  ...filter!,
+                setViewOptions({
+                  ...viewOptions!,
                   showSubStories: checked,
                 });
               }}
@@ -211,7 +219,7 @@ export const StoriesFiltersButton = () => {
                 className="text-primary dark:text-primary"
                 color="tertiary"
                 onClick={() => {
-                  setFilter(initialFilter);
+                  setViewOptions(initialViewOptions);
                 }}
                 size="sm"
                 variant="naked"
