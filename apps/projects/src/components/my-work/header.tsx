@@ -8,6 +8,7 @@ import {
   LayoutSwitcher,
   SideDetailsSwitch,
 } from "@/components/ui";
+import { useMyWork } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -20,6 +21,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { viewOptions, setViewOptions } = useMyWork();
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -33,7 +35,11 @@ export const Header = ({
       />
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesViewOptionsButton />
+        <StoriesViewOptionsButton
+          groupByOptions={["Status", "Priority"]}
+          setViewOptions={setViewOptions}
+          viewOptions={viewOptions}
+        />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}

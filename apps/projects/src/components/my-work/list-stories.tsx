@@ -6,6 +6,7 @@ import type { Story } from "@/types/story";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { AllStories } from "./all-stories";
+import { MyWorkProvider } from "./provider";
 
 export const ListMyStories = ({ stories }: { stories: Story[] }) => {
   const [isExpanded, setIsExpanded] = useLocalStorage(
@@ -17,7 +18,7 @@ export const ListMyStories = ({ stories }: { stories: Story[] }) => {
     "list",
   );
   return (
-    <>
+    <MyWorkProvider>
       <Header
         isExpanded={isExpanded}
         layout={layout}
@@ -32,6 +33,6 @@ export const ListMyStories = ({ stories }: { stories: Story[] }) => {
           <Sidebar />
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </>
+    </MyWorkProvider>
   );
 };

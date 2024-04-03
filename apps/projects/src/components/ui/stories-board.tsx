@@ -8,7 +8,7 @@ import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
-import type { ViewOptionsGroupBy } from "./stories-view-options-button";
+import type { StoriesViewOptions } from "./stories-view-options-button";
 import { ListBoard } from "./list-board";
 
 export type StoriesLayout = "list" | "kanban" | null;
@@ -54,12 +54,12 @@ export const StoriesBoard = ({
   layout,
   stories,
   className,
-  groupBy = "Priority",
+  viewOptions,
 }: {
   layout: StoriesLayout;
   stories: Story[];
   className?: string;
-  groupBy?: ViewOptionsGroupBy;
+  viewOptions: StoriesViewOptions;
 }) => {
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
@@ -70,6 +70,7 @@ export const StoriesBoard = ({
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
+    const { groupBy } = viewOptions;
     if (groupBy === "Status") {
       const newStatus = e.over?.id as StoryStatus | null;
       if (newStatus) {
@@ -100,14 +101,14 @@ export const StoriesBoard = ({
       {layout === "kanban" ? (
         <KanbanBoard
           className={className}
-          groupBy={groupBy}
           stories={storiesBoard}
+          viewOptions={viewOptions}
         />
       ) : (
         <ListBoard
           className={className}
-          groupBy={groupBy}
           stories={storiesBoard}
+          viewOptions={viewOptions}
         />
       )}
 

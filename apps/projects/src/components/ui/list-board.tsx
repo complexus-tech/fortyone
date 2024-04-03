@@ -1,18 +1,19 @@
 import { cn } from "lib";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoriesGroup } from "@/components/ui/stories-group";
+import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
-import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 
 export const ListBoard = ({
   stories,
   className,
-  groupBy,
+  viewOptions,
 }: {
   stories: Story[];
   className?: string;
-  groupBy: ViewOptionsGroupBy;
+  viewOptions: StoriesViewOptions;
 }) => {
+  const { groupBy } = viewOptions;
   const statuses: StoryStatus[] = [
     "Backlog",
     "Todo",
@@ -36,20 +37,20 @@ export const ListBoard = ({
         statuses.map((status) => (
           <StoriesGroup
             className="-top-[0.5px]"
-            groupBy={groupBy}
             key={status}
             status={status}
             stories={stories}
+            viewOptions={viewOptions}
           />
         ))}
       {groupBy === "Priority" &&
         priorities.map((priority) => (
           <StoriesGroup
             className="-top-[0.5px]"
-            groupBy={groupBy}
             key={priority}
             priority={priority}
             stories={stories}
+            viewOptions={viewOptions}
           />
         ))}
     </BodyContainer>

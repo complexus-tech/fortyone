@@ -2,25 +2,24 @@
 import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import type { StoryStatus, Story, StoryPriority } from "@/types/story";
+import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
-import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 
 export const StoriesGroup = ({
   stories,
   status,
   priority,
   className,
-  groupBy,
-  showEmptyGroups = true,
+  viewOptions,
 }: {
   stories: Story[];
   status?: StoryStatus;
   priority?: StoryPriority;
   className?: string;
-  groupBy: ViewOptionsGroupBy;
-  showEmptyGroups?: boolean;
+  viewOptions: StoriesViewOptions;
 }) => {
+  const { groupBy, showEmptyGroups } = viewOptions;
   const id = (groupBy === "Status" ? status : priority) as string;
   const { isOver, setNodeRef } = useDroppable({
     id,

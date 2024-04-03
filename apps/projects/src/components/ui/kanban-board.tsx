@@ -1,20 +1,21 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
-import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 
 export const KanbanBoard = ({
   stories,
   className,
-  groupBy,
+  viewOptions,
 }: {
   stories: Story[];
   className?: string;
-  groupBy: ViewOptionsGroupBy;
+  viewOptions: StoriesViewOptions;
 }) => {
+  const { groupBy } = viewOptions;
   const statuses: StoryStatus[] = [
     "Backlog",
     "Todo",

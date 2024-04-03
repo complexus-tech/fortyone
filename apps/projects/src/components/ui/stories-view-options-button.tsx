@@ -1,7 +1,6 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
-import { useLocalStorage } from "@/hooks";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
 export type ViewOptionsOrderBy =
@@ -14,15 +13,13 @@ export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
   showEmptyGroups: boolean;
-  showSubStories: boolean;
   displayColumns: string[];
 };
 
-export const initialViewOptions: StoriesViewOptions = {
+const initialViewOptions: StoriesViewOptions = {
   groupBy: "Status",
   orderBy: "Priority",
   showEmptyGroups: false,
-  showSubStories: false,
   displayColumns: [
     "Status",
     "Assignee",
@@ -35,13 +32,18 @@ export const initialViewOptions: StoriesViewOptions = {
   ],
 };
 
-export const StoriesViewOptionsButton = () => {
-  const [viewOptions, setViewOptions] = useLocalStorage(
-    "view-options",
-    initialViewOptions,
-  );
-  const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
-    viewOptions!;
+export const StoriesViewOptionsButton = ({
+  viewOptions,
+  setViewOptions,
+  groupByOptions = ["Status", "Assignee", "Priority"],
+  orderByOptions = ["Priority", "Due date", "Created", "Updated"],
+}: {
+  viewOptions: StoriesViewOptions;
+  setViewOptions: (v: StoriesViewOptions) => void;
+  groupByOptions?: ViewOptionsGroupBy[];
+  orderByOptions?: ViewOptionsOrderBy[];
+}) => {
+  const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns = [
     "Status",
@@ -54,12 +56,6 @@ export const StoriesViewOptionsButton = () => {
     "Theme",
     "Labels",
   ];
-
-  const groupByOptions = ["Status", "Assignee", "Priority"];
-  const orderByOptions = ["Priority", "Due date", "Created", "Updated"];
-
-  const isDefaultSetup =
-    JSON.stringify(viewOptions) === JSON.stringify(initialViewOptions);
 
   return (
     <Popover>
@@ -80,7 +76,7 @@ export const StoriesViewOptionsButton = () => {
           <Select
             onValueChange={(value: ViewOptionsGroupBy) => {
               setViewOptions({
-                ...viewOptions!,
+                ...viewOptions,
                 groupBy: value,
               });
             }}
@@ -105,7 +101,7 @@ export const StoriesViewOptionsButton = () => {
           <Select
             onValueChange={(value: ViewOptionsOrderBy) => {
               setViewOptions({
-                ...viewOptions!,
+                ...viewOptions,
                 orderBy: value,
               });
             }}
@@ -141,7 +137,7 @@ export const StoriesViewOptionsButton = () => {
                 id="more"
                 onCheckedChange={(checked) => {
                   setViewOptions({
-                    ...viewOptions!,
+                    ...viewOptions,
                     showEmptyGroups: checked,
                   });
                 }}
@@ -162,14 +158,14 @@ export const StoriesViewOptionsButton = () => {
                   onClick={() => {
                     if (isSelected) {
                       setViewOptions({
-                        ...viewOptions!,
+                        ...viewOptions,
                         displayColumns: displayColumns.filter(
                           (col) => col !== column,
                         ),
                       });
                     } else {
                       setViewOptions({
-                        ...viewOptions!,
+                        ...viewOptions,
                         displayColumns: [...displayColumns, column],
                       });
                     }
@@ -184,51 +180,20 @@ export const StoriesViewOptionsButton = () => {
             })}
           </Flex>
         </Box>
-        <Divider className="mb-3 mt-2" />
-        <Text className="mb-2 px-4" color="muted">
-          <label
-            className="flex select-none items-center justify-between gap-2"
-            htmlFor="more"
+        <Divider className="my-2" />
+        <Flex className="px-4 pb-[0.1rem]" justify="end">
+          <Button
+            className="text-primary dark:text-primary"
+            color="tertiary"
+            onClick={() => {
+              setViewOptions(initialViewOptions);
+            }}
+            size="sm"
+            variant="naked"
           >
-            Show empty groups <Switch id="more" />
-          </label>
-        </Text>
-        <Text className="mb-3 px-4" color="muted">
-          <label
-            className="flex select-none items-center justify-between gap-2"
-            htmlFor="more"
-          >
-            Show sub stories
-            <Switch
-              checked={showSubStories}
-              id="more"
-              onCheckedChange={(checked) => {
-                setViewOptions({
-                  ...viewOptions!,
-                  showSubStories: checked,
-                });
-              }}
-            />
-          </label>
-        </Text>
-        {!isDefaultSetup ? (
-          <>
-            <Divider className="mb-2" />
-            <Flex className="px-4 pb-[0.1rem]" justify="end">
-              <Button
-                className="text-primary dark:text-primary"
-                color="tertiary"
-                onClick={() => {
-                  setViewOptions(initialViewOptions);
-                }}
-                size="sm"
-                variant="naked"
-              >
-                Reset to default
-              </Button>
-            </Flex>
-          </>
-        ) : null}
+            Reset to default
+          </Button>
+        </Flex>
       </Popover.Content>
     </Popover>
   );
