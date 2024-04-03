@@ -7,8 +7,8 @@
 }
 
 .animate-gradient {
-  background-size: 150% 150%; /* Adjust size based on additional keyframe */
-  animation: gradient-animate 5s ease infinite;
+  background-size: 200% 200%;
+  animation: gradient-animate 3s ease infinite;
 }
 
 @keyframes gradient-animate {
@@ -25,7 +25,7 @@
 
 body,
 html {
-  @apply bg-white text-gray antialiased dark:bg-dark dark:text-gray-200;
+  @apply bg-white text-[14.5px] text-gray antialiased dark:bg-dark dark:text-gray-200;
 }
 
 svg {

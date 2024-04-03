@@ -39,3 +39,4 @@ export * from "./NavLink/NavLink";
 // export * from './Image/Image';
 export * from "./ProgressBar/ProgressBar";
 export * from "./DropZone/DropZone";
+export * from "./NavigationMenu/NavigationMenu";

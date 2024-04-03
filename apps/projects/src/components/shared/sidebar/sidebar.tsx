@@ -1,6 +1,5 @@
 "use client";
-import { Box, Button, Flex } from "ui";
-import { ArrowRightIcon } from "icons";
+import { Box } from "ui";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
@@ -13,15 +12,6 @@ export const Sidebar = () => {
         <Navigation />
         <Teams />
       </Box>
-      <Flex justify="between">
-        <Button
-          className="px-3 text-[0.95rem] font-medium transition duration-200 ease-linear dark:bg-opacity-20 hover:dark:bg-opacity-30"
-          rightIcon={<ArrowRightIcon className="h-3.5 w-auto" />}
-          rounded="full"
-        >
-          Upgrade plan
-        </Button>
-      </Flex>
     </Box>
   );
 };
