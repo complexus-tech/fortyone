@@ -44,11 +44,11 @@ import { AllStories } from "./all-stories";
 export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:milestones:layout",
-    "kanban",
+    "list",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
     "objective:milestones:isExpanded",
-    true,
+    false,
   );
 
   const data = [

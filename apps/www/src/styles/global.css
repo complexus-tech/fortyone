@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nprogress-color: #ea6060;
+}
+
+body,
+html {
+  @apply overscroll-contain bg-white text-[12.5px] text-gray antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
+}
+
+svg {
+  shape-rendering: auto;
+  vector-effect: non-scaling-stroke;
+}
+/* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
+  width: 3px;
+}
+
+*::-webkit-scrollbar-track {
+  @apply bg-white dark:bg-[#666666b3];
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply rounded-[3px] bg-[#666666b3] dark:bg-white;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #666666b3 transparent;
+}
+
+[cmdk-overlay] {
+  @apply fixed inset-0 z-40 block h-screen w-screen bg-black/10 backdrop-blur-[0.5px];
+}
+
+.ProseMirror-focused {
+  @apply outline-none;
+}
+
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+ul[data-type="taskList"] p {
+  margin: 0;
+}
+
+ul[data-type="taskList"] li {
+  @apply flex items-center;
+}
+
+ul[data-type="taskList"] li input {
+  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
+}
+
+ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+}
+
+ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+ul[data-type="taskList"] li ul li,
+ul[data-type="taskList"] li ol li {
+  display: list-item;
+}
+
+ul[data-type="taskList"] > li ul[data-type="taskList"],
+ul[data-type="taskList"] > li ol[data-type="taskList"] {
+  display: flex;
+}
+
+.tiptap .is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  @apply pointer-events-none float-left h-0 text-gray-250/80 dark:text-gray-200/60;
+}
+
+/*** Works on common browsers ***/
+::selection {
+  @apply bg-primary text-dark;
+}
+
+/*** Mozilla based browsers ***/
+::-moz-selection {
+  @apply bg-primary text-dark;
+}
+
+/***For Other Browsers ***/
+::-o-selection {
+  @apply bg-primary text-dark;
+}
+
+::-ms-selection {
+  @apply bg-primary text-dark;
+}
+
+/*** For Webkit ***/
+::-webkit-selection {
+  @apply bg-primary text-dark;
+}
+
+/* CSS color for nprogress */
+/* Make clicks pass-through */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress &:after {
+  display: block;
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#nprogress .bar {
+  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
+  z-index: 19031 !important;
+}
+
+.nprogress-custom-parent {
+  overflow: hidden;
+  position: relative;
+}
+.nprogress-custom-parent #nprogress .spinner,
+.nprogress-custom-parent #nprogress .bar {
+  position: absolute;
+}

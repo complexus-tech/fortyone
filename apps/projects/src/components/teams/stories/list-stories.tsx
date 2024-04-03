@@ -15,7 +15,7 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
   );
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "teams:stories:expanded",
-    true,
+    false,
   );
 
   return (

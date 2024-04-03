@@ -29,6 +29,7 @@
     "@tiptap/react": "^2.2.2",
     "@tiptap/starter-kit": "^2.2.2",
     "@uiw/react-heat-map": "^2.2.1",
+    "framer-motion": "^11.0.24",
     "icons": "workspace:*",
     "install": "^0.13.0",
     "lib": "workspace:*",
