@@ -1,5 +1,5 @@
 "use client";
-import { BodyContainer } from "../shared/body";
+import { BodyContainer } from "../../shared/body";
 import { MilestoneCard } from "./card";
 import { ActiveMilestonesHeader } from "./header";
 

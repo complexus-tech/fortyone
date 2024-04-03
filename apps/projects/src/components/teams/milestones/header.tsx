@@ -1,7 +1,7 @@
 "use client";
 import { BreadCrumbs, Button } from "ui";
 import { PlusIcon, MilestonesIcon } from "icons";
-import { HeaderContainer } from "../shared/header-container";
+import { HeaderContainer } from "../../shared/header-container";
 
 export const ActiveMilestonesHeader = () => {
   return (

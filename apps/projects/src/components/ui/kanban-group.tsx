@@ -12,9 +12,11 @@ import { NewStoryDialog } from "./new-story-dialog";
 const List = ({
   children,
   id,
+  totalStories,
 }: {
   children: ReactNode;
   id: string | number;
+  totalStories: number;
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
@@ -25,6 +27,7 @@ const List = ({
         className={cn(
           "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
+            "bg-gray-100/30 dark:bg-dark-300/20": totalStories === 0,
             "bg-gray-100/40 dark:bg-dark-300/40": isOver,
           },
         )}
@@ -57,6 +60,7 @@ export const KanbanGroup = ({
     <List
       id={(groupBy === "Status" ? status : priority) as string}
       key={groupBy === "Status" ? status : priority}
+      totalStories={filteredStories.length}
     >
       {filteredStories.map((story) => (
         <StoryCard key={story.id} story={story} />

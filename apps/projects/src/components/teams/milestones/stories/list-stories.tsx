@@ -3,7 +3,6 @@ import {
   Avatar,
   Badge,
   Box,
-  BreadCrumbs,
   Button,
   Divider,
   Flex,
@@ -19,7 +18,6 @@ import {
   DeleteIcon,
   StarIcon,
   EditIcon,
-  StoryIcon,
   DocsIcon,
 } from "icons";
 import {
@@ -30,22 +28,20 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
-  LayoutSwitcher,
-  StoriesViewOptionsButton,
-  SideDetailsSwitch,
   BoardDividedPanel,
-  StoriesBoard,
   RowWrapper,
   StoryStatusIcon,
   PriorityIcon,
 } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import type { Story } from "@/types/story";
+import { Header } from "./header";
+import { MilestoneStoriesProvider } from "./provider";
+import { AllStories } from "./all-stories";
 
-export const ListStories = ({ stories }: { stories: Story[] }) => {
+export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:milestones:layout",
     "kanban",
@@ -89,37 +85,16 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
   ];
 
   return (
-    <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "Engineering",
-              icon: "🚀",
-            },
-            {
-              name: "Milestones",
-              icon: <MilestonesIcon className="h-4 w-auto" />,
-            },
-            {
-              name: "Stories",
-              icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
-            },
-          ]}
-        />
-        <Flex align="center" gap={2}>
-          <LayoutSwitcher layout={layout} setLayout={setLayout} />
-          <StoriesViewOptionsButton />
-          <span className="text-gray-200 dark:text-dark-100">|</span>
-          <SideDetailsSwitch
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-          />
-        </Flex>
-      </HeaderContainer>
+    <MilestoneStoriesProvider>
+      <Header
+        isExpanded={isExpanded}
+        layout={layout}
+        setIsExpanded={setIsExpanded}
+        setLayout={setLayout}
+      />
       <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <StoriesBoard layout={layout} stories={stories} />
+          <AllStories layout={layout} stories={stories} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Box className="py-6">
@@ -311,6 +286,6 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
           </Box>
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </>
+    </MilestoneStoriesProvider>
   );
 };

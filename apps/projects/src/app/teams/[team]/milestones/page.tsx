@@ -1,5 +1,5 @@
-import { MilestonesList } from "@/components/milestones/list/list-milestones";
-import type { Milestone } from "@/components/milestones/list/row";
+import { MilestonesList } from "@/components/teams/milestones/list/list-milestones";
+import type { Milestone } from "@/components/teams/milestones/list/row";
 
 export default function Page(): JSX.Element {
   const milestones: Milestone[] = [
