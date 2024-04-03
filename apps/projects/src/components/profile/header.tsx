@@ -8,6 +8,7 @@ import {
   LayoutSwitcher,
   SideDetailsSwitch,
 } from "@/components/ui";
+import { useProfile } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -20,6 +21,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { viewOptions, setViewOptions } = useProfile();
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
@@ -37,7 +39,10 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesViewOptionsButton />
+        <StoriesViewOptionsButton
+          setViewOptions={setViewOptions}
+          viewOptions={viewOptions}
+        />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}

@@ -1,7 +1,9 @@
+"use client";
 import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/types/story";
+import { useProfile } from "./provider";
 
 export const AllStories = ({
   stories,
@@ -10,6 +12,7 @@ export const AllStories = ({
   stories: Story[];
   layout: StoriesLayout;
 }) => {
+  const { viewOptions } = useProfile();
   return (
     <Box className="h-[calc(100vh-4rem)]">
       <Tabs defaultValue="assigned">
@@ -25,6 +28,7 @@ export const AllStories = ({
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
             stories={stories}
+            viewOptions={viewOptions}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
@@ -32,6 +36,7 @@ export const AllStories = ({
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
             stories={stories}
+            viewOptions={viewOptions}
           />
         </Tabs.Panel>
         <Tabs.Panel value="subscribed">
@@ -39,6 +44,7 @@ export const AllStories = ({
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
             stories={stories}
+            viewOptions={viewOptions}
           />
         </Tabs.Panel>
       </Tabs>

@@ -6,6 +6,7 @@ import type { Story } from "@/types/story";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { AllStories } from "./all-stories";
+import { ProfileProvider } from "./provider";
 
 export const ListUserStories = ({
   stories,
@@ -23,7 +24,7 @@ export const ListUserStories = ({
     "list",
   );
   return (
-    <>
+    <ProfileProvider>
       <Header
         isExpanded={isExpanded}
         layout={layout}
@@ -38,6 +39,6 @@ export const ListUserStories = ({
           <Sidebar />
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </>
+    </ProfileProvider>
   );
 };
