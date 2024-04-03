@@ -11,7 +11,7 @@ export const Dashboard = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="py-4">
+        <Container className="pb-4 pt-3">
           <Overview />
           <Contributions />
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">

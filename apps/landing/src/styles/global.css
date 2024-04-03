@@ -6,9 +6,26 @@
   --nprogress-color: #ea6060;
 }
 
+.animate-gradient {
+  background-size: 150% 150%; /* Adjust size based on additional keyframe */
+  animation: gradient-animate 5s ease infinite;
+}
+
+@keyframes gradient-animate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 body,
 html {
-  @apply overscroll-contain bg-white text-[12.5px] text-gray antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
+  @apply bg-white text-gray antialiased dark:bg-dark dark:text-gray-200;
 }
 
 svg {

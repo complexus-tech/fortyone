@@ -8,7 +8,7 @@ import { HeaderContainer } from "@/components/shared";
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <HeaderContainer className="justify-between">
+    <HeaderContainer className="justify-between border-0">
       <BreadCrumbs
         breadCrumbs={[
           {

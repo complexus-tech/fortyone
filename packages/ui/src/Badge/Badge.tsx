@@ -4,7 +4,7 @@ import { FC, HTMLAttributes } from "react";
 import { cn } from "lib";
 
 const badge = cva(
-  "flex w-max items-center justify-center uppercase font-semibold rounded-lg border-[0.5px] gap-1",
+  "flex w-max items-center justify-center font-medium rounded-lg border-[0.5px] gap-1",
   {
     variants: {
       variant: {
@@ -25,13 +25,13 @@ const badge = cva(
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
         tertiary:
-          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-100 dark:border-dark-50 dark:text-gray-200",
+          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-300 dark:border-dark-50 dark:text-gray-200",
         secondary: "text-white bg-secondary border-secondary",
       },
       size: {
         sm: "h-5 min-w-[1.25rem] text-[80%] py-2 px-1",
         md: "h-6 text-[0.8rem] leading-6 p-2",
-        lg: "h-8 p-2 text-[0.9rem]",
+        lg: "h-8 px-3.5 text-[0.95rem]",
       },
     },
     compoundVariants: [
