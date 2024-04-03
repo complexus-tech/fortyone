@@ -1,3 +1,4 @@
+"use client";
 import {
   Dispatch,
   SetStateAction,
@@ -77,7 +78,7 @@ export const BubbleMenu = ({
         )}
         gap={2}
       >
-        <Tooltip title="Bold">
+        {/* <Tooltip title="Bold">
           <Button
             active={editor.isActive("bold")}
             color="tertiary"
@@ -199,7 +200,7 @@ export const BubbleMenu = ({
           >
             <CodeBlockIcon className="h-5 w-auto" />
           </Button>
-        </Tooltip>
+        </Tooltip> */}
       </Flex>
 
       <Flex
