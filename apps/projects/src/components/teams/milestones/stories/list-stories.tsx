@@ -180,20 +180,36 @@ export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
+                  <defs>
+                    <linearGradient id="colorUv" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <defs>
+                    <linearGradient id="colorAmt" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="#002F61" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#002F61" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+
                   <XAxis dataKey="name" fontSize="0.9rem" />
                   <Tooltip />
                   <Area
                     dataKey="uv"
-                    fill="#002F61"
+                    fill="url(#colorUv)"
+                    fillOpacity={1}
                     stackId="1"
-                    stroke="#002F61"
+                    stroke="#eab308"
+                    strokeDasharray="5 5"
                     type="monotone"
                   />
                   <Area
                     dataKey="amt"
-                    fill="#eab308"
+                    fill="url(#colorAmt)"
+                    fillOpacity={1}
                     stackId="1"
-                    stroke="#eab308"
+                    stroke="#002F61"
                     type="monotone"
                   />
                 </AreaChart>
