@@ -20,7 +20,7 @@ const BlurryCircle = ({ className }: { className?: string }) => {
 export default function Page(): JSX.Element {
   return (
     <Box className="relative">
-      <BlurryCircle className="absolute -top-[70vh] left-1/2 right-1/2 h-screen w-[105vw] -translate-x-1/2 bg-primary/15 dark:bg-primary/5" />
+      <BlurryCircle className="absolute -top-[70vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 dark:bg-primary/5" />
       <Box className="fixed left-0 top-0 z-10 h-16 w-screen backdrop-blur-lg dark:bg-black/5">
         <Container className="relative z-[1] flex h-full max-w-[85rem] items-center justify-between">
           <Logo className="relative top-1 z-10 h-8 text-dark-100 dark:text-gray-50" />
