@@ -20,15 +20,10 @@ import { BodyContainer } from "@/components/shared";
 
 export const MainDetails = () => {
   const content = `
-          <h4>Jira Story Description Example</h4>
-          <p>This is a sample HTML text for a Jira story description. It can include various elements such as headings, paragraphs, lists, and more.</p>
-          <h4>Steps to Reproduce:</h4>
-          <ol>
-              <li>Open the application.</li>
-              <li>Go to the settings page.</li>
-              <li>Change the language to French.</li>
-              <li>Save the settings.</li>
-          </ol>
+  <h3>We need the ability to do the following.</h3>
+  <p> - Allow submission , editing and updating of third party bank details and to be displayed at Finance before disbursement</p>
+   <p> - Ability to Reject and Approve documents at the BackOffice (Credit Process) </p>
+    <p> - Ability to view the documents and details submitted by the third party </p>
             `;
 
   const editor = useEditor({
@@ -55,7 +50,7 @@ export const MainDetails = () => {
       Text,
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
-    content: "This is a sample title.",
+    content: "BackOffice - Third Party Bank Details and Documents Validations",
     editable: true,
   });
   return (

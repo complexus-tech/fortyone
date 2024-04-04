@@ -4,7 +4,7 @@ import {
   FC,
   HTMLAttributes,
   ReactNode,
-  ComponentType,
+  createElement,
 } from "react";
 
 export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
@@ -12,33 +12,30 @@ export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
   id?: string;
   style?: CSSProperties;
   children?: ReactNode;
-  as?: ComponentType<any>;
+  as?: keyof JSX.IntrinsicElements;
   full?: boolean;
 }
 
 export const Container: FC<ContainerProps> = ({
   className = "",
   style = {},
-  as: Tag = "div",
+  as = "div",
   id,
   children,
   full,
   ...rest
 }) => {
-  return (
-    <Tag
-      className={cn(
-        "mx-auto px-12",
-        {
-          "mx-auto px-0": full,
-        },
-        className
-      )}
-      id={id}
-      style={style}
-      {...rest}
-    >
-      {children}
-    </Tag>
-  );
+  return createElement(as, {
+    className: cn(
+      "mx-auto px-12",
+      {
+        "mx-auto px-0": full,
+      },
+      className
+    ),
+    id,
+    style,
+    ...rest,
+    children,
+  });
 };

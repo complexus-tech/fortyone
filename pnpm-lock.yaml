@@ -41,6 +41,9 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
+      react-fast-marquee:
+        specifier: ^1.6.4
+        version: 1.6.4(react-dom@18.2.0)(react@18.2.0)
       swiper:
         specifier: ^11.1.0
         version: 11.1.0
@@ -2978,7 +2981,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-bold@2.2.2(@tiptap/core@2.2.2):
@@ -2986,7 +2989,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-bubble-menu@2.2.2(@tiptap/core@2.2.4)(@tiptap/pm@2.2.2):
@@ -3016,7 +3019,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-code-block@2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2):
@@ -3044,7 +3047,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-document@2.2.2(@tiptap/core@2.2.2):
@@ -3052,7 +3055,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-document@2.2.2(@tiptap/core@2.2.4):
@@ -3130,7 +3133,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-heading@2.2.3(@tiptap/core@2.2.2):
@@ -3138,7 +3141,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-heading@2.2.3(@tiptap/core@2.2.4):
@@ -3146,7 +3149,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-history@2.2.2(@tiptap/core@2.2.2)(@tiptap/pm@2.2.2):
@@ -3194,7 +3197,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-link@2.2.2(@tiptap/core@2.2.4)(@tiptap/pm@2.2.2):
@@ -3224,7 +3227,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-ordered-list@2.2.2(@tiptap/core@2.2.2):
@@ -3232,7 +3235,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-paragraph@2.2.2(@tiptap/core@2.2.2):
@@ -3240,7 +3243,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-paragraph@2.2.2(@tiptap/core@2.2.4):
@@ -3266,7 +3269,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-table-cell@2.2.4(@tiptap/core@2.2.4):
@@ -3328,7 +3331,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-text@2.2.2(@tiptap/core@2.2.2):
@@ -3336,7 +3339,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.2(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/extension-text@2.2.2(@tiptap/core@2.2.4):
@@ -3352,7 +3355,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.0
     dependencies:
-      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.4)
+      '@tiptap/core': 2.2.4(@tiptap/pm@2.2.2)
     dev: false
 
   /@tiptap/pm@2.2.2:
@@ -8026,6 +8029,16 @@ packages:
       file-selector: 0.6.0
       prop-types: 15.8.1
       react: 18.2.0
+    dev: false
+
+  /react-fast-marquee@1.6.4(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-LAgvhRmHdqaUQ8R5jCUwzEGFUIjnCCt3T3W8X7j7wF6DWe0SATlpP0JX1V0pp2qX3DYUezmn1Iz5AtRFdL2EWQ==}
+    peerDependencies:
+      react: '>= 16.8.0 || 18.0.0'
+      react-dom: '>= 16.8.0 || 18.0.0'
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
     dev: false
 
   /react-hotkeys-hook@4.5.0(react-dom@18.2.0)(react@18.2.0):

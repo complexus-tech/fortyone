@@ -11,7 +11,7 @@ export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
 export const Box = ({
   className = "",
   style = {},
-  as: Tag = "div",
+  as = "div",
   children,
   html,
   ...rest
@@ -22,7 +22,7 @@ export const Box = ({
       }
     : {};
 
-  return createElement(Tag, {
+  return createElement(as, {
     className,
     style,
     ...rest,

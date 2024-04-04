@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
 
 const font = Inter({
   subsets: ["latin"],
   display: "swap",
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -37,8 +38,13 @@ export default function RootLayout({
   children: ReactNode;
 }): JSX.Element {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={font.className}>{children}</body>
+    <html className="dark" lang="en" suppressHydrationWarning>
+      <body className={font.className}>
+        <Navigation />
+        {children}
+        <CallToAction />
+        <Footer />
+      </body>
     </html>
   );
 }

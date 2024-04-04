@@ -82,7 +82,7 @@ interface Props extends HTMLAttributes<HTMLElement>, VariantProps<typeof flex> {
 }
 
 export const Flex = ({
-  as: Tag = "div",
+  as = "div",
   align,
   justify,
   direction,
@@ -98,7 +98,7 @@ export const Flex = ({
     flex({ align, justify, direction, gap, gapX, gapY, wrap }),
     className
   );
-  return createElement(Tag, {
+  return createElement(as, {
     className: classes,
     ...rest,
     children,
