@@ -86,19 +86,14 @@ export default function Page(): JSX.Element {
           <BlurryCircle className="absolute -top-5 left-1/2 right-1/2 h-[600px] w-[600px] -translate-x-1/2 bg-primary/40 dark:bg-primary/30" />
           <BlurryCircle className="absolute -bottom-20 -left-12 h-[400px] w-[400px] bg-warning/50 dark:bg-warning/10" />
           <BlurryCircle className="absolute -bottom-6 right-0 -z-10 h-[400px] w-[400px] bg-white dark:bg-warning/20" />
-          <Swiper
-            effect="cards"
-            grabCursor
-            initialSlide={1}
-            modules={[EffectCards]}
-          >
+          <Swiper effect="cards" grabCursor modules={[EffectCards]}>
             <SwiperSlide className="rounded-2xl">
               <Image
-                alt="Dashboard"
-                className="animate-gradient rounded-2xl border border-gray-200 bg-gradient-to-br from-primary via-secondary to-warning/60 dark:border-0 dark:p-0.5"
-                height={2980}
-                src="/dashboard.png"
-                width={1846}
+                alt="Stories"
+                className="animate-gradient rounded-2xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-0.5"
+                height={2982}
+                src="/stories.png"
+                width={1854}
               />
             </SwiperSlide>
             <SwiperSlide className="rounded-2xl">
@@ -112,11 +107,11 @@ export default function Page(): JSX.Element {
             </SwiperSlide>
             <SwiperSlide className="rounded-2xl">
               <Image
-                alt="Stories"
-                className="animate-gradient rounded-2xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-0.5"
-                height={2982}
-                src="/stories.png"
-                width={1854}
+                alt="Dashboard"
+                className="animate-gradient rounded-2xl border border-gray-200 bg-gradient-to-br from-primary via-secondary to-warning/60 dark:border-0 dark:p-0.5"
+                height={2980}
+                src="/dashboard.png"
+                width={1846}
               />
             </SwiperSlide>
           </Swiper>
