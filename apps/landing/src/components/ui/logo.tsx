@@ -21,7 +21,7 @@ const Icon = ({ className }: { className?: string }) => (
 const MainLogo = ({ className }: { className?: string }) => (
   <svg
     className={cn(
-      "3xl:w-[200px] h-auto w-[130px] md:w-[152px] xl:w-[150px]",
+      "3xl:w-[200px] relative -left-4 h-auto w-[130px] md:w-[152px] xl:w-[150px]",
       className,
     )}
     fill="none"

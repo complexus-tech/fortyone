@@ -3,7 +3,7 @@ import { Container } from "@/components/ui";
 
 export const Integrations = () => {
   return (
-    <Box className="bg-dark py-40">
+    <Box className="bg-black py-40">
       <Container>
         <Flex
           align="center"

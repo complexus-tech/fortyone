@@ -73,3 +73,7 @@ export * from "./retro";
 export * from "./work";
 export * from "./team";
 export * from "./whiteboard";
+export * from "./facebook";
+export * from "./instagram";
+export * from "./linkedin";
+export * from "./twitter";

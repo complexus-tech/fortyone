@@ -39,7 +39,7 @@ export const CallToAction = () => {
           </Button>
         </Flex>
       </Flex>
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-primary/40 dark:bg-primary/10" />
+      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-primary/40 dark:bg-primary/10" />
     </Container>
   );
 };

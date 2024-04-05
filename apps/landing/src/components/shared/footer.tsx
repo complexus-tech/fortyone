@@ -1,9 +1,11 @@
 "use client";
 import type { ReactNode } from "react";
 import { cn } from "lib";
-import { Container, Box, Text } from "ui";
+import { Box, Text } from "ui";
 import Link from "next/link";
+import { FacebookIcon, InstagramIcon, LinkedInIcon, TwitterIcon } from "icons";
 import { Logo } from "../ui/logo";
+import { Container } from "../ui";
 
 const FooterLink = ({
   href,
@@ -23,46 +25,48 @@ const FooterLink = ({
 );
 
 const Copyright = () => (
-  <Box className="col-span-6 flex flex-col justify-between gap-y-8 border-b border-dark-200 pb-8 md:col-span-4 md:flex-row md:items-center md:gap-y-0">
-    <Box className="3xl:gap-16 flex gap-8">
-      <Link
-        className="hover:text-primary"
-        href="https://www.linkedin.com/company/complexus-tech/"
-        target="_blank"
-      >
-        {/* <FaLinkedin className="3xl:h-8 h-5 w-auto" /> 3 */}
-      </Link>
-      <Link
-        className="hover:text-primary"
-        href="https://twitter.com/complexus_tech"
-        target="_blank"
-      >
-        {/* <FaTwitter className="3xl:h-8 h-5 w-auto" /> */}3
-      </Link>
-      <Link
-        className="hover:text-primary"
-        href="https://www.instagram.com/complexus_tech/"
-        target="_blank"
-      >
-        {/* <FaInstagram className="3xl:h-8 h-5 w-auto" /> */}3
-      </Link>
-      <Link
-        className="hover:text-primary"
-        href="https://www.facebook.com/complexus.tech"
-        target="_blank"
-      >
-        {/* <FaFacebook className="3xl:h-8 h-5 w-auto" /> */} 3
-      </Link>
-    </Box>
-    <Box className="hidden items-center gap-5 opacity-70 md:flex">
-      <Link className="3xl:text-lg text-sm" href="/">
-        Privacy Policy
-      </Link>
-      |
-      <Text className="3xl:text-base 3xl:font-medium" fontSize="xs">
-        © {new Date().getFullYear()} Complexus Technologies &bull; All rights
-        reserved.
-      </Text>
+  <Box className="col-span-6">
+    <Box className=" flex flex-col justify-between gap-y-8 border-b border-dark-200 pb-8 md:col-span-4 md:flex-row md:items-center md:gap-y-0">
+      <Box className="3xl:gap-16 flex gap-8">
+        <Link
+          className="hover:text-primary"
+          href="https://twitter.com/complexus_tech"
+          target="_blank"
+        >
+          <TwitterIcon className="h-5 w-auto" />
+        </Link>
+        <Link
+          className="hover:text-primary"
+          href="https://www.linkedin.com/company/complexus-tech/"
+          target="_blank"
+        >
+          <LinkedInIcon className="h-5 w-auto" />
+        </Link>
+        <Link
+          className="hover:text-primary"
+          href="https://www.instagram.com/complexus_tech/"
+          target="_blank"
+        >
+          <InstagramIcon className="h-5 w-auto" />
+        </Link>
+        <Link
+          className="hover:text-primary"
+          href="https://www.facebook.com/complexus.tech"
+          target="_blank"
+        >
+          <FacebookIcon className="h-5 w-auto" />
+        </Link>
+      </Box>
+      <Box className="hidden items-center gap-5 opacity-70 md:flex">
+        <Link className="3xl:text-lg text-sm" href="/">
+          Privacy Policy
+        </Link>
+        |
+        <Text fontSize="sm">
+          © {new Date().getFullYear()} Complexus Technologies &bull; All rights
+          reserved.
+        </Text>
+      </Box>
     </Box>
   </Box>
 );
@@ -110,14 +114,11 @@ export const Footer = () => {
     },
   ];
   return (
-    <Box as="footer" className="relative bg-dark">
-      <Container className="3xl:gap-y-48 3xl:pt-52 3xl:pb-40 grid max-w-[85rem] grid-cols-6 gap-y-8 py-20 text-white md:gap-y-36 md:pt-40 xl:pb-24">
+    <Box as="footer" className="relative bg-black">
+      <Container className="grid grid-cols-6 gap-y-8 py-20">
         <Box className="col-span-6 md:col-span-1">
-          <Logo className="h-7 text-white/95 transition hover:text-white md:hidden lg:inline-block" />
-          <Logo asIcon className="hidden md:inline-block lg:hidden" />
-          <Text className="hiddenc mt-6 leading-snug " color="muted">
-            Complexus
-          </Text>
+          <Logo className="h-7" />
+          <Text color="muted">Complexus</Text>
         </Box>
         <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
           <Text
@@ -166,8 +167,11 @@ export const Footer = () => {
           </FooterLink>
         </Box>
         test
-        <div className="col col-span-2" />
+        <div className="col-span-2" />
         <Copyright />
+        <Text color="muted" fontSize="sm">
+          Complexus is a product of Complexus Technologies. All rights reserved.
+        </Text>
       </Container>
     </Box>
   );

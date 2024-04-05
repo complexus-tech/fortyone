@@ -5,7 +5,7 @@ import { Container, Blur } from "@/components/ui";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="mb-12 mt-16 text-center">
+    <Box as="section" className="my-20 text-center">
       <Text
         as="h3"
         className="mx-auto max-w-4xl pb-2 text-4xl font-medium md:text-7xl"
@@ -30,11 +30,11 @@ export const Features = () => {
       <Intro />
       <Box className="grid grid-cols-3 gap-8">
         <Wrapper className="rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          <Flex align="center" className="mb-8" gap={4} justify="between">
+          <Flex align="center" className="mb-6" gap={4} justify="between">
             <Text as="h3" fontSize="2xl" fontWeight="medium">
               Stories
             </Text>
-            <StoryIcon className="h-8 w-auto text-primary/60" />
+            <StoryIcon className="h-8 w-auto text-primary" />
           </Flex>
           <Text className="mb-8" color="muted">
             Lorem ipsum dolor sit amet, consectetur adipisicing elit. Placeat
