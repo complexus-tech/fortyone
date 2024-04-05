@@ -28,7 +28,7 @@ export const Reviews = () => {
       <Box className="grid grid-cols-3 gap-12">
         {Array.from({ length: 3 }).map((_, i) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-3xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-[1px] dark:border-0"
+            className="animate-gradient h-[38vh] rounded-3xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-[1px] shadow-2xl shadow-secondary/40 dark:border-0"
             key={i}
           >
             <Flex

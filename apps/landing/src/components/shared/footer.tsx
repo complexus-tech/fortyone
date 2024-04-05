@@ -17,7 +17,7 @@ const FooterLink = ({
   className?: string;
 }) => (
   <Link
-    className={cn("3xl:text-lg mb-6 block max-w-max", className)}
+    className={cn("3xl:text-lg mb-4 block max-w-max", className)}
     href={href}
   >
     {children}
@@ -25,110 +25,143 @@ const FooterLink = ({
 );
 
 const Copyright = () => (
-  <Box className="col-span-6">
-    <Box className=" flex flex-col justify-between gap-y-8 border-b border-dark-200 pb-8 md:col-span-4 md:flex-row md:items-center md:gap-y-0">
-      <Box className="3xl:gap-16 flex gap-8">
-        <Link
-          className="hover:text-primary"
-          href="https://twitter.com/complexus_tech"
-          target="_blank"
-        >
-          <TwitterIcon className="h-5 w-auto" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.linkedin.com/company/complexus-tech/"
-          target="_blank"
-        >
-          <LinkedInIcon className="h-5 w-auto" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.instagram.com/complexus_tech/"
-          target="_blank"
-        >
-          <InstagramIcon className="h-5 w-auto" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.facebook.com/complexus.tech"
-          target="_blank"
-        >
-          <FacebookIcon className="h-5 w-auto" />
-        </Link>
-      </Box>
-      <Box className="hidden items-center gap-5 opacity-70 md:flex">
-        <Link className="3xl:text-lg text-sm" href="/">
-          Privacy Policy
-        </Link>
-        |
-        <Text fontSize="sm">
-          © {new Date().getFullYear()} Complexus Technologies &bull; All rights
-          reserved.
-        </Text>
-      </Box>
+  <Box className="flex flex-col justify-between gap-y-8 border-b border-dark-200 pb-4 md:flex-row md:items-center md:gap-y-0">
+    <Box className="3xl:gap-16 flex gap-8">
+      <Link
+        className="hover:text-primary"
+        href="https://twitter.com/complexus_tech"
+        target="_blank"
+      >
+        <TwitterIcon className="h-5 w-auto" />
+      </Link>
+      <Link
+        className="hover:text-primary"
+        href="https://www.linkedin.com/company/complexus-tech/"
+        target="_blank"
+      >
+        <LinkedInIcon className="h-5 w-auto" />
+      </Link>
+      <Link
+        className="hover:text-primary"
+        href="https://www.instagram.com/complexus_tech/"
+        target="_blank"
+      >
+        <InstagramIcon className="h-5 w-auto" />
+      </Link>
+      <Link
+        className="hover:text-primary"
+        href="https://www.facebook.com/complexus.tech"
+        target="_blank"
+      >
+        <FacebookIcon className="h-5 w-auto" />
+      </Link>
+    </Box>
+    <Box className="hidden items-center gap-5 opacity-70 md:flex">
+      <Link className="3xl:text-lg text-sm" href="/">
+        Privacy Policy
+      </Link>
+      |
+      <Text fontSize="sm">
+        © {new Date().getFullYear()} Complexus Technologies &bull; All rights
+        reserved.
+      </Text>
     </Box>
   </Box>
 );
 
 export const Footer = () => {
-  const quickLinks = [
+  const features = [
     {
-      href: "/projects",
-      title: "Projects",
+      href: "/features/stories",
+      title: "User stories",
     },
     {
-      href: "/services",
-      title: "Services",
+      href: "/features/roadmaps",
+      title: "Roadmaps",
     },
     {
-      href: "/about",
-      title: "About",
+      title: "Objectives",
+      href: "/features/objectives",
     },
     {
-      href: "/contact",
-      title: "Contact",
+      href: "/features/milestones",
+      title: "Milestones",
+    },
+    {
+      href: "/features/themes",
+      title: "Themes",
+    },
+    {
+      href: "/features/documents",
+      title: "Documents",
+    },
+    {
+      href: "/features/reporting",
+      title: "Reporting",
+    },
+    {
+      href: "/features/retrospectives",
+      title: "Retrospectives",
+    },
+    {
+      href: "/features/whiteboards",
+      title: "Whiteboards",
+    },
+    {
+      href: "/features/teams",
+      title: "Teams",
+    },
+    {
+      href: "/features/integrations",
+      title: "Integrations",
+    },
+    {
+      href: "/features/discussions",
+      title: "Discussions",
     },
   ];
-  const servicesLinks = [
+  const company = [
     {
-      href: "/services#websites",
-      title: "Websites",
+      title: "About us",
+      href: "/company/about",
     },
     {
-      href: "/services#web-apps",
-      title: "Web Apps",
+      title: "Careers",
+      href: "/company/careers",
     },
     {
-      href: "/services#mobile-apps",
-      title: "Mobile Apps",
+      title: "Partners",
+      href: "/company/partners",
     },
     {
-      href: "/services#ui-ux",
-      title: "UI/UX Design",
+      title: "Press",
+      href: "/company/press",
     },
-
     {
-      href: "/services#consultancy",
-      title: "IT Consultancy",
+      title: "Blog",
+      href: "/company/blog",
+    },
+    {
+      title: "Contact",
+      href: "/company/contact",
     },
   ];
   return (
     <Box as="footer" className="relative bg-black">
-      <Container className="grid grid-cols-6 gap-y-8 py-20">
-        <Box className="col-span-6 md:col-span-1">
+      <Container className="grid grid-cols-6 gap-x-6 gap-y-8 pb-12 pt-20">
+        <Box className="col-span-2">
           <Logo className="h-7" />
-          <Text color="muted">Complexus</Text>
         </Box>
         <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
           <Text
-            className="3xl:text-xl 3xl:tracking-widest mb-8 tracking-wider"
+            className="mb-6 tracking-wide"
+            fontSize="sm"
             fontWeight="medium"
             transform="uppercase"
           >
-            Explore
+            Plartfom
           </Text>
-          {quickLinks.map(({ href, title }) => (
+          {features.map(({ href, title }) => (
             <FooterLink href={href} key={href}>
               {title}
             </FooterLink>
@@ -136,41 +169,62 @@ export const Footer = () => {
         </Box>
         <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
           <Text
-            className="3xl:text-xl 3xl:tracking-widest mb-8 tracking-wider"
+            className="mb-6 tracking-wide"
+            fontSize="sm"
             fontWeight="medium"
             transform="uppercase"
           >
-            Services
+            Company
           </Text>
-          {servicesLinks.map(({ href, title }) => (
+          {company.map(({ href, title }) => (
             <FooterLink href={href} key={href}>
               {title}
             </FooterLink>
           ))}
         </Box>
-        <Box className="col-span-6 md:col-span-1">
+        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
           <Text
-            className="3xl:text-xl 3xl:tracking-widest mb-8 tracking-wider"
+            className="mb-6 tracking-wide"
+            fontSize="sm"
             fontWeight="medium"
             transform="uppercase"
           >
-            Get in touch
+            Company
           </Text>
-          <FooterLink
-            className="text-primary"
-            href="mailto:hello@complexus.tech"
-          >
-            hello@complexus.tech
-          </FooterLink>
-          <FooterLink className="text-primary" href="tel:+263776686870">
-            (+263) 776-686-870
-          </FooterLink>
+          {company.map(({ href, title }) => (
+            <FooterLink href={href} key={href}>
+              {title}
+            </FooterLink>
+          ))}
         </Box>
-        test
-        <div className="col-span-2" />
+        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
+          <Text
+            className="mb-6 tracking-wide"
+            fontSize="sm"
+            fontWeight="medium"
+            transform="uppercase"
+          >
+            Company
+          </Text>
+          {company.map(({ href, title }) => (
+            <FooterLink href={href} key={href}>
+              {title}
+            </FooterLink>
+          ))}
+        </Box>
+      </Container>
+      <Container className="pb-10">
         <Copyright />
-        <Text color="muted" fontSize="sm">
-          Complexus is a product of Complexus Technologies. All rights reserved.
+        <Text className="mt-4" color="muted" fontSize="sm">
+          Complexus is a product of{" "}
+          <a
+            className="underline underline-offset-[3px] hover:text-primary"
+            href="http://complexus.tech"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Complexus Technologies.
+          </a>
         </Text>
       </Container>
     </Box>
