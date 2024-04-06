@@ -1,7 +1,7 @@
 "use client";
 
 import { ComponentPropsWithRef, useState } from "react";
-import { EditorContent, BubbleMenu } from "@tiptap/react";
+import { EditorContent, BubbleMenu, Editor } from "@tiptap/react";
 
 import { BubbleMenu as CustomBubbleMenu } from "./BubbleMenu";
 import { cn } from "lib";

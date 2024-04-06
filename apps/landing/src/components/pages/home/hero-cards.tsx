@@ -24,7 +24,7 @@ export const HeroCards = () => {
               src="/stories.png"
               width={1854}
             />
-            <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-50" />
+            <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-0" />
           </SwiperSlide>
           <SwiperSlide className="relative rounded-2xl">
             <Image
@@ -34,7 +34,6 @@ export const HeroCards = () => {
               src="/story.png"
               width={1854}
             />
-            <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-50" />
           </SwiperSlide>
           <SwiperSlide className="relative rounded-2xl">
             <Image
@@ -44,7 +43,6 @@ export const HeroCards = () => {
               src="/dashboard.png"
               width={1846}
             />
-            <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-50" />
           </SwiperSlide>
         </Swiper>
       </Box>

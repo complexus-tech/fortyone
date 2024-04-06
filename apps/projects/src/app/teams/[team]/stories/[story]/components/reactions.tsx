@@ -12,7 +12,7 @@ export const Reactions = () => {
       <Badge color="tertiary" rounded="full" size="lg" variant="outline">
         👌 2
       </Badge>
-      <Badge
+      {/* <Badge
         className="aspect-square px-1"
         color="tertiary"
         rounded="full"
@@ -20,7 +20,7 @@ export const Reactions = () => {
         variant="outline"
       >
         Emoji
-      </Badge>
+      </Badge> */}
     </Flex>
   );
 };
