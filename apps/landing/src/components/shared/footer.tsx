@@ -115,10 +115,6 @@ export const Footer = () => {
       href: "/features/integrations",
       title: "Integrations",
     },
-    {
-      href: "/features/discussions",
-      title: "Discussions",
-    },
   ];
   const company = [
     {

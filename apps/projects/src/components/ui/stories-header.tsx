@@ -28,7 +28,7 @@ export const StoriesHeader = ({
   return (
     <Container
       className={cn(
-        "sticky top-0 z-[1] select-none bg-gray-50/90 py-[0.4rem] backdrop-blur dark:bg-dark-300/90",
+        "sticky top-0 z-[1] select-none bg-gray-50/90 py-[0.4rem] backdrop-blur dark:bg-[#181818]/90",
         {
           "border-b-[0.5px] border-gray-100 dark:border-dark-50/60":
             count === 0,

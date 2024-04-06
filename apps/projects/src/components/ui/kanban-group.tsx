@@ -27,7 +27,7 @@ const List = ({
         className={cn(
           "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
-            "bg-gray-100/30 dark:bg-dark-300/20": totalStories === 0,
+            "bg-gray-100/30 dark:bg-dark-300/50": totalStories === 0,
             "bg-gray-100/40 dark:bg-dark-300/40": isOver,
           },
         )}
