@@ -5,6 +5,7 @@ import {
   Features,
   Integrations,
   Reviews,
+  ProductDemo,
 } from "@/components/pages/home";
 
 export default function Page(): JSX.Element {
@@ -13,6 +14,7 @@ export default function Page(): JSX.Element {
       <Hero />
       <HeroCards />
       <SampleClients />
+      <ProductDemo />
       <Features />
       <Reviews />
       <Integrations />

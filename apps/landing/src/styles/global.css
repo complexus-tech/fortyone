@@ -154,3 +154,135 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 .nprogress-custom-parent #nprogress .bar {
   position: absolute;
 }
+
+/* Mouse follow cursor */
+.mf-cursor {
+  @apply text-primary/80;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  opacity: 0;
+  direction: ltr;
+  contain: layout style size;
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    color 0.4s;
+}
+@media screen and (min-width: 768px) {
+  .mf-cursor {
+    opacity: 1;
+  }
+}
+.mf-cursor:before {
+  content: "";
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  width: 48px;
+  height: 48px;
+  transform: scale(0.2);
+  background: currentColor;
+  border-radius: 50%;
+  transition:
+    transform 0.25s ease-in-out,
+    opacity 0.1s;
+}
+.mf-cursor.-inverse {
+  color: invert(#000);
+}
+.mf-cursor.-exclusion {
+  -webkit-mix-blend-mode: exclusion;
+  mix-blend-mode: exclusion;
+}
+.mf-cursor.-exclusion:before {
+  background: invert(#000);
+}
+.mf-cursor.-pointer:before {
+  transform: scale(0.15);
+}
+.mf-cursor.-text:before {
+  opacity: 0.75;
+  transform: scale(1.7);
+  background: transparent;
+}
+.mf-cursor.-text.-active:before {
+  transform: scale(1.6);
+  transition-duration: 0.2s;
+}
+.mf-cursor.-icon:before {
+  transform: scale(1.5);
+}
+.mf-cursor.-icon.-active:before {
+  transform: scale(1.4);
+}
+.mf-cursor.-hidden:before {
+  transform: scale(0);
+}
+.mf-cursor-text {
+  @apply absolute flex items-center justify-center rounded-full border border-dark-200 bg-dark p-2 text-center text-gray-50 opacity-0;
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 80px;
+  height: 80px;
+  transform: scale(0) rotate(10deg);
+  font-size: 0.8rem;
+  line-height: 20px;
+  text-align: center;
+  transition:
+    opacity 0.4s,
+    transform 0.3s;
+}
+.mf-cursor.-text .mf-cursor-text,
+.mf-cursor.-icon .mf-cursor-text {
+  opacity: 1;
+  transform: scale(1);
+}
+.mf-cursor-media {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  margin: -200px 0 0 -200px;
+}
+.mf-cursor-media img,
+.mf-cursor-media video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+@media (supports: object-fit: cover) {
+  .mf-cursor-media img,
+  .mf-cursor-media video {
+    position: static;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translateZ(0);
+  }
+}
+.mf-cursor-media img {
+  transform: scale(0.2);
+}
+.mf-cursor-media-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform: scale(0) translateZ(0);
+  padding: 1px;
+  opacity: 0;
+  border-radius: 50%;
+  transition:
+    transform 0.35s,
+    opacity 0.2s 0.2s;
+}
+.mf-cursor.-media .mf-cursor-media-box {
+  opacity: 1;
+  transform: scale(0.696);
+  transition-duration: 0.4s, 0.4s;
+  transition-delay: 0s, 0s;
+}

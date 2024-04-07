@@ -7,11 +7,21 @@ import Image from "next/image";
 import "swiper/css";
 import "swiper/css/effect-cards";
 import { Container, Blur } from "@/components/ui";
+import { useCursor } from "@/hooks";
 
 export const HeroCards = () => {
+  const cursor = useCursor();
   return (
     <Container>
-      <Box className="relative">
+      <Box
+        className="relative"
+        onMouseEnter={() => {
+          cursor.setText("← Drag →");
+        }}
+        onMouseLeave={() => {
+          cursor.removeText();
+        }}
+      >
         <Blur className="absolute -top-10 left-1/2 right-1/2 h-[500px] w-[500px] -translate-x-1/2 bg-primary/40 dark:bg-primary/20" />
         <Blur className="absolute -bottom-28 -left-36 h-[500px] w-[500px] bg-warning/50 dark:bg-primary/10" />
         <Blur className="absolute -bottom-6 right-20 -z-10 h-[400px] w-[400px] bg-white dark:bg-warning/20" />

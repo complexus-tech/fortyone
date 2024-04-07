@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Flex, Text, Wrapper } from "ui";
 import { ArrowRightIcon } from "icons";
-import { Container, Blur } from "@/components/ui";
+import { Container } from "@/components/ui";
 
 export const Reviews = () => {
   const reviews = [
@@ -56,11 +56,11 @@ export const Reviews = () => {
       <Box className="grid grid-cols-3 gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-3xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-[1px] shadow-2xl shadow-secondary/40 dark:border-0"
+            className="animate-gradient h-[38vh] rounded-[2rem] bg-gradient-to-br from-primary via-secondary to-warning/60 p-[1px] shadow-2xl shadow-secondary/40 dark:border-0"
             key={id}
           >
             <Flex
-              className="relative h-full rounded-3xl bg-dark px-8 py-12"
+              className="relative h-full rounded-[2rem] bg-dark px-8 py-12"
               direction="column"
               justify="between"
             >
@@ -99,8 +99,6 @@ export const Reviews = () => {
           See all customer stories
         </Button>
       </Box>
-
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 bg-primary/40 dark:bg-primary/5" />
     </Container>
   );
 };

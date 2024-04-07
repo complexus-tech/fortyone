@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
+import { CursorProvider } from "@/context";
 
 const font = Inter({
   subsets: ["latin"],
@@ -40,10 +41,12 @@ export default function RootLayout({
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        <Navigation />
-        {children}
-        <CallToAction />
-        <Footer />
+        <CursorProvider>
+          <Navigation />
+          {children}
+          <CallToAction />
+          <Footer />
+        </CursorProvider>
       </body>
     </html>
   );

@@ -1,6 +1,17 @@
-import { Box, Text, Flex, Wrapper } from "ui";
-import { StoryIcon } from "icons";
+"use client";
+import { Box, Text, Flex, Wrapper, Button } from "ui";
+import {
+  ArrowRightIcon,
+  EpicsIcon,
+  KanbanIcon,
+  MilestonesIcon,
+  ObjectiveIcon,
+  StoryIcon,
+} from "icons";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { Container, Blur } from "@/components/ui";
 
 const Intro = () => (
@@ -20,46 +31,141 @@ const Intro = () => (
         effortless project management.
       </Text>
     </Box>
-    <Blur className="absolute left-1/2 right-1/2 top-28 h-[900px] w-[900px] -translate-x-1/2 bg-primary/40 dark:bg-secondary/20" />
+    <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-primary/40 dark:bg-secondary/20" />
   </Box>
 );
 
+const ItemWrapper = ({
+  className,
+  children,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => {
+  const [isActive, setIsActive] = useState(false);
+  return (
+    <Box
+      className={className}
+      onMouseEnter={() => {
+        setIsActive(true);
+      }}
+      onMouseLeave={() => {
+        setIsActive(false);
+      }}
+    >
+      <motion.div
+        animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+        className="h-full"
+        initial={{ y: 0, x: 0 }}
+        transition={{ type: "spring", stiffness: 100 }}
+      >
+        <Wrapper className="h-full rounded-[2rem] px-6 py-8 shadow-2xl dark:bg-dark-300/30">
+          <>{children}</>
+        </Wrapper>
+      </motion.div>
+    </Box>
+  );
+};
+
 export const Features = () => {
+  const features = [
+    {
+      id: 1,
+      name: "Stories",
+      description: "Break down complex projects into manageable tasks.",
+      icon: <StoryIcon className="h-7 w-auto" />,
+      image: {
+        src: "/story-card.png",
+        alt: "Stories",
+        height: 2422,
+        width: 1652,
+      },
+    },
+    {
+      id: 2,
+      name: "Objectives",
+      description: "Define your goals, track progress, and measure success.",
+      icon: <ObjectiveIcon className="h-7 w-auto" />,
+      image: {
+        src: "/story-card.png",
+        alt: "Stories",
+        height: 2422,
+        width: 1652,
+      },
+    },
+    {
+      id: 3,
+      name: "Milstones",
+      description: "Set milestones to track progress and celebrate success.",
+      icon: <MilestonesIcon className="h-7 w-auto" />,
+      image: {
+        src: "/story-card.png",
+        alt: "Stories",
+        height: 2422,
+        width: 1652,
+      },
+    },
+    {
+      id: 4,
+      name: "Kanban Boards",
+      description:
+        "Visualize your workflow, track progress, and manage tasks efficiently. Drag and drop tasks to update status.",
+      icon: <KanbanIcon className="h-7 w-auto" />,
+      image: {
+        src: "/kanban.png",
+        alt: "Kanban Boards",
+        height: 2198,
+        width: 948,
+      },
+      className: "col-span-2",
+    },
+
+    {
+      id: 5,
+      name: "Themes",
+      description: "Define your goals, track progress, and measure success.",
+      icon: <EpicsIcon className="h-7 w-auto" />,
+      image: {
+        src: "/story-card.png",
+        alt: "Stories",
+        height: 2422,
+        width: 1652,
+      },
+    },
+  ];
+
   return (
     <Container as="section">
       <Intro />
       <Box className="grid grid-cols-3 gap-8">
-        <Wrapper className="rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          <Flex align="center" className="mb-6" gap={4} justify="between">
-            <Text as="h3" fontSize="2xl" fontWeight="medium">
-              Stories
+        {features.map((feature) => (
+          <ItemWrapper className={feature.className} key={feature.id}>
+            <Flex align="center" className="mb-3" gap={4} justify="between">
+              <Text
+                as="h3"
+                className="flex items-center gap-2"
+                fontSize="2xl"
+                fontWeight="medium"
+              >
+                {feature.icon}
+                {feature.name}
+              </Text>
+              <Button color="tertiary" rounded="full" size="md">
+                <ArrowRightIcon className="h-4 w-auto" />
+              </Button>
+            </Flex>
+            <Text className="mb-4" color="muted">
+              {feature.description}
             </Text>
-            <StoryIcon className="h-8 w-auto text-primary" />
-          </Flex>
-          <Text className="mb-8" color="muted">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Placeat
-            cupiditate nam quis, iure esse magnam.
-          </Text>
-          <Image
-            alt="Stories"
-            className="mx-auto block rounded-lg"
-            height={1134}
-            src="/sto.png"
-            width={752}
-          />
-        </Wrapper>
-        <Wrapper className="min-h-[50vh] rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          Test
-        </Wrapper>
-        <Wrapper className="min-h-[50vh] rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          Test
-        </Wrapper>
-        <Wrapper className="col-span-2 min-h-[40vh] rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          Test
-        </Wrapper>
-        <Wrapper className="min-h-[40vh] rounded-3xl px-8 py-10 shadow-2xl dark:bg-dark-300/30">
-          Test
-        </Wrapper>
+            <Image
+              alt={feature.image.alt}
+              className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
+              height={feature.image.height}
+              src={feature.image.src}
+              width={feature.image.width}
+            />
+          </ItemWrapper>
+        ))}
       </Box>
     </Container>
   );
