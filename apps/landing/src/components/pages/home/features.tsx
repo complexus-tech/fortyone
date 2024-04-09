@@ -95,7 +95,7 @@ export const Features = () => {
     },
     {
       id: 3,
-      name: "Milstones",
+      name: "Milestones",
       description: "Set milestones to track progress and celebrate success.",
       icon: <MilestonesIcon className="h-7 w-auto" />,
       image: {
@@ -167,6 +167,14 @@ export const Features = () => {
           </ItemWrapper>
         ))}
       </Box>
+
+      <Image
+        alt="Stories"
+        className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
+        height={400}
+        src="/images/panel.png"
+        width={1200}
+      />
     </Container>
   );
 };

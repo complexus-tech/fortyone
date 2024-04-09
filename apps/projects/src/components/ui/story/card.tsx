@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Box, Flex, Button, Text, Avatar, DatePicker } from "ui";
+import { Box, Flex, Button, Text, Avatar, DatePicker, Checkbox } from "ui";
 import { CalendarIcon, TagsIcon } from "icons";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
@@ -36,15 +36,19 @@ export const StoryCard = ({
           )}
         >
           <Flex className="mb-0.5" gap={2} justify="between">
-            <Link className="flex-1" href="/teams/web/stories/test-123-story">
-              <Text
-                className="w-[12ch] truncate text-[0.95rem]"
-                color="muted"
-                fontWeight="medium"
-              >
-                COM-{story.id}
-              </Text>
-            </Link>
+            <Flex align="center" gap={1}>
+              <Checkbox className="rounded-[0.35rem]" />
+              <Link className="flex-1" href="/teams/web/stories/test-123-story">
+                <Text
+                  className="w-[12ch] truncate text-[0.95rem]"
+                  color="muted"
+                  fontWeight="medium"
+                >
+                  COM-{story.id}
+                </Text>
+              </Link>
+            </Flex>
+
             <AssigneesMenu>
               <AssigneesMenu.Trigger>
                 <button className="block" type="button">

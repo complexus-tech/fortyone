@@ -31,7 +31,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
         >
           <Flex align="center" className="relative shrink select-none" gap={2}>
             <DragHandle {...listeners} {...attributes} />
-            <TableCheckbox />
+            <TableCheckbox className="absolute -left-[1.6rem]" />
             <Tooltip title="Story ID: COM-12">
               <Text
                 className="min-w-[6ch] truncate text-[0.98rem]"

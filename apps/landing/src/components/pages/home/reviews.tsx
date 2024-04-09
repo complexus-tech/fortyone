@@ -10,7 +10,7 @@ export const Reviews = () => {
       avatar:
         "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
       content:
-        "Caltech employs Complexus to enhance team productivity by 35%, resulting in time savings of 4-6 hours per week per user through its seamless integration with GitHub and simplified agile workflows.",
+        "Complexus is a game-changer! It's intuitive, efficient, and powerful. Say goodbye to wasted time - it's a must-have!",
     },
     {
       id: 2,
@@ -18,7 +18,7 @@ export const Reviews = () => {
       avatar:
         "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
       content:
-        "Caltech employs Complexus to enhance team productivity by 35%, resulting in time savings of 4-6 hours per week per user through its seamless integration with GitHub and simplified agile workflows.",
+        "Complexus simplifies project management like no other system. Highly recommend for enhanced productivity!",
     },
     {
       id: 3,
@@ -26,7 +26,7 @@ export const Reviews = () => {
       avatar:
         "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
       content:
-        "Caltech employs Complexus to enhance team productivity by 35%, resulting in time savings of 4-6 hours per week per user through its seamless integration with GitHub and simplified agile workflows.",
+        "Empowering and effortless - Complexus helps us conquer project complexity. A must-have for achieving exceptional results!",
     },
   ];
 
@@ -56,7 +56,7 @@ export const Reviews = () => {
       <Box className="grid grid-cols-3 gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-[2rem] bg-gradient-to-br from-primary via-secondary to-warning/60 p-[1px] shadow-2xl shadow-secondary/40 dark:border-0"
+            className="animate-gradient h-[38vh] rounded-[2rem] bg-gradient-to-br from-primary via-secondary to-warning/60 p-[2px] shadow-2xl shadow-secondary/40 dark:border-0"
             key={id}
           >
             <Flex
@@ -83,7 +83,6 @@ export const Reviews = () => {
               >
                 Read more
               </Button>
-              <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-50" />
             </Flex>
           </Wrapper>
         ))}
