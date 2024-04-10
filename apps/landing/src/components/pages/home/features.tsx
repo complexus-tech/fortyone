@@ -23,7 +23,7 @@ const Intro = () => (
         color="gradient"
         fontWeight="semibold"
       >
-        Accomplish your primary objectives.
+        Meet your core objectives.
       </Text>
       <Text
         className="mx-auto mt-2 max-w-[700px] md:mt-6"

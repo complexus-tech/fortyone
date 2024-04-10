@@ -15,7 +15,7 @@ const text = cva("text-gray dark:text-gray-200", {
       muted: "text-gray/80 dark:text-gray-300/80",
       danger: "text-danger dark:text-danger",
       gradient:
-        "bg-gradient-to-r from-primary dark:via-gray-100 dark:to-secondary to-secondary bg-clip-text text-transparent dark:text-transparent",
+        "bg-gradient-to-r from-primary dark:via-gray-200 dark:to-secondary to-secondary bg-clip-text text-transparent dark:text-transparent",
       black: "text-gray-300",
       white: "text-gray-200",
       warning: "text-warning",
