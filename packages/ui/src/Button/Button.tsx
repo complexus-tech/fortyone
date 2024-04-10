@@ -28,7 +28,7 @@ export const buttonVariants = cva(
       },
       color: {
         primary:
-          "border-primary bg-primary ring-primary-200 enabled:hover:bg-primary-200 enabled:hover:border-primary-200 focus:bg-primary-200 focus:border-primary-200",
+          "border-primary dark:text-black bg-primary ring-primary-200 enabled:hover:bg-primary-200 enabled:hover:border-primary-200 focus:bg-primary-200 focus:border-primary-200",
         danger:
           "text-danger border-danger bg-danger ring-danger hover:bg-danger/10",
         info: "text-info border-info bg-info ring-info enabled:hover:bg-info-300 enabled:hover:border-info-300 focus:bg-info-300 focus:border-info-300",

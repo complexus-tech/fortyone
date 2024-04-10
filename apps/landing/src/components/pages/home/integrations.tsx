@@ -52,18 +52,19 @@ export const Integrations = () => {
             as="h1"
             className="mt-6 h-max max-w-4xl pb-2 text-7xl"
             color="gradient"
-            fontWeight="medium"
+            fontWeight="semibold"
           >
             Sync up your favorite tools.
           </Text>
           <Text
             className="my-6 max-w-[600px] md:mt-6"
             color="muted"
-            fontSize="lg"
+            fontSize="xl"
+            fontWeight="normal"
           >
-            Complexus seamlessly integrates with popular software tools like
-            GitHub, Intercom, Figma, Notion, Slack, and Gitlab, enhancing
-            project management efficiency.
+            Complexus seamlessly integrates with popular tools like GitHub,
+            Intercom, Figma, Notion, Slack, and Gitlab, empowering teams to
+            achieve their objectives with greater efficiency.
           </Text>
           <Button color="tertiary" rounded="full" size="lg">
             View all integrations

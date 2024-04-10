@@ -19,16 +19,20 @@ const Intro = () => (
     <Box as="section" className="my-20 text-center">
       <Text
         as="h3"
-        className="mx-auto max-w-4xl pb-2 text-4xl font-medium md:text-7xl"
+        className="mx-auto max-w-4xl pb-2 text-4xl md:text-7xl"
         color="gradient"
+        fontWeight="semibold"
       >
-        Say goodbye to wasted time and energy.
+        Nail Every Project. Effortlessly.
       </Text>
-      <Text className="mx-auto mt-2 max-w-[700px] md:mt-6" fontSize="lg">
-        Simplify workflows, streamline collaboration, and achieve exceptional
-        results with Complexus. With features like OKR Tracking, Themes
-        Management, Iterations Planning, and Roadmap Visualization, welcome to
-        effortless project management.
+      <Text
+        className="mx-auto mt-2 max-w-[700px] md:mt-6"
+        fontSize="xl"
+        fontWeight="normal"
+      >
+        Streamline workflows, elevate collaboration, and nail your objectives
+        with features like OKR tracking, Kanban boards, Roadmaps, milestones,
+        and more.
       </Text>
     </Box>
     <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-primary/40 dark:bg-secondary/20" />

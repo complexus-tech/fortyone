@@ -14,7 +14,7 @@ export const ComingSoon = () => {
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-4xl md:text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-4xl md:text-8xl"
             color="gradient"
             fontWeight="medium"
           >

@@ -73,10 +73,10 @@ const Copyright = () => (
 );
 
 export const Footer = () => {
-  const features = [
+  const product = [
     {
       href: "/features/stories",
-      title: "User stories",
+      title: "Stories",
     },
     {
       href: "/features/roadmaps",
@@ -129,14 +129,6 @@ export const Footer = () => {
       href: "/company/careers",
     },
     {
-      title: "Partners",
-      href: "/company/partners",
-    },
-    {
-      title: "Press",
-      href: "/company/press",
-    },
-    {
       title: "Blog",
       href: "/company/blog",
     },
@@ -155,6 +147,30 @@ export const Footer = () => {
       href: "/legal/terms",
     },
   ];
+
+  const resources = [
+    {
+      title: "Help Center",
+      href: "/resources/help",
+    },
+    {
+      title: "Developers",
+      href: "/resources/developers",
+    },
+    {
+      title: "Changelog",
+      href: "/resources/changelog",
+    },
+    {
+      title: "Guides",
+      href: "/resources/guides",
+    },
+
+    {
+      title: "Status",
+      href: "/resources/status",
+    },
+  ];
   return (
     <Box as="footer" className="relative bg-black">
       <Container className="grid grid-cols-6 gap-x-6 gap-y-8 pb-12 pt-20">
@@ -168,9 +184,9 @@ export const Footer = () => {
             fontWeight="medium"
             transform="uppercase"
           >
-            Plartfom
+            Product
           </Text>
-          {features.map(({ href, title }) => (
+          {product.map(({ href, title }) => (
             <FooterLink href={href} key={href}>
               {title}
             </FooterLink>
@@ -213,9 +229,9 @@ export const Footer = () => {
             fontWeight="medium"
             transform="uppercase"
           >
-            Company
+            Resources
           </Text>
-          {company.map(({ href, title }) => (
+          {resources.map(({ href, title }) => (
             <FooterLink href={href} key={href}>
               {title}
             </FooterLink>

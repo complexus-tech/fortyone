@@ -8,8 +8,16 @@ export const SampleClients = () => {
   return (
     <Container className="relative mt-16">
       <Box className="py-28">
-        <Text as="h3" className="text-center" fontSize="xl">
-          Trusted by the hundreds of teams to manage projects.
+        <Text
+          as="h3"
+          className="text-center"
+          fontSize="2xl"
+          fontWeight="normal"
+        >
+          Hundreds of teams rely on us to crush{" "}
+          <span className="border-b border-dashed border-primary text-primary">
+            objectives.
+          </span>
         </Text>
         <Marquee className="mt-20" pauseOnHover speed={40}>
           {Array.from({ length: 12 }).map((_, i) => (

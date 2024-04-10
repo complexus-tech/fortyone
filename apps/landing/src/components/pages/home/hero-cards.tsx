@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "ui";
-import { EffectCards, Autoplay } from "swiper/modules";
+import { EffectCards } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
@@ -11,6 +11,39 @@ import { useCursor } from "@/hooks";
 
 export const HeroCards = () => {
   const cursor = useCursor();
+
+  const cards = [
+    {
+      id: 1,
+      title: "Stories",
+      image: {
+        src: "/stories.png",
+        alt: "Stories",
+        width: 1854,
+        height: 2982,
+      },
+    },
+    {
+      id: 2,
+      title: "Dashboard",
+      image: {
+        src: "/dashboard.png",
+        alt: "Dashboard",
+        width: 1846,
+        height: 2980,
+      },
+    },
+    {
+      id: 3,
+      title: "Story",
+      image: {
+        src: "/story.png",
+        alt: "Story",
+        width: 1854,
+        height: 2982,
+      },
+    },
+  ];
   return (
     <Container>
       <Box
@@ -25,35 +58,27 @@ export const HeroCards = () => {
         <Blur className="absolute -top-10 left-1/2 right-1/2 h-[500px] w-[500px] -translate-x-1/2 bg-primary/40 dark:bg-primary/20" />
         <Blur className="absolute -bottom-28 -left-36 h-[500px] w-[500px] bg-warning/50 dark:bg-primary/10" />
         <Blur className="absolute -bottom-6 right-20 -z-10 h-[400px] w-[400px] bg-white dark:bg-warning/20" />
-        <Swiper effect="cards" grabCursor modules={[EffectCards, Autoplay]}>
-          <SwiperSlide className="relative rounded-2xl">
-            <Image
-              alt="Stories"
-              className="animate-gradient rounded-2xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-1 dark:p-0.5"
-              height={2982}
-              src="/stories.png"
-              width={1854}
-            />
-            <div className="pointer-events-none absolute inset-0 z-10 bg-[url(/noise.png)] opacity-0" />
-          </SwiperSlide>
-          <SwiperSlide className="relative rounded-2xl">
-            <Image
-              alt="Stories"
-              className="animate-gradient rounded-2xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-1 dark:p-0.5"
-              height={2982}
-              src="/story.png"
-              width={1854}
-            />
-          </SwiperSlide>
-          <SwiperSlide className="relative rounded-2xl">
-            <Image
-              alt="Dashboard"
-              className="animate-gradient rounded-2xl bg-gradient-to-br from-primary via-secondary to-warning/60 p-1 dark:p-0.5"
-              height={2980}
-              src="/dashboard.png"
-              width={1846}
-            />
-          </SwiperSlide>
+        <Swiper
+          effect="cards"
+          grabCursor
+          initialSlide={1}
+          modules={[EffectCards]}
+        >
+          {cards.map((card) => (
+            <SwiperSlide
+              className="relative rounded-2xl border border-dark-50 bg-dark-200 p-3"
+              key={card.id}
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[url(/noise.png)] opacity-80" />
+              <Image
+                alt={card.title}
+                className="relative rounded-lg"
+                height={card.image.height}
+                src={card.image.src}
+                width={card.image.width}
+              />
+            </SwiperSlide>
+          ))}
         </Swiper>
       </Box>
     </Container>

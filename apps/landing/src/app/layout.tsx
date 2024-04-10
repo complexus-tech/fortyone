@@ -8,7 +8,7 @@ import { CursorProvider } from "@/context";
 const font = Inter({
   subsets: ["latin"],
   display: "swap",
-  weight: ["500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {

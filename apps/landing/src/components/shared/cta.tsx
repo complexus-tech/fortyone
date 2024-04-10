@@ -3,7 +3,7 @@ import { Blur, Container } from "@/components/ui";
 
 export const CallToAction = () => {
   return (
-    <Box className="border-y border-dark-300">
+    <Box className="border-y border-dark-300 bg-[#030303]">
       <Container className="relative max-w-7xl py-28">
         <Flex
           align="center"
@@ -12,19 +12,20 @@ export const CallToAction = () => {
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-6xl pb-2 text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-7xl"
             color="gradient"
-            fontWeight="medium"
+            fontWeight="semibold"
           >
-            Start Conquering with Complexus Today!
+            Experience the difference. Try it now!
           </Text>
           <Text
             className="mt-4 max-w-[600px] md:mt-6"
             color="muted"
-            fontSize="lg"
+            fontSize="xl"
+            fontWeight="normal"
           >
-            Revolutionize project management. Simplify workflows, enhance
-            collaboration, achieve exceptional results.
+            Streamline your workflows, empower your team, and nail every key
+            objective all in one seamless platform.
           </Text>
           <Flex align="center" className="mt-8" gap={3}>
             <Button rounded="full" size="lg">
@@ -40,7 +41,7 @@ export const CallToAction = () => {
             </Button>
           </Flex>
         </Flex>
-        <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-primary/40 dark:bg-warning/5" />
+        <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-primary/40 dark:bg-primary/10" />
       </Container>
     </Box>
   );

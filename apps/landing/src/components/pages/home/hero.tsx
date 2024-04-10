@@ -5,7 +5,7 @@ import { Container, Blur } from "@/components/ui";
 export const Hero = () => {
   return (
     <Box>
-      <Blur className="absolute -top-[65vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 dark:bg-primary/[0.03]" />
+      <Blur className="absolute -top-[70vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 blur-3xl dark:bg-success/[0.07]" />
       <Container className="pt-20">
         <Flex
           align="center"
@@ -26,15 +26,17 @@ export const Hero = () => {
 
           <Text
             as="h1"
-            className="mt-6 h-max max-w-6xl pb-2 text-4xl md:text-7xl"
+            className="mt-6 max-w-5xl pb-2 text-4xl md:text-8xl"
             color="gradient"
-            fontWeight="medium"
           >
-            Empowering teams to conquer project complexity.
+            Nail every objective on time.
           </Text>
-          <Text className="mt-8 max-w-[600px] md:text-lg" color="muted">
-            Revolutionize project management. Simplify workflows, enhance
-            collaboration, achieve exceptional results.
+          <Text
+            className="mt-8 max-w-[600px] opacity-90 md:text-2xl"
+            fontWeight="normal"
+          >
+            Empower your team to crush every key objective with our seamless
+            project management platform.
           </Text>
           <Flex align="center" className="mt-10" gap={4}>
             <Button

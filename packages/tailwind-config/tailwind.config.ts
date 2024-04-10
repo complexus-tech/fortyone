@@ -6,7 +6,8 @@ const config: Omit<Config, "content"> = {
     colors: {
       transparent: "transparent",
       current: "currentColor",
-      primary: "#EA6060",
+      primary: "#22c55e",
+      // primary: "#EA6060",
       secondary: "#002F61",
       black: "#0c0c0c",
       white: "#ffffff",
