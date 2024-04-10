@@ -5,7 +5,7 @@ import { Container, Blur } from "@/components/ui";
 export const Hero = () => {
   return (
     <Box>
-      <Blur className="absolute -top-[70vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 blur-3xl dark:bg-success/[0.07]" />
+      <Blur className="absolute -top-[70vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 blur-3xl dark:bg-primary/5" />
       <Container className="pt-20">
         <Flex
           align="center"

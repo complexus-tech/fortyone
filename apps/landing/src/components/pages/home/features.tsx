@@ -23,7 +23,7 @@ const Intro = () => (
         color="gradient"
         fontWeight="semibold"
       >
-        Nail Every Project. Effortlessly.
+        Accomplish your primary objectives.
       </Text>
       <Text
         className="mx-auto mt-2 max-w-[700px] md:mt-6"
