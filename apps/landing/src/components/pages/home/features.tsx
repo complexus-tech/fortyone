@@ -35,7 +35,7 @@ const Intro = () => (
         and more.
       </Text>
     </Box>
-    <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-primary/40 dark:bg-secondary/20" />
+    <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
   </Box>
 );
 
