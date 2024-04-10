@@ -10,18 +10,24 @@ import {
   RoadmapIcon,
   StoryIcon,
 } from "icons";
+import Link from "next/link";
 import { Logo, Container } from "@/components/ui";
 
 const MenuItem = ({
   name,
   description,
   icon,
+  href,
 }: {
   name: string;
   description: string;
   icon: JSX.Element;
+  href: string;
 }) => (
-  <Box className="flex w-64 gap-2 rounded-lg p-2 hover:bg-dark-200/80">
+  <Link
+    className="flex w-64 gap-2 rounded-lg p-2 hover:bg-primary/5"
+    href={href}
+  >
     {icon}
     <Box>
       <Text>{name}</Text>
@@ -29,18 +35,17 @@ const MenuItem = ({
         {description}
       </Text>
     </Box>
-  </Box>
+  </Link>
 );
 
 export const Navigation = () => {
   const navLinks = [
     { title: "Integrations", href: "/" },
     { title: "Pricing", href: "/" },
-    { title: "Why Complexus", href: "/" },
-    { title: "Contact", href: "/" },
+    { title: "About", href: "/about" },
   ];
 
-  const features = [
+  const product = [
     {
       id: 1,
       name: "Stories",
@@ -115,67 +120,71 @@ export const Navigation = () => {
   return (
     <Box className="fixed left-0 top-4 z-10 w-screen">
       <Container as="nav">
-        <Box className="z-10 flex h-16 items-center justify-between rounded-full border border-dark-200 px-6 backdrop-blur-lg dark:bg-black/40">
-          <Logo className="relative top-0.5 z-10 h-7 text-dark-100 dark:text-gray-50" />
-          <Flex align="center" gap={4}>
-            <NavigationMenu>
-              <NavigationMenu.List>
-                <NavigationMenu.Item>
-                  <NavigationMenu.Trigger>Features</NavigationMenu.Trigger>
-                  <NavigationMenu.Content className="pb-1">
-                    <Box className="grid w-max grid-cols-2 gap-2 p-2">
-                      {features.map(({ id, name, description, icon }) => (
-                        <MenuItem
-                          description={description}
-                          icon={icon}
-                          key={id}
-                          name={name}
-                        />
-                      ))}
-                    </Box>
-                  </NavigationMenu.Content>
-                </NavigationMenu.Item>
-              </NavigationMenu.List>
-            </NavigationMenu>
-            {navLinks.map(({ title, href }) => (
-              <NavLink href={href} key={title}>
-                {title}
-              </NavLink>
-            ))}
-            <NavigationMenu align="end">
-              <NavigationMenu.List>
-                <NavigationMenu.Item>
-                  <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
-                  <NavigationMenu.Content className="pb-1">
-                    <Box className="grid w-max grid-cols-2 gap-2 p-2">
-                      {resources.map(({ id, name, description, icon }) => (
-                        <MenuItem
-                          description={description}
-                          icon={icon}
-                          key={id}
-                          name={name}
-                        />
-                      ))}
-                    </Box>
-                  </NavigationMenu.Content>
-                </NavigationMenu.Item>
-              </NavigationMenu.List>
-            </NavigationMenu>
-            <Button
-              className="px-3 text-sm"
-              color="tertiary"
-              rightIcon={
-                <ArrowRightIcon className="relative top-[0.5px] h-3 w-auto" />
-              }
-              rounded="full"
-              size="sm"
-            >
-              Sign in
-            </Button>
-            <Button className="px-3 text-sm" rounded="full" size="sm">
-              Get started
-            </Button>
-          </Flex>
+        <Box className="rounded-full">
+          <Box className="z-10 flex h-16 items-center justify-between rounded-full border border-dark-200 px-6 backdrop-blur-lg dark:bg-black/40">
+            <Logo className="relative top-0.5 z-10 h-7 text-dark-100 dark:text-gray-50" />
+            <Flex align="center" gap={4}>
+              <NavigationMenu>
+                <NavigationMenu.List>
+                  <NavigationMenu.Item>
+                    <NavigationMenu.Trigger>Product</NavigationMenu.Trigger>
+                    <NavigationMenu.Content className="bg-primary/[0.02] pb-1">
+                      <Box className="grid w-max grid-cols-2 gap-2 p-2">
+                        {product.map(({ id, name, description, icon }) => (
+                          <MenuItem
+                            description={description}
+                            href="/features"
+                            icon={icon}
+                            key={id}
+                            name={name}
+                          />
+                        ))}
+                      </Box>
+                    </NavigationMenu.Content>
+                  </NavigationMenu.Item>
+                </NavigationMenu.List>
+              </NavigationMenu>
+              {navLinks.map(({ title, href }) => (
+                <NavLink href={href} key={title}>
+                  {title}
+                </NavLink>
+              ))}
+              <NavigationMenu align="end">
+                <NavigationMenu.List>
+                  <NavigationMenu.Item>
+                    <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
+                    <NavigationMenu.Content className="bg-primary/[0.02] pb-1">
+                      <Box className="grid w-max grid-cols-2 gap-2 p-2">
+                        {resources.map(({ id, name, description, icon }) => (
+                          <MenuItem
+                            description={description}
+                            href="/features"
+                            icon={icon}
+                            key={id}
+                            name={name}
+                          />
+                        ))}
+                      </Box>
+                    </NavigationMenu.Content>
+                  </NavigationMenu.Item>
+                </NavigationMenu.List>
+              </NavigationMenu>
+              <Button
+                className="px-3 text-sm"
+                color="tertiary"
+                rightIcon={
+                  <ArrowRightIcon className="relative top-[0.5px] h-3 w-auto" />
+                }
+                rounded="full"
+                size="sm"
+              >
+                Sign in
+              </Button>
+              <Button className="px-3 text-sm" rounded="full" size="sm">
+                Get started
+              </Button>
+            </Flex>
+          </Box>
         </Box>
       </Container>
     </Box>

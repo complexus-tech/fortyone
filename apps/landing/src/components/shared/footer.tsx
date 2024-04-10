@@ -17,7 +17,10 @@ const FooterLink = ({
   className?: string;
 }) => (
   <Link
-    className={cn("3xl:text-lg mb-4 block max-w-max", className)}
+    className={cn(
+      "3xl:text-lg mb-4 block max-w-max transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80",
+      className,
+    )}
     href={href}
   >
     {children}
@@ -142,6 +145,16 @@ export const Footer = () => {
       href: "/company/contact",
     },
   ];
+  const legal = [
+    {
+      title: "Privacy Policy",
+      href: "/legal/privacy",
+    },
+    {
+      title: "Terms of Service",
+      href: "/legal/terms",
+    },
+  ];
   return (
     <Box as="footer" className="relative bg-black">
       <Container className="grid grid-cols-6 gap-x-6 gap-y-8 pb-12 pt-20">
@@ -185,9 +198,9 @@ export const Footer = () => {
             fontWeight="medium"
             transform="uppercase"
           >
-            Company
+            Legal
           </Text>
-          {company.map(({ href, title }) => (
+          {legal.map(({ href, title }) => (
             <FooterLink href={href} key={href}>
               {title}
             </FooterLink>

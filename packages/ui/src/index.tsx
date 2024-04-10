@@ -36,7 +36,7 @@ export * from "./BreadCrumbs/BreadCrumbs";
 export * from "./Button/Button";
 export * from "./NavLink/NavLink";
 // export * from './Logo/Logo';
-// export * from './Image/Image';
+export * from "./Image/Image";
 export * from "./ProgressBar/ProgressBar";
 export * from "./DropZone/DropZone";
 export * from "./NavigationMenu/NavigationMenu";

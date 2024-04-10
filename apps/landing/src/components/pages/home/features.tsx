@@ -8,10 +8,10 @@ import {
   ObjectiveIcon,
   StoryIcon,
 } from "icons";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { Container, Blur } from "@/components/ui";
 
 const Intro = () => (
@@ -135,46 +135,47 @@ export const Features = () => {
   ];
 
   return (
-    <Container as="section">
+    <Container as="section" className="mb-40">
       <Intro />
       <Box className="grid grid-cols-3 gap-8">
-        {features.map((feature) => (
-          <ItemWrapper className={feature.className} key={feature.id}>
-            <Flex align="center" className="mb-3" gap={4} justify="between">
-              <Text
-                as="h3"
-                className="flex items-center gap-2"
-                fontSize="2xl"
-                fontWeight="medium"
-              >
-                {feature.icon}
-                {feature.name}
+        {features.map(
+          ({
+            id,
+            icon,
+            name,
+            description,
+            className,
+            image: { src, alt, height, width },
+          }) => (
+            <ItemWrapper className={className} key={id}>
+              <Flex align="center" className="mb-3" gap={4} justify="between">
+                <Text
+                  as="h3"
+                  className="flex items-center gap-2"
+                  fontSize="2xl"
+                  fontWeight="medium"
+                >
+                  {icon}
+                  {name}
+                </Text>
+                <Button color="tertiary" rounded="full" size="md">
+                  <ArrowRightIcon className="h-4 w-auto" />
+                </Button>
+              </Flex>
+              <Text className="mb-4" color="muted">
+                {description}
               </Text>
-              <Button color="tertiary" rounded="full" size="md">
-                <ArrowRightIcon className="h-4 w-auto" />
-              </Button>
-            </Flex>
-            <Text className="mb-4" color="muted">
-              {feature.description}
-            </Text>
-            <Image
-              alt={feature.image.alt}
-              className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
-              height={feature.image.height}
-              src={feature.image.src}
-              width={feature.image.width}
-            />
-          </ItemWrapper>
-        ))}
+              <Image
+                alt={alt}
+                className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
+                height={height}
+                src={src}
+                width={width}
+              />
+            </ItemWrapper>
+          ),
+        )}
       </Box>
-
-      <Image
-        alt="Stories"
-        className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
-        height={400}
-        src="/images/panel.png"
-        width={1200}
-      />
     </Container>
   );
 };
