@@ -16,12 +16,11 @@ import { Container, Blur } from "@/components/ui";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="my-12 text-center md:my-20">
+    <Box as="section" className="my-12 text-center md:my-24">
       <Text
         as="h3"
-        className="mx-auto max-w-4xl pb-2 text-5xl md:text-7xl"
+        className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
         color="gradient"
-        fontWeight="semibold"
       >
         Meet your core objectives.
       </Text>

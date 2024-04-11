@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Flex, Text, Wrapper } from "ui";
 import { ArrowRightIcon } from "icons";
-import { Container } from "@/components/ui";
+import { Container, Blur } from "@/components/ui";
 
 export const Reviews = () => {
   const reviews = [
@@ -31,7 +31,7 @@ export const Reviews = () => {
   ];
 
   return (
-    <Container className="relative py-40">
+    <Container className="relative pb-32 pt-4">
       <Text
         align="center"
         as="h4"
@@ -46,21 +46,28 @@ export const Reviews = () => {
       <Text
         align="center"
         as="h3"
-        className="mx-auto mb-20 max-w-5xl text-6xl"
+        className="mx-auto mb-6 max-w-5xl pb-2 text-7xl"
         color="gradient"
         fontWeight="medium"
       >
-        Unlock the secrets to turbocharge your team&rsquo;s momentum!
+        Why they choose complexus.
+      </Text>
+      <Text
+        className="mx-auto mb-10 max-w-2xl text-center text-xl"
+        fontWeight="normal"
+      >
+        Complexus is trusted by some of the world&rsquo;s leading companies.
+        Here&rsquo;s what they have to say about their experience.
       </Text>
 
       <Box className="grid grid-cols-3 gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-[2rem] bg-gradient-to-br from-primary via-secondary to-warning/60 p-[2px] shadow-2xl shadow-secondary/40 dark:border-0"
+            className="animate-gradient h-[38vh] rounded-[1.5rem] shadow-2xl shadow-secondary/20"
             key={id}
           >
             <Flex
-              className="relative h-full rounded-[2rem] bg-dark px-8 py-12"
+              className="relative h-full rounded-[2rem] px-8 py-12"
               direction="column"
               justify="between"
             >
@@ -98,6 +105,8 @@ export const Reviews = () => {
           See all customer stories
         </Button>
       </Box>
+
+      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 bg-secondary/10 md:h-[900px] md:w-[900px]" />
     </Container>
   );
 };

@@ -25,10 +25,10 @@ export const Hero = () => {
 
           <Text
             as="h1"
-            className="mt-6 max-w-5xl pb-2 text-6xl md:text-8xl"
+            className="mt-6 max-w-5xl pb-2 text-6xl md:text-[5rem]"
             color="gradient"
           >
-            Nail every objective on time.
+            Nail every objective on time with complexus.
           </Text>
           <Text
             className="mt-6 max-w-[600px] text-lg opacity-90 md:mt-8 md:text-2xl"

@@ -52,7 +52,6 @@ export const Integrations = () => {
             as="h1"
             className="mt-6 h-max max-w-4xl pb-2 text-5xl md:text-7xl"
             color="gradient"
-            fontWeight="semibold"
           >
             Sync up your favorite tools.
           </Text>

@@ -41,7 +41,7 @@ const MenuItem = ({
 export const Navigation = () => {
   const navLinks = [
     { title: "Integrations", href: "/" },
-    { title: "Pricing", href: "/" },
+    { title: "Pricing", href: "/pricing" },
     { title: "About", href: "/about" },
   ];
 

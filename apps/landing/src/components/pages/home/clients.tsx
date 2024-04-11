@@ -15,7 +15,7 @@ export const SampleClients = () => {
           fontWeight="normal"
         >
           Hundreds of teams rely on us to crush their{" "}
-          <Text as="span" color="gradient" fontWeight="semibold">
+          <Text as="span" color="primary" fontWeight="semibold">
             objectives.
           </Text>
         </Text>

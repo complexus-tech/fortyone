@@ -14,7 +14,6 @@ export const CallToAction = () => {
             as="h1"
             className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
             color="gradient"
-            fontWeight="semibold"
           >
             Experience the difference. Try it now!
           </Text>

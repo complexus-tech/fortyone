@@ -5,7 +5,9 @@ import {
   Features,
   Integrations,
   ProductDemo,
+  Reviews,
 } from "@/components/pages/home";
+import { Pricing } from "@/components/ui";
 
 export default function Page(): JSX.Element {
   return (
@@ -15,8 +17,9 @@ export default function Page(): JSX.Element {
       <SampleClients />
       <ProductDemo />
       <Features />
-      {/* <Reviews /> */}
+      <Reviews />
       <Integrations />
+      <Pricing />
     </>
   );
 }
