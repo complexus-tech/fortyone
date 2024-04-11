@@ -16,10 +16,10 @@ import { Container, Blur } from "@/components/ui";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="my-20 text-center">
+    <Box as="section" className="my-12 text-center md:my-20">
       <Text
         as="h3"
-        className="mx-auto max-w-4xl pb-2 text-4xl md:text-7xl"
+        className="mx-auto max-w-4xl pb-2 text-5xl md:text-7xl"
         color="gradient"
         fontWeight="semibold"
       >
@@ -63,7 +63,7 @@ const ItemWrapper = ({
         initial={{ y: 0, x: 0 }}
         transition={{ type: "spring", stiffness: 100 }}
       >
-        <Wrapper className="h-full rounded-[2rem] px-6 py-8 shadow-2xl dark:bg-dark-300/30">
+        <Wrapper className="h-full rounded-2xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
           <>{children}</>
         </Wrapper>
       </motion.div>
@@ -121,7 +121,7 @@ export const Features = () => {
         height: 2198,
         width: 948,
       },
-      className: "col-span-2",
+      className: "md:col-span-2",
     },
 
     {
@@ -141,7 +141,7 @@ export const Features = () => {
   return (
     <Container as="section" className="mb-40">
       <Intro />
-      <Box className="grid grid-cols-3 gap-8">
+      <Box className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-8">
         {features.map(
           ({
             id,

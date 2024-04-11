@@ -6,22 +6,22 @@ import { Container, Logo } from "@/components/ui";
 
 export const SampleClients = () => {
   return (
-    <Container className="relative mt-16">
-      <Box className="py-28">
+    <Container className="relative md:mt-16">
+      <Box className="py-16 md:py-28">
         <Text
           as="h3"
           className="text-center"
           fontSize="2xl"
           fontWeight="normal"
         >
-          Hundreds of teams rely on us to crush{" "}
-          <span className="border-b border-dashed border-primary text-primary">
+          Hundreds of teams rely on us to crush their{" "}
+          <Text as="span" color="gradient" fontWeight="semibold">
             objectives.
-          </span>
+          </Text>
         </Text>
         <Marquee className="mt-20" pauseOnHover speed={40}>
           {Array.from({ length: 12 }).map((_, i) => (
-            <Logo className="mr-12 h-10 text-gray-100" key={i} />
+            <Logo className="mr-8 h-8 text-gray-100 md:mr-12 md:h-10" key={i} />
           ))}
         </Marquee>
       </Box>

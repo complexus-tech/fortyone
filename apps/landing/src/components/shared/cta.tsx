@@ -4,15 +4,15 @@ import { Blur, Container } from "@/components/ui";
 export const CallToAction = () => {
   return (
     <Box className="border-y border-dark-300 bg-[#030303]">
-      <Container className="relative max-w-7xl py-28">
+      <Container className="relative max-w-7xl py-20 md:py-28">
         <Flex
           align="center"
-          className="md:mt-18 mb-8 mt-16 text-center"
+          className="md:mt-18 mb-8 text-center"
           direction="column"
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
             color="gradient"
             fontWeight="semibold"
           >

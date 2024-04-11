@@ -25,13 +25,13 @@ export const Hero = () => {
 
           <Text
             as="h1"
-            className="mt-6 max-w-5xl pb-2 text-4xl md:text-8xl"
+            className="mt-6 max-w-5xl pb-2 text-6xl md:text-8xl"
             color="gradient"
           >
             Nail every objective on time.
           </Text>
           <Text
-            className="mt-8 max-w-[600px] opacity-90 md:text-2xl"
+            className="mt-6 max-w-[600px] text-lg opacity-90 md:mt-8 md:text-2xl"
             fontWeight="normal"
           >
             Empower your team to crush every key objective with our seamless

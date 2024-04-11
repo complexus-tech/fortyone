@@ -27,7 +27,7 @@ export const Container: FC<ContainerProps> = ({
 }) => {
   return createElement(as, {
     className: cn(
-      "mx-auto px-12",
+      "mx-auto px-5 md:px-12",
       {
         "mx-auto px-0": full,
       },

@@ -173,11 +173,11 @@ export const Footer = () => {
   ];
   return (
     <Box as="footer" className="relative bg-black">
-      <Container className="grid grid-cols-6 gap-x-6 gap-y-8 pb-12 pt-20">
+      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-20">
         <Box className="col-span-2">
-          <Logo className="h-7" />
+          <Logo className="-left-1 h-7" />
         </Box>
-        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
+        <Box>
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
@@ -192,7 +192,7 @@ export const Footer = () => {
             </FooterLink>
           ))}
         </Box>
-        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
+        <Box>
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
@@ -207,7 +207,7 @@ export const Footer = () => {
             </FooterLink>
           ))}
         </Box>
-        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
+        <Box>
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
@@ -222,7 +222,7 @@ export const Footer = () => {
             </FooterLink>
           ))}
         </Box>
-        <Box className="col-span-3 mt-8 md:col-span-1 md:mt-0">
+        <Box>
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"

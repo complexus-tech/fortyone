@@ -98,7 +98,7 @@ export const Navigation = () => {
       icon: (
         <Logo
           asIcon
-          className="relative top-1 h-[1.1rem] w-auto shrink-0 text-dark"
+          className="relative top-1 h-[1.15rem] w-auto shrink-0 text-dark"
           fill="#dddddd"
         />
       ),
@@ -121,14 +121,14 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-4 z-10 w-screen">
       <Container as="nav">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-16 items-center justify-between rounded-full border border-dark-200 px-6 backdrop-blur-lg dark:bg-black/40">
-            <Logo className="relative top-0.5 z-10 h-7 text-dark-100 dark:text-gray-50" />
-            <Flex align="center" gap={4}>
+          <Box className="z-10 flex h-12 items-center justify-between rounded-full border border-dark-200 px-4 backdrop-blur-lg dark:bg-black/40 md:h-16 md:px-6">
+            <Logo className="relative top-0.5 z-10 h-5 text-dark-100 dark:text-gray-50 md:h-7" />
+            <Flex align="center" className="hidden md:flex" gap={4}>
               <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger>Product</NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="bg-primary/[0.02] pb-1">
+                    <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
                         {product.map(({ id, name, description, icon }) => (
                           <MenuItem
@@ -153,7 +153,7 @@ export const Navigation = () => {
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="bg-primary/[0.02] pb-1">
+                    <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
                         {resources.map(({ id, name, description, icon }) => (
                           <MenuItem
