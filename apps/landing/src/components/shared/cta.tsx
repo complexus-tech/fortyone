@@ -4,7 +4,7 @@ import { Blur, Container } from "@/components/ui";
 export const CallToAction = () => {
   return (
     <Box className="border-y border-dark-300 bg-[#030303]">
-      <Container className="relative max-w-7xl py-20 md:py-28">
+      <Container className="relative max-w-7xl py-20 md:py-32">
         <Flex
           align="center"
           className="md:mt-18 mb-8 text-center"
