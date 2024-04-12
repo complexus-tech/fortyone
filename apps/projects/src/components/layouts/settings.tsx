@@ -14,7 +14,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const goBack = () => {
-    router.push(prevPage || "/my-stories");
+    router.push(prevPage || "/my-work");
     setPrevPage("");
   };
 
@@ -145,7 +145,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   return (
     <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
       <ResizablePanel.Panel
-        className="bg-gradient-to-br from-white via-gray-50/80 to-gray-50 dark:from-dark-200 dark:via-dark dark:to-dark"
+        className="bg-gradient-to-br from-white via-gray-50/80 to-gray-50 dark:from-dark-200 dark:via-[#101010] dark:via-40% dark:to-[#101010]"
         defaultSize={18}
         maxSize={20}
         minSize={16}
@@ -196,7 +196,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           </Flex>
         </BodyContainer>
       </ResizablePanel.Panel>
-      <ResizablePanel.Handle className="bg-gray-100/70 dark:bg-dark-100/40" />
+      <ResizablePanel.Handle />
       <ResizablePanel.Panel defaultSize={82}>
         <Container className="max-w-[48rem] px-12 py-12">{children}</Container>
       </ResizablePanel.Panel>
