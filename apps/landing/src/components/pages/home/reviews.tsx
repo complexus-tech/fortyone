@@ -31,7 +31,7 @@ export const Reviews = () => {
   ];
 
   return (
-    <Container className="relative pb-32 pt-4">
+    <Container className="relative pb-16 pt-4 md:pb-32">
       <Text
         align="center"
         as="h4"
@@ -46,28 +46,28 @@ export const Reviews = () => {
       <Text
         align="center"
         as="h3"
-        className="mx-auto mb-6 max-w-5xl pb-2 text-7xl"
+        className="mx-auto mb-6 max-w-5xl pb-2 text-5xl md:text-7xl"
         color="gradient"
         fontWeight="medium"
       >
         Why they choose complexus.
       </Text>
       <Text
-        className="mx-auto mb-10 max-w-2xl text-center text-xl"
+        className="mx-auto mb-10 max-w-2xl text-center text-lg md:text-xl"
         fontWeight="normal"
       >
         Complexus is trusted by some of the world&rsquo;s leading companies.
         Here&rsquo;s what they have to say about their experience.
       </Text>
 
-      <Box className="grid grid-cols-3 gap-12">
+      <Box className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-[1.5rem] shadow-2xl shadow-secondary/20"
+            className="animate-gradient h-[38vh] rounded-2xl shadow-2xl shadow-secondary/20 md:rounded-[1.5rem]"
             key={id}
           >
             <Flex
-              className="relative h-full rounded-[2rem] px-8 py-12"
+              className="relative h-full px-4 py-6 md:px-8 md:py-12"
               direction="column"
               justify="between"
             >
@@ -95,7 +95,7 @@ export const Reviews = () => {
         ))}
       </Box>
 
-      <Box className="mx-auto mt-20 w-max">
+      <Box className="mx-auto mt-12 w-max md:mt-20">
         <Button
           color="tertiary"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
