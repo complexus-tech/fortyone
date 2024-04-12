@@ -10,10 +10,10 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
 import TextExt from "@tiptap/extension-text";
-// import Table from "@tiptap/extension-table";
-// import TableCell from "@tiptap/extension-table-cell";
-// import TableHeader from "@tiptap/extension-table-header";
-// import TableRow from "@tiptap/extension-table-row";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
 import { Box, Container, TextEditor, Text } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { Header, Toolbar } from "./components";
@@ -76,12 +76,12 @@ export default function Page(): JSX.Element {
         autolink: true,
       }),
       Placeholder.configure({ placeholder: "Story description" }),
-      // Table.configure({
-      //   resizable: true,
-      // }),
-      // TableRow,
-      // TableHeader,
-      // TableCell,
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content,
     editable: true,

@@ -1,12 +1,12 @@
 "use client";
 
-import { ComponentPropsWithRef, useState } from "react";
-import { EditorContent, BubbleMenu, Editor } from "@tiptap/react";
+import { useState } from "react";
+import { EditorContent, BubbleMenu, EditorContentProps } from "@tiptap/react";
 
 import { BubbleMenu as CustomBubbleMenu } from "./BubbleMenu";
 import { cn } from "lib";
 
-type TextEditorProps = ComponentPropsWithRef<typeof EditorContent> & {
+type TextEditorProps = EditorContentProps & {
   asTitle?: boolean;
   hideBubbleMenu?: boolean;
 };
@@ -16,6 +16,7 @@ export const TextEditor = ({
   className = "",
   asTitle = false,
   hideBubbleMenu = false,
+  innerRef,
   ...rest
 }: TextEditorProps) => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
@@ -49,7 +50,6 @@ export const TextEditor = ({
           className
         )}
         editor={editor}
-        {...rest}
       />
     </>
   );
