@@ -31,7 +31,7 @@ export const Pricing = () => {
       <Container className="pt-16">
         <Flex
           align="center"
-          className="my-10 text-center md:mt-20"
+          className="my-16 text-center md:mt-20"
           direction="column"
         >
           <Button

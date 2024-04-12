@@ -39,8 +39,10 @@ export default function RootLayout({
 }): JSX.Element {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={font.className}>{children}</body>
-      <ProgressBar />
+      <body className={font.className}>
+        {children}
+        <ProgressBar />
+      </body>
     </html>
   );
 }

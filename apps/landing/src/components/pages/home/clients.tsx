@@ -10,8 +10,7 @@ export const SampleClients = () => {
       <Box className="py-16 md:py-28">
         <Text
           as="h3"
-          className="text-center"
-          fontSize="2xl"
+          className="text-center text-xl md:text-2xl"
           fontWeight="normal"
         >
           Hundreds of teams rely on us to crush their{" "}

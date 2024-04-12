@@ -254,15 +254,14 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
-@media (supports: object-fit: cover) {
-  .mf-cursor-media img,
-  .mf-cursor-media video {
-    position: static;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: translateZ(0);
-  }
+
+.mf-cursor-media img,
+.mf-cursor-media video {
+  position: static;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
 }
 .mf-cursor-media img {
   transform: scale(0.2);

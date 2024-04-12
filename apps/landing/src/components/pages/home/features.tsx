@@ -25,7 +25,7 @@ const Intro = () => (
         Meet your core objectives.
       </Text>
       <Text
-        className="mx-auto mt-2 max-w-[700px] md:mt-6"
+        className="mx-auto mt-6 max-w-[700px]"
         fontSize="xl"
         fontWeight="normal"
       >
