@@ -63,7 +63,7 @@ export const Reviews = () => {
       <Box className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-2xl shadow-2xl shadow-secondary/20 md:rounded-[1.5rem]"
+            className="animate-gradient h-[38vh] rounded-2xl border-2 shadow-2xl shadow-secondary/20 md:rounded-[1.5rem]"
             key={id}
           >
             <Flex
@@ -78,7 +78,9 @@ export const Reviews = () => {
                     {name}
                   </Text>
                 </Flex>
-                <Text className="mb-5 leading-relaxed">{content}</Text>
+                <Text fontWeight="normal" className="mb-5 leading-relaxed">
+                  {content}
+                </Text>
               </Box>
               <Button
                 className="px-6"

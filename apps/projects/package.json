@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test": "jest",
@@ -29,6 +29,7 @@
     "@tiptap/react": "^2.3.0",
     "@tiptap/starter-kit": "^2.3.0",
     "@uiw/react-heat-map": "^2.2.2",
+    "date-fns": "^2.30.0",
     "framer-motion": "^11.0.28",
     "icons": "workspace:*",
     "lib": "workspace:*",

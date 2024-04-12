@@ -145,7 +145,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   return (
     <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
       <ResizablePanel.Panel
-        className="bg-gradient-to-br from-white via-gray-50/80 to-gray-50 dark:from-dark-200 dark:via-[#101010] dark:via-40% dark:to-[#101010]"
+        className="bg-gray-50 dark:bg-[#101010]"
         defaultSize={18}
         maxSize={20}
         minSize={16}
@@ -198,7 +198,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
       <ResizablePanel.Panel defaultSize={82}>
-        <Container className="max-w-[48rem] px-12 py-12">{children}</Container>
+        <Container className="max-w-[47rem] p-12">{children}</Container>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );
