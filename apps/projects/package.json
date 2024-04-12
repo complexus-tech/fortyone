@@ -31,7 +31,6 @@
     "@uiw/react-heat-map": "^2.2.2",
     "framer-motion": "^11.0.28",
     "icons": "workspace:*",
-    "install": "^0.13.0",
     "lib": "workspace:*",
     "next": "14.2.0",
     "nprogress": "^0.2.0",
