@@ -4,7 +4,7 @@ import { Container, Blur } from "@/components/ui";
 
 export const Integrations = () => {
   return (
-    <Box className="relative bg-black py-16 md:py-32">
+    <Box className="relative bg-gray-50 py-16 dark:bg-black md:py-32">
       <Image
         alt="Slack logo"
         className="absolute left-16 top-16 hidden rotate-6 md:block"

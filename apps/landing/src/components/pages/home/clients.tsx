@@ -20,7 +20,10 @@ export const SampleClients = () => {
         </Text>
         <Marquee className="mt-20" pauseOnHover speed={40}>
           {Array.from({ length: 12 }).map((_, i) => (
-            <Logo className="mr-8 h-8 text-gray-100 md:mr-12 md:h-10" key={i} />
+            <Logo
+              className="mr-8 h-8 dark:text-gray-100 md:mr-12 md:h-10"
+              key={i}
+            />
           ))}
         </Marquee>
       </Box>

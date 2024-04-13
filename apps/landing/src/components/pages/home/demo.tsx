@@ -18,7 +18,7 @@ export const ProductDemo = () => {
       >
         <video
           autoPlay
-          className="pointer-events-none absolute -top-[4.8%] left-[10.95%] z-[2] mx-auto h-full w-[78%] object-contain opacity-90"
+          className="pointer-events-none absolute -top-[4.6%] left-[10.95%] z-[2] mx-auto h-full w-[78%] object-contain opacity-90"
           loop
           muted
           playsInline

@@ -62,8 +62,11 @@ const packages = [
 
 const Feature = ({ feature }: { feature: string }) => (
   <Flex align="center" gap={2} key={feature}>
-    <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-gray-200">
-      <CheckIcon strokeWidth={3.5} className="h-4 w-auto text-primary" />
+    <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-primary dark:bg-gray-200">
+      <CheckIcon
+        strokeWidth={3.5}
+        className="h-4 w-auto text-white dark:text-primary"
+      />
     </Box>
     <Text className="opacity-90">{feature}</Text>
   </Flex>
@@ -101,7 +104,7 @@ const Package = ({
         initial={{ y: 0, x: 0 }}
         transition={{ type: "spring", stiffness: 100 }}
         className={cn(
-          "h-full rounded-3xl border-2 border-dark-100 bg-dark p-8 shadow-2xl shadow-black",
+          "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark dark:shadow-black",
           {
             "border-primary shadow-primary/20": recommended,
           },
@@ -200,7 +203,7 @@ export const Pricing = () => {
           ))}
         </Box>
         <Box className="relative mt-32">
-          <Box className="mx-auto rounded-3xl border-2 border-dark-100 bg-dark p-8 shadow-2xl shadow-warning/10 md:max-w-4xl">
+          <Box className="mx-auto rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl shadow-warning/10 dark:border-dark-100 dark:bg-dark md:max-w-4xl">
             <Text className="mb-3 text-2xl" fontWeight="medium">
               <span className="font-semibold text-primary">Complexus</span>{" "}
               Enteprise
@@ -211,7 +214,7 @@ export const Pricing = () => {
               administrative capabilities, and enhanced features.
             </Text>
 
-            <Box className="mt-5 grid grid-cols-2 gap-4">
+            <Box className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
               {enterprise.map((feature) => (
                 <Feature feature={feature} key={feature} />
               ))}

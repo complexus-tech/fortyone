@@ -10,7 +10,7 @@ import { Container } from "../ui";
 const FooterLink = ({
   href,
   children,
-  className = "opacity-60",
+  className = "",
 }: {
   href: string;
   children: ReactNode;
@@ -18,7 +18,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "3xl:text-lg mb-4 block max-w-max transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80",
+      "3xl:text-lg mb-4 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
       className,
     )}
     href={href}
@@ -28,7 +28,7 @@ const FooterLink = ({
 );
 
 const Copyright = () => (
-  <Box className="flex flex-col justify-between gap-y-8 border-b border-dark-200 pb-4 md:flex-row md:items-center md:gap-y-0">
+  <Box className="flex flex-col justify-between gap-y-8 border-b border-gray-200 pb-4 dark:border-dark-200 md:flex-row md:items-center md:gap-y-0">
     <Box className="3xl:gap-16 flex gap-8">
       <Link
         className="hover:text-primary"
@@ -172,7 +172,7 @@ export const Footer = () => {
     },
   ];
   return (
-    <Box as="footer" className="relative bg-black">
+    <Box as="footer" className="relative bg-white dark:bg-black">
       <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-20">
         <Box className="col-span-2">
           <Logo className="-left-1 h-7" />
@@ -181,7 +181,7 @@ export const Footer = () => {
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             transform="uppercase"
           >
             Product
@@ -196,7 +196,7 @@ export const Footer = () => {
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             transform="uppercase"
           >
             Company
@@ -211,7 +211,7 @@ export const Footer = () => {
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             transform="uppercase"
           >
             Legal
@@ -226,7 +226,7 @@ export const Footer = () => {
           <Text
             className="mb-6 tracking-wide"
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             transform="uppercase"
           >
             Resources
