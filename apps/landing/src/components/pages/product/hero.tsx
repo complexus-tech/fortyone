@@ -12,25 +12,25 @@ export const Hero = () => {
           rounded="full"
           size="sm"
         >
-          Get to know us
+          Our product
         </Button>
         <Text
           as="h1"
           color="gradient"
           fontWeight="medium"
-          className="my-8 text-5xl md:text-7xl"
+          className="my-8 pb-2 text-5xl md:text-7xl"
         >
-          Achieve your goals with Complexus
+          Simplify project management
         </Text>
         <Text
           fontSize="2xl"
           fontWeight="normal"
-          className="mb-20 max-w-6xl leading-snug opacity-80"
+          className="mb-8 max-w-6xl leading-snug opacity-80"
         >
-          At Complexus, we believe in simplifying project management for teams
-          of all sizes. Our platform is designed to empower you to organize
-          tasks, collaborate effectively, and achieve your project goals with
-          ease.
+          At Complexus, we're dedicated to streamlining project management for
+          teams of any scale. Our platform is crafted to enable you to
+          efficiently organize tasks, collaborate seamlessly, and effortlessly
+          reach your project objectives.
         </Text>
       </Container>
     </Box>

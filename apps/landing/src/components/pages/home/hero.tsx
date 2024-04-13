@@ -5,7 +5,7 @@ import { Container } from "@/components/ui";
 export const Hero = () => {
   return (
     <Box>
-      <Container className="pt-20">
+      <Container className="pt-12 md:pt-20">
         <Flex
           align="center"
           className="mb-8 mt-20 text-center"

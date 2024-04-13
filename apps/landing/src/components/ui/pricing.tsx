@@ -1,5 +1,5 @@
 "use client";
-import { Flex, Text, Box, Button, Badge } from "ui";
+import { Flex, Text, Box, Button, Badge, Switch } from "ui";
 import { ArrowRightIcon, ChatIcon, CheckIcon } from "icons";
 import { Blur } from "./blur";
 import { Container } from "./container";
@@ -106,7 +106,7 @@ const Package = ({
         className={cn(
           "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark dark:shadow-black",
           {
-            "border-primary shadow-primary/20": recommended,
+            "border-primary shadow-primary/20 dark:border-primary": recommended,
           },
         )}
       >
@@ -186,6 +186,7 @@ export const Pricing = () => {
           >
             Experience more, spend less. Switch to complexus.
           </Text>
+          <Switch className=" scale-150" />
         </Flex>
 
         <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">

@@ -10,7 +10,7 @@ export const ProductDemo = () => {
       <Box
         className="relative mx-auto aspect-[16/10] max-w-7xl overflow-hidden"
         onMouseEnter={() => {
-          cursor.setText("Complexus in action");
+          cursor.setText("See in action");
         }}
         onMouseLeave={() => {
           cursor.removeText();

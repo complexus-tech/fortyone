@@ -49,7 +49,7 @@ export const HeroCards = () => {
       <Box
         className="relative"
         onMouseEnter={() => {
-          cursor.setText("← Drag →");
+          cursor.setText("←Drag→");
         }}
         onMouseLeave={() => {
           cursor.removeText();
