@@ -1,5 +1,5 @@
 import { Avatar, BreadCrumbs, Button, Flex, Text } from "ui";
-import { StarIcon } from "icons";
+import { DocsIcon, StarIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 
 export const Header = () => {
@@ -8,20 +8,26 @@ export const Header = () => {
       <Flex align="center" className="w-full" justify="between">
         <BreadCrumbs
           breadCrumbs={[
-            { name: "Complexus" },
-            { name: "Wikis" },
             {
-              name: "Wiki page",
+              name: "Engineering",
+              icon: "🚀",
+            },
+            {
+              name: "Documents",
+              icon: <DocsIcon className="h-[1.1rem] w-auto" />,
+            },
+            {
+              name: "Sprint Planning",
             },
           ]}
         />
-        <Flex align="center" gap={2} justify="between">
+        <Flex align="center" gap={3} justify="between">
           <Text as="span" color="muted">
             Saved
           </Text>
           <Avatar
             name="Joseph Mukorivo"
-            size="md"
+            size="sm"
             src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
           />
           <Button

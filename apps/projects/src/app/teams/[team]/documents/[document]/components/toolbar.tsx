@@ -25,7 +25,7 @@ import { ToggleNode } from "./node";
 
 export const Toolbar = ({ editor }: { editor: Editor | null }) => {
   return (
-    <Container className="sticky top-0 flex items-center justify-between border-b border-gray-50 bg-white/80  backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
+    <Container className="sticky top-0 flex items-center justify-between border-b border-gray-100/60 bg-white shadow-lg shadow-black/[0.03] backdrop-blur dark:border-dark-200 dark:bg-dark-300/80">
       <Flex align="center" className="py-1.5" gap={2}>
         <Tooltip hidden={!editor?.can().undo()} title="Undo">
           <Button

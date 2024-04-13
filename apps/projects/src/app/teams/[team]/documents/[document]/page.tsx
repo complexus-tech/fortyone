@@ -14,13 +14,14 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import { Box, Container, TextEditor, Text } from "ui";
+import { Container, TextEditor, Divider, Flex, Button } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { Header, Toolbar } from "./components";
+import { ChatIcon, DocsIcon, EpicsIcon, MilestonesIcon } from "icons";
 
 export default function Page(): JSX.Element {
   const content = `
-  <div class="tiptap ProseMirror" contenteditable="true" tabindex="0" translate="no" spellcheck="false"><h4>Jira Story Description Example</h4><p>This is a sample HTML text for a Jira story description. It can include various elements such as headings, paragraphs, lists, and more.</p><h4>Steps to Reproduce:</h4><ol><li><p>Open the application.</p></li><li><p>Go to the settings page.</p></li><li><p>Change the language to French.</p></li><li><p>Save the settings.</p></li></ol><p><strong>This is my List</strong></p><ul data-type="taskList"><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 1</p></div></li><li data-checked="true"><label contenteditable="false"><input type="checkbox" checked="checked"><span></span></label><div><p>Item 2</p></div></li><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 3</p></div></li></ul></div>
+ <p>Use the Retrospective template to run a retro with your team at the end of an Iteration or a project and record action items for follow up.</p><h4>Steps to Reproduce:</h4><ol><li><p>Open the application.</p></li><li><p>Go to the settings page.</p></li><li><p>Change the language to French.</p></li><li><p>Save the settings.</p></li></ol><p><strong>This is my List</strong></p><ul data-type="taskList"><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 1</p></div></li><li data-checked="true"><label contenteditable="false"><input type="checkbox" checked="checked"><span></span></label><div><p>Item 2</p></div></li><li data-checked="false"><label contenteditable="false"><input type="checkbox"><span></span></label><div><p>Item 3</p></div></li></ul></div>
 
   <table>
     <thead>
@@ -55,9 +56,9 @@ export default function Page(): JSX.Element {
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Wiki Title..." }),
+      Placeholder.configure({ placeholder: "Title..." }),
     ],
-    content: "Complexus app docs",
+    content: "Release Notes: v1.0.0",
     editable: true,
   });
 
@@ -91,33 +92,48 @@ export default function Page(): JSX.Element {
   return (
     <>
       <Header />
-      <BodyContainer className="overflow-y-hidden">
-        <Toolbar editor={editor} />
-        <Box className="grid grid-cols-4">
-          <Container className="col-span-3 pt-6">
+      <BodyContainer>
+        <Container className="max-w-6xl pt-16">
+          <Flex align="center" gap={3}>
+            <DocsIcon
+              strokeWidth={1.8}
+              className="relative -top-[1px] h-10 w-auto text-gray dark:text-gray-200"
+            />
             <TextEditor
               asTitle
-              className="relative -left-1 text-3xl font-medium"
+              className="relative -left-1 text-[2.5rem] text-gray dark:text-gray-200"
               editor={titleEditor}
             />
-            <TextEditor editor={editor} hideBubbleMenu />
-          </Container>
-          <Container className="w-full pl-6 pt-8">
-            <Text
-              className="mb-10"
-              color="muted"
-              fontWeight="medium"
-              transform="uppercase"
+          </Flex>
+          <Flex gap={2} className="mt-4">
+            <Button
+              size="sm"
+              color="tertiary"
+              leftIcon={<MilestonesIcon className="h-4 w-auto" />}
             >
-              Table of contents
-            </Text>
-
-            <Text color="muted">
-              The table of contents will be generated based on the headings in
-              the document.
-            </Text>
-          </Container>
-        </Box>
+              Add to Sprint
+            </Button>
+            <Button
+              size="sm"
+              color="tertiary"
+              leftIcon={<EpicsIcon className="h-4 w-auto" />}
+            >
+              Add to Epic
+            </Button>
+            <Button
+              size="sm"
+              color="tertiary"
+              leftIcon={<ChatIcon className="h-4 w-auto" />}
+            >
+              Add comment
+            </Button>
+          </Flex>
+          <Divider className="mt-6" />
+          <TextEditor
+            editor={editor}
+            className="text-[1.15rem] leading-normal text-gray dark:text-gray-200/90"
+          />
+        </Container>
       </BodyContainer>
     </>
   );

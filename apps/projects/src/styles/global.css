@@ -8,7 +8,7 @@
 
 body,
 html {
-  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[12.5px] text-gray antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
+  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[12.8px] text-gray antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
 }
 
 svg {
@@ -82,6 +82,32 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   color: #adb5bd;
   content: attr(data-placeholder);
   @apply pointer-events-none float-left h-0 text-gray-250/80 dark:text-gray-200/60;
+}
+
+.tiptap input[type="checkbox"] {
+  @apply h-[1.1rem] w-[1.1rem] accent-primary;
+}
+
+/* style tiptap tables */
+.tiptap table {
+  @apply w-full table-auto border-collapse;
+}
+.tiptap table td,
+th {
+  @apply border border-gray-100 dark:border-dark-50;
+}
+.tiptap table p {
+  @apply m-0;
+}
+.tiptap table th {
+  @apply bg-gray-50/80 font-semibold text-black dark:bg-dark-100 dark:text-gray-50;
+}
+.tiptap table td,
+th {
+  @apply px-2 py-2.5 text-left;
+}
+.tiptap table tr {
+  @apply transition odd:bg-gray-50/80 hover:bg-gray-50/60 dark:odd:bg-dark-300/80 dark:hover:bg-dark-300;
 }
 
 /*** Works on common browsers ***/
