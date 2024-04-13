@@ -104,10 +104,19 @@ th {
 }
 .tiptap table td,
 th {
-  @apply px-2 py-2.5 text-left;
+  @apply relative px-2 py-2.5 text-left;
 }
 .tiptap table tr {
   @apply transition odd:bg-gray-50/80 hover:bg-gray-50/60 dark:odd:bg-dark-300/80 dark:hover:bg-dark-300;
+}
+
+.tiptap table .column-resize-handle {
+  @apply pointer-events-none absolute -bottom-[1px] -right-[2px] top-0 z-[5] w-1 bg-gray-200 dark:bg-dark-50;
+}
+
+.resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
 }
 
 /*** Works on common browsers ***/
