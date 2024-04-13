@@ -8,13 +8,13 @@ export const Support = () => {
     {
       heading: "Support & Enquiries",
       email: "support@complexus.app",
-      icon: <SupportIcon className="h-16 w-auto" />,
+      icon: <SupportIcon className="h-12 w-auto" />,
       description:
         "Contact our support team for assistance with onboarding, troubleshooting or reporting issues.",
     },
     {
       email: "sales@complexus.app",
-      icon: <EmailIcon className="h-16 w-auto" />,
+      icon: <EmailIcon className="h-12 w-auto" />,
       heading: "Sales",
       description:
         "Contact our sales team for product demos, pricing, and other sales-related queries.",
@@ -28,7 +28,7 @@ export const Support = () => {
           {features.map(({ heading, description, icon, email }, idx) => (
             <Box
               key={heading}
-              className="border-t border-gray-200/10 pt-8 md:pt-12"
+              className="border-t border-gray-200/10 pt-8 md:pt-10"
             >
               <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
                 {icon}
@@ -36,16 +36,13 @@ export const Support = () => {
               <Text fontSize="lg" transform="uppercase">
                 {heading}
               </Text>
-              <a href={`mailto:${email}`}>
-                <Text className="my-1" fontWeight="semibold">
-                  {email}
-                </Text>
-              </a>
-              <Text
-                fontSize="lg"
-                fontWeight="normal"
-                className="my-4 opacity-80"
+              <a
+                className="my-1 inline-block font-semibold opacity-90 transition hover:text-primary"
+                href={`mailto:${email}`}
               >
+                {email}
+              </a>
+              <Text fontWeight="normal" className="my-4 text-lg opacity-80">
                 {description}
               </Text>
               <Button href={`mailto:${email}`} rounded="full">

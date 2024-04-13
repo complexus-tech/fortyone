@@ -31,7 +31,7 @@ export const Story = () => {
   return (
     <Container className="max-w-4xl">
       <Text
-        className="mb-6 text-2xl uppercase tracking-wider md:md:w-1/2"
+        className="mb-6 text-2xl uppercase tracking-wide md:md:w-1/2"
         color="gradient"
       >
         Our Mission
@@ -49,7 +49,7 @@ export const Story = () => {
       </Text>
 
       <Text
-        className="mb-6 text-2xl uppercase tracking-wider md:w-1/2"
+        className="mb-6 text-2xl uppercase tracking-wide md:w-1/2"
         color="gradient"
       >
         Meet the founder
@@ -84,7 +84,7 @@ export const Story = () => {
 
       <Box className="relative">
         <Text
-          className="mb-6 mt-28 text-2xl uppercase tracking-wider"
+          className="mb-6 mt-28 text-2xl uppercase tracking-wide"
           color="gradient"
         >
           What makes Complexus unique

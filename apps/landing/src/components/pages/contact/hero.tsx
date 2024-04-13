@@ -28,7 +28,7 @@ export const Hero = () => {
           className="mb-16 max-w-6xl leading-snug opacity-80"
         >
           Reach out to our sales and support teams for demonstrations,
-          assistance with onboarding, or any questions regarding our complexus.
+          assistance with onboarding, or any questions regarding complexus.
         </Text>
       </Container>
     </Box>

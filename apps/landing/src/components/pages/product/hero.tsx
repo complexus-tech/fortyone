@@ -27,10 +27,10 @@ export const Hero = () => {
           fontWeight="normal"
           className="mb-8 max-w-6xl leading-snug opacity-80"
         >
-          At Complexus, we're dedicated to streamlining project management for
-          teams of any scale. Our platform is crafted to enable you to
-          efficiently organize tasks, collaborate seamlessly, and effortlessly
-          reach your project objectives.
+          We're dedicated to streamlining project management for teams of any
+          scale. Our platform is crafted to enable you to efficiently organize
+          tasks, collaborate seamlessly, and effortlessly reach your project
+          objectives.
         </Text>
       </Container>
     </Box>

@@ -1,6 +1,7 @@
-import { BlurImage, Box, Text } from "ui";
+import { BlurImage, Box, Flex, Text } from "ui";
 import { Container } from "@/components/ui";
 import { Blur } from "@/components/ui";
+import { ObjectiveIcon } from "icons";
 
 export const Features = () => {
   const features = [
@@ -59,14 +60,34 @@ export const Features = () => {
 
   return (
     <Container className="max-w-4xl">
-      {features.map(({ name, title, description }) => (
+      {features.map(({ name, title, description }, idx) => (
         <Box
           key={name}
-          className="relative grid grid-cols-4 border-t border-gray-200/5 pt-8 md:py-12"
+          id={name.toLowerCase()}
+          className="relative border-t border-gray-200/5 pt-8 md:py-12"
         >
-          <Text fontSize="xl">{name}</Text>
+          <Flex
+            gap={6}
+            justify="between"
+            align="center"
+            className="relative -left-1 mb-6 opacity-15"
+          >
+            <Text
+              fontWeight="bold"
+              className="text-stroke-white text-5xl md:text-6xl"
+            >
+              <span className="hidden md:inline">0{idx + 1}. </span>
+              {name}
+            </Text>
+            <ObjectiveIcon
+              strokeWidth={1.2}
+              className="relative -right-1 h-10 w-auto md:h-16"
+            />
+          </Flex>
           <Box className="col-span-3">
-            <Text fontSize="xl">{title}</Text>
+            <Text fontSize="3xl" fontWeight="normal" className="opacity-80">
+              {title}
+            </Text>
             <Text
               fontWeight="normal"
               fontSize="lg"
@@ -82,7 +103,7 @@ export const Features = () => {
               className="aspect-[5/3]"
             />
           </Box>
-          <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-secondary/5" />
+          <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[650px] w-[650px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
         </Box>
       ))}
       <Text

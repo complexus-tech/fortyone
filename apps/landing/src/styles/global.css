@@ -8,7 +8,7 @@
 
 .animate-gradient {
   background-size: 200% 200%;
-  animation: gradient-animate 3s ease infinite;
+  animation: gradient-animate 10s ease infinite;
 }
 
 @keyframes gradient-animate {
@@ -21,6 +21,12 @@
   100% {
     background-position: 0% 50%;
   }
+}
+
+.text-stroke-white {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #fff;
 }
 
 body,
