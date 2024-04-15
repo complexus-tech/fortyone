@@ -73,7 +73,7 @@ export const Story = () => {
         }}
       >
         <BlurImage
-          src="/joseph.jpg"
+          src="/joseph.webp"
           theme="dark"
           objectPosition="bottom"
           className="aspect-square rounded-3xl grayscale"

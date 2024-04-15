@@ -17,7 +17,7 @@ export const HeroCards = () => {
       id: 1,
       title: "Stories",
       image: {
-        src: "/stories.png",
+        src: "/stories.webp",
         alt: "Stories",
         width: 1854,
         height: 2982,
@@ -27,7 +27,7 @@ export const HeroCards = () => {
       id: 2,
       title: "Dashboard",
       image: {
-        src: "/dashboard.png",
+        src: "/dashboard.webp",
         alt: "Dashboard",
         width: 1846,
         height: 2980,
