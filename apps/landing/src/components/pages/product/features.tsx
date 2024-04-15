@@ -1,70 +1,132 @@
 import { BlurImage, Box, Flex, Text } from "ui";
 import { Container } from "@/components/ui";
 import { Blur } from "@/components/ui";
-import { ObjectiveIcon } from "icons";
+import {
+  AnalyticsIcon,
+  ChatIcon,
+  DocsIcon,
+  EpicsIcon,
+  MilestonesIcon,
+  ObjectiveIcon,
+  RoadmapIcon,
+  StoryIcon,
+  WhiteboardIcon,
+} from "icons";
 
 export const Features = () => {
   const features = [
     {
+      icon: (
+        <StoryIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Stories",
       title: "Track your work",
-      description:
-        "Track and manage tasks, issues, and bugs with user stories.",
+      overview: "Track and manage tasks, issues, and bugs with user stories.",
     },
     {
+      icon: (
+        <ObjectiveIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Objectives",
       title: "Set goals and track progress",
-      description: "Define clear objectives to guide your project's direction.",
+      overview: "Define clear objectives to guide your project's direction.",
     },
     {
+      icon: (
+        <RoadmapIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Roadmaps",
       title: "Plan and visualize project roadmaps",
-      description:
+      overview:
         "Create and visualize project roadmaps to plan and track progress.",
     },
     {
+      icon: (
+        <MilestonesIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Sprints",
       title: "Iterative development and delivery",
-      description:
+      overview:
         "Organize work into sprints for iterative development and delivery.",
     },
     {
+      icon: (
+        <EpicsIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Epics",
       title: "Manage large-scale features or initiatives",
-      description: "Manage and track large-scale features or initiatives.",
+      overview: "Manage and track large-scale features or initiatives.",
     },
     {
+      icon: (
+        <DocsIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Documents",
       title: "Document management",
-      description: "Store and collaborate on project-related documents.",
+      overview: "Store and collaborate on project-related documents.",
     },
     {
+      icon: (
+        <AnalyticsIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Reports",
       title: "Analytics and insights",
-      description:
-        "Generate reports to analyze project performance and metrics.",
+      overview: "Generate reports to analyze project performance and metrics.",
     },
     {
+      icon: (
+        <ChatIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Discussions",
       title: "Collaborate and communicate",
-      description:
+      overview:
         "Engage in meaningful discussions and keep everyone informed and aligned.",
     },
     {
+      icon: (
+        <WhiteboardIcon
+          strokeWidth={1.3}
+          className="relative -right-1 h-10 w-auto md:h-16"
+        />
+      ),
       name: "Whiteboards",
       title: "Visualize ideas and plans",
-      description:
+      overview:
         "Visualize ideas and plans effortlessly with advanced whiteboard functionality.",
     },
   ];
 
   return (
     <Container className="max-w-4xl">
-      {features.map(({ name, title, description }, idx) => (
+      {features.map(({ name, title, overview, icon }, idx) => (
         <Box
           key={name}
           id={name.toLowerCase()}
-          className="relative border-t border-gray-200/5 pt-8 md:py-12"
+          className="relative scroll-mt-12 border-t border-gray-200/5 pt-8 md:py-12"
         >
           <Flex
             gap={6}
@@ -79,10 +141,7 @@ export const Features = () => {
               <span className="hidden md:inline">0{idx + 1}. </span>
               {name}
             </Text>
-            <ObjectiveIcon
-              strokeWidth={1.2}
-              className="relative -right-1 h-10 w-auto md:h-16"
-            />
+            {icon}
           </Flex>
           <Box className="col-span-3">
             <Text fontSize="3xl" fontWeight="normal" className="opacity-80">
@@ -94,7 +153,7 @@ export const Features = () => {
               color="muted"
               className="my-4"
             >
-              {description}
+              {overview}
             </Text>
             <BlurImage
               src="/stories.png"

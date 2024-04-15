@@ -1,11 +1,13 @@
 import type { Icon } from "./types";
 
 export const AnalyticsIcon = (props: Icon) => {
+  const { strokeWidth = 2, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
       fill="currentColor"
       fillOpacity={0.1}
+      strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
@@ -16,14 +18,12 @@ export const AnalyticsIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
       <path
         d="M5.99219 11.4863C8.14729 11.5581 13.0341 11.2328 15.8137 6.82132M13.9923 6.28835L15.8678 5.98649C16.0964 5.95738 16.432 6.13785 16.5145 6.35298L17.0104 7.99142"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   );

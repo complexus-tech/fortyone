@@ -51,42 +51,49 @@ export const Navigation = () => {
     {
       id: 1,
       name: "Stories",
+      href: "/product#stories",
       description: "Track your work",
       icon: <StoryIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 2,
       name: "Objectives",
+      href: "/product#objectives",
       description: "Set goals and track progress",
       icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 3,
-      name: "Roadmap",
+      name: "Roadmaps",
+      href: "/product#roadmaps",
       description: "Plan and visualize your work",
       icon: <RoadmapIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 4,
       name: "Reports",
+      href: "/product#reports",
       description: "Get analytics on your work",
       icon: <AnalyticsIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 5,
       name: "Integrations",
+      href: "/product#integrations",
       description: "Connect third-party tools",
       icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 6,
       name: "API",
+      href: "/product#api",
       description: "Build custom workflows",
       icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
     {
       id: 7,
       name: "Mobile",
+      href: "/product#mobile",
       description: "Stay connected on the go",
       icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
     },
@@ -95,12 +102,14 @@ export const Navigation = () => {
   const resources = [
     {
       id: 2,
+      href: "/blog",
       name: "Blog",
       description: "Read the latest articles",
       icon: <DocsIcon className="relative top-1 h-[1.15rem] w-auto shrink-0" />,
     },
     {
       id: 3,
+      href: "/developers",
       name: "Developers",
       description: "Explore API documentation",
       icon: <CodeIcon className="relative top-1 h-5 w-auto shrink-0" />,
@@ -131,15 +140,17 @@ export const Navigation = () => {
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
-                        {product.map(({ id, name, description, icon }) => (
-                          <MenuItem
-                            description={description}
-                            href="/product"
-                            icon={icon}
-                            key={id}
-                            name={name}
-                          />
-                        ))}
+                        {product.map(
+                          ({ id, name, description, icon, href }) => (
+                            <MenuItem
+                              description={description}
+                              href={href}
+                              icon={icon}
+                              key={id}
+                              name={name}
+                            />
+                          ),
+                        )}
                       </Box>
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
@@ -165,15 +176,17 @@ export const Navigation = () => {
                     <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
                     <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-1 gap-2 p-2">
-                        {resources.map(({ id, name, description, icon }) => (
-                          <MenuItem
-                            description={description}
-                            href="/features"
-                            icon={icon}
-                            key={id}
-                            name={name}
-                          />
-                        ))}
+                        {resources.map(
+                          ({ id, name, description, icon, href }) => (
+                            <MenuItem
+                              description={description}
+                              href={href}
+                              icon={icon}
+                              key={id}
+                              name={name}
+                            />
+                          ),
+                        )}
                       </Box>
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
