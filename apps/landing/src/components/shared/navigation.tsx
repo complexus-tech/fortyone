@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Flex, NavLink, NavigationMenu, Text } from "ui";
+import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
 import {
   AnalyticsIcon,
   ArrowRightIcon,
@@ -54,49 +54,49 @@ export const Navigation = () => {
       name: "Stories",
       href: "/product#stories",
       description: "Track your work",
-      icon: <StoryIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <StoryIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 2,
       name: "Objectives",
       href: "/product#objectives",
       description: "Set goals and track progress",
-      icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 3,
       name: "Roadmaps",
       href: "/product#roadmaps",
       description: "Plan and visualize your work",
-      icon: <RoadmapIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <RoadmapIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 4,
       name: "Reports",
       href: "/product#reports",
       description: "Get analytics on your work",
-      icon: <AnalyticsIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <AnalyticsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 5,
       name: "Integrations",
       href: "/product#integrations",
       description: "Connect third-party tools",
-      icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 6,
       name: "API",
       href: "/product#api",
       description: "Build custom workflows",
-      icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 7,
       name: "Mobile",
       href: "/product#mobile",
       description: "Stay connected on the go",
-      icon: <ObjectiveIcon className="relative top-1 h-4 w-auto shrink-0" />,
+      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
   ];
 
@@ -106,14 +106,16 @@ export const Navigation = () => {
       href: "/blog",
       name: "Blog",
       description: "Read the latest articles",
-      icon: <DocsIcon className="relative top-1 h-[1.15rem] w-auto shrink-0" />,
+      icon: (
+        <DocsIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
+      ),
     },
     {
       id: 3,
       href: "/developers",
       name: "Developers",
       description: "Explore API documentation",
-      icon: <CodeIcon className="relative top-1 h-5 w-auto shrink-0" />,
+      icon: <CodeIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
     },
   ];
 
@@ -208,7 +210,41 @@ export const Navigation = () => {
               <Button className="text-[0.93rem]" rounded="full">
                 Get started
               </Button>
-              <MenuIcon className="h-6 w-auto md:hidden" />
+              <Menu>
+                <Menu.Button asChild>
+                  <button className="flex">
+                    <MenuIcon className="h-6 w-auto md:hidden" />
+                  </button>
+                </Menu.Button>
+                <Menu.Items
+                  align="end"
+                  className="min-w-[70vw] rounded-xl pt-2"
+                >
+                  <Menu.Group>
+                    {navLinks.map(({ title, href }) => (
+                      <Menu.Item key={title}>
+                        <NavLink className="flex" href={href}>
+                          {title}
+                        </NavLink>
+                      </Menu.Item>
+                    ))}
+                  </Menu.Group>
+                  <Menu.Separator />
+                  <Menu.Group>
+                    {product.map(({ id, name, href, icon }) => (
+                      <Menu.Item key={id}>
+                        <NavLink
+                          className="flex items-center gap-2"
+                          href={href}
+                        >
+                          {icon}
+                          {name}
+                        </NavLink>
+                      </Menu.Item>
+                    ))}
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
             </Flex>
           </Box>
         </Box>
