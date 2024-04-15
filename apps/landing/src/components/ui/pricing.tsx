@@ -203,7 +203,7 @@ export const Pricing = () => {
             />
           ))}
         </Box>
-        <Box className="mt:mt-32 relative mt-8">
+        <Box className="relative mt-8 md:mt-32">
           <Box className="mx-auto rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl shadow-warning/10 dark:border-dark-100 dark:bg-dark md:max-w-4xl">
             <Text className="mb-3 text-2xl" fontWeight="medium">
               <span className="font-semibold text-primary">Complexus</span>{" "}
@@ -231,7 +231,7 @@ export const Pricing = () => {
             </Button>
           </Box>
 
-          <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
+          <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-warning/10" />
         </Box>
       </Container>
     </Box>

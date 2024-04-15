@@ -98,8 +98,8 @@ export const Features = () => {
     },
     {
       id: 3,
-      name: "Milestones",
-      description: "Set milestones to track progress and celebrate success.",
+      name: "Sprints",
+      description: "Set sprints to achieve your goals and track progress.",
       icon: <MilestonesIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
@@ -125,8 +125,8 @@ export const Features = () => {
 
     {
       id: 5,
-      name: "Themes",
-      description: "Define your goals, track progress, and measure success.",
+      name: "Epics",
+      description: "Group related stories together to manage large projects.",
       icon: <EpicsIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
