@@ -23,18 +23,6 @@ export const DocsIcon = ({ strokeWidth = 2, ...rest }: Icon) => {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M8 7H15"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 11H11"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 };

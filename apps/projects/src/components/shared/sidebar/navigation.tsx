@@ -54,7 +54,7 @@ export const Navigation = () => {
       messages: 3,
     },
     {
-      name: "Active Milestones",
+      name: "Running Sprints",
       icon: <MilestonesIcon className="h-[1.3rem] w-auto" />,
       href: "/milestones",
     },

@@ -36,37 +36,37 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
   const links = [
     {
       name: "Stories",
-      icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
+      icon: <StoryIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/teams/web/stories",
     },
     {
-      name: "Themes",
-      icon: <EpicsIcon className="h-5 w-auto" />,
+      name: "Epics",
+      icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
       href: "/teams/web/themes",
     },
     {
       name: "Milestones",
-      icon: <MilestonesIcon className="h-5 w-auto" />,
+      icon: <MilestonesIcon className="h-[1.3rem] w-auto" />,
       href: "/teams/web/milestones",
     },
     {
       name: "Documents",
-      icon: <DocsIcon className="h-5 w-auto" />,
+      icon: <DocsIcon className="h-[1.3rem] w-auto" />,
       href: "/teams/web/documents",
     },
     {
       name: "Discussions",
-      icon: <ChatIcon className="h-[1.35rem] w-auto" strokeWidth={2} />,
+      icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/teams/web/discussions",
     },
     {
       name: "Whiteboards",
-      icon: <WhiteboardIcon className="h-5 w-auto" strokeWidth={2} />,
+      icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/teams/web/retrospectives",
     },
     {
       name: "Retrospectives",
-      icon: <RetroIcon className="h-5 w-auto" strokeWidth={2} />,
+      icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/teams/web/retrospectives",
     },
   ];

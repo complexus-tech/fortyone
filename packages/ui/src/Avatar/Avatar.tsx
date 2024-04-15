@@ -2,6 +2,7 @@
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
 import { FC, HTMLAttributes, useState } from "react";
+import { BlurImage } from "../Image/Image";
 
 const avatar = cva(
   "flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
@@ -67,13 +68,12 @@ export const Avatar: FC<AvatarProps> = (props) => {
   return (
     <div className={classes} {...rest}>
       {path && (
-        <img
+        <BlurImage
           src={path}
+          theme="dark"
+          priority
           alt={name}
-          onError={(_) => {
-            setPath("");
-          }}
-          className={cn("w-full h-auto object-cover", {
+          className={cn("w-full h-full aspect-square", {
             "rounded-full": rounded === "full",
             "rounded-sm": rounded === "sm",
             "rounded-md": rounded === "md",

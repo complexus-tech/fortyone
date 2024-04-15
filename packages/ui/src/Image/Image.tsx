@@ -1,19 +1,26 @@
 "use client";
 import { cn } from "lib";
 import Image from "next/image";
-import { useState } from "react";
+import { ReactEventHandler, useState } from "react";
 
 import { Box } from "../Box/Box";
 
 export const BlurImage = ({
   className = "",
-  rounded = false,
   priority = false,
-  objectPosition = "center",
   quality = 75,
   theme = "light",
   alt = "",
   src = "",
+  onError,
+}: {
+  onError?: ReactEventHandler<HTMLImageElement>;
+  className?: string;
+  priority?: boolean;
+  quality?: number;
+  theme?: "light" | "dark";
+  alt?: string;
+  src: string;
 }) => {
   const [isLoading, setLoading] = useState(true);
 
@@ -23,8 +30,7 @@ export const BlurImage = ({
         "group relative w-full overflow-hidden",
         {
           "bg-gray-100": theme === "light",
-          "bg-[#000]": theme === "dark",
-          "rounded-xl lg:rounded-3xl": rounded,
+          "bg-dark-200": theme === "dark",
         },
         className
       )}
@@ -34,17 +40,15 @@ export const BlurImage = ({
         src={src}
         priority={priority}
         quality={quality}
-        layout="fill"
-        objectPosition={objectPosition}
-        objectFit="cover"
+        fill
         className={cn(
-          "border-separate scale-100 blur-0 grayscale-0 transition duration-500 ease-in-out",
+          "border-separate object-cover object-center scale-100 blur-0 grayscale-0 transition duration-500 ease-in-out",
           {
-            "rounded-xl lg:rounded-3xl": rounded,
             "scale-110 blur-2xl grayscale": isLoading,
           }
         )}
-        onLoadingComplete={() => setLoading(false)}
+        onLoad={() => setLoading(false)}
+        onError={onError}
       />
     </Box>
   );
