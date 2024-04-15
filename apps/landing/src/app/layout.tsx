@@ -12,24 +12,21 @@ const font = Inter({
 });
 
 export const metadata: Metadata = {
-  title:
-    "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
+  title: "Nail every objective on time with complexus.",
   description:
-    "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
+    "Empower your team to crush every key objective with our seamless project management platform.",
   openGraph: {
-    title:
-      "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
+    title: "Nail every objective on time with complexus.",
     description:
-      "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
+      "Empower your team to crush every key objective with our seamless project management platform.",
     url: "https://complexus.app",
   },
   twitter: {
     card: "summary_large_image",
     site: "@complexus_tech",
-    title:
-      "Complexus: Empowering Teams to Conquer Project Complexity, Effortlessly.",
+    title: "Nail every objective on time with complexus.",
     description:
-      "Empower your team with innovative project management solutions. Simplify workflows, streamline collaboration, and achieve exceptional results with Complexus. With features like OKR Tracking, Epics Management, Iterations Planning, and Roadmap Visualization, welcome to effortless project management.",
+      "Empower your team to crush every key objective with our seamless project management platform.",
   },
 };
 
