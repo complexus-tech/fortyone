@@ -282,12 +282,12 @@ export const Features = () => {
             >
               {overview}
             </Text>
-            <Box className="rounded-2xl bg-dark-100 p-1">
+            <Box className="rounded-xl bg-dark-100 p-1.5">
               <BlurImage
                 src="/stories.png"
                 theme="dark"
                 objectPosition="bottom"
-                className="aspect-[2/1] rounded-[0.85rem]"
+                className="aspect-[2/1] rounded-lg"
               />
             </Box>
             <Box className="mt-6 px-0.5">
