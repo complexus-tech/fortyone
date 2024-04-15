@@ -16,7 +16,7 @@ export const Integrations = () => {
         alt="Intercom logo"
         className="absolute left-80 top-12 hidden -rotate-6 md:block"
         height={75}
-        src="/integrations/intercom.svg"
+        src="/integrations/intercom-icon.svg"
         width={75}
       />
 
