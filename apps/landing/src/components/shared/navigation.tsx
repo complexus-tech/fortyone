@@ -6,6 +6,7 @@ import {
   ArrowRightIcon,
   CodeIcon,
   DocsIcon,
+  MenuIcon,
   ObjectiveIcon,
   RoadmapIcon,
   StoryIcon,
@@ -193,7 +194,7 @@ export const Navigation = () => {
                 </NavigationMenu.List>
               </NavigationMenu>
             </Flex>
-            <Flex gap={2} className="ml-2">
+            <Flex align="center" className="ml-2 gap-4 pr-1 md:gap-2 md:pr-0">
               <Button
                 className="hidden px-3 text-[0.93rem] md:inline-block"
                 color="tertiary"
@@ -207,6 +208,7 @@ export const Navigation = () => {
               <Button className="text-[0.93rem]" rounded="full">
                 Get started
               </Button>
+              <MenuIcon className="h-6 w-auto" />
             </Flex>
           </Box>
         </Box>

@@ -79,3 +79,4 @@ export * from "./linkedin";
 export * from "./twitter";
 export * from "./support";
 export * from "./email";
+export * from "./menu";
