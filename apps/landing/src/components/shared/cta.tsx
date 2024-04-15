@@ -4,7 +4,7 @@ import { Blur, Container } from "@/components/ui";
 export const CallToAction = () => {
   return (
     <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-[#030303]">
-      <Container className="relative max-w-7xl py-20 md:py-32">
+      <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
           className="md:mt-18 mb-8 text-center"
@@ -12,7 +12,7 @@ export const CallToAction = () => {
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-5xl leading-tight md:text-7xl"
             color="gradient"
           >
             Experience the difference. Try it now!

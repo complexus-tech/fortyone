@@ -162,9 +162,9 @@ export const Pricing = () => {
   ];
 
   return (
-    <Box className="relative mb-40">
+    <Box className="relative mb-20 md:mb-40">
       <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 z-[2] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
-      <Container className="pt-16">
+      <Container className="md:pt-16">
         <Flex
           align="center"
           className="my-16 text-center md:mt-20"
@@ -180,7 +180,7 @@ export const Pricing = () => {
           </Button>
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-5xl leading-tight md:text-7xl"
             color="gradient"
             fontWeight="medium"
           >
@@ -203,7 +203,7 @@ export const Pricing = () => {
             />
           ))}
         </Box>
-        <Box className="relative mt-32">
+        <Box className="mt:mt-32 relative mt-8">
           <Box className="mx-auto rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl shadow-warning/10 dark:border-dark-100 dark:bg-dark md:max-w-4xl">
             <Text className="mb-3 text-2xl" fontWeight="medium">
               <span className="font-semibold text-primary">Complexus</span>{" "}

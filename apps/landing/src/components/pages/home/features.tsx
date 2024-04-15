@@ -19,7 +19,7 @@ const Intro = () => (
     <Box as="section" className="my-12 text-center md:my-24">
       <Text
         as="h3"
-        className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
+        className="mx-auto max-w-5xl pb-2 text-5xl leading-tight md:text-7xl"
         color="gradient"
       >
         Meet your core objectives.
@@ -62,7 +62,7 @@ const ItemWrapper = ({
         initial={{ y: 0, x: 0 }}
         transition={{ type: "spring", stiffness: 100 }}
       >
-        <Wrapper className="h-full rounded-2xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
+        <Wrapper className="h-full rounded-3xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
           <>{children}</>
         </Wrapper>
       </motion.div>
@@ -76,7 +76,7 @@ export const Features = () => {
       id: 1,
       name: "Stories",
       description: "Break down complex projects into manageable tasks.",
-      icon: <StoryIcon className="h-7 w-auto" />,
+      icon: <StoryIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
         alt: "Stories",
@@ -88,7 +88,7 @@ export const Features = () => {
       id: 2,
       name: "Objectives",
       description: "Define your goals, track progress, and measure success.",
-      icon: <ObjectiveIcon className="h-7 w-auto" />,
+      icon: <ObjectiveIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
         alt: "Stories",
@@ -100,7 +100,7 @@ export const Features = () => {
       id: 3,
       name: "Milestones",
       description: "Set milestones to track progress and celebrate success.",
-      icon: <MilestonesIcon className="h-7 w-auto" />,
+      icon: <MilestonesIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
         alt: "Stories",
@@ -113,7 +113,7 @@ export const Features = () => {
       name: "Kanban Boards",
       description:
         "Visualize your workflow, track progress, and manage tasks efficiently. Drag and drop tasks to update status.",
-      icon: <KanbanIcon className="h-7 w-auto" />,
+      icon: <KanbanIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/kanban.png",
         alt: "Kanban Boards",
@@ -127,7 +127,7 @@ export const Features = () => {
       id: 5,
       name: "Themes",
       description: "Define your goals, track progress, and measure success.",
-      icon: <EpicsIcon className="h-7 w-auto" />,
+      icon: <EpicsIcon className="h-6 w-auto md:h-7" />,
       image: {
         src: "/story-card.png",
         alt: "Stories",
@@ -138,9 +138,9 @@ export const Features = () => {
   ];
 
   return (
-    <Container as="section" className="mb-40">
+    <Container as="section" className="mb-20 md:mb-40">
       <Intro />
-      <Box className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-8">
+      <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {features.map(
           ({
             id,

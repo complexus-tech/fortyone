@@ -259,11 +259,11 @@ export const Features = () => {
             gap={6}
             justify="between"
             align="center"
-            className="relative -left-1 mb-6 opacity-15"
+            className="relative -left-1 mb-2 opacity-15 md:mb-6"
           >
             <Text
               fontWeight="bold"
-              className="text-stroke-white text-5xl md:text-6xl"
+              className="text-stroke-white text-[2.6rem] md:text-6xl"
             >
               <span className="hidden md:inline">0{idx + 1}. </span>
               {name}
@@ -271,18 +271,21 @@ export const Features = () => {
             {icon}
           </Flex>
           <Box className="col-span-3">
-            <Text fontSize="3xl" fontWeight="normal" className="opacity-80">
+            <Text
+              fontWeight="normal"
+              className="text-2xl opacity-80 md:text-3xl"
+            >
               {title}
             </Text>
             <Text
               fontWeight="normal"
               fontSize="lg"
               color="muted"
-              className="my-4"
+              className="my-3 md:my-4"
             >
               {overview}
             </Text>
-            <Box className="rounded-xl bg-dark-100 p-1.5">
+            <Box className="rounded-xl bg-dark-100 p-1 md:p-1.5">
               <BlurImage
                 src="/stories.png"
                 theme="dark"
@@ -309,7 +312,7 @@ export const Features = () => {
       <Text
         fontSize="2xl"
         fontWeight="normal"
-        className="mb-28 mt-10 leading-snug opacity-80"
+        className="mb-16 mt-12 leading-snug opacity-80 md:mb-28 md:mt-0"
       >
         Complexus is tailored to equip you with comprehensive tools for
         effective project management. Whether you're tracking tasks, visualizing

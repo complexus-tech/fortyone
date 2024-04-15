@@ -120,9 +120,9 @@ export const Navigation = () => {
 
   return (
     <Box className="fixed left-0 top-4 z-10 w-screen">
-      <Container as="nav" className="w-max">
+      <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-16 items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-4 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40 md:px-3 md:pl-5">
+          <Box className="z-10 flex h-[3.5rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40 md:h-16 md:px-3 md:pl-5">
             <Logo className="relative top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
@@ -192,9 +192,10 @@ export const Navigation = () => {
                   </NavigationMenu.Item>
                 </NavigationMenu.List>
               </NavigationMenu>
-
+            </Flex>
+            <Flex gap={2} className="ml-2">
               <Button
-                className="px-3 text-[0.93rem]"
+                className="hidden px-3 text-[0.93rem] md:inline-block"
                 color="tertiary"
                 rightIcon={
                   <ArrowRightIcon className="relative top-[0.5px] h-3 w-auto" />
@@ -203,7 +204,7 @@ export const Navigation = () => {
               >
                 Sign in
               </Button>
-              <Button className="px-3 text-[0.93rem]" rounded="full">
+              <Button className="text-[0.93rem]" rounded="full">
                 Get started
               </Button>
             </Flex>

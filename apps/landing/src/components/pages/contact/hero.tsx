@@ -18,14 +18,13 @@ export const Hero = () => {
           as="h1"
           color="gradient"
           fontWeight="medium"
-          className="my-8 pb-2 text-5xl md:text-7xl"
+          className="my-8 pb-2 text-5xl leading-none md:text-7xl"
         >
           What assistance do you require?
         </Text>
         <Text
-          fontSize="2xl"
           fontWeight="normal"
-          className="mb-16 max-w-6xl leading-snug opacity-80"
+          className="max-w-6xl text-xl leading-snug opacity-80 md:mb-16 md:text-2xl"
         >
           Reach out to our sales and support teams for demonstrations,
           assistance with onboarding, or any questions regarding complexus.

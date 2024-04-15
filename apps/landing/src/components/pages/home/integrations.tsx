@@ -45,18 +45,18 @@ export const Integrations = () => {
       <Container className="relative">
         <Flex
           align="center"
-          className="md:mt-18 mb-8 text-center"
+          className="md:mt-18 mb-4 text-center"
           direction="column"
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-4xl pb-2 text-5xl md:text-7xl"
+            className="h-max max-w-4xl pb-2 text-5xl leading-tight md:mt-6 md:text-7xl"
             color="gradient"
           >
             Sync up your favorite tools.
           </Text>
           <Text
-            className="my-6 max-w-[600px] md:mt-6"
+            className="my-6 max-w-[600px]"
             color="muted"
             fontSize="xl"
             fontWeight="normal"

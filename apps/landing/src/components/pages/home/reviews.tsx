@@ -63,11 +63,11 @@ export const Reviews = () => {
       <Box className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
           <Wrapper
-            className="animate-gradient h-[38vh] rounded-2xl border-2 shadow-2xl shadow-secondary/20 md:rounded-[1.5rem]"
+            className="rounded-3xl border-2 shadow-2xl shadow-secondary/20 md:min-h-[38vh] md:rounded-[1.5rem]"
             key={id}
           >
             <Flex
-              className="relative h-full px-4 py-6 md:px-8 md:py-12"
+              className="relative h-full px-4 py-6 md:px-6 md:py-10"
               direction="column"
               justify="between"
             >
@@ -78,19 +78,23 @@ export const Reviews = () => {
                     {name}
                   </Text>
                 </Flex>
-                <Text fontWeight="normal" className="mb-5 leading-relaxed">
+                <Text
+                  fontWeight="normal"
+                  className="mb-8 leading-relaxed opacity-80"
+                >
                   {content}
                 </Text>
+                <Text className="mb-6">CEO, Company Name</Text>
               </Box>
               <Button
-                className="px-6"
-                color="tertiary"
+                className="bg-opacity-10 px-6"
+                // color="tertiary"
                 rightIcon={
                   <ArrowRightIcon className="relative top-[0.5px] h-3.5 w-auto" />
                 }
                 rounded="full"
               >
-                Read more
+                Read full story
               </Button>
             </Flex>
           </Wrapper>
@@ -108,7 +112,7 @@ export const Reviews = () => {
         </Button>
       </Box>
 
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 bg-secondary/10 md:h-[900px] md:w-[900px]" />
+      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/5 md:h-[600px] md:w-[600px]" />
     </Container>
   );
 };

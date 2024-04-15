@@ -31,15 +31,14 @@ export const Story = () => {
   return (
     <Container className="max-w-4xl">
       <Text
-        className="mb-6 text-2xl uppercase tracking-wide md:md:w-1/2"
+        className="mb-6 text-xl uppercase tracking-wide md:md:w-1/2 md:text-2xl"
         color="gradient"
       >
         Our Mission
       </Text>
       <Text
-        fontSize="2xl"
         fontWeight="normal"
-        className="mb-32 max-w-6xl leading-snug opacity-80"
+        className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:mb-32 md:text-2xl"
       >
         Our mission is to provide a user-friendly, feature-rich project
         management solution that streamlines workflows and enhances
@@ -49,15 +48,14 @@ export const Story = () => {
       </Text>
 
       <Text
-        className="mb-6 text-2xl uppercase tracking-wide md:w-1/2"
+        className="mb-6 text-xl uppercase tracking-wide md:w-1/2 md:text-2xl"
         color="gradient"
       >
         Meet the founder
       </Text>
       <Text
-        fontSize="2xl"
         fontWeight="normal"
-        className="mb-10 max-w-6xl leading-snug opacity-80"
+        className="mb-10 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
       >
         Greetings! I'm Joseph, the creator of Complexus. With a passion for
         simplifying project management and a commitment to empowering teams, I
@@ -84,15 +82,14 @@ export const Story = () => {
 
       <Box className="relative">
         <Text
-          className="mb-6 mt-28 text-2xl uppercase tracking-wide"
+          className="mb-6 mt-16 text-xl uppercase tracking-wide md:mt-28 md:text-2xl"
           color="gradient"
         >
           What makes Complexus unique
         </Text>
         <Text
-          fontSize="2xl"
           fontWeight="normal"
-          className="mb-20 max-w-6xl leading-snug opacity-80"
+          className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
         >
           Our platform is crafted with a focus on user experience. We understand
           that intuitive design is crucial for productivity, so we've ensured

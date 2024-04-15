@@ -18,7 +18,7 @@ export const Hero = () => {
           as="h1"
           color="gradient"
           fontWeight="medium"
-          className="my-8 pb-2 text-5xl md:text-7xl"
+          className="my-8 pb-2 text-5xl leading-tight md:text-7xl"
         >
           Simplify project management
         </Text>
