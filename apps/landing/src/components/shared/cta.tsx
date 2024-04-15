@@ -12,7 +12,7 @@ export const CallToAction = () => {
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-5xl leading-tight md:text-7xl"
+            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
             color="gradient"
           >
             Experience the difference. Try it now!

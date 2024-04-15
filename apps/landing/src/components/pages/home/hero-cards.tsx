@@ -66,13 +66,12 @@ export const HeroCards = () => {
         >
           {cards.map((card) => (
             <SwiperSlide
-              className="relative rounded-lg border border-dark-50 bg-dark-200 p-0.5 md:rounded-2xl md:p-2"
+              className="relative rounded-lg border border-gray/60 bg-dark-100/40 p-0.5 backdrop-blur md:rounded-2xl md:p-2"
               key={card.id}
             >
-              <div className="pointer-events-none absolute inset-0 bg-[url(/noise.png)] opacity-80" />
               <Image
                 alt={card.title}
-                className="relative rounded md:rounded-lg"
+                className="relative rounded border-[0.5px] border-dark-100 md:rounded-lg"
                 height={card.image.height}
                 src={card.image.src}
                 width={card.image.width}

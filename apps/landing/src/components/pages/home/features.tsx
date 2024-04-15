@@ -19,7 +19,7 @@ const Intro = () => (
     <Box as="section" className="my-12 text-center md:my-24">
       <Text
         as="h3"
-        className="mx-auto max-w-5xl pb-2 text-5xl leading-tight md:text-7xl"
+        className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
         color="gradient"
       >
         Meet your core objectives.

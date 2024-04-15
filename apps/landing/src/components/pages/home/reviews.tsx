@@ -87,7 +87,7 @@ export const Reviews = () => {
                 <Text className="mb-6">CEO, Company Name</Text>
               </Box>
               <Button
-                className="bg-opacity-10 px-6"
+                className="bg-opacity-10 px-4 md:px-6"
                 // color="tertiary"
                 rightIcon={
                   <ArrowRightIcon className="relative top-[0.5px] h-3.5 w-auto" />

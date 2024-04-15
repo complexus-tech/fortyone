@@ -18,7 +18,7 @@ export const Hero = () => {
           as="h1"
           color="gradient"
           fontWeight="medium"
-          className="my-8 text-5xl leading-tight md:text-7xl"
+          className="my-8 text-5xl leading-[1.05] md:text-7xl"
         >
           Achieve your goals with Complexus
         </Text>

@@ -273,7 +273,7 @@ export const Features = () => {
           <Box className="col-span-3">
             <Text
               fontWeight="normal"
-              className="text-2xl opacity-80 md:text-3xl"
+              className="text-xl opacity-80 md:text-3xl"
             >
               {title}
             </Text>
@@ -281,7 +281,7 @@ export const Features = () => {
               fontWeight="normal"
               fontSize="lg"
               color="muted"
-              className="my-3 md:my-4"
+              className="my-2 md:my-4"
             >
               {overview}
             </Text>
@@ -310,9 +310,8 @@ export const Features = () => {
         </Box>
       ))}
       <Text
-        fontSize="2xl"
         fontWeight="normal"
-        className="mb-16 mt-12 leading-snug opacity-80 md:mb-28 md:mt-0"
+        className="mb-16 mt-12 text-xl leading-snug opacity-80 md:mb-28 md:mt-0 md:text-2xl"
       >
         Complexus is tailored to equip you with comprehensive tools for
         effective project management. Whether you're tracking tasks, visualizing

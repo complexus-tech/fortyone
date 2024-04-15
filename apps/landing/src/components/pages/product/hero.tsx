@@ -18,14 +18,13 @@ export const Hero = () => {
           as="h1"
           color="gradient"
           fontWeight="medium"
-          className="my-8 pb-2 text-5xl leading-tight md:text-7xl"
+          className="my-6 pb-2 text-5xl md:my-8 md:text-7xl"
         >
           Simplify project management
         </Text>
         <Text
-          fontSize="2xl"
           fontWeight="normal"
-          className="mb-8 max-w-6xl leading-snug opacity-80"
+          className="mb-6 max-w-6xl text-xl leading-snug opacity-80 md:mb-8 md:text-2xl"
         >
           We're dedicated to streamlining project management for teams of any
           scale. Our platform is crafted to enable you to efficiently organize
