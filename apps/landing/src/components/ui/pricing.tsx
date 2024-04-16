@@ -1,5 +1,5 @@
 "use client";
-import { Flex, Text, Box, Button, Badge, Switch } from "ui";
+import { Flex, Text, Box, Button, Badge } from "ui";
 import { ArrowRightIcon, ChatIcon, CheckIcon } from "icons";
 import { Blur } from "./blur";
 import { Container } from "./container";
@@ -7,6 +7,7 @@ import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
+type Billing = "yearly" | "monthly";
 const packages = [
   {
     name: "Hobby",
@@ -80,6 +81,7 @@ const Package = ({
   price,
   features,
   recommended,
+  billing,
 }: {
   name: string;
   description: string;
@@ -88,8 +90,13 @@ const Package = ({
   price: number;
   features: string[];
   recommended?: boolean;
+  billing: Billing;
 }) => {
   const [isActive, setIsActive] = useState(false);
+  // if billing is yearly, apply 25% discount
+  if (billing === "yearly") {
+    price = price * 0.75;
+  }
   return (
     <Box
       onMouseEnter={() => {
@@ -153,6 +160,7 @@ const Package = ({
 };
 
 export const Pricing = () => {
+  const [billing, setBilling] = useState<Billing>("yearly");
   const enterprise = [
     "All Business features",
     "Volume discounts",
@@ -167,7 +175,7 @@ export const Pricing = () => {
       <Container className="md:pt-16">
         <Flex
           align="center"
-          className="my-16 text-center md:mt-20"
+          className="mb-8 mt-12 text-center md:mt-20"
           direction="column"
         >
           <Button
@@ -186,13 +194,37 @@ export const Pricing = () => {
           >
             Experience more, spend less. Switch to complexus.
           </Text>
-          <Switch className=" scale-150" />
+          <Box className="mt-6">
+            <Flex className="gap-1 rounded-[0.6rem] bg-dark-200 p-1">
+              {["yearly", "monthly"].map((option) => (
+                <Button
+                  key={option}
+                  className={cn("px-2.5", {
+                    "opacity-80": option !== billing,
+                  })}
+                  color={option === billing ? "primary" : "tertiary"}
+                  size="sm"
+                  variant={option === billing ? "solid" : "naked"}
+                  onClick={() => setBilling(option as Billing)}
+                >
+                  Billed {option}
+                </Button>
+              ))}
+            </Flex>
+            <Text className="mt-2">
+              <Text as="span" color="primary" fontWeight="semibold">
+                Save 25%
+              </Text>{" "}
+              with yearly billing.
+            </Text>
+          </Box>
         </Flex>
 
         <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {packages.map((pkg) => (
             <Package
               key={pkg.name}
+              billing={billing}
               cta={pkg.cta}
               name={pkg.name}
               description={pkg.description}
