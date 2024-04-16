@@ -208,7 +208,7 @@ export const Pricing = () => {
                 </Button>
               ))}
             </Flex>
-            <Text className="mt-4">
+            <Text className="mt-3">
               <Text as="span" color="primary" fontWeight="semibold">
                 Save 25%
               </Text>{" "}
