@@ -193,7 +193,7 @@ export const Pricing = () => {
           </Text>
           <Box className="mt-6">
             <Flex className="gap-1 rounded-[0.6rem] bg-dark-200 p-1">
-              {["monthly", "yearly"].map((option) => (
+              {["monthly", "annual"].map((option) => (
                 <Button
                   key={option}
                   className={cn("px-2.5 capitalize", {
