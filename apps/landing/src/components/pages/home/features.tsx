@@ -19,22 +19,42 @@ import kanbanImg from "../../../../public/kanban.png";
 const Intro = () => (
   <Box className="relative">
     <Box as="section" className="my-12 text-center md:my-24">
-      <Text
-        as="h3"
-        className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
-        color="gradient"
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{
+          duration: 1,
+          delay: 0,
+        }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        Meet your core objectives.
-      </Text>
-      <Text
-        className="mx-auto mt-6 max-w-[700px]"
-        fontSize="xl"
-        fontWeight="normal"
+        <Text
+          as="h3"
+          className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
+          color="gradient"
+        >
+          Meet your core objectives.
+        </Text>
+      </motion.div>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{
+          duration: 1,
+          delay: 0.3,
+        }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        Streamline workflows, elevate collaboration, and nail your objectives
-        with features like OKR tracking, Kanban boards, Roadmaps, milestones,
-        and more.
-      </Text>
+        <Text
+          className="mx-auto mt-6 max-w-[700px]"
+          fontSize="xl"
+          fontWeight="normal"
+        >
+          Streamline workflows, elevate collaboration, and nail your objectives
+          with features like OKR tracking, Kanban boards, Roadmaps, milestones,
+          and more.
+        </Text>
+      </motion.div>
     </Box>
     <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
   </Box>

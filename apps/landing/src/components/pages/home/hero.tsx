@@ -13,17 +13,28 @@ export const Hero = () => {
           className="mb-8 mt-20 text-center"
           direction="column"
         >
-          <Button
-            className="px-3 text-sm md:text-base"
-            color="tertiary"
-            rightIcon={<ArrowRightIcon className="h-3 w-auto" />}
-            rounded="full"
-            size="sm"
-          >
-            Announcing Private Beta 1.0
-          </Button>
           <motion.span
-            initial={{ y: 15, opacity: 0 }}
+            initial={{ y: -10, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
+          >
+            <Button
+              className="px-3 text-sm md:text-base"
+              color="tertiary"
+              rightIcon={<ArrowRightIcon className="h-3 w-auto" />}
+              rounded="full"
+              size="sm"
+            >
+              Announcing Private Beta 1.0
+            </Button>
+          </motion.span>
+
+          <motion.span
+            initial={{ y: -15, opacity: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
@@ -41,7 +52,7 @@ export const Hero = () => {
           </motion.span>
 
           <motion.span
-            initial={{ y: 10, opacity: 0 }}
+            initial={{ y: -10, opacity: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
@@ -59,17 +70,37 @@ export const Hero = () => {
           </motion.span>
 
           <Flex align="center" className="mt-10" gap={4}>
-            <Button
-              className="border border-primary"
-              rounded="full"
-              size="lg"
-              variant="outline"
+            <motion.span
+              initial={{ y: -10, opacity: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{
+                duration: 1,
+                delay: 0.4,
+              }}
+              whileInView={{ y: 0, opacity: 1 }}
             >
-              Talk to us
-            </Button>
-            <Button rounded="full" size="lg">
-              Get Early Access
-            </Button>
+              <Button
+                className="border border-primary"
+                rounded="full"
+                size="lg"
+                variant="outline"
+              >
+                Talk to us
+              </Button>
+            </motion.span>
+            <motion.span
+              initial={{ y: -5, opacity: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{
+                duration: 1,
+                delay: 0.4,
+              }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
+              <Button rounded="full" size="lg">
+                Get Early Access
+              </Button>
+            </motion.span>
           </Flex>
           <Text className="mt-8" color="muted" fontSize="sm">
             No credit card required.

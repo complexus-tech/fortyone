@@ -1,6 +1,8 @@
+"use client";
 import { Avatar, Box, Button, Flex, Text, Wrapper } from "ui";
 import { ArrowRightIcon } from "icons";
 import { Container, Blur } from "@/components/ui";
+import { motion } from "framer-motion";
 
 export const Reviews = () => {
   const reviews = [
@@ -43,22 +45,42 @@ export const Reviews = () => {
       >
         Customer stories
       </Text>
-      <Text
-        align="center"
-        as="h3"
-        className="mx-auto mb-6 max-w-5xl pb-2 text-5xl md:text-7xl"
-        color="gradient"
-        fontWeight="medium"
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{
+          duration: 1,
+          delay: 0,
+        }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        Why they choose complexus.
-      </Text>
-      <Text
-        className="mx-auto mb-10 max-w-2xl text-center text-lg md:text-xl"
-        fontWeight="normal"
+        <Text
+          align="center"
+          as="h3"
+          className="mx-auto mb-6 max-w-5xl pb-2 text-5xl md:text-7xl"
+          color="gradient"
+          fontWeight="medium"
+        >
+          Why they choose complexus.
+        </Text>
+      </motion.div>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{
+          duration: 1,
+          delay: 0.3,
+        }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        Complexus is trusted by some of the world&rsquo;s leading companies.
-        Here&rsquo;s what they have to say about their experience.
-      </Text>
+        <Text
+          className="mx-auto mb-10 max-w-2xl text-center text-lg md:text-xl"
+          fontWeight="normal"
+        >
+          Complexus is trusted by some of the world&rsquo;s leading companies.
+          Here&rsquo;s what they have to say about their experience.
+        </Text>
+      </motion.div>
 
       <Box className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-12">
         {reviews.map(({ id, name, avatar, content }) => (
