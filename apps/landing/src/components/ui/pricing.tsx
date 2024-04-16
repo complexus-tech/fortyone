@@ -215,7 +215,7 @@ export const Pricing = () => {
               <Text as="span" color="primary" fontWeight="semibold">
                 Save 25%
               </Text>{" "}
-              with yearly billing.
+              with yearly billing 🎉
             </Text>
           </Box>
         </Flex>
