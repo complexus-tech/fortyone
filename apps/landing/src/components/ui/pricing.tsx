@@ -7,7 +7,7 @@ import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-type Billing = "yearly" | "monthly";
+type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
@@ -88,8 +88,8 @@ const Package = ({
   billing: Billing;
 }) => {
   const [isActive, setIsActive] = useState(false);
-  // if billing is yearly, apply 25% discount
-  if (billing === "yearly") {
+  // if billing is annual, apply 25% discount
+  if (billing === "annual") {
     price = price * 0.75;
   }
   return (
@@ -156,7 +156,7 @@ const Package = ({
 };
 
 export const Pricing = () => {
-  const [billing, setBilling] = useState<Billing>("yearly");
+  const [billing, setBilling] = useState<Billing>("annual");
   const enterprise = [
     "Volume discounts",
     "Dedicated support",
@@ -212,7 +212,7 @@ export const Pricing = () => {
               <Text as="span" color="primary" fontWeight="semibold">
                 Save 25%
               </Text>{" "}
-              with yearly billing 🎉
+              with annual billing 🎉
             </Text>
           </Box>
         </Flex>
