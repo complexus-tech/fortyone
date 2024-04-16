@@ -17,14 +17,12 @@ const packages = [
       "Start your Hobby projects with our free plan. No credit card required.",
     price: 0,
     features: [
-      "Up to 5 users",
-      "Up to 5 guests",
-      "1 team",
-      "Unlimited stories",
-      "Unlimited objectives",
-      "Import & export data",
-      "Basic support",
-      "100MB storage",
+      "Use Kanban boards & lists",
+      "All Integrations & API",
+      "Google OAuth login",
+      "Import & Export",
+      "200 stories",
+      "Importers",
     ],
   },
   {
@@ -34,13 +32,12 @@ const packages = [
     overview: "Everything in Hobby, plus more features for small teams.",
     price: 9,
     features: [
-      "Unlimited users",
-      "Unlimited guests",
-      "Unlimited teams",
-      "Integrations & API",
-      "Priority support",
-      "Advanced reporting",
-      "50GB storage",
+      "See product vision with Roadmaps",
+      "Up tp 5 custom workflows",
+      "Track OKRs",
+      "Roadmaps",
+      "Analytics & Reporting",
+      "Custom fields",
     ],
   },
   {
@@ -51,23 +48,21 @@ const packages = [
       "Everything in Professional, plus more features for mid-sized teams.",
     price: 12,
     features: [
-      "All Standard features",
-      "Themes & Roadmaps",
-      "Key Results",
-      "Discussions",
-      "100GB storage",
+      "Unlimited everything",
+      "Unlimited custom workflows",
+      "Single Sign-On (SSO)",
+      "Priority support",
+      "Discussions & Whiteboards",
+      "Advanced security",
     ],
     recommended: true,
   },
 ];
 
 const Feature = ({ feature }: { feature: string }) => (
-  <Flex align="center" gap={2} key={feature}>
-    <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-primary dark:bg-gray-200">
-      <CheckIcon
-        strokeWidth={3.5}
-        className="h-4 w-auto text-white dark:text-primary"
-      />
+  <Flex align="center" gap={3} key={feature}>
+    <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-gray-200">
+      <CheckIcon strokeWidth={3.5} className="h-4 w-auto text-dark" />
     </Box>
     <Text className="opacity-90">{feature}</Text>
   </Flex>
@@ -105,13 +100,14 @@ const Package = ({
       onMouseLeave={() => {
         setIsActive(false);
       }}
+      className="min-h-[65vh]"
     >
       <motion.div
         animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
         initial={{ y: 0, x: 0 }}
         transition={{ type: "spring", stiffness: 100 }}
         className={cn(
-          "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark dark:shadow-black",
+          "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark",
           {
             "border-primary shadow-primary/20 dark:border-primary": recommended,
           },
@@ -146,10 +142,10 @@ const Package = ({
         >
           {cta}
         </Button>
-        <Text className="mt-6" color="muted">
+        <Text className="my-6" color="muted">
           {overview}
         </Text>
-        <Flex className="mt-4" direction="column" gap={4}>
+        <Flex className="gap-4 md:gap-5" direction="column">
           {features.map((feature) => (
             <Feature feature={feature} key={feature} />
           ))}
@@ -162,11 +158,12 @@ const Package = ({
 export const Pricing = () => {
   const [billing, setBilling] = useState<Billing>("yearly");
   const enterprise = [
-    "All Business features",
     "Volume discounts",
     "Dedicated support",
     "Custom integrations",
     "Onboarding assistance",
+    "Custom deployment",
+    "SLA",
   ];
 
   return (
@@ -196,10 +193,10 @@ export const Pricing = () => {
           </Text>
           <Box className="mt-6">
             <Flex className="gap-1 rounded-[0.6rem] bg-dark-200 p-1">
-              {["yearly", "monthly"].map((option) => (
+              {["monthly", "yearly"].map((option) => (
                 <Button
                   key={option}
-                  className={cn("px-2.5", {
+                  className={cn("px-2.5 capitalize", {
                     "opacity-80": option !== billing,
                   })}
                   color={option === billing ? "primary" : "tertiary"}
@@ -207,7 +204,7 @@ export const Pricing = () => {
                   variant={option === billing ? "solid" : "naked"}
                   onClick={() => setBilling(option as Billing)}
                 >
-                  Billed {option}
+                  {option} Billing
                 </Button>
               ))}
             </Flex>

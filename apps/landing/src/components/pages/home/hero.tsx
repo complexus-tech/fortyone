@@ -14,13 +14,11 @@ export const Hero = () => {
           <Button
             className="px-3 text-sm md:text-base"
             color="tertiary"
-            rightIcon={
-              <ArrowRightIcon className="relative top-[0.5px] h-3 w-auto" />
-            }
+            rightIcon={<ArrowRightIcon className="h-3 w-auto" />}
             rounded="full"
             size="sm"
           >
-            Announcing Early Adopters Plan
+            Announcing Private Beta 1.0
           </Button>
 
           <Text
