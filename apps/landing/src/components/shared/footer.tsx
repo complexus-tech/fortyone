@@ -75,66 +75,62 @@ const Copyright = () => (
 export const Footer = () => {
   const product = [
     {
-      href: "/features/stories",
+      href: "/product#stories",
       title: "Stories",
     },
     {
-      href: "/features/roadmaps",
+      href: "/product#roadmaps",
       title: "Roadmaps",
     },
     {
       title: "Objectives",
-      href: "/features/objectives",
+      href: "/product#objectives",
     },
     {
-      href: "/features/milestones",
+      href: "/product#milestones",
       title: "Milestones",
     },
     {
-      href: "/features/themes",
+      href: "/product#themes",
       title: "Themes",
     },
     {
-      href: "/features/documents",
+      href: "/product#documents",
       title: "Documents",
     },
     {
-      href: "/features/reporting",
+      href: "/product#reporting",
       title: "Reporting",
     },
     {
-      href: "/features/retrospectives",
+      href: "/product#retrospectives",
       title: "Retrospectives",
     },
     {
-      href: "/features/whiteboards",
+      href: "/product#whiteboards",
       title: "Whiteboards",
     },
     {
-      href: "/features/teams",
+      href: "/product#teams",
       title: "Teams",
     },
     {
-      href: "/features/integrations",
+      href: "/product#integrations",
       title: "Integrations",
     },
   ];
   const company = [
     {
       title: "About us",
-      href: "/company/about",
+      href: "/about",
     },
     {
-      title: "Careers",
-      href: "/company/careers",
-    },
-    {
-      title: "Blog",
-      href: "/company/blog",
+      title: "Pricing",
+      href: "/pricing",
     },
     {
       title: "Contact",
-      href: "/company/contact",
+      href: "/contact",
     },
   ];
   const legal = [

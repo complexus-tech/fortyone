@@ -87,8 +87,8 @@ export const Reviews = () => {
                 <Text className="mb-6">CEO, Company Name</Text>
               </Box>
               <Button
-                className="bg-opacity-10 px-4 md:px-6"
-                // color="tertiary"
+                className="px-4"
+                color="tertiary"
                 rightIcon={
                   <ArrowRightIcon className="relative top-[0.5px] h-3.5 w-auto" />
                 }
@@ -103,7 +103,7 @@ export const Reviews = () => {
 
       <Box className="mx-auto mt-12 w-max md:mt-20">
         <Button
-          color="tertiary"
+          className="md:py-3.5"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
           rounded="full"
           size="lg"

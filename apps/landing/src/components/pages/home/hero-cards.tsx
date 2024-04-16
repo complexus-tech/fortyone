@@ -8,6 +8,9 @@ import "swiper/css";
 import "swiper/css/effect-cards";
 import { Container, Blur } from "@/components/ui";
 import { useCursor } from "@/hooks";
+import storiesImg from "../../../../public/stories.webp";
+import dashboardImg from "../../../../public/dashboard.webp";
+import storyImg from "../../../../public/story.png";
 
 export const HeroCards = () => {
   const cursor = useCursor();
@@ -17,30 +20,24 @@ export const HeroCards = () => {
       id: 1,
       title: "Stories",
       image: {
-        src: "/stories.webp",
+        src: storiesImg,
         alt: "Stories",
-        width: 1854,
-        height: 2982,
       },
     },
     {
       id: 2,
       title: "Dashboard",
       image: {
-        src: "/dashboard.webp",
+        src: dashboardImg,
         alt: "Dashboard",
-        width: 1846,
-        height: 2980,
       },
     },
     {
       id: 3,
       title: "Story",
       image: {
-        src: "/story.png",
+        src: storyImg,
         alt: "Story",
-        width: 1854,
-        height: 2982,
       },
     },
   ];
@@ -71,10 +68,9 @@ export const HeroCards = () => {
             >
               <Image
                 alt={card.title}
+                placeholder="blur"
                 className="relative rounded border-[0.5px] border-dark-100 md:rounded-lg"
-                height={card.image.height}
                 src={card.image.src}
-                width={card.image.width}
               />
             </SwiperSlide>
           ))}
