@@ -4,9 +4,12 @@ import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
 import {
   AnalyticsIcon,
   ArrowRightIcon,
+  ChatIcon,
   CodeIcon,
   DocsIcon,
+  EpicsIcon,
   MenuIcon,
+  MilestonesIcon,
   ObjectiveIcon,
   RoadmapIcon,
   StoryIcon,
@@ -28,7 +31,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-64 gap-2 rounded-lg p-2 hover:bg-dark-100/40"
+    className="flex w-[17rem] gap-2 rounded-lg p-2 hover:bg-dark-100/40"
     href={href}
   >
     {icon}
@@ -72,31 +75,40 @@ export const Navigation = () => {
     },
     {
       id: 4,
-      name: "Reports",
-      href: "/product#reports",
-      description: "Get analytics on your work",
-      icon: <AnalyticsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "Sprints",
+      href: "/product#sprints",
+      description: "Organize work into sprints",
+      icon: (
+        <MilestonesIcon className="relative h-4 w-auto shrink-0 md:top-1" />
+      ),
     },
     {
       id: 5,
-      name: "Integrations",
-      href: "/product#integrations",
-      description: "Connect third-party tools",
-      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "Epics",
+      href: "/product#epics",
+      description: "Break down work into epics",
+      icon: <EpicsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 6,
-      name: "API",
-      href: "/product#api",
-      description: "Build custom workflows",
-      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "Documents",
+      href: "/product#documents",
+      description: "Store and share files",
+      icon: <DocsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 7,
-      name: "Mobile",
-      href: "/product#mobile",
-      description: "Stay connected on the go",
-      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "Reporting",
+      href: "/product#reports",
+      description: "Analyze and report on progress",
+      icon: <AnalyticsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+    },
+    {
+      id: 8,
+      name: "Discussions",
+      href: "/product#discussions",
+      description: "Discuss work with your team",
+      icon: <ChatIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
   ];
 

@@ -1,4 +1,4 @@
-import { BlurImage, Box, Flex, Text } from "ui";
+import { Box, Flex, Text } from "ui";
 import { Container } from "@/components/ui";
 import { Blur } from "@/components/ui";
 import {
@@ -12,6 +12,8 @@ import {
   StoryIcon,
   WhiteboardIcon,
 } from "icons";
+import storyCard from "../../../../public/kanban.png";
+import Image from "next/image";
 
 export const Features = () => {
   const features = [
@@ -22,6 +24,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Stories",
       title: "Track your work",
       overview: "Track and manage tasks, issues, and bugs with user stories.",
@@ -65,6 +68,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Objectives",
       title: "Set goals and track progress",
       overview: "Define clear objectives to guide your project's direction.",
@@ -88,6 +92,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Roadmaps",
       title: "Plan and visualize project roadmaps",
       overview:
@@ -112,6 +117,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Sprints",
       title: "Iterative development and delivery",
       overview:
@@ -136,6 +142,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Epics",
       title: "Manage large-scale features or initiatives",
       overview: "Manage and track large-scale features or initiatives.",
@@ -158,6 +165,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Documents",
       title: "Document management",
       overview: "Store and collaborate on project-related documents.",
@@ -181,6 +189,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Reports",
       title: "Analytics and insights",
       overview: "Generate reports to analyze project performance and metrics.",
@@ -204,6 +213,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Discussions",
       title: "Collaborate and communicate",
       overview:
@@ -228,6 +238,7 @@ export const Features = () => {
           className="relative -right-1 h-10 w-auto md:h-16"
         />
       ),
+      image: storyCard,
       name: "Whiteboards",
       title: "Visualize ideas and plans",
       overview:
@@ -249,65 +260,68 @@ export const Features = () => {
 
   return (
     <Container className="max-w-4xl">
-      {features.map(({ name, title, overview, icon, breakdown }, idx) => (
-        <Box
-          key={name}
-          id={name.toLowerCase()}
-          className="relative scroll-mt-12 border-t border-gray-200/5 pt-8 md:py-12"
-        >
-          <Flex
-            gap={6}
-            justify="between"
-            align="center"
-            className="relative -left-1 mb-2 opacity-15 md:mb-6"
+      {features.map(
+        ({ name, title, overview, icon, breakdown, image }, idx) => (
+          <Box
+            key={name}
+            id={name.toLowerCase()}
+            className="relative scroll-mt-12 border-t border-gray-200/5 pt-8 md:py-12"
           >
-            <Text
-              fontWeight="bold"
-              className="text-stroke-white text-[2.6rem] md:text-6xl"
+            <Flex
+              gap={6}
+              justify="between"
+              align="center"
+              className="relative -left-1 mb-2 opacity-15 md:mb-6"
             >
-              <span className="hidden md:inline">0{idx + 1}. </span>
-              {name}
-            </Text>
-            {icon}
-          </Flex>
-          <Box className="col-span-3">
-            <Text
-              fontWeight="normal"
-              className="text-xl opacity-80 md:text-3xl"
-            >
-              {title}
-            </Text>
-            <Text
-              fontWeight="normal"
-              fontSize="lg"
-              color="muted"
-              className="my-2 md:my-4"
-            >
-              {overview}
-            </Text>
-            <Box className="rounded-xl bg-dark-100 p-1 md:p-1.5">
-              <BlurImage
-                src="/stories.png"
-                theme="dark"
-                className="aspect-[2/1] rounded-lg object-bottom"
-              />
+              <Text
+                fontWeight="bold"
+                className="text-stroke-white text-[2.6rem] md:text-6xl"
+              >
+                <span className="hidden md:inline">0{idx + 1}. </span>
+                {name}
+              </Text>
+              {icon}
+            </Flex>
+            <Box className="col-span-3">
+              <Text
+                fontWeight="normal"
+                className="text-xl opacity-80 md:text-3xl"
+              >
+                {title}
+              </Text>
+              <Text
+                fontWeight="normal"
+                fontSize="lg"
+                color="muted"
+                className="my-2 md:my-4"
+              >
+                {overview}
+              </Text>
+              <Box className="rounded-xl bg-dark-100 p-1 md:p-1.5">
+                <Image
+                  placeholder="blur"
+                  className="pointer-events-none rounded-lg"
+                  src={image}
+                  alt={name}
+                />
+              </Box>
+              <Box className="mt-6 px-0.5">
+                {breakdown.map(({ title, overview }) => (
+                  <Box key={title} className="">
+                    <Text fontSize="lg" className="mb-2">
+                      {title}
+                    </Text>
+                    <Text color="muted" fontWeight="normal" className="mb-5">
+                      {overview}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
             </Box>
-            <Box className="mt-6 px-0.5">
-              {breakdown.map(({ title, overview }) => (
-                <Box key={title} className="">
-                  <Text fontSize="lg" className="mb-2">
-                    {title}
-                  </Text>
-                  <Text color="muted" fontWeight="normal" className="mb-5">
-                    {overview}
-                  </Text>
-                </Box>
-              ))}
-            </Box>
+            <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[650px] w-[650px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
           </Box>
-          <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[650px] w-[650px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
-        </Box>
-      ))}
+        ),
+      )}
       <Text
         fontWeight="normal"
         className="mb-16 mt-12 text-xl leading-snug opacity-80 md:mb-28 md:mt-0 md:text-2xl"

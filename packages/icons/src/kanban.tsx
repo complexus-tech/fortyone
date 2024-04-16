@@ -1,16 +1,17 @@
 import type { Icon } from "./types";
 
 export const KanbanIcon = (props: Icon) => {
+  const { strokeWidth = 2, ...rest } = props;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      {...props}
+      {...rest}
       fill="currentColor"
       fillOpacity={0.1}
       height="24"
       viewBox="0 0 24 24"
       width="24"
-      strokeWidth="2"
+      strokeWidth={strokeWidth}
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"

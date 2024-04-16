@@ -13,6 +13,8 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { Container, Blur } from "@/components/ui";
+import storyCard from "../../../../public/story-card.png";
+import kanbanImg from "../../../../public/kanban.png";
 
 const Intro = () => (
   <Box className="relative">
@@ -76,9 +78,9 @@ export const Features = () => {
       id: 1,
       name: "Stories",
       description: "Break down complex projects into manageable tasks.",
-      icon: <StoryIcon className="h-6 w-auto md:h-7" />,
+      icon: <StoryIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: "/story-card.png",
+        src: storyCard,
         alt: "Stories",
         height: 2422,
         width: 1652,
@@ -88,9 +90,9 @@ export const Features = () => {
       id: 2,
       name: "Objectives",
       description: "Define your goals, track progress, and measure success.",
-      icon: <ObjectiveIcon className="h-6 w-auto md:h-7" />,
+      icon: <ObjectiveIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: "/story-card.png",
+        src: storyCard,
         alt: "Stories",
         height: 2422,
         width: 1652,
@@ -100,9 +102,9 @@ export const Features = () => {
       id: 3,
       name: "Sprints",
       description: "Set sprints to achieve your goals and track progress.",
-      icon: <MilestonesIcon className="h-6 w-auto md:h-7" />,
+      icon: <MilestonesIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: "/story-card.png",
+        src: storyCard,
         alt: "Stories",
         height: 2422,
         width: 1652,
@@ -113,9 +115,9 @@ export const Features = () => {
       name: "Kanban Boards",
       description:
         "Visualize your workflow, track progress, and manage tasks efficiently. Drag and drop tasks to update status.",
-      icon: <KanbanIcon className="h-6 w-auto md:h-7" />,
+      icon: <KanbanIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: "/kanban.png",
+        src: kanbanImg,
         alt: "Kanban Boards",
         height: 2198,
         width: 948,
@@ -127,9 +129,9 @@ export const Features = () => {
       id: 5,
       name: "Epics",
       description: "Group related stories together to manage large projects.",
-      icon: <EpicsIcon className="h-6 w-auto md:h-7" />,
+      icon: <EpicsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: "/story-card.png",
+        src: storyCard,
         alt: "Stories",
         height: 2422,
         width: 1652,
@@ -142,14 +144,7 @@ export const Features = () => {
       <Intro />
       <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {features.map(
-          ({
-            id,
-            icon,
-            name,
-            description,
-            className,
-            image: { src, alt, height, width },
-          }) => (
+          ({ id, icon, name, description, className, image: { src, alt } }) => (
             <ItemWrapper className={className} key={id}>
               <Flex align="center" className="mb-3" gap={4} justify="between">
                 <Text
@@ -161,7 +156,7 @@ export const Features = () => {
                   {icon}
                   {name}
                 </Text>
-                <Button color="tertiary" rounded="full" size="md">
+                <Button color="tertiary" rounded="full" size="sm">
                   <ArrowRightIcon className="h-4 w-auto" />
                 </Button>
               </Flex>
@@ -170,10 +165,9 @@ export const Features = () => {
               </Text>
               <Image
                 alt={alt}
-                className="mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
-                height={height}
+                placeholder="blur"
+                className="pointer-events-none mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
                 src={src}
-                width={width}
               />
             </ItemWrapper>
           ),

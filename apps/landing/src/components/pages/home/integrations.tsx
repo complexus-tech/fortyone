@@ -7,14 +7,14 @@ export const Integrations = () => {
     <Box className="relative bg-gray-50 py-16 dark:bg-black md:py-32">
       <Image
         alt="Slack logo"
-        className="absolute left-16 top-16 hidden rotate-6 md:block"
+        className="pointer-events-none absolute left-16 top-16 hidden rotate-6 md:block"
         height={80}
         src="/integrations/slack.svg"
         width={80}
       />
       <Image
         alt="Intercom logo"
-        className="absolute left-80 top-12 hidden -rotate-6 md:block"
+        className="pointer-events-none absolute left-80 top-12 hidden -rotate-6 md:block"
         height={75}
         src="/integrations/intercom-icon.svg"
         width={75}
@@ -22,21 +22,21 @@ export const Integrations = () => {
 
       <Image
         alt="Notion logo"
-        className="absolute bottom-1/2 left-48 top-1/2 hidden -translate-y-1/2 rotate-12 md:block"
+        className="pointer-events-none absolute bottom-1/2 left-48 top-1/2 hidden -translate-y-1/2 rotate-12 md:block"
         height={95}
         src="/integrations/notion.svg"
         width={95}
       />
       <Image
         alt="Figma logo"
-        className="absolute bottom-16 left-16 hidden rotate-6 md:block"
+        className="pointer-events-none absolute bottom-16 left-16 hidden rotate-6 md:block"
         height={80}
         src="/integrations/figma.svg"
         width={80}
       />
       <Image
         alt="Github logo"
-        className="absolute bottom-16 left-80 hidden rotate-6 md:block"
+        className="pointer-events-none absolute bottom-16 left-80 hidden rotate-6 md:block"
         height={80}
         src="/integrations/github.svg"
         width={80}
@@ -72,35 +72,35 @@ export const Integrations = () => {
       </Container>
       <Image
         alt="Jira logo"
-        className="absolute right-16 top-16 hidden rotate-6 md:block"
+        className="pointer-events-none absolute right-16 top-16 hidden rotate-6 md:block"
         height={85}
         src="/integrations/jira.svg"
         width={85}
       />
       <Image
         alt="Drive logo"
-        className="absolute right-80 top-12 hidden -rotate-6 md:block"
+        className="pointer-events-none absolute right-80 top-12 hidden -rotate-6 md:block"
         height={80}
         src="/integrations/drive.svg"
         width={80}
       />
       <Image
         alt="Gitlab logo"
-        className="absolute bottom-1/2 right-48 top-1/2 hidden -translate-y-1/2 rotate-12 md:block"
+        className="pointer-events-none absolute bottom-1/2 right-48 top-1/2 hidden -translate-y-1/2 rotate-12 md:block"
         height={95}
         src="/integrations/gitlab.svg"
         width={95}
       />
       <Image
         alt="Figma logo"
-        className="absolute bottom-16 right-16 hidden rotate-6 md:block"
+        className="pointer-events-none absolute bottom-16 right-16 hidden rotate-6 md:block"
         height={80}
         src="/integrations/teams.svg"
         width={80}
       />
       <Image
         alt="Zend logo"
-        className="absolute bottom-16 right-80 hidden rotate-6 md:block"
+        className="pointer-events-none absolute bottom-16 right-80 hidden rotate-6 md:block"
         height={80}
         src="/integrations/zend.svg"
         width={80}
