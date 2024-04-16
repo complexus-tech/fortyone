@@ -18,18 +18,18 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "Stories",
-      image: {
-        src: storiesImg,
-        alt: "Stories",
-      },
-    },
-    {
-      id: 2,
       title: "Dashboard",
       image: {
         src: dashboardImg,
         alt: "Dashboard",
+      },
+    },
+    {
+      id: 2,
+      title: "Stories",
+      image: {
+        src: storiesImg,
+        alt: "Stories",
       },
     },
     {
