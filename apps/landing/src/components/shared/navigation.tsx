@@ -13,6 +13,7 @@ import {
   ObjectiveIcon,
   RoadmapIcon,
   StoryIcon,
+  WhiteboardIcon,
 } from "icons";
 import Link from "next/link";
 import { Logo, Container } from "@/components/ui";
@@ -109,6 +110,15 @@ export const Navigation = () => {
       href: "/product#discussions",
       description: "Discuss work with your team",
       icon: <ChatIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+    },
+    {
+      id: 9,
+      name: "Whiteboards",
+      href: "/product#whiteboards",
+      description: "Sketch and brainstorm ideas",
+      icon: (
+        <WhiteboardIcon className="relative h-4 w-auto shrink-0 md:top-1" />
+      ),
     },
   ];
 
@@ -210,17 +220,11 @@ export const Navigation = () => {
             </Flex>
             <Flex align="center" className="ml-2 gap-4 pr-1 md:gap-2 md:pr-0">
               <Button
-                className="hidden px-3 text-[0.93rem] md:flex"
-                color="tertiary"
-                rightIcon={
-                  <ArrowRightIcon className="relative top-[0.5px] h-3 w-auto" />
-                }
+                className="text-[0.93rem]"
                 rounded="full"
+                href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
               >
-                Sign in
-              </Button>
-              <Button className="text-[0.93rem]" rounded="full">
-                Get started
+                Join waitlist
               </Button>
               <Menu>
                 <Menu.Button asChild>

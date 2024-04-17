@@ -123,7 +123,16 @@ export const Reviews = () => {
         ))}
       </Box>
 
-      <Box className="mx-auto mt-12 w-max md:mt-20">
+      <motion.div
+        className="mx-auto mt-12 w-max md:mt-20"
+        initial={{ y: 20, opacity: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{
+          duration: 1,
+          delay: 0.3,
+        }}
+        whileInView={{ y: 0, opacity: 1 }}
+      >
         <Button
           className="md:py-3.5"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
@@ -132,7 +141,7 @@ export const Reviews = () => {
         >
           See all customer stories
         </Button>
-      </Box>
+      </motion.div>
 
       <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/5 md:h-[600px] md:w-[600px]" />
     </Container>

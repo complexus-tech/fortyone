@@ -1,6 +1,8 @@
+"use client";
 import { Flex, Text, Box, Button } from "ui";
 import Image from "next/image";
 import { Container, Blur } from "@/components/ui";
+import { motion } from "framer-motion";
 
 export const Integrations = () => {
   return (
@@ -48,26 +50,57 @@ export const Integrations = () => {
           className="md:mt-18 mb-4 text-center"
           direction="column"
         >
-          <Text
-            as="h1"
-            className="h-max max-w-4xl pb-2 text-5xl md:mt-6 md:text-7xl"
-            color="gradient"
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
           >
-            Sync up your favorite tools.
-          </Text>
-          <Text
-            className="my-6 max-w-[600px]"
-            color="muted"
-            fontSize="xl"
-            fontWeight="normal"
+            <Text
+              as="h1"
+              className="h-max max-w-4xl pb-2 text-5xl md:mt-6 md:text-7xl"
+              color="gradient"
+            >
+              Sync up your favorite tools.
+            </Text>
+          </motion.div>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0.3,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
           >
-            Complexus seamlessly integrates with popular tools like GitHub,
-            Intercom, Figma, Notion, Slack, and Gitlab, empowering teams to
-            achieve their objectives with greater efficiency.
-          </Text>
-          <Button color="tertiary" rounded="full" size="lg">
-            View all integrations
-          </Button>
+            <Text
+              className="my-6 max-w-[600px]"
+              color="muted"
+              fontSize="xl"
+              fontWeight="normal"
+            >
+              Complexus seamlessly integrates with popular tools like GitHub,
+              Intercom, Figma, Notion, Slack, and Gitlab, empowering teams to
+              achieve their objectives with greater efficiency.
+            </Text>
+          </motion.div>
+          <motion.div
+            className="mt-1"
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0.6,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
+          >
+            <Button color="tertiary" rounded="full" size="lg">
+              View all integrations
+            </Button>
+          </motion.div>
         </Flex>
       </Container>
       <Image

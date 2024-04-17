@@ -79,20 +79,21 @@ export const Footer = () => {
       title: "Stories",
     },
     {
-      href: "/product#roadmaps",
-      title: "Roadmaps",
-    },
-    {
       title: "Objectives",
       href: "/product#objectives",
     },
     {
-      href: "/product#milestones",
-      title: "Milestones",
+      href: "/product#roadmaps",
+      title: "Roadmaps",
+    },
+
+    {
+      href: "/product#sprints",
+      title: "Sprints",
     },
     {
-      href: "/product#themes",
-      title: "Themes",
+      href: "/product#epics",
+      title: "Epics",
     },
     {
       href: "/product#documents",
@@ -103,20 +104,12 @@ export const Footer = () => {
       title: "Reporting",
     },
     {
-      href: "/product#retrospectives",
-      title: "Retrospectives",
+      href: "/product#discussions",
+      title: "Discussions",
     },
     {
       href: "/product#whiteboards",
       title: "Whiteboards",
-    },
-    {
-      href: "/product#teams",
-      title: "Teams",
-    },
-    {
-      href: "/product#integrations",
-      title: "Integrations",
     },
   ];
   const company = [

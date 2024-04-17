@@ -70,7 +70,7 @@ export const Hero = () => {
           </motion.span>
 
           <Flex align="center" className="mt-10" gap={4}>
-            <motion.span
+            {/* <motion.span
               initial={{ y: -10, opacity: 0 }}
               viewport={{ once: true, amount: 0.5 }}
               transition={{
@@ -87,7 +87,7 @@ export const Hero = () => {
               >
                 Talk to us
               </Button>
-            </motion.span>
+            </motion.span> */}
             <motion.span
               initial={{ y: -5, opacity: 0 }}
               viewport={{ once: true, amount: 0.5 }}

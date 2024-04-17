@@ -183,16 +183,36 @@ export const Pricing = () => {
           >
             Pricing
           </Button>
-          <Text
-            as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
-            color="gradient"
-            fontWeight="medium"
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
           >
-            Experience more, spend less. Switch to complexus.
-          </Text>
+            <Text
+              as="h1"
+              className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+              color="gradient"
+              fontWeight="medium"
+            >
+              Experience more, spend less. Switch to complexus.
+            </Text>
+          </motion.div>
+
           <Box className="mt-6">
-            <Flex className="gap-1 rounded-[0.6rem] bg-dark-200 p-1">
+            <motion.div
+              className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1"
+              initial={{ y: 20, opacity: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{
+                duration: 1,
+                delay: 0.3,
+              }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
               {["monthly", "annual"].map((option) => (
                 <Button
                   key={option}
@@ -207,13 +227,22 @@ export const Pricing = () => {
                   {option} Billing
                 </Button>
               ))}
-            </Flex>
-            <Text className="mt-3">
+            </motion.div>
+            <motion.p
+              className="mt-3"
+              initial={{ y: 20, opacity: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{
+                duration: 1,
+                delay: 0.6,
+              }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
               <Text as="span" color="primary" fontWeight="semibold">
                 Save 25%
               </Text>{" "}
               with annual billing 🎉
-            </Text>
+            </motion.p>
           </Box>
         </Flex>
 

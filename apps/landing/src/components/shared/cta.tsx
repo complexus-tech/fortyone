@@ -1,5 +1,7 @@
+"use client";
 import { Box, Button, Flex, Text } from "ui";
 import { Blur, Container } from "@/components/ui";
+import { motion } from "framer-motion";
 
 export const CallToAction = () => {
   return (
@@ -10,23 +12,53 @@ export const CallToAction = () => {
           className="md:mt-18 mb-8 text-center"
           direction="column"
         >
-          <Text
-            as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
-            color="gradient"
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
           >
-            Experience the difference. Try it now!
-          </Text>
-          <Text
-            className="mt-4 max-w-[600px] md:mt-6"
-            color="muted"
-            fontSize="xl"
-            fontWeight="normal"
+            <Text
+              as="h1"
+              className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+              color="gradient"
+            >
+              Experience the difference. Try it now!
+            </Text>
+          </motion.div>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0.3,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
           >
-            Streamline your workflows, empower your team, and nail every key
-            objective all in one seamless platform.
-          </Text>
-          <Flex align="center" className="mt-8" gap={3}>
+            <Text
+              className="mt-4 max-w-[600px] md:mt-6"
+              color="muted"
+              fontSize="xl"
+              fontWeight="normal"
+            >
+              Streamline your workflows, empower your team, and nail every key
+              objective all in one seamless platform.
+            </Text>
+          </motion.div>
+
+          <motion.div
+            className="mt-8 flex items-center gap-3"
+            initial={{ y: 20, opacity: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{
+              duration: 1,
+              delay: 0.6,
+            }}
+            whileInView={{ y: 0, opacity: 1 }}
+          >
             <Button
               href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
               rounded="full"
@@ -34,15 +66,7 @@ export const CallToAction = () => {
             >
               Join the waitlist
             </Button>
-            {/* <Button
-              className="border border-primary"
-              rounded="full"
-              size="lg"
-              variant="outline"
-            >
-              Sign in
-            </Button> */}
-          </Flex>
+          </motion.div>
         </Flex>
         <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
       </Container>
