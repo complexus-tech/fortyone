@@ -27,17 +27,21 @@ export const CallToAction = () => {
             objective all in one seamless platform.
           </Text>
           <Flex align="center" className="mt-8" gap={3}>
-            <Button rounded="full" size="lg">
-              Get started for free
-            </Button>
             <Button
+              href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+              rounded="full"
+              size="lg"
+            >
+              Join the waitlist
+            </Button>
+            {/* <Button
               className="border border-primary"
               rounded="full"
               size="lg"
               variant="outline"
             >
               Sign in
-            </Button>
+            </Button> */}
           </Flex>
         </Flex>
         <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />

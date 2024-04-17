@@ -97,8 +97,12 @@ export const Hero = () => {
               }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button rounded="full" size="lg">
-                Get Early Access
+              <Button
+                href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+                rounded="full"
+                size="lg"
+              >
+                Join the waitlist
               </Button>
             </motion.span>
           </Flex>
