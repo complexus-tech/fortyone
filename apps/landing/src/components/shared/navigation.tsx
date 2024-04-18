@@ -220,7 +220,7 @@ export const Navigation = () => {
             </Flex>
             <Flex align="center" className="ml-2 gap-4 pr-1 md:gap-2 md:pr-0">
               <Button
-                className="text-[0.93rem]"
+                className="relative text-[0.93rem] md:left-1"
                 rounded="full"
                 href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
               >
