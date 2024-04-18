@@ -38,7 +38,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
-              delay: 0.1,
+              delay: 0.15,
             }}
             whileInView={{ y: 0, opacity: 1 }}
           >
@@ -93,7 +93,7 @@ export const Hero = () => {
               viewport={{ once: true, amount: 0.5 }}
               transition={{
                 duration: 1,
-                delay: 0.4,
+                delay: 0.6,
               }}
               whileInView={{ y: 0, opacity: 1 }}
             >
