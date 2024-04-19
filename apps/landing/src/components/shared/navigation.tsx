@@ -195,7 +195,7 @@ export const Navigation = () => {
                   {title}
                 </NavLink>
               ))}
-              <NavigationMenu align="end" className="mx-2">
+              {/* <NavigationMenu align="end" className="mx-2">
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
@@ -216,7 +216,7 @@ export const Navigation = () => {
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>
-              </NavigationMenu>
+              </NavigationMenu> */}
             </Flex>
             <Flex align="center" className="ml-2 gap-4 pr-1 md:gap-2 md:pr-0">
               <Button

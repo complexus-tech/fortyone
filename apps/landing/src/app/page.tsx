@@ -17,7 +17,7 @@ export default function Page(): JSX.Element {
       <SampleClients />
       <ProductDemo />
       <Features />
-      <Reviews />
+      {/* <Reviews /> */}
       <Integrations />
       <Pricing />
     </>

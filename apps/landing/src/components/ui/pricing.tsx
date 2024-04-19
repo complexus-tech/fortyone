@@ -134,13 +134,15 @@ const Package = ({
           </Text>
         </Text>
         <Button
+          href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
           className="mt-6 w-full justify-between"
           color="primary"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
           rounded="full"
           size="lg"
         >
-          {cta}
+          Join the waitlist
+          {/* {cta} */}
         </Button>
         <Text className="my-6" color="muted">
           {overview}
@@ -279,6 +281,14 @@ export const Pricing = () => {
               ))}
             </Box>
             <Button
+              className="mt-6"
+              href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+              rounded="full"
+              size="lg"
+            >
+              Join the waitlist
+            </Button>
+            {/* <Button
               className="mt-6 justify-between"
               color="primary"
               leftIcon={<ChatIcon className="h-5 w-auto" />}
@@ -286,7 +296,7 @@ export const Pricing = () => {
               size="lg"
             >
               Contact sales
-            </Button>
+            </Button> */}
           </Box>
 
           <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-warning/10" />
