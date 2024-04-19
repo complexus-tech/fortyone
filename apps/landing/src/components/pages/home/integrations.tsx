@@ -97,8 +97,14 @@ export const Integrations = () => {
             }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button color="tertiary" rounded="full" size="lg">
-              View all integrations
+            <Button
+              href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+              color="tertiary"
+              rounded="full"
+              size="lg"
+            >
+              {/* View all integrations */}
+              Join the waitlist
             </Button>
           </motion.div>
         </Flex>
