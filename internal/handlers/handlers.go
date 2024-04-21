@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/healthgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
@@ -41,6 +42,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the sprints routes
 	sprintsgrp.Routes(sprintsgrp.Config{
+		DB:  cfg.DB,
+		Log: cfg.Log,
+	}, app)
+
+	// register epics routes
+	epicsgrp.Routes(epicsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)
