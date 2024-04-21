@@ -11,7 +11,7 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 
-export type Milestone = {
+export type Sprint = {
   id: number;
   code: string;
   lead: string;
@@ -20,14 +20,14 @@ export type Milestone = {
   date: string;
 };
 
-export const MilestoneRow = ({ name }: { name: string }) => {
+export const SprintRow = ({ name }: { name: string }) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/teams/web/milestones/sprint-1/stories"
+          href="/teams/web/sprints/sprint-1/stories"
         >
           <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>

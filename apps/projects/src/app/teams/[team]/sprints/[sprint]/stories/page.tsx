@@ -1,5 +1,5 @@
 import type { Story } from "@/types/story";
-import { ListMilestoneStories } from "@/components/teams/milestones/stories/list-stories";
+import { ListSprintStories } from "@/components/teams/sprints/stories/list-stories";
 
 export default function Page() {
   const stories: Story[] = [
@@ -219,5 +219,5 @@ export default function Page() {
     },
   ];
 
-  return <ListMilestoneStories stories={stories} />;
+  return <ListSprintStories stories={stories} />;
 }

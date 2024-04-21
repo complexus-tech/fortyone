@@ -4,16 +4,16 @@ import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 
-type MilestoneStories = {
+type SprintStories = {
   viewOptions: StoriesViewOptions;
   setViewOptions: (value: StoriesViewOptions) => void;
 };
 
-const MilestoneStoriesContext = createContext<MilestoneStories | undefined>(
+const SprintStoriesContext = createContext<SprintStories | undefined>(
   undefined,
 );
 
-export const MilestoneStoriesProvider = ({
+export const SprintStoriesProvider = ({
   children,
 }: {
   children: ReactNode;
@@ -29,31 +29,31 @@ export const MilestoneStoriesProvider = ({
       "Due date",
       "Created",
       "Updated",
-      "Milestone",
+      "Sprint",
       "Labels",
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "milestones:stories:view-options",
+    "sprints:stories:view-options",
     initialOptions,
   );
   return (
-    <MilestoneStoriesContext.Provider
+    <SprintStoriesContext.Provider
       value={{
         viewOptions,
         setViewOptions,
       }}
     >
       {children}
-    </MilestoneStoriesContext.Provider>
+    </SprintStoriesContext.Provider>
   );
 };
 
-export const useMilestoneStories = () => {
-  const context = useContext(MilestoneStoriesContext);
+export const useSprintStories = () => {
+  const context = useContext(SprintStoriesContext);
   if (!context) {
     throw new Error(
-      "useMilestoneStories must be used within a MilestoneStoriesProvider",
+      "useSprintStories must be used within a SprintStoriesProvider",
     );
   }
   return context;

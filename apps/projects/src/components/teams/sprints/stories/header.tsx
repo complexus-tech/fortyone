@@ -1,6 +1,6 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
-import { MilestonesIcon, StoryIcon } from "icons";
+import { SprintsIcon, StoryIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -8,7 +8,7 @@ import {
   StoriesViewOptionsButton,
   SideDetailsSwitch,
 } from "@/components/ui";
-import { useMilestoneStories } from "./provider";
+import { useSprintStories } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -21,7 +21,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { viewOptions, setViewOptions } = useMilestoneStories();
+  const { viewOptions, setViewOptions } = useSprintStories();
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -31,8 +31,8 @@ export const Header = ({
             icon: "🚀",
           },
           {
-            name: "Milestones",
-            icon: <MilestonesIcon className="h-4 w-auto" />,
+            name: "Sprints",
+            icon: <SprintsIcon className="h-4 w-auto" />,
           },
           {
             name: "Stories",

@@ -9,7 +9,7 @@ import {
   DocsIcon,
   EpicsIcon,
   MenuIcon,
-  MilestonesIcon,
+  SprintsIcon,
   ObjectiveIcon,
   RoadmapIcon,
   StoryIcon,
@@ -79,9 +79,7 @@ export const Navigation = () => {
       name: "Sprints",
       href: "/product#sprints",
       description: "Organize work into sprints",
-      icon: (
-        <MilestonesIcon className="relative h-4 w-auto shrink-0 md:top-1" />
-      ),
+      icon: <SprintsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 5,

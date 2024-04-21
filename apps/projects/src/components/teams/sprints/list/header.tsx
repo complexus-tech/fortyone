@@ -5,11 +5,11 @@ import {
   SearchIcon,
   PreferencesIcon,
   ArrowDownIcon,
-  MilestonesIcon,
+  SprintsIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
 
-export const MilestonesHeader = () => {
+export const SprintsHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
@@ -19,8 +19,8 @@ export const MilestonesHeader = () => {
             icon: "🚀",
           },
           {
-            name: "Milestones",
-            icon: <MilestonesIcon className="h-[1.1rem] w-auto" />,
+            name: "Sprints",
+            icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
           },
         ]}
       />

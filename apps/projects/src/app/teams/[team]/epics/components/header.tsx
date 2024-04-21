@@ -12,7 +12,7 @@ export const Header = () => {
             icon: "🚀",
           },
           {
-            name: "Themes",
+            name: "Epics",
             icon: <EpicsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
@@ -28,7 +28,7 @@ export const Header = () => {
           Display
         </Button>
         <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
-          New Theme
+          New Epic
         </Button>
       </Flex>
     </HeaderContainer>

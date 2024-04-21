@@ -1,16 +1,16 @@
 "use client";
 import { BreadCrumbs, Button } from "ui";
-import { PlusIcon, MilestonesIcon } from "icons";
+import { PlusIcon, SprintsIcon } from "icons";
 import { HeaderContainer } from "../../shared/header-container";
 
-export const ActiveMilestonesHeader = () => {
+export const ActiveSprintsHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Active Milestones",
-            icon: <MilestonesIcon className="h-[1.15rem] w-auto" />,
+            name: "Active Sprints",
+            icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
           },
         ]}
       />

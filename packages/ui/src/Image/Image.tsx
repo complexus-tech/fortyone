@@ -9,7 +9,6 @@ export const BlurImage = ({
   className = "",
   priority = false,
   quality = 75,
-  theme = "light",
   alt = "",
   src = "",
   onError,
@@ -18,7 +17,6 @@ export const BlurImage = ({
   className?: string;
   priority?: boolean;
   quality?: number;
-  theme?: "light" | "dark";
   alt?: string;
   src: string;
 }) => {
@@ -27,11 +25,7 @@ export const BlurImage = ({
   return (
     <Box
       className={cn(
-        "group relative w-full overflow-hidden",
-        {
-          "bg-gray-100": theme === "light",
-          "bg-dark-200": theme === "dark",
-        },
+        "group relative w-full overflow-hidden bg-gray-100 dark:bg-dark-200",
         className
       )}
     >

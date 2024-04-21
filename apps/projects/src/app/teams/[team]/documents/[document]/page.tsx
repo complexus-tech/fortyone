@@ -17,7 +17,7 @@ import TableRow from "@tiptap/extension-table-row";
 import { Container, TextEditor, Divider, Flex, Button } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { Header, Toolbar } from "./components";
-import { ChatIcon, DocsIcon, EpicsIcon, MilestonesIcon } from "icons";
+import { ChatIcon, DocsIcon, EpicsIcon, SprintsIcon } from "icons";
 
 export default function Page(): JSX.Element {
   const content = `
@@ -109,7 +109,7 @@ export default function Page(): JSX.Element {
             <Button
               size="sm"
               color="tertiary"
-              leftIcon={<MilestonesIcon className="h-4 w-auto" />}
+              leftIcon={<SprintsIcon className="h-4 w-auto" />}
             >
               Add to Sprint
             </Button>

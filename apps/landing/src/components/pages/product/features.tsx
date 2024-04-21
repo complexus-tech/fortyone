@@ -6,7 +6,7 @@ import {
   ChatIcon,
   DocsIcon,
   EpicsIcon,
-  MilestonesIcon,
+  SprintsIcon,
   ObjectiveIcon,
   RoadmapIcon,
   StoryIcon,
@@ -101,18 +101,18 @@ export const Features = () => {
         {
           title: "Visual Planning",
           overview:
-            "Visualize project milestones and timelines for effective planning.",
+            "Visualize project sprints and timelines for effective planning.",
         },
         {
           title: "Progress Tracking",
           overview:
-            "Track project progress and milestones to ensure timely delivery.",
+            "Track project progress and sprints to ensure timely delivery.",
         },
       ],
     },
     {
       icon: (
-        <MilestonesIcon
+        <SprintsIcon
           strokeWidth={1.3}
           className="relative -right-1 h-10 w-auto md:h-16"
         />

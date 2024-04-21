@@ -1,8 +1,8 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
-import { CheckIcon, PlusIcon, MilestonesIcon } from "icons";
+import { CheckIcon, PlusIcon, SprintsIcon } from "icons";
 
-export const MilestonesMenu = () => {
-  const milestones = ["Complains", "Clients", "Audit"];
+export const SprintsMenu = () => {
+  const sprints = ["Complains", "Clients", "Audit"];
   return (
     <Menu>
       <Menu.Button>
@@ -21,10 +21,10 @@ export const MilestonesMenu = () => {
         </Menu.Group>
         <Menu.Separator className="my-2" />
         <Menu.Group>
-          {milestones.map((sprint, idx) => (
+          {sprints.map((sprint, idx) => (
             <Menu.Item className="justify-between" key={sprint}>
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <MilestonesIcon className="h-[1.1rem] w-auto" />
+                <SprintsIcon className="h-[1.1rem] w-auto" />
                 <Text>{sprint}</Text>
               </Box>
               <Flex align="center" gap={2}>

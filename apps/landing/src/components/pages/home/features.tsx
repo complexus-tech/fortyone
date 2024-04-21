@@ -4,7 +4,7 @@ import {
   ArrowRightIcon,
   EpicsIcon,
   KanbanIcon,
-  MilestonesIcon,
+  SprintsIcon,
   ObjectiveIcon,
   StoryIcon,
 } from "icons";
@@ -51,8 +51,8 @@ const Intro = () => (
           fontWeight="normal"
         >
           Streamline workflows, elevate collaboration, and nail your objectives
-          with features like OKR tracking, Kanban boards, Roadmaps, milestones,
-          and more.
+          with features like OKR tracking, Kanban boards, Roadmaps, sprints, and
+          more.
         </Text>
       </motion.div>
     </Box>
@@ -122,7 +122,7 @@ export const Features = () => {
       id: 3,
       name: "Sprints",
       description: "Set sprints to achieve your goals and track progress.",
-      icon: <MilestonesIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      icon: <SprintsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
         src: storyCard,
         alt: "Stories",
@@ -186,7 +186,7 @@ export const Features = () => {
               <Image
                 alt={alt}
                 placeholder="blur"
-                className="pointer-events-none mx-auto block rounded-xl border-2 border-dark-200 shadow-xl shadow-dark-300/60"
+                className="pointer-events-none mx-auto block rounded-xl border border-dark-200 shadow-xl shadow-dark-300/60"
                 src={src}
               />
             </ItemWrapper>

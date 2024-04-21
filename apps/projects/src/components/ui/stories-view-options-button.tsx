@@ -27,7 +27,7 @@ const initialViewOptions: StoriesViewOptions = {
     "Due date",
     "Created",
     "Updated",
-    "Milestone",
+    "Sprint",
     "Labels",
   ],
 };
@@ -52,8 +52,8 @@ export const StoriesViewOptionsButton = ({
     "Due date",
     "Created",
     "Updated",
-    "Milestone",
-    "Theme",
+    "Sprint",
+    "Epic",
     "Labels",
   ];
 

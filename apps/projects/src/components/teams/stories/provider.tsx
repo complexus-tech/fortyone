@@ -23,7 +23,7 @@ export const TeamStoriesProvider = ({ children }: { children: ReactNode }) => {
       "Due date",
       "Created",
       "Updated",
-      "Milestone",
+      "Sprint",
       "Labels",
     ],
   };

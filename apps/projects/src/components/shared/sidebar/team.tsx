@@ -11,7 +11,7 @@ import {
   EpicsIcon,
   MoreHorizontalIcon,
   SettingsIcon,
-  MilestonesIcon,
+  SprintsIcon,
   StarIcon,
   DocsIcon,
   ChatIcon,
@@ -42,12 +42,12 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     {
       name: "Epics",
       icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/themes",
+      href: "/teams/web/epics",
     },
     {
-      name: "Milestones",
-      icon: <MilestonesIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/milestones",
+      name: "Sprints",
+      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+      href: "/teams/web/sprints",
     },
     {
       name: "Documents",

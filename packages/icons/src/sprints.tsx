@@ -1,6 +1,6 @@
 import type { Icon } from "./types";
 
-export const MilestonesIcon = (props: Icon) => {
+export const SprintsIcon = (props: Icon) => {
   const { strokeWidth = 2, ...rest } = props;
   return (
     <svg

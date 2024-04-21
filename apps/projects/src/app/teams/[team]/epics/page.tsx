@@ -4,7 +4,7 @@ import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
 import { StoryStatusIcon } from "@/components/ui";
-import { Header, Theme } from "./components";
+import { Header, Epic } from "./components";
 
 type Module = {
   id: number;
@@ -77,7 +77,7 @@ export default function Page(): JSX.Element {
           </Flex>
         </Container>
         {modules.map(({ id, name }) => (
-          <Theme key={id} name={name} />
+          <Epic key={id} name={name} />
         ))}
       </BodyContainer>
     </>

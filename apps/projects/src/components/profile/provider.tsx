@@ -23,7 +23,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       "Due date",
       "Created",
       "Updated",
-      "Milestone",
+      "Sprint",
       "Labels",
     ],
   };

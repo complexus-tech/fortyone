@@ -12,7 +12,7 @@ import {
   Text,
 } from "ui";
 import {
-  MilestonesIcon,
+  SprintsIcon,
   MoreVerticalIcon,
   LinkIcon,
   DeleteIcon,
@@ -38,16 +38,16 @@ import {
 import { useLocalStorage } from "@/hooks";
 import type { Story } from "@/types/story";
 import { Header } from "./header";
-import { MilestoneStoriesProvider } from "./provider";
+import { SprintStoriesProvider } from "./provider";
 import { AllStories } from "./all-stories";
 
-export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
+export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    "objective:milestones:layout",
+    "objective:sprints:layout",
     "list",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
-    "objective:milestones:isExpanded",
+    "objective:sprints:isExpanded",
     false,
   );
 
@@ -85,7 +85,7 @@ export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
   ];
 
   return (
-    <MilestoneStoriesProvider>
+    <SprintStoriesProvider>
       <Header
         isExpanded={isExpanded}
         layout={layout}
@@ -101,8 +101,8 @@ export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
             <Box className="px-6">
               <Flex align="center" justify="between">
                 <Text className="flex items-center gap-1.5" fontSize="lg">
-                  <MilestonesIcon className="relative -top-px h-[1.4rem] w-auto" />
-                  Milestone 1
+                  <SprintsIcon className="relative -top-px h-[1.4rem] w-auto" />
+                  Sprint 1
                 </Text>
                 <Menu>
                   <Menu.Button>
@@ -156,7 +156,7 @@ export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
                 gap={2}
                 justify="between"
               >
-                <Text>Milestone Progress</Text>
+                <Text>Sprint Progress</Text>
                 <Text>75%</Text>
               </Flex>
               <ProgressBar className="h-1.5" progress={75} />
@@ -295,13 +295,13 @@ export const ListMilestoneStories = ({ stories }: { stories: Story[] }) => {
               >
                 <DocsIcon className="h-20 w-auto rotate-12" strokeWidth={1} />
                 <Text className="mt-4" color="muted">
-                  No documents for this milestone
+                  No documents for this sprint
                 </Text>
               </Flex>
             </Box>
           </Box>
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </MilestoneStoriesProvider>
+    </SprintStoriesProvider>
   );
 };

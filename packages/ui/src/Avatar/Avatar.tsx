@@ -70,7 +70,6 @@ export const Avatar: FC<AvatarProps> = (props) => {
       {path && (
         <BlurImage
           src={path}
-          theme="dark"
           priority
           alt={name}
           className={cn("w-full h-full aspect-square", {

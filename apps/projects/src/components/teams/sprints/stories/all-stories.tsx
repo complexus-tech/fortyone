@@ -2,7 +2,7 @@
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/types/story";
-import { useMilestoneStories } from "./provider";
+import { useSprintStories } from "./provider";
 
 export const AllStories = ({
   layout,
@@ -11,7 +11,7 @@ export const AllStories = ({
   layout: StoriesLayout;
   stories: Story[];
 }) => {
-  const { viewOptions } = useMilestoneStories();
+  const { viewOptions } = useSprintStories();
   return (
     <StoriesBoard layout={layout} stories={stories} viewOptions={viewOptions} />
   );

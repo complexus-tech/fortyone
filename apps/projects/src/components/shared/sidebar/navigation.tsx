@@ -6,7 +6,7 @@ import {
   HomeIcon,
   NotificationsIcon,
   ObjectiveIcon,
-  MilestonesIcon,
+  SprintsIcon,
   RoadmapIcon,
   WorkIcon,
 } from "icons";
@@ -55,8 +55,8 @@ export const Navigation = () => {
     },
     {
       name: "Running Sprints",
-      icon: <MilestonesIcon className="h-[1.3rem] w-auto" />,
-      href: "/milestones",
+      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+      href: "/sprints",
     },
   ];
 

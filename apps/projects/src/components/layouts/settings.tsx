@@ -133,7 +133,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         { title: "Automations", href: "/settings/workspace/automations" },
         { title: "Teams", href: "/settings/workspace/teams" },
         { title: "Roadmap", href: "/settings/workspace/roadmap" },
-        { title: "Milestones", href: "/settings/workspace/milestones" },
+        { title: "Sprints", href: "/settings/workspace/sprints" },
         { title: "Workflows", href: "/settings/workspace/workflows" },
         { title: "Labels", href: "/settings/workspace/labels" },
         { title: "Custom fields", href: "/settings/workspace/custom-fields" },

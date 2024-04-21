@@ -1,3 +1,3 @@
 export * from "./header";
-export * from "./theme";
+export * from "./epic";
 export * from "./statuses-menu";
