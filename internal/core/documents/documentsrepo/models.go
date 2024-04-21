@@ -1,13 +1,13 @@
-package epicsrepo
+package documentsrepo
 
 import (
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/epics"
+	"github.com/complexus-tech/projects-api/internal/core/documents"
 	"github.com/google/uuid"
 )
 
-type dbEpic struct {
+type dbDocument struct {
 	ID          uuid.UUID  `db:"id"`
 	Name        string     `db:"name"`
 	Description string     `db:"description"`
@@ -19,8 +19,8 @@ type dbEpic struct {
 	DeletedAt   *time.Time `db:"deleted_at"`
 }
 
-func toCoreEpic(p dbEpic) epics.CoreEpic {
-	return epics.CoreEpic{
+func toCoreDocument(p dbDocument) documents.CoreDocument {
+	return documents.CoreDocument{
 		ID:          p.ID,
 		Name:        p.Name,
 		Description: p.Description,
@@ -32,10 +32,10 @@ func toCoreEpic(p dbEpic) epics.CoreEpic {
 	}
 }
 
-func toCoreEpics(do []dbEpic) []epics.CoreEpic {
-	epics := make([]epics.CoreEpic, len(do))
+func toCoreDocuments(do []dbDocument) []documents.CoreDocument {
+	documents := make([]documents.CoreDocument, len(do))
 	for i, o := range do {
-		epics[i] = toCoreEpic(o)
+		documents[i] = toCoreDocument(o)
 	}
-	return epics
+	return documents
 }

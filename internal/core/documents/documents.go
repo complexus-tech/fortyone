@@ -1,4 +1,4 @@
-package epics
+package documents
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Repository provides access to the epics storage.
+// Repository provides access to the documents storage.
 type Repository interface {
-	List(ctx context.Context) ([]CoreEpic, error)
+	List(ctx context.Context) ([]CoreDocument, error)
 }
 
 // Service provides story-related operations.
@@ -28,19 +28,19 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
-// List returns a list of epics.
-func (s *Service) List(ctx context.Context) ([]CoreEpic, error) {
-	s.log.Info(ctx, "business.core.epics.list")
-	ctx, span := web.AddSpan(ctx, "business.core.epics.List")
+// List returns a list of documents.
+func (s *Service) List(ctx context.Context) ([]CoreDocument, error) {
+	s.log.Info(ctx, "business.core.documents.list")
+	ctx, span := web.AddSpan(ctx, "business.core.documents.List")
 	defer span.End()
 
-	epics, err := s.repo.List(ctx)
+	documents, err := s.repo.List(ctx)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
-	span.AddEvent("epics retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(epics)),
+	span.AddEvent("documents retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(documents)),
 	))
-	return epics, nil
+	return documents, nil
 }

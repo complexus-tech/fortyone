@@ -1,4 +1,4 @@
-package documents
+package states
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type CoreDocument struct {
+type CoreState struct {
 	ID          uuid.UUID
 	Name        string
 	Description string
