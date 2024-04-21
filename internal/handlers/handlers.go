@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/healthgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
@@ -22,7 +25,7 @@ func BuildRoutes() handlers {
 // It builds all the routes for the application.
 func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
-	// register the heath routes
+	// register the heath routes``
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
@@ -48,6 +51,24 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register epics routes
 	epicsgrp.Routes(epicsgrp.Config{
+		DB:  cfg.DB,
+		Log: cfg.Log,
+	}, app)
+
+	// register the documents routes
+	documentsgrp.Routes(documentsgrp.Config{
+		DB:  cfg.DB,
+		Log: cfg.Log,
+	}, app)
+
+	// register the states routes
+	statesgrp.Routes(statesgrp.Config{
+		DB:  cfg.DB,
+		Log: cfg.Log,
+	}, app)
+
+	// register the teams routes
+	teamsgrp.Routes(teamsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)
