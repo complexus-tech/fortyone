@@ -1,4 +1,4 @@
-package projects
+package objectives
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type CoreProject struct {
+type CoreObjective struct {
 	ID          uuid.UUID
 	Name        string
 	Description string

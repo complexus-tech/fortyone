@@ -1,13 +1,13 @@
-package projectsrepo
+package objectivesrepo
 
 import (
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/projects"
+	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/google/uuid"
 )
 
-type dbProject struct {
+type dbObjective struct {
 	ID          uuid.UUID  `db:"id"`
 	Name        string     `db:"name"`
 	Description string     `db:"description"`
@@ -20,8 +20,8 @@ type dbProject struct {
 	DeletedAt   *time.Time `db:"deleted_at"`
 }
 
-func toCoreProject(p dbProject) projects.CoreProject {
-	return projects.CoreProject{
+func toCoreObjective(p dbObjective) objectives.CoreObjective {
+	return objectives.CoreObjective{
 		ID:          p.ID,
 		Name:        p.Name,
 		Description: p.Description,
@@ -34,10 +34,10 @@ func toCoreProject(p dbProject) projects.CoreProject {
 	}
 }
 
-func toCoreProjects(ps []dbProject) []projects.CoreProject {
-	projects := make([]projects.CoreProject, len(ps))
-	for i, p := range ps {
-		projects[i] = toCoreProject(p)
+func toCoreObjectives(do []dbObjective) []objectives.CoreObjective {
+	objectives := make([]objectives.CoreObjective, len(do))
+	for i, o := range do {
+		objectives[i] = toCoreObjective(o)
 	}
-	return projects
+	return objectives
 }
