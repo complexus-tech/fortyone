@@ -14,13 +14,13 @@ type Repository interface {
 	List(ctx context.Context) ([]CoreObjective, error)
 }
 
-// Service provides issue-related operations.
+// Service provides story-related operations.
 type Service struct {
 	repo Repository
 	log  *logger.Logger
 }
 
-// New constructs a new issues service instance with the provided repository.
+// New constructs a new stories service instance with the provided repository.
 func New(log *logger.Logger, repo Repository) *Service {
 	return &Service{
 		repo: repo,
@@ -40,7 +40,7 @@ func (s *Service) List(ctx context.Context) ([]CoreObjective, error) {
 		return nil, err
 	}
 	span.AddEvent("objectives retrieved.", trace.WithAttributes(
-		attribute.Int("issue.count", len(objectives)),
+		attribute.Int("story.count", len(objectives)),
 	))
 	return objectives, nil
 }

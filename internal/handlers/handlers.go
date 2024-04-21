@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/complexus-tech/projects-api/internal/handlers/healthgrp"
-	"github.com/complexus-tech/projects-api/internal/handlers/issuesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
@@ -27,8 +27,8 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log: cfg.Log,
 	}, app)
 
-	// register the issues routes
-	issuesgrp.Routes(issuesgrp.Config{
+	// register the stories routes
+	storiesgrp.Routes(storiesgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)

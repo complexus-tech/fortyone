@@ -1,14 +1,14 @@
-package issuesrepo
+package storiesrepo
 
 import (
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/issues"
+	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/google/uuid"
 )
 
-// dbIssue represents the database model for an dbIssue.
-type dbIssue struct {
+// dbStory represents the database model for an dbStory.
+type dbStory struct {
 	ID              uuid.UUID  `db:"id"`
 	SequenceID      int        `db:"sequence_id"`
 	Title           string     `db:"title"`
@@ -35,9 +35,9 @@ type dbIssue struct {
 	DeletedAt       *time.Time `db:"deleted_at"`
 }
 
-// toCoreIssue converts a dbIssue to a CoreSingleIssue.
-func toCoreIssue(i dbIssue) issues.CoreSingleIssue {
-	return issues.CoreSingleIssue{
+// toCoreStory converts a dbStory to a CoreSingleStory.
+func toCoreStory(i dbStory) stories.CoreSingleStory {
+	return stories.CoreSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
 		Title:           i.Title,
@@ -61,22 +61,22 @@ func toCoreIssue(i dbIssue) issues.CoreSingleIssue {
 	}
 }
 
-// toCoreIssues converts a slice of dbIssues to a slice of CoreIssueList.
-func toCoreIssues(is []dbIssue) []issues.CoreIssueList {
-	cl := make([]issues.CoreIssueList, len(is))
-	for i, issue := range is {
-		cl[i] = issues.CoreIssueList{
-			ID:         issue.ID,
-			SequenceID: issue.SequenceID,
-			Title:      issue.Title,
-			Parent:     issue.Parent,
-			Project:    issue.Project,
-			Status:     issue.Status,
-			Assignee:   issue.Assignee,
-			StartDate:  issue.StartDate,
-			EndDate:    issue.EndDate,
-			Priority:   issue.Priority,
-			Sprint:     issue.Sprint,
+// toCoreStories converts a slice of dbStories to a slice of CoreStoryList.
+func toCoreStories(is []dbStory) []stories.CoreStoryList {
+	cl := make([]stories.CoreStoryList, len(is))
+	for i, story := range is {
+		cl[i] = stories.CoreStoryList{
+			ID:         story.ID,
+			SequenceID: story.SequenceID,
+			Title:      story.Title,
+			Parent:     story.Parent,
+			Project:    story.Project,
+			Status:     story.Status,
+			Assignee:   story.Assignee,
+			StartDate:  story.StartDate,
+			EndDate:    story.EndDate,
+			Priority:   story.Priority,
+			Sprint:     story.Sprint,
 		}
 	}
 	return cl

@@ -1,4 +1,4 @@
-package issues
+package stories
 
 import (
 	"time"
@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// CoreIssueList represents a list of issues.
-type CoreIssueList struct {
+// CoreStoryList represents a list of stories.
+type CoreStoryList struct {
 	ID         uuid.UUID
 	SequenceID int
 	Title      string
@@ -21,8 +21,8 @@ type CoreIssueList struct {
 	Sprint     *uuid.UUID
 }
 
-// CoreSingleIssue represents a single issue.
-type CoreSingleIssue struct {
+// CoreSingleStory represents a single story.
+type CoreSingleStory struct {
 	ID              uuid.UUID
 	SequenceID      int
 	Title           string

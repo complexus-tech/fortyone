@@ -1,15 +1,15 @@
-package issuesgrp
+package storiesgrp
 
 import (
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/issues"
+	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
-// AppSingleIssue represents a single issue in the application.
-type AppSingleIssue struct {
+// AppSingleStory represents a single story in the application.
+type AppSingleStory struct {
 	ID              uuid.UUID  `json:"id"`
 	SequenceID      int        `json:"sequenceId"`
 	Title           string     `json:"title"`
@@ -32,8 +32,8 @@ type AppSingleIssue struct {
 	DeletedAt       *time.Time `json:"deletedAt"`
 }
 
-// AppIssueList represents a single issue in the list of issues in the application.
-type AppIssueList struct {
+// AppStoryList represents a single story in the list of stories in the application.
+type AppStoryList struct {
 	ID         uuid.UUID  `json:"id"`
 	SequenceID int        `json:"sequenceId"`
 	Title      string     `json:"title"`
@@ -46,8 +46,8 @@ type AppIssueList struct {
 	Sprint     *uuid.UUID `json:"sprint"`
 }
 
-func toAppIssue(i issues.CoreSingleIssue) AppSingleIssue {
-	return AppSingleIssue{
+func toAppStory(i stories.CoreSingleStory) AppSingleStory {
+	return AppSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
 		Description:     i.Description,
@@ -71,31 +71,31 @@ func toAppIssue(i issues.CoreSingleIssue) AppSingleIssue {
 	}
 }
 
-func toAppIssues(issues []issues.CoreIssueList) []AppIssueList {
-	appIssues := make([]AppIssueList, len(issues))
-	for i, issue := range issues {
-		appIssues[i] = AppIssueList{
-			ID:         issue.ID,
-			SequenceID: issue.SequenceID,
-			Title:      issue.Title,
-			Project:    issue.Project,
-			Status:     issue.Status,
-			Assignee:   issue.Assignee,
-			Priority:   issue.Priority,
-			Sprint:     issue.Sprint,
-			StartDate:  issue.StartDate,
-			EndDate:    issue.EndDate,
+func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
+	appStories := make([]AppStoryList, len(stories))
+	for i, story := range stories {
+		appStories[i] = AppStoryList{
+			ID:         story.ID,
+			SequenceID: story.SequenceID,
+			Title:      story.Title,
+			Project:    story.Project,
+			Status:     story.Status,
+			Assignee:   story.Assignee,
+			Priority:   story.Priority,
+			Sprint:     story.Sprint,
+			StartDate:  story.StartDate,
+			EndDate:    story.EndDate,
 		}
 	}
-	return appIssues
+	return appStories
 }
 
-type AppNewIssue struct {
+type AppNewStory struct {
 	Title       string `json:"title" validate:"required"`
 	Description string `json:"description" validate:"required"`
 }
 
-func (a AppNewIssue) Validate() error {
+func (a AppNewStory) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	return validate.Struct(a)
 }
