@@ -32,7 +32,7 @@ export const Sidebar = ({ stories }: { stories: Story[] }) => {
           </Tabs.List>
           <Tabs.Panel value="assignees">
             {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2" key={idx}>
+              <RowWrapper className="px-1 py-2 md:px-0" key={idx}>
                 <Flex align="center" gap={2}>
                   <Avatar name="Joseph Mukorivo" size="xs" />
                   <Text color="muted">josemukorivo</Text>
@@ -46,7 +46,7 @@ export const Sidebar = ({ stories }: { stories: Story[] }) => {
           </Tabs.Panel>
           <Tabs.Panel value="status">
             {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2" key={idx}>
+              <RowWrapper className="px-1 py-2 md:px-0" key={idx}>
                 <Flex align="center" gap={2}>
                   <StoryStatusIcon />
                   <Text color="muted">Backlog</Text>
@@ -60,7 +60,7 @@ export const Sidebar = ({ stories }: { stories: Story[] }) => {
           </Tabs.Panel>
           <Tabs.Panel value="labels">
             {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2" key={idx}>
+              <RowWrapper className="px-1 py-2 md:px-0" key={idx}>
                 <Flex align="center" gap={2}>
                   <span className="block size-2 rounded-full bg-primary" />
                   <Text color="muted">Feature</Text>
@@ -75,7 +75,7 @@ export const Sidebar = ({ stories }: { stories: Story[] }) => {
 
           <Tabs.Panel value="priority">
             {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2" key={idx}>
+              <RowWrapper className="px-1 py-2 md:px-0" key={idx}>
                 <Flex align="center" gap={2}>
                   <PriorityIcon priority="High" />
                   <Text color="muted">High</Text>

@@ -61,18 +61,21 @@ export const SprintCard = ({ name }: SprintCardProps) => {
       <RowWrapper className="block py-6">
         <Flex align="start" justify="between">
           <Text
-            className="flex items-center gap-1"
-            fontSize="2xl"
+            className="flex items-center gap-1.5"
+            fontSize="xl"
             fontWeight="medium"
           >
-            <SprintsIcon className="relative -left-[2px] h-6 w-auto" />
-            {name}
+            <CalendarIcon className="relative -top-[0.5px] h-5 w-auto text-primary" />{" "}
+            Mar 15 - Mar 30 &bull; {name}
           </Text>
           <Flex align="center" gap={1}>
-            <Badge className="mx-4" color="tertiary" rounded="sm">
+            <Badge
+              className="mx-4 border-opacity-20 bg-opacity-10"
+              // size="lg"
+              color="primary"
+            >
               5 days left
             </Badge>
-            <CalendarIcon className="h-5 w-auto" /> Mar 15 - Mar 30
           </Flex>
         </Flex>
         <Box className="mt-3 grid grid-cols-3 divide-x divide-gray-100/70 dark:divide-dark-200">
@@ -85,7 +88,7 @@ export const SprintCard = ({ name }: SprintCardProps) => {
                 75%
               </Text>
             </Flex>
-            <ProgressBar className="h-1.5" progress={75} />
+            <ProgressBar className="h-1" progress={75} />
             <Box className="mt-2.5 grid gap-2.5">
               <Text
                 className="flex items-center justify-between gap-1"
@@ -120,7 +123,7 @@ export const SprintCard = ({ name }: SprintCardProps) => {
             <Text className="mb-2" fontSize="lg" fontWeight="medium">
               Burndown chart
             </Text>
-            <ResponsiveContainer height={100} width="100%">
+            <ResponsiveContainer height={110} width="100%">
               <AreaChart
                 data={data}
                 margin={{
@@ -156,7 +159,7 @@ export const SprintCard = ({ name }: SprintCardProps) => {
             </Text>
             {recentStories.map(({ id, title }, idx) => (
               <RowWrapper
-                className={cn("px-0 py-2", {
+                className={cn("px-0 py-2 md:px-0", {
                   "border-b-0": idx === recentStories.length - 1,
                 })}
                 key={id}

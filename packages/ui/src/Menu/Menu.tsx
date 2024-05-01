@@ -148,7 +148,7 @@ const Separator = forwardRef<
 >(({ className, ...rest }, ref) => (
   <DropdownMenu.Separator
     className={cn(
-      "border-gray-100 dark:border-dark-100 border-b my-2",
+      "border-gray-100 dark:border-dark-100 border-b-[0.5px] my-2",
       className
     )}
     ref={ref}

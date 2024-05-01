@@ -9,13 +9,13 @@ export const ActiveSprintsHeader = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Active Sprints",
-            icon: <SprintsIcon className="h-[1.15rem] w-auto" />,
+            name: "Running Sprints",
+            icon: <SprintsIcon className="h-5 w-auto" />,
           },
         ]}
       />
       <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
-        New sprint
+        New Sprint
       </Button>
     </HeaderContainer>
   );

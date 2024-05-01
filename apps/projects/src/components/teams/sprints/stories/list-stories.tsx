@@ -117,10 +117,8 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                     </Button>
                   </Menu.Button>
                   <Menu.Items align="end" className="w-64">
-                    <Menu.Group>
-                      <Text className="mt-1" color="muted">
-                        Manage sprint
-                      </Text>
+                    <Menu.Group className="px-4">
+                      <Text className="mt-1">Manage Sprint</Text>
                     </Menu.Group>
                     <Menu.Separator className="mb-2" />
                     <Menu.Group>
@@ -145,10 +143,8 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 </Menu>
               </Flex>
               <Flex align="center" className="my-4" gap={2}>
-                <Badge rounded="sm">Current</Badge>
-                <Badge color="tertiary" rounded="sm">
-                  21 Feb - 21 Mar
-                </Badge>
+                <Badge>Current</Badge>
+                <Badge color="tertiary">21 Feb - 21 Mar</Badge>
               </Flex>
               <Flex
                 align="center"
@@ -157,9 +153,9 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 justify="between"
               >
                 <Text>Sprint Progress</Text>
-                <Text>75%</Text>
+                <Text>40%</Text>
               </Flex>
-              <ProgressBar className="h-1.5" progress={75} />
+              <ProgressBar className="h-1" progress={40} />
             </Box>
             <Divider className="mb-6 mt-8" />
             <Box className="px-6">
@@ -226,7 +222,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 </Tabs.List>
                 <Tabs.Panel value="assignees">
                   {new Array(4).fill(1).map((_, idx) => (
-                    <RowWrapper className="px-1 py-2" key={idx}>
+                    <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
                       <Flex align="center" gap={2}>
                         <Avatar name="Joseph Mukorivo" size="xs" />
                         <Text color="muted">josemukorivo</Text>
@@ -240,7 +236,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 </Tabs.Panel>
                 <Tabs.Panel value="labels">
                   {new Array(4).fill(1).map((_, idx) => (
-                    <RowWrapper className="px-1 py-2" key={idx}>
+                    <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
                       <Flex align="center" gap={2}>
                         <span className="block size-2 rounded-full bg-primary" />
                         <Text color="muted">Feature</Text>
@@ -254,7 +250,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 </Tabs.Panel>
                 <Tabs.Panel value="status">
                   {new Array(4).fill(1).map((_, idx) => (
-                    <RowWrapper className="px-1 py-2" key={idx}>
+                    <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
                       <Flex align="center" gap={2}>
                         <StoryStatusIcon />
                         <Text color="muted">Backlog</Text>
@@ -268,7 +264,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                 </Tabs.Panel>
                 <Tabs.Panel value="priority">
                   {new Array(4).fill(1).map((_, idx) => (
-                    <RowWrapper className="px-1 py-2" key={idx}>
+                    <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
                       <Flex align="center" gap={2}>
                         <PriorityIcon priority="High" />
                         <Text color="muted">High</Text>

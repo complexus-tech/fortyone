@@ -7,13 +7,13 @@ export const Support = () => {
   const features = [
     {
       heading: "Support & Enquiries",
-      email: "support@complexus.app",
+      email: "support@complexus.tech",
       icon: <SupportIcon className="h-12 w-auto" />,
       description:
         "Contact our support team for assistance with onboarding, troubleshooting or reporting issues.",
     },
     {
-      email: "sales@complexus.app",
+      email: "sales@complexus.tech",
       icon: <EmailIcon className="h-12 w-auto" />,
       heading: "Sales",
       description:
