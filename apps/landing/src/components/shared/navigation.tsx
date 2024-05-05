@@ -19,6 +19,8 @@ import Link from "next/link";
 import { Logo, Container } from "@/components/ui";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
+import { MenuButton } from "./menu-button";
+import { useState } from "react";
 
 const MenuItem = ({
   name,
@@ -139,6 +141,9 @@ export const Navigation = () => {
     },
   ];
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const toggleMenu = () => setIsMenuOpen((open) => !open);
+
   const pathname = usePathname();
 
   return (
@@ -216,7 +221,7 @@ export const Navigation = () => {
                 </NavigationMenu.List>
               </NavigationMenu> */}
             </Flex>
-            <Flex align="center" className="ml-2 gap-4 pr-1 md:gap-2 md:pr-0">
+            <Flex align="center" className="ml-2 gap-2 pr-1 md:pr-0">
               <Button
                 className="relative text-[0.93rem] md:left-1"
                 rounded="full"
@@ -224,19 +229,25 @@ export const Navigation = () => {
               >
                 Join waitlist
               </Button>
-              <Menu>
+              <Menu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <Menu.Button asChild>
-                  <button className="flex">
-                    <MenuIcon className="h-6 w-auto md:hidden" />
+                  <button className="flex md:hidden">
+                    <MenuButton open={isMenuOpen} />
                   </button>
                 </Menu.Button>
                 <Menu.Items
                   align="end"
-                  className="min-w-[70vw] rounded-xl pt-2"
+                  className="relative left-4 mt-6 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
                 >
                   <Menu.Group>
                     {navLinks.map(({ title, href }) => (
-                      <Menu.Item key={title}>
+                      <Menu.Item
+                        key={title}
+                        className="block rounded-lg py-2"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                        }}
+                      >
                         <NavLink className="flex" href={href}>
                           {title}
                         </NavLink>
@@ -246,7 +257,13 @@ export const Navigation = () => {
                   <Menu.Separator />
                   <Menu.Group>
                     {product.map(({ id, name, href, icon }) => (
-                      <Menu.Item key={id}>
+                      <Menu.Item
+                        key={id}
+                        className="block rounded-lg py-2"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                        }}
+                      >
                         <NavLink
                           className="flex items-center gap-2"
                           href={href}
