@@ -157,61 +157,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
               </Flex>
               <ProgressBar className="h-1" progress={40} />
             </Box>
-            <Divider className="mb-6 mt-8" />
-            <Box className="px-6">
-              <Text as="h3" fontSize="lg" fontWeight="medium">
-                Burndown chart
-              </Text>
-              <Text className="mb-4" color="muted">
-                Burndown chart shows the amount of work remaining in the sprint.
-              </Text>
-              <ResponsiveContainer height={150} width="100%">
-                <AreaChart
-                  data={data}
-                  margin={{
-                    top: 0,
-                    right: 0,
-                    left: -13,
-                    bottom: -12,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <defs>
-                    <linearGradient id="colorUv" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.6} />
-                      <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <defs>
-                    <linearGradient id="colorAmt" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="#002F61" stopOpacity={0.6} />
-                      <stop offset="95%" stopColor="#002F61" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-
-                  <XAxis dataKey="name" fontSize="0.9rem" />
-                  <Tooltip />
-                  <Area
-                    dataKey="uv"
-                    fill="url(#colorUv)"
-                    fillOpacity={1}
-                    stackId="1"
-                    stroke="#eab308"
-                    strokeDasharray="5 5"
-                    type="monotone"
-                  />
-                  <Area
-                    dataKey="amt"
-                    fill="url(#colorAmt)"
-                    fillOpacity={1}
-                    stackId="1"
-                    stroke="#002F61"
-                    type="monotone"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-            <Divider className="my-8" />
+            <Divider className="mb-8 mt-6" />
             <Box className="px-6">
               <Tabs defaultValue="assignees">
                 <Tabs.List className="mx-0 mb-1">
@@ -277,6 +223,60 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                   ))}
                 </Tabs.Panel>
               </Tabs>
+            </Box>
+            <Divider className="mb-6 mt-8" />
+            <Box className="px-6">
+              <Text as="h3" fontSize="lg" fontWeight="medium">
+                Burndown chart
+              </Text>
+              <Text className="mb-4" color="muted">
+                Burndown chart shows the amount of work remaining in the sprint.
+              </Text>
+              <ResponsiveContainer height={150} width="100%">
+                <AreaChart
+                  data={data}
+                  margin={{
+                    top: 0,
+                    right: 0,
+                    left: -13,
+                    bottom: -12,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <defs>
+                    <linearGradient id="colorUv" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <defs>
+                    <linearGradient id="colorAmt" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="#002F61" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#002F61" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+
+                  <XAxis dataKey="name" fontSize="0.9rem" />
+                  <Tooltip />
+                  <Area
+                    dataKey="uv"
+                    fill="url(#colorUv)"
+                    fillOpacity={1}
+                    stackId="1"
+                    stroke="#eab308"
+                    strokeDasharray="5 5"
+                    type="monotone"
+                  />
+                  <Area
+                    dataKey="amt"
+                    fill="url(#colorAmt)"
+                    fillOpacity={1}
+                    stackId="1"
+                    stroke="#002F61"
+                    type="monotone"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </Box>
             <Divider className="mb-6 mt-8" />
             <Box className="px-6">

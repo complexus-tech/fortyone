@@ -2,19 +2,21 @@
 import { Box, Text, Flex, Wrapper, Button } from "ui";
 import {
   ArrowRightIcon,
-  EpicsIcon,
   KanbanIcon,
   SprintsIcon,
-  ObjectiveIcon,
   StoryIcon,
+  AnalyticsIcon,
 } from "icons";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { Container, Blur } from "@/components/ui";
-import storyCard from "../../../../public/story-card.png";
 import kanbanImg from "../../../../public/kanban.png";
+import storyImg from "../../../../public/story1.png";
+import sprintImg from "../../../../public/sprints.png";
+import analyticsImg from "../../../../public/analytics1.png";
+import { cn } from "lib";
 
 const Intro = () => (
   <Box className="relative">
@@ -56,7 +58,7 @@ const Intro = () => (
         </Text>
       </motion.div>
     </Box>
-    <Blur className="absolute left-1/2 right-1/2 top-28 z-[4] h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
+    <Blur className="absolute left-1/2 right-1/2 top-0 z-[4] h-[230vh] w-[70vw] -translate-x-1/2 bg-warning/[0.07] md:h-[70vw]" />
   </Box>
 );
 
@@ -95,42 +97,6 @@ const ItemWrapper = ({
 export const Features = () => {
   const features = [
     {
-      id: 1,
-      name: "Stories",
-      description: "Break down complex projects into manageable tasks.",
-      icon: <StoryIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
-      image: {
-        src: storyCard,
-        alt: "Stories",
-        height: 2422,
-        width: 1652,
-      },
-    },
-    {
-      id: 2,
-      name: "Objectives",
-      description: "Define your goals, track progress, and measure success.",
-      icon: <ObjectiveIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
-      image: {
-        src: storyCard,
-        alt: "Stories",
-        height: 2422,
-        width: 1652,
-      },
-    },
-    {
-      id: 3,
-      name: "Sprints",
-      description: "Set sprints to achieve your goals and track progress.",
-      icon: <SprintsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
-      image: {
-        src: storyCard,
-        alt: "Stories",
-        height: 2422,
-        width: 1652,
-      },
-    },
-    {
       id: 4,
       name: "Kanban Boards",
       description:
@@ -139,23 +105,41 @@ export const Features = () => {
       image: {
         src: kanbanImg,
         alt: "Kanban Boards",
-        height: 2198,
-        width: 948,
       },
       className: "md:col-span-2",
     },
-
     {
-      id: 5,
-      name: "Epics",
-      description: "Group related stories together to manage large projects.",
-      icon: <EpicsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      id: 1,
+      name: "Stories",
+      description: "Break down complex projects into manageable tasks.",
+      icon: <StoryIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
       image: {
-        src: storyCard,
+        src: storyImg,
         alt: "Stories",
-        height: 2422,
-        width: 1652,
       },
+      // className: "md:col-span-2",
+    },
+    {
+      id: 3,
+      name: "Sprints",
+      description: "Set sprints to achieve your goals and track progress.",
+      icon: <SprintsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      image: {
+        src: sprintImg,
+        alt: "Sprints",
+      },
+    },
+    {
+      id: 2,
+      name: "Analytics & Reporting",
+      description:
+        "Track your progress and make data-driven decisions. Get insights into your team's performance and productivity.",
+      icon: <AnalyticsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      image: {
+        src: analyticsImg,
+        alt: "Stories",
+      },
+      className: "md:col-span-2",
     },
   ];
 
@@ -186,7 +170,12 @@ export const Features = () => {
               <Image
                 alt={alt}
                 placeholder="blur"
-                className="pointer-events-none mx-auto block rounded-xl border border-dark-200 shadow-xl shadow-dark-300/60"
+                className={cn(
+                  "pointer-events-none mx-auto block rounded-xl border-[3px] border-dark-200 object-cover object-top shadow-xl shadow-dark-300/60 md:aspect-[4/3]",
+                  {
+                    "md:aspect-[16/5.5]": className === "md:col-span-2",
+                  },
+                )}
                 src={src}
               />
             </ItemWrapper>

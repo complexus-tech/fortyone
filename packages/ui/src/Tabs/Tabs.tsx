@@ -36,7 +36,7 @@ const List = ({ children, className, ...rest }: ListProps) => {
   return (
     <TabsPrimitive.List
       className={cn(
-        "flex flex-wrap w-max mx-12 rounded-[0.4rem] p-[0.2rem] bg-gray-50/90 dark:bg-dark-300",
+        "flex flex-wrap w-max mx-12 rounded-[0.45rem] p-[0.2rem] bg-gray-50/90 dark:bg-dark-200/80",
         className
       )}
       {...rest}

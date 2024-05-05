@@ -74,7 +74,6 @@ export const Story = () => {
       >
         <BlurImage
           src="/joseph.webp"
-          theme="dark"
           className="pointer-events-none aspect-square rounded-3xl object-bottom grayscale"
         />
       </Box>

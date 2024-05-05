@@ -9,7 +9,7 @@ export default function Page(): JSX.Element {
         <MainDetails />
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
-      <ResizablePanel.Panel defaultSize={28} maxSize={35} minSize={25}>
+      <ResizablePanel.Panel defaultSize={28} maxSize={35} minSize={20}>
         <Options />
       </ResizablePanel.Panel>
     </ResizablePanel>

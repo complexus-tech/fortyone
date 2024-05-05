@@ -148,7 +148,7 @@ export const Navigation = () => {
           <Box className="z-10 flex h-[3.75rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40 md:h-16 md:px-3 md:pl-5">
             <Logo className="relative top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
-              {/* <NavigationMenu>
+              <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
@@ -178,7 +178,7 @@ export const Navigation = () => {
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>
-              </NavigationMenu> */}
+              </NavigationMenu>
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   href={href}
