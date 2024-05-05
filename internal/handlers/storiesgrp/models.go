@@ -16,14 +16,14 @@ type AppSingleStory struct {
 	Description     string     `json:"description"`
 	DescriptionHTML string     `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
-	Project         *uuid.UUID `json:"projectId"`
+	Objective       *uuid.UUID `json:"objectiveId"`
 	Status          *uuid.UUID `json:"statusId"`
 	Assignee        *uuid.UUID `json:"assigneeId"`
 	BlockedBy       *uuid.UUID `json:"blockedById"`
 	Blocking        *uuid.UUID `json:"blockingId"`
 	Related         *uuid.UUID `json:"relatedId"`
 	Reporter        *uuid.UUID `json:"reporterId"`
-	Priority        *uuid.UUID `json:"priorityId"`
+	Priority        string     `json:"priority"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
@@ -37,12 +37,12 @@ type AppStoryList struct {
 	ID         uuid.UUID  `json:"id"`
 	SequenceID int        `json:"sequenceId"`
 	Title      string     `json:"title"`
-	Project    *uuid.UUID `json:"project"`
+	Objective  *uuid.UUID `json:"objective"`
 	Status     *uuid.UUID `json:"status"`
 	Assignee   *uuid.UUID `json:"assignee"`
 	StartDate  *time.Time `json:"start_date"`
 	EndDate    *time.Time `json:"end_date"`
-	Priority   *uuid.UUID `json:"priority"`
+	Priority   string     `json:"priority"`
 	Sprint     *uuid.UUID `json:"sprint"`
 }
 
@@ -54,7 +54,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		DescriptionHTML: i.DescriptionHTML,
 		Parent:          i.Parent,
 		Title:           i.Title,
-		Project:         i.Project,
+		Objective:       i.Objective,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
 		Priority:        i.Priority,
@@ -78,7 +78,7 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 			ID:         story.ID,
 			SequenceID: story.SequenceID,
 			Title:      story.Title,
-			Project:    story.Project,
+			Objective:  story.Objective,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
 			Priority:   story.Priority,

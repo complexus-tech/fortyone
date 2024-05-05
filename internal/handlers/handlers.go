@@ -15,17 +15,15 @@ import (
 
 type handlers struct{}
 
-// BuildRoutes returns a new handlers instance which
-// implements the mux.RouteAdder interface.
+// BuildRoutes returns a new handlers instance which implements the mux.RouteAdder interface.
 func BuildRoutes() handlers {
 	return handlers{}
 }
 
-// BuildAllRoutes implements the mux.RouteAdder interface.
-// It builds all the routes for the application.
+// BuildAllRoutes implements the mux.RouteAdder interface. It builds all the routes for the application.
 func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
-	// register the heath routes``
+	// register the heath routes
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,

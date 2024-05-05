@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -28,10 +27,10 @@ func New(stories *stories.Service) *Handlers {
 
 // Get returns the story with the specified ID.
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	id, err := strconv.Atoi(web.Params(r, "id"))
-	if err != nil {
-		return ErrInvalidID
-	}
+	id := web.Params(r, "id")
+	// if err != nil {
+	// 	return ErrInvalidID
+	// }
 	story, err := h.stories.Get(ctx, id)
 	if err != nil {
 		return err

@@ -84,6 +84,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
 
+	// Connect to postgres database
 	db, err := database.Open(database.Config{
 		Host:         cfg.DB.Host,
 		Port:         cfg.DB.Port,
@@ -110,6 +111,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		db.Close()
 	}()
 
+	// Connect to redis cache
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
 		Password: cfg.Cache.Password,
@@ -125,12 +127,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
 	shutdown := make(chan os.Signal, 1)
+
 	// Start Tracing
 	t := tracing.New(service, version, environ)
 	traceProvider, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
 	}
+
 	// Graceful shutdown of tracing if server is stopped
 	defer traceProvider.Shutdown(ctx)
 	tracer := traceProvider.Tracer(service)

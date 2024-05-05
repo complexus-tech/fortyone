@@ -12,12 +12,12 @@ type CoreStoryList struct {
 	SequenceID int
 	Title      string
 	Parent     *uuid.UUID
-	Project    *uuid.UUID
+	Objective  *uuid.UUID
 	Status     *uuid.UUID
 	Assignee   *uuid.UUID
 	StartDate  *time.Time
 	EndDate    *time.Time
-	Priority   *uuid.UUID
+	Priority   string
 	Sprint     *uuid.UUID
 }
 
@@ -29,21 +29,16 @@ type CoreSingleStory struct {
 	Description     string
 	DescriptionHTML string
 	Parent          *uuid.UUID
-	Project         *uuid.UUID
+	Objective       *uuid.UUID
 	Status          *uuid.UUID
 	Assignee        *uuid.UUID
 	BlockedBy       *uuid.UUID
 	Blocking        *uuid.UUID
 	Related         *uuid.UUID
 	Reporter        *uuid.UUID
-	Type            *string
-	Priority        *uuid.UUID
-	Attachments     *string
+	Priority        string
 	Sprint          *uuid.UUID
 	Team            *uuid.UUID
-	Watchers        *string
-	Labels          *string
-	Comments        *string
 	StartDate       *time.Time
 	EndDate         *time.Time
 	CreatedAt       time.Time

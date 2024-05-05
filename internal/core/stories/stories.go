@@ -18,7 +18,7 @@ var (
 // Repository provides access to the story storage.
 type Repository interface {
 	MyStories(ctx context.Context) ([]CoreStoryList, error)
-	Get(ctx context.Context, id int) (CoreSingleStory, error)
+	Get(ctx context.Context, id string) (CoreSingleStory, error)
 }
 
 // Service provides story-related operations.
@@ -53,7 +53,7 @@ func (s *Service) MyStories(ctx context.Context) ([]CoreStoryList, error) {
 }
 
 // Get returns the story with the specified ID.
-func (s *Service) Get(ctx context.Context, id int) (CoreSingleStory, error) {
+func (s *Service) Get(ctx context.Context, id string) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.Get")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Get")
 	defer span.End()

@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -82,8 +83,8 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 		ctx = SetValues(ctx, v)
 
 		if err := handler(ctx, w, r); err != nil {
+			log.Print(err)
 			a.Shutdown()
-
 			return
 		}
 

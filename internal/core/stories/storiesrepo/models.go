@@ -15,19 +15,15 @@ type dbStory struct {
 	Description     string     `db:"description"`
 	DescriptionHTML string     `db:"description_html"`
 	Parent          *uuid.UUID `db:"parent_id"`
-	Project         *uuid.UUID `db:"project_id"`
+	Objective       *uuid.UUID `db:"objective_id"`
 	Status          *uuid.UUID `db:"status_id"`
 	Assignee        *uuid.UUID `db:"assignee_id"`
 	BlockedBy       *uuid.UUID `db:"blocked_by_id"`
 	Blocking        *uuid.UUID `db:"blocking_id"`
 	Related         *uuid.UUID `db:"related_id"`
 	Reporter        *uuid.UUID `db:"reporter_id"`
-	Priority        *uuid.UUID `db:"priority_id"`
-	Attachments     string     `db:"attachments"`
+	Priority        string     `db:"priority"`
 	Sprint          *uuid.UUID `db:"sprint_id"`
-	Watchers        string     `db:"watchers"`
-	Labels          string     `db:"labels"`
-	Comments        string     `db:"comments"`
 	StartDate       *time.Time `db:"start_date"`
 	EndDate         *time.Time `db:"end_date"`
 	CreatedAt       time.Time  `db:"created_at"`
@@ -43,7 +39,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Title:           i.Title,
 		Description:     i.Description,
 		Parent:          i.Parent,
-		Project:         i.Project,
+		Objective:       i.Objective,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
 		BlockedBy:       i.BlockedBy,
@@ -70,7 +66,7 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			SequenceID: story.SequenceID,
 			Title:      story.Title,
 			Parent:     story.Parent,
-			Project:    story.Project,
+			Objective:  story.Objective,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
 			StartDate:  story.StartDate,
