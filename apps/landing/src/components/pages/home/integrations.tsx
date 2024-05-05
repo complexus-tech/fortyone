@@ -98,7 +98,7 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               color="tertiary"
               rounded="full"
               size="lg"

@@ -134,7 +134,7 @@ const Package = ({
           </Text>
         </Text>
         <Button
-          href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+          href="https://forms.gle/NmG4XFS5GhvRjUxu6"
           className="mt-6 w-full justify-between"
           color="primary"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
@@ -282,7 +282,7 @@ export const Pricing = () => {
             </Box>
             <Button
               className="mt-6"
-              href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               rounded="full"
               size="lg"
             >

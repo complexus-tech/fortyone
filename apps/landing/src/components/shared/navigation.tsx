@@ -225,7 +225,7 @@ export const Navigation = () => {
               <Button
                 className="relative text-[0.93rem] md:left-1"
                 rounded="full"
-                href="https://h1o9dmbqz9w.typeform.com/to/FWw2Ni3H"
+                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               >
                 Join waitlist
               </Button>
