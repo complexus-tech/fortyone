@@ -237,7 +237,7 @@ export const Navigation = () => {
                 </Menu.Button>
                 <Menu.Items
                   align="end"
-                  className="relative left-4 mt-6 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
+                  className="relative left-4 mt-4 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
                 >
                   <Menu.Group>
                     {navLinks.map(({ title, href }) => (
