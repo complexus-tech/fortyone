@@ -1,6 +1,6 @@
 import { cn } from "lib";
 import type { ReactNode } from "react";
-import { Container } from "ui";
+import { Box } from "ui";
 
 export const RowWrapper = ({
   children,
@@ -10,14 +10,14 @@ export const RowWrapper = ({
   className?: string;
 }) => {
   return (
-    <Container
+    <Box
       className={cn(
-        "group flex items-center justify-between border-b-[0.5px] border-gray-100 py-2.5 outline-none hover:bg-gray-50/50 focus:bg-gray-50/50 dark:border-dark-100/70 hover:dark:bg-dark-200/20 focus:dark:bg-dark-200/50",
+        "group flex items-center justify-between border-b-[0.5px] border-gray-100 px-12  py-2.5 outline-none hover:bg-gray-50/50 focus:bg-gray-50/50 dark:border-dark-100/70 hover:dark:bg-dark-200/20 focus:dark:bg-dark-200/50",
         className,
       )}
       tabIndex={0}
     >
       {children}
-    </Container>
+    </Box>
   );
 };
