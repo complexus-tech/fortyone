@@ -3,12 +3,10 @@
 import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
 import {
   AnalyticsIcon,
-  ArrowRightIcon,
   ChatIcon,
   CodeIcon,
   DocsIcon,
   EpicsIcon,
-  MenuIcon,
   SprintsIcon,
   ObjectiveIcon,
   RoadmapIcon,

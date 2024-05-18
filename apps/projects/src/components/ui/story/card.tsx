@@ -11,6 +11,7 @@ import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
+import { useBoard } from "@/components/ui/stories-board";
 
 export const StoryCard = ({
   story,
@@ -22,6 +23,7 @@ export const StoryCard = ({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
   });
+  const { selectedStories, setSelectedStories } = useBoard();
   return (
     <div ref={setNodeRef} {...listeners} {...attributes}>
       <StoryContextMenu>
@@ -36,8 +38,20 @@ export const StoryCard = ({
           )}
         >
           <Flex className="mb-0.5" gap={2} justify="between">
-            <Flex align="center" gap={1}>
-              <Checkbox className="rounded-[0.35rem]" />
+            <Flex align="center" gap={2}>
+              <Checkbox
+                checked={selectedStories.includes(story.id)}
+                onCheckedChange={(checked) => {
+                  setSelectedStories(
+                    checked
+                      ? [...selectedStories, story.id]
+                      : selectedStories.filter(
+                          (storyId) => storyId !== story.id,
+                        ),
+                  );
+                }}
+                className="rounded-[0.35rem]"
+              />
               <Link className="flex-1" href="/teams/web/stories/test-123-story">
                 <Text
                   className="w-[12ch] truncate text-[0.95rem]"

@@ -2,7 +2,7 @@
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
-import { useState } from "react";
+import { createContext, useState, useContext } from "react";
 import { createPortal } from "react-dom";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { KanbanBoard } from "./kanban-board";
@@ -10,8 +10,14 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
 import type { StoriesViewOptions } from "./stories-view-options-button";
 import { ListBoard } from "./list-board";
+import { StoriesToolbar } from "./stories-toolbar";
 
 export type StoriesLayout = "list" | "kanban" | null;
+
+const BoardContext = createContext<{
+  selectedStories: number[];
+  setSelectedStories: (value: number[]) => void;
+} | null>(null);
 
 const StoryOverlay = ({
   story,
@@ -63,6 +69,7 @@ export const StoriesBoard = ({
 }) => {
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
+  const [selectedStories, setSelectedStories] = useState<number[]>([]);
 
   const handleDragStart = (e: DragStartEvent) => {
     const story = stories.find(({ id }) => id === Number(e.active.id))!;
@@ -97,26 +104,39 @@ export const StoriesBoard = ({
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-      {layout === "kanban" ? (
-        <KanbanBoard
-          className={className}
-          stories={storiesBoard}
-          viewOptions={viewOptions}
-        />
-      ) : (
-        <ListBoard
-          className={className}
-          stories={storiesBoard}
-          viewOptions={viewOptions}
-        />
-      )}
-
-      {typeof window !== "undefined" &&
-        createPortal(
-          <StoryOverlay layout={layout} story={activeStory} />,
-          document.body,
+    <BoardContext.Provider value={{ selectedStories, setSelectedStories }}>
+      <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+        {layout === "kanban" ? (
+          <KanbanBoard
+            className={className}
+            stories={storiesBoard}
+            viewOptions={viewOptions}
+          />
+        ) : (
+          <ListBoard
+            className={className}
+            stories={storiesBoard}
+            viewOptions={viewOptions}
+          />
         )}
-    </DndContext>
+
+        {typeof window !== "undefined" &&
+          createPortal(
+            <StoryOverlay layout={layout} story={activeStory} />,
+            document.body,
+          )}
+
+        {/* This toolbar pops up when the user selects stories */}
+        {selectedStories.length > 0 && <StoriesToolbar />}
+      </DndContext>
+    </BoardContext.Provider>
   );
+};
+
+export const useBoard = () => {
+  const context = useContext(BoardContext);
+  if (!context) {
+    throw new Error("useBoard must be used within a BoardProvider");
+  }
+  return context;
 };

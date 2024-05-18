@@ -1,23 +1,27 @@
 "use client";
 import { useState } from "react";
-import { Flex, Button, Text } from "ui";
+import { Flex, Button, Text, Box } from "ui";
 import { MinimizeIcon, PlusIcon } from "icons";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
+import { cn } from "lib";
+import { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 
 export const StoriesKanbanHeader = ({
   status,
   priority,
   stories,
   groupBy,
+  viewOptions,
 }: {
   status?: StoryStatus;
   priority?: StoryPriority;
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
+  viewOptions: StoriesViewOptions;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -26,7 +30,11 @@ export const StoriesKanbanHeader = ({
       ? stories.filter((story) => story.status === status)
       : stories.filter((story) => story.priority === priority);
   return (
-    <>
+    <Box
+      className={cn({
+        hidden: filteredStories.length === 0 && !viewOptions.showEmptyGroups,
+      })}
+    >
       <Flex
         align="center"
         className="w-[340px] pl-1"
@@ -73,6 +81,6 @@ export const StoriesKanbanHeader = ({
         setIsOpen={setIsOpen}
         status={status}
       />
-    </>
+    </Box>
   );
 };

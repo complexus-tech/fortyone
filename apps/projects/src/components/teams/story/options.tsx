@@ -14,7 +14,7 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { Labels } from "@/components/ui/story/labels";
-import { AddLinks, OptionsHeader } from "../components";
+import { AddLinks, OptionsHeader } from "./components";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (

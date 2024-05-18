@@ -53,6 +53,7 @@ export const KanbanBoard = ({
                 key={status}
                 status={status}
                 stories={stories}
+                viewOptions={viewOptions}
               />
             ))}
           {groupBy === "Priority" &&
@@ -62,6 +63,7 @@ export const KanbanBoard = ({
                 key={priority}
                 priority={priority}
                 stories={stories}
+                viewOptions={viewOptions}
               />
             ))}
         </Flex>
@@ -74,6 +76,7 @@ export const KanbanBoard = ({
               key={status}
               status={status}
               stories={stories}
+              viewOptions={viewOptions}
             />
           ))}
         {groupBy === "Priority" &&
@@ -83,6 +86,7 @@ export const KanbanBoard = ({
               key={priority}
               priority={priority}
               stories={stories}
+              viewOptions={viewOptions}
             />
           ))}
       </Box>

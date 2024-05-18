@@ -15,7 +15,7 @@ import {
   Attachments,
   Reactions,
   SubstoriesButton,
-} from "@/app/teams/[team]/stories/[story]/components";
+} from "./components";
 import { BodyContainer } from "@/components/shared";
 
 export const MainDetails = () => {
@@ -41,6 +41,9 @@ export const MainDetails = () => {
     ],
     content,
     editable: true,
+    onUpdate: ({ editor }) => {
+      console.log(editor.getHTML());
+    },
   });
 
   const titleEditor = useEditor({
@@ -52,7 +55,11 @@ export const MainDetails = () => {
     ],
     content: "BackOffice - Third Party Bank Details and Documents Validations",
     editable: true,
+    onUpdate: ({ editor }) => {
+      console.log(editor.getText());
+    },
   });
+
   return (
     <>
       <Header />
@@ -63,7 +70,15 @@ export const MainDetails = () => {
             className="relative -left-1 text-3xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={editor} />
+          <TextEditor
+            editor={editor}
+            onChange={(e) => {
+              console.log(e);
+              console.log(editor?.getHTML());
+              console.log(editor?.getJSON());
+              console.log(editor?.getText());
+            }}
+          />
           <Reactions />
           <SubstoriesButton />
           <Divider className="my-4" />

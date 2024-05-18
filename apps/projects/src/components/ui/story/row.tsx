@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { DatePicker, Flex, Text, Tooltip, Avatar } from "ui";
+import { DatePicker, Flex, Text, Tooltip, Avatar, Checkbox } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Story as StoryProps } from "@/types/story";
@@ -14,12 +14,15 @@ import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
+import { useBoard } from "../stories-board";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { id, title, status = "Backlog", priority = "No Priority" } = story;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
+  const { selectedStories, setSelectedStories } = useBoard();
+
   return (
     <div ref={setNodeRef}>
       <StoryContextMenu>
@@ -31,7 +34,17 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
         >
           <Flex align="center" className="relative shrink select-none" gap={2}>
             <DragHandle {...listeners} {...attributes} />
-            <TableCheckbox className="absolute -left-[1.6rem]" />
+            <Checkbox
+              checked={selectedStories.includes(id)}
+              onCheckedChange={(checked) => {
+                setSelectedStories(
+                  checked
+                    ? [...selectedStories, id]
+                    : selectedStories.filter((storyId) => storyId !== id),
+                );
+              }}
+              className="absolute -left-[1.6rem] rounded-[0.35rem]"
+            />
             <Tooltip title="Story ID: COM-12">
               <Text
                 className="min-w-[6ch] truncate text-[0.98rem]"

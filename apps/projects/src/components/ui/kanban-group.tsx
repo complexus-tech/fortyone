@@ -8,21 +8,28 @@ import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
+import { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 
 const List = ({
   children,
   id,
   totalStories,
+  viewOptions,
 }: {
   children: ReactNode;
   id: string | number;
   totalStories: number;
+  viewOptions: StoriesViewOptions;
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
   return (
-    <Box>
+    <Box
+      className={cn({
+        hidden: totalStories === 0 && !viewOptions.showEmptyGroups,
+      })}
+    >
       <div
         className={cn(
           "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
@@ -44,11 +51,13 @@ export const KanbanGroup = ({
   status,
   priority,
   groupBy = "Status",
+  viewOptions,
 }: {
   stories: Story[];
   status?: StoryStatus;
   priority?: StoryPriority;
   groupBy: ViewOptionsGroupBy;
+  viewOptions: StoriesViewOptions;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const filteredStories =
@@ -61,6 +70,7 @@ export const KanbanGroup = ({
       id={(groupBy === "Status" ? status : priority) as string}
       key={groupBy === "Status" ? status : priority}
       totalStories={filteredStories.length}
+      viewOptions={viewOptions}
     >
       {filteredStories.map((story) => (
         <StoryCard key={story.id} story={story} />
