@@ -8,21 +8,21 @@ import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
 import { cn } from "lib";
-import { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
+import { useBoard } from "@/components/ui/stories-board";
 
 export const StoriesKanbanHeader = ({
   status,
   priority,
   stories,
   groupBy,
-  viewOptions,
 }: {
   status?: StoryStatus;
   priority?: StoryPriority;
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
-  viewOptions: StoriesViewOptions;
 }) => {
+  const { viewOptions } = useBoard();
+  const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
 
   const filteredStories =
@@ -32,7 +32,7 @@ export const StoriesKanbanHeader = ({
   return (
     <Box
       className={cn({
-        hidden: filteredStories.length === 0 && !viewOptions.showEmptyGroups,
+        hidden: filteredStories.length === 0 && !showEmptyGroups,
       })}
     >
       <Flex

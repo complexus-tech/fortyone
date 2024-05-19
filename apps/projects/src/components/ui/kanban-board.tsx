@@ -1,20 +1,19 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
-import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
+import { useBoard } from "./stories-board";
 
 export const KanbanBoard = ({
   stories,
   className,
-  viewOptions,
 }: {
   stories: Story[];
   className?: string;
-  viewOptions: StoriesViewOptions;
 }) => {
+  const { viewOptions } = useBoard();
   const { groupBy } = viewOptions;
   const statuses: StoryStatus[] = [
     "Backlog",
@@ -53,7 +52,6 @@ export const KanbanBoard = ({
                 key={status}
                 status={status}
                 stories={stories}
-                viewOptions={viewOptions}
               />
             ))}
           {groupBy === "Priority" &&
@@ -63,7 +61,6 @@ export const KanbanBoard = ({
                 key={priority}
                 priority={priority}
                 stories={stories}
-                viewOptions={viewOptions}
               />
             ))}
         </Flex>
@@ -76,7 +73,6 @@ export const KanbanBoard = ({
               key={status}
               status={status}
               stories={stories}
-              viewOptions={viewOptions}
             />
           ))}
         {groupBy === "Priority" &&
@@ -86,7 +82,6 @@ export const KanbanBoard = ({
               key={priority}
               priority={priority}
               stories={stories}
-              viewOptions={viewOptions}
             />
           ))}
       </Box>

@@ -23,7 +23,7 @@ export const StoryCard = ({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
   });
-  const { selectedStories, setSelectedStories } = useBoard();
+  const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
   return (
     <div ref={setNodeRef} {...listeners} {...attributes}>
       <StoryContextMenu>
@@ -39,7 +39,7 @@ export const StoryCard = ({
         >
           <Flex className="mb-0.5" gap={2} justify="between">
             <Flex align="center" gap={2}>
-              <Checkbox
+              {/* <Checkbox
                 checked={selectedStories.includes(story.id)}
                 onCheckedChange={(checked) => {
                   setSelectedStories(
@@ -51,99 +51,113 @@ export const StoryCard = ({
                   );
                 }}
                 className="rounded-[0.35rem]"
-              />
-              <Link className="flex-1" href="/teams/web/stories/test-123-story">
-                <Text
-                  className="w-[12ch] truncate text-[0.95rem]"
-                  color="muted"
-                  fontWeight="medium"
+              /> */}
+              {isColumnVisible("ID") && (
+                <Link
+                  className="flex-1"
+                  href="/teams/web/stories/test-123-story"
                 >
-                  COM-{story.id}
-                </Text>
-              </Link>
+                  <Text
+                    className="w-[12ch] truncate text-[0.95rem]"
+                    color="muted"
+                    fontWeight="medium"
+                  >
+                    COM-{story.id}
+                  </Text>
+                </Link>
+              )}
             </Flex>
-
-            <AssigneesMenu>
-              <AssigneesMenu.Trigger>
-                <button className="block" type="button">
-                  <Avatar
-                    name="Joseph Mukorivo"
-                    size="xs"
-                    src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                  />
-                </button>
-              </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items />
-            </AssigneesMenu>
+            {isColumnVisible("Assignee") && (
+              <AssigneesMenu>
+                <AssigneesMenu.Trigger>
+                  <button className="block" type="button">
+                    <Avatar
+                      name="Joseph Mukorivo"
+                      size="xs"
+                      src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                    />
+                  </button>
+                </AssigneesMenu.Trigger>
+                <AssigneesMenu.Items />
+              </AssigneesMenu>
+            )}
           </Flex>
           <Link className="flex-1" href="/teams/web/stories/test-123-story">
             <Text className="mb-2 line-clamp-2">{story.title}</Text>
           </Link>
           <Flex gap={1} wrap>
-            <StatusesMenu>
-              <StatusesMenu.Trigger>
-                <Button
-                  className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
-                  color="tertiary"
-                  leftIcon={
-                    <StoryStatusIcon
-                      className="relative left-0.5 h-4 w-auto"
-                      status={story.status}
-                    />
-                  }
-                  size="xs"
-                  type="button"
-                  variant="outline"
-                >
-                  <span className="sr-only">{story.status}</span>
-                </Button>
-              </StatusesMenu.Trigger>
-              <StatusesMenu.Items status={story.status} />
-            </StatusesMenu>
-            <PrioritiesMenu>
-              <PrioritiesMenu.Trigger>
-                <Button
-                  className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
-                  color="tertiary"
-                  leftIcon={
-                    <PriorityIcon
-                      className="relative left-0.5 h-4 w-auto"
-                      priority={story.priority}
-                    />
-                  }
-                  size="xs"
-                  type="button"
-                  variant="outline"
-                >
-                  <span className="sr-only">{story.priority}</span>
-                </Button>
-              </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items priority={story.priority} />
-            </PrioritiesMenu>
-            <DatePicker>
-              <DatePicker.Trigger>
-                <Button
-                  className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-200/30"
-                  color="tertiary"
-                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
-                  size="xs"
-                  variant="outline"
-                >
-                  Sep 21
-                </Button>
-              </DatePicker.Trigger>
-              <DatePicker.Calendar />
-            </DatePicker>
-            <Button
-              className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
-              color="tertiary"
-              leftIcon={<TagsIcon className="h-4 w-auto" />}
-              size="xs"
-              type="button"
-              variant="outline"
-            >
-              3 labels
-            </Button>
+            {isColumnVisible("Status") && (
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
+                  <Button
+                    className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
+                    color="tertiary"
+                    leftIcon={
+                      <StoryStatusIcon
+                        className="relative left-0.5 h-4 w-auto"
+                        status={story.status}
+                      />
+                    }
+                    size="xs"
+                    type="button"
+                    variant="outline"
+                  >
+                    <span className="sr-only">{story.status}</span>
+                  </Button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items status={story.status} />
+              </StatusesMenu>
+            )}
+            {isColumnVisible("Priority") && (
+              <PrioritiesMenu>
+                <PrioritiesMenu.Trigger>
+                  <Button
+                    className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
+                    color="tertiary"
+                    leftIcon={
+                      <PriorityIcon
+                        className="relative left-0.5 h-4 w-auto"
+                        priority={story.priority}
+                      />
+                    }
+                    size="xs"
+                    type="button"
+                    variant="outline"
+                  >
+                    <span className="sr-only">{story.priority}</span>
+                  </Button>
+                </PrioritiesMenu.Trigger>
+                <PrioritiesMenu.Items priority={story.priority} />
+              </PrioritiesMenu>
+            )}
+            {isColumnVisible("Due date") && (
+              <DatePicker>
+                <DatePicker.Trigger>
+                  <Button
+                    className="bg-white px-2 text-sm dark:border-dark-100 dark:bg-dark-200/30"
+                    color="tertiary"
+                    leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                    size="xs"
+                    variant="outline"
+                  >
+                    Sep 21
+                  </Button>
+                </DatePicker.Trigger>
+                <DatePicker.Calendar />
+              </DatePicker>
+            )}
+            {isColumnVisible("Labels") && (
+              <Button
+                className="bg-white dark:border-dark-100 dark:bg-dark-200/30"
+                color="tertiary"
+                leftIcon={<TagsIcon className="h-4 w-auto" />}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                3 labels
+              </Button>
+            )}
           </Flex>
         </Box>
       </StoryContextMenu>

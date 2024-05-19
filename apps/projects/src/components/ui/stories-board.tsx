@@ -11,12 +11,15 @@ import { StoryCard } from "./story/card";
 import type { StoriesViewOptions } from "./stories-view-options-button";
 import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
+import { DisplayColumn } from "@/components/ui/stories-view-options-button";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
 const BoardContext = createContext<{
   selectedStories: number[];
   setSelectedStories: (value: number[]) => void;
+  viewOptions: StoriesViewOptions;
+  isColumnVisible: (column: DisplayColumn) => boolean;
 } | null>(null);
 
 const StoryOverlay = ({
@@ -71,6 +74,9 @@ export const StoriesBoard = ({
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<number[]>([]);
 
+  const isColumnVisible = (column: DisplayColumn) =>
+    viewOptions.displayColumns?.includes(column);
+
   const handleDragStart = (e: DragStartEvent) => {
     const story = stories.find(({ id }) => id === Number(e.active.id))!;
     setActiveStory(story);
@@ -104,14 +110,17 @@ export const StoriesBoard = ({
   };
 
   return (
-    <BoardContext.Provider value={{ selectedStories, setSelectedStories }}>
+    <BoardContext.Provider
+      value={{
+        selectedStories,
+        setSelectedStories,
+        viewOptions,
+        isColumnVisible,
+      }}
+    >
       <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
         {layout === "kanban" ? (
-          <KanbanBoard
-            className={className}
-            stories={storiesBoard}
-            viewOptions={viewOptions}
-          />
+          <KanbanBoard className={className} stories={storiesBoard} />
         ) : (
           <ListBoard
             className={className}

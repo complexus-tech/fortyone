@@ -3,6 +3,17 @@ import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
+export type DisplayColumn =
+  | "ID"
+  | "Status"
+  | "Assignee"
+  | "Priority"
+  | "Due date"
+  | "Created"
+  | "Updated"
+  | "Sprint"
+  | "Epic"
+  | "Labels";
 export type ViewOptionsOrderBy =
   | "Priority"
   | "Due date"
@@ -13,7 +24,7 @@ export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
   showEmptyGroups: boolean;
-  displayColumns: string[];
+  displayColumns: DisplayColumn[];
 };
 
 const initialViewOptions: StoriesViewOptions = {
@@ -21,6 +32,7 @@ const initialViewOptions: StoriesViewOptions = {
   orderBy: "Priority",
   showEmptyGroups: false,
   displayColumns: [
+    "ID",
     "Status",
     "Assignee",
     "Priority",
@@ -45,7 +57,8 @@ export const StoriesViewOptionsButton = ({
 }) => {
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
-  const allColumns = [
+  const allColumns: DisplayColumn[] = [
+    "ID",
     "Status",
     "Assignee",
     "Priority",
@@ -153,6 +166,7 @@ export const StoriesViewOptionsButton = ({
               const isSelected = displayColumns.includes(column);
               return (
                 <Button
+                  className="pl-1.5"
                   color={isSelected ? "primary" : "tertiary"}
                   key={column}
                   onClick={() => {
