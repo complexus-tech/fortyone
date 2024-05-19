@@ -23,6 +23,7 @@ export const SprintStoriesProvider = ({
     orderBy: "Priority",
     showEmptyGroups: false,
     displayColumns: [
+      "ID",
       "Status",
       "Assignee",
       "Priority",

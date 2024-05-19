@@ -17,6 +17,7 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
     orderBy: "Priority",
     showEmptyGroups: false,
     displayColumns: [
+      "ID",
       "Status",
       "Assignee",
       "Priority",
