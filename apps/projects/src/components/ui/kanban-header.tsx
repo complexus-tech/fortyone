@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Flex, Button, Text, Box } from "ui";
-import { MinimizeIcon, PlusIcon } from "icons";
+import { Flex, Button, Text, Box, Tooltip } from "ui";
+import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -55,9 +55,12 @@ export const StoriesKanbanHeader = ({
               {priority}
             </>
           )}
-          <Text as="span" color="muted">
-            {filteredStories.length}
-          </Text>
+          <Tooltip title="Total stories" side="bottom">
+            <span>
+              <StoryIcon strokeWidth={2} className="ml-3 h-5 w-auto" />
+            </span>
+          </Tooltip>
+          <Text color="muted">{filteredStories.length} stories</Text>
         </Flex>
         <span className="flex items-center gap-1">
           <Button color="tertiary" size="sm" variant="naked">

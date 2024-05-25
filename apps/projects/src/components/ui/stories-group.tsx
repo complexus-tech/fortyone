@@ -5,6 +5,10 @@ import type { StoryStatus, Story, StoryPriority } from "@/types/story";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
+import { useLocalStorage } from "@/hooks";
+import { usePathname } from "next/navigation";
+import { Box, Text, Container } from "ui";
+import { RowWrapper } from "./row-wrapper";
 
 export const StoriesGroup = ({
   stories,
@@ -19,8 +23,11 @@ export const StoriesGroup = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
+  const pathname = usePathname();
   const { groupBy, showEmptyGroups } = viewOptions;
   const id = (groupBy === "Status" ? status : priority) as string;
+  const collapseKey = pathname + id;
+  const [isCollapsed, setIsCollapsed] = useLocalStorage(collapseKey, false);
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
@@ -40,11 +47,22 @@ export const StoriesGroup = ({
       <StoriesHeader
         className={className}
         count={filteredStories.length}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
         groupBy={groupBy}
         priority={priority}
         status={status}
       />
-      <StoriesList stories={filteredStories} />
+      {!isCollapsed && <StoriesList stories={filteredStories} />}
+      {!isCollapsed && (
+        <RowWrapper>
+          <Text color="muted">
+            Showing <b>{filteredStories.length}</b> stor
+            {filteredStories.length === 1 ? "y" : "ies"} with{" "}
+            {groupBy?.toLowerCase()} <b>{id}</b>
+          </Text>
+        </RowWrapper>
+      )}
     </div>
   );
 };

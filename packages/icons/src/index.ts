@@ -35,7 +35,7 @@ export * from "./updates";
 export * from "./arrow-up";
 export * from "./bell";
 export * from "./copy";
-export * from "./table";
+export * from "./list";
 export * from "./kanban";
 export * from "./preferences";
 export * from "./edit";

@@ -54,22 +54,21 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 </Text>
               </Tooltip>
             )}
-            {isColumnVisible("Status") && (
-              <StatusesMenu>
-                <StatusesMenu.Trigger>
-                  <button className="block" type="button">
-                    <StoryStatusIcon status={status} />
-                  </button>
-                </StatusesMenu.Trigger>
-                <StatusesMenu.Items status={status} />
-              </StatusesMenu>
-            )}
             <Link href="/teams/web/stories/test-123-story">
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>
           <Flex align="center" className="shrink-0" gap={3}>
-            {isColumnVisible("Labels") && <Labels />}
+            {isColumnVisible("Status") && (
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
+                  <button className="flex items-center gap-1" type="button">
+                    <StoryStatusIcon status={status} /> {status}
+                  </button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items status={status} />
+              </StatusesMenu>
+            )}
             {isColumnVisible("Priority") && (
               <PrioritiesMenu>
                 <PrioritiesMenu.Trigger>
@@ -84,6 +83,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 <PrioritiesMenu.Items priority={priority} />
               </PrioritiesMenu>
             )}
+            {isColumnVisible("Labels") && <Labels />}
             {isColumnVisible("Created") && (
               <DatePicker>
                 <DatePicker.Trigger>

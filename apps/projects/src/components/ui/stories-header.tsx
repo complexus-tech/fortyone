@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
-import { PlusIcon } from "icons";
+import { ArrowDownIcon, ArrowUpIcon, PlusIcon, StoryIcon } from "icons";
 import type { StoryPriority, StoryStatus } from "@/types/story";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -15,6 +15,8 @@ type StoryHeaderProps = {
   className?: string;
   priority?: StoryPriority;
   groupBy: ViewOptionsGroupBy;
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
 };
 export const StoriesHeader = ({
   count,
@@ -22,6 +24,8 @@ export const StoriesHeader = ({
   status = "Backlog",
   priority,
   groupBy,
+  isCollapsed,
+  setIsCollapsed,
 }: StoryHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -37,36 +41,59 @@ export const StoriesHeader = ({
       )}
     >
       <Flex align="center" justify="between">
-        <Flex align="center" gap={2}>
-          {groupBy === "Status" && (
-            <>
-              <StoryStatusIcon status={status} />
-              <Text fontWeight="medium">{status}</Text>
-            </>
-          )}
-          {groupBy === "Priority" && (
-            <>
-              <PriorityIcon priority={priority} />
-              <Text fontWeight="medium">{priority}</Text>
-            </>
-          )}
-          <Text color="muted">{count}</Text>
-        </Flex>
-        <Tooltip side="left" title="New Story">
+        <Flex align="center" className="gap-1.5">
           <Button
             color="tertiary"
-            leftIcon={
-              <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
-            }
-            onClick={() => {
-              setIsOpen(true);
-            }}
             size="sm"
             variant="naked"
+            rightIcon={
+              <ArrowDownIcon
+                strokeWidth={1}
+                className={cn("h-4 w-auto transition dark:text-gray-200", {
+                  "-rotate-90": isCollapsed,
+                })}
+              />
+            }
+            onClick={() => {
+              setIsCollapsed(!isCollapsed);
+            }}
           >
-            <span className="sr-only">New Story</span>
+            {groupBy === "Status" && (
+              <>
+                <StoryStatusIcon status={status} />
+                <Text fontWeight="medium">{status}</Text>
+              </>
+            )}
+            {groupBy === "Priority" && (
+              <>
+                <PriorityIcon priority={priority} />
+                <Text fontWeight="medium">{priority}</Text>
+              </>
+            )}
           </Button>
-        </Tooltip>
+          <Tooltip title="Total stories" side="bottom">
+            <span>
+              <StoryIcon strokeWidth={2} className="ml-3 h-5 w-auto" />
+            </span>
+          </Tooltip>
+          <Text color="muted">{count} stories</Text>
+        </Flex>
+        <Flex gap={2}>
+          <Tooltip side="top" title="New Story">
+            <Button
+              color="tertiary"
+              leftIcon={
+                <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
+              }
+              onClick={() => {
+                setIsOpen(true);
+              }}
+              size="sm"
+            >
+              <span className="sr-only">New Story</span>
+            </Button>
+          </Tooltip>
+        </Flex>
       </Flex>
       <NewStoryDialog
         isOpen={isOpen}

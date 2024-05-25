@@ -1,6 +1,7 @@
 import type { Icon } from "./types";
 
 export const ArrowDownIcon = (props: Icon) => {
+  const { strokeWidth = 3, ...rest } = props;
   return (
     <svg
       {...props}

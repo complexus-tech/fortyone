@@ -1,6 +1,6 @@
 import { Flex } from "ui";
 import { cn } from "lib";
-import { KanbanIcon, TableIcon } from "icons";
+import { KanbanIcon, ListIcon } from "icons";
 import type { StoriesLayout } from "@/components/ui";
 
 export const LayoutSwitcher = ({
@@ -33,7 +33,7 @@ export const LayoutSwitcher = ({
         title="List view"
         type="button"
       >
-        <TableIcon className="h-4 w-auto" />
+        <ListIcon className="h-[1.1rem] w-auto" />
         List view
       </button>
       <button

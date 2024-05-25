@@ -1,11 +1,13 @@
 import type { Icon } from "./types";
 
 export const ArrowUpIcon = (props: Icon) => {
+  const { strokeWidth = 3, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
       fill="currentColor"
       fillOpacity={0.1}
+      strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
