@@ -12,11 +12,13 @@ import { useSprintStories } from "./provider";
 
 export const Header = ({
   isExpanded,
+  allStories,
   setIsExpanded,
   layout,
   setLayout,
 }: {
   isExpanded: boolean | null;
+  allStories: number;
   setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
@@ -41,8 +43,8 @@ export const Header = ({
             },
           ]}
         />
-        <Badge className="bg-opacity-50" rounded="full">
-          20
+        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
+          {allStories} stories
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { DatePicker, Flex, Text, Tooltip, Avatar, Checkbox } from "ui";
+import { DatePicker, Flex, Text, Tooltip, Avatar, Checkbox, Box } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Story as StoryProps } from "@/types/story";
@@ -99,18 +99,36 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               </DatePicker>
             )}
             {isColumnVisible("Assignee") && (
-              <AssigneesMenu>
-                <AssigneesMenu.Trigger>
-                  <button className="flex" type="button">
+              <Tooltip
+                className="py-3"
+                title={
+                  <Flex gap={2} align="center">
                     <Avatar
                       name="Joseph Mukorivo"
-                      size="xs"
                       src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
                     />
-                  </button>
-                </AssigneesMenu.Trigger>
-                <AssigneesMenu.Items />
-              </AssigneesMenu>
+                    <Box>
+                      <Text fontWeight="medium">Joseph Mukorivo</Text>
+                      <Text color="muted">@josemukorivo</Text>
+                    </Box>
+                  </Flex>
+                }
+              >
+                <span>
+                  <AssigneesMenu>
+                    <AssigneesMenu.Trigger>
+                      <button className="flex" type="button">
+                        <Avatar
+                          name="Joseph Mukorivo"
+                          size="xs"
+                          src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                        />
+                      </button>
+                    </AssigneesMenu.Trigger>
+                    <AssigneesMenu.Items />
+                  </AssigneesMenu>
+                </span>
+              </Tooltip>
             )}
           </Flex>
         </RowWrapper>

@@ -15,13 +15,13 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "mr-2 h-[2.3rem] items-center rounded-[0.45rem] bg-gray-100/30 p-[0.2rem] dark:bg-dark-200/50",
+        "mr-2 h-[2.25rem] items-center rounded-[0.46rem] border-[0.5px] border-gray-100/60 bg-gray-50/50 p-[0.18rem] dark:border-dark-100 dark:bg-dark-200/50",
         className,
       )}
     >
       <button
         className={cn(
-          "flex h-full items-center gap-1 rounded-[0.45rem] px-2.5 font-medium dark:text-white/60 hover:dark:text-gray-100",
+          "flex h-full items-center gap-1 rounded-[0.35rem] px-2.5 font-medium dark:text-white/55 hover:dark:text-gray-100",
           {
             "border-[0.5px] border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
               layout === "list",
@@ -34,11 +34,11 @@ export const LayoutSwitcher = ({
         type="button"
       >
         <ListIcon className="h-[1.1rem] w-auto" />
-        List view
+        List
       </button>
       <button
         className={cn(
-          "flex h-full items-center gap-1 rounded-[0.45rem] px-2.5 font-medium dark:text-white/60 hover:dark:text-gray-100",
+          "flex h-full items-center gap-1 rounded-[0.35rem] px-2.5 font-medium dark:text-white/55 hover:dark:text-gray-100",
           {
             "border-[0.5px] border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
               layout === "kanban",
@@ -51,7 +51,7 @@ export const LayoutSwitcher = ({
         type="button"
       >
         <KanbanIcon className="h-5 w-auto" strokeWidth={2.5} />
-        Kanban
+        Board
       </button>
     </Flex>
   );

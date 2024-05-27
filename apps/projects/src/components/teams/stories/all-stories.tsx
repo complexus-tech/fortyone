@@ -1,5 +1,5 @@
 "use client";
-import { Box, Tabs } from "ui";
+import { Box, Button, Container, Flex, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/types/story";
@@ -16,6 +16,7 @@ export const AllStories = ({
 
   const backlog = stories.filter((story) => story.status === "Backlog");
   const activeIssues = stories.filter((story) => story.status !== "Backlog");
+
   return (
     <Tabs defaultValue="all">
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">

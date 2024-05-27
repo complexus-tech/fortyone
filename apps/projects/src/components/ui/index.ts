@@ -19,6 +19,7 @@ export * from "./side-details-switch";
 export * from "./board-divided-panel";
 export * from "./logo";
 export * from "./stories-view-options-button";
+export { StoriesFilterButton } from "./stories-filter-button";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";
