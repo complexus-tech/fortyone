@@ -15,9 +15,9 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import { Container, TextEditor, Divider, Flex, Button } from "ui";
-import { BodyContainer } from "@/components/shared";
-import { Header, Toolbar } from "./components";
 import { ChatIcon, DocsIcon, EpicsIcon, SprintsIcon } from "icons";
+import { BodyContainer } from "@/components/shared";
+import { Header } from "./components";
 
 export default function Page(): JSX.Element {
   const content = `
@@ -96,8 +96,8 @@ export default function Page(): JSX.Element {
         <Container className="max-w-6xl pt-16">
           <Flex align="center" gap={3}>
             <DocsIcon
-              strokeWidth={1.8}
               className="relative -top-[1px] h-10 w-auto text-gray dark:text-gray-200"
+              strokeWidth={1.8}
             />
             <TextEditor
               asTitle
@@ -105,33 +105,33 @@ export default function Page(): JSX.Element {
               editor={titleEditor}
             />
           </Flex>
-          <Flex gap={2} className="mt-4">
+          <Flex className="mt-4" gap={2}>
             <Button
-              size="sm"
               color="tertiary"
               leftIcon={<SprintsIcon className="h-4 w-auto" />}
+              size="sm"
             >
               Add to Sprint
             </Button>
             <Button
-              size="sm"
               color="tertiary"
               leftIcon={<EpicsIcon className="h-4 w-auto" />}
+              size="sm"
             >
               Add to Epic
             </Button>
             <Button
-              size="sm"
               color="tertiary"
               leftIcon={<ChatIcon className="h-4 w-auto" />}
+              size="sm"
             >
               Add comment
             </Button>
           </Flex>
           <Divider className="mt-6" />
           <TextEditor
-            editor={editor}
             className="text-[1.15rem] leading-normal text-gray dark:text-gray-200/90"
+            editor={editor}
           />
         </Container>
       </BodyContainer>

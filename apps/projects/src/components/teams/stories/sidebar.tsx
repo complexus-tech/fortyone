@@ -12,7 +12,7 @@ export const Sidebar = ({ stories }: { stories: Story[] }) => {
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />
           All stories
         </Text>
-        <Badge color="tertiary" className="uppercase">
+        <Badge className="uppercase" color="tertiary">
           Web design
         </Badge>
       </Flex>

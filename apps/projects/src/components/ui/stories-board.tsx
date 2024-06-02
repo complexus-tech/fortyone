@@ -2,25 +2,21 @@
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
-import { createContext, useState, useContext } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  DisplayColumn,
+  StoriesViewOptions,
+} from "@/components/ui/stories-view-options-button";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
-import type { StoriesViewOptions } from "./stories-view-options-button";
 import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
-import { DisplayColumn } from "@/components/ui/stories-view-options-button";
+import { BoardContext } from "./board-context";
 
 export type StoriesLayout = "list" | "kanban" | null;
-
-const BoardContext = createContext<{
-  selectedStories: number[];
-  setSelectedStories: (value: number[]) => void;
-  viewOptions: StoriesViewOptions;
-  isColumnVisible: (column: DisplayColumn) => boolean;
-} | null>(null);
 
 const StoryOverlay = ({
   story,
@@ -75,7 +71,7 @@ export const StoriesBoard = ({
   const [selectedStories, setSelectedStories] = useState<number[]>([]);
 
   const isColumnVisible = (column: DisplayColumn) =>
-    viewOptions.displayColumns?.includes(column);
+    viewOptions.displayColumns.includes(column);
 
   const handleDragStart = (e: DragStartEvent) => {
     const story = stories.find(({ id }) => id === Number(e.active.id))!;
@@ -89,7 +85,7 @@ export const StoriesBoard = ({
       if (newStatus) {
         const index = storiesBoard.findIndex(
           ({ id }) => id === Number(e.active.id),
-        )!;
+        );
         storiesBoard[index].status = newStatus;
         setStoriesBoard([...storiesBoard]);
       }
@@ -100,7 +96,7 @@ export const StoriesBoard = ({
       if (newPriority) {
         const index = storiesBoard.findIndex(
           ({ id }) => id === Number(e.active.id),
-        )!;
+        );
         storiesBoard[index].priority = newPriority;
         setStoriesBoard([...storiesBoard]);
       }
@@ -140,12 +136,4 @@ export const StoriesBoard = ({
       </DndContext>
     </BoardContext.Provider>
   );
-};
-
-export const useBoard = () => {
-  const context = useContext(BoardContext);
-  if (!context) {
-    throw new Error("useBoard must be used within a BoardProvider");
-  }
-  return context;
 };

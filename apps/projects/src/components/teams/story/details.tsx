@@ -9,6 +9,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
+import { BodyContainer } from "@/components/shared";
 import {
   Header,
   Activities,
@@ -16,7 +17,6 @@ import {
   Reactions,
   SubstoriesButton,
 } from "./components";
-import { BodyContainer } from "@/components/shared";
 
 export const MainDetails = () => {
   const content = `
@@ -41,9 +41,9 @@ export const MainDetails = () => {
     ],
     content,
     editable: true,
-    onUpdate: ({ editor }) => {
-      console.log(editor.getHTML());
-    },
+    // onUpdate: ({ editor: e }) => {
+    //   console.log(e.getHTML());
+    // },
   });
 
   const titleEditor = useEditor({
@@ -55,9 +55,9 @@ export const MainDetails = () => {
     ],
     content: "BackOffice - Third Party Bank Details and Documents Validations",
     editable: true,
-    onUpdate: ({ editor }) => {
-      console.log(editor.getText());
-    },
+    // onUpdate: ({ editor: e }) => {
+    //   console.log(editor.getText());
+    // },
   });
 
   return (
@@ -70,15 +70,7 @@ export const MainDetails = () => {
             className="relative -left-1 text-3xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor
-            editor={editor}
-            onChange={(e) => {
-              console.log(e);
-              console.log(editor?.getHTML());
-              console.log(editor?.getJSON());
-              console.log(editor?.getText());
-            }}
-          />
+          <TextEditor editor={editor} />
           <Reactions />
           <SubstoriesButton />
           <Divider className="my-4" />

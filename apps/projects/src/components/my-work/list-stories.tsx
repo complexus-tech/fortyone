@@ -20,8 +20,8 @@ export const ListMyStories = ({ stories }: { stories: Story[] }) => {
   return (
     <MyWorkProvider>
       <Header
-        isExpanded={isExpanded}
         allStories={stories.length}
+        isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}

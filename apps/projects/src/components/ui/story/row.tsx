@@ -7,13 +7,13 @@ import type { Story as StoryProps } from "@/types/story";
 import { RowWrapper } from "../row-wrapper";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
+import { useBoard } from "../board-context";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
-import { useBoard } from "../stories-board";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { id, title, status = "Backlog", priority = "No Priority" } = story;
@@ -35,6 +35,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             <DragHandle {...listeners} {...attributes} />
             <Checkbox
               checked={selectedStories.includes(id)}
+              className="absolute -left-[1.6rem] rounded-[0.35rem]"
               onCheckedChange={(checked) => {
                 setSelectedStories(
                   checked
@@ -42,7 +43,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     : selectedStories.filter((storyId) => storyId !== id),
                 );
               }}
-              className="absolute -left-[1.6rem] rounded-[0.35rem]"
             />
             {isColumnVisible("ID") && (
               <Tooltip title="Story ID: COM-12">
@@ -102,7 +102,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <Tooltip
                 className="py-3"
                 title={
-                  <Flex gap={2} align="center">
+                  <Flex align="center" gap={2}>
                     <Avatar
                       name="Joseph Mukorivo"
                       src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"

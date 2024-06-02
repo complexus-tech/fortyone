@@ -1,26 +1,17 @@
 "use client";
 import Link from "next/link";
-import {
-  Box,
-  Flex,
-  Button,
-  Text,
-  Avatar,
-  DatePicker,
-  Checkbox,
-  Tooltip,
-} from "ui";
+import { Box, Flex, Button, Text, Avatar, DatePicker, Tooltip } from "ui";
 import { CalendarIcon, TagsIcon } from "icons";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Story as StoryProps } from "@/types/story";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
+import { useBoard } from "../board-context";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
-import { useBoard } from "@/components/ui/stories-board";
 
 export const StoryCard = ({
   story,
@@ -32,7 +23,7 @@ export const StoryCard = ({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
   });
-  const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
+  const { isColumnVisible } = useBoard();
   return (
     <div ref={setNodeRef} {...listeners} {...attributes}>
       <StoryContextMenu>
@@ -80,7 +71,7 @@ export const StoryCard = ({
               <Tooltip
                 className="py-3"
                 title={
-                  <Flex gap={2} align="center">
+                  <Flex align="center" gap={2}>
                     <Avatar
                       name="Joseph Mukorivo"
                       src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"

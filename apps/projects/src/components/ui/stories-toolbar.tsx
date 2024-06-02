@@ -1,7 +1,7 @@
 "use client";
 import { Button, Flex, Text, Tooltip } from "ui";
 import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
-import { useBoard } from "./stories-board";
+import { useBoard } from "./board-context";
 
 export const StoriesToolbar = () => {
   const { selectedStories, setSelectedStories } = useBoard();
@@ -17,16 +17,18 @@ export const StoriesToolbar = () => {
       >
         <Tooltip title="Clear selection">
           <Button
-            size="xs"
             color="tertiary"
-            variant="outline"
             leftIcon={
               <CloseIcon
                 className="relative left-[1.5px] h-4 w-auto"
                 strokeWidth={3}
               />
             }
-            onClick={() => setSelectedStories([])}
+            onClick={() => {
+              setSelectedStories([]);
+            }}
+            size="xs"
+            variant="outline"
           >
             <span className="sr-only">Clear</span>
           </Button>

@@ -8,7 +8,7 @@ import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
-import { useBoard } from "@/components/ui/stories-board";
+import { useBoard } from "./board-context";
 
 const List = ({
   children,

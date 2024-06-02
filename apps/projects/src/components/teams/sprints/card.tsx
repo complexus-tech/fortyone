@@ -1,5 +1,5 @@
 import { Avatar, Badge, Box, Flex, ProgressBar, Text } from "ui";
-import { CalendarIcon, SprintsIcon } from "icons";
+import { CalendarIcon } from "icons";
 import Link from "next/link";
 import { cn } from "lib";
 import {

@@ -84,11 +84,11 @@ export const StoriesFilterButton = ({
     <Popover>
       <Popover.Trigger asChild>
         <Button
-          size="sm"
           color="tertiary"
-          variant="outline"
           leftIcon={<FilterIcon className="h-4 w-auto" />}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
+          size="sm"
+          variant="outline"
         >
           {filters > 0
             ? `${filters} filter${filters > 1 ? "s" : ""} applied`

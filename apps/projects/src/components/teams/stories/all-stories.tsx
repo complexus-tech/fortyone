@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, Container, Flex, Tabs } from "ui";
+import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/types/story";

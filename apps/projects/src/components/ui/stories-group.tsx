@@ -1,13 +1,13 @@
 "use client";
 import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
+import { usePathname } from "next/navigation";
+import { Text } from "ui";
 import type { StoryStatus, Story, StoryPriority } from "@/types/story";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
+import { useLocalStorage } from "@/hooks";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
-import { useLocalStorage } from "@/hooks";
-import { usePathname } from "next/navigation";
-import { Box, Text, Container } from "ui";
 import { RowWrapper } from "./row-wrapper";
 
 export const StoriesGroup = ({
@@ -47,10 +47,10 @@ export const StoriesGroup = ({
       <StoriesHeader
         className={className}
         count={filteredStories.length}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
         groupBy={groupBy}
+        isCollapsed={isCollapsed}
         priority={priority}
+        setIsCollapsed={setIsCollapsed}
         status={status}
       />
       {!isCollapsed && <StoriesList stories={filteredStories} />}
@@ -59,7 +59,7 @@ export const StoriesGroup = ({
           <Text color="muted">
             Showing <b>{filteredStories.length}</b> stor
             {filteredStories.length === 1 ? "y" : "ies"} with{" "}
-            {groupBy?.toLowerCase()} <b>{id}</b>
+            {groupBy.toLowerCase()} <b>{id}</b>
           </Text>
         </RowWrapper>
       )}

@@ -87,8 +87,8 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
   return (
     <SprintStoriesProvider>
       <Header
-        isExpanded={isExpanded}
         allStories={stories.length}
+        isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}

@@ -2,13 +2,13 @@
 import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip } from "ui";
 import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
+import { cn } from "lib";
 import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
-import { cn } from "lib";
-import { useBoard } from "@/components/ui/stories-board";
+import { useBoard } from "./board-context";
 
 export const StoriesKanbanHeader = ({
   status,
@@ -55,9 +55,9 @@ export const StoriesKanbanHeader = ({
               {priority}
             </>
           )}
-          <Tooltip title="Total stories" side="bottom">
+          <Tooltip side="bottom" title="Total stories">
             <span>
-              <StoryIcon strokeWidth={2} className="ml-3 h-5 w-auto" />
+              <StoryIcon className="ml-3 h-5 w-auto" strokeWidth={2} />
             </span>
           </Tooltip>
           <Text color="muted">{filteredStories.length} stories</Text>

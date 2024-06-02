@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, StoryIcon } from "icons";
+import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
 import type { StoryPriority, StoryStatus } from "@/types/story";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -44,19 +44,19 @@ export const StoriesHeader = ({
         <Flex align="center" className="gap-1.5">
           <Button
             color="tertiary"
-            size="sm"
-            variant="naked"
-            rightIcon={
-              <ArrowDownIcon
-                strokeWidth={1}
-                className={cn("h-4 w-auto transition dark:text-gray-200", {
-                  "-rotate-90": isCollapsed,
-                })}
-              />
-            }
             onClick={() => {
               setIsCollapsed(!isCollapsed);
             }}
+            rightIcon={
+              <ArrowDownIcon
+                className={cn("h-4 w-auto transition dark:text-gray-200", {
+                  "-rotate-90": isCollapsed,
+                })}
+                strokeWidth={1}
+              />
+            }
+            size="sm"
+            variant="naked"
           >
             {groupBy === "Status" && (
               <>
@@ -71,9 +71,9 @@ export const StoriesHeader = ({
               </>
             )}
           </Button>
-          <Tooltip title="Total stories" side="bottom">
+          <Tooltip side="bottom" title="Total stories">
             <span>
-              <StoryIcon strokeWidth={2} className="ml-3 h-5 w-auto" />
+              <StoryIcon className="ml-3 h-5 w-auto" strokeWidth={2} />
             </span>
           </Tooltip>
           <Text color="muted">{count} stories</Text>

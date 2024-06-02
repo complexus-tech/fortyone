@@ -4,7 +4,7 @@ import type { Story, StoryPriority, StoryStatus } from "@/types/story";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
-import { useBoard } from "./stories-board";
+import { useBoard } from "./board-context";
 
 export const KanbanBoard = ({
   stories,
