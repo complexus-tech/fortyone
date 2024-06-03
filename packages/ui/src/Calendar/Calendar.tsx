@@ -42,7 +42,7 @@ export const Calendar = ({
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
-        head_cell: "w-10 font-semibold text-[1rem]",
+        head_cell: "w-10 font-semibold border-0 text-[1rem]",
         row: "flex w-full mt-2",
         cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
         day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",

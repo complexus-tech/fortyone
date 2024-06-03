@@ -25,7 +25,8 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { viewOptions, setViewOptions } = useTeamStories();
+  const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
+    useTeamStories();
 
   return (
     <HeaderContainer className="justify-between">
@@ -49,8 +50,9 @@ export const Header = ({
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesFilterButton
-          setViewOptions={setViewOptions}
-          viewOptions={viewOptions}
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
         />
         <StoriesViewOptionsButton
           setViewOptions={setViewOptions}

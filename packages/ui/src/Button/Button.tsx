@@ -40,7 +40,7 @@ export const buttonVariants = cva(
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
       size: {
-        xs: "pr-2 pl-1 h-[1.85rem] text-[0.95rem] gap-[2px]",
+        xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
         sm: "px-2 h-[2.1rem] gap-1",
         md: "px-3 h-[2.4rem] md:h-[2.5rem]",
         lg: "px-5 md:px-7 py-2.5 md:py-3",

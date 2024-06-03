@@ -1,31 +1,28 @@
 "use client";
-import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
-import { ArrowDownIcon, FilterIcon } from "icons";
-
-export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
-export type DisplayColumn =
-  | "ID"
-  | "Status"
-  | "Assignee"
-  | "Priority"
-  | "Due date"
-  | "Created"
-  | "Updated"
-  | "Sprint"
-  | "Epic"
-  | "Labels";
-export type ViewOptionsOrderBy =
-  | "Priority"
-  | "Due date"
-  | "Created"
-  | "Updated";
-
-export type StoriesViewOptions = {
-  groupBy: ViewOptionsGroupBy;
-  orderBy: ViewOptionsOrderBy;
-  showEmptyGroups: boolean;
-  displayColumns: DisplayColumn[];
-};
+import {
+  Avatar,
+  Box,
+  Button,
+  DatePicker,
+  Divider,
+  Flex,
+  Popover,
+  Text,
+} from "ui";
+import {
+  ArrowDownIcon,
+  ArrowRightIcon,
+  AvatarIcon,
+  CalendarIcon,
+  CheckIcon,
+  FilterIcon,
+  SprintsIcon,
+} from "icons";
+import { useState, type ReactNode } from "react";
+import { cn } from "lib";
+import type { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { StoryStatusIcon } from "./story-status-icon";
 
 export type StoriesFilter = {
   activeSprints: boolean;
@@ -33,52 +30,86 @@ export type StoriesFilter = {
   dueToday: boolean;
   dueThisWeek: boolean;
   completed: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+  assingee: string[];
+  createdFrom: Date | null;
+  createdTo: Date | null;
+  issueType: string[];
+  labels: string[];
+  priority: string[];
+  createdBy: string[];
+  sprint: string[];
+  status: string[];
+  updatedFrom: Date | null;
+  updatedTo: Date | null;
 };
 
-const initialViewOptions: StoriesViewOptions = {
-  groupBy: "Status",
-  orderBy: "Priority",
-  showEmptyGroups: false,
-  displayColumns: [
-    "ID",
-    "Status",
-    "Assignee",
-    "Priority",
-    "Due date",
-    "Created",
-    "Updated",
-    "Sprint",
-    "Labels",
-  ],
+type StoriesFilterButtonProps = {
+  filters: StoriesFilter;
+  setFilters: (v: StoriesFilter) => void;
+  resetFilters: () => void;
+};
+
+const ToggleButton = ({
+  label,
+  icon,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  isActive: boolean;
+  icon: ReactNode;
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      className={cn(
+        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-200",
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="flex items-center gap-3">
+        {icon}
+        {label}
+      </span>
+      {isActive ? <CheckIcon className="h-5 w-auto text-primary" /> : null}
+    </button>
+  );
 };
 
 export const StoriesFilterButton = ({
-  viewOptions,
-  setViewOptions,
-  groupByOptions = ["Status", "Assignee", "Priority"],
-  orderByOptions = ["Priority", "Due date", "Created", "Updated"],
-}: {
-  viewOptions: StoriesViewOptions;
-  setViewOptions: (v: StoriesViewOptions) => void;
-  groupByOptions?: ViewOptionsGroupBy[];
-  orderByOptions?: ViewOptionsOrderBy[];
-}) => {
-  const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
+  filters,
+  setFilters,
+  resetFilters,
+}: StoriesFilterButtonProps) => {
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: new Date(),
+  });
 
-  const allColumns: DisplayColumn[] = [
-    "ID",
-    "Status",
-    "Assignee",
-    "Priority",
-    "Due date",
-    "Created",
-    "Updated",
-    "Sprint",
-    "Epic",
-    "Labels",
-  ];
+  // filtersCount returns the number of filters applied.
+  const filtersCount = () => {
+    let count = 0;
+    type StoriesFilterKey = keyof StoriesFilter;
+    for (const key in filters) {
+      const typedKey = key as StoriesFilterKey;
+      if (Array.isArray(filters[typedKey])) {
+        count += (filters[typedKey] as unknown[]).length > 0 ? 1 : 0;
+      } else {
+        count += filters[typedKey] ? 1 : 0;
+      }
+    }
+    return count;
+  };
 
-  const filters = 0;
+  const getButtonLabel = () => {
+    if (filtersCount()) {
+      return `${filtersCount()} filter${filtersCount() > 1 ? "s" : ""} applied`;
+    }
+    return "Filter";
+  };
 
   return (
     <Popover>
@@ -90,136 +121,219 @@ export const StoriesFilterButton = ({
           size="sm"
           variant="outline"
         >
-          {filters > 0
-            ? `${filters} filter${filters > 1 ? "s" : ""} applied`
-            : "Filter"}
+          {getButtonLabel()}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="max-w-[24rem]">
-        <Flex align="center" className="my-2 px-4" gap={2} justify="between">
-          <Text color="muted">Group by</Text>
-          <Select
-            onValueChange={(value: ViewOptionsGroupBy) => {
-              setViewOptions({
-                ...viewOptions,
-                groupBy: value,
-              });
-            }}
-            value={groupBy}
+      <Popover.Content align="end" className="w-[26rem] pb-5">
+        <Flex align="center" className="h-10 px-4" justify="between">
+          <Text
+            color="muted"
+            fontSize="sm"
+            fontWeight="semibold"
+            transform="uppercase"
           >
-            <Select.Trigger className="w-32">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Group>
-                {groupByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </Flex>
-        <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
-          <Text color="muted">Order by</Text>
-          <Select
-            onValueChange={(value: ViewOptionsOrderBy) => {
-              setViewOptions({
-                ...viewOptions,
-                orderBy: value,
-              });
-            }}
-            value={orderBy}
-          >
-            <Select.Trigger className="w-32">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Group>
-                {orderByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </Flex>
-        <Divider className="my-2" />
-        <Box className="max-w-[27rem] px-4 py-2">
-          <Text className="mb-4" fontWeight="medium">
-            Display options
+            Apply Filters
           </Text>
-          <Text className="mb-4" color="muted">
-            <label
-              className="flex select-none items-center justify-between gap-2"
-              htmlFor="more"
+          {filtersCount() > 0 && (
+            <Button
+              className="text-primary dark:text-primary"
+              color="tertiary"
+              onClick={resetFilters}
+              size="sm"
+              variant="naked"
             >
-              Show empty groups
-              <Switch
-                checked={showEmptyGroups}
-                id="more"
-                onCheckedChange={(checked) => {
-                  setViewOptions({
-                    ...viewOptions,
-                    showEmptyGroups: checked,
-                  });
-                }}
-              />
-            </label>
-          </Text>
-          <Text className="mb-2" color="muted">
-            Display columns
-          </Text>
-
-          <Flex gap={2} wrap>
-            {allColumns.map((column) => {
-              const isSelected = displayColumns.includes(column);
-              return (
-                <Button
-                  className="pl-1.5"
-                  color={isSelected ? "primary" : "tertiary"}
-                  key={column}
-                  onClick={() => {
-                    if (isSelected) {
-                      setViewOptions({
-                        ...viewOptions,
-                        displayColumns: displayColumns.filter(
-                          (col) => col !== column,
-                        ),
-                      });
-                    } else {
-                      setViewOptions({
-                        ...viewOptions,
-                        displayColumns: [...displayColumns, column],
-                      });
-                    }
-                  }}
-                  rounded="sm"
-                  size="xs"
-                  variant={isSelected ? "solid" : "outline"}
-                >
-                  {column}
-                </Button>
-              );
-            })}
-          </Flex>
-        </Box>
-        <Divider className="my-2" />
-        <Flex className="px-4 pb-[0.1rem]" justify="end">
-          <Button
-            className="text-primary dark:text-primary"
-            color="tertiary"
-            onClick={() => {
-              setViewOptions(initialViewOptions);
-            }}
-            size="sm"
-            variant="naked"
-          >
-            Reset to default
-          </Button>
+              Clear filters
+            </Button>
+          )}
         </Flex>
+        <Divider className="mt-1.5" />
+        <Box>
+          <ToggleButton
+            icon={<SprintsIcon className="h-5 w-auto" />}
+            isActive={filters.activeSprints}
+            label="Active sprints"
+            onClick={() => {
+              setFilters({ ...filters, activeSprints: !filters.activeSprints });
+            }}
+          />
+          <ToggleButton
+            icon={<AvatarIcon className="h-5 w-auto" />}
+            isActive={filters.assignedToMe}
+            label="Assigned to me"
+            onClick={() => {
+              setFilters({ ...filters, assignedToMe: !filters.assignedToMe });
+            }}
+          />
+          <ToggleButton
+            icon={<CalendarIcon className="h-5 w-auto" />}
+            isActive={filters.dueToday}
+            label="Due today"
+            onClick={() => {
+              setFilters({ ...filters, dueToday: !filters.dueToday });
+            }}
+          />
+          <ToggleButton
+            icon={<CalendarIcon className="h-5 w-auto" />}
+            isActive={filters.dueThisWeek}
+            label="Due this week"
+            onClick={() => {
+              setFilters({ ...filters, dueThisWeek: !filters.dueThisWeek });
+            }}
+          />
+          <ToggleButton
+            icon={
+              <StoryStatusIcon
+                className="h-5 w-auto text-dark dark:text-gray-200"
+                status="Done"
+              />
+            }
+            isActive={filters.completed}
+            label="Completed"
+            onClick={() => {
+              setFilters({ ...filters, completed: !filters.completed });
+            }}
+          />
+          <Divider />
+
+          <Box className="mt-4 px-4">
+            <Text
+              color="muted"
+              fontSize="sm"
+              fontWeight="semibold"
+              transform="uppercase"
+            >
+              Date Range
+            </Text>
+            <Flex align="end" className="mt-2">
+              <Box className="w-full">
+                <Text className="mb-1">Start date</Text>
+                <DatePicker>
+                  <DatePicker.Trigger asChild>
+                    <Button
+                      color="tertiary"
+                      fullWidth
+                      leftIcon={
+                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
+                      }
+                      variant="outline"
+                    >
+                      {format(new Date(), "LLL dd, y")}
+                    </Button>
+                  </DatePicker.Trigger>
+                  <DatePicker.Calendar
+                    defaultMonth={date?.from}
+                    initialFocus
+                    // onSelect={handleSearch}
+                    selected={new Date()}
+                  />
+                </DatePicker>
+              </Box>
+              <Box className="flex h-[2.4rem] items-center px-2 md:h-[2.5rem]">
+                <ArrowRightIcon className="h-[1.15rem] w-auto" />
+              </Box>
+              <Box className="w-full">
+                <Text className="mb-1">Due date</Text>
+                <DatePicker>
+                  <DatePicker.Trigger asChild>
+                    <Button
+                      color="tertiary"
+                      fullWidth
+                      leftIcon={
+                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
+                      }
+                      variant="outline"
+                    >
+                      {format(new Date(), "LLL dd, y")}
+                    </Button>
+                  </DatePicker.Trigger>
+                  <DatePicker.Calendar
+                    defaultMonth={date?.from}
+                    initialFocus
+                    // onSelect={handleSearch}
+                    selected={new Date()}
+                  />
+                </DatePicker>
+              </Box>
+            </Flex>
+
+            <Box className="my-6">
+              <Text
+                className="mb-2"
+                color="muted"
+                fontSize="sm"
+                fontWeight="semibold"
+                transform="uppercase"
+              >
+                Assignee
+              </Text>
+
+              <Flex className="gap-x-1.5 gap-y-2" justify="center" wrap>
+                {new Array(20).fill(0).map((_, i) => (
+                  <Avatar key={i} name="John Doe" />
+                ))}
+              </Flex>
+            </Box>
+            <Text
+              color="muted"
+              fontSize="sm"
+              fontWeight="semibold"
+              transform="uppercase"
+            >
+              Created
+            </Text>
+            <Flex align="end" className="mt-2">
+              <Box className="w-full">
+                <Text className="mb-1">From</Text>
+                <DatePicker>
+                  <DatePicker.Trigger asChild>
+                    <Button
+                      color="tertiary"
+                      fullWidth
+                      leftIcon={
+                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
+                      }
+                      variant="outline"
+                    >
+                      {format(new Date(), "LLL dd, y")}
+                    </Button>
+                  </DatePicker.Trigger>
+                  <DatePicker.Calendar
+                    defaultMonth={date?.from}
+                    initialFocus
+                    // onSelect={handleSearch}
+                    selected={new Date()}
+                  />
+                </DatePicker>
+              </Box>
+              <Box className="flex h-[2.4rem] items-center px-2 md:h-[2.5rem]">
+                <ArrowRightIcon className="h-[1.15rem] w-auto" />
+              </Box>
+              <Box className="w-full">
+                <Text className="mb-1">To</Text>
+                <DatePicker>
+                  <DatePicker.Trigger asChild>
+                    <Button
+                      color="tertiary"
+                      fullWidth
+                      leftIcon={
+                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
+                      }
+                      variant="outline"
+                    >
+                      {format(new Date(), "LLL dd, y")}
+                    </Button>
+                  </DatePicker.Trigger>
+                  <DatePicker.Calendar
+                    defaultMonth={date?.from}
+                    initialFocus
+                    // onSelect={handleSearch}
+                    selected={new Date()}
+                  />
+                </DatePicker>
+              </Box>
+            </Flex>
+          </Box>
+        </Box>
       </Popover.Content>
     </Popover>
   );
