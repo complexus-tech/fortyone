@@ -19,10 +19,7 @@ export const StoriesToolbar = () => {
           <Button
             color="tertiary"
             leftIcon={
-              <CloseIcon
-                className="relative left-[1.5px] h-4 w-auto"
-                strokeWidth={3}
-              />
+              <CloseIcon className="relative h-4 w-auto" strokeWidth={3} />
             }
             onClick={() => {
               setSelectedStories([]);
