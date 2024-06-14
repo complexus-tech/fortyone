@@ -9,6 +9,7 @@ import {
   SprintsIcon,
   RoadmapIcon,
   WorkIcon,
+  ChatIcon,
 } from "icons";
 import { NavLink } from "@/components/ui";
 
@@ -36,6 +37,12 @@ export const Navigation = () => {
       name: "My Work",
       icon: <WorkIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/my-work",
+    },
+    {
+      name: "Messages",
+      icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      href: "/messages",
+      messages: 1,
     },
     {
       name: "Roadmaps",
