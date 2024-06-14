@@ -84,7 +84,7 @@ export const StoriesFilterButton = ({
   setFilters,
   resetFilters,
 }: StoriesFilterButtonProps) => {
-  const [date, setDate] = useState<DateRange | undefined>({
+  const [date, _] = useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(),
   });
