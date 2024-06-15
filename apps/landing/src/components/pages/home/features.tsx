@@ -11,23 +11,23 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
+import { cn } from "lib";
 import { Container, Blur } from "@/components/ui";
 import kanbanImg from "../../../../public/kanban.png";
 import storyImg from "../../../../public/story1.png";
 import sprintImg from "../../../../public/sprints.png";
 import analyticsImg from "../../../../public/analytics1.png";
-import { cn } from "lib";
 
 const Intro = () => (
   <Box className="relative">
     <Box as="section" className="my-12 text-center md:my-24">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
         transition={{
           duration: 1,
           delay: 0,
         }}
+        viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
@@ -40,11 +40,11 @@ const Intro = () => (
       </motion.div>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
         transition={{
           duration: 1,
           delay: 0.3,
         }}
+        viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
@@ -101,7 +101,7 @@ export const Features = () => {
       name: "Kanban Boards",
       description:
         "Visualize your workflow, track progress, and manage tasks efficiently. Drag and drop tasks to update status.",
-      icon: <KanbanIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      icon: <KanbanIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: kanbanImg,
         alt: "Kanban Boards",
@@ -112,7 +112,7 @@ export const Features = () => {
       id: 1,
       name: "Stories",
       description: "Break down complex projects into manageable tasks.",
-      icon: <StoryIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      icon: <StoryIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: storyImg,
         alt: "Stories",
@@ -123,7 +123,7 @@ export const Features = () => {
       id: 3,
       name: "Sprints",
       description: "Set sprints to achieve your goals and track progress.",
-      icon: <SprintsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      icon: <SprintsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: sprintImg,
         alt: "Sprints",
@@ -134,7 +134,7 @@ export const Features = () => {
       name: "Analytics & Reporting",
       description:
         "Track your progress and make data-driven decisions. Get insights into your team's performance and productivity.",
-      icon: <AnalyticsIcon strokeWidth={1.4} className="h-6 w-auto md:h-7" />,
+      icon: <AnalyticsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: analyticsImg,
         alt: "Stories",
@@ -169,13 +169,13 @@ export const Features = () => {
               </Text>
               <Image
                 alt={alt}
-                placeholder="blur"
                 className={cn(
                   "pointer-events-none mx-auto block rounded-xl border-[3px] border-dark-200 object-cover object-top shadow-xl shadow-dark-300/60 md:aspect-[4/3]",
                   {
                     "md:aspect-[16/5.5]": className === "md:col-span-2",
                   },
                 )}
+                placeholder="blur"
                 src={src}
               />
             </ItemWrapper>

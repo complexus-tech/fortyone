@@ -1,7 +1,6 @@
 import { Box, Button, Text } from "ui";
-import { Container } from "@/components/ui";
-import { Blur } from "@/components/ui";
 import { EmailIcon, SupportIcon } from "icons";
+import { Container, Blur } from "@/components/ui";
 
 export const Support = () => {
   const features = [
@@ -27,8 +26,8 @@ export const Support = () => {
         <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-20 md:gap-y-16">
           {features.map(({ heading, description, icon, email }, idx) => (
             <Box
-              key={heading}
               className="border-t border-gray-200/10 pt-8 md:pt-10"
+              key={heading}
             >
               <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
                 {icon}
@@ -42,7 +41,7 @@ export const Support = () => {
               >
                 {email}
               </a>
-              <Text fontWeight="normal" className="my-4 text-lg opacity-80">
+              <Text className="my-4 text-lg opacity-80" fontWeight="normal">
                 {description}
               </Text>
               <Button href={`mailto:${email}`} rounded="full">

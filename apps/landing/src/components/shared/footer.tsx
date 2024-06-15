@@ -60,7 +60,7 @@ const Copyright = () => (
       </Link>
     </Box>
     <Box className="hidden items-center gap-5 opacity-70 md:flex">
-      <Link className="3xl:text-lg text-sm" href="/">
+      <Link className="3xl:text-lg text-sm" href="/privacy">
         Privacy Policy
       </Link>
       |
@@ -129,35 +129,22 @@ export const Footer = () => {
   const legal = [
     {
       title: "Privacy Policy",
-      href: "/legal/privacy",
+      href: "/privacy",
     },
     {
       title: "Terms of Service",
-      href: "/legal/terms",
+      href: "/terms",
     },
   ];
 
   const resources = [
     {
-      title: "Help Center",
-      href: "/resources/help",
-    },
-    {
       title: "Developers",
-      href: "/resources/developers",
+      href: "/developers",
     },
     {
-      title: "Changelog",
-      href: "/resources/changelog",
-    },
-    {
-      title: "Guides",
-      href: "/resources/guides",
-    },
-
-    {
-      title: "Status",
-      href: "/resources/status",
+      title: "Blog",
+      href: "/blog",
     },
   ];
   return (

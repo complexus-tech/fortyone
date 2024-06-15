@@ -14,7 +14,6 @@ import {
   SprintsIcon,
   StarIcon,
   DocsIcon,
-  ChatIcon,
   RetroIcon,
   WhiteboardIcon,
 } from "icons";
@@ -53,11 +52,6 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       name: "Documents",
       icon: <DocsIcon className="h-[1.3rem] w-auto" />,
       href: "/teams/web/documents",
-    },
-    {
-      name: "Discussions",
-      icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/discussions",
     },
     {
       name: "Whiteboards",

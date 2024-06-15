@@ -15,7 +15,7 @@ export const AllStories = ({
   const { viewOptions } = useTeamStories();
 
   const backlog = stories.filter((story) => story.status === "Backlog");
-  const activeIssues = stories.filter((story) => story.status !== "Backlog");
+  const activeStories = stories.filter((story) => story.status !== "Backlog");
 
   return (
     <Tabs defaultValue="all">
@@ -38,7 +38,7 @@ export const AllStories = ({
         <StoriesBoard
           className="h-[calc(100vh-7.7rem)]"
           layout={layout}
-          stories={activeIssues}
+          stories={activeStories}
           viewOptions={viewOptions}
         />
       </Tabs.Panel>

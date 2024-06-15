@@ -1,7 +1,7 @@
 "use client";
 import { Box, Button, Flex, Text } from "ui";
-import { Blur, Container } from "@/components/ui";
 import { motion } from "framer-motion";
+import { Blur, Container } from "@/components/ui";
 
 export const CallToAction = () => {
   return (
@@ -14,11 +14,11 @@ export const CallToAction = () => {
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -31,11 +31,11 @@ export const CallToAction = () => {
           </motion.div>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.3,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -52,11 +52,11 @@ export const CallToAction = () => {
           <motion.div
             className="mt-8 flex items-center gap-3"
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.6,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button

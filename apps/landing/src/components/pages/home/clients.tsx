@@ -2,18 +2,18 @@
 import React from "react";
 import { Box, Text } from "ui";
 import Marquee from "react-fast-marquee";
-import { Container, Logo } from "@/components/ui";
 import { motion } from "framer-motion";
+import { Container } from "@/components/ui";
 
 const Brand = ({ logo }: { logo: string }) => {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- will change thi later
     <img
-      key={logo}
-      src={logo}
-      loading="lazy"
       alt="brand logo"
       className="3xl:h-20 mr-8 block h-8 w-auto grayscale invert md:mr-16 md:h-10 md:justify-self-center"
+      key={logo}
+      loading="lazy"
+      src={logo}
     />
   );
 };
@@ -33,11 +33,11 @@ export const SampleClients = () => {
       <Box className="py-16 md:py-28">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
           transition={{
             duration: 1,
             delay: 0,
           }}
+          viewport={{ once: true, amount: 0.5 }}
           whileInView={{ y: 0, opacity: 1 }}
         >
           <Text

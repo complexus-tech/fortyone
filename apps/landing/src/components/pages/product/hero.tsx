@@ -16,20 +16,20 @@ export const Hero = () => {
         </Button>
         <Text
           as="h1"
+          className="my-6 pb-2 text-5xl md:my-8 md:text-7xl"
           color="gradient"
           fontWeight="medium"
-          className="my-6 pb-2 text-5xl md:my-8 md:text-7xl"
         >
           Simplify project management
         </Text>
         <Text
-          fontWeight="normal"
           className="mb-6 max-w-6xl text-xl leading-snug opacity-80 md:mb-8 md:text-2xl"
+          fontWeight="normal"
         >
-          We're dedicated to streamlining project management for teams of any
-          scale. Our platform is crafted to enable you to efficiently organize
-          tasks, collaborate seamlessly, and effortlessly reach your project
-          objectives.
+          We&rsquo;re dedicated to streamlining project management for teams of
+          any scale. Our platform is crafted to enable you to efficiently
+          organize tasks, collaborate seamlessly, and effortlessly reach your
+          project objectives.
         </Text>
       </Container>
     </Box>

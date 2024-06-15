@@ -1,11 +1,11 @@
 "use client";
 import { Flex, Text, Box, Button, Badge } from "ui";
-import { ArrowRightIcon, ChatIcon, CheckIcon } from "icons";
-import { Blur } from "./blur";
-import { Container } from "./container";
+import { ArrowRightIcon, CheckIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Container } from "./container";
+import { Blur } from "./blur";
 
 type Billing = "annual" | "monthly";
 const packages = [
@@ -62,7 +62,7 @@ const packages = [
 const Feature = ({ feature }: { feature: string }) => (
   <Flex align="center" gap={3} key={feature}>
     <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-gray-200">
-      <CheckIcon strokeWidth={3.5} className="h-4 w-auto text-dark" />
+      <CheckIcon className="h-4 w-auto text-dark" strokeWidth={3.5} />
     </Box>
     <Text className="opacity-90">{feature}</Text>
   </Flex>
@@ -72,7 +72,6 @@ const Package = ({
   name,
   description,
   overview,
-  cta,
   price,
   features,
   recommended,
@@ -89,54 +88,55 @@ const Package = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   // if billing is annual, apply 25% discount
+  let finalPrice = price;
   if (billing === "annual") {
-    price = price * 0.75;
+    finalPrice = price * 0.75;
   }
   return (
     <Box
+      className="min-h-[65vh]"
       onMouseEnter={() => {
         setIsActive(true);
       }}
       onMouseLeave={() => {
         setIsActive(false);
       }}
-      className="min-h-[65vh]"
     >
       <motion.div
         animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
-        initial={{ y: 0, x: 0 }}
-        transition={{ type: "spring", stiffness: 100 }}
         className={cn(
           "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark",
           {
             "border-primary shadow-primary/20 dark:border-primary": recommended,
           },
         )}
+        initial={{ y: 0, x: 0 }}
+        transition={{ type: "spring", stiffness: 100 }}
       >
         <Text
           className="mb-2 flex items-center justify-center gap-1.5 text-2xl"
           fontWeight="medium"
         >
-          {name} {recommended && <Badge>Most Popular</Badge>}
+          {name} {recommended ? <Badge>Most Popular</Badge> : null}
         </Text>
         <Text className="text-center text-lg opacity-80" fontWeight="normal">
           {description}
         </Text>
         <Text
           align="center"
-          fontSize="4xl"
           className="mt-4"
+          fontSize="4xl"
           fontWeight="medium"
         >
-          ${price}
+          ${finalPrice}
           <Text as="span" color="muted" fontSize="lg">
             /mo
           </Text>
         </Text>
         <Button
-          href="https://forms.gle/NmG4XFS5GhvRjUxu6"
           className="mt-6 w-full justify-between"
           color="primary"
+          href="https://forms.gle/NmG4XFS5GhvRjUxu6"
           rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
           rounded="full"
           size="lg"
@@ -187,11 +187,11 @@ export const Pricing = () => {
           </Button>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -208,23 +208,25 @@ export const Pricing = () => {
             <motion.div
               className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1"
               initial={{ y: 20, opacity: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
               transition={{
                 duration: 1,
                 delay: 0.3,
               }}
+              viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
               {["monthly", "annual"].map((option) => (
                 <Button
-                  key={option}
                   className={cn("px-2.5 capitalize", {
                     "opacity-80": option !== billing,
                   })}
                   color={option === billing ? "primary" : "tertiary"}
+                  key={option}
+                  onClick={() => {
+                    setBilling(option as Billing);
+                  }}
                   size="sm"
                   variant={option === billing ? "solid" : "naked"}
-                  onClick={() => setBilling(option as Billing)}
                 >
                   {option} Billing
                 </Button>
@@ -233,11 +235,11 @@ export const Pricing = () => {
             <motion.p
               className="mt-3"
               initial={{ y: 20, opacity: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
               transition={{
                 duration: 1,
                 delay: 0.6,
               }}
+              viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Text as="span" color="primary" fontWeight="semibold">
@@ -251,14 +253,14 @@ export const Pricing = () => {
         <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {packages.map((pkg) => (
             <Package
-              key={pkg.name}
               billing={billing}
               cta={pkg.cta}
-              name={pkg.name}
               description={pkg.description}
+              features={pkg.features}
+              key={pkg.name}
+              name={pkg.name}
               overview={pkg.overview}
               price={pkg.price}
-              features={pkg.features}
               recommended={pkg.recommended}
             />
           ))}

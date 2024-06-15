@@ -14,11 +14,15 @@ export const ComingSoon = () => {
         >
           <Text
             as="h1"
-            className="mt-6 h-max max-w-5xl pb-2 text-4xl md:text-8xl"
+            className="mb-16 mt-6 h-max max-w-5xl pb-2 text-4xl md:text-8xl"
             color="gradient"
             fontWeight="medium"
           >
             Coming Soon.
+          </Text>
+
+          <Text color="muted" fontSize="2xl">
+            We are working on something awesome. Stay tuned!
           </Text>
         </Flex>
       </Container>

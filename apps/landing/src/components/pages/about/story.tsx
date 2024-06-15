@@ -1,5 +1,5 @@
 "use client";
-import { BlurImage, Box, Text, Wrapper } from "ui";
+import { BlurImage, Box, Text } from "ui";
 import { Container } from "@/components/ui";
 import { Blur } from "@/components/ui/blur";
 import { useCursor } from "@/hooks";
@@ -37,14 +37,14 @@ export const Story = () => {
         Our Mission
       </Text>
       <Text
-        fontWeight="normal"
         className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:mb-32 md:text-2xl"
+        fontWeight="normal"
       >
         Our mission is to provide a user-friendly, feature-rich project
         management solution that streamlines workflows and enhances
-        productivity. Whether you're a small startup, a growing business, or a
-        seasoned enterprise, we're here to support your project management needs
-        every step of the way.
+        productivity. Whether you&rsquo;re a small startup, a growing business,
+        or a seasoned enterprise, we&rsquo;re here to support your project
+        management needs every step of the way.
       </Text>
 
       <Text
@@ -54,12 +54,12 @@ export const Story = () => {
         Meet the founder
       </Text>
       <Text
-        fontWeight="normal"
         className="mb-10 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
+        fontWeight="normal"
       >
-        Greetings! I'm Joseph, the creator of Complexus. With a passion for
-        simplifying project management and a commitment to empowering teams, I
-        embarked on this journey to develop a platform that caters to the
+        Greetings! I&rsquo;m Joseph, the creator of Complexus. With a passion
+        for simplifying project management and a commitment to empowering teams,
+        I embarked on this journey to develop a platform that caters to the
         diverse needs of modern projects. Every aspect of our system, from its
         design to its functionality, is meticulously crafted to deliver an
         exceptional user experience.
@@ -73,8 +73,8 @@ export const Story = () => {
         }}
       >
         <BlurImage
-          src="/joseph.webp"
           className="pointer-events-none aspect-square rounded-3xl object-bottom grayscale"
+          src="/joseph.webp"
         />
       </Box>
 
@@ -86,19 +86,19 @@ export const Story = () => {
           What makes Complexus unique
         </Text>
         <Text
-          fontWeight="normal"
           className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
+          fontWeight="normal"
         >
           Our platform is crafted with a focus on user experience. We understand
-          that intuitive design is crucial for productivity, so we've ensured
-          that every feature is seamlessly integrated, making it effortless for
-          teams to collaborate and achieve their objectives.
+          that intuitive design is crucial for productivity, so we&rsquo;ve
+          ensured that every feature is seamlessly integrated, making it
+          effortless for teams to collaborate and achieve their objectives.
         </Text>
         <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-20 md:gap-y-16">
           {features.map(({ heading, description }, idx) => (
             <Box
-              key={heading}
               className="border-t border-gray-200/10 pt-8 md:pt-12"
+              key={heading}
             >
               <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
                 {idx + 1}.
@@ -107,9 +107,9 @@ export const Story = () => {
                 {heading}
               </Text>
               <Text
+                className="mt-4 opacity-80"
                 fontSize="lg"
                 fontWeight="normal"
-                className="mt-4 opacity-80"
               >
                 {description}
               </Text>

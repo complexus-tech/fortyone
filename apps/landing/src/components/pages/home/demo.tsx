@@ -1,9 +1,9 @@
 "use client";
 import { Box } from "ui";
-import { Container, Blur } from "@/components/ui";
-import { useCursor } from "@/hooks";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Container, Blur } from "@/components/ui";
+import { useCursor } from "@/hooks";
 
 export const ProductDemo = () => {
   const [isActive, setIsActive] = useState(false);
@@ -22,9 +22,9 @@ export const ProductDemo = () => {
       >
         <motion.div
           animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+          className="relative z-[2] mx-auto aspect-[16/10] max-w-7xl overflow-hidden"
           initial={{ y: 0, x: 0 }}
           transition={{ type: "spring", stiffness: 100 }}
-          className="relative z-[2] mx-auto aspect-[16/10] max-w-7xl overflow-hidden"
         >
           <video
             autoPlay

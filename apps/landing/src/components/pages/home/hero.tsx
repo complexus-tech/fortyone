@@ -1,8 +1,8 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { ArrowRightIcon } from "icons";
-import { Container } from "@/components/ui";
 import { motion } from "framer-motion";
+import { Container } from "@/components/ui";
 
 export const Hero = () => {
   return (
@@ -15,11 +15,11 @@ export const Hero = () => {
         >
           <motion.span
             initial={{ y: -10, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
@@ -35,11 +35,11 @@ export const Hero = () => {
 
           <motion.span
             initial={{ y: -15, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.15,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -53,11 +53,11 @@ export const Hero = () => {
 
           <motion.span
             initial={{ y: -10, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.3,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -90,11 +90,11 @@ export const Hero = () => {
             </motion.span> */}
             <motion.span
               initial={{ y: -5, opacity: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
               transition={{
                 duration: 1,
                 delay: 0.6,
               }}
+              viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button

@@ -1,8 +1,8 @@
 "use client";
 import { Avatar, Box, Button, Flex, Text, Wrapper } from "ui";
 import { ArrowRightIcon } from "icons";
-import { Container, Blur } from "@/components/ui";
 import { motion } from "framer-motion";
+import { Container, Blur } from "@/components/ui";
 
 export const Reviews = () => {
   const reviews = [
@@ -47,11 +47,11 @@ export const Reviews = () => {
       </Text>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
         transition={{
           duration: 1,
           delay: 0,
         }}
+        viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
@@ -66,11 +66,11 @@ export const Reviews = () => {
       </motion.div>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
         transition={{
           duration: 1,
           delay: 0.3,
         }}
+        viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
@@ -101,8 +101,8 @@ export const Reviews = () => {
                   </Text>
                 </Flex>
                 <Text
-                  fontWeight="normal"
                   className="mb-8 leading-relaxed opacity-80"
+                  fontWeight="normal"
                 >
                   {content}
                 </Text>
@@ -126,11 +126,11 @@ export const Reviews = () => {
       <motion.div
         className="mx-auto mt-12 w-max md:mt-20"
         initial={{ y: 20, opacity: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
         transition={{
           duration: 1,
           delay: 0.3,
         }}
+        viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Button

@@ -16,15 +16,15 @@ export const Hero = () => {
         </Button>
         <Text
           as="h1"
+          className="my-8 pb-2 text-5xl leading-none md:text-7xl"
           color="gradient"
           fontWeight="medium"
-          className="my-8 pb-2 text-5xl leading-none md:text-7xl"
         >
           What assistance do you require?
         </Text>
         <Text
-          fontWeight="normal"
           className="max-w-6xl text-xl leading-snug opacity-80 md:mb-16 md:text-2xl"
+          fontWeight="normal"
         >
           Reach out to our sales and support teams for demonstrations,
           assistance with onboarding, or any questions regarding complexus.

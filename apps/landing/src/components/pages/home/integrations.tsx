@@ -1,8 +1,8 @@
 "use client";
 import { Flex, Text, Box, Button } from "ui";
 import Image from "next/image";
-import { Container, Blur } from "@/components/ui";
 import { motion } from "framer-motion";
+import { Container, Blur } from "@/components/ui";
 
 export const Integrations = () => {
   return (
@@ -52,11 +52,11 @@ export const Integrations = () => {
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -69,11 +69,11 @@ export const Integrations = () => {
           </motion.div>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.3,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
@@ -90,16 +90,16 @@ export const Integrations = () => {
           <motion.div
             className="mt-1"
             initial={{ y: 20, opacity: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
             transition={{
               duration: 1,
               delay: 0.6,
             }}
+            viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               color="tertiary"
+              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               rounded="full"
               size="lg"
             >
