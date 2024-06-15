@@ -104,8 +104,8 @@ export const Navigation = () => {
     },
     {
       id: 8,
-      name: "Discussions",
-      href: "/product#messages",
+      name: "Messaging",
+      href: "/product#messaging",
       description: "Communicate and Collaborate",
       icon: <ChatIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },

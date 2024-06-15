@@ -215,7 +215,7 @@ export const features = [
       />
     ),
     image: storyCard,
-    name: "Messages",
+    name: "Messaging",
     title: "Communicate and Collaborate",
     overview:
       "Engage in meaningful discussions through channels and direct messages, keeping everyone informed and aligned.",
