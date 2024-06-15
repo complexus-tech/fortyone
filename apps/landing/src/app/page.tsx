@@ -5,7 +5,7 @@ import {
   Features,
   Integrations,
   ProductDemo,
-  Reviews,
+  // Reviews,
 } from "@/components/pages/home";
 import { Pricing } from "@/components/ui";
 
