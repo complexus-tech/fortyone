@@ -1,49 +1,37 @@
-"use client";
-import { BreadCrumbs, Button, Container, Flex, Select } from "ui";
-import { AnalyticsIcon, PreferencesIcon } from "icons";
-import { BodyContainer, HeaderContainer } from "@/components/shared";
+import { AnalyticsIcon, ArrowLeftIcon } from "icons";
+import { Box, Button, Flex, Text } from "ui";
 import { NewStoryButton } from "@/components/ui";
 
-export default function Page(): JSX.Element {
+export default function Page() {
   return (
-    <>
-      <HeaderContainer className="justify-between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "Reports",
-              icon: <AnalyticsIcon className="h-5 w-auto" />,
-            },
-          ]}
-        />
+    <Box className="flex h-screen items-center justify-center">
+      <Box className="flex flex-col items-center">
+        <AnalyticsIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+        <Text className="mb-6 mt-10" fontSize="3xl">
+          Coming soon...
+        </Text>
+        <Text className="mb-6 max-w-md text-center" color="muted">
+          Oops! This page is under construction. Our team is working on it!
+          While we clear the roadblock, why not explore other routes to
+          productivity?
+        </Text>
         <Flex gap={2}>
           <Button
+            className="gap-1 pl-2"
             color="tertiary"
-            leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
+            href="/my-work"
+            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
           >
-            Display
+            Goto my work
           </Button>
-          <NewStoryButton />
+          <NewStoryButton
+            className="dark:bg-opacity-20 dark:hover:bg-opacity-40"
+            size="md"
+          >
+            Create story
+          </NewStoryButton>
         </Flex>
-      </HeaderContainer>
-      <BodyContainer>
-        <Container className="pt-4">
-          Reports page
-          <Select>
-            <Select.Trigger className="w-40">
-              <Select.Input placeholder="Select" />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Group>
-                <Select.Option value="option1">Option 1</Select.Option>
-                <Select.Option value="option2">Option 2</Select.Option>
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </Container>
-      </BodyContainer>
-    </>
+      </Box>
+    </Box>
   );
 }

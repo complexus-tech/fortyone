@@ -34,6 +34,33 @@ const Card = ({ title, count, description }: CardProps) => (
 );
 
 export const Overview = () => {
+  const overview = [
+    {
+      count: 27,
+      description: "+5% from last month",
+      title: "Stories closed",
+    },
+    {
+      count: 8,
+      description: "+2% from last month",
+      title: "Stories overdue",
+    },
+    {
+      count: 14,
+      description: "+3% from last month",
+      title: "Stories in progress",
+    },
+    {
+      count: 5,
+      description: "+1% from last month",
+      title: "Created by you",
+    },
+    {
+      count: 2,
+      description: "+1% from last month",
+      title: "Assigned to you",
+    },
+  ];
   return (
     <Box>
       <Text as="h2" fontSize="3xl" fontWeight="medium">
@@ -44,13 +71,8 @@ export const Overview = () => {
       </Text>
 
       <Box className="my-4 grid grid-cols-5 gap-4">
-        {new Array(5).fill(0).map((_, i) => (
-          <Card
-            count={27}
-            description="+5% from last month"
-            key={i}
-            title="Stories closed"
-          />
+        {overview.map((item, i) => (
+          <Card key={i} {...item} />
         ))}
       </Box>
     </Box>

@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, StoryMissingIcon } from "icons";
+import { ArrowLeftIcon, RoadmapIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { NewStoryButton } from "@/components/ui";
 
@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <StoryMissingIcon className="h-20 w-auto rotate-12" />
+        <RoadmapIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
         <Text className="mb-6 mt-10" fontSize="3xl">
           Coming soon...
         </Text>
