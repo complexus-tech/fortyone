@@ -219,14 +219,14 @@ export const Navigation = () => {
               </NavigationMenu>
             </Flex>
             <Flex align="center" className="ml-2 gap-4 pr-1 md:pr-0">
-              <Button
+              {/* <Button
                 className="relative text-[0.93rem] md:left-1"
                 color="tertiary"
                 href="https://forms.gle/NmG4XFS5GhvRjUxu6"
                 rounded="full"
               >
                 Log in
-              </Button>
+              </Button> */}
               <Button
                 className="relative text-[0.93rem] md:left-1"
                 href="https://forms.gle/NmG4XFS5GhvRjUxu6"
