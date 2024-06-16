@@ -56,7 +56,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     {
       name: "Whiteboards",
       icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/retrospectives",
+      href: "/teams/web/whiteboards",
     },
     {
       name: "Retrospectives",

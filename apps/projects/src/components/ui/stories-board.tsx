@@ -21,9 +21,11 @@ export type StoriesLayout = "list" | "kanban" | null;
 const StoryOverlay = ({
   story,
   layout,
+  selectedStories = 0,
 }: {
   story: Story | null;
   layout: StoriesLayout;
+  selectedStories: number;
 }) => {
   return (
     <DragOverlay
@@ -44,11 +46,19 @@ const StoryOverlay = ({
           className="w-max rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-3.5 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
           gap={2}
         >
-          <StoryStatusIcon status={story?.status} />
-          <Text color="muted">COM-{story?.id}</Text>
-          <Text className="max-w-xs truncate" fontWeight="medium">
-            {story?.title}
-          </Text>
+          {selectedStories > 1 ? (
+            <Text className="w-60 truncate pl-2" fontWeight="medium">
+              {selectedStories} stories selected
+            </Text>
+          ) : (
+            <>
+              <StoryStatusIcon status={story?.status} />
+              <Text color="muted">COM-{story?.id}</Text>
+              <Text className="max-w-xs truncate" fontWeight="medium">
+                {story?.title}
+              </Text>
+            </>
+          )}
         </Flex>
       )}
     </DragOverlay>
@@ -127,7 +137,11 @@ export const StoriesBoard = ({
 
         {typeof window !== "undefined" &&
           createPortal(
-            <StoryOverlay layout={layout} story={activeStory} />,
+            <StoryOverlay
+              layout={layout}
+              selectedStories={selectedStories.length}
+              story={activeStory}
+            />,
             document.body,
           )}
 

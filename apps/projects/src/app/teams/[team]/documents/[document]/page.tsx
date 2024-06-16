@@ -56,7 +56,7 @@ export default function Page(): JSX.Element {
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Title..." }),
+      Placeholder.configure({ placeholder: "Enter Title..." }),
     ],
     content: "Release Notes: v1.0.0",
     editable: true,
@@ -76,7 +76,7 @@ export default function Page(): JSX.Element {
       LinkExt.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Story description" }),
+      Placeholder.configure({ placeholder: "Write here..." }),
       Table.configure({
         resizable: true,
       }),
