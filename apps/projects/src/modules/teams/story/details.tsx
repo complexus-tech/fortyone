@@ -1,3 +1,4 @@
+"use client";
 import { Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -17,14 +18,10 @@ import {
   Reactions,
   SubstoriesButton,
 } from "./components";
+import { DetailedStory } from "./types";
 
-export const MainDetails = () => {
-  const content = `
-  <h3>We need the ability to do the following.</h3>
-  <p> - Allow submission , editing and updating of third party bank details and to be displayed at Finance before disbursement</p>
-   <p> - Ability to Reject and Approve documents at the BackOffice (Credit Process) </p>
-    <p> - Ability to view the documents and details submitted by the third party </p>
-            `;
+export const MainDetails = ({ story }: { story: DetailedStory }) => {
+  const { title, descriptionHTML } = story;
 
   const editor = useEditor({
     extensions: [
@@ -39,7 +36,7 @@ export const MainDetails = () => {
       }),
       Placeholder.configure({ placeholder: "Story description" }),
     ],
-    content,
+    content: descriptionHTML,
     editable: true,
     // onUpdate: ({ editor: e }) => {
     //   console.log(e.getHTML());
@@ -53,7 +50,7 @@ export const MainDetails = () => {
       Text,
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
-    content: "BackOffice - Third Party Bank Details and Documents Validations",
+    content: title,
     editable: true,
     // onUpdate: ({ editor: e }) => {
     //   console.log(editor.getText());

@@ -2,7 +2,7 @@
 import { Box, Button, Container, Flex, Text } from "ui";
 import { ArrowDownIcon } from "icons";
 import { StoryStatusIcon } from "@/components/ui";
-import { BodyContainer } from "../shared";
+import { BodyContainer } from "../../components/shared";
 import type { Objective } from "./objective";
 import { ObjectiveCard } from "./objective";
 import { ObjectivesHeader } from "./header";

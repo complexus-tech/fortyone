@@ -3,7 +3,7 @@ import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/types/story";
-import { useTeamStories } from "@/components/teams/stories/provider";
+import { useTeamStories } from "@/modules/teams/stories/provider";
 
 export const AllStories = ({
   layout,

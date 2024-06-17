@@ -1,5 +1,8 @@
-import { MainStory } from "@/components/teams/story/main-story";
+import { MainStory } from "@/modules/teams/story";
+import { getStory } from "@/modules/teams/story/actions/get-story";
 
-export default function Page(): JSX.Element {
-  return <MainStory />;
+export default async function Page() {
+  const story = await getStory("d00525f6-0f50-4540-9351-154fb69f051f");
+
+  return <MainStory story={story} />;
 }

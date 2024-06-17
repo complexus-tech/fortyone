@@ -2,7 +2,7 @@ import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
 import { CheckIcon } from "icons";
 import type { StoryStatus } from "@/types/story";
-import { StoryStatusIcon } from "../ui/story-status-icon";
+import { StoryStatusIcon } from "../../components/ui/story-status-icon";
 
 export const ObjectiveStatusesMenu = ({
   status,

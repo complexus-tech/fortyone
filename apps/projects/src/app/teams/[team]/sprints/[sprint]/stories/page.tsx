@@ -1,5 +1,5 @@
 import type { Story } from "@/types/story";
-import { ListSprintStories } from "@/components/teams/sprints/stories/list-stories";
+import { ListSprintStories } from "@/modules/teams/sprints/stories/list-stories";
 
 export default function Page() {
   const stories: Story[] = [

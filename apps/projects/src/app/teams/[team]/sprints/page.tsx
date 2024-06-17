@@ -1,5 +1,5 @@
-import { SprintsList } from "@/components/teams/sprints/list/list-sprints";
-import type { Sprint } from "@/components/teams/sprints/list/row";
+import { SprintsList } from "@/modules/teams/sprints/list/list-sprints";
+import type { Sprint } from "@/modules/teams/sprints/list/row";
 
 export default function Page(): JSX.Element {
   const sprints: Sprint[] = [

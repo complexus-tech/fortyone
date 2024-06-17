@@ -1,5 +1,5 @@
 "use client";
-import { BodyContainer } from "../../shared/body";
+import { BodyContainer } from "../../../components/shared/body";
 import { SprintCard } from "./card";
 import { ActiveSprintsHeader } from "./header";
 

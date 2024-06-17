@@ -1,4 +1,4 @@
-import { ListUserStories } from "@/components/profile/list-stories";
+import { ListUserStories } from "@/modules/profile/list-stories";
 import type { Story } from "@/types/story";
 
 export default function Page() {

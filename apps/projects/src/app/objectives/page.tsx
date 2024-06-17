@@ -1,5 +1,5 @@
-import { ObjectivesList } from "@/components/teams/list";
-import type { Objective } from "@/components/teams/objective";
+import { ObjectivesList } from "@/modules/teams/list";
+import type { Objective } from "@/modules/teams/objective";
 
 export default function Page(): JSX.Element {
   const objectives: Objective[] = [

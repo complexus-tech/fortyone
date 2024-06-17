@@ -1,5 +1,5 @@
 import { BodyContainer } from "@/components/shared";
-import { ListNotifications } from "@/components/notifications/list";
+import { ListNotifications } from "@/modules/notifications/list";
 
 type Notification = {
   id: number;

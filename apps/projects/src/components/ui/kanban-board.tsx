@@ -65,7 +65,7 @@ export const KanbanBoard = ({
             ))}
         </Flex>
       </Box>
-      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7 ">
+      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
         {groupBy === "Status" &&
           statuses.map((status) => (
             <KanbanGroup

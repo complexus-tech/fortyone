@@ -1,4 +1,4 @@
-import { Dashboard } from "@/components/(home)/dashboard";
+import { Dashboard } from "@/modules/home";
 
 export default function Page(): JSX.Element {
   return <Dashboard />;

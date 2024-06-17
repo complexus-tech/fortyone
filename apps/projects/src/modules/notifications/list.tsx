@@ -1,6 +1,6 @@
 import { Box } from "ui";
-import { NotificationCard } from "@/components/notifications/card";
-import { NotificationMessage } from "@/components/notifications/message";
+import { NotificationCard } from "@/modules/notifications/card";
+import { NotificationMessage } from "@/modules/notifications/message";
 import { NotificationsHeader } from "./header";
 
 export const ListNotifications = ({

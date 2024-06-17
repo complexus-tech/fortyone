@@ -1,5 +1,5 @@
 import type { Story } from "@/types/story";
-import { ListMyStories } from "@/components/my-work/list-stories";
+import { ListMyStories } from "@/modules/my-work/list-stories";
 
 export default function Page() {
   const stories: Story[] = [

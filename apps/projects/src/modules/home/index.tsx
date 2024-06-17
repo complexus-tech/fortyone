@@ -1,5 +1,6 @@
+"use client";
 import { Box, Container } from "ui";
-import { BodyContainer } from "../shared/body";
+import { BodyContainer } from "../../components/shared/body";
 import { Header } from "./header";
 import { Overview } from "./overview";
 import { Contributions } from "./contributions";
