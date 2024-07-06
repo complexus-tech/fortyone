@@ -1,3 +1,5 @@
+import { StoryPriority } from "@/types/story";
+
 export type DetailedStory = {
   id: string;
   sequenceId: number;
@@ -12,7 +14,7 @@ export type DetailedStory = {
   blockingId: string;
   relatedId: string;
   reporterId: string;
-  priority: string;
+  priority: StoryPriority;
   sprintId: string;
   startDate: string;
   endDate: string;

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { Labels } from "@/components/ui/story/labels";
 import { AddLinks, OptionsHeader } from "./components";
+import { DetailedStory } from "@/modules/teams/story/types";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -31,7 +32,8 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   );
 };
 
-export const Options = () => {
+export const Options = ({ story }: { story: DetailedStory }) => {
+  const { priority, startDate, endDate } = story;
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2022, 0, 20),
     to: addDays(new Date(2022, 0, 20), 20),
@@ -69,11 +71,11 @@ export const Options = () => {
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<PriorityIcon />}
+                  leftIcon={<PriorityIcon priority={priority} />}
                   type="button"
                   variant="naked"
                 >
-                  No Priority
+                  {priority}
                 </Button>
               </PrioritiesMenu.Trigger>
               <PrioritiesMenu.Items />

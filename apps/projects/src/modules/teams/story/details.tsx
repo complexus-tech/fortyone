@@ -21,9 +21,9 @@ import {
 import { DetailedStory } from "./types";
 
 export const MainDetails = ({ story }: { story: DetailedStory }) => {
-  const { title, descriptionHTML } = story;
+  const { title, descriptionHTML, sequenceId } = story;
 
-  const editor = useEditor({
+  const descriptionEditor = useEditor({
     extensions: [
       StarterKit,
       Underline,
@@ -38,8 +38,8 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     ],
     content: descriptionHTML,
     editable: true,
-    // onUpdate: ({ editor: e }) => {
-    //   console.log(e.getHTML());
+    // onUpdate: ({ editor }) => {
+    //   console.log(editor.getHTML());
     // },
   });
 
@@ -52,14 +52,14 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     ],
     content: title,
     editable: true,
-    // onUpdate: ({ editor: e }) => {
+    // onUpdate: ({ editor }) => {
     //   console.log(editor.getText());
     // },
   });
 
   return (
     <>
-      <Header />
+      <Header sequenceId={sequenceId} />
       <BodyContainer className="overflow-y-auto pb-8">
         <Container className="pt-7">
           <TextEditor
@@ -67,7 +67,7 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
             className="relative -left-1 text-3xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={editor} />
+          <TextEditor editor={descriptionEditor} />
           <Reactions />
           <SubstoriesButton />
           <Divider className="my-4" />

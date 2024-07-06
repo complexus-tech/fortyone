@@ -21,4 +21,5 @@ export type Story = {
   description?: string;
   status?: StoryStatus;
   priority?: StoryPriority;
+  sequenceId: number;
 };

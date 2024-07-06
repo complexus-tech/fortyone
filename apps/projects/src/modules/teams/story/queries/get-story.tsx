@@ -1,0 +1,24 @@
+"use server";
+import "server-only";
+
+import { get } from "@/lib/http";
+import { DURATION_FROM_SECONDS } from "@/constants/time";
+import { TAGS } from "@/constants/tags";
+import { DetailedStory } from "../types";
+import { auth } from "@/auth";
+
+export const getStory = async (id: string) => {
+  const session = await auth();
+
+  const story = await get<DetailedStory>(`/stories/${id}`, {
+    headers: {
+      "x-tenant-id": "123",
+    },
+    next: {
+      revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
+      tags: [`${TAGS.stories}:${id}`],
+    },
+  });
+  // track story view
+  return story;
+};

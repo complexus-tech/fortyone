@@ -16,7 +16,13 @@ import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
-  const { id, title, status = "Backlog", priority = "No Priority" } = story;
+  const {
+    id,
+    sequenceId,
+    title,
+    status = "Backlog",
+    priority = "No Priority",
+  } = story;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
@@ -50,11 +56,11 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   className="min-w-[6ch] truncate text-[0.98rem]"
                   color="muted"
                 >
-                  COM-{id}
+                  COM-{sequenceId}
                 </Text>
               </Tooltip>
             )}
-            <Link href="/teams/web/stories/test-123-story">
+            <Link href={`/teams/web/stories/${id}`}>
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>

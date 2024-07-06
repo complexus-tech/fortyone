@@ -8,7 +8,7 @@ import {
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
 
-export const Header = () => {
+export const Header = ({ sequenceId }: { sequenceId: number }) => {
   return (
     <HeaderContainer>
       <Flex align="center" className="w-full" justify="between">
@@ -24,7 +24,7 @@ export const Header = () => {
               icon: <StoryIcon className="h-[1.1rem] w-auto" />,
             },
             {
-              name: "Web-12",
+              name: `Web-${sequenceId}`,
             },
           ]}
         />

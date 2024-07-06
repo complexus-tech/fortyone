@@ -11,10 +11,7 @@ async function http<T>(
 ): Promise<T> {
   const fullPath = apiURL + path;
   const request = new Request(fullPath, config);
-  const response: Response = await fetch(fullPath, {
-    ...config,
-    cache: "no-store",
-  });
+  const response: Response = await fetch(fullPath, config);
 
   if (!response.ok) {
     if (retries > 0) {

@@ -31,10 +31,12 @@ export const StoriesGroup = ({
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
-  const filteredStories =
-    groupBy === "Status"
-      ? stories.filter((story) => story.status === status)
-      : stories.filter((story) => story.priority === priority);
+  // const filteredStories =
+  //   groupBy === "Status"
+  //     ? stories.filter((story) => story.status === status)
+  //     : stories.filter((story) => story.priority === priority);
+
+  const filteredStories = stories;
 
   return (
     <div

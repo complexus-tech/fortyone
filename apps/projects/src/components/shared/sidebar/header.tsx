@@ -13,17 +13,24 @@ import {
   SprintsIcon,
   UsersAddIcon,
   EpicsIcon,
+  SidebarCollapseIcon,
+  SidebarExpandIcon,
 } from "icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
+import { logOut } from "./actions";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+
+  const callbackUrl = `${pathname}?${searchParams.toString()}`;
+
   useHotkeys("c", () => {
     setIsOpen(true);
   });
@@ -115,14 +122,26 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
-              <Menu.Item>
+              <Menu.Item
+                onClick={async () => {
+                  await logOut(callbackUrl);
+                }}
+              >
                 <LogoutIcon className="h-5 w-auto text-danger" />
                 Log out
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
         </Menu>
-        <Button
+
+        {/* <SidebarExpandIcon
+          role="button"
+          aria-label="Collapse"
+          tabIndex={0}
+          className="h-6 w-auto outline-none"
+        /> */}
+
+        {/* <Button
           align="center"
           className="px-[0.5rem] shadow"
           color="tertiary"
@@ -133,7 +152,7 @@ export const Header = () => {
           variant="outline"
         >
           <span className="sr-only">Search</span>
-        </Button>
+        </Button> */}
       </Flex>
       <Flex className="mb-3 w-full rounded-lg shadow-sm">
         <Button

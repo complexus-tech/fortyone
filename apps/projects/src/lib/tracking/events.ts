@@ -1,14 +1,6 @@
 export const LogEvents = {
-  projectCreated: {
-    name: "Project Created",
-  },
-  projectEdited: {
-    name: "Project Edited",
-  },
-  projectDeleted: {
-    name: "Project Deleted",
-  },
-  storyCreated: {
-    name: "Story Created",
-  },
-};
+  projectCreated: "Project Created",
+  projectEdited: "Project Edited",
+  projectDeleted: "Project Deleted",
+  storyCreated: "Story Created",
+} as const;
