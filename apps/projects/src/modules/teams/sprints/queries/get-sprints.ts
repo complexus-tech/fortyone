@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { get } from "@/lib/http";
 import { TAGS } from "@/constants/tags";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import { Sprint } from "../types";
+import { Sprint } from "@/modules/sprints/types";
 
 export const getTeamSprints = async () => {
   const session = await auth();

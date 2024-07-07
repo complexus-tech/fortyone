@@ -4,7 +4,7 @@ import { BodyContainer } from "@/components/shared";
 import { SprintRowsHeader } from "./components/rows-header";
 import { SprintRow } from "./components/row";
 import { SprintsHeader } from "./components/header";
-import { Sprint } from "./types";
+import { Sprint } from "@/modules/sprints/types";
 
 export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
   return (

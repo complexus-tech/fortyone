@@ -1,7 +1,7 @@
 "use client";
 import { BreadCrumbs, Button } from "ui";
 import { PlusIcon, SprintsIcon } from "icons";
-import { HeaderContainer } from "../../../../../components/shared/header-container";
+import { HeaderContainer } from "../../../components/shared/header-container";
 
 export const ActiveSprintsHeader = () => {
   return (

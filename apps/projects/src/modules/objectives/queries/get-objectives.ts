@@ -1,7 +1,8 @@
 "use server";
 
-import { get } from "@/lib/http";
 import "server-only";
+
+import { get } from "@/lib/http";
 import { Objective } from "../types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { TAGS } from "@/constants/tags";

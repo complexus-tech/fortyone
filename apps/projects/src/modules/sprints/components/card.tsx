@@ -11,13 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { StoryStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
+import { Sprint } from "../types";
 
-export type SprintCardProps = {
-  name: string;
-  description: string;
-};
-
-export const SprintCard = ({ name }: SprintCardProps) => {
+export const SprintCard = ({ title }: Sprint) => {
   const recentStories = [
     { id: 1, title: "Story with the login page" },
     { id: 2, title: "Story with the login page" },
@@ -66,12 +62,12 @@ export const SprintCard = ({ name }: SprintCardProps) => {
             fontWeight="medium"
           >
             <CalendarIcon className="relative -top-[0.5px] h-5 w-auto text-primary" />{" "}
-            Mar 15 - Mar 30 &bull; {name}
+            Mar 15 - Mar 30 &bull; {title}
           </Text>
           <Flex align="center" gap={1}>
             <Badge
-              className="mx-4 border-opacity-20 bg-opacity-10"
-              // size="lg"
+              rounded="sm"
+              className="border-opacity-20 bg-opacity-20 text-base"
               color="primary"
             >
               5 days left
