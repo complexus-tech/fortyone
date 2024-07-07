@@ -3,7 +3,11 @@ import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip } from "ui";
 import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  Story,
+  StoryPriority,
+  StoryStatus,
+} from "@/modules/stories/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";

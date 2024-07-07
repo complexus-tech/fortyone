@@ -1,5 +1,5 @@
 import { Box } from "ui";
-import type { Story as StoryType } from "@/types/story";
+import type { Story as StoryType } from "@/modules/stories/types";
 import { StoryRow } from "./story/row";
 
 export const StoriesList = ({ stories }: { stories: StoryType[] }) => {

@@ -1,25 +1,8 @@
-import { ObjectivesList } from "@/modules/teams/list";
-import type { Objective } from "@/modules/teams/objective";
+import { ObjectivesList } from "@/modules/objectives";
+import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 
-export default function Page(): JSX.Element {
-  const objectives: Objective[] = [
-    {
-      id: 1,
-      code: "COM-12",
-      lead: "John Doe",
-      name: "Data migration for Fin connect",
-      description: "The quick brown fox jumps over the lazy dog.",
-      date: "Sep 27",
-    },
-    {
-      id: 2,
-      code: "COM-12",
-      lead: "John Doe",
-      name: "Complexus data migration",
-      description: "Complexus migration to Objectives 1.0.0",
-      date: "Sep 27",
-    },
-  ];
+export default async function Page() {
+  const objectives = await getObjectives();
 
   return <ObjectivesList objectives={objectives} />;
 }

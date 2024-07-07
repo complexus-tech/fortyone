@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Box, Flex, Menu, Text } from "ui";
 import { CheckIcon } from "icons";
-import type { StoryStatus } from "@/types/story";
+import type { StoryStatus } from "@/modules/stories/types";
 import { StoryStatusIcon } from "../story-status-icon";
 
 export const StatusesMenu = ({ children }: { children: ReactNode }) => {

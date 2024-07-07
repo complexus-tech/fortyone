@@ -1,4 +1,4 @@
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 import { ListStories } from "@/modules/teams/stories/list-stories";
 import { getTeamStories } from "@/modules/teams/stories/queries/get-stories";
 // import { getStories } from "@/actions/stories/get-stories";

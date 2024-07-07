@@ -1,5 +1,5 @@
 import { cn } from "lib";
-import type { StoryStatus } from "../../types/story";
+import type { StoryStatus } from "../../modules/stories/types";
 
 export const StoryStatusIcon = ({
   status = "Backlog",

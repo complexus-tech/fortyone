@@ -1,7 +1,7 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
 import { StoryIcon } from "icons";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 
 export const Sidebar = ({ stories }: { stories: Story[] }) => {
   const totalStories = stories.length;

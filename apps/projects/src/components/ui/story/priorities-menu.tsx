@@ -1,7 +1,7 @@
 import { Box, Flex, Menu, Text } from "ui";
 import type { ReactNode } from "react";
 import { CheckIcon } from "icons";
-import type { StoryPriority } from "@/types/story";
+import type { StoryPriority } from "@/modules/stories/types";
 import { PriorityIcon } from "../priority-icon";
 
 export const PrioritiesMenu = ({ children }: { children: ReactNode }) => {

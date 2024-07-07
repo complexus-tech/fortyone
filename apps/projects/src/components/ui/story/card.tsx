@@ -4,7 +4,7 @@ import { Box, Flex, Button, Text, Avatar, DatePicker, Tooltip } from "ui";
 import { CalendarIcon, TagsIcon } from "icons";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
-import type { Story as StoryProps } from "@/types/story";
+import type { Story as StoryProps } from "@/modules/stories/types";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { useBoard } from "../board-context";

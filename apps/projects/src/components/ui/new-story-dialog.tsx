@@ -27,7 +27,7 @@ import {
   PlusIcon,
   TagsIcon,
 } from "icons";
-import type { StoryPriority, StoryStatus } from "@/types/story";
+import type { StoryPriority, StoryStatus } from "@/modules/stories/types";
 import { StatusesMenu } from "./story/statuses-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";

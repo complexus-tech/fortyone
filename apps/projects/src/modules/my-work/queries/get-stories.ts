@@ -2,18 +2,13 @@
 import "server-only";
 
 import { auth } from "@/auth";
-import { get } from "@/lib/http";
-import { TAGS } from "@/constants/tags";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
-import { Story } from "@/types/story";
+import { getStories } from "@/modules/stories/queries/get-stories";
 
 export const getMyStories = async () => {
   const session = await auth();
-  const stories = await get<Story[]>("/my-stories", {
-    next: {
-      revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
-      tags: [TAGS.stories],
-    },
+  const stories = await getStories({
+    assigneeId: session?.user?.id,
+    createdById: session?.user?.id,
   });
   return stories;
 };

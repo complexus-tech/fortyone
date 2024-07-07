@@ -1,25 +1,8 @@
-import { SprintsList } from "@/modules/teams/sprints/list/list-sprints";
-import type { Sprint } from "@/modules/teams/sprints/list/row";
+import { SprintsList } from "@/modules/teams/sprints";
+import { getTeamSprints } from "@/modules/teams/sprints/queries/get-sprints";
 
-export default function Page(): JSX.Element {
-  const sprints: Sprint[] = [
-    {
-      id: 1,
-      code: "COM-12",
-      lead: "John Doe",
-      name: "Sprint 1",
-      description: "The quick brown fox jumps over the lazy dog.",
-      date: "Sep 27",
-    },
-    {
-      id: 2,
-      code: "COM-12",
-      lead: "John Doe",
-      name: "Sprint 2",
-      description: "Complexus migration to Objectives 1.0.0",
-      date: "Sep 27",
-    },
-  ];
+export default async function Page() {
+  const sprints = await getTeamSprints();
 
   return <SprintsList sprints={sprints} />;
 }

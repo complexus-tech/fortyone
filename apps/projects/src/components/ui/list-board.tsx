@@ -1,5 +1,9 @@
 import { cn } from "lib";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  Story,
+  StoryPriority,
+  StoryStatus,
+} from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";

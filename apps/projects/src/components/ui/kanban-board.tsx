@@ -1,6 +1,10 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  Story,
+  StoryPriority,
+  StoryStatus,
+} from "@/modules/stories/types";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";

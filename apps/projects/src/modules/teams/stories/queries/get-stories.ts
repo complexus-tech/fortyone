@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { get } from "@/lib/http";
 import { TAGS } from "@/constants/tags";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import { Story } from "@/types/story";
+import { Story } from "@/modules/stories/types";
 
 export const getTeamStories = async () => {
   const session = await auth();

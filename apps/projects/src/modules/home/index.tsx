@@ -1,11 +1,10 @@
-"use client";
 import { Box, Container } from "ui";
 import { BodyContainer } from "../../components/shared/body";
-import { Header } from "./header";
-import { Overview } from "./overview";
-import { Contributions } from "./contributions";
-import { MyStories } from "./my-stories";
-import { Activities } from "./activities";
+import { Header } from "./components/header";
+import { Overview } from "./components/overview";
+import { Contributions } from "./components/contributions";
+import { MyStories } from "./components/my-stories";
+import { Activities } from "./components/activities";
 
 export const Dashboard = () => {
   return (

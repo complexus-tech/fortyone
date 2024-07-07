@@ -1,4 +1,8 @@
 export const TAGS = {
   stories: "stories",
-  projects: "projects",
+  objectives: "objectives",
+  sprints: "sprints",
+  epics: "epics",
+  documents: "documents",
+  states: "states",
 };

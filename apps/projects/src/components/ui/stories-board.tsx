@@ -4,7 +4,11 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  Story,
+  StoryPriority,
+  StoryStatus,
+} from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,

@@ -1,5 +1,5 @@
 import { cn } from "lib";
-import type { StoryPriority } from "@/types/story";
+import type { StoryPriority } from "@/modules/stories/types";
 
 export const PriorityIcon = ({
   priority = "No Priority",

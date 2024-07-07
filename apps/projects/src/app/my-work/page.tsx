@@ -1,4 +1,4 @@
-import { ListMyStories } from "@/modules/my-work/list-stories";
+import { ListMyStories } from "@/modules/my-work";
 import { getMyStories } from "@/modules/my-work/queries/get-stories";
 
 export default async function Page() {

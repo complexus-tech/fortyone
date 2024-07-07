@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
 import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
-import type { StoryPriority, StoryStatus } from "@/types/story";
+import type { StoryPriority, StoryStatus } from "@/modules/stories/types";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";

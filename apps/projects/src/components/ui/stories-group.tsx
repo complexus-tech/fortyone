@@ -3,7 +3,11 @@ import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
 import { Text } from "ui";
-import type { StoryStatus, Story, StoryPriority } from "@/types/story";
+import type {
+  StoryStatus,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
 import { StoriesHeader } from "./stories-header";

@@ -36,7 +36,7 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
 import { AllStories } from "./all-stories";

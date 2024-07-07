@@ -2,7 +2,7 @@
 import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 import { useTeamStories } from "@/modules/teams/stories/provider";
 
 export const AllStories = ({

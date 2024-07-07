@@ -4,7 +4,11 @@ import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type {
+  Story,
+  StoryPriority,
+  StoryStatus,
+} from "@/modules/stories/types";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";

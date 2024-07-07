@@ -1,5 +1,5 @@
 "use client";
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";

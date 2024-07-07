@@ -3,7 +3,7 @@ import Link from "next/link";
 import { DatePicker, Flex, Text, Tooltip, Avatar, Checkbox, Box } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
-import type { Story as StoryProps } from "@/types/story";
+import type { Story as StoryProps } from "@/modules/stories/types";
 import { RowWrapper } from "../row-wrapper";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";

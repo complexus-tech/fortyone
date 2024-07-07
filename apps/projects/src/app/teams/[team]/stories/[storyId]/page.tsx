@@ -1,5 +1,5 @@
-import { MainStory } from "@/modules/teams/story";
-import { getStory } from "@/modules/teams/story/queries/get-story";
+import { MainStory } from "@/modules/stories/detail";
+import { getStory } from "@/modules/stories/queries/get-story";
 
 type Props = {
   params: {
