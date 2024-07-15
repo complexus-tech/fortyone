@@ -13,8 +13,8 @@ type AppSingleStory struct {
 	ID              uuid.UUID  `json:"id"`
 	SequenceID      int        `json:"sequenceId"`
 	Title           string     `json:"title"`
-	Description     string     `json:"description"`
-	DescriptionHTML string     `json:"descriptionHTML"`
+	Description     *string    `json:"description"`
+	DescriptionHTML *string    `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
 	Objective       *uuid.UUID `json:"objectiveId"`
 	Status          *uuid.UUID `json:"statusId"`
@@ -23,7 +23,7 @@ type AppSingleStory struct {
 	Blocking        *uuid.UUID `json:"blockingId"`
 	Related         *uuid.UUID `json:"relatedId"`
 	Reporter        *uuid.UUID `json:"reporterId"`
-	Priority        string     `json:"priority"`
+	Priority        *string    `json:"priority"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
@@ -37,12 +37,12 @@ type AppStoryList struct {
 	ID         uuid.UUID  `json:"id"`
 	SequenceID int        `json:"sequenceId"`
 	Title      string     `json:"title"`
-	Objective  *uuid.UUID `json:"objective"`
-	Status     *uuid.UUID `json:"status"`
-	Assignee   *uuid.UUID `json:"assignee"`
-	StartDate  *time.Time `json:"start_date"`
-	EndDate    *time.Time `json:"end_date"`
-	Priority   string     `json:"priority"`
+	Objective  *uuid.UUID `json:"objectiveId"`
+	Status     *uuid.UUID `json:"statusId"`
+	Assignee   *uuid.UUID `json:"assigneeId"`
+	StartDate  *time.Time `json:"startDate"`
+	EndDate    *time.Time `json:"endDate"`
+	Priority   *string    `json:"priority"`
 	Sprint     *uuid.UUID `json:"sprint"`
 }
 
@@ -91,8 +91,32 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 }
 
 type AppNewStory struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description" validate:"required"`
+	Title       string     `json:"title" validate:"required"`
+	Description *string    `json:"description"`
+	Parent      *uuid.UUID `json:"parentId"`
+	Objective   *uuid.UUID `json:"objectiveId"`
+	Status      *uuid.UUID `json:"statusId"`
+	Assignee    *uuid.UUID `json:"assigneeId"`
+	Priority    *string    `json:"priority"`
+	Sprint      *uuid.UUID `json:"sprintId"`
+	Team        uuid.UUID  `json:"teamId" validate:"required"`
+	StartDate   *time.Time `json:"startDate"`
+	EndDate     *time.Time `json:"endDate"`
+}
+
+func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
+	return stories.CoreNewStory{
+		Title:       a.Title,
+		Description: a.Description,
+		Parent:      a.Parent,
+		Objective:   a.Objective,
+		Status:      a.Status,
+		Assignee:    a.Assignee,
+		Priority:    a.Priority,
+		Sprint:      a.Sprint,
+		StartDate:   a.StartDate,
+		EndDate:     a.EndDate,
+	}
 }
 
 func (a AppNewStory) Validate() error {

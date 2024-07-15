@@ -19,6 +19,7 @@ type dbState struct {
 	DeletedAt   *time.Time `db:"deleted_at"`
 }
 
+// group can be backlog, not started, in progress, done, closed
 func toCoreState(p dbState) states.CoreState {
 	return states.CoreState{
 		ID:          p.ID,

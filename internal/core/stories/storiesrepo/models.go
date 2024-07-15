@@ -12,8 +12,8 @@ type dbStory struct {
 	ID              uuid.UUID  `db:"id"`
 	SequenceID      int        `db:"sequence_id"`
 	Title           string     `db:"title"`
-	Description     string     `db:"description"`
-	DescriptionHTML string     `db:"description_html"`
+	Description     *string    `db:"description"`
+	DescriptionHTML *string    `db:"description_html"`
 	Parent          *uuid.UUID `db:"parent_id"`
 	Objective       *uuid.UUID `db:"objective_id"`
 	Status          *uuid.UUID `db:"status_id"`
@@ -22,7 +22,7 @@ type dbStory struct {
 	Blocking        *uuid.UUID `db:"blocking_id"`
 	Related         *uuid.UUID `db:"related_id"`
 	Reporter        *uuid.UUID `db:"reporter_id"`
-	Priority        string     `db:"priority"`
+	Priority        *string    `db:"priority"`
 	Sprint          *uuid.UUID `db:"sprint_id"`
 	StartDate       *time.Time `db:"start_date"`
 	EndDate         *time.Time `db:"end_date"`

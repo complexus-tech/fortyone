@@ -19,6 +19,6 @@ func Routes(cfg Config, app *web.App) {
 	h := New(storiesService)
 
 	app.Get("/stories/{id}", h.Get)
+	app.Post("/stories", h.Create)
 	app.Get("/my-stories", h.MyStories)
-
 }

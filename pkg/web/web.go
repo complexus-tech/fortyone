@@ -43,6 +43,12 @@ func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
 // ServeHTTP implements the http.Handler interface so that App can be used as a Mux.
 // It then calls the ServeHTTP method on the embedded Mux.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// extract this into a confiurable middleware
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+
 	if !a.strictSlash {
 		path := a.stripSlash(r.URL.Path)
 		r.URL.Path = path
@@ -71,6 +77,7 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 	handler = wrapMiddleware(a.mw, handler)
 
 	h := func(w http.ResponseWriter, r *http.Request) {
+
 		ctx, span := a.startSpan(w, r)
 		defer span.End()
 
