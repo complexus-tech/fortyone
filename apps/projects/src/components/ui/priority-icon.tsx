@@ -10,7 +10,7 @@ export const PriorityIcon = ({
 }) => {
   return (
     <>
-      {priority === "No Priority" && (
+      {(priority === "No Priority" || priority === null) && (
         <svg
           className={cn("text-gray dark:text-gray-300", className)}
           fill="currentColor"

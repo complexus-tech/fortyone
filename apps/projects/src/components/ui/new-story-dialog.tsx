@@ -1,5 +1,5 @@
 "use client";
-import { type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   Button,
   Badge,
@@ -23,6 +23,7 @@ import TextExt from "@tiptap/extension-text";
 import {
   ArrowRightIcon,
   CalendarIcon,
+  CloseIcon,
   MaximizeIcon,
   PlusIcon,
   TagsIcon,
@@ -32,6 +33,14 @@ import { StatusesMenu } from "./story/statuses-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { PriorityIcon } from "./priority-icon";
+import { NewStory } from "@/modules/story/types";
+import { createStoryAction } from "@/modules/story/actions/create-story";
+import { toast } from "sonner";
+import nProgress from "nprogress";
+import { useRouter } from "next/navigation";
+import { slugify } from "@/utils";
+import { addDays, format } from "date-fns";
+import { cn } from "lib";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -44,6 +53,19 @@ export const NewStoryDialog = ({
   status?: StoryStatus;
   priority?: StoryPriority;
 }) => {
+  const [storyForm, setStoryForm] = useState<NewStory>({
+    title: "",
+    description: "",
+    descriptionHTML: "",
+    teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
+    endDate: null,
+    startDate: null,
+    priority,
+  });
+  const [loading, setLoading] = useState(false);
+  const [createMore, setCreateMore] = useState(false);
+  const router = useRouter();
+
   const titleEditor = useEditor({
     extensions: [
       Document,
@@ -71,6 +93,64 @@ export const NewStoryDialog = ({
     content: "",
     editable: true,
   });
+
+  const handleCreateStory = async () => {
+    if (!titleEditor || !editor) return;
+
+    if (!titleEditor.getText()) {
+      titleEditor.commands.focus();
+      toast.warning("Validation Error", {
+        description: "Title is required",
+      });
+      return;
+    }
+
+    setLoading(true);
+    nProgress.start();
+
+    const newStory: NewStory = {
+      title: titleEditor.getText(),
+      description: editor.getText(),
+      descriptionHTML: editor.getHTML(),
+      teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
+      priority: storyForm.priority,
+      endDate: storyForm.endDate,
+      startDate: storyForm.startDate,
+      // assigneeId: "",
+      // statusId: status,
+    };
+
+    try {
+      const createdStory = await createStoryAction(newStory);
+      toast.success("Success", {
+        description: "Story created successfully",
+        action: {
+          label: "View story",
+          onClick: () => {
+            titleEditor.commands.setContent("");
+            editor.commands.setContent("");
+            router.push(
+              `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+            );
+          },
+        },
+      });
+      if (!createMore) {
+        setIsOpen(false);
+      } else {
+        titleEditor.commands.setContent("");
+        editor.commands.setContent("");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error", {
+        description: "Failed to create story",
+      });
+    } finally {
+      setLoading(false);
+      nProgress.done();
+    }
+  };
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -122,16 +202,24 @@ export const NewStoryDialog = ({
                 <Button
                   color="tertiary"
                   leftIcon={
-                    <PriorityIcon className="h-4" priority={priority} />
+                    <PriorityIcon
+                      className="h-4"
+                      priority={storyForm.priority}
+                    />
                   }
                   size="xs"
                   type="button"
                   variant="outline"
                 >
-                  {priority}
+                  {storyForm.priority}
                 </Button>
               </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items priority={priority} />
+              <PrioritiesMenu.Items
+                priority={storyForm.priority}
+                setPriority={(priority) => {
+                  setStoryForm((prev) => ({ ...prev, priority }));
+                }}
+              />
             </PrioritiesMenu>
             <DatePicker>
               <DatePicker.Trigger>
@@ -139,13 +227,79 @@ export const NewStoryDialog = ({
                   className="px-2 text-sm"
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                  rightIcon={
+                    storyForm.startDate && (
+                      <CloseIcon
+                        role="button"
+                        onClick={() => {
+                          setStoryForm((prev) => ({
+                            ...prev,
+                            startDate: null,
+                          }));
+                        }}
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
+                      />
+                    )
+                  }
                   size="xs"
                   variant="outline"
                 >
-                  Due date
+                  {storyForm.startDate
+                    ? format(new Date(storyForm.startDate), "MMM d, yyyy")
+                    : "Start date"}
                 </Button>
               </DatePicker.Trigger>
-              <DatePicker.Calendar />
+              <DatePicker.Calendar
+                onDayClick={(date) => {
+                  setStoryForm({ ...storyForm, startDate: date.toISOString() });
+                }}
+              />
+            </DatePicker>
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  className={cn("px-2 text-sm", {
+                    "text-primary dark:text-primary": storyForm.endDate
+                      ? new Date(storyForm.endDate) < new Date()
+                      : false,
+                    "text-warning dark:text-warning": storyForm.endDate
+                      ? new Date(storyForm.endDate) <= addDays(new Date(), 7) &&
+                        new Date(storyForm.endDate) >= new Date()
+                      : false,
+                  })}
+                  color="tertiary"
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                  rightIcon={
+                    storyForm.endDate && (
+                      <CloseIcon
+                        role="button"
+                        onClick={() => {
+                          setStoryForm((prev) => ({ ...prev, endDate: null }));
+                        }}
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
+                      />
+                    )
+                  }
+                  size="xs"
+                  variant="outline"
+                >
+                  {storyForm.endDate
+                    ? format(new Date(storyForm.endDate), "MMM d, yyyy")
+                    : "Due date"}
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar
+                fromDate={
+                  storyForm.startDate
+                    ? new Date(storyForm.startDate)
+                    : undefined
+                }
+                onDayClick={(date) => {
+                  setStoryForm({ ...storyForm, endDate: date.toISOString() });
+                }}
+              />
             </DatePicker>
             <Button
               className="px-2 text-sm"
@@ -161,10 +315,21 @@ export const NewStoryDialog = ({
         <Dialog.Footer className="flex items-center justify-between gap-2">
           <Text color="muted">
             <label className="flex items-center gap-2" htmlFor="more">
-              Create more <Switch id="more" />
+              Create more{" "}
+              <Switch
+                id="more"
+                checked={createMore}
+                onCheckedChange={setCreateMore}
+              />
             </label>
           </Text>
-          <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="md">
+          <Button
+            leftIcon={<PlusIcon className="h-5 w-auto" />}
+            size="md"
+            onClick={handleCreateStory}
+            loading={loading}
+            loadingText="Creating story..."
+          >
             Create story
           </Button>
         </Dialog.Footer>

@@ -7,7 +7,6 @@ export default async function Page({
 }: {
   searchParams: { callbackUrl: string };
 }) {
-  console.log(callbackUrl);
   const session = await auth();
   if (session) {
     redirect("/");

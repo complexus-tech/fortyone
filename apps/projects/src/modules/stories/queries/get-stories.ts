@@ -1,6 +1,3 @@
-"use server";
-import "server-only";
-
 import { auth } from "@/auth";
 import { get } from "@/lib/http";
 import { TAGS } from "@/constants/tags";

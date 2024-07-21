@@ -15,7 +15,7 @@ import {
 } from "@/components/ui";
 import { Labels } from "@/components/ui/story/labels";
 import { AddLinks, OptionsHeader } from ".";
-import { DetailedStory } from "../../types";
+import { DetailedStory } from "../../stories/types";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -33,7 +33,7 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
 };
 
 export const Options = ({ story }: { story: DetailedStory }) => {
-  const { priority, startDate, endDate } = story;
+  const { priority } = story;
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2022, 0, 20),
     to: addDays(new Date(2022, 0, 20), 20),
@@ -41,7 +41,6 @@ export const Options = ({ story }: { story: DetailedStory }) => {
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
       <OptionsHeader />
-
       <Container className="px-8 pt-4 text-gray-300/90">
         <Text className="mb-5" fontWeight="semibold">
           Properties

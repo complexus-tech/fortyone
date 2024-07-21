@@ -9,7 +9,7 @@ async function http<T>(
   responseType?: ResponseType,
   retries = 1,
 ): Promise<T> {
-  const fullPath = apiURL + path;
+  const fullPath = path.startsWith("/") ? apiURL + path : path;
   const request = new Request(fullPath, config);
   const response: Response = await fetch(fullPath, config);
 

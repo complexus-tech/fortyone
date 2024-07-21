@@ -11,8 +11,10 @@ export const PrioritiesMenu = ({ children }: { children: ReactNode }) => {
 const Items = ({
   priority = "No Priority",
   isSearchEnabled = true,
+  setPriority,
 }: {
   priority?: StoryPriority;
+  setPriority?: (priority: StoryPriority) => void;
   isSearchEnabled?: boolean;
 }) => {
   const priorities: StoryPriority[] = [
@@ -36,6 +38,7 @@ const Items = ({
         {priorities.map((pr, idx) => (
           <Menu.Item
             active={pr === priority}
+            onClick={() => setPriority?.(pr)}
             className="justify-between"
             key={pr}
           >

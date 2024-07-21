@@ -3,11 +3,7 @@ import { cva } from "cva";
 import { LoadingIcon } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
-import {
-  forwardRef,
-  type ButtonHTMLAttributes,
-  type ReactElement,
-} from "react";
+import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
   "flex text-gray dark:text-gray-200 w-max items-center border-[0.5px] gap-2 transition duration-200 ease-linear focus:outline-0",
@@ -147,8 +143,8 @@ export interface ButtonProps
   href?: string;
   loadingText?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
-  rightIcon?: ReactElement;
-  leftIcon?: ReactElement;
+  rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

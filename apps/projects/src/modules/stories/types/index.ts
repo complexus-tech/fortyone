@@ -23,26 +23,3 @@ export type Story = {
   priority?: StoryPriority;
   sequenceId: number;
 };
-
-export type DetailedStory = {
-  id: string;
-  sequenceId: number;
-  title: string;
-  description: string;
-  descriptionHTML: string;
-  parentId: string;
-  objectiveId: string;
-  statusId: string;
-  assigneeId: string;
-  blockedById: string;
-  blockingId: string;
-  relatedId: string;
-  reporterId: string;
-  priority: StoryPriority;
-  sprintId: string;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string;
-};

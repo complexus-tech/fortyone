@@ -18,10 +18,10 @@ import {
   Reactions,
   SubstoriesButton,
 } from ".";
-import { DetailedStory } from "../../types/indexw";
+import { DetailedStory } from "../types";
 
 export const MainDetails = ({ story }: { story: DetailedStory }) => {
-  const { title, descriptionHTML, sequenceId } = story;
+  const { title, descriptionHTML, description, sequenceId } = story;
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -36,7 +36,7 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
       }),
       Placeholder.configure({ placeholder: "Story description" }),
     ],
-    content: descriptionHTML,
+    content: descriptionHTML || description,
     editable: true,
     // onUpdate: ({ editor }) => {
     //   console.log(editor.getHTML());

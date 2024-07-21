@@ -14,6 +14,7 @@ import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
+import { slugify } from "@/utils";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -60,7 +61,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 </Text>
               </Tooltip>
             )}
-            <Link href={`/teams/web/stories/${id}`}>
+            <Link href={`/story/${id}/${slugify(title)}`}>
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>

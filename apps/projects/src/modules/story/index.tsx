@@ -2,9 +2,9 @@
 import { ResizablePanel } from "ui";
 import { MainDetails } from "./components/main-details";
 import { Options } from "./components/options";
-import { DetailedStory } from "../types";
+import { DetailedStory } from "./types";
 
-export const MainStory = ({ story }: { story: DetailedStory }) => {
+export const StoryPage = ({ story }: { story: DetailedStory }) => {
   return (
     <ResizablePanel autoSaveId="story-details" direction="horizontal">
       <ResizablePanel.Panel defaultSize={72}>

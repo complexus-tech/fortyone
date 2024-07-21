@@ -1,5 +1,5 @@
-import { MainStory } from "@/modules/stories/detail";
-import { getStory } from "@/modules/stories/queries/get-story";
+import { StoryPage } from "@/modules/story";
+import { getStory } from "@/modules/story/queries/get-story";
 
 type Props = {
   params: {
@@ -9,5 +9,5 @@ type Props = {
 export default async function Page({ params: { storyId } }: Props) {
   const story = await getStory(storyId);
 
-  return <MainStory story={story} />;
+  return <StoryPage story={story} />;
 }

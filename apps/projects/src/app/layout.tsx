@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { Toaster } from "sonner";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
 
@@ -41,6 +42,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
         {children}
+        <Toaster
+          theme="system"
+          closeButton
+          position="bottom-right"
+          richColors
+          duration={6000}
+        />
         <ProgressBar />
       </body>
     </html>
