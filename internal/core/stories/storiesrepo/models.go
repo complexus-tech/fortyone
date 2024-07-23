@@ -16,13 +16,14 @@ type dbStory struct {
 	DescriptionHTML *string    `db:"description_html"`
 	Parent          *uuid.UUID `db:"parent_id"`
 	Objective       *uuid.UUID `db:"objective_id"`
+	Team            uuid.UUID  `db:"team_id"`
 	Status          *uuid.UUID `db:"status_id"`
 	Assignee        *uuid.UUID `db:"assignee_id"`
 	BlockedBy       *uuid.UUID `db:"blocked_by_id"`
 	Blocking        *uuid.UUID `db:"blocking_id"`
 	Related         *uuid.UUID `db:"related_id"`
 	Reporter        *uuid.UUID `db:"reporter_id"`
-	Priority        *string    `db:"priority"`
+	Priority        string     `db:"priority"`
 	Sprint          *uuid.UUID `db:"sprint_id"`
 	StartDate       *time.Time `db:"start_date"`
 	EndDate         *time.Time `db:"end_date"`
@@ -40,6 +41,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Description:     i.Description,
 		Parent:          i.Parent,
 		Objective:       i.Objective,
+		Team:            i.Team,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
 		BlockedBy:       i.BlockedBy,
@@ -73,7 +75,36 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			EndDate:    story.EndDate,
 			Priority:   story.Priority,
 			Sprint:     story.Sprint,
+			CreatedAt:  story.CreatedAt,
+			UpdatedAt:  story.UpdatedAt,
 		}
 	}
 	return cl
+}
+
+// toDBStory converts a CoreSingleStory to a dbStory.
+func toDBStory(i stories.CoreSingleStory) dbStory {
+	return dbStory{
+		ID:              i.ID,
+		SequenceID:      i.SequenceID,
+		Title:           i.Title,
+		Description:     i.Description,
+		Parent:          i.Parent,
+		Objective:       i.Objective,
+		Team:            i.Team,
+		Status:          i.Status,
+		Assignee:        i.Assignee,
+		BlockedBy:       i.BlockedBy,
+		Blocking:        i.Blocking,
+		Related:         i.Related,
+		Reporter:        i.Reporter,
+		DescriptionHTML: i.DescriptionHTML,
+		Priority:        i.Priority,
+		Sprint:          i.Sprint,
+		StartDate:       i.StartDate,
+		EndDate:         i.EndDate,
+		CreatedAt:       i.CreatedAt,
+		UpdatedAt:       i.UpdatedAt,
+		DeletedAt:       i.DeletedAt,
+	}
 }

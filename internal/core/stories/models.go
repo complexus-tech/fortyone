@@ -15,10 +15,12 @@ type CoreStoryList struct {
 	Objective  *uuid.UUID
 	Status     *uuid.UUID
 	Assignee   *uuid.UUID
+	Priority   string
+	Sprint     *uuid.UUID
 	StartDate  *time.Time
 	EndDate    *time.Time
-	Priority   *string
-	Sprint     *uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // CoreSingleStory represents a single story.
@@ -36,9 +38,9 @@ type CoreSingleStory struct {
 	Blocking        *uuid.UUID
 	Related         *uuid.UUID
 	Reporter        *uuid.UUID
-	Priority        *string
+	Priority        string
 	Sprint          *uuid.UUID
-	Team            *uuid.UUID
+	Team            uuid.UUID
 	StartDate       *time.Time
 	EndDate         *time.Time
 	CreatedAt       time.Time
@@ -58,15 +60,19 @@ type CoreNewStory struct {
 	Blocking        *uuid.UUID `json:"blockingId"`
 	Related         *uuid.UUID `json:"relatedId"`
 	Reporter        *uuid.UUID `json:"reporterId"`
-	Priority        *string    `json:"priority"`
+	Priority        string     `json:"priority"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
-	Team            *uuid.UUID `json:"teamId"`
+	Team            uuid.UUID  `json:"teamId"`
 }
 
 func toCoreSingleStory(ns CoreNewStory) CoreSingleStory {
 	now := time.Now()
+	if ns.Priority == "" {
+		ns.Priority = "No Priority"
+	}
+
 	return CoreSingleStory{
 		ID:              uuid.New(),
 		SequenceID:      0,

@@ -1,5 +1,8 @@
 dev:
-	go run cmd/api/main.go
+	~/go/bin/air    
+
+develop:
+	go run cmd/api/main.go 
 
 tidy:
 	go mod tidy

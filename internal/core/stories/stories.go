@@ -51,13 +51,14 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory) (CoreSingleStory,
 
 	story := toCoreSingleStory(ns)
 
-	sequenceID, err := s.repo.GetNextSequenceID(ctx, *story.Team)
+	sequenceID, err := s.repo.GetNextSequenceID(ctx, story.Team)
 
 	if err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, fmt.Errorf("getting next sequence ID: %w", err)
 	}
 	story.SequenceID = sequenceID
+	s.log.Info(ctx, "business.core.stories.create", "sequenceID", sequenceID)
 
 	if err := s.repo.Create(ctx, &story); err != nil {
 		span.RecordError(err)

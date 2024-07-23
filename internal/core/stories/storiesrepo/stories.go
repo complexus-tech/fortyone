@@ -2,6 +2,7 @@ package storiesrepo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -53,7 +54,7 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error
 	defer stmt.Close()
 
 	r.log.Info(ctx, "Creating story.")
-	if _, err := stmt.ExecContext(ctx, story); err != nil {
+	if _, err := stmt.ExecContext(ctx, toDBStory(*story)); err != nil {
 		errMsg := fmt.Sprintf("Failed to create story: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create story"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -68,9 +69,61 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error
 	return nil
 }
 
+// GetNextSequenceID returns the next sequence ID for a team.
 func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID) (int, error) {
-	nextSequenceID := 1
-	return nextSequenceID, nil
+	var currentSequence int
+
+	// Start a transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback() // Rollback in case of error
+
+	// Try to update the existing record and get the new sequence
+	query := `
+		UPDATE team_story_sequences
+		SET current_sequence = current_sequence + 1
+		WHERE team_id = :team_id
+		RETURNING current_sequence
+	`
+	params := map[string]interface{}{
+		"team_id": teamID,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.GetContext(ctx, &currentSequence, params)
+	if err == sql.ErrNoRows {
+		// If no record exists, insert a new one starting from 1
+		q := `
+			INSERT INTO team_story_sequences (team_id, current_sequence)
+			VALUES (:team_id, 1)
+			RETURNING current_sequence
+		`
+		stmt, err = tx.PrepareNamedContext(ctx, q)
+		if err != nil {
+			return 0, fmt.Errorf("failed to prepare named statement for insert: %w", err)
+		}
+		defer stmt.Close()
+
+		err = stmt.GetContext(ctx, &currentSequence, params)
+	}
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to get/update sequence: %w", err)
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return currentSequence, nil
 }
 
 // TeamStories returns a list of stories for a team.
@@ -271,11 +324,18 @@ func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
 			title,
 			priority,
 			description,
+			status_id,
+			start_date,
+			end_date,
+			sprint_id,
+			team_id,
+			objective_id,
 			created_at,
 			updated_at,
 			deleted_at
 		FROM
-			stories;
+			stories
+		ORDER BY created_at DESC;
 	`
 
 	stmt, err := r.db.PreparexContext(ctx, q)
