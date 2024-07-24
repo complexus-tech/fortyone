@@ -11,6 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// AppBulkDeleteRequest represents a request to delete multiple stories.
+type AppBulkDeleteRequest struct {
+	StoryIDs []uuid.UUID `json:"storyIds"`
+}
+
+// AppBulkRestoreRequest represents a request to restore multiple stories.
+type AppBulkRestoreRequest struct {
+	StoryIDs []uuid.UUID `json:"storyIds"`
+}
+
 // AppSingleStory represents a single story in the application.
 type AppSingleStory struct {
 	ID              uuid.UUID  `json:"id"`
@@ -19,7 +29,6 @@ type AppSingleStory struct {
 	Description     *string    `json:"description"`
 	DescriptionHTML *string    `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
-	Objective       *uuid.UUID `json:"objectiveId"`
 	Status          *uuid.UUID `json:"statusId"`
 	Assignee        *uuid.UUID `json:"assigneeId"`
 	BlockedBy       *uuid.UUID `json:"blockedById"`
@@ -28,6 +37,10 @@ type AppSingleStory struct {
 	Reporter        *uuid.UUID `json:"reporterId"`
 	Priority        string     `json:"priority"`
 	Sprint          *uuid.UUID `json:"sprintId"`
+	Epic            *uuid.UUID `json:"epicId"`
+	Objective       *uuid.UUID `json:"objectiveId"`
+	Team            uuid.UUID  `json:"teamId"`
+	Workspace       uuid.UUID  `json:"workspaceId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
 	CreatedAt       time.Time  `json:"createdAt"`
@@ -45,6 +58,8 @@ type AppStoryList struct {
 	Assignee   *uuid.UUID `json:"assigneeId"`
 	Priority   string     `json:"priority"`
 	Sprint     *uuid.UUID `json:"sprintId"`
+	Workspace  uuid.UUID  `json:"workspaceId"`
+	Team       uuid.UUID  `json:"teamId"`
 	StartDate  *time.Time `json:"startDate"`
 	EndDate    *time.Time `json:"endDate"`
 	CreatedAt  time.Time  `json:"createdAt"`
@@ -64,6 +79,9 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Assignee:        i.Assignee,
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
+		Epic:            i.Epic,
+		Team:            i.Team,
+		Workspace:       i.Workspace,
 		StartDate:       i.StartDate,
 		EndDate:         i.EndDate,
 		CreatedAt:       i.CreatedAt,
@@ -84,6 +102,8 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 			SequenceID: story.SequenceID,
 			Title:      story.Title,
 			Objective:  story.Objective,
+			Team:       story.Team,
+			Workspace:  story.Workspace,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
 			Priority:   story.Priority,
@@ -108,6 +128,21 @@ type AppNewStory struct {
 	Priority        string     `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	Team            uuid.UUID  `json:"teamId" validate:"required"`
+	StartDate       *time.Time `json:"startDate"`
+	EndDate         *time.Time `json:"endDate"`
+}
+
+type AppUpdateStory struct {
+	Title           *string    `json:"title"`
+	Description     *string    `json:"description"`
+	DescriptionHTML *string    `json:"descriptionHTML"`
+	Parent          *uuid.UUID `json:"parentId"`
+	Objective       *uuid.UUID `json:"objectiveId"`
+	Status          *uuid.UUID `json:"statusId"`
+	Assignee        *uuid.UUID `json:"assigneeId"`
+	Priority        *string    `json:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint          *uuid.UUID `json:"sprintId"`
+	Team            *uuid.UUID `json:"teamId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
 }

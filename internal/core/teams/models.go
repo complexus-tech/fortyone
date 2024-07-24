@@ -9,10 +9,11 @@ import (
 type CoreTeam struct {
 	ID          uuid.UUID
 	Name        string
-	Description string
-	Owner       *uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
+	Description *string
+	Code        string
+	Color       string
+	Icon        string
+	Workspace   uuid.UUID
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

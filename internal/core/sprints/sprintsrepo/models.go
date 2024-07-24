@@ -8,27 +8,30 @@ import (
 )
 
 type dbSprint struct {
-	ID          uuid.UUID  `db:"id"`
-	Name        string     `db:"name"`
-	Description string     `db:"description"`
-	Owner       *uuid.UUID `db:"owner"`
-	StartDate   *time.Time `db:"start_date"`
-	EndDate     *time.Time `db:"end_date"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
+	ID        uuid.UUID  `db:"sprint_id"`
+	Name      string     `db:"name"`
+	Goal      *string    `db:"goal"`
+	Objective *uuid.UUID `db:"objective_id"`
+	Team      uuid.UUID  `db:"team_id"`
+	Workspace uuid.UUID  `db:"workspace_id"`
+	StartDate time.Time  `db:"start_date"`
+	EndDate   time.Time  `db:"end_date"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at"`
 }
 
-func toCoreSprint(p dbSprint) sprints.CoreSprint {
+func toCoreSprint(s dbSprint) sprints.CoreSprint {
 	return sprints.CoreSprint{
-		ID:          p.ID,
-		Name:        p.Name,
-		Description: p.Description,
-		Owner:       p.Owner,
-		StartDate:   p.StartDate,
-		EndDate:     p.EndDate,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:        s.ID,
+		Name:      s.Name,
+		Goal:      s.Goal,
+		Objective: s.Objective,
+		Team:      s.Team,
+		Workspace: s.Workspace,
+		StartDate: s.StartDate,
+		EndDate:   s.EndDate,
+		CreatedAt: s.CreatedAt,
+		UpdatedAt: s.UpdatedAt,
 	}
 }
 

@@ -8,15 +8,15 @@ import (
 )
 
 type dbTeam struct {
-	ID          uuid.UUID  `db:"id"`
-	Name        string     `db:"name"`
-	Description string     `db:"description"`
-	Owner       *uuid.UUID `db:"owner"`
-	StartDate   *time.Time `db:"start_date"`
-	EndDate     *time.Time `db:"end_date"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
+	ID          uuid.UUID `db:"team_id"`
+	Name        string    `db:"name"`
+	Description *string   `db:"description"`
+	Code        string    `db:"code"`
+	Color       string    `db:"color"`
+	Icon        string    `db:"icon"`
+	Workspace   uuid.UUID `db:"workspace_id"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 func toCoreTeam(p dbTeam) teams.CoreTeam {
@@ -24,9 +24,10 @@ func toCoreTeam(p dbTeam) teams.CoreTeam {
 		ID:          p.ID,
 		Name:        p.Name,
 		Description: p.Description,
-		Owner:       p.Owner,
-		StartDate:   p.StartDate,
-		EndDate:     p.EndDate,
+		Code:        p.Code,
+		Color:       p.Color,
+		Icon:        p.Icon,
+		Workspace:   p.Workspace,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}

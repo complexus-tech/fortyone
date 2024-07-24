@@ -41,6 +41,67 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
+// Delete removes the story with the specified ID.
+func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	param := web.Params(r, "id")
+	id, err := uuid.Parse(param)
+	if err != nil {
+		return ErrInvalidID
+	}
+	if err := h.stories.Delete(ctx, id); err != nil {
+		return err
+	}
+	data := map[string]uuid.UUID{"id": id}
+	web.Respond(ctx, w, data, http.StatusNoContent)
+	return nil
+}
+
+// BulkDelete removes the stories with the specified IDs.
+func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req AppBulkDeleteRequest
+	if err := web.Decode(r, &req); err != nil {
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+	if err := h.stories.BulkDelete(ctx, req.StoryIDs); err != nil {
+		return err
+	}
+	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
+	web.Respond(ctx, w, data, http.StatusNoContent)
+	return nil
+
+}
+
+// Restore restores the story with the specified ID.
+func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	param := web.Params(r, "id")
+	id, err := uuid.Parse(param)
+	if err != nil {
+		return ErrInvalidID
+	}
+	if err := h.stories.Restore(ctx, id); err != nil {
+		return err
+	}
+	data := map[string]uuid.UUID{"id": id}
+	web.Respond(ctx, w, data, http.StatusNoContent)
+	return nil
+}
+
+// BulkRestore restores the stories with the specified IDs.
+func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req AppBulkRestoreRequest
+	if err := web.Decode(r, &req); err != nil {
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+	if err := h.stories.BulkRestore(ctx, req.StoryIDs); err != nil {
+		return err
+	}
+	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
+	web.Respond(ctx, w, data, http.StatusNoContent)
+	return nil
+}
+
 // Create creates a new story.
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var ns AppNewStory

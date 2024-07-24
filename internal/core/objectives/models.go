@@ -9,11 +9,13 @@ import (
 type CoreObjective struct {
 	ID          uuid.UUID
 	Name        string
-	Description string
-	Owner       *uuid.UUID
+	Description *string
+	LeadUser    *uuid.UUID
+	Team        uuid.UUID
+	Workspace   uuid.UUID
 	StartDate   *time.Time
 	EndDate     *time.Time
-	IsPublic    bool
+	IsPrivate   bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

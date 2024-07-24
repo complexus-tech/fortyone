@@ -2,12 +2,15 @@ package teamsrepo
 
 import (
 	"context"
-	"time"
+	"errors"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/google/uuid"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type repo struct {
@@ -23,12 +26,47 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 }
 
 func (r *repo) List(ctx context.Context) ([]teams.CoreTeam, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.List")
+	defer span.End()
 
-	p := []dbTeam{
-		{ID: uuid.New(), Name: "Team 1", Description: "This is team 1", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: uuid.New(), Name: "Team 2", Description: "This is team 2", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: uuid.New(), Name: "Team 3", Description: "This is team 3", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	var teams []dbTeam
+	q := `
+		SELECT
+			team_id,
+			name,
+			description,
+			code,
+			color,
+			icon,
+			workspace_id,
+			created_at,
+			updated_at
+		FROM
+			teams
+		ORDER BY created_at DESC;
+	`
+	stmt, err := r.db.PreparexContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "Fetching teams.")
+	if err := stmt.SelectContext(ctx, &teams); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve teams from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("teams not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
 	}
 
-	return toCoreTeams(p), nil
+	r.log.Info(ctx, "teams retrieved successfully.")
+	span.AddEvent("teams retrieved.", trace.WithAttributes(
+		attribute.Int("teams.count", len(teams)),
+		attribute.String("query", q),
+	))
+
+	return toCoreTeams(teams), nil
 }

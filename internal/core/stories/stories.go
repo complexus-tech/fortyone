@@ -20,6 +20,10 @@ var (
 // Repository provides access to the story storage.
 type Repository interface {
 	Get(ctx context.Context, id uuid.UUID) (CoreSingleStory, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	BulkDelete(ctx context.Context, ids []uuid.UUID) error
+	Restore(ctx context.Context, id uuid.UUID) error
+	BulkRestore(ctx context.Context, ids []uuid.UUID) error
 	Create(ctx context.Context, story *CoreSingleStory) error
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID) (int, error)
 	MyStories(ctx context.Context) ([]CoreStoryList, error)
@@ -168,4 +172,56 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (CoreSingleStory, error
 		return CoreSingleStory{}, err
 	}
 	return story, nil
+}
+
+// Delete deletes the story with the specified ID.
+func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.Delete")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.Delete")
+	defer span.End()
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
+}
+
+// BulkDelete deletes the stories with the specified IDs.
+func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.BulkDelete")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkDelete")
+	defer span.End()
+
+	if err := s.repo.BulkDelete(ctx, ids); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
+}
+
+// Restore restores the story with the specified ID.
+func (s *Service) Restore(ctx context.Context, id uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.Restore")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.Restore")
+	defer span.End()
+
+	if err := s.repo.Restore(ctx, id); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
+}
+
+// BulkRestore restores the stories with the specified IDs.
+func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.BulkRestore")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkRestore")
+	defer span.End()
+
+	if err := s.repo.BulkRestore(ctx, ids); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
 }

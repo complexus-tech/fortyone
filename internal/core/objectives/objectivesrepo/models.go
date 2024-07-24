@@ -8,16 +8,17 @@ import (
 )
 
 type dbObjective struct {
-	ID          uuid.UUID  `db:"id"`
+	ID          uuid.UUID  `db:"objective_id"`
 	Name        string     `db:"name"`
-	Description string     `db:"description"`
-	Owner       *uuid.UUID `db:"owner"`
+	Description *string    `db:"description"`
+	LeadUser    *uuid.UUID `db:"lead_user_id"`
+	Team        uuid.UUID  `db:"team_id"`
+	Workspace   uuid.UUID  `db:"workspace_id"`
 	StartDate   *time.Time `db:"start_date"`
 	EndDate     *time.Time `db:"end_date"`
-	IsPublic    bool       `db:"is_public"`
+	IsPrivate   bool       `db:"is_private"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
 }
 
 func toCoreObjective(p dbObjective) objectives.CoreObjective {
@@ -25,10 +26,12 @@ func toCoreObjective(p dbObjective) objectives.CoreObjective {
 		ID:          p.ID,
 		Name:        p.Name,
 		Description: p.Description,
-		Owner:       p.Owner,
+		LeadUser:    p.LeadUser,
+		Team:        p.Team,
+		Workspace:   p.Workspace,
 		StartDate:   p.StartDate,
 		EndDate:     p.EndDate,
-		IsPublic:    p.IsPublic,
+		IsPrivate:   p.IsPrivate,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}

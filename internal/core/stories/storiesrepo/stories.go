@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -330,11 +331,12 @@ func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
 			sprint_id,
 			team_id,
 			objective_id,
+			workspace_id,
 			created_at,
-			updated_at,
-			deleted_at
+			updated_at
 		FROM
 			stories
+		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC;
 	`
 
@@ -381,6 +383,10 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, 
 			status_id,
 			description,
 			description_html,
+			team_id,
+			objective_id,
+			sprint_id,
+			workspace_id,
 			created_at,
 			updated_at,
 			deleted_at
@@ -409,4 +415,209 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, 
 	r.log.Info(ctx, fmt.Sprintf("Story #%s retrieved successfully", id), "id", id)
 	span.AddEvent("Story retrieved.", trace.WithAttributes(attribute.String("story.id", id.String())))
 	return toCoreStory(story), nil
+}
+
+// Delete deletes the story with the specified ID.
+func (r *repo) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.Delete")
+	defer span.End()
+	params := map[string]interface{}{"id": id}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, `
+		UPDATE stories 
+		SET deleted_at = NOW(),
+				updated_at = NOW() 
+		WHERE id = :id;
+	`)
+
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Deleting story #%s", id), "id", id)
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to delete story: %s", err), "id", id)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Story #%s deleted successfully", id), "id", id)
+	span.AddEvent("Story deleted.", trace.WithAttributes(attribute.String("story.id", id.String())))
+
+	return nil
+}
+
+// BulkDelete removes the stories with the specified IDs.
+func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkDelete")
+	defer span.End()
+
+	query := `
+		UPDATE stories
+		SET deleted_at = NOW(),
+				updated_at = NOW()
+		WHERE id IN (:ids);
+	`
+	params := map[string]interface{}{"ids": ids}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named bulk delete statement: %s", err), "ids", ids)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", ids), "ids", ids)
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to delete stories: %s", err), "ids", ids)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Stories: %v deleted successfully", ids), "ids", ids)
+	span.AddEvent("Stories deleted.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+
+	return nil
+}
+
+// Restore rrestores a story with the specified ID.
+func (r *repo) Restore(ctx context.Context, id uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.Restore")
+	defer span.End()
+
+	query := `
+			UPDATE stories 
+			SET deleted_at = NULL, 
+					updated_at = NOW() 
+			WHERE id = :id
+	`
+	params := map[string]interface{}{"id": id}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare restore statement: %s", err), "id", id)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Restoring story #%s", id), "id", id)
+	_, err = stmt.ExecContext(ctx, params)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to restore story: %s", err), "id", id)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Story #%s restored successfully", id), "id", id)
+	span.AddEvent("Story restored.", trace.WithAttributes(attribute.String("story.id", id.String())))
+
+	return nil
+}
+
+// BulkRestore restores the stories with the specified IDs.
+func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkRestore")
+	defer span.End()
+
+	query := `
+		UPDATE stories
+		SET deleted_at = NULL,
+				updated_at = NOW()
+		WHERE id IN (:ids);
+	`
+	params := map[string]interface{}{"ids": ids}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named bulk restore statement: %s", err), "ids", ids)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Restoring stories: %v", ids), "ids", ids)
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to restore stories: %s", err), "ids", ids)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Stories: %v restored successfully", ids), "ids", ids)
+	span.AddEvent("Stories restored.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+
+	return nil
+}
+
+// Update updates the story with the specified ID.
+func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
+	defer span.End()
+
+	query := "UPDATE stories SET "
+	var setClauses []string
+	params := map[string]any{"id": id}
+
+	for field, value := range updates {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		params[field] = value
+	}
+
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query += strings.Join(setClauses, ", ")
+	query += " WHERE id = :id"
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named update statement: %s", err), "id", id)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Updating story #%s", id), "id", id)
+	_, err = stmt.ExecContext(ctx, params)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to update story: %s", err), "id", id)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Story #%s updated successfully", id), "id", id)
+	span.AddEvent("Story updated.", trace.WithAttributes(attribute.String("story.id", id.String())))
+
+	return nil
+}
+
+// BulkUpdate updates the stories with the specified IDs.
+func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, updates map[string]any) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkUpdate")
+	defer span.End()
+
+	query := "UPDATE stories SET "
+	var setClauses []string
+	params := map[string]any{"ids": ids}
+
+	for field, value := range updates {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		params[field] = value
+	}
+
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query += strings.Join(setClauses, ", ")
+	query += " WHERE id IN (:ids)"
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named bulk update statement: %s", err), "ids", ids)
+		return err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, fmt.Sprintf("Updating stories: %v", ids), "ids", ids)
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to update stories: %s", err), "ids", ids)
+		return err
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Stories: %v updated successfully", ids), "ids", ids)
+	span.AddEvent("Stories updated.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+
+	return nil
 }

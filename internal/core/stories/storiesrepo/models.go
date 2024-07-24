@@ -16,6 +16,8 @@ type dbStory struct {
 	DescriptionHTML *string    `db:"description_html"`
 	Parent          *uuid.UUID `db:"parent_id"`
 	Objective       *uuid.UUID `db:"objective_id"`
+	Epic            *uuid.UUID `db:"epic_id"`
+	Workspace       uuid.UUID  `db:"workspace_id"`
 	Team            uuid.UUID  `db:"team_id"`
 	Status          *uuid.UUID `db:"status_id"`
 	Assignee        *uuid.UUID `db:"assignee_id"`
@@ -42,6 +44,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Parent:          i.Parent,
 		Objective:       i.Objective,
 		Team:            i.Team,
+		Workspace:       i.Workspace,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
 		BlockedBy:       i.BlockedBy,
@@ -69,12 +72,15 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			Title:      story.Title,
 			Parent:     story.Parent,
 			Objective:  story.Objective,
+			Sprint:     story.Sprint,
+			Epic:       story.Epic,
+			Team:       story.Team,
+			Workspace:  story.Workspace,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
 			StartDate:  story.StartDate,
 			EndDate:    story.EndDate,
 			Priority:   story.Priority,
-			Sprint:     story.Sprint,
 			CreatedAt:  story.CreatedAt,
 			UpdatedAt:  story.UpdatedAt,
 		}

@@ -13,10 +13,13 @@ type CoreStoryList struct {
 	Title      string
 	Parent     *uuid.UUID
 	Objective  *uuid.UUID
+	Epic       *uuid.UUID
 	Status     *uuid.UUID
 	Assignee   *uuid.UUID
 	Priority   string
 	Sprint     *uuid.UUID
+	Team       uuid.UUID
+	Workspace  uuid.UUID
 	StartDate  *time.Time
 	EndDate    *time.Time
 	CreatedAt  time.Time
@@ -40,7 +43,9 @@ type CoreSingleStory struct {
 	Reporter        *uuid.UUID
 	Priority        string
 	Sprint          *uuid.UUID
+	Epic            *uuid.UUID
 	Team            uuid.UUID
+	Workspace       uuid.UUID
 	StartDate       *time.Time
 	EndDate         *time.Time
 	CreatedAt       time.Time

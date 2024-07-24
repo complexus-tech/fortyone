@@ -7,12 +7,14 @@ import (
 )
 
 type CoreSprint struct {
-	ID          uuid.UUID
-	Name        string
-	Description string
-	Owner       *uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        uuid.UUID
+	Name      string
+	Goal      *string
+	Objective *uuid.UUID
+	Team      uuid.UUID
+	Workspace uuid.UUID
+	StartDate time.Time
+	EndDate   time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
