@@ -2,6 +2,7 @@ package storiesgrp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -134,13 +135,17 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return ErrInvalidID
 	}
-	var ns AppUpdateStory
-	if err := web.Decode(r, &ns); err != nil {
+	var requestData map[string]json.RawMessage
+	if err := web.Decode(r, &requestData); err != nil {
 		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
 		return nil
 	}
 
-	if err := h.stories.Update(ctx, id, toCoreUpdateStory(ns)); err != nil {
+	updates, err := getUpdates(requestData)
+	if err != nil {
+		return err
+	}
+	if err := h.stories.Update(ctx, id, updates); err != nil {
 		return err
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)

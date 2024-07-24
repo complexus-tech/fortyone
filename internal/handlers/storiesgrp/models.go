@@ -132,18 +132,19 @@ type AppNewStory struct {
 	EndDate         *time.Time `json:"endDate"`
 }
 
+// AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
 type AppUpdateStory struct {
-	Title           *string    `json:"title"`
-	Description     *string    `json:"description"`
-	DescriptionHTML *string    `json:"descriptionHTML"`
-	Parent          *uuid.UUID `json:"parentId"`
-	Objective       *uuid.UUID `json:"objectiveId"`
-	Status          *uuid.UUID `json:"statusId"`
-	Assignee        *uuid.UUID `json:"assigneeId"`
-	Priority        *string    `json:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
-	Sprint          *uuid.UUID `json:"sprintId"`
-	StartDate       *time.Time `json:"startDate"`
-	EndDate         *time.Time `json:"endDate"`
+	Title           *string    `json:"title" db:"title"`
+	Description     *string    `json:"description" db:"description"`
+	DescriptionHTML *string    `json:"descriptionHTML" db:"description_html"`
+	Parent          *uuid.UUID `json:"parentId" db:"parent"`
+	Objective       *uuid.UUID `json:"objectiveId" db:"objective"`
+	Status          *uuid.UUID `json:"statusId" db:"status_id"`
+	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
+	Priority        *string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint          *uuid.UUID `json:"sprintId" db:"sprint_id"`
+	StartDate       *time.Time `json:"startDate" db:"start_date"`
+	EndDate         *time.Time `json:"endDate" db:"end_date"`
 }
 
 func toCoreNewStory(a AppNewStory) stories.CoreNewStory {

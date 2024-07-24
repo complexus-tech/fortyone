@@ -115,19 +115,3 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		DeletedAt:       i.DeletedAt,
 	}
 }
-
-// toDBUpdateStory converts a CoreUpdateStory to a dbStory.
-func toDBUpdateStory(i stories.CoreUpdateStory) dbStory {
-	return dbStory{
-		Title:           *i.Title,
-		Description:     i.Description,
-		DescriptionHTML: i.DescriptionHTML,
-		Parent:          i.Parent,
-		Objective:       i.Objective,
-		Status:          i.Status,
-		Assignee:        i.Assignee,
-		Sprint:          i.Sprint,
-		StartDate:       i.StartDate,
-		EndDate:         i.EndDate,
-	}
-}

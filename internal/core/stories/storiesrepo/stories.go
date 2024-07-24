@@ -532,16 +532,9 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
 }
 
 // Update updates the story with the specified ID.
-func (r *repo) Update(ctx context.Context, id uuid.UUID, us stories.CoreUpdateStory) error {
+func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
 	defer span.End()
-
-	updates, err := getUpdates(toDBUpdateStory(us))
-	fmt.Println(updates)
-	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to get updates: %s", err), "id", id)
-		return err
-	}
 
 	query := "UPDATE stories SET "
 	var setClauses []string
