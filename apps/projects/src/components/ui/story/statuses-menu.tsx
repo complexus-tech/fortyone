@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Box, Flex, Menu, Text } from "ui";
 import { CheckIcon } from "icons";
-import type { StoryStatus } from "@/modules/stories/types";
 import { StoryStatusIcon } from "../story-status-icon";
+import { useStore } from "@/hooks/store";
 
 export const StatusesMenu = ({ children }: { children: ReactNode }) => {
   return <Menu>{children}</Menu>;
@@ -13,21 +13,19 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 );
 
 const Items = ({
-  status = "Backlog",
+  statusId,
   isSearchEnabled = true,
+  setStatusId,
 }: {
-  status?: StoryStatus;
+  statusId?: string;
   isSearchEnabled?: boolean;
+  setStatusId: (statusId: string) => void;
 }) => {
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Duplicate",
-    "Canceled",
-  ];
+  const { states } = useStore();
+  if (!states.length) return null;
+  const state = states.find((state) => state.id === statusId) || states.at(0);
+  const { id: defaultStateId } = state!!;
+
   return (
     <Menu.Items align="center" className="w-64">
       {isSearchEnabled ? (
@@ -39,18 +37,21 @@ const Items = ({
         </>
       ) : null}
       <Menu.Group>
-        {statuses.map((st, idx) => (
+        {states.map(({ id, name }, idx) => (
           <Menu.Item
-            active={st === status}
+            active={id === defaultStateId}
+            onClick={() => {
+              setStatusId(id);
+            }}
             className="justify-between"
-            key={st}
+            key={id}
           >
             <Box className="grid grid-cols-[24px_auto] items-center">
-              <StoryStatusIcon status={st} />
-              <Text>{st}</Text>
+              <StoryStatusIcon statusId={id} />
+              <Text>{name}</Text>
             </Box>
             <Flex align="center" gap={2}>
-              {st === status && (
+              {id === defaultStateId && (
                 <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
               )}
               <Text color="muted">{idx}</Text>

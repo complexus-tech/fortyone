@@ -1,34 +1,92 @@
-import { BreadCrumbs, Button, Flex, Text } from "ui";
+"use client";
+import { Badge, BreadCrumbs, Button, Flex, Text } from "ui";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   BellIcon,
   StarIcon,
   StoryIcon,
+  UndoIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
+import { useStore } from "@/hooks/store";
+import { restoreStoryAction } from "../actions/restore-story";
+import { toast } from "sonner";
+import nProgress from "nprogress";
+import { useState } from "react";
 
-export const Header = ({ sequenceId }: { sequenceId: number }) => {
+export const Header = ({
+  sequenceId,
+  teamId,
+  isDeleted,
+  storyId,
+}: {
+  sequenceId: number;
+  teamId: string;
+  isDeleted: boolean;
+  storyId: string;
+}) => {
+  const [loading, setLoading] = useState(false);
+  const { teams } = useStore();
+  const { name, code } = teams.find((team) => team.id === teamId)!!;
+
+  const restoreStory = async () => {
+    try {
+      nProgress.start();
+      setLoading(true);
+      const _ = await restoreStoryAction(storyId);
+      toast.success("Success", {
+        description: "Story restored successfully",
+      });
+    } catch (error) {
+      toast.error("Error", {
+        description: "Failed to restore story",
+      });
+    } finally {
+      nProgress.done();
+      setLoading(false);
+    }
+  };
+
   return (
     <HeaderContainer>
       <Flex align="center" className="w-full" justify="between">
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: "Engineering",
-              icon: "🚀",
-              url: "/teams/web",
-            },
-            {
-              name: "Stories",
-              icon: <StoryIcon className="h-[1.1rem] w-auto" />,
-            },
-            {
-              name: `Web-${sequenceId}`,
-            },
-          ]}
-        />
+        <Flex align="center" gap={3}>
+          <BreadCrumbs
+            breadCrumbs={[
+              {
+                name,
+                icon: "🚀",
+                url: "/teams/web",
+              },
+              {
+                name: "Stories",
+                icon: <StoryIcon className="h-[1.1rem] w-auto" />,
+              },
+              {
+                name: `${code?.toUpperCase()}-${sequenceId}`,
+              },
+            ]}
+          />
+          {isDeleted && (
+            <Badge className="uppercase" color="tertiary" rounded="full">
+              Deleted
+            </Badge>
+          )}
+        </Flex>
         <Flex align="center" gap={2} justify="between">
+          {isDeleted && (
+            <Button
+              size="sm"
+              color="tertiary"
+              loading={loading}
+              loadingText="Restoring..."
+              onClick={restoreStory}
+              leftIcon={<UndoIcon className="h-4 w-auto" />}
+            >
+              Restore story
+            </Button>
+          )}
           <Text className="mr-2">
             2 /{" "}
             <Text as="span" color="muted">
@@ -39,6 +97,7 @@ export const Header = ({ sequenceId }: { sequenceId: number }) => {
             className="aspect-square"
             color="tertiary"
             rounded="xl"
+            disabled={isDeleted}
             size="sm"
           >
             <ArrowUpIcon className="h-4 w-auto" />
@@ -52,11 +111,21 @@ export const Header = ({ sequenceId }: { sequenceId: number }) => {
           >
             <ArrowDownIcon className="h-4 w-auto" />
           </Button>
-          <Button className="aspect-square" color="tertiary" size="sm">
+          <Button
+            className="aspect-square"
+            color="tertiary"
+            disabled={isDeleted}
+            size="sm"
+          >
             <StarIcon className="h-4 w-auto" />
             <span className="sr-only">Favourite</span>
           </Button>
-          <Button className="aspect-square" color="tertiary" size="sm">
+          <Button
+            className="aspect-square"
+            color="tertiary"
+            disabled={isDeleted}
+            size="sm"
+          >
             <BellIcon className="h-5 w-auto" />
             <span className="sr-only">Subscribe</span>
           </Button>

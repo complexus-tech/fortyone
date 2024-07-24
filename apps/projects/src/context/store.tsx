@@ -1,35 +1,30 @@
 "use client";
 
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode } from "react";
 import { State } from "@/types/states";
+import { Objective } from "@/modules/objectives/types";
+import { Team } from "@/modules/teams/types";
+import { Sprint } from "@/modules/sprints/types";
 
 type Store = {
+  teams: Team[];
   states: State[];
+  objectives: Objective[];
+  sprints: Sprint[];
 };
 
-const StoreContext = createContext<Store | undefined>(undefined);
+export const StoreContext = createContext<Store | undefined>(undefined);
 
 export const StoreProvider = ({
   children,
-  states,
+  initialState,
 }: {
   children: ReactNode;
-  states: State[];
+  initialState: Store;
 }) => {
-  const initialState: Store = {
-    states,
-  };
   return (
     <StoreContext.Provider value={initialState}>
       {children}
     </StoreContext.Provider>
   );
-};
-
-export const useStore = () => {
-  const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error("useStore must be used within a StoreProvider");
-  }
-  return context;
 };

@@ -8,13 +8,10 @@ export const getStory = async (id: string) => {
   const session = await auth();
 
   const story = await get<DetailedStory>(`/stories/${id}`, {
-    headers: {
-      "x-tenant-id": "123",
+    next: {
+      revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
+      tags: [`${TAGS.stories}:${id}`],
     },
-    // next: {
-    //   revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
-    //   tags: [`${TAGS.stories}:${id}`],
-    // },
   });
   // track story view
   return story;

@@ -5,4 +5,5 @@ export const TAGS = {
   epics: "epics",
   documents: "documents",
   states: "states",
+  teams: "teams",
 };

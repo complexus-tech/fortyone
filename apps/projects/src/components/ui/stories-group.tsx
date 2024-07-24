@@ -3,16 +3,14 @@ import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
 import { Text } from "ui";
-import type {
-  StoryStatus,
-  Story,
-  StoryPriority,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
+import { State } from "@/types/states";
+import { useStore } from "@/hooks/store";
 
 export const StoriesGroup = ({
   stories,
@@ -22,25 +20,31 @@ export const StoriesGroup = ({
   viewOptions,
 }: {
   stories: Story[];
-  status?: StoryStatus;
+  status?: State;
   priority?: StoryPriority;
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
   const pathname = usePathname();
+  const { states } = useStore();
+  const { id: defaultStatusId } = states.at(0)!!;
   const { groupBy, showEmptyGroups } = viewOptions;
-  const id = (groupBy === "Status" ? status : priority) as string;
+  const id = (groupBy === "Status" ? status?.id : priority) as string;
   const collapseKey = pathname + id;
   const [isCollapsed, setIsCollapsed] = useLocalStorage(collapseKey, false);
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
-  // const filteredStories =
-  //   groupBy === "Status"
-  //     ? stories.filter((story) => story.status === status)
-  //     : stories.filter((story) => story.priority === priority);
 
-  const filteredStories = stories;
+  const mappedStories = stories.map(({ statusId, priority, ...rest }) => ({
+    ...rest,
+    priority: priority ?? "No Priority",
+    statusId: statusId ?? defaultStatusId,
+  }));
+  const filteredStories =
+    groupBy === "Status"
+      ? mappedStories.filter((story) => story.statusId === status?.id)
+      : mappedStories.filter((story) => story.priority === priority);
 
   return (
     <div
@@ -65,7 +69,8 @@ export const StoriesGroup = ({
           <Text color="muted">
             Showing <b>{filteredStories.length}</b> stor
             {filteredStories.length === 1 ? "y" : "ies"} with{" "}
-            {groupBy.toLowerCase()} <b>{id}</b>
+            {groupBy.toLowerCase()}{" "}
+            <b>{groupBy === "Status" ? status?.name : priority}</b>
           </Text>
         </RowWrapper>
       )}

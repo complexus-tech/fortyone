@@ -12,6 +12,7 @@ export type DisplayColumn =
   | "Created"
   | "Updated"
   | "Sprint"
+  | "Objective"
   | "Epic"
   | "Labels";
 export type ViewOptionsOrderBy =
@@ -67,6 +68,7 @@ export const StoriesViewOptionsButton = ({
     "Updated",
     "Sprint",
     "Epic",
+    "Objective",
     "Labels",
   ];
 

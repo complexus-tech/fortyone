@@ -1,16 +1,16 @@
 import { get } from "@/lib/http";
-import { State } from "@/types/states";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { TAGS } from "@/constants/tags";
 import { auth } from "@/auth";
+import { Team } from "@/modules/teams/types";
 
-export const getStates = async () => {
+export const getTeams = async () => {
   const session = await auth();
-  const states = await get<State[]>("/states", {
+  const teams = await get<Team[]>("/teams", {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 30,
-      tags: [TAGS.states],
+      tags: [TAGS.teams],
     },
   });
-  return states;
+  return teams;
 };

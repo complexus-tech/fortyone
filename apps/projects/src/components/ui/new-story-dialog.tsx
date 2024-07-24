@@ -1,5 +1,5 @@
 "use client";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Button,
   Badge,
@@ -28,7 +28,7 @@ import {
   PlusIcon,
   TagsIcon,
 } from "icons";
-import type { StoryPriority, StoryStatus } from "@/modules/stories/types";
+import type { StoryPriority } from "@/modules/stories/types";
 import { StatusesMenu } from "./story/statuses-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
@@ -36,32 +36,41 @@ import { PriorityIcon } from "./priority-icon";
 import { NewStory } from "@/modules/story/types";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { toast } from "sonner";
-import nProgress from "nprogress";
+import nProgress, { set } from "nprogress";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/utils";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
+import { useStore } from "@/hooks/store";
 
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
-  status = "Backlog",
+  statusId,
   priority = "No Priority",
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
-  status?: StoryStatus;
+  statusId?: string;
   priority?: StoryPriority;
 }) => {
-  const [storyForm, setStoryForm] = useState<NewStory>({
+  const { states } = useStore();
+  const { id: defaultStateId } = (states.find(
+    (state) => state.id === statusId,
+  ) || states.at(0))!!;
+
+  const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
     teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
+    statusId: defaultStateId,
     endDate: null,
     startDate: null,
     priority,
-  });
+  };
+
+  const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const router = useRouter();
@@ -114,10 +123,10 @@ export const NewStoryDialog = ({
       descriptionHTML: editor.getHTML(),
       teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
       priority: storyForm.priority,
+      statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
       // assigneeId: "",
-      // statusId: status,
     };
 
     try {
@@ -127,6 +136,7 @@ export const NewStoryDialog = ({
         action: {
           label: "View story",
           onClick: () => {
+            nProgress.start();
             titleEditor.commands.setContent("");
             editor.commands.setContent("");
             router.push(
@@ -137,9 +147,6 @@ export const NewStoryDialog = ({
       });
       if (!createMore) {
         setIsOpen(false);
-      } else {
-        titleEditor.commands.setContent("");
-        editor.commands.setContent("");
       }
     } catch (error) {
       console.log(error);
@@ -149,8 +156,17 @@ export const NewStoryDialog = ({
     } finally {
       setLoading(false);
       nProgress.done();
+      titleEditor.commands.setContent("");
+      editor.commands.setContent("");
+      setStoryForm(initialForm);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      titleEditor?.commands.focus();
+    }
+  }, [isOpen]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -187,15 +203,28 @@ export const NewStoryDialog = ({
               <StatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<StoryStatusIcon className="h-4" status={status} />}
+                  leftIcon={
+                    <StoryStatusIcon
+                      className="h-4"
+                      statusId={storyForm.statusId}
+                    />
+                  }
                   size="xs"
                   type="button"
                   variant="outline"
                 >
-                  {status}
+                  {
+                    states.find((state) => state.id === storyForm.statusId)
+                      ?.name
+                  }
                 </Button>
               </StatusesMenu.Trigger>
-              <StatusesMenu.Items status={status} />
+              <StatusesMenu.Items
+                statusId={storyForm.statusId}
+                setStatusId={(id) => {
+                  setStoryForm((prev) => ({ ...prev, statusId: id }));
+                }}
+              />
             </StatusesMenu>
             <PrioritiesMenu>
               <PrioritiesMenu.Trigger>

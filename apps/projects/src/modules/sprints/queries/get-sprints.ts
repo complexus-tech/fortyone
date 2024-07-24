@@ -1,16 +1,16 @@
 import { get } from "@/lib/http";
-import { State } from "@/types/states";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { TAGS } from "@/constants/tags";
 import { auth } from "@/auth";
+import { Sprint } from "../types";
 
-export const getStates = async () => {
+export const getSprints = async () => {
   const session = await auth();
-  const states = await get<State[]>("/states", {
+  const sprints = await get<Sprint[]>("/sprints", {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 30,
-      tags: [TAGS.states],
+      tags: [TAGS.sprints],
     },
   });
-  return states;
+  return sprints;
 };

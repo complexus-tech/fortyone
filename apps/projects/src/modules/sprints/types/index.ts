@@ -1,8 +1,12 @@
 export type Sprint = {
-  id: number;
-  code: string;
-  lead: string;
-  title: string;
-  description: string;
-  date: string;
+  id: string;
+  name: string;
+  goal: string;
+  objectiveId: string;
+  teamId: string;
+  workspaceId: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  updatedAt: string;
 };

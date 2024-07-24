@@ -5,7 +5,7 @@ import { FC, HTMLAttributes, useState } from "react";
 import { BlurImage } from "../Image/Image";
 
 const avatar = cva(
-  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium",
+  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0",
   {
     variants: {
       rounded: {

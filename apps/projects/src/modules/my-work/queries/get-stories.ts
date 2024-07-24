@@ -1,6 +1,3 @@
-"use server";
-import "server-only";
-
 import { auth } from "@/auth";
 import { getStories } from "@/modules/stories/queries/get-stories";
 

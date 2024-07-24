@@ -1,16 +1,20 @@
 import { cn } from "lib";
-import type { StoryStatus } from "../../modules/stories/types";
+import { useStore } from "@/hooks/store";
 
 export const StoryStatusIcon = ({
-  status = "Backlog",
+  statusId,
   className,
 }: {
-  status?: StoryStatus;
+  statusId?: string;
   className?: string;
 }) => {
+  const { states } = useStore();
+  if (!states.length) return null;
+  const state = states.find((state) => state.id === statusId) || states.at(0);
+  const { category } = state!!;
   return (
     <>
-      {status === "Backlog" && (
+      {category === "backlog" && (
         <svg
           className={cn(
             "h-[1.15rem] w-auto text-gray dark:text-gray-300",
@@ -36,7 +40,7 @@ export const StoryStatusIcon = ({
           <path d="M6.391 20.279a10 10 0 0 1-2.69-2.7" />
         </svg>
       )}
-      {status === "Todo" && (
+      {category === "unstarted" && (
         <svg
           className={cn(
             "h-[1.15rem] w-auto text-gray dark:text-gray-300",
@@ -55,7 +59,7 @@ export const StoryStatusIcon = ({
           <circle cx="12" cy="12" r="10" />
         </svg>
       )}
-      {status === "In Progress" && (
+      {category === "started" && (
         <svg
           className={cn("h-[1.15rem] w-auto text-warning", className)}
           fill="none"
@@ -71,23 +75,7 @@ export const StoryStatusIcon = ({
           <circle cx="12" cy="12" r="10" />
         </svg>
       )}
-      {status === "Testing" && (
-        <svg
-          className={cn("h-[1.15rem] w-auto text-info", className)}
-          fill="none"
-          height="24"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.5"
-          viewBox="0 0 24 24"
-          width="24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-      )}
-      {status === "Paused" && (
+      {category === "paused" && (
         <svg
           className={cn(
             "h-[1.15rem] w-auto text-dark-50 dark:text-gray-200",
@@ -108,7 +96,7 @@ export const StoryStatusIcon = ({
           <line x1="14" x2="14" y1="15" y2="9" />
         </svg>
       )}
-      {status === "Done" && (
+      {category === "completed" && (
         <svg
           className={cn("h-[1.15rem] w-auto text-success", className)}
           fill="none"
@@ -125,30 +113,9 @@ export const StoryStatusIcon = ({
           <path d="m9 12 2 2 4-4" />
         </svg>
       )}
-      {status === "Canceled" && (
+      {category === "cancelled" && (
         <svg
           className={cn("h-[1.15rem] w-auto text-danger", className)}
-          fill="none"
-          height="24"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.5"
-          viewBox="0 0 24 24"
-          width="24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="m15 9-6 6" />
-          <path d="m9 9 6 6" />
-        </svg>
-      )}
-      {status === "Duplicate" && (
-        <svg
-          className={cn(
-            "h-[1.15rem] w-auto text-dark-50 dark:text-gray-200/80",
-            className,
-          )}
           fill="none"
           height="24"
           stroke="currentColor"

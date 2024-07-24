@@ -352,6 +352,10 @@ importers:
         version: 1.13.2(eslint@9.0.0)
 
   packages/icons:
+    dependencies:
+      lib:
+        specifier: workspace:*
+        version: link:../lib
     devDependencies:
       '@types/node':
         specifier: ^20.12.7

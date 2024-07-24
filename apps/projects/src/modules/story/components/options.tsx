@@ -1,7 +1,18 @@
 "use client";
-import { Box, Button, Container, Divider, Text, DatePicker, Avatar } from "ui";
+import {
+  Box,
+  Button,
+  Container,
+  Divider,
+  Text,
+  DatePicker,
+  Avatar,
+  Flex,
+  Tooltip,
+  Badge,
+} from "ui";
 import { useState, type ReactNode } from "react";
-import { addDays } from "date-fns";
+import { addDays, format, differenceInDays, isTomorrow } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { CalendarIcon } from "icons";
 import {
@@ -15,7 +26,9 @@ import {
 } from "@/components/ui";
 import { Labels } from "@/components/ui/story/labels";
 import { AddLinks, OptionsHeader } from ".";
-import { DetailedStory } from "../../stories/types";
+import { DetailedStory } from "../types";
+import { useStore } from "@/hooks/store";
+import { cn } from "lib";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -33,18 +46,92 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
 };
 
 export const Options = ({ story }: { story: DetailedStory }) => {
-  const { priority } = story;
+  const {
+    priority,
+    statusId,
+    startDate,
+    endDate,
+    objectiveId,
+    sprintId,
+    deletedAt,
+  } = story;
+  const { states } = useStore();
+  const { name } = (states.find((state) => state.id === statusId) ||
+    states.at(0))!!;
+  const isDeleted = !!deletedAt;
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2022, 0, 20),
     to: addDays(new Date(2022, 0, 20), 20),
   });
+
+  const getDueDateMessage = (date: Date) => {
+    if (date < new Date()) {
+      return (
+        <>
+          <Text fontSize="md">
+            This was overdue on {format(date, "MMMM dd")}
+          </Text>
+          <Text color="muted" fontSize="md">
+            {differenceInDays(new Date(), date)} days overdue
+          </Text>
+        </>
+      );
+    }
+    if (date <= addDays(new Date(), 7) && date >= new Date()) {
+      return (
+        <>
+          <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+          <Text fontSize="md" color="muted">
+            {isTomorrow(date) ? (
+              "Tomorrow"
+            ) : (
+              <>Due in {differenceInDays(date, new Date())} days</>
+            )}
+          </Text>
+        </>
+      );
+    }
+    return (
+      <>
+        <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+        <Text color="muted" fontSize="md">
+          {isTomorrow(date) ? (
+            "Tomorrow"
+          ) : (
+            <>Due in {differenceInDays(date, new Date())} days</>
+          )}
+        </Text>
+      </>
+    );
+  };
+
+  const updateStoryProperty = (
+    property: keyof DetailedStory,
+    value: string,
+  ) => {
+    // update the property of the story
+  };
+
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader />
+      <OptionsHeader story={story} />
       <Container className="px-8 pt-4 text-gray-300/90">
-        <Text className="mb-5" fontWeight="semibold">
-          Properties
-        </Text>
+        <Flex className="mb-5" align="center" justify="between">
+          <Text fontWeight="semibold">Properties</Text>
+          {isDeleted && (
+            <Badge
+              rounded="full"
+              color="warning"
+              className="text-dark dark:bg-opacity-50 dark:text-white"
+            >
+              {differenceInDays(
+                addDays(new Date(deletedAt), 30),
+                new Date(deletedAt),
+              )}{" "}
+              days left in bin
+            </Badge>
+          )}
+        </Flex>
         <Option
           label="Status"
           value={
@@ -52,14 +139,15 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <StatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<StoryStatusIcon />}
+                  disabled={isDeleted}
+                  leftIcon={<StoryStatusIcon statusId={statusId} />}
                   type="button"
                   variant="naked"
                 >
-                  Backlog
+                  {name}
                 </Button>
               </StatusesMenu.Trigger>
-              <StatusesMenu.Items />
+              <StatusesMenu.Items statusId={statusId} setStatusId={() => {}} />
             </StatusesMenu>
           }
         />
@@ -70,6 +158,7 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
+                  disabled={isDeleted}
                   leftIcon={<PriorityIcon priority={priority} />}
                   type="button"
                   variant="naked"
@@ -88,6 +177,7 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <AssigneesMenu.Trigger>
                 <Button
                   className="font-medium"
+                  disabled={isDeleted}
                   color="tertiary"
                   leftIcon={
                     <Avatar
@@ -114,10 +204,21 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <DatePicker.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
+                  disabled={isDeleted}
+                  leftIcon={
+                    <CalendarIcon
+                      className={cn("h-[1.15rem] w-auto", {
+                        "text-gray/80 dark:text-gray-300/80": !startDate,
+                      })}
+                    />
+                  }
                   variant="naked"
                 >
-                  Sep 27, 2024
+                  {startDate ? (
+                    format(new Date(startDate), "MMM dd, yyyy")
+                  ) : (
+                    <Text color="muted">Add start date</Text>
+                  )}
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar
@@ -135,15 +236,54 @@ export const Options = ({ story }: { story: DetailedStory }) => {
           label="Due date"
           value={
             <DatePicker>
-              <DatePicker.Trigger>
-                <Button
-                  color="tertiary"
-                  leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
-                  variant="naked"
-                >
-                  Sep 27, 2024
-                </Button>
-              </DatePicker.Trigger>
+              <Tooltip
+                hidden={!endDate}
+                className="py-3"
+                title={
+                  <Flex align="start" gap={2}>
+                    <CalendarIcon
+                      className={cn("relative top-[2.5px] h-5 w-auto", {
+                        "text-primary dark:text-primary":
+                          new Date(endDate) < new Date(),
+                        "text-warning dark:text-warning":
+                          new Date(endDate) <= addDays(new Date(), 7) &&
+                          new Date(endDate) >= new Date(),
+                      })}
+                    />
+                    <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                  </Flex>
+                }
+              >
+                <span>
+                  <DatePicker.Trigger asChild>
+                    <DatePicker.Trigger>
+                      <Button
+                        color="tertiary"
+                        className={cn({
+                          "text-primary dark:text-primary":
+                            endDate && new Date(endDate) < new Date(),
+                          "text-warning dark:text-warning":
+                            endDate &&
+                            new Date(endDate) <= addDays(new Date(), 7) &&
+                            new Date(endDate) >= new Date(),
+                          "text-gray/80 dark:text-gray-300/80": !endDate,
+                        })}
+                        disabled={isDeleted}
+                        leftIcon={
+                          <CalendarIcon className="h-[1.15rem] w-auto" />
+                        }
+                        variant="naked"
+                      >
+                        {endDate ? (
+                          format(new Date(endDate), "MMM dd, yyyy")
+                        ) : (
+                          <Text color="muted">Add due date</Text>
+                        )}
+                      </Button>
+                    </DatePicker.Trigger>
+                  </DatePicker.Trigger>
+                </span>
+              </Tooltip>
               <DatePicker.Calendar />
             </DatePicker>
           }

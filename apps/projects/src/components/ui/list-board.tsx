@@ -1,12 +1,9 @@
 import { cn } from "lib";
-import type {
-  Story,
-  StoryPriority,
-  StoryStatus,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
+import { useStore } from "@/hooks/store";
 
 export const ListBoard = ({
   stories,
@@ -18,14 +15,7 @@ export const ListBoard = ({
   viewOptions: StoriesViewOptions;
 }) => {
   const { groupBy } = viewOptions;
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
+  const { states } = useStore();
 
   const priorities: StoryPriority[] = [
     "No Priority",
@@ -38,10 +28,10 @@ export const ListBoard = ({
   return (
     <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
       {groupBy === "Status" &&
-        statuses.map((status) => (
+        states.map((status) => (
           <StoriesGroup
             className="-top-[0.5px]"
-            key={status}
+            key={status.id}
             status={status}
             stories={stories}
             viewOptions={viewOptions}

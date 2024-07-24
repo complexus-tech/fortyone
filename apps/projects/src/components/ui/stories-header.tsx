@@ -3,14 +3,15 @@ import { useState } from "react";
 import { Button, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
 import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
-import type { StoryPriority, StoryStatus } from "@/modules/stories/types";
+import type { StoryPriority } from "@/modules/stories/types";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
+import { State } from "@/types/states";
 
 type StoryHeaderProps = {
-  status?: StoryStatus;
+  status?: State;
   count: number;
   className?: string;
   priority?: StoryPriority;
@@ -21,7 +22,7 @@ type StoryHeaderProps = {
 export const StoriesHeader = ({
   count,
   className,
-  status = "Backlog",
+  status,
   priority,
   groupBy,
   isCollapsed,
@@ -60,8 +61,8 @@ export const StoriesHeader = ({
           >
             {groupBy === "Status" && (
               <>
-                <StoryStatusIcon status={status} />
-                <Text fontWeight="medium">{status}</Text>
+                <StoryStatusIcon statusId={status?.id} />
+                <Text fontWeight="medium">{status?.name}</Text>
               </>
             )}
             {groupBy === "Priority" && (
@@ -99,7 +100,7 @@ export const StoriesHeader = ({
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
-        status={status}
+        statusId={status?.id}
       />
     </Container>
   );

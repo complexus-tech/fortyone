@@ -19,10 +19,10 @@ const Items = ({
 }) => {
   const priorities: StoryPriority[] = [
     "No Priority",
-    "Urgent",
-    "High",
-    "Medium",
     "Low",
+    "Medium",
+    "High",
+    "Urgent",
   ];
   return (
     <Menu.Items align="center" className="w-64">

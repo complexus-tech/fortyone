@@ -143,6 +143,11 @@ th {
   @apply bg-primary text-dark;
 }
 
+/* this is for sonner */
+[data-close-button] {
+  @apply dark:hover:!border-dark-50 hover:dark:!bg-dark-100;
+}
+
 /* CSS color for nprogress */
 /* Make clicks pass-through */
 #nprogress {

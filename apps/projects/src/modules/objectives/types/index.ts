@@ -1,8 +1,13 @@
 export type Objective = {
-  id: number;
-  code: string;
-  lead: string;
-  title: string;
+  id: string;
+  name: string;
   description: string;
-  date: string;
+  leadUser: string;
+  teamId: string;
+  workspaceId: string;
+  startDate: string;
+  endDate: string;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
 };

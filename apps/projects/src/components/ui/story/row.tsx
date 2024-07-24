@@ -1,6 +1,16 @@
 "use client";
 import Link from "next/link";
-import { DatePicker, Flex, Text, Tooltip, Avatar, Checkbox, Box } from "ui";
+import {
+  DatePicker,
+  Flex,
+  Text,
+  Tooltip,
+  Avatar,
+  Checkbox,
+  Box,
+  Button,
+  Badge,
+} from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Story as StoryProps } from "@/modules/stories/types";
@@ -15,19 +25,180 @@ import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { slugify } from "@/utils";
+import { useStore } from "@/hooks/store";
+import {
+  CalendarIcon,
+  EpicsIcon,
+  LinkIcon,
+  ObjectiveIcon,
+  SprintsIcon,
+} from "icons";
+import { format, addDays, differenceInDays, isTomorrow } from "date-fns";
+import { StateCategory } from "@/types/states";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
     id,
     sequenceId,
     title,
-    status = "Backlog",
+    statusId,
+    endDate,
+    createdAt,
+    updatedAt,
+    teamId,
+    objectiveId,
+    sprintId,
+    epicId,
     priority = "No Priority",
   } = story;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
   const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
+  const { states, teams, objectives, sprints } = useStore();
+  const status = states.find((state) => state.id === statusId) || states.at(0);
+  const teamCode = teams.find((team) => team.id === teamId)?.code;
+  const selectedObjective = objectives.find(
+    (objective) => objective.id === objectiveId,
+  );
+  const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
+
+  const completedOrCancelled = (category?: StateCategory) => {
+    return ["completed", "cancelled", "paused"].includes(category || "");
+  };
+
+  const getDueDateMessage = (date: Date) => {
+    if (date < new Date()) {
+      return (
+        <>
+          <Text fontSize="md">
+            This was overdue on {format(date, "MMMM dd")}
+          </Text>
+          <Text color="muted" fontSize="md">
+            {differenceInDays(new Date(), date)} days overdue
+          </Text>
+        </>
+      );
+    }
+    if (date <= addDays(new Date(), 7) && date >= new Date()) {
+      return (
+        <>
+          <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+          <Text fontSize="md" color="muted">
+            {isTomorrow(date) ? (
+              "Tomorrow"
+            ) : (
+              <>Due in {differenceInDays(date, new Date())} days</>
+            )}
+          </Text>
+        </>
+      );
+    }
+    return (
+      <>
+        <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+        <Text color="muted" fontSize="md">
+          {isTomorrow(date) ? (
+            "Tomorrow"
+          ) : (
+            <>Due in {differenceInDays(date, new Date())} days</>
+          )}
+        </Text>
+      </>
+    );
+  };
+
+  const sprintTooltip = () => {
+    const isCompleted = new Date(selectedSprint?.endDate!!) < new Date();
+    const inProgress =
+      new Date(selectedSprint?.startDate!!) < new Date() &&
+      new Date(selectedSprint?.endDate!!) > new Date();
+    const daysLeft = differenceInDays(
+      new Date(selectedSprint?.endDate!!),
+      new Date(),
+    );
+    const isPanned = new Date(selectedSprint?.startDate!!) > new Date();
+
+    const getBadgeColor = () => {
+      if (isCompleted || isPanned) {
+        return "tertiary";
+      }
+      if (inProgress && daysLeft < 5) {
+        return "primary";
+      }
+      if (inProgress && daysLeft < 8) {
+        return "warning";
+      }
+      return "info";
+    };
+
+    const getBadgeText = () => {
+      if (isCompleted) {
+        return "Completed";
+      }
+      if (isPanned) {
+        return "Planned";
+      }
+      if (inProgress && daysLeft < 5) {
+        return `${daysLeft} days left`;
+      }
+      if (inProgress && daysLeft < 8) {
+        return "Ending in a week";
+      }
+      return "In progress";
+    };
+
+    return (
+      <Flex align="start" gap={2}>
+        <SprintsIcon className="relative top-[6px] h-5 w-auto shrink-0" />
+        <Box>
+          <Flex align="center" justify="between">
+            <Text fontSize="md">{selectedSprint?.name}</Text>
+
+            <Button
+              color="tertiary"
+              rounded="full"
+              size="sm"
+              title="Open sprint"
+            >
+              <LinkIcon className="h-4 w-auto -rotate-45" />
+              <span className="sr-only">Open sprint</span>
+            </Button>
+          </Flex>
+          <Flex align="center" gap={6} className="mb-2 mt-3" justify="between">
+            <Text fontSize="md" className="flex items-center gap-1">
+              <CalendarIcon
+                className={cn("h-5 w-auto", {
+                  "text-primary dark:text-primary":
+                    getBadgeColor() === "primary",
+                  "text-warning dark:text-warning":
+                    getBadgeColor() === "warning",
+                  "text-info dark:text-info": getBadgeColor() === "info",
+                })}
+              />{" "}
+              {format(new Date(selectedSprint?.startDate!!), "MMM dd")} -{" "}
+              {format(new Date(selectedSprint?.endDate!!), "MMM dd")}
+            </Text>
+            <Badge
+              className="border-opacity-50 bg-opacity-40 text-xs font-semibold uppercase"
+              rounded="full"
+              color={getBadgeColor()}
+            >
+              {getBadgeText()}
+            </Badge>
+          </Flex>
+          {selectedSprint?.goal && (
+            <>
+              <Text fontSize="md">Sprint Goal:</Text>
+              <Text color="muted" className="line-clamp-4" fontSize="md">
+                {selectedSprint?.goal}
+              </Text>
+            </>
+          )}
+        </Box>
+      </Flex>
+    );
+  };
 
   return (
     <div ref={setNodeRef}>
@@ -52,12 +223,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               }}
             />
             {isColumnVisible("ID") && (
-              <Tooltip title="Story ID: COM-12">
+              <Tooltip title={`Story ID: ${teamCode}-${sequenceId}`}>
                 <Text
-                  className="min-w-[6ch] truncate text-[0.98rem]"
+                  className="min-w-[6ch] truncate text-[0.99rem]"
                   color="muted"
                 >
-                  COM-{sequenceId}
+                  {teamCode}-{sequenceId}
                 </Text>
               </Tooltip>
             )}
@@ -65,15 +236,18 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>
-          <Flex align="center" className="shrink-0" gap={3}>
+          <Flex align="center" className="shrink-0" gap={2}>
             {isColumnVisible("Status") && (
               <StatusesMenu>
                 <StatusesMenu.Trigger>
                   <button className="flex items-center gap-1" type="button">
-                    <StoryStatusIcon status={status} /> {status}
+                    <StoryStatusIcon statusId={statusId} /> {status?.name}
                   </button>
                 </StatusesMenu.Trigger>
-                <StatusesMenu.Items status={status} />
+                <StatusesMenu.Items
+                  statusId={statusId}
+                  setStatusId={(id) => {}}
+                />
               </StatusesMenu>
             )}
             {isColumnVisible("Priority") && (
@@ -90,39 +264,161 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 <PrioritiesMenu.Items priority={priority} />
               </PrioritiesMenu>
             )}
-            {isColumnVisible("Labels") && <Labels />}
-            {isColumnVisible("Created") && (
-              <DatePicker>
-                <DatePicker.Trigger>
-                  <button type="button">
-                    <Tooltip title="Created on Sep 27, 2021">
-                      <Text as="span" color="muted">
-                        Sep 27
-                      </Text>
-                    </Tooltip>
-                  </button>
-                </DatePicker.Trigger>
-                <DatePicker.Calendar />
-              </DatePicker>
-            )}
-            {isColumnVisible("Assignee") && (
+            {isColumnVisible("Objective") && selectedObjective && (
               <Tooltip
-                className="py-3"
+                className="max-w-80 py-3"
                 title={
-                  <Flex align="center" gap={2}>
-                    <Avatar
-                      name="Joseph Mukorivo"
-                      src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                    />
+                  <Flex align="start" gap={2}>
+                    <ObjectiveIcon className="relative top-[2.5px] h-5 w-auto shrink-0" />
                     <Box>
-                      <Text fontWeight="medium">Joseph Mukorivo</Text>
-                      <Text color="muted">@josemukorivo</Text>
+                      <Text fontSize="md" className="mb-1.5">
+                        {selectedObjective?.name}
+                      </Text>
+                      <Text
+                        color="muted"
+                        className="line-clamp-4"
+                        fontSize="md"
+                      >
+                        {selectedObjective?.description}
+                      </Text>
                     </Box>
                   </Flex>
                 }
               >
-                <span>
-                  <AssigneesMenu>
+                <Button
+                  color="tertiary"
+                  className="pl-1.5 pr-2"
+                  size="xs"
+                  rounded="xl"
+                  type="button"
+                >
+                  <ObjectiveIcon className="h-5 w-auto" />
+                  <span className="inline-block max-w-36 truncate">
+                    {selectedObjective?.name}
+                  </span>
+                </Button>
+              </Tooltip>
+            )}
+
+            {isColumnVisible("Sprint") && selectedSprint && (
+              <Tooltip className="max-w-96 py-3" title={sprintTooltip()}>
+                <Button
+                  color="tertiary"
+                  className="pl-1.5 pr-2"
+                  size="xs"
+                  rounded="xl"
+                  type="button"
+                >
+                  <SprintsIcon className="h-5 w-auto" />
+                  <span className="inline-block max-w-36 truncate">
+                    {selectedSprint?.name}
+                  </span>
+                </Button>
+              </Tooltip>
+            )}
+
+            <Button
+              color="tertiary"
+              className="px-2"
+              size="xs"
+              rounded="xl"
+              type="button"
+            >
+              <EpicsIcon className="h-5 w-auto" /> Objective
+            </Button>
+            {isColumnVisible("Labels") && <Labels />}
+
+            {isColumnVisible("Due date") &&
+              endDate &&
+              !completedOrCancelled(status?.category) && (
+                <DatePicker>
+                  <Tooltip
+                    className="py-3"
+                    title={
+                      <Flex align="start" gap={2}>
+                        <CalendarIcon
+                          className={cn("relative top-[2.5px] h-5 w-auto", {
+                            "text-primary dark:text-primary":
+                              new Date(endDate) < new Date(),
+                            "text-warning dark:text-warning":
+                              new Date(endDate) <= addDays(new Date(), 7) &&
+                              new Date(endDate) >= new Date(),
+                          })}
+                        />
+                        <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                      </Flex>
+                    }
+                  >
+                    <span>
+                      <DatePicker.Trigger asChild>
+                        <Button
+                          color="tertiary"
+                          className={cn("px-2", {
+                            "text-primary dark:text-primary":
+                              new Date(endDate) < new Date(),
+                            "text-warning dark:text-warning":
+                              new Date(endDate) <= addDays(new Date(), 7) &&
+                              new Date(endDate) >= new Date(),
+                          })}
+                          size="xs"
+                          rounded="xl"
+                          type="button"
+                        >
+                          <CalendarIcon
+                            className="h-4 w-auto"
+                            strokeWidth={2.5}
+                          />
+                          {format(new Date(endDate), "MMM dd")}
+                        </Button>
+                      </DatePicker.Trigger>
+                    </span>
+                  </Tooltip>
+                  <DatePicker.Calendar />
+                </DatePicker>
+              )}
+            {isColumnVisible("Created") && (
+              <Tooltip
+                title={`Created on ${format(new Date(createdAt), "MMM dd, yyyy HH:mm")}`}
+              >
+                <span className="cursor-default">
+                  <Text as="span" color="muted">
+                    {format(new Date(createdAt), "MMM dd")}
+                  </Text>
+                </span>
+              </Tooltip>
+            )}
+            {isColumnVisible("Updated") && (
+              <Tooltip
+                title={`Last updated on ${format(new Date(updatedAt), "MMM dd, yyyy HH:mm")}`}
+              >
+                <span className="cursor-default">
+                  <Text as="span" color="muted">
+                    {format(new Date(updatedAt), "MMM dd")}
+                  </Text>
+                </span>
+              </Tooltip>
+            )}
+            {isColumnVisible("Assignee") && (
+              <AssigneesMenu>
+                <Tooltip
+                  title={
+                    <Flex align="center" gap={2}>
+                      <Avatar
+                        name="Joseph Mukorivo"
+                        src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                      />
+                      <Box>
+                        <Text fontSize="md" fontWeight="medium">
+                          Joseph Mukorivo
+                        </Text>
+                        <Text fontSize="md" color="muted">
+                          @josemukorivo
+                        </Text>
+                      </Box>
+                    </Flex>
+                  }
+                >
+                  <span>
                     <AssigneesMenu.Trigger>
                       <button className="flex" type="button">
                         <Avatar
@@ -132,10 +428,10 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         />
                       </button>
                     </AssigneesMenu.Trigger>
-                    <AssigneesMenu.Items />
-                  </AssigneesMenu>
-                </span>
-              </Tooltip>
+                  </span>
+                </Tooltip>
+                <AssigneesMenu.Items />
+              </AssigneesMenu>
             )}
           </Flex>
         </RowWrapper>

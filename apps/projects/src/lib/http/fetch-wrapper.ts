@@ -9,18 +9,36 @@ async function http<T>(
   responseType?: ResponseType,
   retries = 1,
 ): Promise<T> {
+  let requestConfig: RequestInit = config;
+  if (process.env.NODE_ENV === "development") {
+    requestConfig = {
+      ...config,
+      next: {
+        revalidate: 0,
+      },
+    };
+  }
+
   const fullPath = path.startsWith("/") ? apiURL + path : path;
-  const request = new Request(fullPath, config);
-  const response: Response = await fetch(fullPath, config);
+  const request = new Request(fullPath, requestConfig);
+  const response: Response = await fetch(fullPath, requestConfig);
 
   if (!response.ok) {
     if (retries > 0) {
-      return await http<T>(fullPath, config, responseType, retries - 1);
+      return await http<T>(fullPath, requestConfig, responseType, retries - 1);
     }
     const errJson = await response.json();
     const err = HttpError.fromRequest(request, response, errJson);
     throw err;
   }
+
+  // check if it's 204, return empty object
+  if (response.status === 204) {
+    return {
+      success: true,
+    } as any;
+  }
+
   // may error if there is no body, return empty array
   if (responseType === "blob") return (await response.blob()) as any;
   return await response.json();
@@ -41,7 +59,7 @@ type Options = {
 };
 export async function post<T, U>(
   path: string,
-  body: T,
+  body: T = {} as T,
   config?: RequestInit,
   options: Options = { raw: false },
   retries = 1,
@@ -87,14 +105,12 @@ export async function patch<T, U>(
 
 export async function remove<T, U>(
   path: string,
-  body: T,
   config?: RequestInit,
   retries = 1,
 ): Promise<U> {
   const init = {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
     ...config,
   };
   return await http<U>(path, init, "json", retries);

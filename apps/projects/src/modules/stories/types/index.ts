@@ -1,13 +1,3 @@
-export type StoryStatus =
-  | "Backlog"
-  | "Todo"
-  | "In Progress"
-  | "Testing"
-  | "Done"
-  | "Paused"
-  | "Duplicate"
-  | "Canceled";
-
 export type StoryPriority =
   | "No Priority"
   | "Urgent"
@@ -16,10 +6,19 @@ export type StoryPriority =
   | "Low";
 
 export type Story = {
-  id: number;
+  id: string;
   title: string;
   description?: string;
-  status?: StoryStatus;
-  priority?: StoryPriority;
-  sequenceId: number;
+  statusId: string;
+  sprintId: string;
+  objectiveId: string;
+  teamId: string;
+  workspaceId: string;
+  epicId: string;
+  sequenceId: string;
+  priority: StoryPriority;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  updatedAt: string;
 };

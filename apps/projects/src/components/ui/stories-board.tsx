@@ -4,11 +4,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import type {
-  Story,
-  StoryPriority,
-  StoryStatus,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -56,8 +52,8 @@ const StoryOverlay = ({
             </Text>
           ) : (
             <>
-              <StoryStatusIcon status={story?.status} />
-              <Text color="muted">COM-{story?.id}</Text>
+              <StoryStatusIcon statusId={story?.statusId} />
+              <Text color="muted">COM-{story?.sequenceId}</Text>
               <Text className="max-w-xs truncate" fontWeight="medium">
                 {story?.title}
               </Text>
@@ -82,25 +78,23 @@ export const StoriesBoard = ({
 }) => {
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
-  const [selectedStories, setSelectedStories] = useState<number[]>([]);
+  const [selectedStories, setSelectedStories] = useState<string[]>([]);
 
   const isColumnVisible = (column: DisplayColumn) =>
     viewOptions.displayColumns.includes(column);
 
   const handleDragStart = (e: DragStartEvent) => {
-    const story = stories.find(({ id }) => id === Number(e.active.id))!;
+    const story = stories.find(({ id }) => id === e.active.id)!;
     setActiveStory(story);
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { groupBy } = viewOptions;
     if (groupBy === "Status") {
-      const newStatus = e.over?.id as StoryStatus | null;
+      const newStatus = e.over?.id.toString() ?? null;
       if (newStatus) {
-        const index = storiesBoard.findIndex(
-          ({ id }) => id === Number(e.active.id),
-        );
-        storiesBoard[index].status = newStatus;
+        const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
+        storiesBoard[index].statusId = newStatus;
         setStoriesBoard([...storiesBoard]);
       }
     }
@@ -108,9 +102,7 @@ export const StoriesBoard = ({
     if (groupBy === "Priority") {
       const newPriority = e.over?.id as StoryPriority | null;
       if (newPriority) {
-        const index = storiesBoard.findIndex(
-          ({ id }) => id === Number(e.active.id),
-        );
+        const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
         storiesBoard[index].priority = newPriority;
         setStoriesBoard([...storiesBoard]);
       }

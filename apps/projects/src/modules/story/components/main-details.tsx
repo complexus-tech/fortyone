@@ -21,7 +21,16 @@ import {
 import { DetailedStory } from "../types";
 
 export const MainDetails = ({ story }: { story: DetailedStory }) => {
-  const { title, descriptionHTML, description, sequenceId } = story;
+  const {
+    id: storyId,
+    title,
+    descriptionHTML,
+    description,
+    sequenceId,
+    teamId,
+    deletedAt,
+  } = story;
+  const isDeleted = !!deletedAt;
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -37,7 +46,7 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
       Placeholder.configure({ placeholder: "Story description" }),
     ],
     content: descriptionHTML || description,
-    editable: true,
+    editable: !isDeleted,
     // onUpdate: ({ editor }) => {
     //   console.log(editor.getHTML());
     // },
@@ -51,7 +60,7 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
     content: title,
-    editable: true,
+    editable: !isDeleted,
     // onUpdate: ({ editor }) => {
     //   console.log(editor.getText());
     // },
@@ -59,7 +68,12 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
 
   return (
     <>
-      <Header sequenceId={sequenceId} />
+      <Header
+        sequenceId={sequenceId}
+        teamId={teamId}
+        isDeleted={isDeleted}
+        storyId={storyId}
+      />
       <BodyContainer className="overflow-y-auto pb-8">
         <Container className="pt-7">
           <TextEditor

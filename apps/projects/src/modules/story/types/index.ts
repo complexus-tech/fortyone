@@ -7,6 +7,7 @@ export type DetailedStory = {
   description: string;
   descriptionHTML: string;
   parentId: string;
+  teamId: string;
   objectiveId: string;
   statusId: string;
   assigneeId: string;

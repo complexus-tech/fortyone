@@ -8,13 +8,10 @@ import {
   NewStoryIcon,
   PlusIcon,
   ObjectiveIcon,
-  SearchIcon,
   SettingsIcon,
   SprintsIcon,
   UsersAddIcon,
   EpicsIcon,
-  SidebarCollapseIcon,
-  SidebarExpandIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -154,9 +151,9 @@ export const Header = () => {
           <span className="sr-only">Search</span>
         </Button> */}
       </Flex>
-      <Flex className="mb-3 w-full rounded-lg shadow-sm">
+      <Flex className="mb-3 w-full rounded-lg shadow">
         <Button
-          className="rounded-r-none"
+          className="h-9 rounded-r-none md:h-[2.65rem]"
           color="tertiary"
           fullWidth
           leftIcon={<NewStoryIcon className="h-5 w-auto" />}
@@ -171,7 +168,7 @@ export const Header = () => {
           <Menu.Button>
             <Button
               align="center"
-              className="rounded-l-none border-l-0 px-[0.65rem]"
+              className="rounded-l-none border-l-0 px-[0.85rem] md:h-[2.65rem]"
               color="tertiary"
               leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
               variant="outline"
