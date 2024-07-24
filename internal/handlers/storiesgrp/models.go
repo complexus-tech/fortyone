@@ -164,22 +164,6 @@ func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
 	}
 }
 
-func toCoreUpdateStory(a AppUpdateStory) stories.CoreUpdateStory {
-	return stories.CoreUpdateStory{
-		Title:           a.Title,
-		Description:     a.Description,
-		DescriptionHTML: a.DescriptionHTML,
-		Parent:          a.Parent,
-		Objective:       a.Objective,
-		Status:          a.Status,
-		Assignee:        a.Assignee,
-		Priority:        a.Priority,
-		Sprint:          a.Sprint,
-		StartDate:       a.StartDate,
-		EndDate:         a.EndDate,
-	}
-}
-
 func (a AppNewStory) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 

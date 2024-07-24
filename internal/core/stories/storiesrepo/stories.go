@@ -388,6 +388,10 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, 
 			objective_id,
 			sprint_id,
 			workspace_id,
+			assignee_id,
+			reporter_id,
+			start_date,
+			end_date,
 			created_at,
 			updated_at,
 			deleted_at
@@ -550,12 +554,16 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any)
 	query += strings.Join(setClauses, ", ")
 	query += " WHERE id = :id"
 
+	fmt.Println(query)
+
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named update statement: %s", err), "id", id)
 		return err
 	}
 	defer stmt.Close()
+
+	fmt.Println(stmt.QueryString)
 
 	r.log.Info(ctx, fmt.Sprintf("Updating story #%s", id), "id", id)
 	_, err = stmt.ExecContext(ctx, params)
