@@ -142,7 +142,6 @@ type AppUpdateStory struct {
 	Assignee        *uuid.UUID `json:"assigneeId"`
 	Priority        *string    `json:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId"`
-	Team            *uuid.UUID `json:"teamId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
 }
@@ -161,6 +160,22 @@ func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
 		StartDate:       a.StartDate,
 		EndDate:         a.EndDate,
 		Team:            a.Team,
+	}
+}
+
+func toCoreUpdateStory(a AppUpdateStory) stories.CoreUpdateStory {
+	return stories.CoreUpdateStory{
+		Title:           a.Title,
+		Description:     a.Description,
+		DescriptionHTML: a.DescriptionHTML,
+		Parent:          a.Parent,
+		Objective:       a.Objective,
+		Status:          a.Status,
+		Assignee:        a.Assignee,
+		Priority:        a.Priority,
+		Sprint:          a.Sprint,
+		StartDate:       a.StartDate,
+		EndDate:         a.EndDate,
 	}
 }
 

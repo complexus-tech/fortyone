@@ -38,11 +38,11 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error
 	INSERT INTO stories (
 			id, sequence_id, title, description, description_html, parent_id, objective_id,
 			status_id, assignee_id, blocked_by_id, blocking_id, related_id, reporter_id,
-			priority, sprint_id, team_id, start_date, end_date, created_at, updated_at
+			priority, sprint_id, team_id, workspace_id, start_date, end_date, created_at, updated_at
 	) VALUES (
 			:id, :sequence_id, :title, :description, :description_html, :parent_id, :objective_id,
 			:status_id, :assignee_id, :blocked_by_id, :blocking_id, :related_id, :reporter_id,
-			:priority, :sprint_id, :team_id, :start_date, :end_date, :created_at, :updated_at
+			:priority, :sprint_id, :team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
 	);
 `
 
@@ -512,7 +512,6 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkRestore")
 	defer span.End()
 
-	// copy bulk delete implementation and modify
 	query := `
 				UPDATE stories
 				SET deleted_at = NULL, updated_at = NOW()
@@ -533,9 +532,16 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
 }
 
 // Update updates the story with the specified ID.
-func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any) error {
+func (r *repo) Update(ctx context.Context, id uuid.UUID, us stories.CoreUpdateStory) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
 	defer span.End()
+
+	updates, err := getUpdates(toDBUpdateStory(us))
+	fmt.Println(updates)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to get updates: %s", err), "id", id)
+		return err
+	}
 
 	query := "UPDATE stories SET "
 	var setClauses []string

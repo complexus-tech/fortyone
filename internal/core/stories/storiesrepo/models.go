@@ -97,6 +97,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		Description:     i.Description,
 		Parent:          i.Parent,
 		Objective:       i.Objective,
+		Workspace:       i.Workspace,
 		Team:            i.Team,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
@@ -112,5 +113,21 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+	}
+}
+
+// toDBUpdateStory converts a CoreUpdateStory to a dbStory.
+func toDBUpdateStory(i stories.CoreUpdateStory) dbStory {
+	return dbStory{
+		Title:           *i.Title,
+		Description:     i.Description,
+		DescriptionHTML: i.DescriptionHTML,
+		Parent:          i.Parent,
+		Objective:       i.Objective,
+		Status:          i.Status,
+		Assignee:        i.Assignee,
+		Sprint:          i.Sprint,
+		StartDate:       i.StartDate,
+		EndDate:         i.EndDate,
 	}
 }

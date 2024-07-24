@@ -127,6 +127,26 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 	return nil
 }
 
+// Update updates the story with the specified ID.
+func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	param := web.Params(r, "id")
+	id, err := uuid.Parse(param)
+	if err != nil {
+		return ErrInvalidID
+	}
+	var ns AppUpdateStory
+	if err := web.Decode(r, &ns); err != nil {
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+
+	if err := h.stories.Update(ctx, id, toCoreUpdateStory(ns)); err != nil {
+		return err
+	}
+	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
 // TeamStories returns a list of stories for a team.
 func (h *Handlers) TeamStories(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	param := web.Params(r, "teamId")

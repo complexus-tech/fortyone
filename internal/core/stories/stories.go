@@ -24,6 +24,7 @@ type Repository interface {
 	BulkDelete(ctx context.Context, ids []uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID) error
+	Update(ctx context.Context, id uuid.UUID, story CoreUpdateStory) error
 	Create(ctx context.Context, story *CoreSingleStory) error
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID) (int, error)
 	MyStories(ctx context.Context) ([]CoreStoryList, error)
@@ -181,6 +182,19 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 	defer span.End()
 
 	if err := s.repo.Delete(ctx, id); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
+}
+
+// Update updates the story with the specified ID.
+func (s *Service) Update(ctx context.Context, id uuid.UUID, ns CoreUpdateStory) error {
+	s.log.Info(ctx, "business.core.stories.Update")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
+	defer span.End()
+
+	if err := s.repo.Update(ctx, id, ns); err != nil {
 		span.RecordError(err)
 		return err
 	}

@@ -20,6 +20,7 @@ func Routes(cfg Config, app *web.App) {
 
 	app.Get("/stories/{id}", h.Get)
 	app.Delete("/stories/{id}", h.Delete)
+	app.Patch("/stories/{id}", h.Update)
 	app.Post("/stories/{id}/restore", h.Restore)
 	app.Post("/stories/restore", h.BulkRestore)
 	app.Post("/stories", h.Create)

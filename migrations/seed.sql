@@ -24,8 +24,13 @@ CREATE TABLE teams (
   team_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   description TEXT,
+  workspace_id UUID REFERENCES workspaces(workspace_id) NOT NULL,
+  code VARCHAR(255) NOT NULL,
+  color VARCHAR(100) NOT NULL,
+  icon VARCHAR(255) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  UNIQUE (workspace_id, code)
 );
 -- Workspace Management
 CREATE TABLE workspaces (
@@ -57,17 +62,19 @@ CREATE TABLE statuses (
   color VARCHAR(255),
   category VARCHAR(255),
   order_index INTEGER,
+  team_id UUID REFERENCES teams(team_id) NOT NULL,
+  workspace_id UUID REFERENCES workspaces(workspace_id) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE sprints (
   sprint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  objective_id UUID REFERENCES objectives(objective_id) NOT NULL,
-  team_id UUID REFERENCES teams(team_id),
-  workspace_id UUID REFERENCES workspaces(workspace_id),
+  objective_id UUID REFERENCES objectives(objective_id),
+  team_id UUID REFERENCES teams(team_id) NOT NULL,
+  workspace_id UUID REFERENCES workspaces(workspace_id) NOT NULL,
   name VARCHAR(255) NOT NULL,
-  start_date DATE,
-  end_date DATE,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
   goal TEXT,
   status VARCHAR(255),
   backlog_status VARCHAR(255),
@@ -90,22 +97,22 @@ CREATE TABLE attachments (
 -- Story Management
 CREATE TABLE stories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sequence_id SERIAL,
+  sequence_id INTEGER,
+  team_id UUID REFERENCES teams(team_id) NOT NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT,
   description_html TEXT,
   parent_id UUID REFERENCES stories(id),
-  objective_id UUID REFERENCES objectives(objective_id) NOT NULL,
+  objective_id UUID REFERENCES objectives(objective_id),
   status_id UUID REFERENCES statuses(status_id) NOT NULL,
   assignee_id UUID REFERENCES users(user_id),
   blocked_by_id UUID REFERENCES stories(id),
   blocking_id UUID REFERENCES stories(id),
   related_id UUID REFERENCES stories(id),
-  reporter_id UUID REFERENCES users(user_id) NOT NULL,
+  reporter_id UUID REFERENCES users(user_id),
   priority VARCHAR(100),
   sprint_id UUID REFERENCES sprints(sprint_id),
-  team_id UUID REFERENCES teams(team_id),
-  workspace_id UUID REFERENCES workspaces(workspace_id),
+  workspace_id UUID REFERENCES workspaces(workspace_id) NOT NULL,
   start_date DATE,
   end_date DATE,
   estimate FLOAT,
@@ -113,7 +120,8 @@ CREATE TABLE stories (
   is_draft BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  deleted_at TIMESTAMP WITH TIME ZONE
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  CONSTRAINT unique_team_sequence UNIQUE (team_id, sequence_id)
 );
 CREATE TABLE story_attachments (
   story_id UUID REFERENCES stories(id) NOT NULL,
@@ -252,6 +260,11 @@ CREATE TABLE integrations (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+CREATE TABLE team_story_sequences (
+  team_id UUID PRIMARY KEY,
+  current_sequence INTEGER NOT NULL DEFAULT 0
+);
+-- Add team code unique constraint
 -- Indexes for performance optimization
 CREATE INDEX idx_stories_objective_id ON stories(objective_id);
 CREATE INDEX idx_stories_sprint_id ON stories(sprint_id);
@@ -259,3 +272,4 @@ CREATE INDEX idx_stories_team_id ON stories(team_id);
 CREATE INDEX idx_stories_workspace_id ON stories(workspace_id);
 CREATE INDEX idx_objectives_lead_user_id ON objectives(lead_user_id);
 CREATE INDEX idx_attachments_uploaded_by ON attachments(uploaded_by);
+CREATE INDEX idx_team_story_sequences_team_id ON team_story_sequences(team_id);
