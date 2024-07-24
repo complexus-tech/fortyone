@@ -51,8 +51,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err := h.stories.Delete(ctx, id); err != nil {
 		return err
 	}
-	data := map[string]uuid.UUID{"id": id}
-	web.Respond(ctx, w, data, http.StatusNoContent)
+	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
@@ -67,7 +66,7 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
-	web.Respond(ctx, w, data, http.StatusNoContent)
+	web.Respond(ctx, w, data, http.StatusOK)
 	return nil
 
 }
@@ -83,7 +82,7 @@ func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 	data := map[string]uuid.UUID{"id": id}
-	web.Respond(ctx, w, data, http.StatusNoContent)
+	web.Respond(ctx, w, data, http.StatusOK)
 	return nil
 }
 
@@ -98,7 +97,7 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 		return err
 	}
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
-	web.Respond(ctx, w, data, http.StatusNoContent)
+	web.Respond(ctx, w, data, http.StatusOK)
 	return nil
 }
 

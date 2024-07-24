@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -454,22 +455,15 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
 	defer span.End()
 
 	query := `
-		UPDATE stories
-		SET deleted_at = NOW(),
-				updated_at = NOW()
-		WHERE id IN (:ids);
-	`
-	params := map[string]interface{}{"ids": ids}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named bulk delete statement: %s", err), "ids", ids)
-		return err
-	}
-	defer stmt.Close()
+        UPDATE stories 
+        SET deleted_at = NOW(), updated_at = NOW() 
+        WHERE id = ANY($1)
+    `
 
 	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", ids), "ids", ids)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+
+	_, err := r.db.ExecContext(ctx, query, pq.Array(ids))
+	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to delete stories: %s", err), "ids", ids)
 		return err
 	}
@@ -518,23 +512,16 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkRestore")
 	defer span.End()
 
+	// copy bulk delete implementation and modify
 	query := `
-		UPDATE stories
-		SET deleted_at = NULL,
-				updated_at = NOW()
-		WHERE id IN (:ids);
-	`
-	params := map[string]interface{}{"ids": ids}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named bulk restore statement: %s", err), "ids", ids)
-		return err
-	}
-	defer stmt.Close()
+				UPDATE stories
+				SET deleted_at = NULL, updated_at = NOW()
+				WHERE id = ANY($1)
+			`
 
 	r.log.Info(ctx, fmt.Sprintf("Restoring stories: %v", ids), "ids", ids)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+	_, err := r.db.ExecContext(ctx, query, pq.Array(ids))
+	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to restore stories: %s", err), "ids", ids)
 		return err
 	}
