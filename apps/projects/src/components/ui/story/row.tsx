@@ -35,6 +35,9 @@ import {
 } from "icons";
 import { format, addDays, differenceInDays, isTomorrow } from "date-fns";
 import { StateCategory } from "@/types/states";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { DetailedStory } from "@/modules/story/types";
+import { toast } from "sonner";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -199,6 +202,15 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
       </Flex>
     );
   };
+  const handleUpdate = async (data: Partial<DetailedStory>) => {
+    try {
+      await updateStoryAction(id, data);
+    } catch (error) {
+      toast.error("Error updating story", {
+        description: "Failed to update story, reverted changes.",
+      });
+    }
+  };
 
   return (
     <div ref={setNodeRef}>
@@ -246,7 +258,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
                   statusId={statusId}
-                  setStatusId={(id) => {}}
+                  setStatusId={(id) => {
+                    handleUpdate({ statusId: id });
+                  }}
                 />
               </StatusesMenu>
             )}
@@ -261,7 +275,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     {priority}
                   </button>
                 </PrioritiesMenu.Trigger>
-                <PrioritiesMenu.Items priority={priority} />
+                <PrioritiesMenu.Items
+                  priority={priority}
+                  setPriority={(p) => {
+                    handleUpdate({ priority: p });
+                  }}
+                />
               </PrioritiesMenu>
             )}
             {isColumnVisible("Objective") && selectedObjective && (
@@ -373,7 +392,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                       </DatePicker.Trigger>
                     </span>
                   </Tooltip>
-                  <DatePicker.Calendar />
+                  <DatePicker.Calendar
+                    selected={new Date(endDate)}
+                    onDayClick={(day) => {
+                      handleUpdate({ endDate: day.toISOString() });
+                    }}
+                  />
                 </DatePicker>
               )}
             {isColumnVisible("Created") && (

@@ -4,27 +4,11 @@ import { Box, Button, Flex } from "ui";
 import { ArrowDownIcon, PlusIcon, TeamIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "./team";
+import { useStore } from "@/hooks/store";
 
 export const Teams = () => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("teams-dropdown", true);
-
-  const teams = [
-    {
-      id: 1,
-      icon: "🚀",
-      name: "Engineering",
-    },
-    {
-      id: 2,
-      icon: "🇦🇫",
-      name: "Marketing",
-    },
-    {
-      id: 3,
-      icon: "🏀",
-      name: "Product",
-    },
-  ];
+  const { teams } = useStore();
 
   return (
     <Box className="mt-4">
@@ -77,8 +61,19 @@ export const Teams = () => {
         direction="column"
         gap={1}
       >
-        {teams.map(({ id, icon, name }) => (
-          <Team icon={icon} id={id} key={id} name={name} />
+        {teams.map(({ id, icon, name, color }) => (
+          <Team
+            icon={
+              icon || (
+                <Box className="rounded p-0.5 dark:bg-dark-300">
+                  <TeamIcon className="h-[1.1rem] w-auto" style={{ color }} />
+                </Box>
+              )
+            }
+            id={id}
+            key={id}
+            name={name}
+          />
         ))}
       </Flex>
     </Box>

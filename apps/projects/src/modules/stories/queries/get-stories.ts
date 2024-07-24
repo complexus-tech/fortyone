@@ -20,10 +20,10 @@ export const getStories = async (
 ) => {
   const session = await auth();
   const stories = await get<Story[]>("/my-stories", {
-    next: {
-      revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
-      tags: [TAGS.stories, ...tags],
-    },
+    // next: {
+    //   revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
+    //   tags: [TAGS.stories],
+    // },
     ...config,
   });
   return stories;

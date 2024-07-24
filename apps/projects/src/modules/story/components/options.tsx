@@ -29,6 +29,8 @@ import { AddLinks, OptionsHeader } from ".";
 import { DetailedStory } from "../types";
 import { useStore } from "@/hooks/store";
 import { cn } from "lib";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { toast } from "sonner";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -47,6 +49,7 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
 
 export const Options = ({ story }: { story: DetailedStory }) => {
   const {
+    id,
     priority,
     statusId,
     startDate,
@@ -59,11 +62,6 @@ export const Options = ({ story }: { story: DetailedStory }) => {
   const { name } = (states.find((state) => state.id === statusId) ||
     states.at(0))!!;
   const isDeleted = !!deletedAt;
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(2022, 0, 20),
-    to: addDays(new Date(2022, 0, 20), 20),
-  });
-
   const getDueDateMessage = (date: Date) => {
     if (date < new Date()) {
       return (
@@ -105,11 +103,15 @@ export const Options = ({ story }: { story: DetailedStory }) => {
     );
   };
 
-  const updateStoryProperty = (
-    property: keyof DetailedStory,
-    value: string,
-  ) => {
-    // update the property of the story
+  const handleUpdate = async (data: Partial<DetailedStory>) => {
+    try {
+      await updateStoryAction(id, data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Error updating story", {
+        description: "Failed to update story, reverted changes.",
+      });
+    }
   };
 
   return (
@@ -147,7 +149,12 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                   {name}
                 </Button>
               </StatusesMenu.Trigger>
-              <StatusesMenu.Items statusId={statusId} setStatusId={() => {}} />
+              <StatusesMenu.Items
+                statusId={statusId}
+                setStatusId={(st) => {
+                  handleUpdate({ statusId: st });
+                }}
+              />
             </StatusesMenu>
           }
         />
@@ -166,7 +173,11 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                   {priority}
                 </Button>
               </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items />
+              <PrioritiesMenu.Items
+                setPriority={(p) => {
+                  handleUpdate({ priority: p });
+                }}
+              />
             </PrioritiesMenu>
           }
         />
@@ -222,12 +233,10 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar
-                defaultMonth={date?.from}
-                initialFocus
-                mode="range"
-                numberOfMonths={2}
-                onSelect={setDate}
-                selected={date}
+                selected={startDate ? new Date(startDate) : undefined}
+                onDayClick={(day) => {
+                  handleUpdate({ startDate: day.toISOString() });
+                }}
               />
             </DatePicker>
           }
@@ -255,36 +264,37 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                 }
               >
                 <span>
-                  <DatePicker.Trigger asChild>
-                    <DatePicker.Trigger>
-                      <Button
-                        color="tertiary"
-                        className={cn({
-                          "text-primary dark:text-primary":
-                            endDate && new Date(endDate) < new Date(),
-                          "text-warning dark:text-warning":
-                            endDate &&
-                            new Date(endDate) <= addDays(new Date(), 7) &&
-                            new Date(endDate) >= new Date(),
-                          "text-gray/80 dark:text-gray-300/80": !endDate,
-                        })}
-                        disabled={isDeleted}
-                        leftIcon={
-                          <CalendarIcon className="h-[1.15rem] w-auto" />
-                        }
-                        variant="naked"
-                      >
-                        {endDate ? (
-                          format(new Date(endDate), "MMM dd, yyyy")
-                        ) : (
-                          <Text color="muted">Add due date</Text>
-                        )}
-                      </Button>
-                    </DatePicker.Trigger>
+                  <DatePicker.Trigger>
+                    <Button
+                      color="tertiary"
+                      className={cn({
+                        "text-primary dark:text-primary":
+                          endDate && new Date(endDate) < new Date(),
+                        "text-warning dark:text-warning":
+                          endDate &&
+                          new Date(endDate) <= addDays(new Date(), 7) &&
+                          new Date(endDate) >= new Date(),
+                        "text-gray/80 dark:text-gray-300/80": !endDate,
+                      })}
+                      disabled={isDeleted}
+                      leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
+                      variant="naked"
+                    >
+                      {endDate ? (
+                        format(new Date(endDate), "MMM dd, yyyy")
+                      ) : (
+                        <Text color="muted">Add due date</Text>
+                      )}
+                    </Button>
                   </DatePicker.Trigger>
                 </span>
               </Tooltip>
-              <DatePicker.Calendar />
+              <DatePicker.Calendar
+                selected={endDate ? new Date(endDate) : undefined}
+                onDayClick={(day) => {
+                  handleUpdate({ endDate: day.toISOString() });
+                }}
+              />
             </DatePicker>
           }
         />

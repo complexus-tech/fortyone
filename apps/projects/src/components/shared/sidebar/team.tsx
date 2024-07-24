@@ -21,7 +21,7 @@ import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
 type TeamProps = {
-  id: number;
+  id: string;
   name: string;
   icon?: ReactNode;
 };

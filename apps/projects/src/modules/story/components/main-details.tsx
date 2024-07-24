@@ -19,6 +19,39 @@ import {
   SubstoriesButton,
 } from ".";
 import { DetailedStory } from "../types";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { toast } from "sonner";
+import { useCallback, useEffect, useRef } from "react";
+
+const DEBOUNCE_DELAY = 500; // 500ms delay
+
+// Custom debounce hook
+const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const debouncedCallback = useCallback(
+    (...args: any[]) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay],
+  );
+
+  return debouncedCallback;
+};
 
 export const MainDetails = ({ story }: { story: DetailedStory }) => {
   const {
@@ -31,6 +64,19 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     deletedAt,
   } = story;
   const isDeleted = !!deletedAt;
+
+  const handleUpdate = async (data: Partial<DetailedStory>) => {
+    try {
+      await updateStoryAction(storyId, data);
+    } catch (error) {
+      console.log(error);
+      toast.error("Error updating story", {
+        description: "Failed to update story, reverted changes.",
+      });
+    }
+  };
+
+  const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -47,9 +93,12 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     ],
     content: descriptionHTML || description,
     editable: !isDeleted,
-    // onUpdate: ({ editor }) => {
-    //   console.log(editor.getHTML());
-    // },
+    onUpdate: ({ editor }) => {
+      debouncedHandleUpdate({
+        descriptionHTML: editor.getHTML(),
+        description: editor.getText(),
+      });
+    },
   });
 
   const titleEditor = useEditor({
@@ -61,9 +110,11 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     ],
     content: title,
     editable: !isDeleted,
-    // onUpdate: ({ editor }) => {
-    //   console.log(editor.getText());
-    // },
+    onUpdate: ({ editor }) => {
+      debouncedHandleUpdate({
+        title: editor.getText(),
+      });
+    },
   });
 
   return (
@@ -75,13 +126,13 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
         storyId={storyId}
       />
       <BodyContainer className="overflow-y-auto pb-8">
-        <Container className="pt-7">
+        <Container className="pt-7 md:px-16">
           <TextEditor
             asTitle
-            className="relative -left-1 text-3xl font-medium"
+            className="relative -left-1 text-4xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={descriptionEditor} />
+          <TextEditor className="mt-8" editor={descriptionEditor} />
           <Reactions />
           <SubstoriesButton />
           <Divider className="my-4" />

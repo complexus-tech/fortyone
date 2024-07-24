@@ -121,7 +121,7 @@ export const NewStoryDialog = ({
       title: titleEditor.getText(),
       description: editor.getText(),
       descriptionHTML: editor.getHTML(),
-      teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
+      teamId: "004cf60d-e3b1-4695-b6a3-da6d2af42fa2",
       priority: storyForm.priority,
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
@@ -148,6 +148,9 @@ export const NewStoryDialog = ({
       if (!createMore) {
         setIsOpen(false);
       }
+      titleEditor.commands.setContent("");
+      editor.commands.setContent("");
+      setStoryForm(initialForm);
     } catch (error) {
       console.log(error);
       toast.error("Error", {
@@ -156,9 +159,6 @@ export const NewStoryDialog = ({
     } finally {
       setLoading(false);
       nProgress.done();
-      titleEditor.commands.setContent("");
-      editor.commands.setContent("");
-      setStoryForm(initialForm);
     }
   };
 

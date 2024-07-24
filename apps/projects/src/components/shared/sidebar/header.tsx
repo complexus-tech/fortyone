@@ -81,11 +81,11 @@ export const Header = () => {
               <Menu.Item>
                 <Avatar
                   color="secondary"
-                  name="Fin Kenya"
+                  name="Amaka Studio"
                   rounded="md"
                   size="xs"
                 />
-                Fin Kenya
+                Amaka Studio
               </Menu.Item>
               <Menu.Item asChild>
                 <Button
