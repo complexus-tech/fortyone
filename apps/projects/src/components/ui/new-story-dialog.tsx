@@ -9,6 +9,7 @@ import {
   Text,
   TextEditor,
   DatePicker,
+  Menu,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -23,6 +24,7 @@ import TextExt from "@tiptap/extension-text";
 import {
   ArrowRightIcon,
   CalendarIcon,
+  CheckIcon,
   CloseIcon,
   MaximizeIcon,
   PlusIcon,
@@ -42,6 +44,8 @@ import { slugify } from "@/utils";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useStore } from "@/hooks/store";
+import { useLocalStorage } from "@/hooks";
+import { Team } from "@/modules/teams/types";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -54,7 +58,11 @@ export const NewStoryDialog = ({
   statusId?: string;
   priority?: StoryPriority;
 }) => {
-  const { states } = useStore();
+  const { states, teams } = useStore();
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+    "activeTeam",
+    teams.at(0)!!,
+  );
   const { id: defaultStateId } = (states.find(
     (state) => state.id === statusId,
   ) || states.at(0))!!;
@@ -63,7 +71,7 @@ export const NewStoryDialog = ({
     title: "",
     description: "",
     descriptionHTML: "",
-    teamId: "737868a5-01c5-4b63-bb8e-8166ef9cbf56",
+    teamId: activeTeam.id,
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
@@ -121,7 +129,7 @@ export const NewStoryDialog = ({
       title: titleEditor.getText(),
       description: editor.getText(),
       descriptionHTML: editor.getHTML(),
-      teamId: "004cf60d-e3b1-4695-b6a3-da6d2af42fa2",
+      teamId: activeTeam.id,
       priority: storyForm.priority,
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
@@ -173,7 +181,40 @@ export const NewStoryDialog = ({
       <Dialog.Content hideClose size="lg">
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
-            <Badge color="tertiary">COMP-1</Badge>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  size="xs"
+                  className="gap-1 font-semibold tracking-wide"
+                  leftIcon={<span>{activeTeam.icon}</span>}
+                  color="tertiary"
+                >
+                  {activeTeam.code}
+                </Button>
+              </Menu.Button>
+              <Menu.Items className="w-52" align="start">
+                <Menu.Group>
+                  {teams.map((team) => (
+                    <Menu.Item
+                      active={team.id === activeTeam.id}
+                      onClick={() => {
+                        setActiveTeam(team);
+                      }}
+                      className="justify-between gap-3"
+                      key={team.id}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span className="shrink-0">{team.icon}</span>
+                        <span className="block truncate">{team.name}</span>
+                      </span>
+                      {team.id === activeTeam.id && (
+                        <CheckIcon className="h-[1.1rem] w-auto" />
+                      )}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
             <Text color="muted">New story</Text>
           </Dialog.Title>

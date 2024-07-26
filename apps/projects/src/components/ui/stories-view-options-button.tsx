@@ -72,10 +72,14 @@ export const StoriesViewOptionsButton = ({
     "Labels",
   ];
 
+  const hasFilters =
+    JSON.stringify(viewOptions) !== JSON.stringify(initialViewOptions);
+
   return (
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          className="relative"
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
@@ -83,6 +87,9 @@ export const StoriesViewOptionsButton = ({
           variant="outline"
         >
           View
+          {hasFilters && (
+            <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
+          )}
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem]">

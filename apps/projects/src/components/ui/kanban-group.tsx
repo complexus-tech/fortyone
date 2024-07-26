@@ -4,15 +4,12 @@ import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
-import type {
-  Story,
-  StoryPriority,
-  StoryStatus,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
 import { useBoard } from "./board-context";
+import { State } from "@/types/states";
 
 const List = ({
   children,
@@ -57,20 +54,20 @@ export const KanbanGroup = ({
   groupBy = "Status",
 }: {
   stories: Story[];
-  status?: StoryStatus;
+  status?: State;
   priority?: StoryPriority;
   groupBy: ViewOptionsGroupBy;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const filteredStories =
     groupBy === "Status"
-      ? stories.filter((story) => story.status === status)
+      ? stories.filter((story) => story.statusId === status?.id)
       : stories.filter((story) => story.priority === priority);
 
   return (
     <List
-      id={(groupBy === "Status" ? status : priority) as string}
-      key={groupBy === "Status" ? status : priority}
+      id={(groupBy === "Status" ? status?.id : priority) as string}
+      key={groupBy === "Status" ? status?.id : priority}
       totalStories={filteredStories.length}
     >
       {filteredStories.map((story) => (
@@ -92,7 +89,7 @@ export const KanbanGroup = ({
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
-        status={status}
+        statusId={status?.id}
       />
     </List>
   );

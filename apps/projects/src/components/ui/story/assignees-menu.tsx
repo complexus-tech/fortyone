@@ -14,10 +14,12 @@ const Items = ({
   isSearchEnabled = true,
   placeholder = "Assign user...",
   align,
+  onAssigneeSelected,
 }: {
   isSearchEnabled?: boolean;
   placeholder?: string;
   align?: "start" | "end" | "center";
+  onAssigneeSelected?: (assignee: string) => void;
 }) => {
   const users = [
     {
@@ -41,7 +43,7 @@ const Items = ({
     },
   ];
   return (
-    <Menu.Items align={align} className="w-72">
+    <Menu.Items align={align} className="w-72" >
       {isSearchEnabled ? (
         <>
           <Menu.Group className="px-4">
@@ -53,7 +55,12 @@ const Items = ({
 
       <Menu.Group>
         {users.map(({ name, avatar }, idx) => (
-          <Menu.Item active={idx === 1} className="justify-between" key={name}>
+          <Menu.Item
+            active={idx === 1}
+            className="justify-between"
+            key={name}
+            onClick={() => onAssigneeSelected?.(name)}
+          >
             <Flex align="center" gap={2}>
               <Avatar color="primary" name={name} size="sm" src={avatar} />
               <Text className="max-w-[10rem] truncate">{name}</Text>

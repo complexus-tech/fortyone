@@ -15,6 +15,9 @@ import { StoryCard } from "./story/card";
 import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
+import { DetailedStory } from "@/modules/story/types";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { toast } from "sonner";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -88,6 +91,16 @@ export const StoriesBoard = ({
     setActiveStory(story);
   };
 
+  const updateStory = async (storyId: string, data: Partial<DetailedStory>) => {
+    try {
+      const _ = await updateStoryAction(storyId, data);
+    } catch (error) {
+      toast.error("Error updating story", {
+        description: "Failed to update story, reverted changes.",
+      });
+    }
+  };
+
   const handleDragEnd = (e: DragEndEvent) => {
     const { groupBy } = viewOptions;
     if (groupBy === "Status") {
@@ -96,6 +109,9 @@ export const StoriesBoard = ({
         const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
         storiesBoard[index].statusId = newStatus;
         setStoriesBoard([...storiesBoard]);
+        updateStory(e.active.id.toString(), {
+          statusId: newStatus,
+        });
       }
     }
 
@@ -105,10 +121,54 @@ export const StoriesBoard = ({
         const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
         storiesBoard[index].priority = newPriority;
         setStoriesBoard([...storiesBoard]);
+        updateStory(e.active.id.toString(), {
+          priority: newPriority,
+        });
       }
     }
-
     setActiveStory(null);
+  };
+
+  const orderStories = (stories: Story[]) => {
+    switch (viewOptions.orderBy) {
+      case "Created":
+        return stories.toSorted(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      case "Updated":
+        return stories.toSorted(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+      case "Due date":
+        return stories.toSorted((a, b) => {
+          const aDate = new Date(a.endDate);
+          const bDate = new Date(b.endDate);
+          if (isNaN(aDate.getTime())) {
+            return 1;
+          }
+          if (isNaN(bDate.getTime())) {
+            return -1;
+          }
+          return aDate.getTime() - bDate.getTime();
+        });
+      case "Priority":
+        const prioritiesMap: Record<StoryPriority, number> = {
+          "No Priority": 0,
+          Low: 1,
+          Medium: 2,
+          High: 3,
+          Urgent: 4,
+        };
+        return stories.toSorted(
+          (a, b) =>
+            prioritiesMap[b.priority] - prioritiesMap[a.priority] ||
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      default:
+        return stories;
+    }
   };
 
   return (
@@ -122,11 +182,14 @@ export const StoriesBoard = ({
     >
       <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
         {layout === "kanban" ? (
-          <KanbanBoard className={className} stories={storiesBoard} />
+          <KanbanBoard
+            className={className}
+            stories={orderStories(storiesBoard)}
+          />
         ) : (
           <ListBoard
             className={className}
-            stories={storiesBoard}
+            stories={orderStories(storiesBoard)}
             viewOptions={viewOptions}
           />
         )}

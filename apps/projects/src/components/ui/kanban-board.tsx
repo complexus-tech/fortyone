@@ -1,14 +1,11 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
-import type {
-  Story,
-  StoryPriority,
-  StoryStatus,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
+import { useStore } from "@/hooks/store";
 
 export const KanbanBoard = ({
   stories,
@@ -19,14 +16,7 @@ export const KanbanBoard = ({
 }) => {
   const { viewOptions } = useBoard();
   const { groupBy } = viewOptions;
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
+  const { states: statuses } = useStore();
 
   const priorities: StoryPriority[] = [
     "No Priority",
@@ -53,7 +43,7 @@ export const KanbanBoard = ({
             statuses.map((status) => (
               <StoriesKanbanHeader
                 groupBy={groupBy}
-                key={status}
+                key={status.id}
                 status={status}
                 stories={stories}
               />
@@ -74,7 +64,7 @@ export const KanbanBoard = ({
           statuses.map((status) => (
             <KanbanGroup
               groupBy={groupBy}
-              key={status}
+              key={status.id}
               status={status}
               stories={stories}
             />

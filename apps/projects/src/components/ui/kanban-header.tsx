@@ -3,16 +3,13 @@ import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip } from "ui";
 import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
-import type {
-  Story,
-  StoryPriority,
-  StoryStatus,
-} from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
 import { useBoard } from "./board-context";
+import { State } from "@/types/states";
 
 export const StoriesKanbanHeader = ({
   status,
@@ -20,7 +17,7 @@ export const StoriesKanbanHeader = ({
   stories,
   groupBy,
 }: {
-  status?: StoryStatus;
+  status?: State;
   priority?: StoryPriority;
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
@@ -31,7 +28,7 @@ export const StoriesKanbanHeader = ({
 
   const filteredStories =
     groupBy === "Status"
-      ? stories.filter((story) => story.status === status)
+      ? stories.filter((story) => story.statusId === status?.id)
       : stories.filter((story) => story.priority === priority);
   return (
     <Box
@@ -44,13 +41,13 @@ export const StoriesKanbanHeader = ({
         className="w-[340px] pl-1"
         gap={2}
         justify="between"
-        key={status}
+        key={status?.id}
       >
         <Flex align="center" gap={2}>
           {groupBy === "Status" && (
             <>
-              <StoryStatusIcon status={status} />
-              {status}
+              <StoryStatusIcon statusId={status?.id} />
+              {status?.name}
             </>
           )}
           {groupBy === "Priority" && (
@@ -86,7 +83,7 @@ export const StoriesKanbanHeader = ({
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
-        status={status}
+        statusId={status?.id}
       />
     </Box>
   );

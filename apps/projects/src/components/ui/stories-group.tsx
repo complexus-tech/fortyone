@@ -9,7 +9,7 @@ import { useLocalStorage } from "@/hooks";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
-import { State } from "@/types/states";
+import { State, StateCategory } from "@/types/states";
 import { useStore } from "@/hooks/store";
 
 export const StoriesGroup = ({
@@ -31,7 +31,27 @@ export const StoriesGroup = ({
   const { groupBy, showEmptyGroups } = viewOptions;
   const id = (groupBy === "Status" ? status?.id : priority) as string;
   const collapseKey = pathname + id;
-  const [isCollapsed, setIsCollapsed] = useLocalStorage(collapseKey, false);
+  const defaultClosedStatuses: StateCategory[] = [
+    "cancelled",
+    "completed",
+    "paused",
+  ];
+
+  const getDefaultCollapsed = () => {
+    if (
+      groupBy === "Status" &&
+      status &&
+      defaultClosedStatuses.includes(status?.category)
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const [isCollapsed, setIsCollapsed] = useLocalStorage(
+    collapseKey,
+    getDefaultCollapsed(),
+  );
   const { isOver, setNodeRef } = useDroppable({
     id,
   });

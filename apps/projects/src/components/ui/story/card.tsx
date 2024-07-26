@@ -12,6 +12,7 @@ import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
+import { useStore } from "@/hooks/store";
 
 export const StoryCard = ({
   story,
@@ -20,9 +21,15 @@ export const StoryCard = ({
   story: StoryProps;
   className?: string;
 }) => {
+  const { id, title, sequenceId, priority, statusId, teamId } = story;
+  const { teams, states } = useStore();
+  const activeStatus =
+    states.find((state) => state.id === statusId) || states.at(0);
+  const { code: teamCode } = teams.find((team) => team.id === teamId)!!;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: story.id,
+    id,
   });
+
   const { isColumnVisible } = useBoard();
   return (
     <div ref={setNodeRef} {...listeners} {...attributes}>
@@ -58,11 +65,11 @@ export const StoryCard = ({
                   href="/teams/web/stories/test-123-story"
                 >
                   <Text
-                    className="w-[12ch] truncate text-[0.95rem]"
+                    className="w-[12ch] truncate text-[0.95rem] uppercase"
                     color="muted"
                     fontWeight="medium"
                   >
-                    COM-{story.id}
+                    {teamCode}-{sequenceId}
                   </Text>
                 </Link>
               )}
@@ -101,7 +108,7 @@ export const StoryCard = ({
             )}
           </Flex>
           <Link className="flex-1" href="/teams/web/stories/test-123-story">
-            <Text className="mb-2 line-clamp-2">{story.title}</Text>
+            <Text className="mb-2 line-clamp-2">{title}</Text>
           </Link>
           <Flex gap={1} wrap>
             {isColumnVisible("Status") && (
@@ -113,17 +120,20 @@ export const StoryCard = ({
                     leftIcon={
                       <StoryStatusIcon
                         className="relative left-0.5 h-4 w-auto"
-                        status={story.status}
+                        statusId={statusId}
                       />
                     }
                     size="xs"
                     type="button"
                     variant="outline"
                   >
-                    <span className="sr-only">{story.status}</span>
+                    <span className="sr-only">{activeStatus?.name}</span>
                   </Button>
                 </StatusesMenu.Trigger>
-                <StatusesMenu.Items status={story.status} />
+                <StatusesMenu.Items
+                  statusId={statusId}
+                  setStatusId={(s) => {}}
+                />
               </StatusesMenu>
             )}
             {isColumnVisible("Priority") && (
@@ -135,17 +145,17 @@ export const StoryCard = ({
                     leftIcon={
                       <PriorityIcon
                         className="relative left-0.5 h-4 w-auto"
-                        priority={story.priority}
+                        priority={priority}
                       />
                     }
                     size="xs"
                     type="button"
                     variant="outline"
                   >
-                    <span className="sr-only">{story.priority}</span>
+                    <span className="sr-only">{priority}</span>
                   </Button>
                 </PrioritiesMenu.Trigger>
-                <PrioritiesMenu.Items priority={story.priority} />
+                <PrioritiesMenu.Items priority={priority} />
               </PrioritiesMenu>
             )}
             {isColumnVisible("Due date") && (
