@@ -7,10 +7,10 @@ import { auth } from "@/auth";
 export const getStates = async () => {
   const session = await auth();
   const states = await get<State[]>(`/states`, {
-    next: {
-      revalidate: DURATION_FROM_SECONDS.SECOND * 1,
-      tags: [TAGS.states],
-    },
+    // next: {
+    //   revalidate: DURATION_FROM_SECONDS.SECOND * 1,
+    //   tags: [TAGS.states],
+    // },
   });
   return states;
 };

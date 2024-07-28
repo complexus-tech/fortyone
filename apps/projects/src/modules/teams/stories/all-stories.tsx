@@ -5,6 +5,10 @@ import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useTeamStories } from "@/modules/teams/stories/provider";
 import { useStore } from "@/hooks/store";
+import { useMemo } from "react";
+import { fi } from "date-fns/locale";
+import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
+import { useSession } from "next-auth/react";
 
 export const AllStories = ({
   layout,
@@ -13,19 +17,71 @@ export const AllStories = ({
   stories: Story[];
   layout: StoriesLayout;
 }) => {
-  const { states } = useStore();
-  const { viewOptions } = useTeamStories();
+  const session = useSession();
+  const { states, sprints } = useStore();
+  // a sprint is active if it has a start date and end date and the current date is between the start and end date
+  // use date-fns to check if the current date is between the start and end date
+  const activeSprints = sprints
+    .filter(
+      (sprint) =>
+        sprint.startDate &&
+        sprint.endDate &&
+        isAfter(new Date(), new Date(sprint.startDate)) &&
+        isBefore(new Date(), new Date(sprint.endDate)),
+    )
+    .map((sprint) => sprint.id);
+
+  const completedStatuses = states
+    .filter((state) => state.category === "completed")
+    .map((state) => state.id);
+  const { viewOptions, filters } = useTeamStories();
   const backlogStatuses = states
     .filter((state) => state.category === "backlog")
     .map((state) => state.id);
   const activeStatuses = states
-    .filter((state) => (state.category = "started"))
+    .filter((state) => state.category === "started")
     .map((state) => state.id);
 
-  const backlog = stories.filter((story) =>
+  //filters
+  const filteredStories = useMemo(() => {
+    let newStories = [...stories];
+    if (filters.completed) {
+      newStories = newStories.filter((story) =>
+        completedStatuses.includes(story.statusId),
+      );
+    }
+    if (filters.dueThisWeek) {
+      newStories = newStories.filter((story) =>
+        isThisWeek(new Date(story.endDate)),
+      );
+    }
+    if (filters.dueToday) {
+      newStories = newStories.filter((story) =>
+        isToday(new Date(story.endDate)),
+      );
+    }
+    if (filters.completed) {
+      newStories = newStories.filter((story) =>
+        completedStatuses.includes(story.statusId),
+      );
+    }
+    if (filters.assignedToMe) {
+      newStories = newStories.filter(
+        (story) => story.assigneeId === session.data?.user?.id,
+      );
+    }
+    if (filters.activeSprints) {
+      newStories = newStories.filter((story) =>
+        activeSprints.includes(story.sprintId),
+      );
+    }
+    return newStories;
+  }, [stories, filters]);
+
+  const backlog = filteredStories.filter((story) =>
     backlogStatuses.includes(story.statusId),
   );
-  const activeStories = stories.filter((story) =>
+  const activeStories = filteredStories.filter((story) =>
     activeStatuses.includes(story.statusId),
   );
 
@@ -42,7 +98,7 @@ export const AllStories = ({
         <StoriesBoard
           className="h-[calc(100vh-7.7rem)]"
           layout={layout}
-          stories={stories}
+          stories={filteredStories}
           viewOptions={viewOptions}
         />
       </Tabs.Panel>

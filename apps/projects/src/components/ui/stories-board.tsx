@@ -2,7 +2,7 @@
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Flex, Text } from "ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
@@ -163,6 +163,10 @@ export const StoriesBoard = ({
 
     return stories.sort((a, b) => getSortValue(b) - getSortValue(a));
   };
+
+  useEffect(() => {
+    setStoriesBoard(stories);
+  }, [stories]);
 
   return (
     <BoardContext.Provider

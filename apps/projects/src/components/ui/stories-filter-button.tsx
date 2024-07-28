@@ -23,6 +23,7 @@ import { cn } from "lib";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { StoryStatusIcon } from "./story-status-icon";
+import { useStore } from "@/hooks/store";
 
 export type StoriesFilter = {
   activeSprints: boolean;
@@ -89,6 +90,11 @@ export const StoriesFilterButton = ({
     from: new Date(),
     to: new Date(),
   });
+
+  const { states } = useStore();
+  const doneStatusId = states.find(
+    (state) => state.category === "completed",
+  )?.id;
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
@@ -185,7 +191,7 @@ export const StoriesFilterButton = ({
             icon={
               <StoryStatusIcon
                 className="h-5 w-auto text-dark dark:text-gray-200"
-                status="Done"
+                statusId={doneStatusId}
               />
             }
             isActive={filters.completed}
@@ -248,10 +254,11 @@ export const StoriesFilterButton = ({
                     </Button>
                   </DatePicker.Trigger>
                   <DatePicker.Calendar
-                    defaultMonth={date?.from}
+                    mode="range"
+                    // selected={date}
+
+                    numberOfMonths={2}
                     initialFocus
-                    // onSelect={handleSearch}
-                    selected={new Date()}
                   />
                 </DatePicker>
               </Box>

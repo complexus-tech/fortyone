@@ -3,26 +3,27 @@ import { get } from "@/lib/http";
 import { TAGS } from "@/constants/tags";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { Story } from "@/modules/stories/types";
+import qs from "qs";
 
 export const getStories = async (
-  {
-    tags = [],
-  }: {
-    createdById?: string;
+  params: {
+    reporterId?: string;
     teamId?: string;
     sprintId?: string;
-    objectId?: string;
+    objectiveId?: string;
     epicId?: string;
     assigneeId?: string;
-    tags?: string[];
   } = {},
   config?: RequestInit,
 ) => {
-  const session = await auth();
-  const stories = await get<Story[]>(`/my-stories`, {
+  const query = qs.stringify(params, {
+    skipNulls: true,
+    addQueryPrefix: true,
+  });
+  const stories = await get<Story[]>(`/stories${query}`, {
     next: {
-      revalidate: 1, // DURATION_FROM_SECONDS.MINUTE * 10,
-      tags: [TAGS.stories],
+      // revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
+      tags: [TAGS.stories, `${TAGS.stories}:${query}`],
     },
     ...config,
   });

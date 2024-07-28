@@ -36,32 +36,32 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     {
       name: "Stories",
       icon: <StoryIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/stories",
+      href: `/teams/${id}/stories`,
     },
     {
       name: "Epics",
       icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/epics",
+      href: `/teams/${id}/epics`,
     },
     {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/sprints",
+      href: `/teams/${id}/sprints`,
     },
     {
       name: "Documents",
       icon: <DocsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/documents",
+      href: `/teams/${id}/documents`,
     },
     {
       name: "Whiteboards",
       icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/whiteboards",
+      href: `/teams/${id}/whiteboards`,
     },
     {
       name: "Retrospectives",
       icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/retrospectives",
+      href: `/teams/${id}/retrospectives`,
     },
   ];
 

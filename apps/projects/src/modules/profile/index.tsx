@@ -7,20 +7,18 @@ import { Header } from "./components/header";
 import { Sidebar } from "./components/sidebar";
 import { AllStories } from "./components/all-stories";
 import { ProfileProvider } from "./components/provider";
+import { useParams } from "next/navigation";
 
-export const ListUserStories = ({
-  stories,
-  user,
-}: {
-  stories: Story[];
-  user: string;
-}) => {
+export const ListUserStories = ({ stories }: { stories: Story[] }) => {
+  const { userId } = useParams<{
+    userId: string;
+  }>();
   const [isExpanded, setIsExpanded] = useLocalStorage(
-    `stories:${user}:expanded`,
+    `stories:${userId}:expanded`,
     true,
   );
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    `stories:${user}:layout`,
+    `stories:${userId}:layout`,
     "list",
   );
   return (

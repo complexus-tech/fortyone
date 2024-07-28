@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { get } from "@/lib/http";
 import { Story } from "@/modules/stories/types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";

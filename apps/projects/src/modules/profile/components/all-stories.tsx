@@ -4,6 +4,7 @@ import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useProfile } from "./provider";
+import { useSession } from "next-auth/react";
 
 export const AllStories = ({
   stories,
@@ -13,6 +14,15 @@ export const AllStories = ({
   layout: StoriesLayout;
 }) => {
   const { viewOptions } = useProfile();
+  const session = useSession();
+
+  const createdStories = stories.filter(
+    (story) => story.reporterId === session.data?.user?.id,
+  );
+  const assignedStories = stories.filter(
+    (story) => story.assigneeId === session.data?.user?.id,
+  );
+
   return (
     <Box className="h-[calc(100vh-4rem)]">
       <Tabs defaultValue="assigned">
@@ -20,14 +30,13 @@ export const AllStories = ({
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
-            <Tabs.Tab value="subscribed">Subscribed</Tabs.Tab>
           </Tabs.List>
         </Box>
         <Tabs.Panel value="assigned">
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
-            stories={stories}
+            stories={assignedStories}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
@@ -35,15 +44,7 @@ export const AllStories = ({
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
-            stories={stories}
-            viewOptions={viewOptions}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="subscribed">
-          <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
-            layout={layout}
-            stories={stories}
+            stories={createdStories}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>

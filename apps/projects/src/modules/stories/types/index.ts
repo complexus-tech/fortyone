@@ -14,6 +14,8 @@ export type Story = {
   objectiveId: string;
   teamId: string;
   workspaceId: string;
+  assigneeId: string;
+  reporterId: string;
   epicId: string;
   sequenceId: string;
   priority: StoryPriority;
