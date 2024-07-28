@@ -54,7 +54,6 @@ import { useStore } from "@/hooks/store";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
-import { auth } from "@/auth";
 
 export const NewStoryDialog = ({
   isOpen,

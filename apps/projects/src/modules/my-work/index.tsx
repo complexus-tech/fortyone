@@ -7,8 +7,14 @@ import { Header } from "./components/header";
 import { Sidebar } from "./components/sidebar";
 import { ListStories } from "./components/list-stories";
 import { MyWorkProvider } from "./components/provider";
+import { useState } from "react";
 
-export const ListMyStories = ({ stories }: { stories: Story[] }) => {
+export const ListMyStories = ({
+  stories: allStories,
+}: {
+  stories: Story[];
+}) => {
+  const [stories, setStories] = useState<Story[]>(allStories);
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "my-stories:expanded",
     false,
@@ -17,6 +23,7 @@ export const ListMyStories = ({ stories }: { stories: Story[] }) => {
     "my-stories:stories:layout",
     "list",
   );
+
   return (
     <MyWorkProvider>
       <Header

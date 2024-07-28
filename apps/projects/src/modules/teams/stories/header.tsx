@@ -11,6 +11,8 @@ import {
   StoriesViewOptionsButton,
 } from "@/components/ui";
 import { useTeamStories } from "./provider";
+import { useParams } from "next/navigation";
+import { useStore } from "@/hooks/store";
 
 export const Header = ({
   isExpanded,
@@ -25,6 +27,9 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { teams } = useStore();
+  const { name, icon } = teams.find((team) => team.id === teamId)!!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamStories();
 
@@ -34,8 +39,8 @@ export const Header = ({
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "Engineering",
-              icon: "🚀",
+              name,
+              icon,
             },
             {
               name: "Stories",

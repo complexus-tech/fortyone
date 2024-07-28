@@ -1,3 +1,4 @@
+"use client";
 import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
