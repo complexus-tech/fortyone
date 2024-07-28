@@ -56,6 +56,7 @@ type AppStoryList struct {
 	Objective  *uuid.UUID `json:"objectiveId"`
 	Status     *uuid.UUID `json:"statusId"`
 	Assignee   *uuid.UUID `json:"assigneeId"`
+	Reporter   *uuid.UUID `json:"reporterId"`
 	Priority   string     `json:"priority"`
 	Sprint     *uuid.UUID `json:"sprintId"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
@@ -106,6 +107,7 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 			Workspace:  story.Workspace,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
+			Reporter:   story.Reporter,
 			Priority:   story.Priority,
 			Sprint:     story.Sprint,
 			StartDate:  story.StartDate,
@@ -125,6 +127,7 @@ type AppNewStory struct {
 	Objective       *uuid.UUID `json:"objectiveId"`
 	Status          *uuid.UUID `json:"statusId"`
 	Assignee        *uuid.UUID `json:"assigneeId"`
+	Reporter        *uuid.UUID `json:"reporterId"`
 	Priority        string     `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	Team            uuid.UUID  `json:"teamId" validate:"required"`
@@ -137,14 +140,27 @@ type AppUpdateStory struct {
 	Title           *string    `json:"title" db:"title"`
 	Description     *string    `json:"description" db:"description"`
 	DescriptionHTML *string    `json:"descriptionHTML" db:"description_html"`
-	Parent          *uuid.UUID `json:"parentId" db:"parent"`
-	Objective       *uuid.UUID `json:"objectiveId" db:"objective"`
+	Parent          *uuid.UUID `json:"parentId" db:"parent_id"`
+	Objective       *uuid.UUID `json:"objectiveId" db:"objective_id"`
 	Status          *uuid.UUID `json:"statusId" db:"status_id"`
 	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
 	Priority        *string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId" db:"sprint_id"`
 	StartDate       *time.Time `json:"startDate" db:"start_date"`
 	EndDate         *time.Time `json:"endDate" db:"end_date"`
+}
+
+// AppFilters represents the filters for stories.
+type AppFilters struct {
+	Parent    *uuid.UUID `json:"parentId" db:"parent_id"`
+	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
+	Status    *uuid.UUID `json:"statusId" db:"status_id"`
+	Assignee  *uuid.UUID `json:"assigneeId" db:"assignee_id"`
+	Priority  *string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint    *uuid.UUID `json:"sprintId" db:"sprint_id"`
+	Team      *uuid.UUID `json:"teamId" db:"team_id"`
+	Epic      *uuid.UUID `json:"epicId" db:"epic_id"`
+	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
 }
 
 func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
@@ -156,6 +172,7 @@ func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
 		Objective:       a.Objective,
 		Status:          a.Status,
 		Assignee:        a.Assignee,
+		Reporter:        a.Reporter,
 		Priority:        a.Priority,
 		Sprint:          a.Sprint,
 		StartDate:       a.StartDate,

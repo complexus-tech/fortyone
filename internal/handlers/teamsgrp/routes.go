@@ -16,12 +16,8 @@ type Config struct {
 func Routes(cfg Config, app *web.App) {
 
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
-	// storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB))
 
 	t := New(teamsService)
-	// s := storiesgrp.New(storiesService)
-
-	// app.Get("/teams/{id}/stories", s.TeamStories)
-	app.Get("/teams", t.List)
+	app.Get("/workspaces/{workspaceId}/teams", t.List)
 
 }

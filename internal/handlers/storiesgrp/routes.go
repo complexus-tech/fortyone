@@ -16,14 +16,15 @@ type Config struct {
 func Routes(cfg Config, app *web.App) {
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB))
 
-	h := New(storiesService)
+	h := New(storiesService, cfg.Log)
 
-	app.Get("/stories/{id}", h.Get)
-	app.Delete("/stories/{id}", h.Delete)
-	app.Patch("/stories/{id}", h.Update)
-	app.Post("/stories/{id}/restore", h.Restore)
-	app.Post("/stories/restore", h.BulkRestore)
-	app.Post("/stories", h.Create)
-	app.Delete("/stories", h.BulkDelete)
-	app.Get("/my-stories", h.MyStories)
+	app.Get("/workspaces/{workspaceId}/stories", h.List)
+	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get)
+	app.Get("/workspaces/{workspaceId}/my-stories", h.MyStories)
+	app.Post("/workspaces/{workspaceId}/stories", h.Create)
+	app.Post("/workspaces/{workspaceId}/stories/{id}/restore", h.Restore)
+	app.Post("/workspaces/{workspaceId}/stories/restore", h.BulkRestore)
+	app.Patch("/workspaces/{workspaceId}/stories/{id}", h.Update)
+	app.Delete("/workspaces/{workspaceId}/stories/{id}", h.Delete)
+	app.Delete("/workspaces/{workspaceId}/stories", h.BulkDelete)
 }

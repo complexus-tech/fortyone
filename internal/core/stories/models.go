@@ -16,6 +16,7 @@ type CoreStoryList struct {
 	Epic       *uuid.UUID
 	Status     *uuid.UUID
 	Assignee   *uuid.UUID
+	Reporter   *uuid.UUID
 	Priority   string
 	Sprint     *uuid.UUID
 	Team       uuid.UUID
@@ -86,22 +87,19 @@ type CoreUpdateStory struct {
 	EndDate         *time.Time
 }
 
-func toCoreSingleStory(ns CoreNewStory) CoreSingleStory {
+func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 	now := time.Now()
 	if ns.Priority == "" {
 		ns.Priority = "No Priority"
 	}
-	workspace, _ := uuid.Parse("3589aaa4-f1f4-40bb-ae1c-9104dd537d8c")
 
 	return CoreSingleStory{
-		ID:              uuid.New(),
-		SequenceID:      0,
+		Workspace:       workspaceId,
 		Title:           ns.Title,
 		Description:     ns.Description,
 		DescriptionHTML: ns.DescriptionHTML,
 		Parent:          ns.Parent,
 		Objective:       ns.Objective,
-		Workspace:       workspace,
 		Status:          ns.Status,
 		Assignee:        ns.Assignee,
 		BlockedBy:       ns.BlockedBy,

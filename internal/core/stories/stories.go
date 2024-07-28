@@ -3,7 +3,6 @@ package stories
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -19,19 +18,16 @@ var (
 
 // Repository provides access to the story storage.
 type Repository interface {
-	Get(ctx context.Context, id uuid.UUID) (CoreSingleStory, error)
-	Delete(ctx context.Context, id uuid.UUID) error
-	BulkDelete(ctx context.Context, ids []uuid.UUID) error
-	Restore(ctx context.Context, id uuid.UUID) error
-	BulkRestore(ctx context.Context, ids []uuid.UUID) error
-	Update(ctx context.Context, id uuid.UUID, updates map[string]any) error
+	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error)
+	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
+	BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
+	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Create(ctx context.Context, story *CoreSingleStory) error
-	GetNextSequenceID(ctx context.Context, teamId uuid.UUID) (int, error)
-	MyStories(ctx context.Context) ([]CoreStoryList, error)
-	TeamStories(ctx context.Context, teamId uuid.UUID) ([]CoreStoryList, error)
-	ObjectiveStories(ctx context.Context, objectiveId uuid.UUID) ([]CoreStoryList, error)
-	EpicStories(ctx context.Context, epicId uuid.UUID) ([]CoreStoryList, error)
-	SprintStories(ctx context.Context, sprintId uuid.UUID) ([]CoreStoryList, error)
+	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
+	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
+	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 }
 
 // Service provides story-related operations.
@@ -49,21 +45,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // Create creates a new story.
-func (s *Service) Create(ctx context.Context, ns CoreNewStory) (CoreSingleStory, error) {
+func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.UUID) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.create")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Create")
 	defer span.End()
 
-	story := toCoreSingleStory(ns)
-
-	sequenceID, err := s.repo.GetNextSequenceID(ctx, story.Team)
-
-	if err != nil {
-		span.RecordError(err)
-		return CoreSingleStory{}, fmt.Errorf("getting next sequence ID: %w", err)
-	}
-	story.SequenceID = sequenceID
-	s.log.Info(ctx, "business.core.stories.create", "sequenceID", sequenceID)
+	story := toCoreSingleStory(ns, workspaceId)
 
 	if err := s.repo.Create(ctx, &story); err != nil {
 		span.RecordError(err)
@@ -77,12 +64,12 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory) (CoreSingleStory,
 }
 
 // MyStories returns a list of stories.
-func (s *Service) MyStories(ctx context.Context) ([]CoreStoryList, error) {
+func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error) {
 	s.log.Info(ctx, "business.core.stories.list")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
 	defer span.End()
 
-	stories, err := s.repo.MyStories(ctx)
+	stories, err := s.repo.MyStories(ctx, workspaceId)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -93,64 +80,13 @@ func (s *Service) MyStories(ctx context.Context) ([]CoreStoryList, error) {
 	return stories, nil
 }
 
-// TeamStories returns a list of stories for a team.
-func (s *Service) TeamStories(ctx context.Context, teamId uuid.UUID) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.TeamStories")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.TeamStories")
+// List returns a list of stories for a workspace with additional filters.
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
+	s.log.Info(ctx, "business.core.stories.List")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
 	defer span.End()
 
-	stories, err := s.repo.TeamStories(ctx, teamId)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-	))
-	return stories, nil
-}
-
-// ObjectiveStories returns a list of stories for an objective.
-func (s *Service) ObjectiveStories(ctx context.Context, objectiveId uuid.UUID) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.ObjectiveStories")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.ObjectiveStories")
-	defer span.End()
-
-	stories, err := s.repo.ObjectiveStories(ctx, objectiveId)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-	))
-	return stories, nil
-}
-
-// EpicStories returns a list of stories for an epic.
-func (s *Service) EpicStories(ctx context.Context, epicId uuid.UUID) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.EpicStories")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.EpicStories")
-	defer span.End()
-
-	stories, err := s.repo.EpicStories(ctx, epicId)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-	))
-	return stories, nil
-}
-
-// SprintStories returns a list of stories for a sprint.
-func (s *Service) SprintStories(ctx context.Context, sprintId uuid.UUID) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.SprintStories")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.SprintStories")
-	defer span.End()
-
-	stories, err := s.repo.SprintStories(ctx, sprintId)
+	stories, err := s.repo.List(ctx, workspaceId, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -162,12 +98,12 @@ func (s *Service) SprintStories(ctx context.Context, sprintId uuid.UUID) ([]Core
 }
 
 // Get returns the story with the specified ID.
-func (s *Service) Get(ctx context.Context, id uuid.UUID) (CoreSingleStory, error) {
+func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.Get")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Get")
 	defer span.End()
 
-	story, err := s.repo.Get(ctx, id)
+	story, err := s.repo.Get(ctx, id, workspaceId)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
@@ -176,12 +112,12 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (CoreSingleStory, error
 }
 
 // Delete deletes the story with the specified ID.
-func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	s.log.Info(ctx, "business.core.stories.Delete")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Delete")
 	defer span.End()
 
-	if err := s.repo.Delete(ctx, id); err != nil {
+	if err := s.repo.Delete(ctx, id, workspaceId); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -189,12 +125,12 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // Update updates the story with the specified ID.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, updates map[string]any) error {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	s.log.Info(ctx, "business.core.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
 
-	if err := s.repo.Update(ctx, id, updates); err != nil {
+	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -202,12 +138,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, updates map[string]a
 }
 
 // BulkDelete deletes the stories with the specified IDs.
-func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
+func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
 	s.log.Info(ctx, "business.core.stories.BulkDelete")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkDelete")
 	defer span.End()
 
-	if err := s.repo.BulkDelete(ctx, ids); err != nil {
+	if err := s.repo.BulkDelete(ctx, ids, workspaceId); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -215,12 +151,12 @@ func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
 }
 
 // Restore restores the story with the specified ID.
-func (s *Service) Restore(ctx context.Context, id uuid.UUID) error {
+func (s *Service) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	s.log.Info(ctx, "business.core.stories.Restore")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Restore")
 	defer span.End()
 
-	if err := s.repo.Restore(ctx, id); err != nil {
+	if err := s.repo.Restore(ctx, id, workspaceId); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -228,12 +164,12 @@ func (s *Service) Restore(ctx context.Context, id uuid.UUID) error {
 }
 
 // BulkRestore restores the stories with the specified IDs.
-func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
+func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
 	s.log.Info(ctx, "business.core.stories.BulkRestore")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkRestore")
 	defer span.End()
 
-	if err := s.repo.BulkRestore(ctx, ids); err != nil {
+	if err := s.repo.BulkRestore(ctx, ids, workspaceId); err != nil {
 		span.RecordError(err)
 		return err
 	}

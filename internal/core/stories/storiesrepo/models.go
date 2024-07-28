@@ -78,6 +78,7 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			Workspace:  story.Workspace,
 			Status:     story.Status,
 			Assignee:   story.Assignee,
+			Reporter:   story.Reporter,
 			StartDate:  story.StartDate,
 			EndDate:    story.EndDate,
 			Priority:   story.Priority,
@@ -91,7 +92,6 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 // toDBStory converts a CoreSingleStory to a dbStory.
 func toDBStory(i stories.CoreSingleStory) dbStory {
 	return dbStory{
-		ID:              i.ID,
 		SequenceID:      i.SequenceID,
 		Title:           i.Title,
 		Description:     i.Description,

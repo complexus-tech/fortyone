@@ -12,7 +12,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -29,22 +28,109 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
+// GetNextSequenceID returns the next sequence ID for a team.
+func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error) {
+	var currentSequence int
+
+	// Start a transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, nil, nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	query := `
+		UPDATE team_story_sequences
+		SET current_sequence = current_sequence + 1
+		WHERE workspace_id = :workspace_id AND team_id = :team_id
+		RETURNING current_sequence
+	`
+	params := map[string]interface{}{
+		"team_id":      teamID,
+		"workspace_id": workspaceId,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		tx.Rollback()
+		return 0, nil, nil, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.GetContext(ctx, &currentSequence, params)
+	if err == sql.ErrNoRows {
+		// If no record exists, insert a new one starting from 1
+		q := `
+			INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence)
+			VALUES (:workspace_id, :team_id, 1)
+			RETURNING current_sequence
+		`
+		stmt, err = tx.PrepareNamedContext(ctx, q)
+		if err != nil {
+			tx.Rollback()
+			return 0, nil, nil, fmt.Errorf("failed to prepare named statement for insert: %w", err)
+		}
+		defer stmt.Close()
+
+		err = stmt.GetContext(ctx, &currentSequence, params)
+	}
+
+	if err != nil {
+		tx.Rollback()
+		return 0, nil, nil, fmt.Errorf("failed to get/update sequence: %w", err)
+	}
+
+	commit := func() error {
+		return tx.Commit()
+	}
+
+	rollback := func() error {
+		return tx.Rollback()
+	}
+
+	return currentSequence, commit, rollback, nil
+}
+
 // Create creates a new story.
 func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
 
+	sequenceID, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
+	if err != nil {
+		return fmt.Errorf("failed to get next sequence ID: %w", err)
+	}
+	story.SequenceID = sequenceID
+
+	if err := r.insertStory(ctx, story); err != nil {
+		rollback()
+		return fmt.Errorf("failed to insert story: %w", err)
+	}
+
+	if err := commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
+	defer span.End()
+
 	q := `
-	INSERT INTO stories (
-			id, sequence_id, title, description, description_html, parent_id, objective_id,
-			status_id, assignee_id, blocked_by_id, blocking_id, related_id, reporter_id,
-			priority, sprint_id, team_id, workspace_id, start_date, end_date, created_at, updated_at
-	) VALUES (
-			:id, :sequence_id, :title, :description, :description_html, :parent_id, :objective_id,
-			:status_id, :assignee_id, :blocked_by_id, :blocking_id, :related_id, :reporter_id,
-			:priority, :sprint_id, :team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
-	);
-`
+			INSERT INTO stories (
+					sequence_id, title, description, description_html,
+					parent_id, objective_id, status_id, assignee_id, 
+					blocked_by_id, blocking_id, related_id, reporter_id,
+					priority, sprint_id, team_id, workspace_id, start_date, 
+					end_date, created_at, updated_at
+			) VALUES (
+					:sequence_id, :title, :description, :description_html,
+					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
+					:blocking_id, :related_id, :reporter_id, :priority, :sprint_id,
+					:team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
+			);
+		`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -55,9 +141,9 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, "Creating story.")
+	r.log.Info(ctx, "creating story.")
 	if _, err := stmt.ExecContext(ctx, toDBStory(*story)); err != nil {
-		errMsg := fmt.Sprintf("Failed to create story: %s", err)
+		errMsg := fmt.Sprintf("failed to create story: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create story"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
@@ -71,176 +157,45 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error
 	return nil
 }
 
-// GetNextSequenceID returns the next sequence ID for a team.
-func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID) (int, error) {
-	var currentSequence int
+// List returns a list of stories for a workspace with additional filters.
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
+	defer span.End()
 
-	// Start a transaction
-	tx, err := r.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback() // Rollback in case of error
-
-	// Try to update the existing record and get the new sequence
 	query := `
-		UPDATE team_story_sequences
-		SET current_sequence = current_sequence + 1
-		WHERE team_id = :team_id
-		RETURNING current_sequence
-	`
-	params := map[string]interface{}{
-		"team_id": teamID,
-	}
-
-	stmt, err := tx.PrepareNamedContext(ctx, query)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prepare named statement: %w", err)
-	}
-	defer stmt.Close()
-
-	err = stmt.GetContext(ctx, &currentSequence, params)
-	if err == sql.ErrNoRows {
-		// If no record exists, insert a new one starting from 1
-		q := `
-			INSERT INTO team_story_sequences (team_id, current_sequence)
-			VALUES (:team_id, 1)
-			RETURNING current_sequence
-		`
-		stmt, err = tx.PrepareNamedContext(ctx, q)
-		if err != nil {
-			return 0, fmt.Errorf("failed to prepare named statement for insert: %w", err)
-		}
-		defer stmt.Close()
-
-		err = stmt.GetContext(ctx, &currentSequence, params)
-	}
-
-	if err != nil {
-		return 0, fmt.Errorf("failed to get/update sequence: %w", err)
-	}
-
-	// Commit the transaction
-	if err = tx.Commit(); err != nil {
-		return 0, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return currentSequence, nil
-}
-
-// TeamStories returns a list of stories for a team.
-func (r *repo) TeamStories(ctx context.Context, teamId uuid.UUID) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.TeamStories")
-	defer span.End()
-
-	var stories []dbStory
-	q := `
 		SELECT
 			id,
 			sequence_id,
 			title,
 			priority,
 			description,
+			status_id,
+			start_date,
+			end_date,
+			sprint_id,
+			team_id,
+			objective_id,
+			workspace_id,
+			assignee_id,
+			reporter_id,
 			created_at,
-			updated_at,
-			deleted_at
-		FROM
-			stories;
-	`
-
-	stmt, err := r.db.PreparexContext(ctx, q)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-	defer stmt.Close()
-
-	r.log.Info(ctx, "Fetching stories.")
-	if err := stmt.SelectContext(ctx, &stories); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-
-	r.log.Info(ctx, "Stories retrieved successfully.")
-	span.AddEvent("Stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-		attribute.String("query", q),
-	))
-
-	return toCoreStories(stories), nil
-}
-
-// ObjectiveStories returns a list of stories for an objective.
-func (r *repo) ObjectiveStories(ctx context.Context, objectiveId uuid.UUID) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.ObjectiveStories")
-	defer span.End()
-	var stories []dbStory
-	q := `
-		SELECT
-			id,
-			sequence_id,
-			title,
-			priority,
-			description,
-			created_at,
-			updated_at,
-			deleted_at
+			updated_at
 		FROM
 			stories
-		WHERE
-			objective_id = :objective_id;
 	`
-	stmt, err := r.db.PreparexContext(ctx, q)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-	defer stmt.Close()
+	var setClauses []string
 
-	r.log.Info(ctx, fmt.Sprintf("Fetching stories for objective #%s", objectiveId), "objectiveID", objectiveId)
-	if err := stmt.SelectContext(ctx, &stories, objectiveId); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
+	for field := range filters {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Stories for objective #%s retrieved successfully", objectiveId), "objectiveID", objectiveId)
-	span.AddEvent("Stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-		attribute.String("query", q),
-	))
+	filters["workspace_id"] = workspaceId
 
-	return toCoreStories(stories), nil
-}
+	query += " WHERE " + strings.Join(setClauses, " OR ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id;"
 
-// SprintStories returns a list of stories for a sprint.
-func (r *repo) SprintStories(ctx context.Context, sprintId uuid.UUID) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.SprintStories")
-	defer span.End()
 	var stories []dbStory
-	q := `
-		SELECT
-			id,
-			sequence_id,
-			title,
-			priority,
-			description,
-			created_at,
-			updated_at,
-			deleted_at
-		FROM
-			stories
-		WHERE
-			sprint_id = :sprint_id;
-	`
-	stmt, err := r.db.PreparexContext(ctx, q)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -249,76 +204,38 @@ func (r *repo) SprintStories(ctx context.Context, sprintId uuid.UUID) ([]stories
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, fmt.Sprintf("Fetching stories for sprint #%s", sprintId), "sprintId", sprintId)
-	if err := stmt.SelectContext(ctx, &stories, sprintId); err != nil {
+	r.log.Info(ctx, "fetching stories.")
+	if err := stmt.SelectContext(ctx, &stories, filters); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Stories for sprint #%s retrieved successfully", sprintId), "sprintId", sprintId)
-	span.AddEvent("Stories retrieved.", trace.WithAttributes(
+	r.log.Info(ctx, "stories retrieved successfully.")
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(stories)),
-		attribute.String("query", q),
-	))
-
-	return toCoreStories(stories), nil
-}
-
-// EpicStories returns a list of stories for an epic.
-func (r *repo) EpicStories(ctx context.Context, epicId uuid.UUID) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.EpicStories")
-	defer span.End()
-	var stories []dbStory
-	q := `
-		SELECT
-			id,
-			sequence_id,
-			title,
-			priority,
-			description,
-			created_at,
-			updated_at,
-			deleted_at
-		FROM
-			stories
-		WHERE
-			epic_id = :epic_id;
-	`
-	stmt, err := r.db.PreparexContext(ctx, q)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-	defer stmt.Close()
-
-	r.log.Info(ctx, fmt.Sprintf("Fetching stories for epic #%s", epicId), "epicId", epicId)
-	if err := stmt.SelectContext(ctx, &stories, epicId); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-
-	r.log.Info(ctx, fmt.Sprintf("Stories for epic #%s retrieved successfully", epicId), "epicId", epicId)
-	span.AddEvent("Stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-		attribute.String("query", q),
+		attribute.String("query", query),
 	))
 
 	return toCoreStories(stories), nil
 }
 
 // MyStories returns a list of stories.
-func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
+func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.CoreStoryList, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
 	defer span.End()
 
+	currentUser, _ := uuid.Parse("8a798112-90fe-495e-9f1c-f36655e3d8ab")
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceId,
+		"current_user": currentUser,
+	}
+
 	var stories []dbStory
-	// filter where assignee_id = current user or reporter_id = current user or current user in in the watchers list
+	// TODO: Add check for current user in watchers list
+
 	q := `
 		SELECT
 			id,
@@ -333,15 +250,18 @@ func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
 			team_id,
 			objective_id,
 			workspace_id,
+			assignee_id,
+			reporter_id,
 			created_at,
 			updated_at
 		FROM
 			stories
-		WHERE deleted_at IS NULL
+		WHERE workspace_id = :workspace_id AND deleted_at IS NULL 
+		AND (assignee_id = :current_user OR reporter_id = :current_user)
 		ORDER BY created_at DESC;
 	`
 
-	stmt, err := r.db.PreparexContext(ctx, q)
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -351,7 +271,7 @@ func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
 	defer stmt.Close()
 
 	r.log.Info(ctx, "Fetching stories.")
-	if err := stmt.SelectContext(ctx, &stories); err != nil {
+	if err := stmt.SelectContext(ctx, &stories, params); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -368,11 +288,11 @@ func (r *repo) MyStories(ctx context.Context) ([]stories.CoreStoryList, error) {
 }
 
 // Get returns the story with the specified ID.
-func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, error) {
+func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (stories.CoreSingleStory, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Get")
 	defer span.End()
 
-	params := map[string]interface{}{"id": id}
+	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
 	var story dbStory
 
 	stmt, err := r.db.PrepareNamedContext(ctx, `
@@ -398,7 +318,8 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, 
 		FROM
 			stories
 		WHERE
-			id = :id;
+			id = :id
+		AND workspace_id = :workspace_id;
 	`)
 
 	if err != nil {
@@ -423,16 +344,17 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID) (stories.CoreSingleStory, 
 }
 
 // Delete deletes the story with the specified ID.
-func (r *repo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Delete")
 	defer span.End()
-	params := map[string]interface{}{"id": id}
+	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, `
 		UPDATE stories 
 		SET deleted_at = NOW(),
 				updated_at = NOW() 
-		WHERE id = :id;
+		WHERE id = :id
+		AND workspace_id = :workspace_id;
 	`)
 
 	if err != nil {
@@ -454,19 +376,20 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // BulkDelete removes the stories with the specified IDs.
-func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
+func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkDelete")
 	defer span.End()
+
+	params := map[string]interface{}{"ids": ids, "workspace_id": workspaceId}
 
 	query := `
         UPDATE stories 
         SET deleted_at = NOW(), updated_at = NOW() 
-        WHERE id = ANY($1)
+        WHERE id = ANY(:ids) AND workspace_id = :workspace_id;
     `
 
 	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", ids), "ids", ids)
-
-	_, err := r.db.ExecContext(ctx, query, pq.Array(ids))
+	_, err := r.db.NamedExecContext(ctx, query, params)
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to delete stories: %s", err), "ids", ids)
 		return err
@@ -479,7 +402,7 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID) error {
 }
 
 // Restore rrestores a story with the specified ID.
-func (r *repo) Restore(ctx context.Context, id uuid.UUID) error {
+func (r *repo) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Restore")
 	defer span.End()
 
@@ -488,8 +411,9 @@ func (r *repo) Restore(ctx context.Context, id uuid.UUID) error {
 			SET deleted_at = NULL, 
 					updated_at = NOW() 
 			WHERE id = :id
+			AND workspace_id = :workspace_id;
 	`
-	params := map[string]interface{}{"id": id}
+	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -512,37 +436,40 @@ func (r *repo) Restore(ctx context.Context, id uuid.UUID) error {
 }
 
 // BulkRestore restores the stories with the specified IDs.
-func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID) error {
+func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkRestore")
 	defer span.End()
+
+	params := map[string]interface{}{"ids": ids, "workspace_id": workspaceId}
 
 	query := `
 				UPDATE stories
 				SET deleted_at = NULL, updated_at = NOW()
-				WHERE id = ANY($1)
+				WHERE id = ANY(:ids)
+				AND workspace_id = :workspace_id;
 			`
 
-	r.log.Info(ctx, fmt.Sprintf("Restoring stories: %v", ids), "ids", ids)
-	_, err := r.db.ExecContext(ctx, query, pq.Array(ids))
+	r.log.Info(ctx, fmt.Sprintf("restoring stories: %v", ids), "ids", ids)
+	_, err := r.db.NamedExecContext(ctx, query, params)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to restore stories: %s", err), "ids", ids)
+		r.log.Error(ctx, fmt.Sprintf("failed to restore stories: %s", err), "ids", ids)
 		return err
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Stories: %v restored successfully", ids), "ids", ids)
-	span.AddEvent("Stories restored.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+	r.log.Info(ctx, fmt.Sprintf("stories: %v restored successfully", ids), "ids", ids)
+	span.AddEvent("stories restored.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
 
 	return nil
 }
 
 // Update updates the story with the specified ID.
-func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any) error {
+func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
 	defer span.End()
 
 	query := "UPDATE stories SET "
 	var setClauses []string
-	params := map[string]any{"id": id}
+	params := map[string]any{"id": id, "workspace_id": workspaceId}
 
 	for field, value := range updates {
 		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
@@ -552,9 +479,7 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any)
 	setClauses = append(setClauses, "updated_at = NOW()")
 
 	query += strings.Join(setClauses, ", ")
-	query += " WHERE id = :id"
-
-	fmt.Println(query)
+	query += " WHERE id = :id AND workspace_id = :workspace_id;"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -579,13 +504,13 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, updates map[string]any)
 }
 
 // BulkUpdate updates the stories with the specified IDs.
-func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, updates map[string]any) error {
+func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkUpdate")
 	defer span.End()
 
 	query := "UPDATE stories SET "
 	var setClauses []string
-	params := map[string]any{"ids": ids}
+	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
 
 	for field, value := range updates {
 		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
@@ -595,7 +520,7 @@ func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, updates map[stri
 	setClauses = append(setClauses, "updated_at = NOW()")
 
 	query += strings.Join(setClauses, ", ")
-	query += " WHERE id IN (:ids)"
+	query += " WHERE id IN (:ids) AND workspace_id = :workspace_id;"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -25,9 +26,13 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context) ([]states.CoreState, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreState, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.states.List")
 	defer span.End()
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceId,
+	}
 
 	var statuses []dbState
 	q := `
@@ -37,15 +42,18 @@ func (r *repo) List(ctx context.Context) ([]states.CoreState, error) {
 			color,
 			category,
 			order_index,
+			team_id,
+			workspace_id,
 			created_at,
 			updated_at
 		FROM
 			statuses
+		WHERE workspace_id = :workspace_id
 		ORDER BY order_index ASC;
 	`
-	stmt, err := r.db.PreparexContext(ctx, q)
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
@@ -53,7 +61,7 @@ func (r *repo) List(ctx context.Context) ([]states.CoreState, error) {
 	defer stmt.Close()
 
 	r.log.Info(ctx, "Fetching statuses.")
-	if err := stmt.SelectContext(ctx, &statuses); err != nil {
+	if err := stmt.SelectContext(ctx, &statuses, params); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve statuses from the database: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("statuses not found"), trace.WithAttributes(attribute.String("error", errMsg)))

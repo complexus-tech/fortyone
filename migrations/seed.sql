@@ -261,8 +261,10 @@ CREATE TABLE integrations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE team_story_sequences (
-  team_id UUID PRIMARY KEY,
-  current_sequence INTEGER NOT NULL DEFAULT 0
+  workspace_id UUID REFERENCES workspaces(workspace_id) NOT NULL,
+  team_id UUID REFERENCES teams(team_id) NOT NULL,
+  current_sequence INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (workspace_id, team_id)
 );
 -- Add team code unique constraint
 -- Indexes for performance optimization
@@ -272,4 +274,4 @@ CREATE INDEX idx_stories_team_id ON stories(team_id);
 CREATE INDEX idx_stories_workspace_id ON stories(workspace_id);
 CREATE INDEX idx_objectives_lead_user_id ON objectives(lead_user_id);
 CREATE INDEX idx_attachments_uploaded_by ON attachments(uploaded_by);
-CREATE INDEX idx_team_story_sequences_team_id ON team_story_sequences(team_id);
+CREATE INDEX idx_team_story_sequences_workspace_team ON team_story_sequences(workspace_id, team_id);

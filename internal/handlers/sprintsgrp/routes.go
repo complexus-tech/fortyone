@@ -19,6 +19,6 @@ func Routes(cfg Config, app *web.App) {
 
 	h := New(sprintsService)
 
-	app.Get("/sprints", h.List)
+	app.Get("/workspaces/{workspaceId}/sprints", h.List)
 
 }
