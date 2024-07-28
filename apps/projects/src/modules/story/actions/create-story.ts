@@ -6,7 +6,7 @@ import { revalidateTag } from "next/cache";
 import { TAGS } from "@/constants/tags";
 
 export const createStoryAction = async (newStory: NewStory) => {
-  const story = await post<NewStory, DetailedStory>("/stories", newStory);
+  const story = await post<NewStory, DetailedStory>(`/stories`, newStory);
   revalidateTag(TAGS.stories);
   return story;
 };

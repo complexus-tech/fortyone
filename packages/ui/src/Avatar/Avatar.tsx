@@ -3,6 +3,7 @@ import { VariantProps, cva } from "cva";
 import { cn } from "lib";
 import { FC, HTMLAttributes, useState } from "react";
 import { BlurImage } from "../Image/Image";
+import { AssigneeIcon } from "icons";
 
 const avatar = cva(
   "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0",
@@ -18,7 +19,7 @@ const avatar = cva(
       color: {
         primary: "text-white bg-primary",
         secondary: "text-white bg-secondary",
-        gray: "text-black bg-gray",
+        tertiary: "dark:bg-dark-200/50 bg-gray-50",
         naked: "bg-transparent",
       },
       size: {
@@ -63,13 +64,18 @@ const getInitials = (name: string) => {
 export const Avatar: FC<AvatarProps> = (props) => {
   const { className, src, name, color, size, rounded, ...rest } = props;
   const classes = cn(avatar({ rounded, color, size }), className);
-  const [path, setPath] = useState(src);
+  const asIcon = !src && !name;
 
   return (
-    <div className={classes} {...rest}>
-      {path && (
+    <div
+      className={cn(classes, {
+        "bg-transparent dark:bg-transparent": asIcon,
+      })}
+      {...rest}
+    >
+      {src && (
         <BlurImage
-          src={path}
+          src={src}
           priority
           alt={name}
           className={cn("w-full h-full aspect-square", {
@@ -80,33 +86,15 @@ export const Avatar: FC<AvatarProps> = (props) => {
           })}
         />
       )}
-      {!path && name && <span title={name}>{getInitials(name)}</span>}
-      {!path && !name && (
-        <svg
-          className={cn("h-5 w-auto", {
+      {!src && name && <span title={name}>{getInitials(name)}</span>}
+      {asIcon && (
+        <AssigneeIcon
+          className={cn("h-5 w-auto opacity-70", {
             "h-5": size === "sm",
             "h-auto": size === "xs",
           })}
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <path
-            d="M7.5 17C9.8317 14.5578 14.1432 14.4428 16.5 17M14.4951 9.5C14.4951 10.8807 13.3742 12 11.9915 12C10.6089 12 9.48797 10.8807 9.48797 9.5C9.48797 8.11929 10.6089 7 11.9915 7C13.3742 7 14.4951 8.11929 14.4951 9.5Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+          strokeWidth={2}
+        />
       )}
     </div>
   );

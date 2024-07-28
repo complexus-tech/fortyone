@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { HttpError } from "./error";
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,13 +11,26 @@ async function http<T>(
   retries = 1,
 ): Promise<T> {
   let requestConfig: RequestInit = config;
+
   if (process.env.NODE_ENV === "development") {
     requestConfig = {
       ...config,
       next: {
-        revalidate: 0,
+        revalidate: 1,
       },
     };
+  }
+
+  const session = await auth();
+  if (session) {
+    requestConfig.headers = {
+      ...requestConfig.headers,
+      Authorization: `Bearer ${session.token}`,
+    };
+
+    path = path.startsWith("/")
+      ? `/workspaces/${session.activeWorkspace.id}` + path
+      : path;
   }
 
   const fullPath = path.startsWith("/") ? apiURL + path : path;

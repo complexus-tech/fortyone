@@ -446,9 +446,10 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     <AssigneesMenu.Trigger>
                       <button className="flex" type="button">
                         <Avatar
-                          name="Joseph Mukorivo"
+                          color="tertiary"
+                          // name="Joseph Mukorivo"
                           size="xs"
-                          src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                          // src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
                         />
                       </button>
                     </AssigneesMenu.Trigger>

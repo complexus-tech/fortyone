@@ -1,5 +1,4 @@
 "use client";
-
 import { createContext, ReactNode } from "react";
 import { State } from "@/types/states";
 import { Objective } from "@/modules/objectives/types";

@@ -6,7 +6,7 @@ import { Team } from "@/modules/teams/types";
 
 export const getTeams = async () => {
   const session = await auth();
-  const teams = await get<Team[]>("/teams", {
+  const teams = await get<Team[]>(`/teams`, {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 30,
       tags: [TAGS.teams],

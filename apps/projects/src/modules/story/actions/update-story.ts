@@ -1,7 +1,7 @@
 "use server";
 
 import { patch } from "@/lib/http";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { TAGS } from "@/constants/tags";
 import { DetailedStory } from "../types";
 

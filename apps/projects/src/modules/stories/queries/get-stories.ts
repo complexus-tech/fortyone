@@ -15,15 +15,15 @@ export const getStories = async (
     epicId?: string;
     assigneeId?: string;
     tags?: string[];
-  },
+  } = {},
   config?: RequestInit,
 ) => {
   const session = await auth();
-  const stories = await get<Story[]>("/my-stories", {
-    // next: {
-    //   revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
-    //   tags: [TAGS.stories],
-    // },
+  const stories = await get<Story[]>(`/my-stories`, {
+    next: {
+      revalidate: 1, // DURATION_FROM_SECONDS.MINUTE * 10,
+      tags: [TAGS.stories],
+    },
     ...config,
   });
   return stories;

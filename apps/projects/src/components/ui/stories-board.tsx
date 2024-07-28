@@ -18,6 +18,7 @@ import { BoardContext } from "./board-context";
 import { DetailedStory } from "@/modules/story/types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
+import { useStore } from "@/hooks/store";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -30,6 +31,8 @@ const StoryOverlay = ({
   layout: StoriesLayout;
   selectedStories: number;
 }) => {
+  const { teams } = useStore();
+  const team = teams.find(({ id }) => id === story?.teamId);
   return (
     <DragOverlay
       className="pointer-events-none"
@@ -56,7 +59,9 @@ const StoryOverlay = ({
           ) : (
             <>
               <StoryStatusIcon statusId={story?.statusId} />
-              <Text color="muted">COM-{story?.sequenceId}</Text>
+              <Text color="muted">
+                {team?.code}-{story?.sequenceId}
+              </Text>
               <Text className="max-w-xs truncate" fontWeight="medium">
                 {story?.title}
               </Text>
@@ -129,46 +134,34 @@ export const StoriesBoard = ({
     setActiveStory(null);
   };
 
-  const orderStories = (stories: Story[]) => {
-    switch (viewOptions.orderBy) {
-      case "Created":
-        return stories.toSorted(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-      case "Updated":
-        return stories.toSorted(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-        );
-      case "Due date":
-        return stories.toSorted((a, b) => {
-          const aDate = new Date(a.endDate);
-          const bDate = new Date(b.endDate);
-          if (isNaN(aDate.getTime())) {
-            return 1;
-          }
-          if (isNaN(bDate.getTime())) {
-            return -1;
-          }
-          return aDate.getTime() - bDate.getTime();
-        });
-      case "Priority":
-        const prioritiesMap: Record<StoryPriority, number> = {
-          "No Priority": 0,
-          Low: 1,
-          Medium: 2,
-          High: 3,
-          Urgent: 4,
-        };
-        return stories.toSorted(
-          (a, b) =>
-            prioritiesMap[b.priority] - prioritiesMap[a.priority] ||
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-      default:
-        return stories;
-    }
+  const orderStories = (stories: Story[] = []) => {
+    const getSortValue = (story: Story): number => {
+      switch (viewOptions.orderBy) {
+        case "Created":
+          return new Date(story.createdAt).getTime();
+        case "Updated":
+          return new Date(story.updatedAt).getTime();
+        case "Due date":
+          const date = new Date(story.endDate);
+          return isNaN(date.getTime()) ? Infinity : date.getTime();
+        case "Priority":
+          const prioritiesMap: Record<StoryPriority, number> = {
+            "No Priority": 0,
+            Low: 1,
+            Medium: 2,
+            High: 3,
+            Urgent: 4,
+          };
+          return (
+            prioritiesMap[story.priority] * 1e15 -
+            new Date(story.createdAt).getTime()
+          );
+        default:
+          return 0;
+      }
+    };
+
+    return stories.sort((a, b) => getSortValue(b) - getSortValue(a));
   };
 
   return (

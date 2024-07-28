@@ -9,7 +9,7 @@ type Payload = {
 };
 
 export const bulkDeleteAction = async (storyIds: string[]) => {
-  const stories = await remove<Payload, Payload>("/stories", {
+  const stories = await remove<Payload, Payload>(`/stories`, {
     body: JSON.stringify({ storyIds }),
   });
   revalidateTag(TAGS.stories);

@@ -4,6 +4,7 @@ import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useTeamStories } from "@/modules/teams/stories/provider";
+import { useStore } from "@/hooks/store";
 
 export const AllStories = ({
   layout,
@@ -12,10 +13,21 @@ export const AllStories = ({
   stories: Story[];
   layout: StoriesLayout;
 }) => {
+  const { states } = useStore();
   const { viewOptions } = useTeamStories();
+  const backlogStatuses = states
+    .filter((state) => state.category === "backlog")
+    .map((state) => state.id);
+  const activeStatuses = states
+    .filter((state) => (state.category = "started"))
+    .map((state) => state.id);
 
-  const backlog = stories.filter((story) => story.status === "Backlog");
-  const activeStories = stories.filter((story) => story.status !== "Backlog");
+  const backlog = stories.filter((story) =>
+    backlogStatuses.includes(story.statusId),
+  );
+  const activeStories = stories.filter((story) =>
+    activeStatuses.includes(story.statusId),
+  );
 
   return (
     <Tabs defaultValue="all">

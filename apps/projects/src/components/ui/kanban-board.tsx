@@ -19,11 +19,11 @@ export const KanbanBoard = ({
   const { states: statuses } = useStore();
 
   const priorities: StoryPriority[] = [
-    "No Priority",
-    "Low",
-    "Medium",
-    "High",
     "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
   ];
 
   return (

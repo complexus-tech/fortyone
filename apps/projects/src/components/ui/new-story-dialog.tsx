@@ -1,8 +1,13 @@
 "use client";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  use,
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   Button,
-  Badge,
   Dialog,
   Flex,
   Switch,
@@ -10,6 +15,7 @@ import {
   TextEditor,
   DatePicker,
   Menu,
+  Tooltip,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -27,6 +33,7 @@ import {
   CheckIcon,
   CloseIcon,
   MaximizeIcon,
+  MinimizeIcon,
   PlusIcon,
   TagsIcon,
 } from "icons";
@@ -38,7 +45,7 @@ import { PriorityIcon } from "./priority-icon";
 import { NewStory } from "@/modules/story/types";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { toast } from "sonner";
-import nProgress, { set } from "nprogress";
+import nProgress from "nprogress";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/utils";
 import { addDays, format } from "date-fns";
@@ -46,6 +53,8 @@ import { cn } from "lib";
 import { useStore } from "@/hooks/store";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
+import { useSession } from "next-auth/react";
+import { auth } from "@/auth";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -58,7 +67,9 @@ export const NewStoryDialog = ({
   statusId?: string;
   priority?: StoryPriority;
 }) => {
+  const session = useSession();
   const { states, teams } = useStore();
+  const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
     teams.at(0)!!,
@@ -77,7 +88,7 @@ export const NewStoryDialog = ({
     startDate: null,
     priority,
   };
-
+  // const session = useSession();
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
@@ -134,6 +145,8 @@ export const NewStoryDialog = ({
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
+      reporterId: session?.data?.user?.id,
+
       // assigneeId: "",
     };
 
@@ -155,6 +168,7 @@ export const NewStoryDialog = ({
       });
       if (!createMore) {
         setIsOpen(false);
+        setIsExpanded(false);
       }
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
@@ -178,7 +192,7 @@ export const NewStoryDialog = ({
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
-      <Dialog.Content hideClose size="lg">
+      <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
@@ -219,16 +233,27 @@ export const NewStoryDialog = ({
             <Text color="muted">New story</Text>
           </Dialog.Title>
           <Flex gap={2}>
-            <Button
-              className="px-[0.35rem] dark:hover:bg-dark-100"
-              color="tertiary"
-              href="/"
-              size="xs"
-              variant="naked"
-            >
-              <MaximizeIcon className="h-[1.2rem] w-auto" />
-              <span className="sr-only">Expand story to full screen</span>
-            </Button>
+            <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
+              <Button
+                className="px-[0.35rem] dark:hover:bg-dark-100"
+                color="tertiary"
+                size="xs"
+                variant="naked"
+                onClick={() => {
+                  setIsExpanded((prev) => !prev);
+                }}
+              >
+                {isExpanded ? (
+                  <MinimizeIcon className="h-[1.2rem] w-auto" />
+                ) : (
+                  <MaximizeIcon className="h-[1.2rem] w-auto" />
+                )}
+
+                <span className="sr-only">
+                  {isExpanded ? "Minimize" : "Expand"} dialog
+                </span>
+              </Button>
+            </Tooltip>
             <Dialog.Close />
           </Flex>
         </Dialog.Header>
@@ -238,7 +263,12 @@ export const NewStoryDialog = ({
             className="text-2xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={editor} />
+          <TextEditor
+            editor={editor}
+            className={cn({
+              "min-h-96": isExpanded,
+            })}
+          />
           <Flex className="mt-4" gap={1}>
             <StatusesMenu>
               <StatusesMenu.Trigger>

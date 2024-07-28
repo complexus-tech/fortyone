@@ -18,11 +18,11 @@ export const ListBoard = ({
   const { states } = useStore();
 
   const priorities: StoryPriority[] = [
-    "No Priority",
-    "Low",
-    "Medium",
-    "High",
     "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
   ];
 
   return (

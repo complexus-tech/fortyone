@@ -7,7 +7,7 @@ import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { TAGS } from "@/constants/tags";
 
 export const getRunningSprints = async () => {
-  const sprints = await get<Sprint[]>("/sprints", {
+  const sprints = await get<Sprint[]>(`/sprints`, {
     next: {
       revalidate: DURATION_FROM_SECONDS.HOUR,
       tags: [TAGS.sprints],

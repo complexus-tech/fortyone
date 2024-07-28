@@ -10,7 +10,7 @@ type Payload = {
 
 export const bulkRestoreAction = async (storyIds: string[]) => {
   const payload = { storyIds };
-  const stories = await post<Payload, Payload>("/stories/restore", payload);
+  const stories = await post<Payload, Payload>(`/stories/restore`, payload);
   revalidateTag(TAGS.stories);
   storyIds.forEach((storyId) => revalidateTag(`${TAGS.stories}:${storyId}`));
 

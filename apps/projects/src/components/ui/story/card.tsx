@@ -1,6 +1,15 @@
 "use client";
 import Link from "next/link";
-import { Box, Flex, Button, Text, Avatar, DatePicker, Tooltip } from "ui";
+import {
+  Box,
+  Flex,
+  Button,
+  Text,
+  Avatar,
+  DatePicker,
+  Tooltip,
+  Checkbox,
+} from "ui";
 import { CalendarIcon, TagsIcon } from "icons";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
@@ -13,6 +22,7 @@ import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
 import { useStore } from "@/hooks/store";
+import { slugify } from "@/utils";
 
 export const StoryCard = ({
   story,
@@ -30,7 +40,7 @@ export const StoryCard = ({
     id,
   });
 
-  const { isColumnVisible } = useBoard();
+  const { isColumnVisible, selectedStories, setSelectedStories } = useBoard();
   return (
     <div ref={setNodeRef} {...listeners} {...attributes}>
       <StoryContextMenu>
@@ -46,7 +56,7 @@ export const StoryCard = ({
         >
           <Flex className="mb-0.5" gap={2} justify="between">
             <Flex align="center" gap={2}>
-              {/* <Checkbox
+              <Checkbox
                 checked={selectedStories.includes(story.id)}
                 onCheckedChange={(checked) => {
                   setSelectedStories(
@@ -58,11 +68,11 @@ export const StoryCard = ({
                   );
                 }}
                 className="rounded-[0.35rem]"
-              /> */}
+              />
               {isColumnVisible("ID") && (
                 <Link
                   className="flex-1"
-                  href="/teams/web/stories/test-123-story"
+                  href={`/story/${id}/${slugify(title)}`}
                 >
                   <Text
                     className="w-[12ch] truncate text-[0.95rem] uppercase"
@@ -107,7 +117,7 @@ export const StoryCard = ({
               </Tooltip>
             )}
           </Flex>
-          <Link className="flex-1" href="/teams/web/stories/test-123-story">
+          <Link className="flex-1" href={`/story/${id}/${slugify(title)}`}>
             <Text className="mb-2 line-clamp-2">{title}</Text>
           </Link>
           <Flex gap={1} wrap>
