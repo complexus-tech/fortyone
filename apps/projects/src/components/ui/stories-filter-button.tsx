@@ -131,7 +131,7 @@ export const StoriesFilterButton = ({
           {getButtonLabel()}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-[26rem] pb-5">
+      <Popover.Content align="end" className="w-[26rem] rounded-[0.6rem] pb-5">
         <Flex align="center" className="h-10 px-4" justify="between">
           <Text
             color="muted"

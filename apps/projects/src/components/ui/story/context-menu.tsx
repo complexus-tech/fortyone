@@ -1,7 +1,9 @@
+"use client";
 import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { Avatar, Box, ContextMenu } from "ui";
 import {
+  AssigneeIcon,
   BellIcon,
   CalendarPlusIcon,
   CopyIcon,
@@ -13,7 +15,6 @@ import {
   SprintsIcon,
   StarIcon,
   TagsIcon,
-  UserIcon,
 } from "icons";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
@@ -29,38 +30,38 @@ export const contextMenu = [
         subMenu: [
           {
             label: "Backlog",
-            icon: <StoryStatusIcon status="Backlog" />,
+            icon: <StoryStatusIcon />,
           },
           {
             label: "To Do",
-            icon: <StoryStatusIcon status="Todo" />,
+            icon: <StoryStatusIcon />,
           },
           {
             label: "In Progress",
-            icon: <StoryStatusIcon status="In Progress" />,
+            icon: <StoryStatusIcon />,
           },
           {
             label: "Testing",
-            icon: <StoryStatusIcon status="Testing" />,
+            icon: <StoryStatusIcon />,
           },
 
           {
             label: "Done",
-            icon: <StoryStatusIcon status="Done" />,
+            icon: <StoryStatusIcon />,
           },
           {
             label: "Duplicate",
-            icon: <StoryStatusIcon status="Duplicate" />,
+            icon: <StoryStatusIcon />,
           },
           {
             label: "Canceled",
-            icon: <StoryStatusIcon status="Canceled" />,
+            icon: <StoryStatusIcon />,
           },
         ],
       },
       {
         label: "Assignee",
-        icon: <UserIcon className="h-5 w-auto" />,
+        icon: <AssigneeIcon className="h-5 w-auto" />,
         shortCut: "⌘+[",
         subMenu: [
           {

@@ -116,7 +116,7 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-opacity-100 text-gray",
+        className: "bg-opacity-100 text-gray cursor-not-allowed",
       },
       {
         active: true,

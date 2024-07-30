@@ -11,7 +11,7 @@ import {
   Tooltip,
   Badge,
 } from "ui";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { addDays, format, differenceInDays, isTomorrow } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { CalendarIcon } from "icons";
@@ -203,7 +203,7 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                   josemukorivo
                 </Button>
               </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items />
+              <AssigneesMenu.Items onAssigneeSelected={(assignee) => {}} />
             </AssigneesMenu>
           }
         />
@@ -253,13 +253,13 @@ export const Options = ({ story }: { story: DetailedStory }) => {
                     <CalendarIcon
                       className={cn("relative top-[2.5px] h-5 w-auto", {
                         "text-primary dark:text-primary":
-                          new Date(endDate) < new Date(),
+                          new Date(endDate!!) < new Date(),
                         "text-warning dark:text-warning":
-                          new Date(endDate) <= addDays(new Date(), 7) &&
-                          new Date(endDate) >= new Date(),
+                          new Date(endDate!!) <= addDays(new Date(), 7) &&
+                          new Date(endDate!!) >= new Date(),
                       })}
                     />
-                    <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                    <Box>{getDueDateMessage(new Date(endDate!!))}</Box>
                   </Flex>
                 }
               >

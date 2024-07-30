@@ -92,7 +92,7 @@ export const StoriesViewOptionsButton = ({
           )}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="max-w-[24rem]">
+      <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select

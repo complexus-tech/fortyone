@@ -1,26 +1,53 @@
+"use client";
 import { CheckIcon } from "icons";
-import type { ReactNode } from "react";
-import { Avatar, Flex, Menu, Text } from "ui";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
+
+const AssigneesContext = createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}>({
+  open: false,
+  setOpen: () => {},
+});
+
+export const useAssigneesMenu = () => {
+  const { open, setOpen } = useContext(AssigneesContext);
+  return { open, setOpen };
+};
+
+const Menu = ({ children }: { children: ReactNode }) => {
+  const { open, setOpen } = useAssigneesMenu();
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      {children}
+    </Popover>
+  );
+};
 
 export const AssigneesMenu = ({ children }: { children: ReactNode }) => {
-  return <Menu>{children}</Menu>;
+  const [open, setOpen] = useState(false);
+  return (
+    <AssigneesContext.Provider value={{ open, setOpen }}>
+      <Menu>{children}</Menu>
+    </AssigneesContext.Provider>
+  );
 };
 
 const Trigger = ({ children }: { children: ReactNode }) => (
-  <Menu.Button asChild>{children}</Menu.Button>
+  <Popover.Trigger asChild>{children}</Popover.Trigger>
 );
 
 const Items = ({
-  isSearchEnabled = true,
   placeholder = "Assign user...",
   align,
   onAssigneeSelected,
 }: {
-  isSearchEnabled?: boolean;
   placeholder?: string;
   align?: "start" | "end" | "center";
-  onAssigneeSelected?: (assignee: string) => void;
+  onAssigneeSelected: (assignee: string) => void;
 }) => {
+  const { setOpen } = useAssigneesMenu();
   const users = [
     {
       name: "Joseph Mukorivo",
@@ -43,38 +70,39 @@ const Items = ({
     },
   ];
   return (
-    <Menu.Items align={align} className="w-72" >
-      {isSearchEnabled ? (
-        <>
-          <Menu.Group className="px-4">
-            <Menu.Input autoFocus placeholder={placeholder} />
-          </Menu.Group>
-          <Menu.Separator className="my-2" />
-        </>
-      ) : null}
-
-      <Menu.Group>
-        {users.map(({ name, avatar }, idx) => (
-          <Menu.Item
-            active={idx === 1}
-            className="justify-between"
-            key={name}
-            onClick={() => onAssigneeSelected?.(name)}
-          >
-            <Flex align="center" gap={2}>
-              <Avatar color="primary" name={name} size="sm" src={avatar} />
-              <Text className="max-w-[10rem] truncate">{name}</Text>
-            </Flex>
-            <Flex align="center" gap={1}>
-              {idx === 1 && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Menu.Item>
-        ))}
-      </Menu.Group>
-    </Menu.Items>
+    <Popover.Content align={align} className="w-72">
+      <Command>
+        <Command.Input autoFocus placeholder={placeholder} />
+        <Divider className="my-2" />
+        <Command.Empty className="py-2">
+          <Text color="muted">No user found.</Text>
+        </Command.Empty>
+        <Command.Group>
+          {users.map(({ name, avatar }, idx) => (
+            <Command.Item
+              active={idx === 1}
+              className="justify-between"
+              key={name}
+              onSelect={() => {
+                onAssigneeSelected(name);
+                setOpen(false);
+              }}
+            >
+              <Flex align="center" gap={2}>
+                <Avatar color="primary" name={name} size="sm" src={avatar} />
+                <Text className="max-w-[10rem] truncate">{name}</Text>
+              </Flex>
+              <Flex align="center" gap={1}>
+                {idx === 1 && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">{idx}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
+        </Command.Group>
+      </Command>
+    </Popover.Content>
   );
 };
 
