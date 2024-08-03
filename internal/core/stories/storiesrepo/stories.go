@@ -91,29 +91,30 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 }
 
 // Create creates a new story.
-func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) error {
+func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stories.CoreSingleStory, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
 
-	sequenceID, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
+	lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
 	if err != nil {
-		return fmt.Errorf("failed to get next sequence ID: %w", err)
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
 	}
-	story.SequenceID = sequenceID
+	story.SequenceID = lastSequence + 1
 
-	if err := r.insertStory(ctx, story); err != nil {
+	cs, err := r.insertStory(ctx, story)
+	if err != nil {
 		rollback()
-		return fmt.Errorf("failed to insert story: %w", err)
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to insert story: %w", err)
 	}
 
 	if err := commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return nil
+	return toCoreStory(cs), nil
 }
 
-func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) error {
+func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
 
@@ -129,24 +130,25 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
 					:blocking_id, :related_id, :reporter_id, :priority, :sprint_id,
 					:team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
-			);
+			) RETURNING stories.*;
 		`
 
+	var cs dbStory
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return dbStory{}, err
 	}
 	defer stmt.Close()
 
 	r.log.Info(ctx, "creating story.")
-	if _, err := stmt.ExecContext(ctx, toDBStory(*story)); err != nil {
+	if err := stmt.GetContext(ctx, &cs, toDBStory(*story)); err != nil {
 		errMsg := fmt.Sprintf("failed to create story: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create story"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return dbStory{}, err
 	}
 
 	r.log.Info(ctx, "Story created successfully.")
@@ -154,7 +156,7 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 		attribute.String("story.title", story.Title),
 	))
 
-	return nil
+	return cs, err
 }
 
 // List returns a list of stories for a workspace with additional filters.
@@ -292,6 +294,16 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Get")
 	defer span.End()
 
+	story, err := r.getStoryById(ctx, id, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return stories.CoreSingleStory{}, err
+	}
+	return toCoreStory(story), nil
+
+}
+
+func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
 	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
 	var story dbStory
 
@@ -324,8 +336,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
-		span.RecordError(errors.New("story not found"), trace.WithAttributes(attribute.String("story.id", id.String())))
-		return stories.CoreSingleStory{}, err
+		return dbStory{}, err
 	}
 	defer stmt.Close()
 
@@ -334,13 +345,11 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to retrieve story from database: %s", err), "id", id)
-		span.RecordError(errors.New("story not found"), trace.WithAttributes(attribute.String("story.id", id.String())))
-		return stories.CoreSingleStory{}, err
+		return dbStory{}, err
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Story #%s retrieved successfully", id), "id", id)
-	span.AddEvent("Story retrieved.", trace.WithAttributes(attribute.String("story.id", id.String())))
-	return toCoreStory(story), nil
+	return story, nil
 }
 
 // Delete deletes the story with the specified ID.

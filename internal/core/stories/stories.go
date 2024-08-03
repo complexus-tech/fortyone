@@ -24,7 +24,7 @@ type Repository interface {
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
-	Create(ctx context.Context, story *CoreSingleStory) error
+	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
@@ -52,15 +52,16 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 
 	story := toCoreSingleStory(ns, workspaceId)
 
-	if err := s.repo.Create(ctx, &story); err != nil {
+	cs, err := s.repo.Create(ctx, &story)
+	if err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
 
 	span.AddEvent("story created.", trace.WithAttributes(
-		attribute.String("story.title", story.Title),
+		attribute.String("story.title", cs.Title),
 	))
-	return story, nil
+	return cs, nil
 }
 
 // MyStories returns a list of stories.

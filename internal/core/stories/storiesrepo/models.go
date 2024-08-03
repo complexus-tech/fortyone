@@ -21,6 +21,8 @@ type dbStory struct {
 	Team            uuid.UUID  `db:"team_id"`
 	Status          *uuid.UUID `db:"status_id"`
 	Assignee        *uuid.UUID `db:"assignee_id"`
+	Estimate        *float32   `db:"estimate"`
+	IsDraft         bool       `db:"is_draft"`
 	BlockedBy       *uuid.UUID `db:"blocked_by_id"`
 	Blocking        *uuid.UUID `db:"blocking_id"`
 	Related         *uuid.UUID `db:"related_id"`
@@ -32,6 +34,7 @@ type dbStory struct {
 	CreatedAt       time.Time  `db:"created_at"`
 	UpdatedAt       time.Time  `db:"updated_at"`
 	DeletedAt       *time.Time `db:"deleted_at"`
+	ArchivedAt      *time.Time `db:"archived_at"`
 }
 
 // toCoreStory converts a dbStory to a CoreSingleStory.
