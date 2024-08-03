@@ -1,9 +1,12 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
 import { StoryIcon } from "icons";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
-import type { Story } from "@/modules/stories/types";
+import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { useParams } from "next/navigation";
 
-export const Sidebar = ({ stories }: { stories: Story[] }) => {
+export const Sidebar = () => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { data: stories = [] } = useTeamStories(teamId);
   const totalStories = stories.length;
   return (
     <Box className="py-8">

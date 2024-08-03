@@ -2,21 +2,17 @@
 import { Box, Tabs } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import type { Story } from "@/modules/stories/types";
-import { useTeamStories } from "@/modules/teams/stories/provider";
+import { useTeamOptions } from "@/modules/teams/stories/provider";
 import { useStore } from "@/hooks/store";
 import { useMemo } from "react";
-import { fi } from "date-fns/locale";
 import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 
-export const AllStories = ({
-  layout,
-  stories,
-}: {
-  stories: Story[];
-  layout: StoriesLayout;
-}) => {
+export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { data: stories = [] } = useTeamStories(teamId);
   const session = useSession();
   const { states, sprints } = useStore();
   // a sprint is active if it has a start date and end date and the current date is between the start and end date
@@ -34,7 +30,7 @@ export const AllStories = ({
   const completedStatuses = states
     .filter((state) => state.category === "completed")
     .map((state) => state.id);
-  const { viewOptions, filters } = useTeamStories();
+  const { viewOptions, filters } = useTeamOptions();
   const backlogStatuses = states
     .filter((state) => state.category === "backlog")
     .map((state) => state.id);
@@ -52,12 +48,12 @@ export const AllStories = ({
     }
     if (filters.dueThisWeek) {
       newStories = newStories.filter((story) =>
-        isThisWeek(new Date(story.endDate)),
+        isThisWeek(new Date(story.endDate!)),
       );
     }
     if (filters.dueToday) {
       newStories = newStories.filter((story) =>
-        isToday(new Date(story.endDate)),
+        isToday(new Date(story.endDate!)),
       );
     }
     if (filters.completed) {
@@ -72,7 +68,7 @@ export const AllStories = ({
     }
     if (filters.activeSprints) {
       newStories = newStories.filter((story) =>
-        activeSprints.includes(story.sprintId),
+        activeSprints.includes(story.sprintId!),
       );
     }
     return newStories;

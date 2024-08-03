@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
+import { Providers } from "./providers";
 
 const font = Inter({
   subsets: ["latin"],
@@ -41,18 +42,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster
           theme="system"
           closeButton
           position="bottom-right"
-          duration={6000}
+          duration={10000}
           toastOptions={{
             className:
               "w-full rounded-lg p-4 flex items-center gap-3 shadow-lg",
             classNames: {
               toast:
-                "bg-white/90 dark:bg-dark-100/90 backdrop-blur  border border-gray-100/60 dark:border-dark-50",
+                "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-gray-100/60 dark:border-dark-50",
               closeButton:
                 "bg-white/90 dark:bg-dark-100/90 dark:border-dark-50",
             },

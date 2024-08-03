@@ -5,7 +5,7 @@ import type { StoriesViewOptions } from "@/components/ui/stories-view-options-bu
 import { useLocalStorage } from "@/hooks";
 import type { StoriesFilter } from "@/components/ui/stories-filter-button";
 
-type TeamStories = {
+type TeamOptions = {
   viewOptions: StoriesViewOptions;
   setViewOptions: (value: StoriesViewOptions) => void;
   filters: StoriesFilter;
@@ -13,9 +13,9 @@ type TeamStories = {
   resetFilters: () => void;
 };
 
-const TeamStoriesContext = createContext<TeamStories | undefined>(undefined);
+const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
 
-export const TeamStoriesProvider = ({ children }: { children: ReactNode }) => {
+export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "Status",
     orderBy: "Priority",
@@ -65,7 +65,7 @@ export const TeamStoriesProvider = ({ children }: { children: ReactNode }) => {
     setFilters(initialFilters);
   };
   return (
-    <TeamStoriesContext.Provider
+    <TeamOptionsContext.Provider
       value={{
         viewOptions,
         setViewOptions,
@@ -75,12 +75,12 @@ export const TeamStoriesProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-    </TeamStoriesContext.Provider>
+    </TeamOptionsContext.Provider>
   );
 };
 
-export const useTeamStories = () => {
-  const context = useContext(TeamStoriesContext);
+export const useTeamOptions = () => {
+  const context = useContext(TeamOptionsContext);
   if (!context) {
     throw new Error("useTeamStories must be used within a TeamStoriesProvider");
   }

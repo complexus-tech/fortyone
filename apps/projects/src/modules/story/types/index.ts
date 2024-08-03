@@ -8,6 +8,7 @@ export type DetailedStory = {
   descriptionHTML: string;
   parentId: string;
   teamId: string;
+  workspaceId: string;
   objectiveId: string;
   statusId: string;
   assigneeId: string;
@@ -17,6 +18,7 @@ export type DetailedStory = {
   reporterId: string;
   priority: StoryPriority;
   sprintId: string;
+  epicId: string;
   startDate: string | null;
   endDate: string | null;
   createdAt: string;

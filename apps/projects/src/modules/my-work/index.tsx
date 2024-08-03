@@ -2,19 +2,12 @@
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import type { Story } from "@/modules/stories/types";
 import { Header } from "./components/header";
 import { Sidebar } from "./components/sidebar";
 import { ListStories } from "./components/list-stories";
 import { MyWorkProvider } from "./components/provider";
-import { useState } from "react";
 
-export const ListMyStories = ({
-  stories: allStories,
-}: {
-  stories: Story[];
-}) => {
-  const [stories, setStories] = useState<Story[]>(allStories);
+export const ListMyStories = () => {
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "my-stories:expanded",
     false,
@@ -27,7 +20,6 @@ export const ListMyStories = ({
   return (
     <MyWorkProvider>
       <Header
-        allStories={stories.length}
         isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
@@ -35,7 +27,7 @@ export const ListMyStories = ({
       />
       <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <ListStories layout={layout} stories={stories} />
+          <ListStories layout={layout} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Sidebar />

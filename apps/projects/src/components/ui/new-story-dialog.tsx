@@ -43,27 +43,27 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { PriorityIcon } from "./priority-icon";
 import { NewStory } from "@/modules/story/types";
-import { createStoryAction } from "@/modules/story/actions/create-story";
 import { toast } from "sonner";
 import nProgress from "nprogress";
-import { useRouter } from "next/navigation";
-import { slugify } from "@/utils";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useStore } from "@/hooks/store";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
+import { useCreateStoryMutation } from "@/modules/story/hooks/create-story-mutation";
 
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
   statusId,
+  teamId,
   priority = "No Priority",
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   statusId?: string;
+  teamId?: string;
   priority?: StoryPriority;
 }) => {
   const session = useSession();
@@ -81,17 +81,16 @@ export const NewStoryDialog = ({
     title: "",
     description: "",
     descriptionHTML: "",
-    teamId: activeTeam.id,
+    teamId: teamId || activeTeam.id,
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
     priority,
   };
-  // const session = useSession();
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
-  const router = useRouter();
+  const mutation = useCreateStoryMutation();
 
   const titleEditor = useEditor({
     extensions: [
@@ -123,7 +122,6 @@ export const NewStoryDialog = ({
 
   const handleCreateStory = async () => {
     if (!titleEditor || !editor) return;
-
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
       toast.warning("Validation Error", {
@@ -131,7 +129,6 @@ export const NewStoryDialog = ({
       });
       return;
     }
-
     setLoading(true);
     nProgress.start();
 
@@ -145,26 +142,11 @@ export const NewStoryDialog = ({
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
       reporterId: session?.data?.user?.id,
-
       // assigneeId: "",
     };
 
     try {
-      const createdStory = await createStoryAction(newStory);
-      toast.success("Success", {
-        description: "Story created successfully",
-        action: {
-          label: "View story",
-          onClick: () => {
-            nProgress.start();
-            titleEditor.commands.setContent("");
-            editor.commands.setContent("");
-            router.push(
-              `/story/${createdStory.id}/${slugify(createdStory.title)}`,
-            );
-          },
-        },
-      });
+      await mutation.mutateAsync(newStory);
       if (!createMore) {
         setIsOpen(false);
         setIsExpanded(false);
@@ -174,9 +156,6 @@ export const NewStoryDialog = ({
       setStoryForm(initialForm);
     } catch (error) {
       console.log(error);
-      toast.error("Error", {
-        description: "Failed to create story",
-      });
     } finally {
       setLoading(false);
       nProgress.done();
@@ -186,6 +165,12 @@ export const NewStoryDialog = ({
   useEffect(() => {
     if (isOpen) {
       titleEditor?.commands.focus();
+    }
+    if (teamId) {
+      const team = teams.find((team) => team.id === teamId);
+      if (team) {
+        setActiveTeam(team);
+      }
     }
   }, [isOpen]);
 
@@ -247,7 +232,6 @@ export const NewStoryDialog = ({
                 ) : (
                   <MaximizeIcon className="h-[1.2rem] w-auto" />
                 )}
-
                 <span className="sr-only">
                   {isExpanded ? "Minimize" : "Expand"} dialog
                 </span>

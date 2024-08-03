@@ -12,14 +12,10 @@ async function http<T>(
 ): Promise<T> {
   let requestConfig: RequestInit = config;
 
-  if (process.env.NODE_ENV === "development") {
-    requestConfig = {
-      ...config,
-      next: {
-        revalidate: 1,
-      },
-    };
-  }
+  requestConfig = {
+    ...config,
+    cache: "no-store",
+  };
 
   const session = await auth();
   if (session) {

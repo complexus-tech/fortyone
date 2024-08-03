@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
+    "@tanstack/react-query": "^5.51.21",
     "@tiptap/extension-document": "^2.3.0",
     "@tiptap/extension-heading": "^2.3.0",
     "@tiptap/extension-link": "^2.3.0",
@@ -35,9 +36,10 @@
     "icons": "workspace:*",
     "lib": "workspace:*",
     "msw": "^2.3.1",
-    "next": "14.2.3",
+    "next": "14.2.5",
     "next-auth": "5.0.0-beta.19",
     "nprogress": "^0.2.0",
+    "nuqs": "^1.17.6",
     "qs": "^6.12.3",
     "react": "^18.2.0",
     "react-day-picker": "^8.10.0",
@@ -53,6 +55,8 @@
   "devDependencies": {
     "@next/eslint-plugin-next": "^13.5.6",
     "@tailwindcss/typography": "^0.5.12",
+    "@tanstack/eslint-plugin-query": "^5.51.15",
+    "@tanstack/react-query-devtools": "^5.51.21",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.12",

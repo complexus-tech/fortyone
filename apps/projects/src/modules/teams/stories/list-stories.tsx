@@ -4,11 +4,11 @@ import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { Sidebar } from "./sidebar";
-import { TeamStoriesProvider } from "./provider";
+import { TeamOptionsProvider } from "./provider";
 import { Header } from "./header";
 import { AllStories } from "./all-stories";
 
-export const ListStories = ({ stories }: { stories: Story[] }) => {
+export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:stories:layout",
     "list",
@@ -19,9 +19,8 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
   );
 
   return (
-    <TeamStoriesProvider>
+    <TeamOptionsProvider>
       <Header
-        allStories={stories.length}
         isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
@@ -29,12 +28,12 @@ export const ListStories = ({ stories }: { stories: Story[] }) => {
       />
       <BoardDividedPanel autoSaveId="teams:stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <AllStories layout={layout} stories={stories} />
+          <AllStories layout={layout} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-          <Sidebar stories={stories} />
+          <Sidebar />
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </TeamStoriesProvider>
+    </TeamOptionsProvider>
   );
 };

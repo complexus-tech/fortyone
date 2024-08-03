@@ -10,29 +10,28 @@ import {
   StoriesFilterButton,
   StoriesViewOptionsButton,
 } from "@/components/ui";
-import { useTeamStories } from "./provider";
+import { useTeamOptions } from "./provider";
 import { useParams } from "next/navigation";
 import { useStore } from "@/hooks/store";
+import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 
 export const Header = ({
   isExpanded,
-  allStories,
   setIsExpanded,
   layout,
   setLayout,
 }: {
   isExpanded: boolean | null;
-  allStories: number;
   setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
+  const { data = [] } = useTeamStories(teamId);
   const { teams } = useStore();
   const { name, icon } = teams.find((team) => team.id === teamId)!!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
-    useTeamStories();
-
+    useTeamOptions();
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>
@@ -49,7 +48,7 @@ export const Header = ({
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {allStories} stories
+          {data.length} stories
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>
@@ -63,7 +62,7 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <NewStoryButton />
+        <NewStoryButton teamId={teamId} />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}

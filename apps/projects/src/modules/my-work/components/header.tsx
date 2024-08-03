@@ -9,20 +9,20 @@ import {
   SideDetailsSwitch,
 } from "@/components/ui";
 import { useMyWork } from "./provider";
+import { useMyStories } from "../hooks/my-stories";
 
 export const Header = ({
   isExpanded,
-  allStories,
   setIsExpanded,
   layout,
   setLayout,
 }: {
   isExpanded: boolean | null;
-  allStories: number;
   setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
   return (
     <HeaderContainer className="justify-between">
@@ -37,7 +37,7 @@ export const Header = ({
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {allStories} stories
+          {data?.length} stories
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>
