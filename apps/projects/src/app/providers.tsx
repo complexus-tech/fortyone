@@ -7,6 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 const makeQueryClient = () => {
   return new QueryClient({
@@ -14,7 +15,7 @@ const makeQueryClient = () => {
       queries: {
         // With SSR, we usually want to set some default staleTime
         // above 0 to avoid refetching immediately on the client
-        staleTime: 60 * 1000,
+        staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 1,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         retry: 1,
