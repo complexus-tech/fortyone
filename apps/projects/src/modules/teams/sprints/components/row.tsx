@@ -49,7 +49,7 @@ export const SprintRow = ({ title }: { title: string }) => {
                 />
               </button>
             </AssigneesMenu.Trigger>
-            <AssigneesMenu.Items />
+            <AssigneesMenu.Items onAssigneeSelected={(assigneeid) => {}} />
           </AssigneesMenu>
         </Box>
         <Text className="w-28 text-left" color="muted">

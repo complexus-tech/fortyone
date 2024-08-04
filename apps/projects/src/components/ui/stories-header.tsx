@@ -1,34 +1,42 @@
 "use client";
 import { useState } from "react";
-import { Button, Container, Flex, Text, Tooltip } from "ui";
+import { Button, Checkbox, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
-import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
-import type { StoryPriority } from "@/modules/stories/types";
-import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
+import { ArrowDownIcon, ArrowUpDownIcon, PlusIcon, StoryIcon } from "icons";
+import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  ViewOptionsGroupBy,
+  ViewOptionsOrderBy,
+} from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
 import { State } from "@/types/states";
+import { useBoard } from "@/components/ui/board-context";
 
 type StoryHeaderProps = {
   status?: State;
-  count: number;
   className?: string;
   priority?: StoryPriority;
   groupBy: ViewOptionsGroupBy;
+  stories: Story[];
   isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
 };
 export const StoriesHeader = ({
-  count,
   className,
+  stories,
   status,
   priority,
   groupBy,
   isCollapsed,
   setIsCollapsed,
 }: StoryHeaderProps) => {
+  const count = stories.length;
   const [isOpen, setIsOpen] = useState(false);
+  const { selectedStories, setSelectedStories } = useBoard();
+
+  const groupedStories = stories.map((s) => s.id);
 
   return (
     <Container
@@ -42,7 +50,22 @@ export const StoriesHeader = ({
       )}
     >
       <Flex align="center" justify="between">
-        <Flex align="center" className="gap-1.5">
+        <Flex align="center" className="relative gap-1.5">
+          <Checkbox
+            className="absolute -left-[1.6rem]"
+            checked={groupedStories.every((s) => selectedStories.includes(s))}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedStories(
+                  Array.from(new Set([...selectedStories, ...groupedStories])),
+                );
+              } else {
+                setSelectedStories([
+                  ...selectedStories.filter((s) => !groupedStories.includes(s)),
+                ]);
+              }
+            }}
+          />
           <Button
             color="tertiary"
             onClick={() => {

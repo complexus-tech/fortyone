@@ -13,7 +13,7 @@ import {
 import { StoryStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
 import { Sprint } from "../types";
 
-export const SprintCard = ({ title }: Sprint) => {
+export const SprintCard = ({ name }: Sprint) => {
   const recentStories = [
     { id: 1, title: "Story with the login page" },
     { id: 2, title: "Story with the login page" },
@@ -62,7 +62,7 @@ export const SprintCard = ({ title }: Sprint) => {
             fontWeight="medium"
           >
             <CalendarIcon className="relative -top-[0.5px] h-5 w-auto text-primary" />{" "}
-            Mar 15 - Mar 30 &bull; {title}
+            Mar 15 - Mar 30 &bull; {name}
           </Text>
           <Flex align="center" gap={1}>
             <Badge

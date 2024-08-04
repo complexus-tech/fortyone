@@ -111,7 +111,9 @@ export const StoryCard = ({
                         />
                       </button>
                     </AssigneesMenu.Trigger>
-                    <AssigneesMenu.Items />
+                    <AssigneesMenu.Items
+                      onAssigneeSelected={(assigneeId) => {}}
+                    />
                   </AssigneesMenu>
                 </span>
               </Tooltip>
@@ -165,7 +167,10 @@ export const StoryCard = ({
                     <span className="sr-only">{priority}</span>
                   </Button>
                 </PrioritiesMenu.Trigger>
-                <PrioritiesMenu.Items priority={priority} />
+                <PrioritiesMenu.Items
+                  priority={priority}
+                  setPriority={(pr) => {}}
+                />
               </PrioritiesMenu>
             )}
             {isColumnVisible("Due date") && (

@@ -1,5 +1,5 @@
 "use client";
-import { Box, Tabs } from "ui";
+import { Box, Tabs, Text, Flex } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useTeamOptions } from "@/modules/teams/stories/provider";
@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { ArrowUpDownIcon } from "icons";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -91,13 +92,21 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
-        <Tabs.List>
+      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
+        <Tabs.List className="h-min">
           <Tabs.Tab value="all">All stories</Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>
+        <Text
+          color="muted"
+          className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
+        >
+          <ArrowUpDownIcon className="h-4 w-auto" />
+          Ordering by <b className="capitalize">{viewOptions.orderBy}</b>
+        </Text>
       </Box>
+
       <Tabs.Panel value="all">
         <StoriesBoard
           className="h-[calc(100vh-7.7rem)]"

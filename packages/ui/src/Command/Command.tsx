@@ -34,7 +34,7 @@ const CommandInput = forwardRef<
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        "bg-transparent placeholder:text-gray placeholder:dark:text-gray-200/60 py-[0.15rem] pl-[1.1rem] outline-none w-full",
+        "bg-transparent placeholder:text-gray/80 placeholder:dark:text-gray-200/60 py-[0.15rem] pl-[1.1rem] outline-none w-full",
         className
       )}
       {...props}

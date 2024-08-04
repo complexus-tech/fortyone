@@ -82,3 +82,4 @@ export * from "./support";
 export * from "./email";
 export * from "./menu";
 export * from "./assignee";
+export * from "./arrow-up-down";

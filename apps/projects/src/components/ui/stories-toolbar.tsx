@@ -1,63 +1,33 @@
 "use client";
-import { Button, Flex, Text, Tooltip, Dialog } from "ui";
+import { Button, Flex, Text, Tooltip, Dialog, Command, Divider, Box } from "ui";
 import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
 import { useBoard } from "./board-context";
-import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
-import nProgress from "nprogress";
 import { useState } from "react";
-import { toast } from "sonner";
-import { bulkRestoreAction } from "@/modules/stories/actions/bulk-restore-stories";
+import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
+import { StoryPriority } from "@/modules/stories/types";
+import { PriorityIcon } from "./priority-icon";
 
 export const StoriesToolbar = () => {
-  const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
+  const [isSprintsOpen, setIsSprintsOpen] = useState(false);
+  const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
 
-  const bulkRestore = async (stories: string[]) => {
-    try {
-      nProgress.start();
-      setIsRestoring(true);
-      const { storyIds } = await bulkRestoreAction(stories);
-      toast.success("Success", {
-        description: `${storyIds.length} stories restored`,
-      });
-    } catch (error) {
-      console.log(error);
-      toast.error("Error", {
-        description: "Failed to restore stories",
-      });
-    } finally {
-      setIsRestoring(false);
-      nProgress.done();
-    }
-  };
+  const { mutateAsync } = useBulkDeleteStoryMutation();
 
   const handleBulkDelete = async () => {
-    try {
-      nProgress.start();
-      setLoading(true);
-      const { storyIds } = await bulkDeleteAction(selectedStories);
-      toast.success("Success", {
-        description: `${selectedStories.length} stories deleted`,
-        cancel: {
-          label: "Undo",
-          onClick: () => {
-            bulkRestore(storyIds);
-          },
-        },
-      });
-    } catch (error) {
-      toast.error("Error", {
-        description: "Failed to delete stories",
-      });
-    } finally {
-      setLoading(false);
-      nProgress.done();
-      setSelectedStories([]);
-      setIsOpen(false);
-    }
+    mutateAsync(selectedStories);
+    setSelectedStories([]);
+    setIsOpen(false);
   };
+
+  const priorities: StoryPriority[] = [
+    "No Priority",
+    "Low",
+    "Medium",
+    "High",
+    "Urgent",
+  ];
   return (
     <>
       <Flex
@@ -88,6 +58,9 @@ export const StoriesToolbar = () => {
         </Text>
         <Button
           color="tertiary"
+          onClick={() => {
+            setIsSprintsOpen(true);
+          }}
           leftIcon={<SprintsIcon className="h-[1.15rem] w-auto" />}
           variant="outline"
         >
@@ -95,6 +68,9 @@ export const StoriesToolbar = () => {
         </Button>
         <Button
           color="tertiary"
+          onClick={() => {
+            setIsObjectivesOpen(true);
+          }}
           leftIcon={<ObjectiveIcon className="h-[1.15rem] w-auto" />}
           variant="outline"
         >
@@ -110,6 +86,7 @@ export const StoriesToolbar = () => {
         </Button>
       </Flex>
 
+      {/* Delete stories dialog */}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content>
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
@@ -134,8 +111,86 @@ export const StoriesToolbar = () => {
               </Button>
               <Button
                 leftIcon={<DeleteIcon className="h-5 w-auto" />}
-                loading={loading || isRestoring}
-                loadingText={isRestoring ? "Restoring..." : "Deleting..."}
+                onClick={handleBulkDelete}
+              >
+                Delete
+              </Button>
+            </Flex>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Add to sprint dialog */}
+      <Dialog onOpenChange={setIsSprintsOpen} open={isSprintsOpen}>
+        <Dialog.Content hideClose={false}>
+          <Dialog.Header className="sr-only">
+            <Dialog.Title>
+              Add {selectedStories.length} stories to sprint
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="px-4 pt-4">
+            <Command>
+              <Command.Input
+                autoFocus
+                className="text-lg"
+                placeholder="Choose sprint..."
+              />
+              <Divider className="mb-2 mt-3" />
+              <Command.Empty className="py-2">
+                <Text color="muted">No sprint found.</Text>
+              </Command.Empty>
+              <Command.Group className="px-0">
+                {priorities.map((pr, idx) => (
+                  <Command.Item
+                    // active={pr === priority}
+                    value={pr}
+                    onSelect={() => {
+                      // setPriority(pr);
+                      setIsSprintsOpen(false);
+                    }}
+                    className="justify-between py-2.5"
+                    key={pr}
+                  >
+                    <Box className="grid grid-cols-[24px_auto] items-center">
+                      <PriorityIcon priority={pr} />
+                      <Text>{pr}</Text>
+                    </Box>
+                    <Flex align="center" gap={2}>
+                      <Text color="muted">{idx}</Text>
+                    </Flex>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            </Command>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Add to objective dialog */}
+      <Dialog onOpenChange={setIsObjectivesOpen} open={isObjectivesOpen}>
+        <Dialog.Content>
+          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+            <Dialog.Title className="flex items-center gap-1 text-lg">
+              Delete {selectedStories.length} stories?
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="pt-0">
+            <Text color="muted">
+              These stories will be moved to the recycle bin and will be
+              permanently deleted after 30 days. You can restore them at any
+              time before that.
+            </Text>
+            <Flex align="center" gap={2} justify="end" className="mt-4">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                leftIcon={<DeleteIcon className="h-5 w-auto" />}
                 onClick={handleBulkDelete}
               >
                 Delete

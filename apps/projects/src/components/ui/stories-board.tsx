@@ -1,7 +1,7 @@
 "use client";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { Flex, Text } from "ui";
+import { Box, Flex, Text, Button } from "ui";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Story, StoryPriority } from "@/modules/stories/types";
@@ -16,10 +16,10 @@ import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
 import { DetailedStory } from "@/modules/story/types";
-import { updateStoryAction } from "@/modules/story/actions/update-story";
-import { toast } from "sonner";
 import { useStore } from "@/hooks/store";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
+import { ArrowLeftIcon, ChatIcon, StoryMissingIcon } from "icons";
+import { NewStoryButton } from "@/components/ui";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -178,31 +178,55 @@ export const StoriesBoard = ({
       }}
     >
       <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-        {layout === "kanban" ? (
-          <KanbanBoard
-            className={className}
-            stories={orderStories(storiesBoard)}
-          />
-        ) : (
-          <ListBoard
-            className={className}
-            stories={orderStories(storiesBoard)}
-            viewOptions={viewOptions}
-          />
-        )}
-
-        {typeof window !== "undefined" &&
-          createPortal(
-            <StoryOverlay
-              layout={layout}
-              selectedStories={selectedStories.length}
-              story={activeStory}
-            />,
-            document.body,
+        <Box>
+          {storiesBoard.length === 0 && (
+            <Box className="flex h-[70vh] items-center justify-center">
+              <Box className="flex flex-col items-center">
+                <StoryMissingIcon
+                  className="h-20 w-auto rotate-12"
+                  strokeWidth={1.3}
+                />
+                <Text className="mb-6 mt-8" fontSize="3xl">
+                  No stories found
+                </Text>
+                <Text className="mb-6 max-w-md text-center" color="muted">
+                  Oops! This board is empty. Why not create a story?
+                </Text>
+                <Flex gap={2}>
+                  <NewStoryButton color="tertiary" size="md">
+                    Create new story
+                  </NewStoryButton>
+                </Flex>
+              </Box>
+            </Box>
           )}
 
-        {/* This toolbar pops up when the user selects stories */}
-        {selectedStories.length > 0 && <StoriesToolbar />}
+          {layout === "kanban" ? (
+            <KanbanBoard
+              className={className}
+              stories={orderStories(storiesBoard)}
+            />
+          ) : (
+            <ListBoard
+              className={className}
+              stories={orderStories(storiesBoard)}
+              viewOptions={viewOptions}
+            />
+          )}
+
+          {typeof window !== "undefined" &&
+            createPortal(
+              <StoryOverlay
+                layout={layout}
+                selectedStories={selectedStories.length}
+                story={activeStory}
+              />,
+              document.body,
+            )}
+
+          {/* This toolbar pops up when the user selects stories */}
+          {selectedStories.length > 0 && <StoriesToolbar />}
+        </Box>
       </DndContext>
     </BoardContext.Provider>
   );

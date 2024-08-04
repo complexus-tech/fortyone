@@ -215,7 +215,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">Start date</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -241,7 +241,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">Due date</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -293,7 +293,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">From</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -319,7 +319,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">To</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth

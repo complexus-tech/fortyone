@@ -57,7 +57,10 @@ export const MyStories = () => {
                           <PriorityIcon priority="No Priority" />
                         </button>
                       </PrioritiesMenu.Trigger>
-                      <PrioritiesMenu.Items priority="No Priority" />
+                      <PrioritiesMenu.Items
+                        priority="No Priority"
+                        setPriority={(pr) => {}}
+                      />
                     </PrioritiesMenu>
                     <Flex align="center" gap={2}>
                       <Text
@@ -70,10 +73,10 @@ export const MyStories = () => {
                       <StatusesMenu>
                         <StatusesMenu.Trigger>
                           <button className="block" type="button">
-                            <StoryStatusIcon status="Backlog" />
+                            <StoryStatusIcon />
                           </button>
                         </StatusesMenu.Trigger>
-                        <StatusesMenu.Items status="Backlog" />
+                        <StatusesMenu.Items setStatusId={(statusId) => {}} />
                       </StatusesMenu>
                       <Text className="overflow-hidden text-ellipsis whitespace-nowrap pl-2 hover:opacity-90">
                         Design a new homepage

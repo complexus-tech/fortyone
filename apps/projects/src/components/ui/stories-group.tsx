@@ -76,7 +76,7 @@ export const StoriesGroup = ({
     >
       <StoriesHeader
         className={className}
-        count={filteredStories.length}
+        stories={filteredStories}
         groupBy={groupBy}
         isCollapsed={isCollapsed}
         priority={priority}

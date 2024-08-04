@@ -49,8 +49,8 @@ export const ObjectivesList = ({ objectives }: { objectives: Objective[] }) => {
             </Flex>
           </Flex>
         </Container>
-        {objectives.map(({ id, title }) => (
-          <ObjectiveCard key={id} title={title} />
+        {objectives.map(({ id, name }) => (
+          <ObjectiveCard key={id} title={name} />
         ))}
       </BodyContainer>
     </>

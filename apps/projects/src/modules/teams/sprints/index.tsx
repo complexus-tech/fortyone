@@ -22,8 +22,8 @@ export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
         <Tabs.Panel value="all">
           <BodyContainer>
             <SprintRowsHeader />
-            {sprints.map(({ id, title }) => (
-              <SprintRow key={id} title={title} />
+            {sprints.map(({ id, name }) => (
+              <SprintRow key={id} title={name} />
             ))}
           </BodyContainer>
         </Tabs.Panel>

@@ -63,7 +63,7 @@ export const EpicRow = ({ title }: { title: string }) => {
                 />
               </button>
             </AssigneesMenu.Trigger>
-            <AssigneesMenu.Items />
+            <AssigneesMenu.Items onAssigneeSelected={(assigneeId) => {}} />
           </AssigneesMenu>
         </Box>
         <Text className="w-28 text-left" color="muted">
