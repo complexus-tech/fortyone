@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import { useMyWork } from "./provider";
 import { useMyStories } from "../hooks/my-stories";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 export const Header = ({
   isExpanded,
@@ -24,6 +25,11 @@ export const Header = ({
 }) => {
   const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
+  const tabs = ["assigned", "created", "subscribed"] as const;
+  const [tab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault("assigned"),
+  );
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
@@ -33,7 +39,11 @@ export const Header = ({
               name: "My Work",
               icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
             },
-            { name: "Assigned", icon: <UserIcon className="h-4 w-auto" /> },
+            {
+              name: tab,
+              icon: <UserIcon className="h-4 w-auto" />,
+              className: "capitalize",
+            },
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">

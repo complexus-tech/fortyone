@@ -1,50 +1,57 @@
 "use client";
-import { cn } from "lib";
-import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { ComponentPropsWithoutRef, ElementRef, forwardRef } from "react";
+import { ReactNode, createContext, useContext, useState } from "react";
 import { Calendar, CalendarProps } from "../Calendar/Calendar";
+import { Popover } from "../Popover/Popover";
 
-const Popover = PopoverPrimitive.Root;
+const PickerContext = createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}>({
+  open: false,
+  setOpen: () => {},
+});
 
-const PopoverTrigger = PopoverPrimitive.Trigger;
-
-const PopoverContent = forwardRef<
-  ElementRef<typeof PopoverPrimitive.Content>,
-  ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "end", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn("z-50", className)}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-));
-PopoverContent.displayName = PopoverPrimitive.Content.displayName;
-
-export type PopoverProps = ComponentPropsWithoutRef<typeof Popover>;
-
-export const DatePicker = (props: PopoverProps) => {
-  const { children } = props;
-  return <Popover {...props}>{children}</Popover>;
+export const usePicker = () => {
+  const { open, setOpen } = useContext(PickerContext);
+  return { open, setOpen };
 };
 
-type TriggerProps = ComponentPropsWithoutRef<typeof PopoverTrigger>;
-const Trigger = ({ children, ...rest }: TriggerProps) => {
+const Menu = ({ children }: { children: ReactNode }) => {
+  const { open, setOpen } = usePicker();
   return (
-    <PopoverTrigger asChild {...rest}>
+    <Popover open={open} onOpenChange={setOpen}>
       {children}
-    </PopoverTrigger>
+    </Popover>
   );
 };
 
-const CalendarPrimitive = (props: CalendarProps) => {
+export const DatePicker = ({ children }: { children: ReactNode }) => {
+  const [open, setOpen] = useState(false);
   return (
-    <PopoverContent className="w-auto p-0 z-50">
-      <Calendar {...props} />
-    </PopoverContent>
+    <PickerContext.Provider value={{ open, setOpen }}>
+      <Menu>{children}</Menu>
+    </PickerContext.Provider>
+  );
+};
+
+const Trigger = ({ children }: { children: ReactNode }) => {
+  return <Popover.Trigger asChild>{children}</Popover.Trigger>;
+};
+
+const CalendarPrimitive = (props: CalendarProps) => {
+  const { onDayClick, ...rest } = props;
+  const { setOpen } = usePicker();
+  return (
+    <Popover.Content className="w-auto p-0 z-50 rounded-xl border-0 bg-transparent dark:bg-transparent">
+      <Calendar
+        {...rest}
+        onDayClick={(day, activeModifiers, event) => {
+          if (!onDayClick) return;
+          onDayClick(day, activeModifiers, event);
+          setOpen(false);
+        }}
+      />
+    </Popover.Content>
   );
 };
 

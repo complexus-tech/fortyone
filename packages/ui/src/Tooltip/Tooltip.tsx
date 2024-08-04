@@ -16,7 +16,7 @@ export const Tooltip = ({
 }: ContentProps) => {
   return (
     <TooltipPrimitive.Provider>
-      <TooltipPrimitive.Root delayDuration={300}>
+      <TooltipPrimitive.Root delayDuration={500}>
         <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content

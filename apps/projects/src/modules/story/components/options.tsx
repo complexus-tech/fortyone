@@ -12,8 +12,13 @@ import {
   Badge,
 } from "ui";
 import { type ReactNode } from "react";
-import { addDays, format, differenceInDays, isTomorrow } from "date-fns";
-import type { DateRange } from "react-day-picker";
+import {
+  addDays,
+  format,
+  differenceInDays,
+  isTomorrow,
+  formatISO,
+} from "date-fns";
 import { CalendarIcon } from "icons";
 import {
   PrioritiesMenu,
@@ -29,8 +34,9 @@ import { AddLinks, OptionsHeader } from ".";
 import { DetailedStory } from "../types";
 import { useStore } from "@/hooks/store";
 import { cn } from "lib";
-import { updateStoryAction } from "@/modules/story/actions/update-story";
-import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import { useStoryById } from "@/modules/story/hooks/story";
+import { useUpdateStoryMutation } from "../hooks/update-mutation";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -47,7 +53,9 @@ const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   );
 };
 
-export const Options = ({ story }: { story: DetailedStory }) => {
+export const Options = () => {
+  const params = useParams<{ storyId: string }>();
+  const { data } = useStoryById(params.storyId);
   const {
     id,
     priority,
@@ -57,11 +65,12 @@ export const Options = ({ story }: { story: DetailedStory }) => {
     objectiveId,
     sprintId,
     deletedAt,
-  } = story;
+  } = data!;
   const { states } = useStore();
   const { name } = (states.find((state) => state.id === statusId) ||
     states.at(0))!!;
   const isDeleted = !!deletedAt;
+  const { mutateAsync } = useUpdateStoryMutation();
   const getDueDateMessage = (date: Date) => {
     if (date < new Date()) {
       return (
@@ -104,22 +113,17 @@ export const Options = ({ story }: { story: DetailedStory }) => {
   };
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {
-    try {
-      await updateStoryAction(id, data);
-    } catch (error) {
-      console.log(error);
-      toast.error("Error updating story", {
-        description: "Failed to update story, reverted changes.",
-      });
-    }
+    await mutateAsync({ storyId: id, payload: data });
   };
 
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader story={story} />
+      <OptionsHeader />
       <Container className="px-8 pt-4 text-gray-300/90">
         <Flex className="mb-5" align="center" justify="between">
-          <Text fontWeight="semibold">Properties</Text>
+          <Text fontWeight="semibold">
+            Properties <br />
+          </Text>
           {isDeleted && (
             <Badge
               rounded="full"
@@ -235,7 +239,9 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <DatePicker.Calendar
                 selected={startDate ? new Date(startDate) : undefined}
                 onDayClick={(day) => {
-                  handleUpdate({ startDate: day.toISOString() });
+                  handleUpdate({
+                    startDate: formatISO(day),
+                  });
                 }}
               />
             </DatePicker>
@@ -292,7 +298,9 @@ export const Options = ({ story }: { story: DetailedStory }) => {
               <DatePicker.Calendar
                 selected={endDate ? new Date(endDate) : undefined}
                 onDayClick={(day) => {
-                  handleUpdate({ endDate: day.toISOString() });
+                  handleUpdate({
+                    endDate: formatISO(day),
+                  });
                 }}
               />
             </DatePicker>

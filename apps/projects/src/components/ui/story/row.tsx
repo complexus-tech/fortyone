@@ -33,11 +33,16 @@ import {
   ObjectiveIcon,
   SprintsIcon,
 } from "icons";
-import { format, addDays, differenceInDays, isTomorrow } from "date-fns";
+import {
+  format,
+  addDays,
+  differenceInDays,
+  isTomorrow,
+  formatISO,
+} from "date-fns";
 import { StateCategory } from "@/types/states";
-import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { DetailedStory } from "@/modules/story/types";
-import { toast } from "sonner";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -202,14 +207,14 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
       </Flex>
     );
   };
+
+  const { mutateAsync } = useUpdateStoryMutation();
+
   const handleUpdate = async (data: Partial<DetailedStory>) => {
-    try {
-      await updateStoryAction(id, data);
-    } catch (error) {
-      toast.error("Error updating story", {
-        description: "Failed to update story, reverted changes.",
-      });
-    }
+    mutateAsync({
+      storyId: id,
+      payload: data,
+    });
   };
 
   return (
@@ -369,7 +374,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     }
                   >
                     <span>
-                      <DatePicker.Trigger asChild>
+                      <DatePicker.Trigger>
                         <Button
                           color="tertiary"
                           className={cn("px-2", {
@@ -395,7 +400,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   <DatePicker.Calendar
                     selected={new Date(endDate)}
                     onDayClick={(day) => {
-                      handleUpdate({ endDate: day.toISOString() });
+                      handleUpdate({ endDate: formatISO(day) });
                     }}
                   />
                 </DatePicker>
@@ -455,7 +460,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     </AssigneesMenu.Trigger>
                   </span>
                 </Tooltip>
-                <AssigneesMenu.Items />
+                <AssigneesMenu.Items onAssigneeSelected={(assigneeId) => {}} />
               </AssigneesMenu>
             )}
           </Flex>

@@ -1,11 +1,5 @@
 "use client";
-import {
-  use,
-  useEffect,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Button,
   Dialog,
@@ -51,7 +45,7 @@ import { useStore } from "@/hooks/store";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
-import { useCreateStoryMutation } from "@/modules/story/hooks/create-story-mutation";
+import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 
 export const NewStoryDialog = ({
   isOpen,

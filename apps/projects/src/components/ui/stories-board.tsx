@@ -19,6 +19,7 @@ import { DetailedStory } from "@/modules/story/types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
 import { useStore } from "@/hooks/store";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -88,6 +89,8 @@ export const StoriesBoard = ({
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
 
+  const { mutateAsync } = useUpdateStoryMutation();
+
   const isColumnVisible = (column: DisplayColumn) =>
     viewOptions.displayColumns.includes(column);
 
@@ -96,14 +99,11 @@ export const StoriesBoard = ({
     setActiveStory(story);
   };
 
-  const updateStory = async (storyId: string, data: Partial<DetailedStory>) => {
-    try {
-      const _ = await updateStoryAction(storyId, data);
-    } catch (error) {
-      toast.error("Error updating story", {
-        description: "Failed to update story, reverted changes.",
-      });
-    }
+  const updateStory = async (
+    storyId: string,
+    payload: Partial<DetailedStory>,
+  ) => {
+    mutateAsync({ storyId, payload });
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -142,7 +142,7 @@ export const StoriesBoard = ({
         case "Updated":
           return new Date(story.updatedAt).getTime();
         case "Due date":
-          const date = new Date(story.endDate);
+          const date = new Date(story.endDate!);
           return isNaN(date.getTime()) ? Infinity : date.getTime();
         case "Priority":
           const prioritiesMap: Record<StoryPriority, number> = {

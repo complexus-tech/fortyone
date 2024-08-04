@@ -8,3 +8,12 @@ export const storyKeys = {
   details: () => [...storyKeys.all, "detail"] as const,
   detail: (id: string) => [...storyKeys.details(), id] as const,
 };
+
+export const storyTags = {
+  all: "stories" as const,
+  teams: () => `${storyTags.all}-list-team` as const,
+  mine: () => `${storyTags.all}-list-mine` as const,
+  team: (teamId: string) => `${storyTags.teams()}-${teamId}` as const,
+  details: () => `${storyTags.all}-detail` as const,
+  detail: (id: string) => `${storyTags.details()}-${id}` as const,
+};

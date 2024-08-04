@@ -2,6 +2,10 @@
 module.exports = {
   reactStrictMode: true,
   transpilePackages: ["ui", "icons"],
+  experimental: {
+    reactCompiler: true,
+    after: true,
+  },
   images: {
     remotePatterns: [
       {

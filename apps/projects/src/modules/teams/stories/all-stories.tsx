@@ -9,12 +9,20 @@ import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const session = useSession();
   const { states, sprints } = useStore();
+
+  const tabs = ["all", "active", "backlog"] as const;
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault("all"),
+  );
+  type Tab = (typeof tabs)[number];
   // a sprint is active if it has a start date and end date and the current date is between the start and end date
   // use date-fns to check if the current date is between the start and end date
   const activeSprints = sprints
@@ -82,7 +90,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   );
 
   return (
-    <Tabs defaultValue="all">
+    <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
         <Tabs.List>
           <Tabs.Tab value="all">All stories</Tabs.Tab>

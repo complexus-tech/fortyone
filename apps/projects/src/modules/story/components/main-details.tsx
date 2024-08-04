@@ -22,6 +22,8 @@ import { DetailedStory } from "../types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
 import { useCallback, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
+import { useStoryById } from "../hooks/story";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -53,7 +55,9 @@ const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
   return debouncedCallback;
 };
 
-export const MainDetails = ({ story }: { story: DetailedStory }) => {
+export const MainDetails = () => {
+  const params = useParams<{ storyId: string }>();
+  const { data } = useStoryById(params.storyId);
   const {
     id: storyId,
     title,
@@ -62,7 +66,7 @@ export const MainDetails = ({ story }: { story: DetailedStory }) => {
     sequenceId,
     teamId,
     deletedAt,
-  } = story;
+  } = data!;
   const isDeleted = !!deletedAt;
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {

@@ -10,10 +10,7 @@ import {
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import { useStore } from "@/hooks/store";
-import { restoreStoryAction } from "../actions/restore-story";
-import { toast } from "sonner";
-import nProgress from "nprogress";
-import { useState } from "react";
+import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
 
 export const Header = ({
   sequenceId,
@@ -26,26 +23,12 @@ export const Header = ({
   isDeleted: boolean;
   storyId: string;
 }) => {
-  const [loading, setLoading] = useState(false);
   const { teams } = useStore();
   const { name, code } = teams.find((team) => team.id === teamId)!!;
+  const { mutateAsync } = useRestoreStoryMutation();
 
   const restoreStory = async () => {
-    try {
-      nProgress.start();
-      setLoading(true);
-      const _ = await restoreStoryAction(storyId);
-      toast.success("Success", {
-        description: "Story restored successfully",
-      });
-    } catch (error) {
-      toast.error("Error", {
-        description: "Failed to restore story",
-      });
-    } finally {
-      nProgress.done();
-      setLoading(false);
-    }
+    mutateAsync(storyId);
   };
 
   return (
@@ -79,8 +62,6 @@ export const Header = ({
             <Button
               size="sm"
               color="tertiary"
-              loading={loading}
-              loadingText="Restoring..."
               onClick={restoreStory}
               leftIcon={<UndoIcon className="h-4 w-auto" />}
             >

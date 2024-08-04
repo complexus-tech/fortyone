@@ -23,7 +23,7 @@ export type DetailedStory = {
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string;
+  deletedAt: string | null;
 };
 
 export type NewStory = Partial<DetailedStory>;

@@ -32,7 +32,6 @@ export const useCreateStoryMutation = () => {
       });
     },
     onSuccess: (story) => {
-      const teamId = story.teamId;
       const previousStories = queryClient.getQueryData<Story[]>(
         storyKeys.lists(),
       );
@@ -55,6 +54,7 @@ export const useCreateStoryMutation = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
     },
   });
 

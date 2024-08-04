@@ -1,59 +1,29 @@
 "use client";
 import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, LinkIcon } from "icons";
-import { DetailedStory } from "../types";
 import { useStore } from "@/hooks/store";
 import { useCopyToClipboard } from "@/hooks";
 import { toast } from "sonner";
-import nProgress from "nprogress";
-import { deleteStoryAction } from "../actions/delete-story";
 import { useState } from "react";
-import { restoreStoryAction } from "@/modules/story/actions/restore-story";
+import { useParams } from "next/navigation";
+import { useStoryById } from "@/modules/story/hooks/story";
+import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 
-export const OptionsHeader = ({ story }: { story: DetailedStory }) => {
-  const { id, sequenceId, deletedAt } = story;
-  const [loading, setLoading] = useState(false);
+export const OptionsHeader = () => {
+  const params = useParams<{ storyId: string }>();
+  const { data } = useStoryById(params.storyId);
+  const { id, teamId, sequenceId, deletedAt } = data!;
   const [isOpen, setIsOpen] = useState(false);
   const { teams } = useStore();
   const [_, copyText] = useCopyToClipboard();
-  const { code } = teams.find((team) => team.id === story.teamId)!!;
+  const { code } = teams.find((team) => team.id === teamId)!!;
   const isDeleted = !!deletedAt;
-
-  const restoreStory = async () => {
-    try {
-      nProgress.start();
-      const _ = await restoreStoryAction(id);
-      toast.success("Success", {
-        description: "Story restored successfully",
-      });
-    } catch (error) {
-      toast.error("Error", {
-        description: "Failed to restore story",
-      });
-    } finally {
-      nProgress.done();
-    }
-  };
+  const { mutateAsync: deleteAsync } = useDeleteStoryMutation();
 
   const handleDelete = async () => {
     try {
-      nProgress.start();
-      setLoading(true);
-      await deleteStoryAction(id);
-      toast.success("Success", {
-        description: "Story deleted successfully",
-        cancel: {
-          label: "Undo",
-          onClick: restoreStory,
-        },
-      });
-    } catch (e) {
-      toast.error("Error", {
-        description: "Failed to delete story",
-      });
+      await deleteAsync(id);
     } finally {
-      nProgress.done();
-      setLoading(false);
       setIsOpen(false);
     }
   };
@@ -133,8 +103,6 @@ export const OptionsHeader = ({ story }: { story: DetailedStory }) => {
               </Button>
               <Button
                 leftIcon={<DeleteIcon className="h-5 w-auto" />}
-                loading={loading}
-                loadingText="Deleting..."
                 onClick={handleDelete}
               >
                 Delete
