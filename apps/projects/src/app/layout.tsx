@@ -5,6 +5,11 @@ import { Toaster } from "sonner";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
+import dynamic from "next/dynamic";
+
+const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
+  ssr: false,
+});
 
 const font = Inter({
   subsets: ["latin"],
@@ -59,6 +64,7 @@ export default function RootLayout({
             },
           }}
         />
+        <PostHogPageView />
         <ProgressBar />
       </body>
     </html>
