@@ -28,7 +28,7 @@ import { useStoryById } from "../hooks/story";
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
 // Custom debounce hook
-const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
+const useDebounce = (callback: (...args: any[]) => void, delay = 500) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

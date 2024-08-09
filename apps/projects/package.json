@@ -42,6 +42,8 @@
     "next-auth": "5.0.0-beta.19",
     "nprogress": "^0.2.0",
     "nuqs": "^1.17.6",
+    "posthog-js": "^1.154.5",
+    "posthog-node": "^4.0.1",
     "qs": "^6.12.3",
     "react": "19.0.0-rc-8269d55d-20240802",
     "react-day-picker": "^8.10.1",
