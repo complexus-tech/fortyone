@@ -41,11 +41,12 @@ import { toast } from "sonner";
 import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
-import { useStore } from "@/hooks/store";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
+import { useTeams } from "@/lib/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -61,15 +62,16 @@ export const NewStoryDialog = ({
   priority?: StoryPriority;
 }) => {
   const session = useSession();
-  const { states, teams } = useStore();
+  const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
     teams.at(0)!!,
   );
-  const { id: defaultStateId } = (states.find(
+  const { id: defaultStateId } = (statuses.find(
     (state) => state.id === statusId,
-  ) || states.at(0))!!;
+  ) || statuses.at(0))!!;
 
   const initialForm: NewStory = {
     title: "",
@@ -217,6 +219,7 @@ export const NewStoryDialog = ({
                 color="tertiary"
                 size="xs"
                 variant="naked"
+                rounded="full"
                 onClick={() => {
                   setIsExpanded((prev) => !prev);
                 }}
@@ -262,7 +265,7 @@ export const NewStoryDialog = ({
                   variant="outline"
                 >
                   {
-                    states.find((state) => state.id === storyForm.statusId)
+                    statuses.find((state) => state.id === storyForm.statusId)
                       ?.name
                   }
                 </Button>

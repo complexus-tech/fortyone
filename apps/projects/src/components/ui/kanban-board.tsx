@@ -5,7 +5,7 @@ import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const KanbanBoard = ({
   stories,
@@ -16,8 +16,7 @@ export const KanbanBoard = ({
 }) => {
   const { viewOptions } = useBoard();
   const { groupBy } = viewOptions;
-  const { states: statuses } = useStore();
-
+  const { data: statuses = [] } = useStatuses();
   const priorities: StoryPriority[] = [
     "Urgent",
     "High",

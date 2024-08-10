@@ -6,7 +6,7 @@ export const SprintRowsHeader = () => {
     <Container className="sticky top-0 z-[1] select-none bg-gray-50/50 py-2 backdrop-blur dark:bg-dark-300/90">
       <Flex align="center" justify="between">
         <Flex align="center" gap={2}>
-          <Badge color="tertiary" rounded="sm">
+          <Badge color="tertiary" className="border px-2 py-3 text-base">
             Active
           </Badge>
         </Flex>
@@ -30,7 +30,10 @@ export const SprintRowsHeader = () => {
             <Button
               className="aspect-square"
               color="tertiary"
-              rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
+              rounded="full"
+              rightIcon={
+                <ArrowDownIcon className="relative top-px h-4 w-auto" />
+              }
               size="sm"
               variant="outline"
             >

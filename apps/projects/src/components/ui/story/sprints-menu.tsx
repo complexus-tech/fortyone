@@ -1,9 +1,9 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { PlusIcon, SprintsIcon } from "icons";
-import { useStore } from "@/hooks/store";
+import { useSprints } from "@/lib/hooks/sprints";
 
 export const SprintsMenu = () => {
-  const { sprints } = useStore();
+  const { data: sprints = [] } = useSprints();
   return (
     <Menu>
       <Menu.Button>

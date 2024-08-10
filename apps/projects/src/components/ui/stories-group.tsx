@@ -10,7 +10,7 @@ import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
 import { State, StateCategory } from "@/types/states";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const StoriesGroup = ({
   stories,
@@ -26,8 +26,8 @@ export const StoriesGroup = ({
   viewOptions: StoriesViewOptions;
 }) => {
   const pathname = usePathname();
-  const { states } = useStore();
-  const { id: defaultStatusId } = states.at(0)!!;
+  const { data: statuses = [] } = useStatuses();
+  const { id: defaultStatusId } = statuses.at(0)!!;
   const { groupBy, showEmptyGroups } = viewOptions;
   const id = (groupBy === "Status" ? status?.id : priority) as string;
   const collapseKey = pathname + id;

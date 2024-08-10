@@ -16,6 +16,7 @@ export const bulkRestoreAction = async (storyIds: string[]) => {
     revalidateTag(storyTags.detail(storyId));
   });
   revalidateTag(storyTags.teams());
+  revalidateTag(storyTags.mine());
 
   return stories;
 };

@@ -12,8 +12,8 @@ import {
 } from "@/components/ui";
 import { useTeamOptions } from "./provider";
 import { useParams } from "next/navigation";
-import { useStore } from "@/hooks/store";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { useTeams } from "@/lib/hooks/teams";
 
 export const Header = ({
   isExpanded,
@@ -27,8 +27,8 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { data = [] } = useTeamStories(teamId);
-  const { teams } = useStore();
+  const { data: stories = [] } = useTeamStories(teamId);
+  const { data: teams = [] } = useTeams();
   const { name, icon } = teams.find((team) => team.id === teamId)!!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
@@ -48,7 +48,7 @@ export const Header = ({
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {data.length} stories
+          {stories.length} stories
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

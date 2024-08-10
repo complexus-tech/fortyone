@@ -17,6 +17,7 @@ export const getStories = async (
   const query = qs.stringify(params, {
     skipNulls: true,
     addQueryPrefix: true,
+    encodeValuesOnly: true,
   });
   const stories = await get<Story[]>(`stories${query}`, options);
   return stories;

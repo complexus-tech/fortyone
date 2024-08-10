@@ -3,7 +3,6 @@ import { Box, Tabs, Text, Flex } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useTeamOptions } from "@/modules/teams/stories/provider";
-import { useStore } from "@/hooks/store";
 import { useMemo } from "react";
 import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { useSession } from "next-auth/react";
@@ -11,12 +10,15 @@ import { useParams } from "next/navigation";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { ArrowUpDownIcon } from "icons";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const session = useSession();
-  const { states, sprints } = useStore();
+  const { data: statuses = [] } = useStatuses();
+  const { data: sprints = [] } = useSprints();
 
   const tabs = ["all", "active", "backlog"] as const;
   const [tab, setTab] = useQueryState(
@@ -36,14 +38,14 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     )
     .map((sprint) => sprint.id);
 
-  const completedStatuses = states
+  const completedStatuses = statuses
     .filter((state) => state.category === "completed")
     .map((state) => state.id);
   const { viewOptions, filters } = useTeamOptions();
-  const backlogStatuses = states
+  const backlogStatuses = statuses
     .filter((state) => state.category === "backlog")
     .map((state) => state.id);
-  const activeStatuses = states
+  const activeStatuses = statuses
     .filter((state) => state.category === "started")
     .map((state) => state.id);
 

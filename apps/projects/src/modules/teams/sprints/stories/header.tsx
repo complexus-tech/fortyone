@@ -9,6 +9,9 @@ import {
   SideDetailsSwitch,
 } from "@/components/ui";
 import { useSprintStories } from "./provider";
+import { useParams } from "next/navigation";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useTeams } from "@/lib/hooks/teams";
 
 export const Header = ({
   isExpanded,
@@ -24,18 +27,30 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { viewOptions, setViewOptions } = useSprintStories();
+  const { teamId, sprintId } = useParams<{
+    teamId: string;
+    sprintId: string;
+  }>();
+  const { data: sprints = [] } = useSprints();
+  const { data: teams = [] } = useTeams();
+
+  const team = teams.find((team) => team.id === teamId)!;
+  const sprint = sprints.find((sprint) => sprint.id === sprintId)!;
+
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "Engineering",
-              icon: "🚀",
+              name: team?.name,
+              icon: team?.icon,
+              url: `/teams/${team?.id}/stories`,
             },
             {
-              name: "Sprints",
+              name: sprint?.name,
               icon: <SprintsIcon className="h-4 w-auto" />,
+              url: `/teams/${team?.id}/sprints/${sprint?.id}`,
             },
             {
               name: "Stories",

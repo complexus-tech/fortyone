@@ -1,5 +1,5 @@
 import { cn } from "lib";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const StoryStatusIcon = ({
   statusId,
@@ -8,9 +8,10 @@ export const StoryStatusIcon = ({
   statusId?: string;
   className?: string;
 }) => {
-  const { states } = useStore();
-  if (!states.length) return null;
-  const state = states.find((state) => state.id === statusId) || states.at(0);
+  const { data: statuses = [] } = useStatuses();
+  if (!statuses.length) return null;
+  const state =
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { category } = state!!;
   return (
     <>

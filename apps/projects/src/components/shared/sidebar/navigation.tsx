@@ -38,22 +38,22 @@ export const Navigation = () => {
       icon: <WorkIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/my-work",
     },
-    {
-      name: "Messages",
-      icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/messages",
-      messages: 1,
-    },
-    {
-      name: "Roadmaps",
-      icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/roadmaps",
-    },
-    {
-      name: "Objectives",
-      icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
-      href: "/objectives",
-    },
+    // {
+    //   name: "Messages",
+    //   icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: "/messages",
+    //   messages: 1,
+    // },
+    // {
+    //   name: "Roadmaps",
+    //   icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: "/roadmaps",
+    // },
+    // {
+    //   name: "Objectives",
+    //   icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
+    //   href: "/objectives",
+    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,

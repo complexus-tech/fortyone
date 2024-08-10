@@ -2,12 +2,9 @@
 import { useState } from "react";
 import { Button, Checkbox, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
-import { ArrowDownIcon, ArrowUpDownIcon, PlusIcon, StoryIcon } from "icons";
+import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
-import type {
-  ViewOptionsGroupBy,
-  ViewOptionsOrderBy,
-} from "@/components/ui/stories-view-options-button";
+import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";

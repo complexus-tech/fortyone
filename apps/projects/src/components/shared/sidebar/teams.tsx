@@ -4,11 +4,11 @@ import { Box, Button, Flex } from "ui";
 import { ArrowDownIcon, PlusIcon, TeamIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { Team } from "./team";
-import { useStore } from "@/hooks/store";
+import { useTeams } from "@/lib/hooks/teams";
 
 export const Teams = () => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("teams-dropdown", true);
-  const { teams } = useStore();
+  const { data: teams = [] } = useTeams();
 
   return (
     <Box className="mt-4">

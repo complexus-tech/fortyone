@@ -9,8 +9,8 @@ import {
   UndoIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
-import { useStore } from "@/hooks/store";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
+import { useTeams } from "@/lib/hooks/teams";
 
 export const Header = ({
   sequenceId,
@@ -23,7 +23,7 @@ export const Header = ({
   isDeleted: boolean;
   storyId: string;
 }) => {
-  const { teams } = useStore();
+  const { data: teams = [] } = useTeams();
   const { name, code } = teams.find((team) => team.id === teamId)!!;
   const { mutateAsync } = useRestoreStoryMutation();
 

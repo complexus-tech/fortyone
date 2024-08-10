@@ -38,11 +38,11 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       icon: <StoryIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: `/teams/${id}/stories`,
     },
-    {
-      name: "Epics",
-      icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
-      href: `/teams/${id}/epics`,
-    },
+    // {
+    //   name: "Epics",
+    //   icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
+    //   href: `/teams/${id}/epics`,
+    // },
     {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
@@ -53,16 +53,16 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       icon: <DocsIcon className="h-[1.3rem] w-auto" />,
       href: `/teams/${id}/documents`,
     },
-    {
-      name: "Whiteboards",
-      icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: `/teams/${id}/whiteboards`,
-    },
-    {
-      name: "Retrospectives",
-      icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: `/teams/${id}/retrospectives`,
-    },
+    // {
+    //   name: "Whiteboards",
+    //   icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/whiteboards`,
+    // },
+    // {
+    //   name: "Retrospectives",
+    //   icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/retrospectives`,
+    // },
   ];
 
   return (

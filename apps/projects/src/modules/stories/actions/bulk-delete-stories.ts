@@ -13,6 +13,7 @@ export const bulkDeleteAction = async (storyIds: string[]) => {
   storyIds.forEach((storyId) => {
     revalidateTag(storyTags.detail(storyId));
   });
+  revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
 
   return stories;

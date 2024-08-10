@@ -8,9 +8,10 @@ export const useBulkRestoreStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: bulkRestoreAction,
-    onError: (_, storyIds) => {
+    onError: (error, storyIds) => {
       toast.error("Failed to restore stories", {
-        description: "An error occurred while restoring stories",
+        description:
+          error?.message || "An error occurred while restoring stories",
         action: {
           label: "Retry",
           onClick: () => mutation.mutate(storyIds),

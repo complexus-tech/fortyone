@@ -23,7 +23,7 @@ import { cn } from "lib";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { StoryStatusIcon } from "./story-status-icon";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export type StoriesFilter = {
   activeSprints: boolean;
@@ -91,8 +91,8 @@ export const StoriesFilterButton = ({
     to: new Date(),
   });
 
-  const { states } = useStore();
-  const doneStatusId = states.find(
+  const { data: statuses = [] } = useStatuses();
+  const doneStatusId = statuses.find(
     (state) => state.category === "completed",
   )?.id;
 

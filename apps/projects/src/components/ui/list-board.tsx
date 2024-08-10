@@ -3,7 +3,7 @@ import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const ListBoard = ({
   stories,
@@ -15,7 +15,7 @@ export const ListBoard = ({
   viewOptions: StoriesViewOptions;
 }) => {
   const { groupBy } = viewOptions;
-  const { states } = useStore();
+  const { data: statuses = [] } = useStatuses();
 
   const priorities: StoryPriority[] = [
     "Urgent",
@@ -28,7 +28,7 @@ export const ListBoard = ({
   return (
     <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
       {groupBy === "Status" &&
-        states.map((status) => (
+        statuses.map((status) => (
           <StoriesGroup
             className="-top-[0.5px]"
             key={status.id}

@@ -12,9 +12,10 @@ export const useBulkDeleteStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
-    onError: (_, storyIds) => {
+    onError: (err, storyIds) => {
       toast.error("Failed to delete stories", {
-        description: "An error occurred while deleting the story",
+        description:
+          err?.message || "An error occurred while deleting the story",
         action: {
           label: "Retry",
           onClick: () => mutation.mutate(storyIds),
@@ -28,9 +29,11 @@ export const useBulkDeleteStoryMutation = () => {
         .filter((query) => query.isActive);
 
       activeQueries.forEach((query) => {
-        queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-          stories?.filter((story) => !storyIds.includes(story.id)),
-        );
+        queryClient.setQueryData<Story[]>(query.queryKey, () => {
+          return (query.state.data as Story[])?.filter(
+            (story) => !storyIds.includes(story.id),
+          );
+        });
       });
 
       return storyIds;

@@ -1,3 +1,4 @@
+"use client";
 import { Flex, Text, Avatar, Button, Menu, ProgressBar, Box } from "ui";
 import Link from "next/link";
 import {
@@ -10,17 +11,21 @@ import {
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
+import { Sprint } from "@/modules/sprints/types";
+import { useParams } from "next/navigation";
 
-export const SprintRow = ({ title }: { title: string }) => {
+export const SprintRow = ({ id, name }: Sprint) => {
+  const { teamId } = useParams<{ teamId: string }>();
+
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
         <TableCheckbox />
         <Link
           className="flex items-center gap-1"
-          href="/teams/web/sprints/sprint-1/stories"
+          href={`/teams/${teamId}/sprints/${id}/stories`}
         >
-          <Text className="w-[250px] truncate hover:opacity-90">{title}</Text>
+          <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
       </Flex>
       <Flex align="center" gap={5}>

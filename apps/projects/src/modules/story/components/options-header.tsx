@@ -1,20 +1,20 @@
 "use client";
 import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, LinkIcon } from "icons";
-import { useStore } from "@/hooks/store";
 import { useCopyToClipboard } from "@/hooks";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
+import { useTeams } from "@/lib/hooks/teams";
 
 export const OptionsHeader = () => {
   const params = useParams<{ storyId: string }>();
   const { data } = useStoryById(params.storyId);
   const { id, teamId, sequenceId, deletedAt } = data!;
   const [isOpen, setIsOpen] = useState(false);
-  const { teams } = useStore();
+  const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
   const { code } = teams.find((team) => team.id === teamId)!!;
   const isDeleted = !!deletedAt;

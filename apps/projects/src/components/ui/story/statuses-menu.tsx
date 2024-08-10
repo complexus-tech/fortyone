@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
 import { StoryStatusIcon } from "../story-status-icon";
-import { useStore } from "@/hooks/store";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 const StatusContext = createContext<{
   open: boolean;
@@ -47,22 +47,37 @@ const Items = ({
   statusId?: string;
   setStatusId: (statusId: string) => void;
 }) => {
-  const { states } = useStore();
-  if (!states.length) return null;
-  const state = states.find((state) => state.id === statusId) || states.at(0);
+  const { data: statuses = [] } = useStatuses();
+  const [query, setQuery] = useState("");
+  if (!statuses.length) return null;
+  const state =
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { id: defaultStateId } = state!!;
   const { setOpen } = useStatusMenu();
 
   return (
     <Popover.Content align="center" className="w-64">
       <Command>
-        <Command.Input autoFocus placeholder="Change status..." />
+        <Command.Input
+          autoFocus
+          placeholder="Change status..."
+          value={query}
+          onValueChange={(value) => {
+            if (Number.parseInt(value) < statuses.length) {
+              setStatusId(statuses[Number.parseInt(value)].id);
+              setOpen(false);
+              setQuery("");
+              return;
+            }
+            setQuery(value);
+          }}
+        />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
           <Text color="muted">No statuses found.</Text>
         </Command.Empty>
         <Command.Group>
-          {states.map(({ id, name }, idx) => (
+          {statuses.map(({ id, name }, idx) => (
             <Command.Item
               active={id === defaultStateId}
               value={name}

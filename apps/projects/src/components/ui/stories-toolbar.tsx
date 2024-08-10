@@ -6,6 +6,10 @@ import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { StoryPriority } from "@/modules/stories/types";
 import { PriorityIcon } from "./priority-icon";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useTeams } from "@/lib/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useObjectives } from "@/lib/hooks/objectives";
 
 export const StoriesToolbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,10 +17,15 @@ export const StoriesToolbar = () => {
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
 
-  const { mutateAsync } = useBulkDeleteStoryMutation();
+  const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
+  const { data: sprints = [] } = useSprints();
+  const { data: objectives = [] } = useObjectives();
+
+  const { mutateAsync: bulkDeleteMutate } = useBulkDeleteStoryMutation();
 
   const handleBulkDelete = async () => {
-    mutateAsync(selectedStories);
+    bulkDeleteMutate(selectedStories);
     setSelectedStories([]);
     setIsOpen(false);
   };
@@ -140,20 +149,18 @@ export const StoriesToolbar = () => {
                 <Text color="muted">No sprint found.</Text>
               </Command.Empty>
               <Command.Group className="px-0">
-                {priorities.map((pr, idx) => (
+                {sprints.map(({ id, name }, idx) => (
                   <Command.Item
-                    // active={pr === priority}
-                    value={pr}
+                    value={name}
                     onSelect={() => {
-                      // setPriority(pr);
                       setIsSprintsOpen(false);
                     }}
                     className="justify-between py-2.5"
-                    key={pr}
+                    key={id}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center">
-                      <PriorityIcon priority={pr} />
-                      <Text>{pr}</Text>
+                      <SprintsIcon />
+                      <Text>{name}</Text>
                     </Box>
                     <Flex align="center" gap={2}>
                       <Text color="muted">{idx}</Text>

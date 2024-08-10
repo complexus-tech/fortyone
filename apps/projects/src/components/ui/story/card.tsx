@@ -21,8 +21,11 @@ import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
-import { useStore } from "@/hooks/store";
 import { slugify } from "@/utils";
+import { useTeams } from "@/lib/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useObjectives } from "@/lib/hooks/objectives";
 
 export const StoryCard = ({
   story,
@@ -32,9 +35,12 @@ export const StoryCard = ({
   className?: string;
 }) => {
   const { id, title, sequenceId, priority, statusId, teamId } = story;
-  const { teams, states } = useStore();
+  const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
+  const { data: sprints = [] } = useSprints();
+  const { data: objectives = [] } = useObjectives();
   const activeStatus =
-    states.find((state) => state.id === statusId) || states.at(0);
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { code: teamCode } = teams.find((team) => team.id === teamId)!!;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,

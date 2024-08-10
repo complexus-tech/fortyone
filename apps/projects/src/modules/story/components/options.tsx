@@ -32,11 +32,11 @@ import {
 import { Labels } from "@/components/ui/story/labels";
 import { AddLinks, OptionsHeader } from ".";
 import { DetailedStory } from "../types";
-import { useStore } from "@/hooks/store";
 import { cn } from "lib";
 import { useParams } from "next/navigation";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -66,9 +66,9 @@ export const Options = () => {
     sprintId,
     deletedAt,
   } = data!;
-  const { states } = useStore();
-  const { name } = (states.find((state) => state.id === statusId) ||
-    states.at(0))!!;
+  const { data: statuses = [] } = useStatuses();
+  const { name } = (statuses.find((state) => state.id === statusId) ||
+    statuses.at(0))!!;
   const isDeleted = !!deletedAt;
   const { mutateAsync } = useUpdateStoryMutation();
   const getDueDateMessage = (date: Date) => {

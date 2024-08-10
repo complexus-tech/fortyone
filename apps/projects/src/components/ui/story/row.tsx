@@ -25,7 +25,6 @@ import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { slugify } from "@/utils";
-import { useStore } from "@/hooks/store";
 import {
   CalendarIcon,
   EpicsIcon,
@@ -43,6 +42,10 @@ import {
 import { StateCategory } from "@/types/states";
 import { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
+import { useTeams } from "@/lib/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useObjectives } from "@/lib/hooks/objectives";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -59,12 +62,17 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     epicId,
     priority = "No Priority",
   } = story;
+  const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
+  const { data: sprints = [] } = useSprints();
+  const { data: objectives = [] } = useObjectives();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
   const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
-  const { states, teams, objectives, sprints } = useStore();
-  const status = states.find((state) => state.id === statusId) || states.at(0);
+
+  const status =
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const teamCode = teams.find((team) => team.id === teamId)?.code;
   const selectedObjective = objectives.find(
     (objective) => objective.id === objectiveId,

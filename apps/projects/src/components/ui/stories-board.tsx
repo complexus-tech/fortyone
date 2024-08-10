@@ -16,11 +16,10 @@ import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
 import { DetailedStory } from "@/modules/story/types";
-import { useStore } from "@/hooks/store";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { ArrowLeftIcon, ChatIcon, StoryMissingIcon } from "icons";
+import { StoryMissingIcon } from "icons";
 import { NewStoryButton } from "@/components/ui";
-
+import { useTeams } from "@/lib/hooks/teams";
 export type StoriesLayout = "list" | "kanban" | null;
 
 const StoryOverlay = ({
@@ -32,7 +31,7 @@ const StoryOverlay = ({
   layout: StoriesLayout;
   selectedStories: number;
 }) => {
-  const { teams } = useStore();
+  const { data: teams = [] } = useTeams();
   const team = teams.find(({ id }) => id === story?.teamId);
   return (
     <DragOverlay
