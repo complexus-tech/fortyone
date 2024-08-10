@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
@@ -212,13 +211,11 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return ErrInvalidWorkspaceID
 	}
 
-	raw, err := queryMapToRawMessage(r.URL.Query())
+	var af AppFilters
+	filters, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
-		h.log.Warn(ctx, "error parsing query params")
-	}
-	filters, err := getFilters(raw)
-	if err != nil {
-		return fmt.Errorf("error getting filters: %w", err)
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
 	}
 
 	stories, err := h.stories.List(ctx, workspaceId, filters)

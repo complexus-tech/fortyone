@@ -193,7 +193,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 
 	filters["workspace_id"] = workspaceId
 
-	query += " WHERE " + strings.Join(setClauses, " OR ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id;"
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id;"
 
 	var stories []dbStory
 

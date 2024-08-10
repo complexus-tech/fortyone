@@ -37,7 +37,7 @@ type Config struct {
 	}
 	DB struct {
 		Host         string `default:"localhost"`
-		Port         string `default:"5432"`
+		Port         string `default:"5432" env:"APP_DB_PORT"`
 		User         string `default:"postgres"`
 		Password     string `default:"password"`
 		Name         string `default:"complexus"`
@@ -79,11 +79,11 @@ func main() {
 // run starts the HTTP server, tracing and listens for OS signals to gracefully shutdown.
 func run(ctx context.Context, log *logger.Logger) error {
 	var cfg Config
+
 	err := config.Parse("app", &cfg)
 	if err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
-
 	// Connect to postgres database
 	db, err := database.Open(database.Config{
 		Host:         cfg.DB.Host,

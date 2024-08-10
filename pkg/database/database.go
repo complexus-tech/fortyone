@@ -42,7 +42,7 @@ func Open(cfg Config) (*sqlx.DB, error) {
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(cfg.User, cfg.Password),
-		Host:     cfg.Host,
+		Host:     cfg.Host + ":" + cfg.Port,
 		Path:     cfg.Name,
 		RawQuery: q.Encode(),
 	}

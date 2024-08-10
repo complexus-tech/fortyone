@@ -91,7 +91,7 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 
 		if err := handler(ctx, w, r); err != nil {
 			log.Print(err)
-			a.Shutdown()
+			Respond(ctx, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

@@ -21,6 +21,11 @@ type AppSprintsList struct {
 	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
+type AppFilters struct {
+	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
+	Team      *uuid.UUID `json:"teamId" db:"team_id"`
+}
+
 // toAppSprints converts a list of core sprints to a list of application sprints.
 func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 	appSprints := make([]AppSprintsList, len(sprints))
