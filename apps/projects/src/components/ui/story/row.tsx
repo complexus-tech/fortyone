@@ -31,6 +31,8 @@ import {
   LinkIcon,
   ObjectiveIcon,
   SprintsIcon,
+  CloseIcon,
+  PlusIcon,
 } from "icons";
 import {
   format,
@@ -46,6 +48,7 @@ import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useObjectives } from "@/lib/hooks/objectives";
+import { SprintsMenu } from "@/components/ui";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -333,22 +336,58 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             )}
 
             {isColumnVisible("Sprint") && selectedSprint && (
-              <Tooltip className="max-w-96 py-3" title={sprintTooltip()}>
-                <Button
-                  color="tertiary"
-                  className="pl-1.5 pr-2"
-                  size="xs"
-                  rounded="xl"
-                  type="button"
+              <SprintsMenu>
+                <Tooltip
+                  className="pointer-events-none max-w-96 py-3"
+                  title={sprintTooltip()}
                 >
-                  <SprintsIcon className="h-5 w-auto" />
-                  <span className="inline-block max-w-36 truncate">
-                    {selectedSprint?.name}
+                  <span>
+                    <SprintsMenu.Trigger>
+                      <Button
+                        color="tertiary"
+                        className="pl-1.5 pr-2"
+                        size="xs"
+                        rounded="xl"
+                        type="button"
+                        rightIcon={
+                          sprintId && (
+                            <Button
+                              className="aspect-square"
+                              color="tertiary"
+                              variant="naked"
+                              size="xs"
+                              onClick={() => {
+                                handleUpdate({ sprintId: null });
+                              }}
+                              rounded="full"
+                              leftIcon={
+                                <CloseIcon
+                                  strokeWidth={2}
+                                  className="h-5 w-auto text-primary"
+                                />
+                              }
+                            >
+                              <span className="sr-only">Remove sprint</span>
+                            </Button>
+                          )
+                        }
+                      >
+                        <SprintsIcon className="h-5 w-auto" />
+                        <span className="inline-block max-w-36 truncate">
+                          {selectedSprint?.name}
+                        </span>
+                      </Button>
+                    </SprintsMenu.Trigger>
                   </span>
-                </Button>
-              </Tooltip>
+                </Tooltip>
+                <SprintsMenu.Items
+                  sprintId={sprintId ?? undefined}
+                  setSprintId={(sprint) => {
+                    handleUpdate({ sprintId: sprint });
+                  }}
+                />
+              </SprintsMenu>
             )}
-
             <Button
               color="tertiary"
               className="px-2"
@@ -359,7 +398,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <EpicsIcon className="h-5 w-auto" /> Objective
             </Button>
             {isColumnVisible("Labels") && <Labels />}
-
             {isColumnVisible("Due date") &&
               endDate &&
               !completedOrCancelled(status?.category) && (
@@ -439,8 +477,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <AssigneesMenu>
                 <Tooltip
                   title={
-                    <Flex align="center" gap={2}>
+                    <Flex gap={3}>
                       <Avatar
+                        className="mt-1.5"
                         name="Joseph Mukorivo"
                         src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
                       />
@@ -448,9 +487,19 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         <Text fontSize="md" fontWeight="medium">
                           Joseph Mukorivo
                         </Text>
-                        <Text fontSize="md" color="muted">
+                        <Text fontSize="md" color="muted" className="mb-2">
                           @josemukorivo
                         </Text>
+
+                        <Button
+                          size="xs"
+                          color="tertiary"
+                          rounded="full"
+                          className="mb-0.5 ml-px px-2"
+                          href="/"
+                        >
+                          Go to profile
+                        </Button>
                       </Box>
                     </Flex>
                   }

@@ -19,7 +19,7 @@ import {
   isTomorrow,
   formatISO,
 } from "date-fns";
-import { CalendarIcon } from "icons";
+import { CalendarIcon, CloseIcon, PlusIcon, SprintsIcon } from "icons";
 import {
   PrioritiesMenu,
   StatusesMenu,
@@ -37,6 +37,7 @@ import { useParams } from "next/navigation";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -66,7 +67,9 @@ export const Options = () => {
     sprintId,
     deletedAt,
   } = data!;
+  const { data: sprints = [] } = useSprints();
   const { data: statuses = [] } = useStatuses();
+  const sprint = sprints.find((s) => s.id === sprintId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
     statuses.at(0))!!;
   const isDeleted = !!deletedAt;
@@ -306,7 +309,62 @@ export const Options = () => {
             </DatePicker>
           }
         />
-        <Option label="Sprint" value={<SprintsMenu />} />
+        <Option
+          label="Sprint"
+          value={
+            <SprintsMenu>
+              <SprintsMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  className={cn({
+                    "pr-1": sprintId,
+                  })}
+                  disabled={isDeleted}
+                  leftIcon={
+                    sprintId ? (
+                      <SprintsIcon className="h-5 w-auto" />
+                    ) : (
+                      <PlusIcon className="h-5 w-auto" />
+                    )
+                  }
+                  rightIcon={
+                    sprintId && (
+                      <Button
+                        className="aspect-square"
+                        color="tertiary"
+                        variant="naked"
+                        size="xs"
+                        onClick={() => {
+                          handleUpdate({ sprintId: null });
+                        }}
+                        rounded="full"
+                        leftIcon={
+                          <CloseIcon
+                            strokeWidth={2}
+                            className="h-5 w-auto text-primary"
+                          />
+                        }
+                      >
+                        <span className="sr-only">Remove sprint</span>
+                      </Button>
+                    )
+                  }
+                  type="button"
+                  variant="naked"
+                >
+                  {sprint?.name || "Add sprint"}
+                </Button>
+              </SprintsMenu.Trigger>
+              <SprintsMenu.Items
+                align="end"
+                sprintId={sprintId ?? undefined}
+                setSprintId={(sprint) => {
+                  handleUpdate({ sprintId: sprint });
+                }}
+              />
+            </SprintsMenu>
+          }
+        />
         <Option label="Module" value={<ModulesMenu />} />
         <Option
           label="Parent"

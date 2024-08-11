@@ -93,8 +93,8 @@ export const Header = ({
             <ArrowDownIcon className="h-4 w-auto" />
           </Button>
           <Button
-            className="aspect-square"
             color="tertiary"
+            variant="naked"
             disabled={isDeleted}
             size="sm"
           >
@@ -102,8 +102,8 @@ export const Header = ({
             <span className="sr-only">Favourite</span>
           </Button>
           <Button
-            className="aspect-square"
             color="tertiary"
+            variant="naked"
             disabled={isDeleted}
             size="sm"
           >
