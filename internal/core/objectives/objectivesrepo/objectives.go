@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -25,7 +27,7 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context) ([]objectives.CoreObjective, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]objectives.CoreObjective, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.List")
 	defer span.End()
 
@@ -45,9 +47,17 @@ func (r *repo) List(ctx context.Context) ([]objectives.CoreObjective, error) {
 			updated_at
 		FROM
 			objectives
-		ORDER BY created_at DESC;
 	`
-	stmt, err := r.db.PreparexContext(ctx, q)
+	var setClauses []string
+	filters["workspace_id"] = workspaceId
+
+	for field := range filters {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+	}
+
+	q += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY created_at DESC;"
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -57,7 +67,7 @@ func (r *repo) List(ctx context.Context) ([]objectives.CoreObjective, error) {
 	defer stmt.Close()
 
 	r.log.Info(ctx, "Fetching objectives.")
-	if err := stmt.SelectContext(ctx, &objectives); err != nil {
+	if err := stmt.SelectContext(ctx, &objectives, filters); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve objectives from the database: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("objectives not found"), trace.WithAttributes(attribute.String("error", errMsg)))

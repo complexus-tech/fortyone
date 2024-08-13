@@ -22,6 +22,10 @@ type AppObjectiveList struct {
 	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
+type AppFilters struct {
+	Team *uuid.UUID `json:"teamId" db:"team_id"`
+}
+
 // toAppObjectives converts a list of core objectives to a list of application objectives.
 func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 	appObjectives := make([]AppObjectiveList, len(objectives))

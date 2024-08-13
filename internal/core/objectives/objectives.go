@@ -5,13 +5,14 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // Repository provides access to the objectives storage.
 type Repository interface {
-	List(ctx context.Context) ([]CoreObjective, error)
+	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreObjective, error)
 }
 
 // Service provides story-related operations.
@@ -29,12 +30,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // List returns a list of objectives.
-func (s *Service) List(ctx context.Context) ([]CoreObjective, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreObjective, error) {
 	s.log.Info(ctx, "business.core.objectives.list")
 	ctx, span := web.AddSpan(ctx, "business.core.objectives.List")
 	defer span.End()
 
-	objectives, err := s.repo.List(ctx)
+	objectives, err := s.repo.List(ctx, workspaceId, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
