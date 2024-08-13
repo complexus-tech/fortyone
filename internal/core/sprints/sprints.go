@@ -13,6 +13,7 @@ import (
 // Repository provides access to the sprints storage.
 type Repository interface {
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error)
+	Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSprint, error)
 }
 
 // Service provides story-related operations.
@@ -41,6 +42,23 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[s
 		return nil, err
 	}
 	span.AddEvent("sprints retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(sprints)),
+	))
+	return sprints, nil
+}
+
+// Running returns a list of running sprints.
+func (s *Service) Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSprint, error) {
+	s.log.Info(ctx, "business.core.sprints.running")
+	ctx, span := web.AddSpan(ctx, "business.core.sprints.Running")
+	defer span.End()
+
+	sprints, err := s.repo.Running(ctx, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	span.AddEvent("running sprints retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(sprints)),
 	))
 	return sprints, nil

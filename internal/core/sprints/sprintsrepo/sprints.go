@@ -57,7 +57,60 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	}
 
 	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY end_date DESC;"
-	fmt.Println(query)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "Fetching sprints.")
+	if err := stmt.SelectContext(ctx, &sprints, filters); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve sprints from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("sprints not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	r.log.Info(ctx, "sprints retrieved successfully.")
+	span.AddEvent("sprints retrieved.", trace.WithAttributes(
+		attribute.Int("sprints.count", len(sprints)),
+		attribute.String("query", query),
+	))
+
+	return toCoreSprints(sprints), nil
+}
+
+func (r *repo) Running(ctx context.Context, workspaceId uuid.UUID) ([]sprints.CoreSprint, error) {
+
+	ctx, span := web.AddSpan(ctx, "business.repository.sprints.List")
+	defer span.End()
+
+	var sprints []dbSprint
+	query := `
+		SELECT
+			sprint_id,
+			name,
+			goal,
+			team_id,
+			objective_id,
+			workspace_id,
+			start_date,
+			end_date,
+			created_at,
+			updated_at
+		FROM
+			sprints
+		WHERE workspace_id = :workspace_id
+		AND start_date <= NOW() AND end_date >= NOW() ORDER BY end_date DESC;
+	`
+
+	var filters = make(map[string]any)
+	filters["workspace_id"] = workspaceId
+
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)

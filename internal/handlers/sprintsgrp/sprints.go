@@ -48,3 +48,19 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	web.Respond(ctx, w, toAppSprints(sprints), http.StatusOK)
 	return nil
 }
+
+// Running returns a list of running sprints.
+func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return ErrInvalidWorkspaceID
+	}
+
+	sprints, err := h.sprints.Running(ctx, workspaceId)
+	if err != nil {
+		return err
+	}
+	web.Respond(ctx, w, toAppSprints(sprints), http.StatusOK)
+	return nil
+}
