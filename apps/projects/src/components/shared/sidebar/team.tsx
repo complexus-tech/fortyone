@@ -16,6 +16,7 @@ import {
   DocsIcon,
   RetroIcon,
   WhiteboardIcon,
+  ObjectiveIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
@@ -53,6 +54,11 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       icon: <DocsIcon className="h-[1.3rem] w-auto" />,
       href: `/teams/${id}/documents`,
     },
+    // {
+    //   name: "Objectives",
+    //   icon: <ObjectiveIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/objectives`,
+    // },
     // {
     //   name: "Whiteboards",
     //   icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
@@ -136,7 +142,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       </Flex>
       <Flex
         className={cn(
-          "ml-3 h-0 overflow-hidden border-l border-dotted border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-50",
+          "ml-5 h-0 overflow-hidden border-l border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-100",
           {
             "mt-2 h-max": isOpen,
           },

@@ -168,54 +168,41 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     };
 
     return (
-      <Flex align="start" gap={2}>
-        <SprintsIcon className="relative top-[6px] h-5 w-auto shrink-0" />
-        <Box>
-          <Flex align="center" justify="between">
-            <Text fontSize="md">{selectedSprint?.name}</Text>
+      <Box>
+        <Flex align="center" justify="between">
+          <Text fontSize="md">{selectedSprint?.name}</Text>
 
-            <Button
-              color="tertiary"
-              rounded="full"
-              size="sm"
-              title="Open sprint"
-            >
-              <LinkIcon className="h-4 w-auto -rotate-45" />
-              <span className="sr-only">Open sprint</span>
-            </Button>
-          </Flex>
-          <Flex align="center" gap={6} className="mb-2 mt-3" justify="between">
-            <Text fontSize="md" className="flex items-center gap-1">
-              <CalendarIcon
-                className={cn("h-5 w-auto", {
-                  "text-primary dark:text-primary":
-                    getBadgeColor() === "primary",
-                  "text-warning dark:text-warning":
-                    getBadgeColor() === "warning",
-                  "text-info dark:text-info": getBadgeColor() === "info",
-                })}
-              />{" "}
-              {format(new Date(selectedSprint?.startDate!!), "MMM dd")} -{" "}
-              {format(new Date(selectedSprint?.endDate!!), "MMM dd")}
+          <SprintsIcon className="h-5 w-auto shrink-0" />
+        </Flex>
+        <Flex align="center" gap={6} className="mb-2 mt-3" justify="between">
+          <Text fontSize="md" className="flex items-center gap-1">
+            <CalendarIcon
+              className={cn("h-5 w-auto", {
+                "text-primary dark:text-primary": getBadgeColor() === "primary",
+                "text-warning dark:text-warning": getBadgeColor() === "warning",
+                "text-info dark:text-info": getBadgeColor() === "info",
+              })}
+            />{" "}
+            {format(new Date(selectedSprint?.startDate!!), "MMM dd")} -{" "}
+            {format(new Date(selectedSprint?.endDate!!), "MMM dd")}
+          </Text>
+          <Badge
+            className="border-opacity-50 bg-opacity-40 text-xs font-semibold uppercase"
+            rounded="full"
+            color={getBadgeColor()}
+          >
+            {getBadgeText()}
+          </Badge>
+        </Flex>
+        {selectedSprint?.goal && (
+          <>
+            <Text fontSize="md">Sprint Goal:</Text>
+            <Text color="muted" className="mt-1 line-clamp-4" fontSize="md">
+              {selectedSprint?.goal}
             </Text>
-            <Badge
-              className="border-opacity-50 bg-opacity-40 text-xs font-semibold uppercase"
-              rounded="full"
-              color={getBadgeColor()}
-            >
-              {getBadgeText()}
-            </Badge>
-          </Flex>
-          {selectedSprint?.goal && (
-            <>
-              <Text fontSize="md">Sprint Goal:</Text>
-              <Text color="muted" className="line-clamp-4" fontSize="md">
-                {selectedSprint?.goal}
-              </Text>
-            </>
-          )}
-        </Box>
-      </Flex>
+          </>
+        )}
+      </Box>
     );
   };
 

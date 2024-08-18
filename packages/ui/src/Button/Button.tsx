@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
-  "flex text-gray dark:text-gray-200 w-max items-center border-[0.5px] gap-2 transition duration-200 ease-linear focus:outline-0",
+  "flex text-gray dark:text-gray-200 w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
   {
     variants: {
       variant: {
@@ -17,7 +17,7 @@ export const buttonVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-[0.45rem]",
+        md: "rounded-lg",
         lg: "rounded-xl",
         xl: "rounded-3xl",
         full: "rounded-full",
@@ -46,6 +46,9 @@ export const buttonVariants = cva(
       },
       active: {
         true: null,
+      },
+      asIcon: {
+        true: "px-0 aspect-square justify-center",
       },
       loading: {
         true: "opacity-80 cursor-progress",
@@ -153,6 +156,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant,
       color,
       rounded,
+      asIcon,
       size,
       target = "_self",
       loading,
@@ -173,6 +177,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       buttonVariants({
         variant,
         color,
+        asIcon,
         size,
         disabled,
         loading,

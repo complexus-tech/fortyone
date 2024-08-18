@@ -55,7 +55,7 @@ export const DocumentsPage = ({
               {templates.map(({ id, name }) => (
                 <Flex
                   align="center"
-                  className="w-[200px] shrink-0 cursor-pointer rounded-lg border-[0.5px] border-gray-100 bg-gray-50/20 px-3 py-5 shadow-sm transition duration-200 ease-linear dark:border-dark-100 dark:bg-dark-200/40 dark:hover:bg-dark-200/60"
+                  className="w-[200px] shrink-0 cursor-pointer rounded-lg border border-gray-100 bg-gray-50/20 px-3 py-5 shadow-sm transition duration-200 ease-linear dark:border-dark-100 dark:bg-dark-200/40 dark:hover:bg-dark-200/60"
                   gap={3}
                   key={id}
                 >

@@ -151,16 +151,17 @@ export const Header = () => {
           <span className="sr-only">Search</span>
         </Button> */}
       </Flex>
-      <Flex className="mb-3 w-full rounded-lg shadow">
+      <Flex className="mb-3 w-full rounded-lg">
         <Button
           className="h-9 rounded-r-none md:h-[2.65rem]"
           color="tertiary"
           fullWidth
+          rounded="lg"
           leftIcon={<NewStoryIcon className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}
-          variant="outline"
+          // variant="outline"
         >
           Create Story
         </Button>
@@ -170,19 +171,15 @@ export const Header = () => {
               align="center"
               className="rounded-l-none border-l-0 px-[0.85rem] md:h-[2.65rem]"
               color="tertiary"
+              rounded="lg"
               leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
-              variant="outline"
+              // variant="outline"
             >
               <span className="sr-only">More</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="end" className="w-64 pb-1">
+          <Menu.Items align="end" className="w-56 pb-1">
             <Menu.Group className="gap-4 space-y-1">
-              <Menu.Item>
-                <NewStoryIcon className="h-5 w-auto" />
-                Continue from Draft
-              </Menu.Item>
-              <Menu.Separator />
               <Menu.Item>
                 <NewStoryIcon className="h-5 w-auto" />
                 Create Story

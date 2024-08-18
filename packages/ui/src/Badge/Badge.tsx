@@ -4,7 +4,7 @@ import { FC, HTMLAttributes } from "react";
 import { cn } from "lib";
 
 const badge = cva(
-  "flex w-max items-center justify-center font-medium rounded-lg border-[0.5px] gap-1",
+  "flex w-max items-center justify-center font-medium rounded-lg border gap-1",
   {
     variants: {
       variant: {

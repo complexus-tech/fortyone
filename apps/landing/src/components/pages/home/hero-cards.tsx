@@ -68,7 +68,7 @@ export const HeroCards = () => {
             >
               <Image
                 alt={card.title}
-                className="relative rounded border-[0.5px] border-dark-100 md:rounded-lg"
+                className="relative rounded border border-dark-100 md:rounded-lg"
                 placeholder="blur"
                 src={card.image.src}
               />

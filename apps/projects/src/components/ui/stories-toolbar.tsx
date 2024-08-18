@@ -41,7 +41,7 @@ export const StoriesToolbar = () => {
     <>
       <Flex
         align="center"
-        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-[0.55rem] border-[0.5px] border-gray-100 bg-white/60 px-2.5 py-2 shadow-lg shadow-dark/10 backdrop-blur dark:border-dark-50 dark:bg-dark-300/70 dark:shadow-dark/20"
+        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-[0.55rem] border border-gray-100 bg-white/60 px-2.5 py-2 shadow-lg shadow-dark/10 backdrop-blur dark:border-dark-50 dark:bg-dark-300/70 dark:shadow-dark/20"
         gap={2}
       >
         <Text

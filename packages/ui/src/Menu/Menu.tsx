@@ -24,7 +24,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-200/80 backdrop-blur z-50 border-[0.5px] border-gray-50 dark:border-dark-50/60 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
+  "bg-white/80 dark:bg-dark-200/80 backdrop-blur z-50 border border-gray-50 dark:border-dark-50/60 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
   {
     variants: {
       rounded: {
@@ -36,7 +36,7 @@ const contentClasses = cva(
     defaultVariants: {
       rounded: "md",
     },
-  }
+  },
 );
 
 type ContentProps = ComponentProps<typeof DropdownMenu.Content> &
@@ -73,11 +73,11 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50 hover:dark:bg-dark-50 hover:bg-gray-100/70 focus:bg-gray-100/70 rounded-[0.5rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-2 rounded-[0.5rem] px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
       {
         "bg-gray-100/80 dark:bg-dark-50": active,
       },
-      className
+      className,
     )}
     ref={ref}
     {...rest}
@@ -92,11 +92,11 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "flex gap-2 mb-1 items-center select-none focus:dark:bg-dark-50/80 hover:dark:bg-dark-50 hover:bg-gray-50 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50/80",
       {
         "bg-gray-50/80 dark:bg-dark-50/60": checked,
       },
-      className
+      className,
     )}
     ref={ref}
     checked={checked}
@@ -127,19 +127,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
     <div className="flex items-center gap-1">
       <SearchIcon
-        className="h-[1.15rem] w-auto relative -left-1 text-gray dark:text-gray-300"
+        className="relative -left-1 h-[1.15rem] w-auto text-gray dark:text-gray-300"
         strokeWidth={2.5}
       />
       <input
         className={cn(
-          "bg-transparent py-[0.15rem] outline-none w-full",
-          className
+          "w-full bg-transparent py-[0.15rem] outline-none",
+          className,
         )}
         ref={ref}
         {...rest}
       />
     </div>
-  )
+  ),
 );
 
 const Separator = forwardRef<
@@ -148,8 +148,8 @@ const Separator = forwardRef<
 >(({ className, ...rest }, ref) => (
   <DropdownMenu.Separator
     className={cn(
-      "border-gray-100 dark:border-dark-100 border-b-[0.5px] my-2",
-      className
+      "my-2 border-b-[0.5px] border-gray-100 dark:border-dark-100",
+      className,
     )}
     ref={ref}
     {...rest}

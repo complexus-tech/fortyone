@@ -1,49 +1,30 @@
 "use client";
-import { cn } from "lib";
-import { Box, Button, Flex } from "ui";
-import { ArrowDownIcon, PlusIcon, TeamIcon } from "icons";
-import { useLocalStorage } from "@/hooks";
+import { Box, Button, Flex, Text } from "ui";
+import { MoreHorizontalIcon, PlusIcon, TeamIcon } from "icons";
 import { Team } from "./team";
 import { useTeams } from "@/lib/hooks/teams";
 
 export const Teams = () => {
-  const [isOpen, setIsOpen] = useLocalStorage<boolean>("teams-dropdown", true);
   const { data: teams = [] } = useTeams();
 
   return (
     <Box className="mt-4">
       <Flex
         align="center"
-        className="group mb-1 h-[2.5rem] select-none rounded-lg pl-2.5 pr-1 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
+        className="group mb-1 h-[2.5rem] select-none rounded-lg pl-3 pr-1"
         justify="between"
-        onClick={() => {
-          setIsOpen(!isOpen);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            setIsOpen(!isOpen);
-          }
-        }}
         role="button"
         tabIndex={0}
       >
-        <span className="flex items-center gap-2 font-medium">
-          <TeamIcon className="h-5 w-auto" />
-          Workspace Teams
-          <ArrowDownIcon
-            className={cn(
-              "relative top-[0.2px] h-3.5 w-auto -rotate-90 transition-transform",
-              {
-                "rotate-0": isOpen,
-              },
-            )}
-            strokeWidth={3.5}
-          />
-        </span>
+        <Text className="flex items-center gap-2 font-medium">
+          <TeamIcon className="h-[1.3rem] w-auto" />
+          Teams
+        </Text>
         <Button
-          className="hidden group-hover:inline"
           color="tertiary"
-          leftIcon={<PlusIcon className="h-5 w-auto" />}
+          className="aspect-square"
+          rounded="full"
+          leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
           size="sm"
           type="button"
           variant="naked"
@@ -51,24 +32,13 @@ export const Teams = () => {
           <span className="sr-only">Add new team</span>
         </Button>
       </Flex>
-      <Flex
-        className={cn(
-          "ml-5 h-0 max-h-[54vh] overflow-hidden overflow-y-auto border-l border-dotted border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-50",
-          {
-            "h-max": isOpen,
-          },
-        )}
-        direction="column"
-        gap={1}
-      >
+      <Flex direction="column" gap={1}>
         {teams.map(({ id, icon, name, color }) => (
           <Team
             icon={
-              icon || (
-                <Box className="rounded p-0.5 dark:bg-dark-300">
-                  <TeamIcon className="h-[1.1rem] w-auto" style={{ color }} />
-                </Box>
-              )
+              <Box className="flex w-6 items-center justify-center rounded-xl text-lg">
+                {icon || <TeamIcon className="h-5 w-auto" style={{ color }} />}
+              </Box>
             }
             id={id}
             key={id}

@@ -8,7 +8,7 @@
 
 body,
 html {
-  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[12.8px] text-dark antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
+  @apply h-screen w-screen overflow-hidden overscroll-contain bg-white text-[13px] text-dark antialiased 2xl:text-[14px] dark:bg-dark dark:text-gray-200;
 }
 
 svg {

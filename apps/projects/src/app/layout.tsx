@@ -6,6 +6,7 @@ import "../styles/global.css";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import dynamic from "next/dynamic";
+import { toasterIcons } from "./toaster-icons";
 
 const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
   ssr: false,
@@ -63,6 +64,7 @@ export default function RootLayout({
                 "bg-white/90 dark:bg-dark-100/90 dark:border-dark-50",
             },
           }}
+          icons={toasterIcons}
         />
         <PostHogPageView />
         <ProgressBar />

@@ -11,19 +11,14 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import { BodyContainer } from "@/components/shared";
-import {
-  Header,
-  Activities,
-  Attachments,
-  Reactions,
-  SubstoriesButton,
-} from ".";
+import { Header, Activities, Attachments, Reactions } from ".";
 import { DetailedStory } from "../types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
 import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useStoryById } from "../hooks/story";
+import { NewSubStory } from "@/components/ui/new-sub-story";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -138,7 +133,7 @@ export const MainDetails = () => {
           />
           <TextEditor className="mt-8" editor={descriptionEditor} />
           <Reactions />
-          <SubstoriesButton />
+          <NewSubStory teamId={teamId} parentId={storyId} />
           <Divider className="my-4" />
           <Attachments />
           <Divider className="my-6" />
