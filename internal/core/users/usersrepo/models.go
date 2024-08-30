@@ -1,0 +1,38 @@
+package usersrepo
+
+import (
+	"time"
+
+	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/google/uuid"
+)
+
+type dbUser struct {
+	ID          uuid.UUID `db:"user_id"`
+	Username    string    `db:"username"`
+	Email       string    `db:"email"`
+	Password    string    `db:"password"`
+	FullName    string    `db:"full_name"`
+	Role        string    `db:"role"`
+	AvatarURL   string    `db:"avatar_url"`
+	IsActive    bool      `db:"is_active"`
+	LastLoginAt time.Time `db:"last_login_at"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+}
+
+func toCoreUser(p dbUser) users.CoreUser {
+	return users.CoreUser{
+		ID:          p.ID,
+		Username:    p.Username,
+		Email:       p.Email,
+		Password:    p.Password,
+		FullName:    p.FullName,
+		Role:        p.Role,
+		AvatarURL:   p.AvatarURL,
+		IsActive:    p.IsActive,
+		LastLoginAt: p.LastLoginAt,
+		CreatedAt:   p.CreatedAt,
+		UpdatedAt:   p.UpdatedAt,
+	}
+}

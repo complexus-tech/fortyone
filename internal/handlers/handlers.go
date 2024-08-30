@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/usersgrp"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
@@ -67,6 +68,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the teams routes
 	teamsgrp.Routes(teamsgrp.Config{
+		DB:  cfg.DB,
+		Log: cfg.Log,
+	}, app)
+
+	// register the users routes
+	usersgrp.Routes(usersgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)
