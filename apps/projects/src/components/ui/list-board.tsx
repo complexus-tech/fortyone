@@ -4,6 +4,7 @@ import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { BodyContainer } from "../shared/body";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { StoriesList } from "./stories-list";
 
 export const ListBoard = ({
   stories,
@@ -27,6 +28,7 @@ export const ListBoard = ({
 
   return (
     <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
+      {groupBy === "None" && <StoriesList stories={stories} />}
       {groupBy === "Status" &&
         statuses.map((status) => (
           <StoriesGroup

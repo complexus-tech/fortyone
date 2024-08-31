@@ -13,5 +13,6 @@ export const updateStoryAction = async (
   revalidateTag(storyTags.detail(storyId));
   revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
+
   return storyId;
 };

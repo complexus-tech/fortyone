@@ -1,5 +1,5 @@
 "use client";
-import { Container, Divider, TextEditor } from "ui";
+import { Container, Divider, Flex, TextEditor, Text, Badge, Button } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -9,16 +9,20 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
-import Text from "@tiptap/extension-text";
+import TextExtension from "@tiptap/extension-text";
 import { BodyContainer } from "@/components/shared";
 import { Header, Activities, Attachments, Reactions } from ".";
 import { DetailedStory } from "../types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useStoryById } from "../hooks/story";
 import { NewSubStory } from "@/components/ui/new-sub-story";
+import { StoriesBoard, StoriesList } from "@/components/ui";
+import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
+import { useLocalStorage } from "@/hooks";
+import { cn } from "lib";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -53,6 +57,11 @@ const useDebounce = (callback: (...args: any[]) => void, delay = 500) => {
 export const MainDetails = () => {
   const params = useParams<{ storyId: string }>();
   const { data } = useStoryById(params.storyId);
+  const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
+    "isSubStoriesOpen",
+    true,
+  );
+  const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const {
     id: storyId,
     title,
@@ -61,6 +70,7 @@ export const MainDetails = () => {
     sequenceId,
     teamId,
     deletedAt,
+    subStories,
   } = data!;
   const isDeleted = !!deletedAt;
 
@@ -104,7 +114,7 @@ export const MainDetails = () => {
     extensions: [
       Document,
       Paragraph,
-      Text,
+      TextExtension,
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
     content: title,
@@ -133,9 +143,67 @@ export const MainDetails = () => {
           />
           <TextEditor className="mt-8" editor={descriptionEditor} />
           <Reactions />
-          <NewSubStory teamId={teamId} parentId={storyId} />
-          <Divider className="my-4" />
-          <Attachments />
+          <Flex align="center" justify="between">
+            <Flex align="center" gap={2}>
+              <Button
+                color="tertiary"
+                variant="naked"
+                size="sm"
+                onClick={() => {
+                  setIsSubStoriesOpen(!isSubStoriesOpen);
+                }}
+                rightIcon={
+                  isSubStoriesOpen ? (
+                    <ArrowDownIcon className="h-4 w-auto" />
+                  ) : (
+                    <ArrowUpIcon className="h-4 w-auto" />
+                  )
+                }
+              >
+                Sub stories
+              </Button>
+              <Badge color="tertiary" rounded="full" className="px-1.5">
+                1/{subStories.length} Done
+              </Badge>
+            </Flex>
+            <Button
+              color="tertiary"
+              leftIcon={<PlusIcon className="h-5 w-auto" />}
+              size="sm"
+              variant="naked"
+              onClick={() => setIsCreateSubStoryOpen(true)}
+            >
+              Add Sub Story
+            </Button>
+          </Flex>
+          <NewSubStory
+            teamId={teamId}
+            parentId={storyId}
+            isOpen={isCreateSubStoryOpen}
+            setIsOpen={setIsCreateSubStoryOpen}
+          />
+          {isSubStoriesOpen && subStories.length > 0 && (
+            <StoriesBoard
+              layout="list"
+              stories={subStories}
+              className="mt-2 h-auto border-t border-gray-100/60 pb-0 dark:border-dark-100/80"
+              viewOptions={{
+                groupBy: "None",
+                orderBy: "Priority",
+                showEmptyGroups: false,
+                displayColumns: ["ID", "Status", "Assignee"],
+              }}
+            />
+          )}
+
+          <Attachments
+            className={cn(
+              "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
+              {
+                "mt-0 border-0": isSubStoriesOpen && subStories.length > 0,
+              },
+            )}
+          />
           <Divider className="my-6" />
           <Activities />
         </Container>

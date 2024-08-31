@@ -1,4 +1,4 @@
-import { StoryPriority } from "@/modules/stories/types";
+import { Story, StoryPriority } from "@/modules/stories/types";
 
 export type DetailedStory = {
   id: string;
@@ -24,6 +24,7 @@ export type DetailedStory = {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  subStories: Story[];
 };
 
 export type NewStory = Partial<DetailedStory>;

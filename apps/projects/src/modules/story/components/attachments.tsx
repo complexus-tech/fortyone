@@ -8,7 +8,7 @@ interface CustomFile extends File {
   preview?: string;
 }
 
-export const Attachments = () => {
+export const Attachments = ({ className }: { className?: string }) => {
   const [files, setFiles] = useState<CustomFile[]>([]);
 
   const onDrop = useCallback((acceptedFiles: CustomFile[]) => {
@@ -29,7 +29,7 @@ export const Attachments = () => {
   });
 
   return (
-    <Box>
+    <Box className={className}>
       <Text
         as="h4"
         className="mb-2 flex items-center gap-1"

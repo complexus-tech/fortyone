@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Button, Flex, TextEditor, DatePicker, Box } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -31,18 +31,21 @@ export const NewSubStory = ({
   teamId,
   parentId,
   priority = "No Priority",
+  isOpen,
+  setIsOpen,
 }: {
   statusId?: string;
   teamId: string;
   parentId: string;
   priority?: StoryPriority;
+  isOpen?: boolean;
+  setIsOpen?: Dispatch<SetStateAction<boolean>>;
 }) => {
   const session = useSession();
   const { data: statuses = [] } = useStatuses();
   const { id: defaultStateId } = (statuses.find(
     (state) => state.id === statusId,
   ) || statuses.at(0))!!;
-  const [isOpen, setIsOpen] = useState(false);
 
   const initialForm: NewStory = {
     title: "",
@@ -133,17 +136,6 @@ export const NewSubStory = ({
 
   return (
     <Box>
-      <Flex justify="end">
-        <Button
-          color="tertiary"
-          leftIcon={<PlusIcon className="h-5 w-auto" />}
-          size="sm"
-          variant="naked"
-          onClick={() => setIsOpen(true)}
-        >
-          Add Sub Story
-        </Button>
-      </Flex>
       {isOpen && (
         <Box className="mt-2 rounded-lg border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
           <TextEditor

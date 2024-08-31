@@ -100,7 +100,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
             strokeWidth={3.5}
           />
           <Menu>
-            <Menu.Button>
+            <Menu.Button asChild>
               <button
                 className={cn("px-1 py-2 opacity-0 group-hover:opacity-100", {
                   "opacity-100": isOpen,

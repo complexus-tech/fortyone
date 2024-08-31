@@ -28,11 +28,9 @@ import { slugify } from "@/utils";
 import {
   CalendarIcon,
   EpicsIcon,
-  LinkIcon,
   ObjectiveIcon,
   SprintsIcon,
   CloseIcon,
-  PlusIcon,
 } from "icons";
 import {
   format,

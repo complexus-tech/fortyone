@@ -2,7 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 
-export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
+export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
 export type DisplayColumn =
   | "ID"
   | "Status"

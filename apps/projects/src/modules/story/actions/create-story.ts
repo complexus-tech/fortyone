@@ -9,5 +9,8 @@ export const createStoryAction = async (newStory: NewStory) => {
   const story = await post<NewStory, DetailedStory>("stories", newStory);
   revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
+  if (newStory.parentId) {
+    revalidateTag(storyTags.detail(newStory.parentId));
+  }
   return story;
 };
