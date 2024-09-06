@@ -28,6 +28,15 @@ type Repository interface {
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
+	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
+	// Add this method later for labels
+	// GetLabels(ctx context.Context, storyId uuid.UUID, workspaceId uuid.UUID) ([]Label, error)
+}
+
+// Add this new type
+type CoreSingleStoryWithSubs struct {
+	CoreSingleStory
+	SubStories []CoreStoryList `json:"subStories"`
 }
 
 // Service provides story-related operations.
@@ -109,6 +118,23 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+
+	subStories, err := s.repo.GetSubStories(ctx, id, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
+
+	story.SubStories = subStories
+
+	// Fetch labels later when implemented
+	// labels, err := s.repo.GetLabels(ctx, id, workspaceId)
+	// if err != nil {
+	//     span.RecordError(err)
+	//     return CoreSingleStory{}, err
+	// }
+	// story.Labels = labels
+
 	return story, nil
 }
 

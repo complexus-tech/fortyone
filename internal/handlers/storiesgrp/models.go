@@ -23,29 +23,30 @@ type AppBulkRestoreRequest struct {
 
 // AppSingleStory represents a single story in the application.
 type AppSingleStory struct {
-	ID              uuid.UUID  `json:"id"`
-	SequenceID      int        `json:"sequenceId"`
-	Title           string     `json:"title"`
-	Description     *string    `json:"description"`
-	DescriptionHTML *string    `json:"descriptionHTML"`
-	Parent          *uuid.UUID `json:"parentId"`
-	Status          *uuid.UUID `json:"statusId"`
-	Assignee        *uuid.UUID `json:"assigneeId"`
-	BlockedBy       *uuid.UUID `json:"blockedById"`
-	Blocking        *uuid.UUID `json:"blockingId"`
-	Related         *uuid.UUID `json:"relatedId"`
-	Reporter        *uuid.UUID `json:"reporterId"`
-	Priority        string     `json:"priority"`
-	Sprint          *uuid.UUID `json:"sprintId"`
-	Epic            *uuid.UUID `json:"epicId"`
-	Objective       *uuid.UUID `json:"objectiveId"`
-	Team            uuid.UUID  `json:"teamId"`
-	Workspace       uuid.UUID  `json:"workspaceId"`
-	StartDate       *time.Time `json:"startDate"`
-	EndDate         *time.Time `json:"endDate"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-	DeletedAt       *time.Time `json:"deletedAt"`
+	ID              uuid.UUID      `json:"id"`
+	SequenceID      int            `json:"sequenceId"`
+	Title           string         `json:"title"`
+	Description     *string        `json:"description"`
+	DescriptionHTML *string        `json:"descriptionHTML"`
+	Parent          *uuid.UUID     `json:"parentId"`
+	Status          *uuid.UUID     `json:"statusId"`
+	Assignee        *uuid.UUID     `json:"assigneeId"`
+	BlockedBy       *uuid.UUID     `json:"blockedById"`
+	Blocking        *uuid.UUID     `json:"blockingId"`
+	Related         *uuid.UUID     `json:"relatedId"`
+	Reporter        *uuid.UUID     `json:"reporterId"`
+	Priority        string         `json:"priority"`
+	Sprint          *uuid.UUID     `json:"sprintId"`
+	Epic            *uuid.UUID     `json:"epicId"`
+	Objective       *uuid.UUID     `json:"objectiveId"`
+	Team            uuid.UUID      `json:"teamId"`
+	Workspace       uuid.UUID      `json:"workspaceId"`
+	StartDate       *time.Time     `json:"startDate"`
+	EndDate         *time.Time     `json:"endDate"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
+	DeletedAt       *time.Time     `json:"deletedAt"`
+	SubStories      []AppStoryList `json:"subStories"`
 }
 
 // AppStoryList represents a single story in the list of stories in the application.
@@ -92,6 +93,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Blocking:        i.Blocking,
 		Related:         i.Related,
 		Reporter:        i.Reporter,
+		SubStories:      toAppStories(i.SubStories),
 	}
 }
 
@@ -234,4 +236,17 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 	}
 
 	return parts[0] // Return the JSON tag name
+}
+
+// AppSingleStoryWithSubs represents a single story with its sub-stories in the application.
+type AppSingleStoryWithSubs struct {
+	AppSingleStory
+	SubStories []AppStoryList `json:"subStories"`
+}
+
+func toAppStoryWithSubs(i stories.CoreSingleStoryWithSubs) AppSingleStoryWithSubs {
+	return AppSingleStoryWithSubs{
+		AppSingleStory: toAppStory(i.CoreSingleStory),
+		SubStories:     toAppStories(i.SubStories),
+	}
 }

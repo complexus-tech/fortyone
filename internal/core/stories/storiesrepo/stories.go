@@ -296,11 +296,10 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 
 	story, err := r.getStoryById(ctx, id, workspaceId)
 	if err != nil {
-		span.RecordError(err)
 		return stories.CoreSingleStory{}, err
 	}
-	return toCoreStory(story), nil
 
+	return toCoreStory(story), nil
 }
 
 func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
@@ -548,4 +547,63 @@ func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	span.AddEvent("Stories updated.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
 
 	return nil
+}
+
+func (r *repo) GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]stories.CoreStoryList, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetSubStories")
+	defer span.End()
+
+	subStories, err := r.getSubStories(ctx, parentId, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	return toCoreStories(subStories), nil
+}
+
+func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]dbStory, error) {
+	query := `
+        SELECT
+          id,
+					sequence_id,
+					title,
+					priority,
+					description,
+					status_id,
+					start_date,
+					end_date,
+					sprint_id,
+					team_id,
+					objective_id,
+					workspace_id,
+					assignee_id,
+					reporter_id,
+					created_at,
+					updated_at
+        FROM
+            stories
+        WHERE
+            parent_id = :parent_id
+					AND workspace_id = :workspace_id
+					AND deleted_at IS NULL
+        ORDER BY sequence_id ASC;
+    `
+	params := map[string]interface{}{
+		"parent_id":    parentId,
+		"workspace_id": workspaceId,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", parentId)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var subStories []dbStory
+	if err := stmt.SelectContext(ctx, &subStories, params); err != nil {
+		return nil, err
+	}
+
+	return subStories, nil
 }

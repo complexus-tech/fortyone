@@ -30,7 +30,7 @@ func New(stories *stories.Service, log *logger.Logger) *Handlers {
 	}
 }
 
-// Get returns the story with the specified ID.
+// Get returns the story with the specified ID, including sub-stories.
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	storyIdParam := web.Params(r, "id")
 	workspaceIdParam := web.Params(r, "workspaceId")

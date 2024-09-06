@@ -52,6 +52,7 @@ type CoreSingleStory struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time
+	SubStories      []CoreStoryList
 }
 
 type CoreNewStory struct {
