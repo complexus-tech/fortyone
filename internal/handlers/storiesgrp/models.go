@@ -237,16 +237,3 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 
 	return parts[0] // Return the JSON tag name
 }
-
-// AppSingleStoryWithSubs represents a single story with its sub-stories in the application.
-type AppSingleStoryWithSubs struct {
-	AppSingleStory
-	SubStories []AppStoryList `json:"subStories"`
-}
-
-func toAppStoryWithSubs(i stories.CoreSingleStoryWithSubs) AppSingleStoryWithSubs {
-	return AppSingleStoryWithSubs{
-		AppSingleStory: toAppStory(i.CoreSingleStory),
-		SubStories:     toAppStories(i.SubStories),
-	}
-}

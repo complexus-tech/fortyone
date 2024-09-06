@@ -303,51 +303,59 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 }
 
 func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
-	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
+	query := `
+        SELECT
+           s.id,
+					s.title,
+					s.priority,
+					s.sequence_id,
+					s.status_id,
+					s.description,
+					s.description_html,
+					s.team_id,
+					s.objective_id,
+					s.sprint_id,
+					s.workspace_id,
+					s.assignee_id,
+					s.reporter_id,
+					s.start_date,
+					s.end_date,
+					s.created_at,
+					s.updated_at,
+					s.deleted_at,
+					(
+						SELECT json_agg(sub.*)
+						FROM stories sub
+						WHERE sub.parent_id = s.id
+					) AS sub_stories
+				FROM stories s
+        WHERE
+            s.id = :id AND s.workspace_id = :workspace_id;
+    `
+
+	params := map[string]interface{}{
+		"id":           id,
+		"workspace_id": workspaceId,
+	}
+
 	var story dbStory
 
-	stmt, err := r.db.PrepareNamedContext(ctx, `
-		SELECT
-			id,
-			title,
-			priority,
-			sequence_id,
-			status_id,
-			description,
-			description_html,
-			team_id,
-			objective_id,
-			sprint_id,
-			workspace_id,
-			assignee_id,
-			reporter_id,
-			start_date,
-			end_date,
-			created_at,
-			updated_at,
-			deleted_at
-		FROM
-			stories
-		WHERE
-			id = :id
-		AND workspace_id = :workspace_id;
-	`)
-
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
 		return dbStory{}, err
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, fmt.Sprintf("Fetching story #%s", id), "id", id)
 	err = stmt.GetContext(ctx, &story, params)
-
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to retrieve story from database: %s", err), "id", id)
+		if err == sql.ErrNoRows {
+			return dbStory{}, errors.New("story not found")
+		}
+		r.log.Error(ctx, fmt.Sprintf("Failed to execute query: %s", err), "id", id)
 		return dbStory{}, err
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Story #%s retrieved successfully", id), "id", id)
 	return story, nil
 }
 
