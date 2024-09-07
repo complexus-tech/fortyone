@@ -265,23 +265,23 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, "Fetching stories.")
+	r.log.Info(ctx, "fetching stories.")
 	if err := stmt.SelectContext(ctx, &stories, params); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
+		errMsg := fmt.Sprintf("failed to retrieve stories from the database: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
 
-	r.log.Info(ctx, "Stories retrieved successfully.")
-	span.AddEvent("Stories retrieved.", trace.WithAttributes(
+	r.log.Info(ctx, "stories retrieved successfully.")
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(stories)),
 		attribute.String("query", q),
 	))
@@ -305,7 +305,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
 	query := `
         SELECT
-           s.id,
+          s.id,
 					s.title,
 					s.priority,
 					s.sequence_id,
@@ -342,7 +342,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err), "id", id)
 		return dbStory{}, err
 	}
 	defer stmt.Close()
@@ -352,7 +352,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 		if err == sql.ErrNoRows {
 			return dbStory{}, errors.New("story not found")
 		}
-		r.log.Error(ctx, fmt.Sprintf("Failed to execute query: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to execute query: %s", err), "id", id)
 		return dbStory{}, err
 	}
 
@@ -374,14 +374,14 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	`)
 
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to prepare named statement: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err), "id", id)
 		return err
 	}
 	defer stmt.Close()
 
 	r.log.Info(ctx, fmt.Sprintf("Deleting story #%s", id), "id", id)
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to delete story: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to delete story: %s", err), "id", id)
 		return err
 	}
 
@@ -407,7 +407,7 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", ids), "ids", ids)
 	_, err := r.db.NamedExecContext(ctx, query, params)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to delete stories: %s", err), "ids", ids)
+		r.log.Error(ctx, fmt.Sprintf("failed to delete stories: %s", err), "ids", ids)
 		return err
 	}
 
@@ -433,20 +433,20 @@ func (r *repo) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID)
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to prepare restore statement: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare restore statement: %s", err), "id", id)
 		return err
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, fmt.Sprintf("Restoring story #%s", id), "id", id)
+	r.log.Info(ctx, fmt.Sprintf("restoring story #%s", id), "id", id)
 	_, err = stmt.ExecContext(ctx, params)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to restore story: %s", err), "id", id)
+		r.log.Error(ctx, fmt.Sprintf("failed to restore story: %s", err), "id", id)
 		return err
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Story #%s restored successfully", id), "id", id)
-	span.AddEvent("Story restored.", trace.WithAttributes(attribute.String("story.id", id.String())))
+	r.log.Info(ctx, fmt.Sprintf("story #%s restored successfully", id), "id", id)
+	span.AddEvent("story restored.", trace.WithAttributes(attribute.String("story.id", id.String())))
 
 	return nil
 }
@@ -503,8 +503,6 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 		return err
 	}
 	defer stmt.Close()
-
-	fmt.Println(stmt.QueryString)
 
 	r.log.Info(ctx, fmt.Sprintf("Updating story #%s", id), "id", id)
 	_, err = stmt.ExecContext(ctx, params)
