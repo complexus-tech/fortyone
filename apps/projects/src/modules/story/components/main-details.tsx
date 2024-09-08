@@ -1,5 +1,5 @@
 "use client";
-import { Container, Divider, Flex, TextEditor, Text, Badge, Button } from "ui";
+import { Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -18,11 +18,9 @@ import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useStoryById } from "../hooks/story";
-import { NewSubStory } from "@/components/ui/new-sub-story";
-import { StoriesBoard, StoriesList } from "@/components/ui";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { cn } from "lib";
+import { SubStories } from "./sub-stories";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -61,7 +59,6 @@ export const MainDetails = () => {
     "isSubStoriesOpen",
     true,
   );
-  const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const {
     id: storyId,
     title,
@@ -143,59 +140,13 @@ export const MainDetails = () => {
           />
           <TextEditor className="mt-8" editor={descriptionEditor} />
           <Reactions />
-          <Flex align="center" justify="between">
-            <Flex align="center" gap={2}>
-              <Button
-                color="tertiary"
-                variant="naked"
-                size="sm"
-                onClick={() => {
-                  setIsSubStoriesOpen(!isSubStoriesOpen);
-                }}
-                rightIcon={
-                  isSubStoriesOpen ? (
-                    <ArrowDownIcon className="h-4 w-auto" />
-                  ) : (
-                    <ArrowUpIcon className="h-4 w-auto" />
-                  )
-                }
-              >
-                Sub stories
-              </Button>
-              <Badge color="tertiary" rounded="full" className="px-1.5">
-                1/{subStories.length} Done
-              </Badge>
-            </Flex>
-            <Button
-              color="tertiary"
-              leftIcon={<PlusIcon className="h-5 w-auto" />}
-              size="sm"
-              variant="naked"
-              onClick={() => setIsCreateSubStoryOpen(true)}
-            >
-              Add Sub Story
-            </Button>
-          </Flex>
-          <NewSubStory
-            teamId={teamId}
+          <SubStories
+            subStories={subStories}
             parentId={storyId}
-            isOpen={isCreateSubStoryOpen}
-            setIsOpen={setIsCreateSubStoryOpen}
+            teamId={teamId}
+            setIsSubStoriesOpen={setIsSubStoriesOpen}
+            isSubStoriesOpen={isSubStoriesOpen}
           />
-          {isSubStoriesOpen && subStories.length > 0 && (
-            <StoriesBoard
-              layout="list"
-              stories={subStories}
-              className="mt-2 h-auto border-t border-gray-100/60 pb-0 dark:border-dark-100/80"
-              viewOptions={{
-                groupBy: "None",
-                orderBy: "Priority",
-                showEmptyGroups: false,
-                displayColumns: ["ID", "Status", "Assignee"],
-              }}
-            />
-          )}
-
           <Attachments
             className={cn(
               "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",

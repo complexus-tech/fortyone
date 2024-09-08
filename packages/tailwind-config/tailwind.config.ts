@@ -3,6 +3,10 @@ import type { Config } from "tailwindcss";
 // each package will define it's own content
 const config: Omit<Config, "content"> = {
   theme: {
+    fontFamily: {
+      satoshi: ["var(--font-satoshi)"],
+      inter: ["var(--font-inter)"],
+    },
     colors: {
       transparent: "transparent",
       current: "currentColor",
