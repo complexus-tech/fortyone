@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "eslint-config-next": "15.0.0-rc.0",
-    "framer-motion": "^11.0.28",
+    "framer-motion": "^11.5.4",
     "gsap": "^3.12.5",
     "icons": "workspace:*",
     "lib": "workspace:*",
