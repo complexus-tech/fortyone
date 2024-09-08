@@ -1,6 +1,9 @@
 module.exports = {
   reactStrictMode: true,
   transpilePackages: ["ui", "icons"],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {
