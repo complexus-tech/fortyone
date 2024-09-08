@@ -21,9 +21,9 @@ export const Support = () => {
   ];
 
   return (
-    <Container className="max-w-4xl">
+    <Container className="max-w-3xl">
       <Box className="relative">
-        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-20 md:gap-y-16">
+        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-12 md:gap-y-16">
           {features.map(({ heading, description, icon, email }, idx) => (
             <Box
               className="border-t border-gray-200/10 pt-8 md:pt-10"

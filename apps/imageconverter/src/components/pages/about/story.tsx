@@ -29,7 +29,7 @@ export const Story = () => {
   ];
 
   return (
-    <Container className="max-w-4xl">
+    <Container className="max-w-3xl">
       <Text
         className="mb-4 text-xl uppercase tracking-wide md:mb-6 md:md:w-1/2 md:text-2xl"
         color="gradient"
@@ -40,11 +40,10 @@ export const Story = () => {
         className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:mb-32 md:text-2xl"
         fontWeight="normal"
       >
-        Our mission is to provide a user-friendly, feature-rich project
-        management solution that streamlines workflows and enhances
-        productivity. Whether you&rsquo;re a small startup, a growing business,
-        or a seasoned enterprise, we&rsquo;re here to support your project
-        management needs every step of the way.
+        Our mission is to provide a seamless, efficient, and accessible online
+        image conversion solution. We strive to empower users worldwide with the
+        ability to transform their images effortlessly, supporting creativity
+        and productivity across various platforms and devices.
       </Text>
 
       <Text
@@ -57,12 +56,9 @@ export const Story = () => {
         className="mb-10 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
         fontWeight="normal"
       >
-        Greetings! I&rsquo;m Joseph, the creator of Complexus. With a passion
-        for simplifying project management and a commitment to empowering teams,
-        I embarked on this journey to develop a platform that caters to the
-        diverse needs of modern projects. Every aspect of our system, from its
-        design to its functionality, is meticulously crafted to deliver an
-        exceptional user experience.
+        Greetings! I&rsquo;m Joseph, the creator of ImageConveta. With a passion
+        for simplifying digital workflows, I set out to build a tool that makes
+        image conversion accessible to everyone.
       </Text>
       <Box
         onMouseEnter={() => {
@@ -71,52 +67,12 @@ export const Story = () => {
         onMouseLeave={() => {
           cursor.removeText();
         }}
+        className="mb-36"
       >
         <BlurImage
-          className="pointer-events-none aspect-square rounded-3xl object-bottom grayscale"
+          className="pointer-events-none aspect-square rounded-2xl object-bottom grayscale"
           src="/joseph.webp"
         />
-      </Box>
-
-      <Box className="relative">
-        <Text
-          className="mb-4 mt-16 text-xl uppercase tracking-wide md:mb-6 md:mt-28 md:text-2xl"
-          color="gradient"
-        >
-          What makes Complexus unique
-        </Text>
-        <Text
-          className="mb-20 max-w-6xl text-xl leading-snug opacity-80 md:text-2xl"
-          fontWeight="normal"
-        >
-          Our platform is crafted with a focus on user experience. We understand
-          that intuitive design is crucial for productivity, so we&rsquo;ve
-          ensured that every feature is seamlessly integrated, making it
-          effortless for teams to collaborate and achieve their objectives.
-        </Text>
-        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-20 md:gap-y-16">
-          {features.map(({ heading, description }, idx) => (
-            <Box
-              className="border-t border-gray-200/10 pt-8 md:pt-12"
-              key={heading}
-            >
-              <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
-                {idx + 1}.
-              </Text>
-              <Text fontSize="lg" transform="uppercase">
-                {heading}
-              </Text>
-              <Text
-                className="mt-4 opacity-80"
-                fontSize="lg"
-                fontWeight="normal"
-              >
-                {description}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-        <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 bg-warning/5" />
       </Box>
     </Container>
   );
