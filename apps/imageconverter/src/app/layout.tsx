@@ -14,7 +14,7 @@ const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
 });
 
 export const metadata: Metadata = {
-  title: "Image Converter - Convert Your Images In Seconds",
+  title: "Image Conveta - Convert Your Images In Seconds",
   keywords: [
     "image converter",
     "image converter online",
@@ -46,13 +46,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://imageconveta.com",
     siteName: "ImageConveta",
-    title: "Image Converter - Convert Your Images In Seconds",
+    title: "Image Conveta - Convert Your Images In Seconds",
     description:
       "Convert, resize, and optimize images effortlessly with ImageConveta. Perfect for designers, marketers, and developers.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Image Converter - Convert Your Images In Seconds",
+    title: "Image Conveta - Convert Your Images In Seconds",
     description:
       "Convert, resize, and optimize images effortlessly with ImageConveta. Perfect for designers, marketers, and developers.",
   },
