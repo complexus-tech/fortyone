@@ -4,7 +4,13 @@ import { Attachment } from "@/types";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button, Flex, Text, Box, DropZone } from "ui";
-import { ArrowDownIcon, CloseIcon, PlusIcon, SettingsIcon } from "icons";
+import {
+  ArrowDownIcon,
+  CancelIcon,
+  CloseIcon,
+  PlusIcon,
+  SettingsIcon,
+} from "icons";
 import { AttachmentPreview } from "@/components/ui/preview";
 import Link from "next/link";
 
@@ -106,7 +112,10 @@ export const FilePicker = () => {
                       color="tertiary"
                       variant="naked"
                       leftIcon={
-                        <CloseIcon strokeWidth={2.3} className="h-5 w-auto" />
+                        <CancelIcon
+                          strokeWidth={2.3}
+                          className="h-5 w-auto text-primary"
+                        />
                       }
                     />
                   </Flex>

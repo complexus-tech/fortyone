@@ -15,6 +15,7 @@ const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://imageconveta.com"),
   title: "Image Converter- Convert Your Images In Seconds",
   keywords: [
     "image converter",
