@@ -9,7 +9,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
       <ResizablePanel.Panel defaultSize={18} maxSize={20} minSize={14}>
         <Sidebar />
       </ResizablePanel.Panel>
-      <ResizablePanel.Handle className="mr-[0.5px]" />
+      <ResizablePanel.Handle className="z-[2] -mr-px" />
       <ResizablePanel.Panel defaultSize={82}>{children}</ResizablePanel.Panel>
     </ResizablePanel>
   );

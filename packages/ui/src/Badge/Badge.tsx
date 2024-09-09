@@ -4,7 +4,7 @@ import { FC, HTMLAttributes } from "react";
 import { cn } from "lib";
 
 const badge = cva(
-  "flex w-max items-center justify-center font-medium rounded-lg border-[0.5px] gap-1",
+  "flex w-max items-center justify-center font-medium rounded-lg border gap-1",
   {
     variants: {
       variant: {
@@ -14,7 +14,7 @@ const badge = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-[0.4rem]",
+        md: "ßrounded-[0.4rem]",
         lg: "rounded-xl",
         full: "rounded-full",
       },
@@ -25,7 +25,7 @@ const badge = cva(
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
         tertiary:
-          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-300 dark:border-dark-50 dark:text-gray-200",
+          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-200/80 dark:border-dark-50 dark:text-gray-200",
         secondary: "text-white bg-secondary border-secondary",
       },
       size: {

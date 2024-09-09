@@ -26,8 +26,8 @@ const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/20 dark:bg-black/20 flex items-start justify-center",
-      className
+      "fixed inset-0 z-50 flex items-start justify-center bg-black/30 dark:bg-black/60",
+      className,
     )}
     {...props}
   />
@@ -38,8 +38,8 @@ const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
     className={cn(
-      "rounded-lg inline-block hover:bg-gray-50 dark:hover:bg-dark-100 p-[2px] transition outline-none dark:text-gray-200",
-      className
+      "inline-block rounded-full p-1 outline-none transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-100",
+      className,
     )}
   >
     <CloseIcon className="h-6 w-auto" />
@@ -59,18 +59,18 @@ const DialogContent = forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "w-full bg-white/90 mt-[10%] shadow-xl border-[0.5px] border-gray-100 shadow-dark/20 dark:shadow-dark dark:border-dark-50 dark:bg-dark-300/90 backdrop-blur rounded-xl overflow-hidden max-w-3xl relative",
+          "relative mt-[10%] w-full max-w-3xl overflow-hidden rounded-xl border border-gray-100 bg-white/95 shadow-xl shadow-dark/20 backdrop-blur dark:border-dark-50 dark:bg-dark-200/95 dark:shadow-dark",
           {
             "max-w-md": size === "sm",
             "max-w-xl": size === "md",
             "max-w-5xl": size === "lg",
             "max-w-7xl": size === "xl",
-          }
+          },
         )}
         {...props}
       >
         {children}
-        {!hideClose && <DialogClose className="top-4 right-4 absolute" />}
+        {!hideClose && <DialogClose className="absolute right-4 top-4" />}
       </DialogPrimitive.Content>
     </DialogOverlay>
   </DialogPortal>
@@ -98,14 +98,14 @@ const DialogFooter = ({
     className={cn(
       "flex px-6 pb-[0.8rem]",
       {
-        "border-t-[0.5px] border-gray-100 dark:border-dark-50/80 pt-[0.8rem]":
+        "border-t-[0.5px] border-gray-100 pt-[0.8rem] dark:border-dark-50/80":
           variant !== "bordered",
         "justify-start": justify === "start",
         "justify-end": justify === "end",
         "justify-center": justify === "center",
         "justify-between": justify === "between",
       },
-      className
+      className,
     )}
     {...props}
   />
@@ -120,7 +120,7 @@ const DialogTitle = forwardRef<
     ref={ref}
     className={cn(
       "font-medium leading-none tracking-tight dark:text-white",
-      className
+      className,
     )}
     {...props}
   />
@@ -133,7 +133,7 @@ const DialogDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-[0.95rem] px-6", className)}
+    className={cn("px-6 text-[0.95rem]", className)}
     {...props}
   />
 ));
@@ -146,8 +146,8 @@ type BodyProps = ComponentProps<typeof Box>;
 const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
-      "px-6 pt-2 pb-4 dark:text-white max-h-[80vh] overflow-y-auto",
-      className
+      "max-h-[80vh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
+      className,
     )}
     {...props}
   />

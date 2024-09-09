@@ -1,0 +1,293 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nprogress-color: #ea6060;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-animate 10s ease infinite;
+}
+
+@keyframes gradient-animate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.text-stroke-white {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #fff;
+}
+
+body,
+html {
+  @apply overflow-x-hidden scroll-smooth font-inter text-[14.5px] font-medium text-dark antialiased dark:bg-[#090909] dark:text-gray-200 2xl:text-[15px];
+}
+
+svg {
+  shape-rendering: auto;
+  vector-effect: non-scaling-stroke;
+}
+/* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
+  width: 3px;
+}
+
+*::-webkit-scrollbar-track {
+  @apply bg-white dark:bg-[#666666b3];
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply rounded-[3px] bg-[#666666b3] dark:bg-white;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #666666b3 transparent;
+}
+
+[cmdk-overlay] {
+  @apply fixed inset-0 z-40 block h-screen w-screen bg-black/10 backdrop-blur-[0.5px];
+}
+
+.ProseMirror-focused {
+  @apply outline-none;
+}
+
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+ul[data-type="taskList"] p {
+  margin: 0;
+}
+
+ul[data-type="taskList"] li {
+  @apply flex items-center;
+}
+
+ul[data-type="taskList"] li input {
+  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
+}
+
+ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+}
+
+ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+ul[data-type="taskList"] li ul li,
+ul[data-type="taskList"] li ol li {
+  display: list-item;
+}
+
+ul[data-type="taskList"] > li ul[data-type="taskList"],
+ul[data-type="taskList"] > li ol[data-type="taskList"] {
+  display: flex;
+}
+
+.tiptap .is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  @apply pointer-events-none float-left h-0 text-gray-250/80 dark:text-gray-200/60;
+}
+
+/*** Works on common browsers ***/
+::selection {
+  @apply bg-primary text-dark;
+}
+
+/*** Mozilla based browsers ***/
+::-moz-selection {
+  @apply bg-primary text-dark;
+}
+
+/***For Other Browsers ***/
+::-o-selection {
+  @apply bg-primary text-dark;
+}
+
+::-ms-selection {
+  @apply bg-primary text-dark;
+}
+
+/*** For Webkit ***/
+::-webkit-selection {
+  @apply bg-primary text-dark;
+}
+
+/* CSS color for nprogress */
+/* Make clicks pass-through */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress &:after {
+  display: block;
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#nprogress .bar {
+  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
+  z-index: 19031 !important;
+}
+
+.nprogress-custom-parent {
+  overflow: hidden;
+  position: relative;
+}
+.nprogress-custom-parent #nprogress .spinner,
+.nprogress-custom-parent #nprogress .bar {
+  position: absolute;
+}
+
+/* Mouse follow cursor */
+.mf-cursor {
+  @apply text-primary/80;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  opacity: 0;
+  direction: ltr;
+  contain: layout style size;
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    color 0.4s;
+}
+@media screen and (min-width: 768px) {
+  .mf-cursor {
+    opacity: 1;
+  }
+}
+.mf-cursor:before {
+  content: "";
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  width: 48px;
+  height: 48px;
+  transform: scale(0.2);
+  background: currentColor;
+  border-radius: 50%;
+  transition:
+    transform 0.25s ease-in-out,
+    opacity 0.1s;
+}
+.mf-cursor.-inverse {
+  color: invert(#000);
+}
+.mf-cursor.-exclusion {
+  -webkit-mix-blend-mode: exclusion;
+  mix-blend-mode: exclusion;
+}
+.mf-cursor.-exclusion:before {
+  background: invert(#000);
+}
+.mf-cursor.-pointer:before {
+  transform: scale(0.15);
+}
+.mf-cursor.-text:before {
+  opacity: 0.75;
+  transform: scale(1.7);
+  background: transparent;
+}
+.mf-cursor.-text.-active:before {
+  transform: scale(1.6);
+  transition-duration: 0.2s;
+}
+.mf-cursor.-icon:before {
+  transform: scale(1.5);
+}
+.mf-cursor.-icon.-active:before {
+  transform: scale(1.4);
+}
+.mf-cursor.-hidden:before {
+  transform: scale(0);
+}
+.mf-cursor-text {
+  @apply absolute flex items-center justify-center rounded-full border border-dark-200 bg-dark p-2 text-center text-gray-50 opacity-0;
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 80px;
+  height: 80px;
+  transform: scale(0) rotate(10deg);
+  font-size: 0.9rem;
+  line-height: 20px;
+  text-align: center;
+  transition:
+    opacity 0.4s,
+    transform 0.3s;
+}
+.mf-cursor.-text .mf-cursor-text,
+.mf-cursor.-icon .mf-cursor-text {
+  opacity: 1;
+  transform: scale(1);
+}
+.mf-cursor-media {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  margin: -200px 0 0 -200px;
+}
+.mf-cursor-media img,
+.mf-cursor-media video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+.mf-cursor-media img,
+.mf-cursor-media video {
+  position: static;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+}
+.mf-cursor-media img {
+  transform: scale(0.2);
+}
+.mf-cursor-media-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform: scale(0) translateZ(0);
+  padding: 1px;
+  opacity: 0;
+  border-radius: 50%;
+  transition:
+    transform 0.35s,
+    opacity 0.2s 0.2s;
+}
+.mf-cursor.-media .mf-cursor-media-box {
+  opacity: 1;
+  transform: scale(0.696);
+  transition-duration: 0.4s, 0.4s;
+  transition-delay: 0s, 0s;
+}

@@ -23,6 +23,7 @@ import { cn } from "lib";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { StoryStatusIcon } from "./story-status-icon";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export type StoriesFilter = {
   activeSprints: boolean;
@@ -90,6 +91,11 @@ export const StoriesFilterButton = ({
     to: new Date(),
   });
 
+  const { data: statuses = [] } = useStatuses();
+  const doneStatusId = statuses.find(
+    (state) => state.category === "completed",
+  )?.id;
+
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
     let count = 0;
@@ -125,7 +131,7 @@ export const StoriesFilterButton = ({
           {getButtonLabel()}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-[26rem] pb-5">
+      <Popover.Content align="end" className="w-[26rem] rounded-[0.6rem] pb-5">
         <Flex align="center" className="h-10 px-4" justify="between">
           <Text
             color="muted"
@@ -185,7 +191,7 @@ export const StoriesFilterButton = ({
             icon={
               <StoryStatusIcon
                 className="h-5 w-auto text-dark dark:text-gray-200"
-                status="Done"
+                statusId={doneStatusId}
               />
             }
             isActive={filters.completed}
@@ -209,7 +215,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">Start date</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -235,7 +241,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">Due date</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -248,10 +254,11 @@ export const StoriesFilterButton = ({
                     </Button>
                   </DatePicker.Trigger>
                   <DatePicker.Calendar
-                    defaultMonth={date?.from}
+                    mode="range"
+                    // selected={date}
+
+                    numberOfMonths={2}
                     initialFocus
-                    // onSelect={handleSearch}
-                    selected={new Date()}
                   />
                 </DatePicker>
               </Box>
@@ -286,7 +293,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">From</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth
@@ -312,7 +319,7 @@ export const StoriesFilterButton = ({
               <Box className="w-full">
                 <Text className="mb-1">To</Text>
                 <DatePicker>
-                  <DatePicker.Trigger asChild>
+                  <DatePicker.Trigger>
                     <Button
                       color="tertiary"
                       fullWidth

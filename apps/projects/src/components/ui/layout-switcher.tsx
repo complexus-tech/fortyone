@@ -15,15 +15,15 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "mr-2 h-[2.25rem] items-center rounded-[0.46rem] border-[0.5px] border-gray-100/60 bg-gray-50/50 p-[0.18rem] dark:border-dark-100 dark:bg-dark-200/50",
+        "mr-2 h-[2.4rem] items-center gap-1 rounded-[0.6rem] bg-gray-50/50 p-[0.18rem] dark:bg-dark-200/70",
         className,
       )}
     >
       <button
         className={cn(
-          "flex h-full items-center gap-1 rounded-[0.35rem] px-2.5 font-medium dark:text-white/55 hover:dark:text-gray-100",
+          "flex h-full items-center gap-1 rounded-lg px-3 font-medium dark:text-white/55 hover:dark:text-gray-100",
           {
-            "border-[0.5px] border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
+            "border border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
               layout === "list",
           },
         )}
@@ -38,9 +38,9 @@ export const LayoutSwitcher = ({
       </button>
       <button
         className={cn(
-          "flex h-full items-center gap-1 rounded-[0.35rem] px-2.5 font-medium dark:text-white/55 hover:dark:text-gray-100",
+          "flex h-full items-center gap-1 rounded-lg px-2.5 font-medium dark:text-white/55 hover:dark:text-gray-100",
           {
-            "border-[0.5px] border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
+            "border border-gray-200/80 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
               layout === "kanban",
           },
         )}

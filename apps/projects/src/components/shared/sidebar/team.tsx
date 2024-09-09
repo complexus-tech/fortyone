@@ -16,12 +16,13 @@ import {
   DocsIcon,
   RetroIcon,
   WhiteboardIcon,
+  ObjectiveIcon,
 } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
 type TeamProps = {
-  id: number;
+  id: string;
   name: string;
   icon?: ReactNode;
 };
@@ -36,33 +37,38 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     {
       name: "Stories",
       icon: <StoryIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/stories",
+      href: `/teams/${id}/stories`,
     },
-    {
-      name: "Epics",
-      icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/epics",
-    },
+    // {
+    //   name: "Epics",
+    //   icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
+    //   href: `/teams/${id}/epics`,
+    // },
     {
       name: "Sprints",
       icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/sprints",
+      href: `/teams/${id}/sprints`,
     },
     {
       name: "Documents",
       icon: <DocsIcon className="h-[1.3rem] w-auto" />,
-      href: "/teams/web/documents",
+      href: `/teams/${id}/documents`,
     },
-    {
-      name: "Whiteboards",
-      icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/whiteboards",
-    },
-    {
-      name: "Retrospectives",
-      icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-      href: "/teams/web/retrospectives",
-    },
+    // {
+    //   name: "Objectives",
+    //   icon: <ObjectiveIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/objectives`,
+    // },
+    // {
+    //   name: "Whiteboards",
+    //   icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/whiteboards`,
+    // },
+    // {
+    //   name: "Retrospectives",
+    //   icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   href: `/teams/${id}/retrospectives`,
+    // },
   ];
 
   return (
@@ -94,7 +100,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
             strokeWidth={3.5}
           />
           <Menu>
-            <Menu.Button>
+            <Menu.Button asChild>
               <button
                 className={cn("px-1 py-2 opacity-0 group-hover:opacity-100", {
                   "opacity-100": isOpen,
@@ -136,7 +142,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
       </Flex>
       <Flex
         className={cn(
-          "ml-3 h-0 overflow-hidden border-l border-dotted border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-50",
+          "ml-5 h-0 overflow-hidden border-l border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-100",
           {
             "mt-2 h-max": isOpen,
           },

@@ -3,14 +3,10 @@ import { cva } from "cva";
 import { LoadingIcon } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
-import {
-  forwardRef,
-  type ButtonHTMLAttributes,
-  type ReactElement,
-} from "react";
+import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
-  "flex text-gray dark:text-gray-200 w-max items-center border-[0.5px] gap-2 transition duration-200 ease-linear focus:outline-0",
+  "flex text-dark dark:text-gray-200 w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
   {
     variants: {
       variant: {
@@ -21,7 +17,7 @@ export const buttonVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-[0.45rem]",
+        md: "rounded-lg",
         lg: "rounded-xl",
         xl: "rounded-3xl",
         full: "rounded-full",
@@ -35,7 +31,7 @@ export const buttonVariants = cva(
         warning:
           "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
         tertiary:
-          "dark:border-dark-50/50 dark:bg-dark-200/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
+          "dark:border-dark-50/80 dark:bg-dark-100/50 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
@@ -46,7 +42,7 @@ export const buttonVariants = cva(
         lg: "px-5 md:px-7 py-2.5 md:py-3",
       },
       disabled: {
-        true: "opacity-40 cursor-not-allowed",
+        true: "opacity-40 cursor-not-allowed pointer-events-none",
       },
       active: {
         true: null,
@@ -62,6 +58,9 @@ export const buttonVariants = cva(
         left: "justify-start",
         right: "justify-end",
         between: "justify-between",
+      },
+      asIcon: {
+        true: "px-0 aspect-square justify-center",
       },
     },
     compoundVariants: [
@@ -120,7 +119,7 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-opacity-100 text-gray",
+        className: "bg-opacity-100 text-gray cursor-not-allowed",
       },
       {
         active: true,
@@ -147,8 +146,8 @@ export interface ButtonProps
   href?: string;
   loadingText?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
-  rightIcon?: ReactElement;
-  leftIcon?: ReactElement;
+  rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -157,6 +156,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant,
       color,
       rounded,
+      asIcon,
       size,
       target = "_self",
       loading,
@@ -177,6 +177,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       buttonVariants({
         variant,
         color,
+        asIcon,
         size,
         disabled,
         loading,

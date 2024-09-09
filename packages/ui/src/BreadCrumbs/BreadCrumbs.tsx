@@ -8,6 +8,7 @@ interface BreadCrumb {
   name: string;
   url?: string;
   icon?: ReactNode;
+  className?: string;
 }
 
 export type BreadCrumbsProps = {
@@ -18,16 +19,18 @@ export type BreadCrumbsProps = {
 export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
   return (
     <Flex align="center" gap={2} className={className}>
-      {breadCrumbs.map(({ name, icon, url = "" }, idx) => (
+      {breadCrumbs.map(({ name, icon, url = "", className = "" }, idx) => (
         <Link
           key={idx}
           href={url}
           className={cn(
             "flex items-center gap-2 font-medium group first-letter:uppercase transition",
             {
-              "text-opacity-80": idx + 1 === breadCrumbs.length,
+              "text-gray/80 dark:text-gray-300/80":
+                idx + 1 === breadCrumbs.length,
               "pointer-events-none": !url,
-            }
+            },
+            className
           )}
         >
           {icon && <span className="group-hover:text-primary">{icon}</span>}

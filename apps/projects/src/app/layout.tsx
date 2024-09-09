@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { Toaster } from "sonner";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
+import { Providers } from "./providers";
+import dynamic from "next/dynamic";
+import { toasterIcons } from "./toaster-icons";
+
+const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
+  ssr: false,
+});
 
 const font = Inter({
   subsets: ["latin"],
@@ -40,7 +48,25 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        {children}
+        <Providers>{children}</Providers>
+        <Toaster
+          theme="system"
+          closeButton
+          position="bottom-right"
+          duration={10000}
+          toastOptions={{
+            className:
+              "w-full rounded-lg p-4 flex items-center gap-3 shadow-lg",
+            classNames: {
+              toast:
+                "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-gray-100/60 dark:border-dark-50",
+              closeButton:
+                "bg-white/90 dark:bg-dark-100/90 dark:border-dark-50",
+            },
+          }}
+          icons={toasterIcons}
+        />
+        <PostHogPageView />
         <ProgressBar />
       </body>
     </html>

@@ -1,0 +1,50 @@
+{
+  "name": "imageconverter",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "eslint-config-next": "15.0.0-rc.0",
+    "framer-motion": "^11.5.4",
+    "gsap": "^3.12.5",
+    "icons": "workspace:*",
+    "lib": "workspace:*",
+    "mouse-follower": "^1.1.2",
+    "next": "15.0.0-rc.0",
+    "next-themes": "^0.3.0",
+    "posthog-js": "^1.154.5",
+    "react": "19.0.0-rc-a03254bc-20240905",
+    "react-dom": "19.0.0-rc-a03254bc-20240905",
+    "react-dropzone": "^14.2.3",
+    "react-fast-marquee": "^1.6.4",
+    "schema-dts": "^1.1.2",
+    "sharp": "^0.33.3",
+    "swiper": "^11.1.1",
+    "tailwind-config": "workspace:*",
+    "ui": "workspace:*"
+  },
+  "overrides": {
+    "@types/react": "npm:types-react@rc",
+    "@types/react-dom": "npm:types-react-dom@rc"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "^13.5.6",
+    "@types/node": "^20.12.7",
+    "@types/react": "npm:types-react@rc",
+    "@types/react-dom": "npm:types-react-dom@rc",
+    "autoprefixer": "^10.4.19",
+    "eslint-config-custom": "workspace:*",
+    "postcss": "^8.4.38",
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.5.13",
+    "tailwindcss": "^3.4.3",
+    "ts-node": "^10.9.2",
+    "tsconfig": "workspace:*",
+    "typescript": "^4.9.5"
+  }
+}

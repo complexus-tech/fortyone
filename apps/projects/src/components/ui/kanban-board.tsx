@@ -1,10 +1,11 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
-import type { Story, StoryPriority, StoryStatus } from "@/types/story";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const KanbanBoard = ({
   stories,
@@ -15,21 +16,13 @@ export const KanbanBoard = ({
 }) => {
   const { viewOptions } = useBoard();
   const { groupBy } = viewOptions;
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Canceled",
-  ];
-
+  const { data: statuses = [] } = useStatuses();
   const priorities: StoryPriority[] = [
-    "No Priority",
-    "Low",
-    "Medium",
-    "High",
     "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
   ];
 
   return (
@@ -49,7 +42,7 @@ export const KanbanBoard = ({
             statuses.map((status) => (
               <StoriesKanbanHeader
                 groupBy={groupBy}
-                key={status}
+                key={status.id}
                 status={status}
                 stories={stories}
               />
@@ -65,12 +58,12 @@ export const KanbanBoard = ({
             ))}
         </Flex>
       </Box>
-      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7 ">
+      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
         {groupBy === "Status" &&
           statuses.map((status) => (
             <KanbanGroup
               groupBy={groupBy}
-              key={status}
+              key={status.id}
               status={status}
               stories={stories}
             />

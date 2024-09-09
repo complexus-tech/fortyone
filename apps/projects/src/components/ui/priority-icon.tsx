@@ -1,5 +1,5 @@
 import { cn } from "lib";
-import type { StoryPriority } from "@/types/story";
+import type { StoryPriority } from "@/modules/stories/types";
 
 export const PriorityIcon = ({
   priority = "No Priority",
@@ -10,7 +10,7 @@ export const PriorityIcon = ({
 }) => {
   return (
     <>
-      {priority === "No Priority" && (
+      {(priority === "No Priority" || priority === null) && (
         <svg
           className={cn("text-gray dark:text-gray-300", className)}
           fill="currentColor"
@@ -27,7 +27,7 @@ export const PriorityIcon = ({
 
       {priority === "Urgent" && (
         <svg
-          className={cn("h-5 w-auto text-primary", className)}
+          className={cn("h-5 w-auto text-danger", className)}
           fill="currentColor"
           height="24"
           viewBox="0 0 24 24"
@@ -37,27 +37,27 @@ export const PriorityIcon = ({
           <path
             d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
           <path
             d="M11.9998 16H12.0088"
             stroke="white"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
           <path
             d="M12 13L12 7"
             stroke="white"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
         </svg>
       )}
       {priority === "High" && (
         <svg
-          className={cn("text-gray dark:text-gray-300", className)}
+          className={cn("text-warning", className)}
           fill="currentColor"
           focusable="false"
           height="16"
@@ -71,7 +71,7 @@ export const PriorityIcon = ({
       )}
       {priority === "Medium" && (
         <svg
-          className={cn("text-gray dark:text-gray-300", className)}
+          className={cn("text-success", className)}
           fill="currentColor"
           focusable="false"
           height="16"
@@ -85,7 +85,7 @@ export const PriorityIcon = ({
       )}
       {priority === "Low" && (
         <svg
-          className={cn("text-gray dark:text-gray-300", className)}
+          className={cn("text-info", className)}
           fill="currentColor"
           focusable="false"
           height="16"

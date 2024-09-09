@@ -8,22 +8,26 @@ import {
   NewStoryIcon,
   PlusIcon,
   ObjectiveIcon,
-  SearchIcon,
   SettingsIcon,
   SprintsIcon,
   UsersAddIcon,
   EpicsIcon,
 } from "icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
+import { logOut } from "./actions";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+
+  const callbackUrl = `${pathname}?${searchParams.toString()}`;
+
   useHotkeys("c", () => {
     setIsOpen(true);
   });
@@ -77,11 +81,11 @@ export const Header = () => {
               <Menu.Item>
                 <Avatar
                   color="secondary"
-                  name="Fin Kenya"
+                  name="Amaka Studio"
                   rounded="md"
                   size="xs"
                 />
-                Fin Kenya
+                Amaka Studio
               </Menu.Item>
               <Menu.Item asChild>
                 <Button
@@ -115,14 +119,26 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
-              <Menu.Item>
+              <Menu.Item
+                onClick={async () => {
+                  await logOut(callbackUrl);
+                }}
+              >
                 <LogoutIcon className="h-5 w-auto text-danger" />
                 Log out
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
         </Menu>
-        <Button
+
+        {/* <SidebarExpandIcon
+          role="button"
+          aria-label="Collapse"
+          tabIndex={0}
+          className="h-6 w-auto outline-none"
+        /> */}
+
+        {/* <Button
           align="center"
           className="px-[0.5rem] shadow"
           color="tertiary"
@@ -133,18 +149,19 @@ export const Header = () => {
           variant="outline"
         >
           <span className="sr-only">Search</span>
-        </Button>
+        </Button> */}
       </Flex>
-      <Flex className="mb-3 w-full rounded-lg shadow-sm">
+      <Flex className="mb-3 w-full rounded-lg">
         <Button
-          className="rounded-r-none"
+          className="h-9 rounded-r-none md:h-[2.65rem]"
           color="tertiary"
           fullWidth
+          rounded="lg"
           leftIcon={<NewStoryIcon className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}
-          variant="outline"
+          // variant="outline"
         >
           Create Story
         </Button>
@@ -152,21 +169,17 @@ export const Header = () => {
           <Menu.Button>
             <Button
               align="center"
-              className="rounded-l-none border-l-0 px-[0.65rem]"
+              className="rounded-l-none border-l-0 px-[0.85rem] md:h-[2.65rem]"
               color="tertiary"
+              rounded="lg"
               leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
-              variant="outline"
+              // variant="outline"
             >
               <span className="sr-only">More</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="end" className="w-64 pb-1">
+          <Menu.Items align="end" className="w-56 pb-1">
             <Menu.Group className="gap-4 space-y-1">
-              <Menu.Item>
-                <NewStoryIcon className="h-5 w-auto" />
-                Continue from Draft
-              </Menu.Item>
-              <Menu.Separator />
               <Menu.Item>
                 <NewStoryIcon className="h-5 w-auto" />
                 Create Story

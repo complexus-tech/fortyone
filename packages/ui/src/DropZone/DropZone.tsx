@@ -18,7 +18,7 @@ export const DropZone = ({
       {label && (
         <label
           htmlFor=""
-          className="inline-block mb-3 font-medium dark:text-white"
+          className="mb-3 inline-block font-medium dark:text-white"
         >
           {label}
           {required && <span className="text-danger">*</span>}
@@ -29,20 +29,20 @@ export const DropZone = ({
   );
 };
 
-export type RootProps = {
+export type RootProps = DropzoneRootProps & {
   rootProps: DropzoneRootProps;
   isDragActive: boolean;
   children?: ReactNode;
 };
 const Root = (props: RootProps) => {
-  const { children, isDragActive, rootProps } = props;
-  const { className, ...rest } = rootProps;
+  const { children, isDragActive, rootProps, className } = props;
+  const { ...rest } = rootProps;
   return (
     <div
       className={cn(
-        "border-[1px] border-dashed hover:border-primary/80 transition dark:hover:border-primary/40 border-gray-200 bg-gray-50/50 dark:border-dark-100 rounded-xl dark:bg-dark-200/40 h-24 cursor-pointer flex justify-center items-center p-4",
+        "flex h-24 cursor-pointer items-center justify-center rounded-xl border-[1px] border-dashed border-gray-300 bg-gray-50/50 p-4 transition hover:border-primary/80 dark:border-dark-100 dark:bg-dark-200/40 dark:hover:border-primary/40",
         {
-          "bg-gray-50 dark:bg-dark-200/80 hover:border-primary/40 transition dark:hover:border-primary/40":
+          "bg-gray-50 transition hover:border-primary/40 dark:bg-dark-200/80 dark:hover:border-primary/40":
             isDragActive,
         },
         className

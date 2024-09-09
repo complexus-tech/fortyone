@@ -4,6 +4,12 @@ import type { ReactNode } from "react";
 import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
+import { PostHogProvider } from "./posthog";
+import dynamic from "next/dynamic";
+
+const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
+  ssr: false,
+});
 
 const font = Inter({
   subsets: ["latin"],
@@ -38,12 +44,15 @@ export default function RootLayout({
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        <CursorProvider>
-          <Navigation />
-          {children}
-          <CallToAction />
-          <Footer />
-        </CursorProvider>
+        <PostHogProvider>
+          <CursorProvider>
+            <Navigation />
+            {children}
+            <CallToAction />
+            <Footer />
+          </CursorProvider>
+          <PostHogPageView />
+        </PostHogProvider>
       </body>
     </html>
   );

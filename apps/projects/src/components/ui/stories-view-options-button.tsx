@@ -2,7 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 
-export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority";
+export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
 export type DisplayColumn =
   | "ID"
   | "Status"
@@ -12,6 +12,7 @@ export type DisplayColumn =
   | "Created"
   | "Updated"
   | "Sprint"
+  | "Objective"
   | "Epic"
   | "Labels";
 export type ViewOptionsOrderBy =
@@ -67,13 +68,18 @@ export const StoriesViewOptionsButton = ({
     "Updated",
     "Sprint",
     "Epic",
+    "Objective",
     "Labels",
   ];
+
+  const hasFilters =
+    JSON.stringify(viewOptions) !== JSON.stringify(initialViewOptions);
 
   return (
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          className="relative"
           color="tertiary"
           leftIcon={<PreferencesIcon className="h-4 w-auto" />}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
@@ -81,9 +87,12 @@ export const StoriesViewOptionsButton = ({
           variant="outline"
         >
           View
+          {hasFilters && (
+            <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
+          )}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="max-w-[24rem]">
+      <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select

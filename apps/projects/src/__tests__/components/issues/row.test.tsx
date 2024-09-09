@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { StoryRow } from "@/components/ui";
-import type { Story } from "@/types/story";
+import type { Story } from "@/modules/stories/types";
 
 describe("Rendering StoryRow component with story data", () => {
   const story: Story = {

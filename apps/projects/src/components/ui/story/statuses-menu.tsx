@@ -1,64 +1,108 @@
-import type { ReactNode } from "react";
-import { Box, Flex, Menu, Text } from "ui";
+"use client";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
-import type { StoryStatus } from "@/types/story";
 import { StoryStatusIcon } from "../story-status-icon";
+import { useStatuses } from "@/lib/hooks/statuses";
+
+const StatusContext = createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}>({
+  open: false,
+  setOpen: () => {},
+});
+
+export const useStatusMenu = () => {
+  const { open, setOpen } = useContext(StatusContext);
+  return { open, setOpen };
+};
+
+const Menu = ({ children }: { children: ReactNode }) => {
+  const { open, setOpen } = useStatusMenu();
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      {children}
+    </Popover>
+  );
+};
 
 export const StatusesMenu = ({ children }: { children: ReactNode }) => {
-  return <Menu>{children}</Menu>;
+  const [open, setOpen] = useState(false);
+  return (
+    <StatusContext.Provider value={{ open, setOpen }}>
+      <Menu>{children}</Menu>
+    </StatusContext.Provider>
+  );
 };
 
 const Trigger = ({ children }: { children: ReactNode }) => (
-  <Menu.Button>{children}</Menu.Button>
+  <Popover.Trigger asChild>{children}</Popover.Trigger>
 );
 
 const Items = ({
-  status = "Backlog",
-  isSearchEnabled = true,
+  statusId,
+  setStatusId,
 }: {
-  status?: StoryStatus;
-  isSearchEnabled?: boolean;
+  statusId?: string;
+  setStatusId: (statusId: string) => void;
 }) => {
-  const statuses: StoryStatus[] = [
-    "Backlog",
-    "Todo",
-    "In Progress",
-    "Testing",
-    "Done",
-    "Duplicate",
-    "Canceled",
-  ];
+  const { data: statuses = [] } = useStatuses();
+  const [query, setQuery] = useState("");
+  if (!statuses.length) return null;
+  const state =
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
+  const { id: defaultStateId } = state!!;
+  const { setOpen } = useStatusMenu();
+
   return (
-    <Menu.Items align="center" className="w-64">
-      {isSearchEnabled ? (
-        <>
-          <Menu.Group className="px-4">
-            <Menu.Input autoFocus placeholder="Change status..." />
-          </Menu.Group>
-          <Menu.Separator className="my-2" />
-        </>
-      ) : null}
-      <Menu.Group>
-        {statuses.map((st, idx) => (
-          <Menu.Item
-            active={st === status}
-            className="justify-between"
-            key={st}
-          >
-            <Box className="grid grid-cols-[24px_auto] items-center">
-              <StoryStatusIcon status={st} />
-              <Text>{st}</Text>
-            </Box>
-            <Flex align="center" gap={2}>
-              {st === status && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Menu.Item>
-        ))}
-      </Menu.Group>
-    </Menu.Items>
+    <Popover.Content align="center" className="w-64">
+      <Command>
+        <Command.Input
+          autoFocus
+          placeholder="Change status..."
+          value={query}
+          onValueChange={(value) => {
+            if (Number.parseInt(value) < statuses.length) {
+              setStatusId(statuses[Number.parseInt(value)].id);
+              setOpen(false);
+              setQuery("");
+              return;
+            }
+            setQuery(value);
+          }}
+        />
+        <Divider className="my-2" />
+        <Command.Empty className="py-2">
+          <Text color="muted">No statuses found.</Text>
+        </Command.Empty>
+        <Command.Group>
+          {statuses.map(({ id, name }, idx) => (
+            <Command.Item
+              active={id === defaultStateId}
+              value={name}
+              onSelect={() => {
+                setStatusId(id);
+                setOpen(false);
+              }}
+              className="justify-between"
+              key={id}
+            >
+              <Box className="grid grid-cols-[24px_auto] items-center">
+                <StoryStatusIcon statusId={id} />
+                <Text>{name}</Text>
+              </Box>
+              <Flex align="center" gap={2}>
+                {id === defaultStateId && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">{idx}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
+        </Command.Group>
+      </Command>
+    </Popover.Content>
   );
 };
 

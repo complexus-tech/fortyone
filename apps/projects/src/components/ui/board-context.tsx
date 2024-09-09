@@ -6,8 +6,8 @@ import type {
 } from "@/components/ui/stories-view-options-button";
 
 export const BoardContext = createContext<{
-  selectedStories: number[];
-  setSelectedStories: (value: number[]) => void;
+  selectedStories: string[];
+  setSelectedStories: (value: string[]) => void;
   viewOptions: StoriesViewOptions;
   isColumnVisible: (column: DisplayColumn) => boolean;
 } | null>(null);
