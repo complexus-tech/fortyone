@@ -73,7 +73,6 @@ export const FilePicker = () => {
                     <Box>
                       <Text className="line-clamp-1">
                         {image.name}
-                        Lorem ipsum dolor, sit amet consectetur adipisicing.
                       </Text>
                       <Text color="muted" className="opacity-80">
                         {formatFileSize(image.size)}
