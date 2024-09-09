@@ -18,13 +18,13 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-4 z-10 w-screen">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-2xl">
-          <Box className="z-10 flex h-[3.2rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg md:px-2.5 dark:border-dark-200 dark:bg-black/40">
+          <Box className="z-10 flex h-[3.2rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40 md:px-2.5">
             <Logo className="mr-10" />
             <Flex align="center" className="hidden md:flex" gap={4}>
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-300/80",
+                    "rounded-3xl px-3 py-1.5 transition hover:bg-gray-200/60 dark:hover:bg-dark-100/60",
                     {
                       "bg-dark-300/80": pathname === href,
                     },

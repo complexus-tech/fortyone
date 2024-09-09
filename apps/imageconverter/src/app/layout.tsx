@@ -8,13 +8,14 @@ import dynamic from "next/dynamic";
 import { inter, satoshi } from "@/styles/fonts";
 import { cn } from "lib";
 import { WebApplication, WithContext } from "schema-dts";
+import { ThemeProvider } from "next-themes";
 
 const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
   ssr: false,
 });
 
 export const metadata: Metadata = {
-  title: "Image Conveta - Convert Your Images In Seconds",
+  title: "Image Converter- Convert Your Images In Seconds",
   keywords: [
     "image converter",
     "image converter online",
@@ -46,13 +47,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://imageconveta.com",
     siteName: "ImageConveta",
-    title: "Image Conveta - Convert Your Images In Seconds",
+    title: "Image Converter - Convert Your Images In Seconds",
     description:
       "Convert, resize, and optimize images effortlessly with ImageConveta. Perfect for designers, marketers, and developers.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Image Conveta - Convert Your Images In Seconds",
+    title: "Image Converter - Convert Your Images In Seconds",
     description:
       "Convert, resize, and optimize images effortlessly with ImageConveta. Perfect for designers, marketers, and developers.",
   },
@@ -98,14 +99,16 @@ export default function RootLayout({
     >
       <body className="relative">
         <JsonLd>{structuredData}</JsonLd>
-        <PostHogProvider>
-          <CursorProvider>
-            <Navigation />
-            {children}
-            <Footer />
-          </CursorProvider>
-          <PostHogPageView />
-        </PostHogProvider>
+        <ThemeProvider attribute="class">
+          <PostHogProvider>
+            <CursorProvider>
+              <Navigation />
+              {children}
+              <Footer />
+            </CursorProvider>
+            <PostHogPageView />
+          </PostHogProvider>
+        </ThemeProvider>
         <div className="pointer-events-none fixed left-0 top-0 h-full w-full bg-[url('/noise.png')] bg-repeat opacity-50" />
       </body>
     </html>

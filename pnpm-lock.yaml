@@ -44,6 +44,9 @@ importers:
       next:
         specifier: 15.0.0-rc.0
         version: 15.0.0-rc.0(react-dom@19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905))(react@19.0.0-rc-a03254bc-20240905)
+      next-themes:
+        specifier: ^0.3.0
+        version: 0.3.0(react-dom@19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905))(react@19.0.0-rc-a03254bc-20240905)
       posthog-js:
         specifier: ^1.154.5
         version: 1.154.5
@@ -53,6 +56,9 @@ importers:
       react-dom:
         specifier: 19.0.0-rc-a03254bc-20240905
         version: 19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905)
+      react-dropzone:
+        specifier: ^14.2.3
+        version: 14.2.3(react@19.0.0-rc-a03254bc-20240905)
       react-fast-marquee:
         specifier: ^1.6.4
         version: 1.6.4(react-dom@19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905))(react@19.0.0-rc-a03254bc-20240905)
@@ -4684,6 +4690,12 @@ packages:
         optional: true
       nodemailer:
         optional: true
+
+  next-themes@0.3.0:
+    resolution: {integrity: sha512-/QHIrsYpd6Kfk7xakK4svpDI5mmXP0gfvCoJdGpZQ2TOrQZmsW0QxjaiLn8wbIKjtm4BTSqLoix4lxYYOnLJ/w==}
+    peerDependencies:
+      react: ^16.8 || ^17 || ^18
+      react-dom: ^16.8 || ^17 || ^18
 
   next@14.2.3:
     resolution: {integrity: sha512-dowFkFTR8v79NPJO4QsBUtxv0g9BrS/phluVpMAt2ku7H+cbcBJlopXjkWlwxrk/xGqMemr7JkGPGemPrLLX7A==}
@@ -10990,6 +11002,11 @@ snapshots:
       next: 15.0.0-rc.0(@babel/core@7.24.4)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@0.0.0-experimental-334f00b-20240725)(react-dom@19.0.0-rc-8269d55d-20240802(react@19.0.0-rc-8269d55d-20240802))(react@19.0.0-rc-8269d55d-20240802)
       react: 19.0.0-rc-8269d55d-20240802
 
+  next-themes@0.3.0(react-dom@19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905))(react@19.0.0-rc-a03254bc-20240905):
+    dependencies:
+      react: 19.0.0-rc-a03254bc-20240905
+      react-dom: 19.0.0-rc-a03254bc-20240905(react@19.0.0-rc-a03254bc-20240905)
+
   next@14.2.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
       '@next/env': 14.2.3
@@ -11597,6 +11614,13 @@ snapshots:
       file-selector: 0.6.0
       prop-types: 15.8.1
       react: 19.0.0-rc-8269d55d-20240802
+
+  react-dropzone@14.2.3(react@19.0.0-rc-a03254bc-20240905):
+    dependencies:
+      attr-accept: 2.2.2
+      file-selector: 0.6.0
+      prop-types: 15.8.1
+      react: 19.0.0-rc-a03254bc-20240905
 
   react-fast-marquee@1.6.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:

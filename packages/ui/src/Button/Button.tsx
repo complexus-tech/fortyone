@@ -31,7 +31,7 @@ export const buttonVariants = cva(
         warning:
           "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
         tertiary:
-          "dark:border-dark-50/80 dark:bg-dark-100/50 bg-gray-50 border-gray-100/60 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
+          "dark:border-dark-50/80 dark:bg-dark-100/50 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
@@ -47,9 +47,6 @@ export const buttonVariants = cva(
       active: {
         true: null,
       },
-      asIcon: {
-        true: "px-0 aspect-square justify-center",
-      },
       loading: {
         true: "opacity-80 cursor-progress",
       },
@@ -61,6 +58,9 @@ export const buttonVariants = cva(
         left: "justify-start",
         right: "justify-end",
         between: "justify-between",
+      },
+      asIcon: {
+        true: "px-0 aspect-square justify-center",
       },
     },
     compoundVariants: [

@@ -1,8 +1,9 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
-import { ArrowDownIcon, ArrowRightIcon } from "icons";
+import { ArrowRightIcon } from "icons";
 import { motion } from "framer-motion";
 import { Container, Blur } from "@/components/ui";
+import { FilePicker } from "./filepicker";
 
 export const Hero = () => {
   return (
@@ -86,84 +87,11 @@ export const Hero = () => {
                 width: "100%",
               }}
             >
-              <Box className="rounded-xl border-[1.5px] border-dashed border-gray-200 px-4 pb-4 pt-10  dark:border-dark-100">
-                <Flex
-                  direction="column"
-                  align="center"
-                  className="mb-10"
-                  gap={4}
-                >
-                  <Button rounded="lg" size="lg">
-                    Choose Files
-                  </Button>
-                  <Text color="muted" fontSize="sm">
-                    Max file size 1GB. Sign up for more
-                  </Text>
-                </Flex>
-                <Flex gap={2} justify="between" className="text-left">
-                  <Box>
-                    <Text
-                      color="muted"
-                      fontSize="sm"
-                      fontWeight="medium"
-                      className="mb-1.5"
-                    >
-                      Target format
-                    </Text>
-                    <Button
-                      size="sm"
-                      className="gap-2"
-                      color="tertiary"
-                      rightIcon={<ArrowDownIcon className="h-3 w-auto" />}
-                    >
-                      .png
-                    </Button>
-                  </Box>
-
-                  <Flex gap={3}>
-                    <Box>
-                      <Text
-                        color="muted"
-                        fontSize="sm"
-                        fontWeight="medium"
-                        className="mb-1.5"
-                      >
-                        Color change
-                      </Text>
-                      <Button
-                        size="sm"
-                        className="gap-2"
-                        color="tertiary"
-                        rightIcon={<ArrowDownIcon className="h-3 w-auto" />}
-                      >
-                        No change
-                      </Button>
-                    </Box>
-                    <Box>
-                      <Text
-                        color="muted"
-                        fontSize="sm"
-                        fontWeight="medium"
-                        className="mb-1.5"
-                      >
-                        Quality
-                      </Text>
-                      <Button
-                        size="sm"
-                        className="gap-2"
-                        color="tertiary"
-                        rightIcon={<ArrowDownIcon className="h-3 w-auto" />}
-                      >
-                        Best
-                      </Button>
-                    </Box>
-                  </Flex>
-                </Flex>
-              </Box>
+              <FilePicker />
             </motion.div>
           </Box>
 
-          <Text className="mt-4" color="muted" fontSize="sm">
+          <Text className="mt-3" color="muted">
             By proceeding, you agree to our Terms of Use.
           </Text>
         </Flex>
