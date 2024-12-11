@@ -192,11 +192,17 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
+	// Get the user ID from the context (assuming it's set by authentication middleware)
+	userID, ok := ctx.Value("userID").(uuid.UUID)
+	if !ok {
+		return errors.New("user ID not found in context")
+	}
+
 	updates, err := getUpdates(requestData)
 	if err != nil {
 		return err
 	}
-	if err := h.stories.Update(ctx, storyId, workspaceId, updates); err != nil {
+	if err := h.stories.Update(ctx, storyId, workspaceId, updates, userID); err != nil {
 		return err
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)

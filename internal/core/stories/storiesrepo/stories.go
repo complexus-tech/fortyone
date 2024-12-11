@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -57,7 +58,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 	defer stmt.Close()
 
 	err = stmt.GetContext(ctx, &currentSequence, params)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		// If no record exists, insert a new one starting from 1
 		q := `
 			INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence)
@@ -228,7 +229,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
 	defer span.End()
 
-	currentUser, _ := uuid.Parse("8a798112-90fe-495e-9f1c-f36655e3d8ab")
+	currentUser, _ := mid.GetUserID(ctx)
 
 	params := map[string]interface{}{
 		"workspace_id": workspaceId,
@@ -417,7 +418,7 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	return nil
 }
 
-// Restore rrestores a story with the specified ID.
+// Restore restores a story with the specified ID.
 func (r *repo) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Restore")
 	defer span.End()
@@ -612,4 +613,49 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 	}
 
 	return subStories, nil
+}
+
+func (r *repo) RecordActivity(ctx context.Context, storyID uuid.UUID, activityType string, description string, userID uuid.UUID) error {
+	query := `
+        INSERT INTO story_activities (story_id, type, description, user_id)
+        VALUES (:story_id, :type, :description, :user_id)
+    `
+	params := map[string]interface{}{
+		"story_id":    storyID,
+		"type":        activityType,
+		"description": description,
+		"user_id":     userID,
+	}
+
+	_, err := r.db.NamedExecContext(ctx, query, params)
+	return err
+}
+
+func (r *repo) GetLastActivity(ctx context.Context, storyID uuid.UUID, activityType string) (string, uuid.UUID, error) {
+	query := `
+        SELECT description, user_id
+        FROM story_activities
+        WHERE story_id = :story_id AND type = :activity_type
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+	params := map[string]interface{}{
+		"story_id":      storyID,
+		"activity_type": activityType,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return "", uuid.Nil, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var description string
+	var userID uuid.UUID
+	err = stmt.QueryRowContext(ctx, params).Scan(&description, &userID)
+	if err != nil {
+		return "", uuid.Nil, fmt.Errorf("failed to query last activity: %w", err)
+	}
+
+	return description, userID, nil
 }

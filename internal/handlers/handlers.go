@@ -16,8 +16,8 @@ import (
 
 type handlers struct{}
 
-// BuildRoutes returns a new handlers instance which implements the mux.RouteAdder interface.
-func BuildRoutes() handlers {
+// New returns a new handlers instance which implements the mux.RouteAdder interface.
+func New() handlers {
 	return handlers{}
 }
 
@@ -28,54 +28,63 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the stories routes
 	storiesgrp.Routes(storiesgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the objectives routes
 	objectivesgrp.Routes(objectivesgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the sprints routes
 	sprintsgrp.Routes(sprintsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register epics routes
 	epicsgrp.Routes(epicsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the documents routes
 	documentsgrp.Routes(documentsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the states routes
 	statesgrp.Routes(statesgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the teams routes
 	teamsgrp.Routes(teamsgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the users routes
 	usersgrp.Routes(usersgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 }

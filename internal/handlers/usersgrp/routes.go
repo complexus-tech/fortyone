@@ -9,15 +9,16 @@ import (
 )
 
 type Config struct {
-	DB  *sqlx.DB
-	Log *logger.Logger
+	DB        *sqlx.DB
+	Log       *logger.Logger
+	SecretKey string
 }
 
 func Routes(cfg Config, app *web.App) {
 
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
 
-	h := New(usersService)
+	h := New(usersService, cfg.SecretKey)
 
 	app.Post("/users/login", h.Login)
 

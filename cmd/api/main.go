@@ -27,6 +27,9 @@ var (
 )
 
 type Config struct {
+	Auth struct {
+		SecretKey string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
 		ReadTimeout     time.Duration `default:"5s" env:"APP_API_READ_TIMEOUT"`
@@ -140,12 +143,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 	tracer := traceProvider.Tracer(service)
 
 	muxCfg := mux.Config{
-		DB:       db,
-		Shutdown: shutdown,
-		Log:      log,
-		Tracer:   tracer,
+		DB:        db,
+		Shutdown:  shutdown,
+		Log:       log,
+		Tracer:    tracer,
+		SecretKey: cfg.Auth.SecretKey,
 	}
-	apiMux := mux.New(muxCfg, handlers.BuildRoutes())
+	apiMux := mux.New(muxCfg, handlers.New())
 
 	server := http.Server{
 		Addr:         cfg.Web.APIHost,
