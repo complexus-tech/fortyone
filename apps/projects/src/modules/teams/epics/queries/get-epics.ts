@@ -6,15 +6,15 @@ import { get } from "@/lib/http";
 import { TAGS } from "@/constants/tags";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { Epic } from "../types";
+import { ApiResponse } from "@/types";
 
 export const getTeamEpics = async () => {
-  const session = await auth();
-  const epics = await get<Epic[]>("/epics", {
+  const epics = await get<ApiResponse<Epic[]>>("/epics", {
     next: {
       tags: [TAGS.epics],
       revalidate: DURATION_FROM_SECONDS.HOUR * 1,
     },
   });
 
-  return epics;
+  return epics?.data;
 };

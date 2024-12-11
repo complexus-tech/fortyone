@@ -4,6 +4,7 @@ import { get } from "@/lib/http";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { Sprint } from "@/modules/sprints/types";
 import qs from "qs";
+import { ApiResponse } from "@/types";
 
 export const getTeamSprints = async (teamId: string) => {
   const query = qs.stringify(
@@ -15,7 +16,7 @@ export const getTeamSprints = async (teamId: string) => {
     },
   );
 
-  const sprints = await get<Sprint[]>(`sprints${query}`, {
+  const sprints = await get<ApiResponse<Sprint[]>>(`sprints${query}`, {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
       tags: [`team-sprints-${teamId}`],
