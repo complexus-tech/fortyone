@@ -3,13 +3,14 @@
 import { post } from "@/lib/http";
 import { revalidateTag } from "next/cache";
 import { storyTags } from "@/modules/stories/constants";
+import { ApiResponse } from "@/types";
 
 type Payload = {
   storyIds: string[];
 };
 
 export const bulkRestoreAction = async (storyIds: string[]) => {
-  const stories = await post<Payload, Payload>("stories/restore", {
+  const stories = await post<Payload, ApiResponse<Payload>>("stories/restore", {
     storyIds,
   });
   storyIds.forEach((storyId) => {
@@ -18,5 +19,5 @@ export const bulkRestoreAction = async (storyIds: string[]) => {
   revalidateTag(storyTags.teams());
   revalidateTag(storyTags.mine());
 
-  return stories;
+  return stories.data;
 };

@@ -12,6 +12,8 @@ import {
   SprintsIcon,
   UsersAddIcon,
   EpicsIcon,
+  SidebarExpandIcon,
+  SearchIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -130,75 +132,30 @@ export const Header = () => {
             </Menu.Group>
           </Menu.Items>
         </Menu>
-
-        {/* <SidebarExpandIcon
-          role="button"
-          aria-label="Collapse"
-          tabIndex={0}
-          className="h-6 w-auto outline-none"
-        /> */}
-
-        {/* <Button
-          align="center"
-          className="px-[0.5rem] shadow"
-          color="tertiary"
-          leftIcon={
-            <SearchIcon className="h-[0.95rem] w-auto" strokeWidth={3} />
-          }
-          size="sm"
-          variant="outline"
-        >
-          <span className="sr-only">Search</span>
-        </Button> */}
       </Flex>
-      <Flex className="mb-3 w-full rounded-lg">
+      <Flex gap={2} className="mb-4">
         <Button
-          className="h-9 rounded-r-none md:h-[2.65rem]"
-          color="tertiary"
+          className="rounded-[0.6rem] md:h-[2.5rem]"
           fullWidth
-          rounded="lg"
+          color="tertiary"
+          variant="outline"
           leftIcon={<NewStoryIcon className="h-5 w-auto" />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}
-          // variant="outline"
         >
-          Create Story
+          New Story
         </Button>
-        <Menu>
-          <Menu.Button>
-            <Button
-              align="center"
-              className="rounded-l-none border-l-0 px-[0.85rem] md:h-[2.65rem]"
-              color="tertiary"
-              rounded="lg"
-              leftIcon={<ArrowDownIcon className="h-[1.1rem] w-auto" />}
-              // variant="outline"
-            >
-              <span className="sr-only">More</span>
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="end" className="w-56 pb-1">
-            <Menu.Group className="gap-4 space-y-1">
-              <Menu.Item>
-                <NewStoryIcon className="h-5 w-auto" />
-                Create Story
-              </Menu.Item>
-              <Menu.Item>
-                <EpicsIcon className="h-5 w-auto" />
-                Create Epic
-              </Menu.Item>
-              <Menu.Item>
-                <SprintsIcon className="h-5 w-auto" />
-                Create Sprint
-              </Menu.Item>
-              <Menu.Item>
-                <ObjectiveIcon className="h-5 w-auto" />
-                Create Objective
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
+        <Button
+          asIcon
+          className="rounded-[0.6rem] md:h-[2.5rem]"
+          color="tertiary"
+          leftIcon={<SearchIcon className="h-4 w-auto" strokeWidth={3} />}
+          size="sm"
+          variant="outline"
+        >
+          <span className="sr-only">Search</span>
+        </Button>
       </Flex>
       <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>

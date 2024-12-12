@@ -336,24 +336,19 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         type="button"
                         rightIcon={
                           sprintId && (
-                            <Button
-                              className="aspect-square"
-                              color="tertiary"
-                              variant="naked"
-                              size="xs"
+                            <span
+                              tabIndex={0}
+                              className="flex aspect-square items-center gap-1"
                               onClick={() => {
                                 handleUpdate({ sprintId: null });
                               }}
-                              rounded="full"
-                              leftIcon={
-                                <CloseIcon
-                                  strokeWidth={2}
-                                  className="h-5 w-auto text-primary"
-                                />
-                              }
                             >
+                              <CloseIcon
+                                strokeWidth={2}
+                                className="h-5 w-auto text-primary"
+                              />
                               <span className="sr-only">Remove sprint</span>
-                            </Button>
+                            </span>
                           )
                         }
                       >
