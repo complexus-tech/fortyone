@@ -2,14 +2,21 @@ import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { ListSprintStories } from "@/modules/teams/sprints/stories/list-stories";
 
-export default async function Page({
-  params: { teamId, sprintId },
-}: {
-  params: {
-    teamId: string;
-    sprintId: string;
-  };
-}) {
+export default async function Page(
+  props: {
+    params: Promise<{
+      teamId: string;
+      sprintId: string;
+    }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    teamId,
+    sprintId
+  } = params;
+
   const stories = await getStories(
     {
       teamId,

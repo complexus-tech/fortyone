@@ -5,11 +5,17 @@ import { getStory } from "@/modules/story/queries/get-story";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 
 type Props = {
-  params: {
+  params: Promise<{
     storyId: string;
-  };
+  }>;
 };
-export default async function Page({ params: { storyId } }: Props) {
+export default async function Page(props: Props) {
+  const params = await props.params;
+
+  const {
+    storyId
+  } = params;
+
   const queryClient = getQueryClient();
 
   await queryClient.prefetchQuery({

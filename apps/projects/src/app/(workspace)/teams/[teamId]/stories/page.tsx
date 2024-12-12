@@ -5,13 +5,19 @@ import { storyKeys, storyTags } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 
-export default async function Page({
-  params: { teamId },
-}: {
-  params: {
-    teamId: string;
-  };
-}) {
+export default async function Page(
+  props: {
+    params: Promise<{
+      teamId: string;
+    }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    teamId
+  } = params;
+
   const queryClient = getQueryClient();
 
   await queryClient.prefetchQuery({
