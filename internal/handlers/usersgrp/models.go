@@ -12,12 +12,12 @@ type AppUser struct {
 	Username    string    `json:"username"`
 	Email       string    `json:"email"`
 	FullName    string    `json:"fullName"`
-	Role        string    `json:"role"`
 	AvatarURL   string    `json:"avatarUrl"`
 	IsActive    bool      `json:"isActive"`
 	LastLoginAt time.Time `json:"lastLoginAt"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       *string   `json:"token,omitempty"`
 }
 
 func toAppUser(user users.CoreUser) AppUser {
@@ -26,11 +26,16 @@ func toAppUser(user users.CoreUser) AppUser {
 		Username:    user.Username,
 		Email:       user.Email,
 		FullName:    user.FullName,
-		Role:        user.Role,
 		AvatarURL:   user.AvatarURL,
 		IsActive:    user.IsActive,
 		LastLoginAt: user.LastLoginAt,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
+		Token:       user.Token,
 	}
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

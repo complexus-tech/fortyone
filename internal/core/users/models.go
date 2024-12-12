@@ -19,4 +19,5 @@ type CoreUser struct {
 	LastLoginAt time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Token       *string
 }

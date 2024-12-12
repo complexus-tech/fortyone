@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -228,7 +229,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
 	defer span.End()
 
-	currentUser, _ := uuid.Parse("8a798112-90fe-495e-9f1c-f36655e3d8ab")
+	currentUser, _ := mid.GetUserID(ctx)
 
 	params := map[string]interface{}{
 		"workspace_id": workspaceId,
@@ -612,4 +613,49 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 	}
 
 	return subStories, nil
+}
+
+func (r *repo) RecordActivity(ctx context.Context, storyID uuid.UUID, activityType string, description string, userID uuid.UUID) error {
+	query := `
+        INSERT INTO story_activities (story_id, type, description, user_id)
+        VALUES (:story_id, :type, :description, :user_id)
+    `
+	params := map[string]interface{}{
+		"story_id":    storyID,
+		"type":        activityType,
+		"description": description,
+		"user_id":     userID,
+	}
+
+	_, err := r.db.NamedExecContext(ctx, query, params)
+	return err
+}
+
+func (r *repo) GetLastActivity(ctx context.Context, storyID uuid.UUID, activityType string) (string, uuid.UUID, error) {
+	query := `
+        SELECT description, user_id
+        FROM story_activities
+        WHERE story_id = :story_id AND type = :activity_type
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+	params := map[string]interface{}{
+		"story_id":      storyID,
+		"activity_type": activityType,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return "", uuid.Nil, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var description string
+	var userID uuid.UUID
+	err = stmt.QueryRowContext(ctx, params).Scan(&description, &userID)
+	if err != nil {
+		return "", uuid.Nil, fmt.Errorf("failed to query last activity: %w", err)
+	}
+
+	return description, userID, nil
 }

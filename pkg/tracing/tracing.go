@@ -35,7 +35,6 @@ func (c *config) StartTracing() (*trace.TracerProvider, error) {
 	ctx := context.Background()
 	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure())
 	if err != nil {
-
 		return nil, err
 	}
 

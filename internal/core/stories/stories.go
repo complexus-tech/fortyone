@@ -2,7 +2,9 @@ package stories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -31,6 +33,8 @@ type Repository interface {
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	// Add this method later for labels
 	// GetLabels(ctx context.Context, storyId uuid.UUID, workspaceId uuid.UUID) ([]Label, error)
+	RecordActivity(ctx context.Context, storyID uuid.UUID, activityType string, description string, userID uuid.UUID) error
+	GetLastActivity(ctx context.Context, storyID uuid.UUID, activityType string) (string, uuid.UUID, error)
 }
 
 // Add this new type
@@ -152,15 +156,34 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 }
 
 // Update updates the story with the specified ID.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any, userID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
+
+	for field, value := range updates {
+		activityType := fmt.Sprintf("%s_updated", field)
+		description := fmt.Sprintf("%s updated to %v", field, value)
+
+		lastDescription, lastUserID, err := s.repo.GetLastActivity(ctx, id, activityType)
+		if err != nil && err != sql.ErrNoRows {
+			span.RecordError(err)
+			return err
+		}
+
+		if lastDescription != description || lastUserID != userID {
+			if err := s.repo.RecordActivity(ctx, id, activityType, description, userID); err != nil {
+				span.RecordError(err)
+				return err
+			}
+		}
+	}
 
 	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
 		span.RecordError(err)
 		return err
 	}
+
 	return nil
 }
 

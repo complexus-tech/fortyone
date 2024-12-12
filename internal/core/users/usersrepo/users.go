@@ -2,6 +2,7 @@ package usersrepo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -25,7 +26,7 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) Login(ctx context.Context, email, password string) (users.CoreUser, error) {
+func (r *repo) GetByEmail(ctx context.Context, email string) (users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.Login")
 	defer span.End()
 
@@ -35,9 +36,8 @@ func (r *repo) Login(ctx context.Context, email, password string) (users.CoreUse
 			user_id,
 			username,
 			email,
-			password,
+			password_hash,
 			full_name,
-			role,
 			avatar_url,
 			is_active,
 			last_login_at,
@@ -45,17 +45,16 @@ func (r *repo) Login(ctx context.Context, email, password string) (users.CoreUse
 			updated_at
 		FROM
 			users
-		WHERE email = :email AND password = :password;
+		WHERE email = :email;
 	`
 
 	var params = map[string]interface{}{
-		"email":    email,
-		"password": password,
+		"email": email,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return users.CoreUser{}, err
@@ -65,9 +64,11 @@ func (r *repo) Login(ctx context.Context, email, password string) (users.CoreUse
 	r.log.Info(ctx, "Fetching user.")
 	if err := stmt.GetContext(ctx, &user, params); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve user from the database: %s", err)
-		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("user not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return users.CoreUser{}, err
+		if err == sql.ErrNoRows {
+			return users.CoreUser{}, errors.New("email or password is incorrect")
+		}
+		return users.CoreUser{}, fmt.Errorf("failed to retrieve user %w", err)
 	}
 
 	r.log.Info(ctx, "User retrieved successfully.")
@@ -76,4 +77,17 @@ func (r *repo) Login(ctx context.Context, email, password string) (users.CoreUse
 	))
 
 	return toCoreUser(user), nil
+}
+
+func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.Create")
+	defer span.End()
+
+	// q := `
+	// 	INSERT INTO users (username, email, password_hash, full_name, avatar_url, is_active, last_login_at, created_at, updated_at)
+	// 	VALUES (:username, :email, :password_hash, :full_name, :avatar_url, :is_active, :last_login_at, :created_at, :updated_at)
+	// `
+
+	return users.CoreUser{}, nil
+
 }

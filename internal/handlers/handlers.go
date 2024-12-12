@@ -16,8 +16,8 @@ import (
 
 type handlers struct{}
 
-// BuildRoutes returns a new handlers instance which implements the mux.RouteAdder interface.
-func BuildRoutes() handlers {
+// New returns a new handlers instance which implements the mux.RouteAdder interface.
+func New() handlers {
 	return handlers{}
 }
 
@@ -74,8 +74,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the users routes
 	usersgrp.Routes(usersgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 }

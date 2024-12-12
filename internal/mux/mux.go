@@ -18,10 +18,11 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB       *sqlx.DB
-	Shutdown chan os.Signal
-	Log      *logger.Logger
-	Tracer   trace.Tracer
+	DB        *sqlx.DB
+	Shutdown  chan os.Signal
+	Log       *logger.Logger
+	Tracer    trace.Tracer
+	SecretKey string
 }
 
 // New returns a new HTTP handler that defines all the API routes.
