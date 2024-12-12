@@ -94,13 +94,14 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
         </span>
         <Flex align="center" gap={1}>
           <ArrowDownIcon
+            suppressHydrationWarning
             className={cn("h-3.5 w-auto -rotate-90", {
               "rotate-0": isOpen,
             })}
             strokeWidth={3.5}
           />
           <Menu>
-            <Menu.Button asChild>
+            <Menu.Button asChild suppressHydrationWarning>
               <button
                 className={cn("px-1 py-2 opacity-0 group-hover:opacity-100", {
                   "opacity-100": isOpen,
@@ -141,6 +142,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
         </Flex>
       </Flex>
       <Flex
+        suppressHydrationWarning
         className={cn(
           "ml-5 h-0 overflow-hidden border-l border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-100",
           {
