@@ -5,7 +5,6 @@ import { storyKeys } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 
 export default async function Page() {
-  console.log(await getMyStories());
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
     queryKey: storyKeys.mine(),

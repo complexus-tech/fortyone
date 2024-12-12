@@ -4,7 +4,6 @@ module.exports = {
   transpilePackages: ["ui", "icons"],
   experimental: {
     reactCompiler: true,
-    after: true,
   },
   images: {
     remotePatterns: [

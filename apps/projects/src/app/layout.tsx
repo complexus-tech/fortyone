@@ -8,9 +8,9 @@ import { Providers } from "./providers";
 import dynamic from "next/dynamic";
 import { toasterIcons } from "./toaster-icons";
 
-const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
-  ssr: false,
-});
+// const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
+//   ssr: false,
+// });
 
 const font = Inter({
   subsets: ["latin"],
@@ -66,7 +66,7 @@ export default function RootLayout({
           }}
           icons={toasterIcons}
         />
-        <PostHogPageView />
+        {/* <PostHogPageView /> */}
         <ProgressBar />
       </body>
     </html>
