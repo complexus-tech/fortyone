@@ -58,7 +58,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 	defer stmt.Close()
 
 	err = stmt.GetContext(ctx, &currentSequence, params)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		// If no record exists, insert a new one starting from 1
 		q := `
 			INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence)
@@ -418,7 +418,7 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	return nil
 }
 
-// Restore rrestores a story with the specified ID.
+// Restore restores a story with the specified ID.
 func (r *repo) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Restore")
 	defer span.End()
