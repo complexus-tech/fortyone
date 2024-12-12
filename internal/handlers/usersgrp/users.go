@@ -39,7 +39,7 @@ func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	expiresAt := time.Now().Add(time.Hour * 24)
+	expiresAt := time.Now().Add(time.Hour * 24 * 30)
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
 		ExpiresAt: jwt.NewNumericDate(expiresAt),

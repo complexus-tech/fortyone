@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -36,17 +37,21 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		return ErrInvalidStoryID
+		h.log.Error(ctx, "invalid story id", "error", err)
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
 	}
 
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	story, err := h.stories.Get(ctx, storyId, workspaceId)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, toAppStory(story), http.StatusOK)
 	return nil
@@ -58,16 +63,19 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		return ErrInvalidStoryID
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
 	}
 
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	if err := h.stories.Delete(ctx, storyId, workspaceId); err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -78,15 +86,17 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 	var req AppBulkDeleteRequest
 	if err := web.Decode(r, &req); err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 	if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspaceId); err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
 	web.Respond(ctx, w, data, http.StatusOK)
@@ -100,16 +110,19 @@ func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.R
 	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		return ErrInvalidStoryID
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
 	}
 
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	if err := h.stories.Restore(ctx, storyId, workspaceId); err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	data := map[string]uuid.UUID{"id": storyId}
 	web.Respond(ctx, w, data, http.StatusOK)
@@ -121,15 +134,17 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 	var req AppBulkRestoreRequest
 	if err := web.Decode(r, &req); err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 	if err := h.stories.BulkRestore(ctx, req.StoryIDs, workspaceId); err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
 	web.Respond(ctx, w, data, http.StatusOK)
@@ -141,17 +156,19 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 	var ns AppNewStory
 	if err := web.Decode(r, &ns); err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
 	story, err := h.stories.Create(ctx, toCoreNewStory(ns), workspaceId)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, toAppStory(story), http.StatusCreated)
 	return nil
@@ -162,11 +179,13 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 	stories, err := h.stories.MyStories(ctx, workspaceId)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, toAppStories(stories), http.StatusOK)
 	return nil
@@ -178,32 +197,37 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		return ErrInvalidStoryID
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
 	}
 
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	var requestData map[string]json.RawMessage
 	if err := web.Decode(r, &requestData); err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
 	// Get the user ID from the context (assuming it's set by authentication middleware)
-	userID, ok := ctx.Value("userID").(uuid.UUID)
-	if !ok {
-		return errors.New("user ID not found in context")
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 
 	updates, err := getUpdates(requestData)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	if err := h.stories.Update(ctx, storyId, workspaceId, updates, userID); err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -214,19 +238,21 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	var af AppFilters
 	filters, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
 	stories, err := h.stories.List(ctx, workspaceId, filters)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 	web.Respond(ctx, w, toAppStories(stories), http.StatusOK)
 	return nil

@@ -2,9 +2,7 @@ package stories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -159,23 +157,23 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
 
-	for field, value := range updates {
-		activityType := fmt.Sprintf("%s_updated", field)
-		description := fmt.Sprintf("%s updated to %v", field, value)
+	// for field, value := range updates {
+	// 	activityType := fmt.Sprintf("%s_updated", field)
+	// 	description := fmt.Sprintf("%s updated to %v", field, value)
 
-		lastDescription, lastUserID, err := s.repo.GetLastActivity(ctx, id, activityType)
-		if err != nil && err != sql.ErrNoRows {
-			span.RecordError(err)
-			return err
-		}
+	// 	lastDescription, lastUserID, err := s.repo.GetLastActivity(ctx, id, activityType)
+	// 	if err != nil && err != sql.ErrNoRows {
+	// 		span.RecordError(err)
+	// 		return err
+	// 	}
 
-		if lastDescription != description || lastUserID != userID {
-			if err := s.repo.RecordActivity(ctx, id, activityType, description, userID); err != nil {
-				span.RecordError(err)
-				return err
-			}
-		}
-	}
+	// 	if lastDescription != description || lastUserID != userID {
+	// 		if err := s.repo.RecordActivity(ctx, id, activityType, description, userID); err != nil {
+	// 			span.RecordError(err)
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
 		span.RecordError(err)
