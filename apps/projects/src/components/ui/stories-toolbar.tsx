@@ -67,6 +67,8 @@ export const StoriesToolbar = () => {
         </Text>
         <Button
           color="tertiary"
+          title="This is not available yet"
+          disabled
           onClick={() => {
             setIsSprintsOpen(true);
           }}
@@ -76,6 +78,8 @@ export const StoriesToolbar = () => {
           Add to sprint
         </Button>
         <Button
+          title="This is not available yet"
+          disabled
           color="tertiary"
           onClick={() => {
             setIsObjectivesOpen(true);

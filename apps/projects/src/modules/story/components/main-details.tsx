@@ -132,7 +132,7 @@ export const MainDetails = () => {
         storyId={storyId}
       />
       <BodyContainer className="overflow-y-auto pb-8">
-        <Container className="pt-7 md:px-16">
+        <Container className="pt-7">
           <TextEditor
             asTitle
             className="relative -left-1 text-4xl font-medium"

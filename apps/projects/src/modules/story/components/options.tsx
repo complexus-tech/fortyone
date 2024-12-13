@@ -214,7 +214,7 @@ export const Options = () => {
             </AssigneesMenu>
           }
         />
-        <Option label="Labels" value={<Labels />} />
+        {/* <Option label="Labels" value={<Labels />} /> */}
         <Option
           label="Start date"
           value={
@@ -309,7 +309,7 @@ export const Options = () => {
             </DatePicker>
           }
         />
-        <Option
+        {/* <Option
           label="Sprint"
           value={
             <SprintsMenu>
@@ -397,7 +397,7 @@ export const Options = () => {
               None
             </Button>
           }
-        />
+        /> */}
 
         <Divider className="my-4" />
         <AddLinks />

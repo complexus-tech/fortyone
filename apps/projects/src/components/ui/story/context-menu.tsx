@@ -19,6 +19,7 @@ import {
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { ContextMenuItem } from "./context-menu-item";
+import { Story } from "@/modules/stories/types";
 
 export const contextMenu = [
   {
@@ -165,7 +166,13 @@ export const contextMenu = [
   },
 ];
 
-export const StoryContextMenu = ({ children }: { children: ReactNode }) => {
+export const StoryContextMenu = ({
+  children,
+  story,
+}: {
+  children: ReactNode;
+  story: Story;
+}) => {
   return (
     <ContextMenu>
       <ContextMenu.Trigger>

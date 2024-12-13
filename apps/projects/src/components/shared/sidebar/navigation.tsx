@@ -49,22 +49,22 @@ export const Navigation = () => {
     //   icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
     //   href: "/roadmaps",
     // },
-    {
-      name: "Objectives",
-      icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
-      href: "/objectives",
-    },
+    // {
+    //   name: "Objectives",
+    //   icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
+    //   href: "/objectives",
+    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/notifications",
       messages: 3,
     },
-    {
-      name: "Running Sprints",
-      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
-      href: "/sprints",
-    },
+    // {
+    //   name: "Running Sprints",
+    //   icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+    //   href: "/sprints",
+    // },
   ];
 
   return (

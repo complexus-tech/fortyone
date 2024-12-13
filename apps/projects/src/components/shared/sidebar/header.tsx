@@ -144,7 +144,7 @@ export const Header = () => {
             setIsOpen(!isOpen);
           }}
         >
-          New Story
+          Create Story
         </Button>
         <Button
           asIcon

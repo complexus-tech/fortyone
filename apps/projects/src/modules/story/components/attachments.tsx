@@ -29,7 +29,7 @@ export const Attachments = ({ className }: { className?: string }) => {
   });
 
   return (
-    <Box className={className}>
+    <Box className={className} suppressHydrationWarning>
       <Text
         as="h4"
         className="mb-2 flex items-center gap-1"

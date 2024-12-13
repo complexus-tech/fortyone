@@ -5,6 +5,7 @@ import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { Story } from "@/modules/stories/types";
 import { useState } from "react";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 export const SubStories = ({
   subStories,
@@ -20,6 +21,14 @@ export const SubStories = ({
   isSubStoriesOpen: boolean;
 }) => {
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
+  const { data: statuses = [] } = useStatuses();
+  const completedStatus = statuses?.find(
+    (status) => status?.category === "completed",
+  );
+
+  const completedStories =
+    subStories.filter((story) => story.statusId === completedStatus?.id)
+      ?.length ?? 0;
 
   return (
     <>
@@ -43,7 +52,7 @@ export const SubStories = ({
             Sub stories
           </Button>
           <Badge color="tertiary" rounded="full" className="px-1.5">
-            1/{subStories.length} Done
+            {completedStories}/{subStories.length} Done
           </Badge>
         </Flex>
         <Button

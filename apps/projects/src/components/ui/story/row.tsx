@@ -25,13 +25,7 @@ import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { slugify } from "@/utils";
-import {
-  CalendarIcon,
-  EpicsIcon,
-  ObjectiveIcon,
-  SprintsIcon,
-  CloseIcon,
-} from "icons";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon, CloseIcon } from "icons";
 import {
   format,
   addDays,
@@ -215,7 +209,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
 
   return (
     <div ref={setNodeRef}>
-      <StoryContextMenu>
+      <StoryContextMenu story={story}>
         <RowWrapper
           className={cn("gap-4", {
             "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
@@ -368,15 +362,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 />
               </SprintsMenu>
             )}
-            <Button
-              color="tertiary"
-              className="px-2"
-              size="xs"
-              rounded="xl"
-              type="button"
-            >
-              <EpicsIcon className="h-5 w-auto" /> Objective
-            </Button>
             {isColumnVisible("Labels") && <Labels />}
             {isColumnVisible("Due date") &&
               endDate &&
@@ -456,6 +441,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip
+                  className="mr-2 py-2"
                   title={
                     <Flex gap={3}>
                       <Avatar
@@ -464,17 +450,18 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
                       />
                       <Box>
-                        <Text fontSize="md" fontWeight="medium">
-                          Joseph Mukorivo
-                        </Text>
-                        <Text fontSize="md" color="muted" className="mb-2">
+                        <Text fontWeight="medium">Joseph Mukorivo</Text>
+                        <Text
+                          fontSize="sm"
+                          color="muted"
+                          className="relative -top-0.5 mb-2"
+                        >
                           @josemukorivo
                         </Text>
 
                         <Button
                           size="xs"
-                          color="tertiary"
-                          rounded="full"
+                          // color="tertiary"
                           className="mb-0.5 ml-px px-2"
                           href="/"
                         >

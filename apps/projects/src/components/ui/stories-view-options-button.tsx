@@ -40,8 +40,8 @@ const initialViewOptions: StoriesViewOptions = {
     "Due date",
     "Created",
     "Updated",
-    "Sprint",
-    "Labels",
+    // "Sprint",
+    // "Labels",
   ],
 };
 
@@ -66,10 +66,10 @@ export const StoriesViewOptionsButton = ({
     "Due date",
     "Created",
     "Updated",
-    "Sprint",
-    "Epic",
-    "Objective",
-    "Labels",
+    // "Sprint",
+    // "Epic",
+    // "Objective",
+    // "Labels",
   ];
 
   const hasFilters =

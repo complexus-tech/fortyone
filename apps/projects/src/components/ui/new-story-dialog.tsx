@@ -219,7 +219,6 @@ export const NewStoryDialog = ({
                 color="tertiary"
                 size="xs"
                 variant="naked"
-                rounded="full"
                 onClick={() => {
                   setIsExpanded((prev) => !prev);
                 }}
@@ -381,7 +380,7 @@ export const NewStoryDialog = ({
                 }}
               />
             </DatePicker>
-            <Button
+            {/* <Button
               className="px-2 text-sm"
               color="tertiary"
               leftIcon={<TagsIcon className="h-4 w-auto" />}
@@ -389,7 +388,7 @@ export const NewStoryDialog = ({
               variant="outline"
             >
               <span className="sr-only">Add labels to the story</span>
-            </Button>
+            </Button> */}
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-between gap-2">

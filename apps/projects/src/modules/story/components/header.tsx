@@ -68,7 +68,7 @@ export const Header = ({
               Restore story
             </Button>
           )}
-          <Text className="mr-2">
+          {/* <Text className="mr-2">
             2 /{" "}
             <Text as="span" color="muted">
               8
@@ -91,8 +91,8 @@ export const Header = ({
             size="sm"
           >
             <ArrowDownIcon className="h-4 w-auto" />
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             color="tertiary"
             variant="naked"
             disabled={isDeleted}
@@ -109,7 +109,7 @@ export const Header = ({
           >
             <BellIcon className="h-5 w-auto" />
             <span className="sr-only">Subscribe</span>
-          </Button>
+          </Button> */}
         </Flex>
       </Flex>
     </HeaderContainer>

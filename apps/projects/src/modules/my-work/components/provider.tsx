@@ -24,8 +24,8 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
       "Due date",
       "Created",
       "Updated",
-      "Sprint",
-      "Labels",
+      // "Sprint",
+      // "Labels",
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(

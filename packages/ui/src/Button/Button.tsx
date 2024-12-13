@@ -42,7 +42,7 @@ export const buttonVariants = cva(
         lg: "px-5 md:px-7 py-2.5 md:py-3",
       },
       disabled: {
-        true: "opacity-40 cursor-not-allowed pointer-events-none",
+        true: "opacity-40 cursor-not-allowed",
       },
       active: {
         true: null,

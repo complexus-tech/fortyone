@@ -28,8 +28,8 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
       "Due date",
       "Created",
       "Updated",
-      "Sprint",
-      "Labels",
+      // "Sprint",
+      // "Labels",
     ],
   };
   const initialFilters: StoriesFilter = {

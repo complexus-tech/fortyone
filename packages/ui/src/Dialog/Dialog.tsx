@@ -27,7 +27,7 @@ const DialogOverlay = forwardRef<
     ref={ref}
     className={cn(
       "fixed inset-0 z-50 flex items-start justify-center bg-black/30 dark:bg-black/60",
-      className,
+      className
     )}
     {...props}
   />
@@ -38,8 +38,8 @@ const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
     className={cn(
-      "inline-block rounded-full p-1 outline-none transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-100",
-      className,
+      "inline-block rounded-[0.6rem] p-1 outline-none transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-100",
+      className
     )}
   >
     <CloseIcon className="h-6 w-auto" />
@@ -65,7 +65,7 @@ const DialogContent = forwardRef<
             "max-w-xl": size === "md",
             "max-w-5xl": size === "lg",
             "max-w-7xl": size === "xl",
-          },
+          }
         )}
         {...props}
       >
@@ -105,7 +105,7 @@ const DialogFooter = ({
         "justify-center": justify === "center",
         "justify-between": justify === "between",
       },
-      className,
+      className
     )}
     {...props}
   />
@@ -120,7 +120,7 @@ const DialogTitle = forwardRef<
     ref={ref}
     className={cn(
       "font-medium leading-none tracking-tight dark:text-white",
-      className,
+      className
     )}
     {...props}
   />
@@ -147,7 +147,7 @@ const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
       "max-h-[80vh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
-      className,
+      className
     )}
     {...props}
   />

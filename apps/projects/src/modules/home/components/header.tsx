@@ -18,7 +18,7 @@ export const Header = () => {
         ]}
       />
       <Flex gap={2}>
-        <Button
+        {/* <Button
           color="tertiary"
           leftIcon={<PlusIcon className="h-[1.15rem] w-auto" />}
           onClick={() => {
@@ -27,7 +27,7 @@ export const Header = () => {
           size="sm"
         >
           New Objective
-        </Button>
+        </Button> */}
         <NewStoryButton />
       </Flex>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
