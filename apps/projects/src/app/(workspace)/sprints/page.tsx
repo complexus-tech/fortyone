@@ -3,5 +3,5 @@ import { DetailedSprintList } from "@/modules/sprints";
 
 export default async function Page() {
   const runningSprints = await getRunningSprints();
-  return <DetailedSprintList sprints={runningSprints} />;
+  return <DetailedSprintList sprints={runningSprints!} />;
 }

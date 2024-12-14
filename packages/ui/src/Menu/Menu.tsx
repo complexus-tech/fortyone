@@ -36,8 +36,29 @@ const contentClasses = cva(
     defaultVariants: {
       rounded: "md",
     },
-  },
+  }
 );
+
+const SubTrigger = forwardRef<
+  ElementRef<typeof DropdownMenu.SubTrigger>,
+  ComponentPropsWithoutRef<typeof DropdownMenu.SubTrigger> & {
+    active?: boolean;
+  }
+>(({ children, className, active, ...rest }, ref) => (
+  <DropdownMenu.SubTrigger
+    className={cn(
+      "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
+      {
+        "bg-gray-50/80 dark:bg-dark-100": active,
+      },
+      className
+    )}
+    ref={ref}
+    {...rest}
+  >
+    {children}
+  </DropdownMenu.SubTrigger>
+));
 
 type ContentProps = ComponentProps<typeof DropdownMenu.Content> &
   VariantProps<typeof contentClasses>;
@@ -77,7 +98,7 @@ const Item = forwardRef<
       {
         "bg-gray-100/80 dark:bg-dark-50": active,
       },
-      className,
+      className
     )}
     ref={ref}
     {...rest}
@@ -96,7 +117,7 @@ const CheckboxItem = forwardRef<
       {
         "bg-gray-50/80 dark:bg-dark-50/60": checked,
       },
-      className,
+      className
     )}
     ref={ref}
     checked={checked}
@@ -122,6 +143,33 @@ export const Menu = ({ children, ...rest }: MenuProps) => {
   );
 };
 
+type SubContentProps = ComponentProps<typeof DropdownMenu.SubContent> &
+  VariantProps<typeof contentClasses>;
+const SubItems = ({
+  children,
+  className,
+  sideOffset = 7.8,
+  alignOffset = -4,
+  loop = true,
+  rounded,
+  ...rest
+}: SubContentProps) => {
+  const classes = cn(contentClasses({ rounded }), className);
+  return (
+    <DropdownMenu.Portal>
+      <DropdownMenu.SubContent
+        className={classes}
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
+        loop={loop}
+        {...rest}
+      >
+        {children}
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Portal>
+  );
+};
+
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...rest }, ref) => (
@@ -133,13 +181,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         className={cn(
           "w-full bg-transparent py-[0.15rem] outline-none",
-          className,
+          className
         )}
         ref={ref}
         {...rest}
       />
     </div>
-  ),
+  )
 );
 
 const Separator = forwardRef<
@@ -149,7 +197,7 @@ const Separator = forwardRef<
   <DropdownMenu.Separator
     className={cn(
       "my-2 border-b-[0.5px] border-gray-100 dark:border-dark-100",
-      className,
+      className
     )}
     ref={ref}
     {...rest}
@@ -165,6 +213,9 @@ const Group = forwardRef<
 
 Menu.Button = Trigger;
 Menu.Separator = Separator;
+Menu.SubMenu = DropdownMenu.Sub;
+Menu.SubTrigger = SubTrigger;
+Menu.SubItems = SubItems;
 Menu.Group = Group;
 Menu.Items = Items;
 Menu.Item = Item;
