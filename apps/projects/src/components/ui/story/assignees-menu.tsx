@@ -1,4 +1,5 @@
 "use client";
+import { useMembers } from "@/lib/hooks/members";
 import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
@@ -41,34 +42,17 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 const Items = ({
   placeholder = "Assign user...",
   align,
+  assigneeId,
   onAssigneeSelected,
 }: {
   placeholder?: string;
   align?: "start" | "end" | "center";
-  onAssigneeSelected: (assignee: string) => void;
+  assigneeId?: string | null;
+  onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
   const { setOpen } = useAssigneesMenu();
-  const users = [
-    {
-      name: "Joseph Mukorivo",
-      avatar:
-        "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
-    },
-    {
-      name: "Jane Doe",
-      avatar:
-        "https://images.unsplash.com/photo-1677576874778-df95ea6ff733?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDI4fHRvd0paRnNrcEdnfHxlbnwwfHx8fHw%3D&auto=format&fit=crop&w=800&q=60",
-    },
-    {
-      name: "John Doe",
-      avatar:
-        "https://images.unsplash.com/photo-1696452044585-c6a9389d0c6b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDM3fHRvd0paRnNrcEdnfHxlbnwwfHx8fHw%3D&auto=format&fit=crop&w=800&q=60",
-    },
+  const { data: members = [] } = useMembers();
 
-    {
-      name: "Doubting Thomas",
-    },
-  ];
   return (
     <Popover.Content align={align} className="w-72">
       <Command>
@@ -78,25 +62,49 @@ const Items = ({
           <Text color="muted">No user found.</Text>
         </Command.Empty>
         <Command.Group>
-          {users.map(({ name, avatar }, idx) => (
+          <Command.Item
+            active={!assigneeId}
+            className="justify-between"
+            onSelect={() => {
+              onAssigneeSelected(null);
+              setOpen(false);
+            }}
+          >
+            <Flex align="center" gap={2}>
+              <Avatar color="primary" size="sm" />
+              <Text className="max-w-[10rem] truncate">No assignee</Text>
+            </Flex>
+            <Flex align="center" gap={1}>
+              {!assigneeId && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
+              <Text color="muted">0</Text>
+            </Flex>
+          </Command.Item>
+          {members.map(({ id, fullName, avatarUrl }, idx) => (
             <Command.Item
-              active={idx === 1}
+              active={id === assigneeId}
               className="justify-between"
-              key={name}
+              key={id}
               onSelect={() => {
-                onAssigneeSelected(name);
+                onAssigneeSelected(id);
                 setOpen(false);
               }}
             >
               <Flex align="center" gap={2}>
-                <Avatar color="primary" name={name} size="sm" src={avatar} />
-                <Text className="max-w-[10rem] truncate">{name}</Text>
+                <Avatar
+                  color="primary"
+                  name={fullName}
+                  size="sm"
+                  src={avatarUrl}
+                />
+                <Text className="max-w-[10rem] truncate">{fullName}</Text>
               </Flex>
               <Flex align="center" gap={1}>
-                {idx === 1 && (
+                {id === assigneeId && (
                   <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 )}
-                <Text color="muted">{idx}</Text>
+                <Text color="muted">{idx + 1}</Text>
               </Flex>
             </Command.Item>
           ))}

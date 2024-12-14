@@ -38,6 +38,7 @@ import { useStoryById } from "@/modules/story/hooks/story";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
+import { useMembers } from "@/lib/hooks/members";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -64,16 +65,21 @@ export const Options = () => {
     startDate,
     endDate,
     objectiveId,
+    assigneeId,
     sprintId,
     deletedAt,
   } = data!;
   const { data: sprints = [] } = useSprints();
   const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
   const sprint = sprints.find((s) => s.id === sprintId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
     statuses.at(0))!!;
   const isDeleted = !!deletedAt;
+  const assignee = members.find((m) => m.id === assigneeId);
+
   const { mutateAsync } = useUpdateStoryMutation();
+
   const getDueDateMessage = (date: Date) => {
     if (date < new Date()) {
       return (
@@ -158,8 +164,8 @@ export const Options = () => {
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
                 statusId={statusId}
-                setStatusId={(st) => {
-                  handleUpdate({ statusId: st });
+                setStatusId={(statusId) => {
+                  handleUpdate({ statusId });
                 }}
               />
             </StatusesMenu>
@@ -181,8 +187,8 @@ export const Options = () => {
                 </Button>
               </PrioritiesMenu.Trigger>
               <PrioritiesMenu.Items
-                setPriority={(p) => {
-                  handleUpdate({ priority: p });
+                setPriority={(priority) => {
+                  handleUpdate({ priority });
                 }}
               />
             </PrioritiesMenu>
@@ -194,23 +200,35 @@ export const Options = () => {
             <AssigneesMenu>
               <AssigneesMenu.Trigger>
                 <Button
-                  className="font-medium"
+                  className={cn("font-medium", {
+                    "text-gray-200 dark:text-gray-300": !assigneeId,
+                  })}
                   disabled={isDeleted}
                   color="tertiary"
                   leftIcon={
                     <Avatar
-                      name="Joseph Mukorivo"
+                      className="text-dark/80 dark:text-gray-200"
+                      name={assignee?.fullName}
                       size="xs"
-                      src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                      src={assignee?.avatarUrl}
                     />
                   }
                   type="button"
                   variant="naked"
                 >
-                  josemukorivo
+                  {assignee?.username || (
+                    <Text color="muted" as="span">
+                      Assign
+                    </Text>
+                  )}
                 </Button>
               </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items onAssigneeSelected={(assignee) => {}} />
+              <AssigneesMenu.Items
+                assigneeId={assigneeId}
+                onAssigneeSelected={(assigneeId) => {
+                  handleUpdate({ assigneeId });
+                }}
+              />
             </AssigneesMenu>
           }
         />

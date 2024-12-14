@@ -41,6 +41,7 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useObjectives } from "@/lib/hooks/objectives";
 import { SprintsMenu } from "@/components/ui";
+import { useMembers } from "@/lib/hooks/members";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -61,6 +62,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
   const { data: objectives = [] } = useObjectives();
+  const { data: members = [] } = useMembers();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
@@ -73,7 +75,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     (objective) => objective.id === objectiveId,
   );
   const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
-
+  const selectedAssignee = members.find(
+    (member) => member.id === story?.assigneeId,
+  );
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
@@ -243,7 +247,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
             </Link>
           </Flex>
-          <Flex align="center" className="shrink-0" gap={2}>
+          <Flex align="center" className="shrink-0" gap={3}>
             {isColumnVisible("Status") && (
               <StatusesMenu>
                 <StatusesMenu.Trigger>
@@ -441,34 +445,40 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip
-                  className="mr-2 py-2"
+                  className="mr-2 py-2.5"
                   title={
-                    <Flex gap={3}>
-                      <Avatar
-                        className="mt-1.5"
-                        name="Joseph Mukorivo"
-                        src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                      />
+                    selectedAssignee ? (
                       <Box>
-                        <Text fontWeight="medium">Joseph Mukorivo</Text>
-                        <Text
-                          fontSize="sm"
-                          color="muted"
-                          className="relative -top-0.5 mb-2"
-                        >
-                          @josemukorivo
-                        </Text>
-
-                        <Button
-                          size="xs"
-                          // color="tertiary"
-                          className="mb-0.5 ml-px px-2"
-                          href="/"
-                        >
-                          Go to profile
-                        </Button>
+                        <Flex gap={2}>
+                          <Avatar
+                            name={selectedAssignee?.fullName}
+                            src={selectedAssignee?.avatarUrl}
+                            className="mt-0.5"
+                          />
+                          <Box>
+                            <Link
+                              href={`/profile/${selectedAssignee?.id}`}
+                              className="mb-2 flex gap-1"
+                            >
+                              <Text fontWeight="medium" fontSize="md">
+                                {selectedAssignee?.fullName}
+                              </Text>
+                              <Text color="muted" fontSize="md">
+                                ({selectedAssignee?.username})
+                              </Text>
+                            </Link>
+                            <Button
+                              size="xs"
+                              color="tertiary"
+                              className="mb-0.5 ml-px px-2"
+                              href={`/profile/${selectedAssignee?.id}`}
+                            >
+                              Go to profile
+                            </Button>
+                          </Box>
+                        </Flex>
                       </Box>
-                    </Flex>
+                    ) : null
                   }
                 >
                   <span>
@@ -476,15 +486,20 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                       <button className="flex" type="button">
                         <Avatar
                           color="tertiary"
-                          // name="Joseph Mukorivo"
-                          size="xs"
-                          // src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
+                          name={selectedAssignee?.fullName}
+                          size="sm"
+                          src={selectedAssignee?.avatarUrl}
                         />
                       </button>
                     </AssigneesMenu.Trigger>
                   </span>
                 </Tooltip>
-                <AssigneesMenu.Items onAssigneeSelected={(assigneeId) => {}} />
+                <AssigneesMenu.Items
+                  assigneeId={selectedAssignee?.id}
+                  onAssigneeSelected={(assigneeId) => {
+                    handleUpdate({ assigneeId });
+                  }}
+                />
               </AssigneesMenu>
             )}
           </Flex>

@@ -9,6 +9,8 @@ import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import { getMembers } from "@/lib/queries/members/get-members";
+import { memberKeys } from "@/constants/keys";
 
 export const metadata: Metadata = {
   title: "Objectives",
@@ -39,6 +41,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: ["sprints"],
       queryFn: getSprints,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: memberKeys.lists(),
+      queryFn: getMembers,
     }),
   ]);
 

@@ -25,3 +25,17 @@ export const sprintKeys = {
   details: () => [...sprintKeys.all, "detail"] as const,
   detail: (id: string) => [...sprintKeys.details(), id] as const,
 };
+
+export const memberKeys = {
+  all: ["members"] as const,
+  lists: () => [...memberKeys.all, "list"] as const,
+  details: () => [...memberKeys.all, "detail"] as const,
+  detail: (id: string) => [...memberKeys.details(), id] as const,
+};
+
+export const memberTags = {
+  all: "members" as const,
+  lists: () => `${memberTags.all}-list` as const,
+  details: () => `${memberTags.all}-detail` as const,
+  detail: (id: string) => `${memberTags.details()}-${id}` as const,
+};

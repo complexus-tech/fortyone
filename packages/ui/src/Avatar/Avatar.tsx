@@ -1,7 +1,7 @@
 "use client";
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
-import { FC, HTMLAttributes, useState } from "react";
+import { FC, HTMLAttributes } from "react";
 import { BlurImage } from "../Image/Image";
 import { AssigneeIcon } from "icons";
 
@@ -23,7 +23,7 @@ const avatar = cva(
         naked: "bg-transparent",
       },
       size: {
-        xs: "h-6 text-xs leading-6",
+        xs: "h-5 text-xs leading-6",
         sm: "h-7 text-sm leading-7",
         md: "h-8 text-base leading-8",
         lg: "h-12 text-lg leading-[3rem]",
@@ -90,8 +90,8 @@ export const Avatar: FC<AvatarProps> = (props) => {
       {asIcon && (
         <AssigneeIcon
           className={cn("h-5 w-auto opacity-70", {
-            "h-5": size === "sm",
-            "h-auto": size === "xs",
+            "h-6": size === "sm",
+            "h-5": size === "xs",
           })}
           strokeWidth={2}
         />

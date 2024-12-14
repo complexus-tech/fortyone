@@ -10,6 +10,8 @@ import {
   DatePicker,
   Menu,
   Tooltip,
+  Avatar,
+  Box,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -47,6 +49,8 @@ import { useSession } from "next-auth/react";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { useMembers } from "@/lib/hooks/members";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -64,6 +68,7 @@ export const NewStoryDialog = ({
   const session = useSession();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
@@ -81,6 +86,7 @@ export const NewStoryDialog = ({
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
+    assigneeId: null,
     priority,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
@@ -138,7 +144,7 @@ export const NewStoryDialog = ({
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
       reporterId: session?.data?.user?.id,
-      // assigneeId: "",
+      assigneeId: storyForm.assigneeId,
     };
 
     try {
@@ -271,8 +277,8 @@ export const NewStoryDialog = ({
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
                 statusId={storyForm.statusId}
-                setStatusId={(id) => {
-                  setStoryForm((prev) => ({ ...prev, statusId: id }));
+                setStatusId={(statusId) => {
+                  setStoryForm((prev) => ({ ...prev, statusId }));
                 }}
               />
             </StatusesMenu>
@@ -380,6 +386,41 @@ export const NewStoryDialog = ({
                 }}
               />
             </DatePicker>
+            <AssigneesMenu>
+              <AssigneesMenu.Trigger>
+                <Button
+                  className="gap-1.5 px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={
+                    <Avatar
+                      color="tertiary"
+                      name={
+                        members.find(
+                          (member) => member.id === storyForm.assigneeId,
+                        )?.fullName
+                      }
+                      size="xs"
+                      src={
+                        members.find(
+                          (member) => member.id === storyForm.assigneeId,
+                        )?.avatarUrl
+                      }
+                    />
+                  }
+                  size="xs"
+                  variant="outline"
+                >
+                  {members.find((member) => member.id === storyForm.assigneeId)
+                    ?.username || "Assignee"}
+                </Button>
+              </AssigneesMenu.Trigger>
+              <AssigneesMenu.Items
+                assigneeId={storyForm.assigneeId}
+                onAssigneeSelected={(assigneeId) => {
+                  setStoryForm({ ...storyForm, assigneeId });
+                }}
+              />
+            </AssigneesMenu>
             {/* <Button
               className="px-2 text-sm"
               color="tertiary"

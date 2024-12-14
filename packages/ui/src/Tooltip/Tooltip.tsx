@@ -14,14 +14,17 @@ export const Tooltip = ({
   sideOffset = 3,
   ...rest
 }: ContentProps) => {
+  if (!title) {
+    return children;
+  }
   return (
     <TooltipPrimitive.Provider>
-      <TooltipPrimitive.Root delayDuration={500}>
+      <TooltipPrimitive.Root delayDuration={600}>
         <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             className={cn(
-              "dark:text-gray-200 z-50 text-gray border border-gray-100 bg-white/80 px-3 text-sm py-[0.35rem] dark:border-dark-100/60 font-medium dark:bg-dark-200/80 backdrop-blur rounded-lg",
+              "dark:text-gray-200 z-50 text-gray border border-gray-100 bg-white/80 px-3 text-[0.95rem] py-[0.35rem] dark:border-dark-100/60 font-medium dark:bg-dark-200/80 backdrop-blur rounded-[0.6rem] mr-2",
               className
             )}
             sideOffset={sideOffset}

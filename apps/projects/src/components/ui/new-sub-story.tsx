@@ -1,6 +1,6 @@
 "use client";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Button, Flex, TextEditor, DatePicker, Box } from "ui";
+import { Button, Flex, TextEditor, DatePicker, Box, Avatar } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -25,6 +25,8 @@ import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { useMembers } from "@/lib/hooks/members";
 
 export const NewSubStory = ({
   statusId,
@@ -38,11 +40,12 @@ export const NewSubStory = ({
   teamId: string;
   parentId: string;
   priority?: StoryPriority;
-  isOpen?: boolean;
-  setIsOpen?: Dispatch<SetStateAction<boolean>>;
+  isOpen: boolean;
+  setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const session = useSession();
   const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
   const { id: defaultStateId } = (statuses.find(
     (state) => state.id === statusId,
   ) || statuses.at(0))!!;
@@ -55,6 +58,7 @@ export const NewSubStory = ({
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
+    assigneeId: null,
     priority,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
@@ -112,7 +116,7 @@ export const NewSubStory = ({
       startDate: storyForm.startDate,
       reporterId: session?.data?.user?.id,
       parentId,
-      // assigneeId: "",
+      assigneeId: storyForm.assigneeId,
     };
 
     try {
@@ -285,15 +289,42 @@ export const NewSubStory = ({
                   }}
                 />
               </DatePicker>
-              <Button
-                className="px-2 text-sm"
-                color="tertiary"
-                leftIcon={<TagsIcon className="h-4 w-auto" />}
-                size="xs"
-                variant="outline"
-              >
-                <span className="sr-only">Add labels to the story</span>
-              </Button>
+              <AssigneesMenu>
+                <AssigneesMenu.Trigger>
+                  <Button
+                    className="gap-1.5 px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={
+                      <Avatar
+                        color="tertiary"
+                        name={
+                          members.find(
+                            (member) => member.id === storyForm.assigneeId,
+                          )?.fullName
+                        }
+                        size="xs"
+                        src={
+                          members.find(
+                            (member) => member.id === storyForm.assigneeId,
+                          )?.avatarUrl
+                        }
+                      />
+                    }
+                    size="xs"
+                    variant="outline"
+                  >
+                    {members.find(
+                      (member) => member.id === storyForm.assigneeId,
+                    )?.username || "Assignee"}
+                  </Button>
+                </AssigneesMenu.Trigger>
+                <AssigneesMenu.Items
+                  assigneeId={storyForm.assigneeId}
+                  onAssigneeSelected={(assigneeId) => {
+                    setStoryForm({ ...storyForm, assigneeId });
+                  }}
+                />
+              </AssigneesMenu>
             </Flex>
             <Flex gap={1}>
               <Button
