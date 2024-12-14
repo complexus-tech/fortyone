@@ -14,7 +14,7 @@ type AppUser struct {
 	FullName    string    `json:"fullName"`
 	AvatarURL   string    `json:"avatarUrl"`
 	IsActive    bool      `json:"isActive"`
-	LastLoginAt time.Time `json:"lastLoginAt"`
+	LastLoginAt time.Time `json:"-"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	Token       *string   `json:"token,omitempty"`
@@ -33,6 +33,14 @@ func toAppUser(user users.CoreUser) AppUser {
 		UpdatedAt:   user.UpdatedAt,
 		Token:       user.Token,
 	}
+}
+
+func toAppUsers(users []users.CoreUser) []AppUser {
+	appUsers := make([]AppUser, len(users))
+	for i, user := range users {
+		appUsers[i] = toAppUser(user)
+	}
+	return appUsers
 }
 
 type LoginRequest struct {

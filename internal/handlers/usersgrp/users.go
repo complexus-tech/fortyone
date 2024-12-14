@@ -2,12 +2,18 @@ package usersgrp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+)
+
+var (
+	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 )
 
 type Handlers struct {
@@ -54,4 +60,21 @@ func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 
+}
+
+// List returns a list of users for a workspace.
+func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	users, err := h.users.List(ctx, workspaceId)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
+	return nil
 }

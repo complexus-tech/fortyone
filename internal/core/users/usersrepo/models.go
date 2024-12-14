@@ -34,3 +34,11 @@ func toCoreUser(p dbUser) users.CoreUser {
 		UpdatedAt:   p.UpdatedAt,
 	}
 }
+
+func toCoreUsers(du []dbUser) []users.CoreUser {
+	coreUsers := make([]users.CoreUser, len(du))
+	for i, user := range du {
+		coreUsers[i] = toCoreUser(user)
+	}
+	return coreUsers
+}

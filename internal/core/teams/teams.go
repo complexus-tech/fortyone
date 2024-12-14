@@ -5,13 +5,14 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // Repository provides access to the teams storage.
 type Repository interface {
-	List(ctx context.Context) ([]CoreTeam, error)
+	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreTeam, error)
 }
 
 // Service provides story-related operations.
@@ -29,12 +30,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // List returns a list of teams.
-func (s *Service) List(ctx context.Context) ([]CoreTeam, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.list")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.List")
 	defer span.End()
 
-	teams, err := s.repo.List(ctx)
+	teams, err := s.repo.List(ctx, workspaceId)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

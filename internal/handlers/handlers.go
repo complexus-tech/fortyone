@@ -68,16 +68,16 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the states routes
 	statesgrp.Routes(statesgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the teams routes
 	teamsgrp.Routes(teamsgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the users routes

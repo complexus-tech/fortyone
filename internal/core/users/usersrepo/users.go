@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -90,4 +91,52 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 
 	return users.CoreUser{}, nil
 
+}
+
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
+	defer span.End()
+
+	var users []dbUser
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceId,
+	}
+
+	q := `
+		SELECT
+			u.user_id,
+			u.username,
+			u.email,
+			u.password_hash,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.last_login_at,
+			u.created_at,
+			u.updated_at
+		FROM 
+			users u
+		INNER JOIN 
+			workspace_members wm ON u.user_id = wm.user_id
+		WHERE 
+			wm.workspace_id = :workspace_id 
+		AND u.is_active = TRUE
+	`
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg, workspaceId)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &users, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve users from the database: %s", err)
+		span.RecordError(errors.New("failed to retrieve users"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, fmt.Errorf("failed to retrieve users %w", err)
+	}
+
+	return toCoreUsers(users), nil
 }
