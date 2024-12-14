@@ -32,29 +32,31 @@ export const SubStories = ({
 
   return (
     <>
-      <Flex align="center" justify="between">
-        <Flex align="center" gap={2}>
-          <Button
-            color="tertiary"
-            variant="naked"
-            size="sm"
-            onClick={() => {
-              setIsSubStoriesOpen(!isSubStoriesOpen);
-            }}
-            rightIcon={
-              isSubStoriesOpen ? (
-                <ArrowDownIcon className="h-4 w-auto" />
-              ) : (
-                <ArrowUpIcon className="h-4 w-auto" />
-              )
-            }
-          >
-            Sub stories
-          </Button>
-          <Badge color="tertiary" rounded="full" className="px-1.5">
-            {completedStories}/{subStories.length} Done
-          </Badge>
-        </Flex>
+      <Flex align="center" justify={subStories.length > 0 ? "between" : "end"}>
+        {subStories.length > 0 && (
+          <Flex align="center" gap={2}>
+            <Button
+              color="tertiary"
+              variant="naked"
+              size="sm"
+              onClick={() => {
+                setIsSubStoriesOpen(!isSubStoriesOpen);
+              }}
+              rightIcon={
+                isSubStoriesOpen ? (
+                  <ArrowDownIcon className="h-4 w-auto" />
+                ) : (
+                  <ArrowUpIcon className="h-4 w-auto" />
+                )
+              }
+            >
+              Sub stories
+            </Button>
+            <Badge color="tertiary" rounded="full" className="px-1.5">
+              {completedStories}/{subStories.length} Done
+            </Badge>
+          </Flex>
+        )}
         <Button
           color="tertiary"
           leftIcon={<PlusIcon className="h-5 w-auto" />}

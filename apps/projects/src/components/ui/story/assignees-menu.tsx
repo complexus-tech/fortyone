@@ -3,6 +3,7 @@ import { useMembers } from "@/lib/hooks/members";
 import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
+import { cn } from "lib";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -71,7 +72,11 @@ const Items = ({
             }}
           >
             <Flex align="center" gap={2}>
-              <Avatar color="primary" size="sm" />
+              <Avatar
+                color="primary"
+                size="sm"
+                className="text-dark/80 dark:text-gray-200"
+              />
               <Text className="max-w-[10rem] truncate">No assignee</Text>
             </Flex>
             <Flex align="center" gap={1}>

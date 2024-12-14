@@ -207,7 +207,9 @@ export const Options = () => {
                   color="tertiary"
                   leftIcon={
                     <Avatar
-                      className="text-dark/80 dark:text-gray-200"
+                      className={cn({
+                        "text-dark/80 dark:text-gray-200": !assignee?.fullName,
+                      })}
                       name={assignee?.fullName}
                       size="xs"
                       src={assignee?.avatarUrl}
