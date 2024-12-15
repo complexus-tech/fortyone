@@ -58,12 +58,14 @@ export const NewStoryDialog = ({
   statusId,
   teamId,
   priority = "No Priority",
+  assigneeId,
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   statusId?: string;
   teamId?: string;
   priority?: StoryPriority;
+  assigneeId?: string | null;
 }) => {
   const session = useSession();
   const { data: teams = [] } = useTeams();
@@ -86,7 +88,7 @@ export const NewStoryDialog = ({
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
-    assigneeId: null,
+    assigneeId,
     priority,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);

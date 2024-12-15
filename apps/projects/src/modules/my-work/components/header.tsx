@@ -53,7 +53,7 @@ export const Header = ({
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesViewOptionsButton
-          groupByOptions={["Status", "Priority", "None"]}
+          groupByOptions={["Status", "Priority", "Assignee", "None"]}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />

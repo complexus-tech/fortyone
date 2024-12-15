@@ -6,7 +6,7 @@ export type ApiResponse<T> = {
 };
 
 export type Member = {
-  id: string;
+  id: string | null;
   username: string;
   email: string;
   fullName: string;

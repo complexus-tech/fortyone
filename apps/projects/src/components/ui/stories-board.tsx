@@ -130,6 +130,17 @@ export const StoriesBoard = ({
         });
       }
     }
+
+    if (groupBy === "Assignee") {
+      const newAssignee = e.over?.id as string | null;
+      const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
+      storiesBoard[index].assigneeId = newAssignee;
+      setStoriesBoard([...storiesBoard]);
+      updateStory(e.active.id.toString(), {
+        assigneeId: newAssignee,
+      });
+    }
+
     setActiveStory(null);
   };
 

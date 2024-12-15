@@ -5,6 +5,8 @@ import type { StoriesViewOptions } from "@/components/ui/stories-view-options-bu
 import { BodyContainer } from "../shared/body";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { StoriesList } from "./stories-list";
+import { useMembers } from "@/lib/hooks/members";
+import { Member } from "@/types";
 
 export const ListBoard = ({
   stories,
@@ -17,6 +19,7 @@ export const ListBoard = ({
 }) => {
   const { groupBy } = viewOptions;
   const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
 
   const priorities: StoryPriority[] = [
     "Urgent",
@@ -25,6 +28,17 @@ export const ListBoard = ({
     "Low",
     "No Priority",
   ];
+
+  const unassignedMember: Member = {
+    id: null,
+    username: "Unassigned",
+    email: "",
+    fullName: "",
+    avatarUrl: "",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
   return (
     <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
@@ -45,6 +59,17 @@ export const ListBoard = ({
             className="-top-[0.5px]"
             key={priority}
             priority={priority}
+            stories={stories}
+            viewOptions={viewOptions}
+          />
+        ))}
+
+      {groupBy === "Assignee" &&
+        [...members, unassignedMember].map((member) => (
+          <StoriesGroup
+            className="-top-[0.5px]"
+            key={member.id}
+            assignee={member}
             stories={stories}
             viewOptions={viewOptions}
           />

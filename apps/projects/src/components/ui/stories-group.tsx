@@ -11,6 +11,7 @@ import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
 import { State, StateCategory } from "@/types/states";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { Member } from "@/types";
 
 export const StoriesGroup = ({
   stories,
@@ -18,10 +19,12 @@ export const StoriesGroup = ({
   priority,
   className,
   viewOptions,
+  assignee,
 }: {
   stories: Story[];
   status?: State;
   priority?: StoryPriority;
+  assignee?: Member;
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
@@ -29,7 +32,14 @@ export const StoriesGroup = ({
   const { data: statuses = [] } = useStatuses();
   const { id: defaultStatusId } = statuses.at(0)!!;
   const { groupBy, showEmptyGroups } = viewOptions;
-  const id = (groupBy === "Status" ? status?.id : priority) as string;
+  const id = (
+    groupBy === "Status"
+      ? status?.id
+      : groupBy === "Assignee"
+        ? assignee?.id
+        : priority
+  ) as string;
+
   const collapseKey = pathname + id;
   const defaultClosedStatuses: StateCategory[] = [
     "cancelled",
@@ -61,10 +71,12 @@ export const StoriesGroup = ({
     priority: priority ?? "No Priority",
     statusId: statusId ?? defaultStatusId,
   }));
-  const filteredStories =
-    groupBy === "Status"
-      ? mappedStories.filter((story) => story.statusId === status?.id)
-      : mappedStories.filter((story) => story.priority === priority);
+  const filteredStories = mappedStories.filter((story) => {
+    if (groupBy === "Status") return story.statusId === id;
+    if (groupBy === "Assignee") return story.assigneeId === id;
+    if (groupBy === "Priority") return story.priority === id;
+    return false;
+  });
 
   return (
     <div
@@ -82,6 +94,7 @@ export const StoriesGroup = ({
         priority={priority}
         setIsCollapsed={setIsCollapsed}
         status={status}
+        assignee={assignee}
       />
       {!isCollapsed && <StoriesList stories={filteredStories} />}
       {!isCollapsed && (
@@ -90,7 +103,13 @@ export const StoriesGroup = ({
             Showing <b>{filteredStories.length}</b> stor
             {filteredStories.length === 1 ? "y" : "ies"} with{" "}
             {groupBy.toLowerCase()}{" "}
-            <b>{groupBy === "Status" ? status?.name : priority}</b>
+            <b>
+              {groupBy === "Status"
+                ? status?.name
+                : groupBy === "Assignee"
+                  ? assignee?.username || "Unassigned"
+                  : priority}
+            </b>
           </Text>
         </RowWrapper>
       )}

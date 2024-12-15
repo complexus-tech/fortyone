@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button, Checkbox, Container, Flex, Text, Tooltip } from "ui";
+import { Avatar, Button, Checkbox, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
 import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
@@ -10,6 +10,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
 import { State } from "@/types/states";
 import { useBoard } from "@/components/ui/board-context";
+import { Member } from "@/types";
 
 type StoryHeaderProps = {
   status?: State;
@@ -19,6 +20,7 @@ type StoryHeaderProps = {
   stories: Story[];
   isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
+  assignee?: Member;
 };
 export const StoriesHeader = ({
   className,
@@ -28,6 +30,7 @@ export const StoriesHeader = ({
   groupBy,
   isCollapsed,
   setIsCollapsed,
+  assignee,
 }: StoryHeaderProps) => {
   const count = stories.length;
   const [isOpen, setIsOpen] = useState(false);
@@ -79,6 +82,26 @@ export const StoriesHeader = ({
             size="sm"
             variant="naked"
           >
+            {groupBy === "Assignee" && (
+              <Flex align="center" className="gap-1.5">
+                <Avatar
+                  name={assignee?.fullName}
+                  size="xs"
+                  className={cn({
+                    "text-black dark:text-white": !assignee?.fullName,
+                  })}
+                  src={assignee?.avatarUrl}
+                />
+                <Text
+                  fontWeight="medium"
+                  className={cn("relative -top-[1px]", {
+                    "top-[0px]": !assignee?.fullName,
+                  })}
+                >
+                  {assignee?.username || "Unassigned"}
+                </Text>
+              </Flex>
+            )}
             {groupBy === "Status" && (
               <>
                 <StoryStatusIcon statusId={status?.id} />
@@ -121,6 +144,7 @@ export const StoriesHeader = ({
         priority={priority}
         setIsOpen={setIsOpen}
         statusId={status?.id}
+        assigneeId={assignee?.id || null}
       />
     </Container>
   );
