@@ -1,10 +1,16 @@
 "use server";
 
+import { post } from "@/lib/http";
+import { User } from "next-auth";
+
 export async function authenticateUser({ email = "", password = "" }) {
-  //   const user = await post<{ email: string; password: string }, User>(
-  //     `${apiUrl}/login/`,
-  //     { email, password }
-  //   );
+  // const user = await post<{ email: string; password: string }, User>(
+  //   "users/login",
+  //   {
+  //     email,
+  //     password,
+  //   },
+  // );
 
   return {
     id: "8a798112-90fe-495e-9f1c-f36655e3d8ab",

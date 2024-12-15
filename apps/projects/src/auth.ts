@@ -42,6 +42,7 @@ export const { handlers, auth, signOut, signIn } = NextAuth({
       },
     }),
   ],
+
   callbacks: {
     jwt({ token, user }) {
       if (user) {
@@ -77,4 +78,5 @@ export const { handlers, auth, signOut, signIn } = NextAuth({
     signIn: "/login",
     signOut: "/login",
   },
+  debug: true,
 });
