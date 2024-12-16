@@ -24,3 +24,13 @@ export type Story = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type StoryActivity = {
+  id: string;
+  storyId: string;
+  userId: string;
+  type: "update" | "comment" | "create";
+  field: string;
+  currentValue: string;
+  createdAt: string;
+};

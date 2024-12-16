@@ -8,77 +8,9 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { AttachmentIcon, ClockIcon, CommentIcon, UpdatesIcon } from "icons";
 import { Activity } from "@/components/ui";
-import type { ActivityProps } from "@/components/ui";
+import { StoryActivity } from "@/modules/stories/types";
 
-export const Activities = () => {
-  const activites: ActivityProps[] = [
-    {
-      id: 1,
-      user: "josemukorivo",
-      action: "changed status from",
-      prevValue: "Todo",
-      newValue: "In Progress",
-      timestamp: "23 hours ago",
-    },
-    {
-      id: 2,
-      user: "janedoe",
-      action: "created task",
-      prevValue: "Story 1",
-      newValue: "Todo",
-      timestamp: "2 days ago",
-    },
-    {
-      id: 3,
-      user: "johnsmith",
-      action: "assigned task to",
-      prevValue: "jackdoe",
-      newValue: "janedoe",
-      timestamp: "1 week ago",
-    },
-    {
-      id: 4,
-      user: "johndoe",
-      action: "changed status from",
-      prevValue: "In Progress",
-      newValue: "Done",
-      timestamp: "1 hour ago",
-    },
-    {
-      id: 5,
-      user: "josemukorivo",
-      action: "added comment",
-      prevValue: "",
-      newValue: "This is a sample comment.",
-      timestamp: "1 hour ago",
-    },
-    {
-      id: 6,
-      user: "janedoe",
-      action: "added comment",
-      prevValue: "",
-      newValue: "This is another sample comment.",
-      timestamp: "2 hours ago",
-    },
-
-    {
-      id: 7,
-      user: "johnsmith",
-      action: "added comment",
-      prevValue: "",
-      newValue: "This is another sample comment.",
-      timestamp: "2 hours ago",
-    },
-    {
-      id: 8,
-      user: "johndoe",
-      action: "added comment",
-      prevValue: "",
-      newValue: "This is another sample comment.",
-      timestamp: "2 hours ago",
-    },
-  ];
-
+export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -138,9 +70,9 @@ export const Activities = () => {
           <Flex className="relative" direction="column" gap={4}>
             <Box
               className="pointer-events-none absolute left-4 top-0 z-0 border-l border-gray-200 dark:border-dark-100/70"
-              style={{ height: 36 * activites.length + 45 }}
+              style={{ height: 36 * (activities.length + 1) + 45 }}
             />
-            {activites.map((activity) => (
+            {activities.map((activity) => (
               <Activity key={activity.id} {...activity} />
             ))}
             <Flex align="start">
@@ -180,9 +112,13 @@ export const Activities = () => {
         <Tabs.Panel value="updates">
           <Flex className="relative" direction="column" gap={4}>
             <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-gray-100 dark:border-dark-200" />
-            {activites.map((activity) => (
-              <Activity key={activity.id} {...activity} />
-            ))}
+            {activities.filter((a) => a.type === "update").length === 0 ? (
+              <Text>No updates available</Text>
+            ) : (
+              activities
+                .filter((a) => a.type === "update")
+                .map((activity) => <Activity key={activity.id} {...activity} />)
+            )}
           </Flex>
         </Tabs.Panel>
         <Tabs.Panel value="comments">

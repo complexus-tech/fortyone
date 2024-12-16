@@ -7,6 +7,7 @@ export const storyKeys = {
   list: (filter: string) => [...storyKeys.lists(), filter] as const,
   details: () => [...storyKeys.all, "detail"] as const,
   detail: (id: string) => [...storyKeys.details(), id] as const,
+  activities: (id: string) => [...storyKeys.detail(id), "activities"] as const,
 };
 
 export const storyTags = {
@@ -16,4 +17,5 @@ export const storyTags = {
   team: (teamId: string) => `${storyTags.teams()}-${teamId}` as const,
   details: () => `${storyTags.all}-detail` as const,
   detail: (id: string) => `${storyTags.details()}-${id}` as const,
+  activities: (id: string) => `${storyTags.detail(id)}-activities` as const,
 };

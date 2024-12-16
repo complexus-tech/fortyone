@@ -37,7 +37,8 @@
     "react-day-picker": "^8.10.1",
     "react-dropzone": "^14.2.3",
     "react-resizable-panels": "^2.0.16",
-    "react-select": "^5.8.0"
+    "react-select": "^5.8.0",
+    "react-time-ago": "^7.3.3"
   },
   "overrides": {
     "@types/react": "npm:types-react@rc",

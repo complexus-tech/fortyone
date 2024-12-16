@@ -21,6 +21,8 @@ import { useStoryById } from "../hooks/story";
 import { useLocalStorage } from "@/hooks";
 import { cn } from "lib";
 import { SubStories } from "./sub-stories";
+import { useStoryActivities } from "../hooks/story-activities";
+import { StoryActivity } from "@/modules/stories/types";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -55,6 +57,7 @@ const useDebounce = (callback: (...args: any[]) => void, delay = 500) => {
 export const MainDetails = () => {
   const params = useParams<{ storyId: string }>();
   const { data } = useStoryById(params.storyId);
+  const { data: activities = [] } = useStoryActivities(params.storyId);
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
     true,
@@ -68,8 +71,23 @@ export const MainDetails = () => {
     teamId,
     deletedAt,
     subStories,
+    createdAt,
+    reporterId,
   } = data!;
   const isDeleted = !!deletedAt;
+
+  const createStoryActivity: StoryActivity = {
+    id: "1",
+    type: "create",
+    createdAt,
+    storyId,
+    userId: reporterId,
+    field: "title",
+    currentValue: title,
+  };
+  const allActivities = reporterId
+    ? [createStoryActivity, ...activities]
+    : activities;
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {
     try {
@@ -156,7 +174,7 @@ export const MainDetails = () => {
             )}
           />
           <Divider className="my-6" />
-          <Activities />
+          <Activities activities={allActivities} />
         </Container>
       </BodyContainer>
     </>
