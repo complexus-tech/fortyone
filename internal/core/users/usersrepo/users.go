@@ -42,6 +42,7 @@ func (r *repo) GetByEmail(ctx context.Context, email string) (users.CoreUser, er
 			avatar_url,
 			is_active,
 			last_login_at,
+			last_used_workspace_id,
 			created_at,
 			updated_at
 		FROM

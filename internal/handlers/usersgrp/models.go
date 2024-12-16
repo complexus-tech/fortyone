@@ -8,30 +8,37 @@ import (
 )
 
 type AppUser struct {
-	ID          uuid.UUID `json:"id"`
-	Username    string    `json:"username"`
-	Email       string    `json:"email"`
-	FullName    string    `json:"fullName"`
-	AvatarURL   string    `json:"avatarUrl"`
-	IsActive    bool      `json:"isActive"`
-	LastLoginAt time.Time `json:"-"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	Token       *string   `json:"token,omitempty"`
+	ID                  uuid.UUID  `json:"id"`
+	Username            string     `json:"username"`
+	Email               string     `json:"email"`
+	FullName            string     `json:"fullName"`
+	AvatarURL           string     `json:"avatarUrl"`
+	IsActive            bool       `json:"isActive"`
+	LastLoginAt         time.Time  `json:"-"`
+	LastUsedWorkspaceID *uuid.UUID `json:"lastUsedWorkspaceId"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	Token               *string    `json:"token,omitempty"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		FullName:    user.FullName,
-		AvatarURL:   user.AvatarURL,
-		IsActive:    user.IsActive,
-		LastLoginAt: user.LastLoginAt,
-		CreatedAt:   user.CreatedAt,
-		UpdatedAt:   user.UpdatedAt,
-		Token:       user.Token,
+		ID:                  user.ID,
+		Username:            user.Username,
+		Email:               user.Email,
+		FullName:            user.FullName,
+		AvatarURL:           user.AvatarURL,
+		IsActive:            user.IsActive,
+		LastLoginAt:         user.LastLoginAt,
+		LastUsedWorkspaceID: user.LastUsedWorkspaceID,
+		CreatedAt:           user.CreatedAt,
+		UpdatedAt:           user.UpdatedAt,
+		Token:               user.Token,
 	}
 }
 
@@ -41,9 +48,4 @@ func toAppUsers(users []users.CoreUser) []AppUser {
 		appUsers[i] = toAppUser(user)
 	}
 	return appUsers
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
 }
