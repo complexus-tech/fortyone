@@ -124,6 +124,6 @@ type CoreActivity struct {
 	UserID       uuid.UUID `json:"userId"`
 	Type         string    `json:"type"`
 	Field        string    `json:"field"`
-	CurrentValue *string   `json:"currentValue"`
+	CurrentValue string    `json:"currentValue"`
 	CreatedAt    time.Time `json:"createdAt"`
 }

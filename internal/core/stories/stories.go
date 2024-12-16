@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -152,7 +153,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 }
 
 // Update updates the story with the specified ID.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any, userID uuid.UUID) error {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	s.log.Info(ctx, "business.core.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
@@ -167,12 +168,17 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	for field, value := range updates {
 		currentValue := fmt.Sprintf("%v", value)
+
 		na := CoreActivity{
 			StoryID:      id,
 			Type:         "update",
 			Field:        field,
-			CurrentValue: &currentValue,
+			CurrentValue: currentValue,
 			UserID:       userID,
+		}
+		// ignore if field contains description
+		if strings.Contains(field, "description") {
+			continue
 		}
 		ca = append(ca, na)
 	}

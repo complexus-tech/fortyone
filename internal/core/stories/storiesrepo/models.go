@@ -138,7 +138,7 @@ type dbActivity struct {
 	UserID       uuid.UUID `db:"user_id"`
 	Type         string    `db:"activity_type"`
 	Field        string    `db:"field_changed"`
-	CurrentValue *string   `db:"current_value"`
+	CurrentValue string    `db:"current_value"`
 	CreatedAt    time.Time `db:"created_at"`
 }
 

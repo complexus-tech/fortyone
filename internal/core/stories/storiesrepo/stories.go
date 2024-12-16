@@ -707,13 +707,14 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 		SELECT 
 			activity_id,
 			story_id,
+			user_id,
 			activity_type,
 			field_changed,
 			current_value,
 			created_at
 		FROM story_activities
 		WHERE story_id = :story_id
-		ORDER BY created_at DESC
+		ORDER BY created_at
 	`
 
 	var activities []dbActivity

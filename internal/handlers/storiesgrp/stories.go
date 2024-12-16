@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
-	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -213,18 +212,12 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
-		return nil
-	}
-
 	updates, err := getUpdates(requestData)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	if err := h.stories.Update(ctx, storyId, workspaceId, updates, userID); err != nil {
+	if err := h.stories.Update(ctx, storyId, workspaceId, updates); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
