@@ -116,7 +116,7 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stor
 }
 
 func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.insertStory")
 	defer span.End()
 
 	q := `

@@ -213,7 +213,6 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// Get the user ID from the context (assuming it's set by authentication middleware)
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
