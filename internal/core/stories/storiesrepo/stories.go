@@ -615,47 +615,124 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 	return subStories, nil
 }
 
-func (r *repo) RecordActivity(ctx context.Context, storyID uuid.UUID, activityType string, description string, userID uuid.UUID) error {
-	query := `
-        INSERT INTO story_activities (story_id, type, description, user_id)
-        VALUES (:story_id, :type, :description, :user_id)
-    `
-	params := map[string]interface{}{
-		"story_id":    storyID,
-		"type":        activityType,
-		"description": description,
-		"user_id":     userID,
+func (r *repo) RecordActivities(ctx context.Context, activities []stories.CoreActivity) ([]stories.CoreActivity, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.RecordActivities")
+	defer span.End()
+
+	dbActivities, err := r.recordActivities(ctx, activities)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert activities: %w", err)
 	}
 
-	_, err := r.db.NamedExecContext(ctx, query, params)
-	return err
+	return toCoreActivities(dbActivities), nil
 }
 
-func (r *repo) GetLastActivity(ctx context.Context, storyID uuid.UUID, activityType string) (string, uuid.UUID, error) {
-	query := `
-        SELECT description, user_id
-        FROM story_activities
-        WHERE story_id = :story_id AND type = :activity_type
-        ORDER BY created_at DESC
-        LIMIT 1
-    `
-	params := map[string]interface{}{
-		"story_id":      storyID,
-		"activity_type": activityType,
-	}
+func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreActivity) ([]dbActivity, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.recordActivity")
+	defer span.End()
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	// Prepare the base query for bulk insert
+	q := `
+		INSERT INTO story_activities (
+			story_id, 
+			activity_type, 
+			field_changed, 
+			current_value,
+			user_id
+		)
+		VALUES (
+			:story_id, 
+			:activity_type, 
+			:field_changed, 
+			:current_value,
+			:user_id
+		)
+		RETURNING story_activities.*;
+	`
+
+	// Start a transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return "", uuid.Nil, fmt.Errorf("failed to prepare named statement: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Prepare the statement
+	stmt, err := tx.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
 	}
 	defer stmt.Close()
 
-	var description string
-	var userID uuid.UUID
-	err = stmt.QueryRowContext(ctx, params).Scan(&description, &userID)
-	if err != nil {
-		return "", uuid.Nil, fmt.Errorf("failed to query last activity: %w", err)
+	// Insert each activity and collect results
+	var result []dbActivity
+	for _, activity := range activities {
+		var da dbActivity
+		if err := stmt.GetContext(ctx, &da, toDBActivity(activity)); err != nil {
+			errMsg := fmt.Sprintf("Failed to insert activity: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to insert activity"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return nil, err
+		}
+		result = append(result, da)
 	}
 
-	return description, userID, nil
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Successfully created %d activities", len(activities)))
+	span.AddEvent("Activities created.", trace.WithAttributes(
+		attribute.Int("activity.count", len(activities)),
+	))
+
+	return result, nil
+}
+
+// GetActivities returns all activities for a given story ID.
+func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.CoreActivity, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetActivities")
+	defer span.End()
+	params := map[string]interface{}{"story_id": storyID}
+
+	q := `
+		SELECT 
+			activity_id,
+			story_id,
+			activity_type,
+			field_changed,
+			current_value,
+			created_at
+		FROM story_activities
+		WHERE story_id = :story_id
+		ORDER BY created_at DESC
+	`
+
+	var activities []dbActivity
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, fmt.Errorf("failed to get activities: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &activities, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to get activities: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get activities"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, fmt.Errorf("failed to get activities: %w", err)
+	}
+
+	return toCoreActivities(activities), nil
 }

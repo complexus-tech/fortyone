@@ -21,13 +21,13 @@ var (
 type Handlers struct {
 	stories *stories.Service
 	log     *logger.Logger
-	// audit  *audit.Service
 }
 
 // NewStoriesHandlers returns a new storiesHandlers instance.
 func New(stories *stories.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		stories: stories,
+		log:     log,
 	}
 }
 
@@ -254,5 +254,23 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 	web.Respond(ctx, w, toAppStories(stories), http.StatusOK)
+	return nil
+}
+
+// GetActivities returns the activities for a story.
+func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	activities, err := h.stories.GetActivities(ctx, storyId)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	web.Respond(ctx, w, toAppActivities(activities), http.StatusOK)
 	return nil
 }

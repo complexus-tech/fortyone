@@ -116,3 +116,14 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 		UpdatedAt:       now,
 	}
 }
+
+// CoreActivity represents the core model for an activity.
+type CoreActivity struct {
+	ID           uuid.UUID `json:"id"`
+	StoryID      uuid.UUID `json:"storyId"`
+	UserID       uuid.UUID `json:"userId"`
+	Type         string    `json:"type"`
+	Field        string    `json:"field"`
+	CurrentValue *string   `json:"currentValue"`
+	CreatedAt    time.Time `json:"createdAt"`
+}

@@ -3,7 +3,9 @@ package stories
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -28,10 +30,8 @@ type Repository interface {
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
-	// Add this method later for labels
-	// GetLabels(ctx context.Context, storyId uuid.UUID, workspaceId uuid.UUID) ([]Label, error)
-	RecordActivity(ctx context.Context, storyID uuid.UUID, activityType string, description string, userID uuid.UUID) error
-	GetLastActivity(ctx context.Context, storyID uuid.UUID, activityType string) (string, uuid.UUID, error)
+	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
+	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -157,23 +157,29 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
 
-	// for field, value := range updates {
-	// 	activityType := fmt.Sprintf("%s_updated", field)
-	// 	description := fmt.Sprintf("%s updated to %v", field, value)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
 
-	// 	lastDescription, lastUserID, err := s.repo.GetLastActivity(ctx, id, activityType)
-	// 	if err != nil && err != sql.ErrNoRows {
-	// 		span.RecordError(err)
-	// 		return err
-	// 	}
+	ca := []CoreActivity{}
 
-	// 	if lastDescription != description || lastUserID != userID {
-	// 		if err := s.repo.RecordActivity(ctx, id, activityType, description, userID); err != nil {
-	// 			span.RecordError(err)
-	// 			return err
-	// 		}
-	// 	}
-	// }
+	for field, value := range updates {
+		currentValue := fmt.Sprintf("%v", value)
+		na := CoreActivity{
+			StoryID:      id,
+			Type:         "update",
+			Field:        field,
+			CurrentValue: &currentValue,
+			UserID:       userID,
+		}
+		ca = append(ca, na)
+	}
+	if _, err := s.repo.RecordActivities(ctx, ca); err != nil {
+		span.RecordError(err)
+		return err
+	}
 
 	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
 		span.RecordError(err)
@@ -220,4 +226,23 @@ func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId 
 		return err
 	}
 	return nil
+}
+
+// GetActivities returns the activities for a story.
+func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error) {
+	s.log.Info(ctx, "business.core.activities.GetActivities")
+	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivities")
+	defer span.End()
+
+	activities, err := s.repo.GetActivities(ctx, storyID)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("activities retrieved.", trace.WithAttributes(
+		attribute.Int("activity.count", len(activities)),
+	))
+
+	return activities, nil
 }

@@ -17,12 +17,12 @@ type Config struct {
 
 func Routes(cfg Config, app *web.App) {
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB))
-
 	h := New(storiesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	app.Get("/workspaces/{workspaceId}/stories", h.List, auth)
 	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth)
+	app.Get("/workspaces/{workspaceId}/stories/{id}/activities", h.GetActivities, auth)
 	app.Get("/workspaces/{workspaceId}/my-stories", h.MyStories, auth)
 	app.Post("/workspaces/{workspaceId}/stories", h.Create, auth)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/restore", h.Restore, auth)

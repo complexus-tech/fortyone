@@ -11,6 +11,32 @@ import (
 	"github.com/google/uuid"
 )
 
+// AppActivityList represents an activity in the application layer
+type AppActivityList struct {
+	ID           uuid.UUID `json:"id"`
+	StoryID      uuid.UUID `json:"storyId"`
+	Type         string    `json:"type"`
+	Field        string    `json:"field"`
+	CurrentValue *string   `json:"currentValue"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// toAppActivities converts a list of core activities to a list of application activities
+func toAppActivities(activities []stories.CoreActivity) []AppActivityList {
+	appActivities := make([]AppActivityList, len(activities))
+	for i, activity := range activities {
+		appActivities[i] = AppActivityList{
+			ID:           activity.ID,
+			StoryID:      activity.StoryID,
+			Type:         activity.Type,
+			Field:        activity.Field,
+			CurrentValue: activity.CurrentValue,
+			CreatedAt:    activity.CreatedAt,
+		}
+	}
+	return appActivities
+}
+
 // AppBulkDeleteRequest represents a request to delete multiple stories.
 type AppBulkDeleteRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`

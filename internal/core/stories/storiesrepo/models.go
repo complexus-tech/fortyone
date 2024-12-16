@@ -130,3 +130,47 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		DeletedAt:       i.DeletedAt,
 	}
 }
+
+// dbActivity represents the database model for an dbActivity.
+type dbActivity struct {
+	ID           uuid.UUID `db:"activity_id"`
+	StoryID      uuid.UUID `db:"story_id"`
+	UserID       uuid.UUID `db:"user_id"`
+	Type         string    `db:"activity_type"`
+	Field        string    `db:"field_changed"`
+	CurrentValue *string   `db:"current_value"`
+	CreatedAt    time.Time `db:"created_at"`
+}
+
+// toCoreActivity converts a dbActivity to a CoreActivity.
+func toCoreActivity(i dbActivity) stories.CoreActivity {
+	return stories.CoreActivity{
+		ID:           i.ID,
+		StoryID:      i.StoryID,
+		UserID:       i.UserID,
+		Type:         i.Type,
+		Field:        i.Field,
+		CurrentValue: i.CurrentValue,
+		CreatedAt:    i.CreatedAt,
+	}
+}
+
+// toDBActivity converts a CoreActivity to a dbActivity.
+func toDBActivity(i stories.CoreActivity) dbActivity {
+	return dbActivity{
+		StoryID:      i.StoryID,
+		UserID:       i.UserID,
+		Type:         i.Type,
+		Field:        i.Field,
+		CurrentValue: i.CurrentValue,
+	}
+}
+
+// toCoreActivities converts a slice of dbActivities to a slice of CoreActivity.
+func toCoreActivities(is []dbActivity) []stories.CoreActivity {
+	ca := make([]stories.CoreActivity, len(is))
+	for i, activity := range is {
+		ca[i] = toCoreActivity(activity)
+	}
+	return ca
+}
