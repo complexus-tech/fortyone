@@ -83,6 +83,7 @@ export const MainDetails = () => {
     storyId,
     userId: reporterId,
     field: "title",
+    parentId: null,
     currentValue: title,
   };
   const allActivities = reporterId
@@ -174,7 +175,7 @@ export const MainDetails = () => {
             )}
           />
           <Divider className="my-6" />
-          <Activities activities={allActivities} />
+          <Activities activities={allActivities} storyId={storyId} />
         </Container>
       </BodyContainer>
     </>

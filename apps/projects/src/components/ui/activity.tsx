@@ -4,18 +4,38 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { CalendarIcon } from "icons";
+import { cn } from "lib";
 
 export const Activity = ({
   userId,
+  parentId,
   field,
   currentValue,
   type,
   createdAt,
+  children,
 }: StoryActivity) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const member = members.find((member) => member.id === userId);
+
+  const Comment = ({
+    parentId,
+    currentValue,
+  }: {
+    parentId: string | null;
+    currentValue: string;
+  }) => (
+    <Box
+      className={cn(
+        "prose prose-stone ml-9 mt-1 max-w-full rounded-lg rounded-br-none bg-gray-50/60 p-4 text-[0.95rem] leading-6 dark:prose-invert prose-headings:font-medium prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:bg-dark-200/70 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200",
+        {
+          "ml-12": parentId,
+        },
+      )}
+      html={currentValue}
+    />
+  );
 
   const fieldMap = {
     title: {
@@ -41,11 +61,17 @@ export const Activity = ({
     assignee_id: {
       label: "Assignee",
       render: (value: string) => (
-        <Link
-          href={`/profile/${members?.find((member) => member.id === value)?.id}`}
-        >
-          {members?.find((member) => member.id === value)?.username}
-        </Link>
+        <>
+          {!value || value?.includes("nil") ? (
+            <span>Unassigned</span>
+          ) : (
+            <Link
+              href={`/profile/${members?.find((member) => member.id === value)?.id}`}
+            >
+              {members?.find((member) => member.id === value)?.username}
+            </Link>
+          )}
+        </>
       ),
     },
     start_date: {
@@ -93,92 +119,109 @@ export const Activity = ({
   };
 
   return (
-    <Flex align="center" className="z-[1]" gap={1}>
-      <Tooltip
-        className="py-2.5"
-        title={
-          member && (
-            <Box>
-              <Flex gap={2}>
-                <Avatar
-                  name={member?.fullName}
-                  src={member?.avatarUrl}
-                  className="mt-0.5"
-                />
-                <Box>
-                  <Link
-                    href={`/profile/${member?.id}`}
-                    className="mb-2 flex gap-1"
-                  >
-                    <Text fontWeight="medium" fontSize="md">
-                      {member?.fullName}
-                    </Text>
-                    <Text color="muted" fontSize="md">
-                      ({member?.username})
-                    </Text>
-                  </Link>
-                  <Button
-                    size="xs"
-                    color="tertiary"
-                    className="mb-0.5 ml-px px-2"
-                    href={`/profile/${member?.id}`}
-                  >
-                    Go to profile
-                  </Button>
-                </Box>
-              </Flex>
+    <Box className="relative pb-4">
+      <Box
+        className={cn(
+          "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-200 dark:border-dark-100/70",
+        )}
+      />
+      <Flex align="center" className="z[1]" gap={1}>
+        <Tooltip
+          className="py-2.5"
+          title={
+            member && (
+              <Box>
+                <Flex gap={2}>
+                  <Avatar
+                    name={member?.fullName}
+                    src={member?.avatarUrl}
+                    className="mt-0.5"
+                  />
+                  <Box>
+                    <Link
+                      href={`/profile/${member?.id}`}
+                      className="mb-2 flex gap-1"
+                    >
+                      <Text fontWeight="medium" fontSize="md">
+                        {member?.fullName}
+                      </Text>
+                      <Text color="muted" fontSize="md">
+                        ({member?.username})
+                      </Text>
+                    </Link>
+                    <Button
+                      size="xs"
+                      color="tertiary"
+                      className="mb-0.5 ml-px px-2"
+                      href={`/profile/${member?.id}`}
+                    >
+                      Go to profile
+                    </Button>
+                  </Box>
+                </Flex>
+              </Box>
+            )
+          }
+        >
+          <Flex gap={1} className="cursor-pointer">
+            <Box className="relative top-[1px] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+              <Avatar
+                name={member?.fullName}
+                size="xs"
+                src={member?.avatarUrl}
+              />
             </Box>
-          )
-        }
-      >
-        <Flex gap={1} className="cursor-pointer">
-          <Box className="relative top-[1px] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
-            <Avatar name={member?.fullName} size="xs" src={member?.avatarUrl} />
-          </Box>
-          <Text
-            className="relative top-0.5 ml-1 text-black dark:text-white"
-            fontWeight="medium"
-          >
-            {member?.username}
-          </Text>
-        </Flex>
-      </Tooltip>
-      {(type === "update" || type === "create") && (
+            <Text
+              className="relative top-0.5 ml-1 text-black dark:text-white"
+              fontWeight="medium"
+            >
+              {member?.username}
+            </Text>
+          </Flex>
+        </Tooltip>
         <Text className="text-[0.95rem]" color="muted">
-          {type === "create" ? "created the story" : "changed"}
+          {type === "create"
+            ? "created the story"
+            : type === "update"
+              ? "changed"
+              : "commented"}
         </Text>
-      )}
 
-      {type === "update" && (
+        {type === "update" && (
+          <>
+            <Text
+              className="text-[0.95rem] text-black dark:text-white"
+              fontWeight="medium"
+            >
+              {fieldMap[field]?.label}
+            </Text>
+            <Text className="text-[0.95rem]" color="muted">
+              to
+            </Text>
+            <Text
+              className="text-[0.95rem] text-black dark:text-white"
+              as="span"
+              fontWeight="medium"
+            >
+              {fieldMap[field]?.render(currentValue)}
+            </Text>
+          </>
+        )}
+        <Text className="text-[0.95rem]" color="muted">
+          ·
+        </Text>
+        <Text className="text-[0.95rem]" color="muted">
+          <TimeAgo timestamp={createdAt} />
+        </Text>
+      </Flex>
+      {type === "comment" && (
         <>
-          <Text
-            className="text-[0.95rem] text-black dark:text-white"
-            fontWeight="medium"
-          >
-            {fieldMap[field]?.label}
-          </Text>
-          <Text className="text-[0.95rem]" color="muted">
-            to
-          </Text>
-          <Text
-            className="text-[0.95rem] text-black dark:text-white"
-            as="span"
-            fontWeight="medium"
-          >
-            {fieldMap[field]?.render(currentValue)}
-          </Text>
+          <Comment parentId={parentId} currentValue={currentValue} />
+          {children &&
+            children?.length > 0 &&
+            children.map((child) => <Comment key={child.id} {...child} />)}
         </>
       )}
-      {(type === "update" || type === "create") && (
-        <>
-          <Text className="text-[0.95rem]" color="muted">
-            ·
-          </Text>
-          <Text className="text-[0.95rem]" color="muted">
-            <TimeAgo timestamp={createdAt} />
-          </Text>
-        </>
-      )}
-    </Flex>
+    </Box>
   );
 };

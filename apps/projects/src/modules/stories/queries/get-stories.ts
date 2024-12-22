@@ -20,6 +20,7 @@ export const getStories = async (
     addQueryPrefix: true,
     encodeValuesOnly: true,
   });
+
   const stories = await get<ApiResponse<Story[]>>(`stories${query}`, options);
   return stories.data;
 };

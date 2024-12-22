@@ -29,8 +29,10 @@ export type StoryActivity = {
   id: string;
   storyId: string;
   userId: string;
+  parentId: string | null;
   type: "update" | "comment" | "create";
   field: string;
   currentValue: string;
   createdAt: string;
+  children?: StoryActivity[];
 };

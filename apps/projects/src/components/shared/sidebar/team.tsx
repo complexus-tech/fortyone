@@ -3,7 +3,7 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
-import { ArrowDownIcon, StoryIcon } from "icons";
+import { ArrowDownIcon, ObjectiveIcon, StoryIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink } from "../../ui";
 
@@ -40,11 +40,11 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     //   icon: <DocsIcon className="h-[1.3rem] w-auto" />,
     //   href: `/teams/${id}/documents`,
     // },
-    // {
-    //   name: "Objectives",
-    //   icon: <ObjectiveIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-    //   href: `/teams/${id}/objectives`,
-    // },
+    {
+      name: "Objectives",
+      icon: <ObjectiveIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      href: `/teams/${id}/objectives`,
+    },
     // {
     //   name: "Whiteboards",
     //   icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,

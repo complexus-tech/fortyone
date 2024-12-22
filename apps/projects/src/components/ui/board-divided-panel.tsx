@@ -19,7 +19,7 @@ export const BoardDividedPanel = ({
 
 const MainPanel = ({ children }: { children: ReactNode }) => {
   return (
-    <ResizablePanel.Panel defaultSize={75}>{children}</ResizablePanel.Panel>
+    <ResizablePanel.Panel defaultSize={70}>{children}</ResizablePanel.Panel>
   );
 };
 
@@ -37,7 +37,7 @@ const SideBar = ({
       {isExpanded ? (
         <>
           <ResizablePanel.Handle />
-          <ResizablePanel.Panel defaultSize={25} maxSize={40} minSize={20}>
+          <ResizablePanel.Panel defaultSize={30} maxSize={40} minSize={25}>
             <BodyContainer className={className}>{children}</BodyContainer>
           </ResizablePanel.Panel>
         </>

@@ -39,6 +39,7 @@ import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
+import Link from "next/link";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -66,6 +67,7 @@ export const Options = () => {
     endDate,
     objectiveId,
     assigneeId,
+    reporterId,
     sprintId,
     deletedAt,
   } = data!;
@@ -77,6 +79,7 @@ export const Options = () => {
     statuses.at(0))!!;
   const isDeleted = !!deletedAt;
   const assignee = members.find((m) => m.id === assigneeId);
+  const reporter = members.find((m) => m.id === reporterId);
 
   const { mutateAsync } = useUpdateStoryMutation();
 
@@ -147,6 +150,27 @@ export const Options = () => {
             </Badge>
           )}
         </Flex>
+        <Option
+          label="Reporter"
+          value={
+            <Flex align="center" className="px-2.5" gap={2}>
+              <Avatar
+                className={cn({
+                  "text-dark/80 dark:text-gray-200": !reporter?.fullName,
+                })}
+                name={reporter?.fullName}
+                size="xs"
+                src={reporter?.avatarUrl}
+              />
+              <Link
+                href={`/profile/${reporter?.id}`}
+                className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
+              >
+                {reporter?.username}
+              </Link>
+            </Flex>
+          }
+        />
         <Option
           label="Status"
           value={

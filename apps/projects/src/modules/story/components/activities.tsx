@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Flex, Tabs, Text, TextEditor } from "ui";
+import { Avatar, Box, Button, Debug, Flex, Tabs, Text, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -9,8 +9,22 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { AttachmentIcon, ClockIcon, CommentIcon, UpdatesIcon } from "icons";
 import { Activity } from "@/components/ui";
 import { StoryActivity } from "@/modules/stories/types";
+import { useSession } from "next-auth/react";
+import { cn } from "lib";
+import { useCommentStoryMutation } from "../hooks/comment-mutation";
+import { toast } from "sonner";
 
-export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
+export const Activities = ({
+  activities,
+  className,
+  storyId,
+}: {
+  activities: StoryActivity[];
+  className?: string;
+  storyId: string;
+}) => {
+  const { data: session } = useSession();
+  const { mutateAsync } = useCommentStoryMutation();
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -27,6 +41,42 @@ export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
     content: "",
     editable: true,
   });
+
+  const nestedActivities = () => {
+    const activitiesById: Record<string, StoryActivity> = {};
+    const results: StoryActivity[] = [];
+
+    activities.forEach((activity) => {
+      activitiesById[activity.id] = { ...activity, children: [] };
+    });
+
+    activities.forEach((activity) => {
+      if (activity.parentId) {
+        activitiesById[activity.parentId].children?.push(activity);
+      } else {
+        results.push(activitiesById[activity.id]);
+      }
+    });
+
+    return results;
+  };
+
+  const handleComment = async () => {
+    const comment = editor?.getHTML() ?? "";
+    if (editor?.isEmpty) {
+      toast.error("Comment is required", {
+        description: "Please enter a comment before submitting",
+      });
+      return;
+    }
+    await mutateAsync({
+      storyId,
+      payload: { comment, parentId: null, userId: session?.user?.id! },
+    }).then(() => {
+      editor?.commands?.clearContent();
+    });
+  };
+
   return (
     <Box>
       <Text
@@ -67,27 +117,27 @@ export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
           </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
-          <Flex className="relative" direction="column" gap={4}>
-            <Box
-              className="pointer-events-none absolute left-4 top-0 z-0 border-l border-gray-200 dark:border-dark-100/70"
-              style={{ height: 36 * (activities.length + 1) + 45 }}
-            />
-            {activities.map((activity) => (
+          <Flex direction="column">
+            {nestedActivities().map((activity) => (
               <Activity key={activity.id} {...activity} />
             ))}
             <Flex align="start">
-              <Box className="z-[1] mt-4 flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
-                <Avatar name="Joseph Mukorivo" size="xs" />
+              <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+                <Avatar
+                  name={session?.user?.name ?? undefined}
+                  src={session?.user?.image ?? undefined}
+                  size="xs"
+                />
               </Box>
               <Flex
-                className="ml-1 mt-2 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
+                className="ml-1 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
                 direction="column"
                 gap={2}
                 justify="between"
               >
                 <TextEditor className="prose-base" editor={editor} />
                 <Flex gap={1} justify="end">
-                  <Button
+                  {/* <Button
                     className="px-3"
                     color="tertiary"
                     leftIcon={<AttachmentIcon className="h-4 w-auto" />}
@@ -95,12 +145,14 @@ export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
                     variant="naked"
                   >
                     <span className="sr-only">Attach files</span>
-                  </Button>
+                  </Button> */}
                   <Button
                     className="px-3"
                     color="tertiary"
+                    disabled={editor?.isEmpty}
                     size="sm"
                     variant="outline"
+                    onClick={handleComment}
                   >
                     Comment
                   </Button>
@@ -111,7 +163,7 @@ export const Activities = ({ activities }: { activities: StoryActivity[] }) => {
         </Tabs.Panel>
         <Tabs.Panel value="updates">
           <Flex className="relative" direction="column" gap={4}>
-            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-gray-100 dark:border-dark-200" />
+            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-100 dark:border-dark-200" />
             {activities.filter((a) => a.type === "update").length === 0 ? (
               <Text>No updates available</Text>
             ) : (

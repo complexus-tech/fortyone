@@ -13,28 +13,32 @@ import {
   CalendarIcon,
   DeleteIcon,
   MoreHorizontalIcon,
+  ObjectiveIcon,
   SettingsIcon,
   StarIcon,
 } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
+import { Objective } from "../types";
 
-export const ObjectiveCard = ({ title }: { title: string }) => {
+export const ObjectiveCard = ({
+  id,
+  name,
+  leadUser,
+  teamId,
+  startDate,
+  endDate,
+}: Objective) => {
   return (
     <RowWrapper>
       <Flex align="center" className="relative select-none" gap={2}>
-        <TableCheckbox />
+        <ObjectiveIcon className="h-5 w-auto" />
         <Link
           className="flex items-center gap-1"
-          href="/objectives/web/stories"
+          href={`/teams/${teamId}/objectives/${id}`}
         >
-          <Tooltip title="Objective code: WEB">
-            <Text className="w-[55px] truncate text-left" color="muted">
-              WEB-01
-            </Text>
-          </Tooltip>
-          <Text className="w-[250px] truncate hover:opacity-90">{title}</Text>
+          <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
         </Link>
       </Flex>
       <Flex align="center" gap={5}>

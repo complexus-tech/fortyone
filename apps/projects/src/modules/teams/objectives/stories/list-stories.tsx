@@ -4,8 +4,8 @@ import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { Sidebar } from "./sidebar";
 import { TeamOptionsProvider } from "./provider";
-import { Header } from "./header";
 import { AllStories } from "./all-stories";
+import { Header } from "../components/header";
 
 export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(

@@ -8,6 +8,9 @@ export const storyKeys = {
   details: () => [...storyKeys.all, "detail"] as const,
   detail: (id: string) => [...storyKeys.details(), id] as const,
   activities: (id: string) => [...storyKeys.detail(id), "activities"] as const,
+  objectives: () => [...storyKeys.all, "objectives"] as const,
+  objective: (objectiveId: string) =>
+    [...storyKeys.objectives(), objectiveId] as const,
 };
 
 export const storyTags = {
@@ -18,4 +21,7 @@ export const storyTags = {
   details: () => `${storyTags.all}-detail` as const,
   detail: (id: string) => `${storyTags.details()}-${id}` as const,
   activities: (id: string) => `${storyTags.detail(id)}-activities` as const,
+  objectives: () => `${storyTags.all}-objectives` as const,
+  objective: (objectiveId: string) =>
+    `${storyTags.objectives()}-${objectiveId}` as const,
 };
