@@ -252,3 +252,19 @@ func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreA
 
 	return activities, nil
 }
+
+// CreateComment creates a comment for a story.
+func (s *Service) CreateComment(ctx context.Context, comment CoreActivity) ([]CoreActivity, error) {
+	s.log.Info(ctx, "business.core.stories.CreateComment")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateComment")
+	defer span.End()
+
+	ca := []CoreActivity{comment}
+
+	activities, err := s.repo.RecordActivities(ctx, ca)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	return activities, nil
+}

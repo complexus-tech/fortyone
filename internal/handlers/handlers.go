@@ -41,9 +41,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the objectives routes
 	objectivesgrp.Routes(objectivesgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the sprints routes

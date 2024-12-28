@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -265,5 +266,45 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 	web.Respond(ctx, w, toAppActivities(activities), http.StatusOK)
+	return nil
+}
+
+// CreateComment creates a comment for a story.
+func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	var requestData AppNewComment
+	if err := web.Decode(r, &requestData); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	ca := stories.CoreActivity{
+		StoryID:      storyId,
+		Parent:       requestData.Parent,
+		UserID:       userID,
+		Type:         "comment",
+		Field:        "comment",
+		CurrentValue: requestData.Comment,
+	}
+
+	activities, err := h.stories.CreateComment(ctx, ca)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	web.Respond(ctx, w, toAppActivities(activities), http.StatusCreated)
+
 	return nil
 }

@@ -638,14 +638,16 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			activity_type, 
 			field_changed, 
 			current_value,
-			user_id
+			user_id,
+			parent_activity_id
 		)
 		VALUES (
 			:story_id, 
 			:activity_type, 
 			:field_changed, 
 			:current_value,
-			:user_id
+			:user_id,
+			:parent_activity_id
 		)
 		RETURNING story_activities.*;
 	`
@@ -711,6 +713,7 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 			activity_type,
 			field_changed,
 			current_value,
+			parent_activity_id,
 			created_at
 		FROM story_activities
 		WHERE story_id = :story_id

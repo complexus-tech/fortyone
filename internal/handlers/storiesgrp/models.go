@@ -11,30 +11,36 @@ import (
 	"github.com/google/uuid"
 )
 
-// AppActivityList represents an activity in the application layer
-type AppActivityList struct {
-	ID           uuid.UUID `json:"id"`
-	StoryID      uuid.UUID `json:"storyId"`
-	UserID       uuid.UUID `json:"userId"`
-	Type         string    `json:"type"`
-	Field        string    `json:"field"`
-	CurrentValue string    `json:"currentValue"`
-	CreatedAt    time.Time `json:"createdAt"`
+// AppActivity represents an activity in the application layer
+type AppActivity struct {
+	ID           uuid.UUID  `json:"id"`
+	StoryID      uuid.UUID  `json:"storyId"`
+	Parent       *uuid.UUID `json:"parentId"`
+	UserID       uuid.UUID  `json:"userId"`
+	Type         string     `json:"type"`
+	Field        string     `json:"field"`
+	CurrentValue string     `json:"currentValue"`
+	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+func toAppActivity(i stories.CoreActivity) AppActivity {
+	return AppActivity{
+		ID:           i.ID,
+		StoryID:      i.StoryID,
+		Parent:       i.Parent,
+		UserID:       i.UserID,
+		Type:         i.Type,
+		Field:        i.Field,
+		CurrentValue: i.CurrentValue,
+		CreatedAt:    i.CreatedAt,
+	}
 }
 
 // toAppActivities converts a list of core activities to a list of application activities
-func toAppActivities(activities []stories.CoreActivity) []AppActivityList {
-	appActivities := make([]AppActivityList, len(activities))
+func toAppActivities(activities []stories.CoreActivity) []AppActivity {
+	appActivities := make([]AppActivity, len(activities))
 	for i, activity := range activities {
-		appActivities[i] = AppActivityList{
-			ID:           activity.ID,
-			StoryID:      activity.StoryID,
-			UserID:       activity.UserID,
-			Type:         activity.Type,
-			Field:        activity.Field,
-			CurrentValue: activity.CurrentValue,
-			CreatedAt:    activity.CreatedAt,
-		}
+		appActivities[i] = toAppActivity(activity)
 	}
 	return appActivities
 }
@@ -167,17 +173,22 @@ type AppNewStory struct {
 
 // AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
 type AppUpdateStory struct {
-	Title           string    `json:"title" db:"title"`
-	Description     string    `json:"description" db:"description"`
-	DescriptionHTML string    `json:"descriptionHTML" db:"description_html"`
-	Parent          uuid.UUID `json:"parentId" db:"parent_id"`
-	Objective       uuid.UUID `json:"objectiveId" db:"objective_id"`
-	Status          uuid.UUID `json:"statusId" db:"status_id"`
-	Assignee        uuid.UUID `json:"assigneeId" db:"assignee_id"`
-	Priority        string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
-	Sprint          uuid.UUID `json:"sprintId" db:"sprint_id"`
-	StartDate       time.Time `json:"startDate" db:"start_date"`
-	EndDate         time.Time `json:"endDate" db:"end_date"`
+	Title           string     `json:"title" db:"title"`
+	Description     string     `json:"description" db:"description"`
+	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
+	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
+	Objective       uuid.UUID  `json:"objectiveId" db:"objective_id"`
+	Status          uuid.UUID  `json:"statusId" db:"status_id"`
+	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
+	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
+	StartDate       time.Time  `json:"startDate" db:"start_date"`
+	EndDate         time.Time  `json:"endDate" db:"end_date"`
+}
+
+type AppNewComment struct {
+	Comment string     `json:"comment" validate:"required"`
+	Parent  *uuid.UUID `json:"parentId"`
 }
 
 // AppFilters represents the filters for stories.
