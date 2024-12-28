@@ -5,7 +5,7 @@ import type { StoriesViewOptions } from "@/components/ui/stories-view-options-bu
 import { useLocalStorage } from "@/hooks";
 import type { StoriesFilter } from "@/components/ui/stories-filter-button";
 
-type TeamOptions = {
+type ObjectiveOptions = {
   viewOptions: StoriesViewOptions;
   setViewOptions: (value: StoriesViewOptions) => void;
   filters: StoriesFilter;
@@ -13,9 +13,15 @@ type TeamOptions = {
   resetFilters: () => void;
 };
 
-const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
+const ObjectiveOptionsContext = createContext<ObjectiveOptions | undefined>(
+  undefined,
+);
 
-export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
+export const ObjectiveOptionsProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "Status",
     orderBy: "Priority",
@@ -53,11 +59,11 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     updatedTo: null,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:stories:view-options",
+    "teams:objectives:stories:view-options",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(
-    "teams:stories:filters",
+    "teams:objectives:stories:filters",
     initialFilters,
   );
 
@@ -65,7 +71,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     setFilters(initialFilters);
   };
   return (
-    <TeamOptionsContext.Provider
+    <ObjectiveOptionsContext.Provider
       value={{
         viewOptions,
         setViewOptions,
@@ -75,14 +81,16 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-    </TeamOptionsContext.Provider>
+    </ObjectiveOptionsContext.Provider>
   );
 };
 
-export const useTeamOptions = () => {
-  const context = useContext(TeamOptionsContext);
+export const useObjectiveOptions = () => {
+  const context = useContext(ObjectiveOptionsContext);
   if (!context) {
-    throw new Error("useTeamStories must be used within a TeamStoriesProvider");
+    throw new Error(
+      "useObjectiveStories must be used within a ObjectiveStoriesProvider",
+    );
   }
   return context;
 };

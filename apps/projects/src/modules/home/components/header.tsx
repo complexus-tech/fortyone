@@ -12,14 +12,15 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Home",
+            name: "Overview",
             icon: <HomeIcon className="h-[1.35rem] w-auto" />,
           },
         ]}
       />
-      <Flex gap={2}>
-        {/* <Button
+      <Flex gap={3}>
+        <Button
           color="tertiary"
+          variant="naked"
           leftIcon={<PlusIcon className="h-[1.15rem] w-auto" />}
           onClick={() => {
             setIsOpen(true);
@@ -27,7 +28,7 @@ export const Header = () => {
           size="sm"
         >
           New Objective
-        </Button> */}
+        </Button>
         <NewStoryButton />
       </Flex>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />

@@ -1,6 +1,11 @@
 import { AnalyticsIcon, ArrowLeftIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { NewStoryButton } from "@/components/ui";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Reports",
+};
 
 export default function Page() {
   return (

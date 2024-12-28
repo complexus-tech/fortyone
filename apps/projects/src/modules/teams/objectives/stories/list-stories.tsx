@@ -3,29 +3,29 @@ import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { Sidebar } from "./sidebar";
-import { TeamOptionsProvider } from "./provider";
+import { ObjectiveOptionsProvider } from "./provider";
 import { AllStories } from "./all-stories";
-import { Header } from "../components/header";
+import { Header } from "./header";
 
 export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    "teams:stories:layout",
+    "teams:objectives:stories:layout",
     "list",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage(
-    "teams:stories:expanded",
+    "teams:objectives:stories:expanded",
     false,
   );
 
   return (
-    <TeamOptionsProvider>
+    <ObjectiveOptionsProvider>
       <Header
         isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
-      <BoardDividedPanel autoSaveId="teams:stories:divided-panel">
+      <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
         <BoardDividedPanel.MainPanel>
           <AllStories layout={layout} />
         </BoardDividedPanel.MainPanel>
@@ -33,6 +33,6 @@ export const ListStories = () => {
           <Sidebar />
         </BoardDividedPanel.SideBar>
       </BoardDividedPanel>
-    </TeamOptionsProvider>
+    </ObjectiveOptionsProvider>
   );
 };

@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { getObjectives } from "@/modules/objectives/queries/get-objectives";
+import { getObjectives } from "../queries/get-objectives";
+import { objectiveKeys } from "../contants";
 
 export const useObjectives = () => {
   return useQuery({
-    queryKey: ["objectives"],
+    queryKey: objectiveKeys.list(),
     queryFn: getObjectives,
   });
 };

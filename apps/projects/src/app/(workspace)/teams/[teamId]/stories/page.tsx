@@ -4,19 +4,20 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { storyKeys, storyTags } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
+import { Metadata } from "next";
 
-export default async function Page(
-  props: {
-    params: Promise<{
-      teamId: string;
-    }>;
-  }
-) {
+export const metadata: Metadata = {
+  title: "Stories",
+};
+
+export default async function Page(props: {
+  params: Promise<{
+    teamId: string;
+  }>;
+}) {
   const params = await props.params;
 
-  const {
-    teamId
-  } = params;
+  const { teamId } = params;
 
   const queryClient = getQueryClient();
 

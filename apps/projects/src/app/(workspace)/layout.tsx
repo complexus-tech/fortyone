@@ -11,11 +11,7 @@ import { getQueryClient } from "@/app/get-query-client";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { memberKeys } from "@/constants/keys";
-
-export const metadata: Metadata = {
-  title: "Objectives",
-  description: "Complexus Objectives",
-};
+import { objectiveKeys } from "@/modules/objectives/contants";
 
 export default async function RootLayout({
   children,
@@ -31,10 +27,6 @@ export default async function RootLayout({
       queryFn: getStatuses,
     }),
     queryClient.prefetchQuery({
-      queryKey: ["objectives"],
-      queryFn: getObjectives,
-    }),
-    queryClient.prefetchQuery({
       queryKey: ["teams"],
       queryFn: getTeams,
     }),
@@ -45,6 +37,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: memberKeys.lists(),
       queryFn: getMembers,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: objectiveKeys.list(),
+      queryFn: getObjectives,
     }),
   ]);
 

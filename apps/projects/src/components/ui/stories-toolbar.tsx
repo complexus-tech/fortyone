@@ -5,11 +5,10 @@ import { useBoard } from "./board-context";
 import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { StoryPriority } from "@/modules/stories/types";
-import { PriorityIcon } from "./priority-icon";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useObjectives } from "@/lib/hooks/objectives";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 export const StoriesToolbar = () => {
   const [isOpen, setIsOpen] = useState(false);

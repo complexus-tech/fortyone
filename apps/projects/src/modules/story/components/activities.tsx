@@ -93,27 +93,20 @@ export const Activities = ({
           <Tabs.Tab
             className="gap-1 px-2"
             leftIcon={
-              <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
-            }
-            value="all"
-          >
-            All Activities
-          </Tabs.Tab>
-          <Tabs.Tab
-            className="gap-1 px-2"
-            leftIcon={<UpdatesIcon className="h-4 w-auto" strokeWidth={2.8} />}
-            value="updates"
-          >
-            Updates
-          </Tabs.Tab>
-          <Tabs.Tab
-            className="gap-1 px-2"
-            leftIcon={
               <CommentIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
             value="comments"
           >
             Comments
+          </Tabs.Tab>
+          <Tabs.Tab
+            className="gap-1 px-2"
+            leftIcon={
+              <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
+            }
+            value="all"
+          >
+            Activities
           </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">

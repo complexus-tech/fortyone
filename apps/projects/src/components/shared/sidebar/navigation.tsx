@@ -24,36 +24,37 @@ export const Navigation = () => {
   const pathname = usePathname();
   const links: MenuItem[] = [
     {
-      name: "Home",
+      name: "Overview",
       icon: <HomeIcon className="h-[1.3rem] w-auto" />,
       href: "/",
-    },
-    {
-      name: "Reports",
-      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
-      href: "/reports",
     },
     {
       name: "My Work",
       icon: <WorkIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
       href: "/my-work",
     },
+    {
+      name: "Reporting",
+      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
+      href: "/reports",
+    },
+
     // {
     //   name: "Messages",
     //   icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
     //   href: "/messages",
     //   messages: 1,
     // },
-    // {
-    //   name: "Roadmaps",
-    //   icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-    //   href: "/roadmaps",
-    // },
     {
-      name: "All Objectives",
-      icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
-      href: "/objectives",
+      name: "Roadmap",
+      icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      href: "/roadmaps",
     },
+    // {
+    //   name: "Objectives",
+    //   icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
+    //   href: "/objectives",
+    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,

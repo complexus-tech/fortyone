@@ -4,6 +4,11 @@ import { StoryPage } from "@/modules/story";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
 import { getStory } from "@/modules/story/queries/get-story";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Story",
+};
 
 type Props = {
   params: Promise<{
@@ -14,9 +19,7 @@ export default async function Page(props: Props) {
   const params = await props.params;
 
   const { storyId } = params;
-
   const queryClient = getQueryClient();
-
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: storyKeys.detail(storyId),

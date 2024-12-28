@@ -39,9 +39,9 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
-import { useObjectives } from "@/lib/hooks/objectives";
 import { SprintsMenu } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -55,7 +55,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     teamId,
     objectiveId,
     sprintId,
-    epicId,
     priority = "No Priority",
   } = story;
   const { data: teams = [] } = useTeams();
@@ -360,8 +359,8 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 </Tooltip>
                 <SprintsMenu.Items
                   sprintId={sprintId ?? undefined}
-                  setSprintId={(sprint) => {
-                    handleUpdate({ sprintId: sprint });
+                  setSprintId={(sprintId) => {
+                    handleUpdate({ sprintId });
                   }}
                 />
               </SprintsMenu>

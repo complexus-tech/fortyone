@@ -1,6 +1,11 @@
 import { ArrowLeftIcon, RoadmapIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { NewStoryButton } from "@/components/ui";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Roadmap",
+};
 
 export default function Page() {
   return (

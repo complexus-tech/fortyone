@@ -25,7 +25,7 @@ import { slugify } from "@/utils";
 import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
-import { useObjectives } from "@/lib/hooks/objectives";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 export const StoryCard = ({
   story,

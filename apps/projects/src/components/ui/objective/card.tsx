@@ -1,26 +1,11 @@
-import {
-  Flex,
-  Text,
-  Tooltip,
-  Avatar,
-  Button,
-  Menu,
-  ProgressBar,
-  Box,
-} from "ui";
+import { Flex, Text, Avatar, ProgressBar, Box } from "ui";
 import Link from "next/link";
-import {
-  CalendarIcon,
-  DeleteIcon,
-  MoreHorizontalIcon,
-  ObjectiveIcon,
-  SettingsIcon,
-  StarIcon,
-} from "icons";
+import { CalendarIcon, ObjectiveIcon } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
-import { Objective } from "../types";
+import { Objective } from "../../../modules/objectives/types";
+import { format } from "date-fns";
+import { useMembers } from "@/lib/hooks/members";
 
 export const ObjectiveCard = ({
   id,
@@ -29,51 +14,54 @@ export const ObjectiveCard = ({
   teamId,
   startDate,
   endDate,
+  createdAt,
 }: Objective) => {
+  const { data: members = [] } = useMembers();
+  const lead = members.find((member) => member.id === leadUser);
   return (
     <RowWrapper>
-      <Flex align="center" className="relative select-none" gap={2}>
-        <ObjectiveIcon className="h-5 w-auto" />
-        <Link
-          className="flex items-center gap-1"
-          href={`/teams/${teamId}/objectives/${id}`}
-        >
-          <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
-        </Link>
-      </Flex>
+      <Link
+        className="w-[250px] truncate hover:opacity-90"
+        href={`/teams/${teamId}/objectives/${id}`}
+      >
+        {name}
+      </Link>
       <Flex align="center" gap={5}>
-        <Flex align="center" className="w-32" gap={2}>
+        <Flex align="center" className="w-40" gap={2}>
           <ProgressBar className="h-1.5 w-24" progress={20} />
           <Text color="muted" fontWeight="medium">
             20%
           </Text>
         </Flex>
-        <Text className="w-30 flex items-center gap-1" color="muted">
-          <CalendarIcon className="h-5 w-auto" strokeWidth={2} />
-          Sep 27, 2024
+        <Text className="flex w-40 items-center gap-1" color="muted">
+          <CalendarIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+          {format(new Date(startDate), "MMM dd, yyyy")}
         </Text>
-        <Text className="flex w-32 items-center gap-1" color="muted">
-          <CalendarIcon className="h-5 w-auto text-primary" strokeWidth={2} />
-          Sep 27, 2024
+        <Text className="flex w-40 items-center gap-1" color="muted">
+          <CalendarIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+          {format(new Date(endDate), "MMM dd, yyyy")}
         </Text>
-        <Box className="w-12">
+        <Box className="w-40">
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
-              <button className="flex" type="button">
-                <Avatar
-                  name="Joseph Mukorivo"
-                  size="xs"
-                  src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                />
+              <button className="flex items-center gap-1.5" type="button">
+                <Avatar name={lead?.fullName} size="xs" src={lead?.avatarUrl} />
+                <Text
+                  className="relative -top-px max-w-[14ch] truncate"
+                  color="muted"
+                  fontWeight="medium"
+                >
+                  {lead?.username || "Lead"}
+                </Text>
               </button>
             </AssigneesMenu.Trigger>
             <AssigneesMenu.Items onAssigneeSelected={(assigneeId) => {}} />
           </AssigneesMenu>
         </Box>
-        <Text className="w-28 text-left" color="muted">
-          Sep 27, 2024
+        <Text className="w-40 text-left" color="muted">
+          {format(new Date(createdAt), "MMM dd, yyyy")}
         </Text>
-        <Box className="w-8">
+        {/* <Box className="w-8">
           <Menu>
             <Menu.Button>
               <Button
@@ -130,7 +118,7 @@ export const ObjectiveCard = ({
               </Menu.Group>
             </Menu.Items>
           </Menu>
-        </Box>
+        </Box> */}
       </Flex>
     </RowWrapper>
   );

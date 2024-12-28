@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import { SettingsLayout } from "@/components/layouts";
 
 export const metadata: Metadata = {
-  title: "Objectives",
-  description: "Complexus Objectives",
+  title: "Settings",
 };
 
 export default function RootLayout({

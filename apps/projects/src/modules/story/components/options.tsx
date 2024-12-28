@@ -19,7 +19,13 @@ import {
   isTomorrow,
   formatISO,
 } from "date-fns";
-import { CalendarIcon, CloseIcon, PlusIcon, SprintsIcon } from "icons";
+import {
+  CalendarIcon,
+  CloseIcon,
+  ObjectiveIcon,
+  PlusIcon,
+  SprintsIcon,
+} from "icons";
 import {
   PrioritiesMenu,
   StatusesMenu,
@@ -40,6 +46,8 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
 import Link from "next/link";
+import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 const Option = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
@@ -74,7 +82,9 @@ export const Options = () => {
   const { data: sprints = [] } = useSprints();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { data: objectives = [] } = useObjectives();
   const sprint = sprints.find((s) => s.id === sprintId);
+  const objective = objectives.find((o) => o.id === objectiveId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
     statuses.at(0))!!;
   const isDeleted = !!deletedAt;
@@ -353,16 +363,47 @@ export const Options = () => {
             </DatePicker>
           }
         />
-        {/* <Option
+        <Option
+          label="Objective"
+          value={
+            <ObjectivesMenu>
+              <ObjectivesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  title={objectiveId ? objective?.name : undefined}
+                  disabled={isDeleted}
+                  leftIcon={
+                    objectiveId ? (
+                      <ObjectiveIcon className="h-5 w-auto" />
+                    ) : (
+                      <PlusIcon className="h-5 w-auto" />
+                    )
+                  }
+                  type="button"
+                  variant="naked"
+                >
+                  <span className="inline-block max-w-[16ch] truncate">
+                    {objective?.name || "Add objective"}
+                  </span>
+                </Button>
+              </ObjectivesMenu.Trigger>
+              <ObjectivesMenu.Items
+                align="end"
+                objectiveId={objectiveId ?? undefined}
+                setObjectiveId={(objectiveId) => {
+                  handleUpdate({ objectiveId });
+                }}
+              />
+            </ObjectivesMenu>
+          }
+        />
+        <Option
           label="Sprint"
           value={
             <SprintsMenu>
               <SprintsMenu.Trigger>
                 <Button
                   color="tertiary"
-                  className={cn({
-                    "pr-1": sprintId,
-                  })}
                   disabled={isDeleted}
                   leftIcon={
                     sprintId ? (
@@ -371,44 +412,25 @@ export const Options = () => {
                       <PlusIcon className="h-5 w-auto" />
                     )
                   }
-                  rightIcon={
-                    sprintId && (
-                      <Button
-                        className="aspect-square"
-                        color="tertiary"
-                        variant="naked"
-                        size="xs"
-                        onClick={() => {
-                          handleUpdate({ sprintId: null });
-                        }}
-                        rounded="full"
-                        leftIcon={
-                          <CloseIcon
-                            strokeWidth={2}
-                            className="h-5 w-auto text-primary"
-                          />
-                        }
-                      >
-                        <span className="sr-only">Remove sprint</span>
-                      </Button>
-                    )
-                  }
                   type="button"
                   variant="naked"
                 >
-                  {sprint?.name || "Add sprint"}
+                  <span className="inline-block max-w-[16ch] truncate">
+                    {sprint?.name || "Add sprint"}
+                  </span>
                 </Button>
               </SprintsMenu.Trigger>
               <SprintsMenu.Items
                 align="end"
                 sprintId={sprintId ?? undefined}
-                setSprintId={(sprint) => {
-                  handleUpdate({ sprintId: sprint });
+                setSprintId={(sprintId) => {
+                  handleUpdate({ sprintId });
                 }}
               />
             </SprintsMenu>
           }
         />
+        {/* 
         <Option label="Module" value={<ModulesMenu />} />
         <Option
           label="Parent"

@@ -1,6 +1,11 @@
 import { ArrowLeftIcon, ChatIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { NewStoryButton } from "@/components/ui";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Messages",
+};
 
 export default function Page() {
   return (

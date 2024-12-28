@@ -1,5 +1,10 @@
 import { ListUserStories } from "@/modules/profile";
 import { getStories } from "@/modules/stories/queries/get-stories";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Profile",
+};
 
 export default async function Page(props: {
   params: Promise<{

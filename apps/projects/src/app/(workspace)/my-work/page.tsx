@@ -3,6 +3,11 @@ import { ListMyStories } from "@/modules/my-work";
 import { getMyStories } from "@/modules/my-work/queries/get-stories";
 import { storyKeys } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My Work",
+};
 
 export default async function Page() {
   const queryClient = getQueryClient();
