@@ -50,6 +50,7 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { TeamColor } from "./team-color";
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
@@ -185,8 +186,8 @@ export const NewStoryDialog = ({
               <Menu.Button>
                 <Button
                   size="xs"
-                  className="gap-1 font-semibold tracking-wide"
-                  leftIcon={<span>{activeTeam.icon}</span>}
+                  className="gap-1.5 font-semibold tracking-wide"
+                  leftIcon={<TeamColor color={activeTeam.color} />}
                   color="tertiary"
                 >
                   {activeTeam.code}
@@ -204,7 +205,7 @@ export const NewStoryDialog = ({
                       key={team.id}
                     >
                       <span className="flex items-center gap-1.5">
-                        <span className="shrink-0">{team.icon}</span>
+                        <TeamColor color={team?.color} className="shrink-0" />
                         <span className="block truncate">{team.name}</span>
                       </span>
                       {team.id === activeTeam.id && (
@@ -444,7 +445,7 @@ export const NewStoryDialog = ({
             </label>
           </Text>
           <Button
-            leftIcon={<PlusIcon className="h-5 w-auto" />}
+            leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
             size="md"
             onClick={handleCreateStory}
             loading={loading}

@@ -14,7 +14,7 @@ export const Sidebar = () => {
       </Box>
 
       <Box className="rounded-xl bg-white p-4 shadow dark:bg-dark-300">
-        <Text>You&apos;re on the free plan</Text>
+        <Text fontWeight="medium">You&apos;re on the free plan</Text>
         <Text className="mt-2.5" color="muted">
           You can upgrade to a paid plan to get more features.
         </Text>

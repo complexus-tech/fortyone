@@ -43,7 +43,10 @@ export const OptionsHeader = () => {
           <Tooltip title="Copy Story Link">
             <Button
               color="tertiary"
-              leftIcon={<LinkIcon className="h-5 w-auto" strokeWidth={2.5} />}
+              suppressHydrationWarning
+              leftIcon={
+                <LinkIcon className="h-5 w-auto -rotate-45" strokeWidth={2.5} />
+              }
               variant="naked"
               onClick={async () => {
                 await copyText(window.location.href);

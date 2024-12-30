@@ -4,8 +4,7 @@ export const LogoutIcon = (props: Icon) => {
   return (
     <svg
       {...props}
-      fill="currentColor"
-      fillOpacity={0.1}
+      fill="none"
       height="24"
       viewBox="0 0 24 24"
       width="24"

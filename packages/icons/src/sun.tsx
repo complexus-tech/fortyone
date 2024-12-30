@@ -9,7 +9,6 @@ export const SunIcon = (props: Icon) => {
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="currentColor"
       strokeWidth={strokeWidth}
-      fillOpacity={0.1}
       height="24"
       viewBox="0 0 24 24"
       width="24"

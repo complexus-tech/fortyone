@@ -8,12 +8,12 @@ export const Teams = () => {
   const { data: teams = [] } = useTeams();
 
   return (
-    <Box className="mt-4">
+    <Box className="mt-5">
       <Text
         className="mb-2.5 flex items-center gap-1 pl-2.5 font-medium"
         color="muted"
       >
-        <TeamIcon className="h-[1.2rem] w-auto text-gray dark:text-gray-300" />
+        <TeamIcon className="h-[1.2rem]" />
         Your Teams
       </Text>
       <Flex direction="column" gap={1}>

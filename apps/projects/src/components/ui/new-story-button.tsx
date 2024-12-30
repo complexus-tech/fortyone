@@ -8,7 +8,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 export const NewStoryButton = ({
   size = "sm",
   children,
-  leftIcon = <PlusIcon className="h-5 w-auto" />,
+  leftIcon = <PlusIcon className="text-white dark:text-gray-200" />,
   teamId,
   ...rest
 }: ButtonProps & {

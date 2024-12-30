@@ -114,7 +114,7 @@ export const Header = () => {
                 <Menu.SubTrigger>
                   <span className="flex w-full items-center justify-between gap-1.5">
                     <span className="flex items-center gap-2">
-                      <PreferencesIcon className="h-5 w-auto" />
+                      <PreferencesIcon className="h-[1.15rem] w-auto" />
                       Appearance
                     </span>
                     <ArrowRightIcon className="h-4" />
@@ -160,12 +160,12 @@ export const Header = () => {
                     setPathBeforeSettings(pathname);
                   }}
                 >
-                  <SettingsIcon className="h-5 w-auto" />
+                  <SettingsIcon className="h-[1.15rem]" />
                   Workspace settings
                 </Link>
               </Menu.Item>
               <Menu.Item>
-                <UsersAddIcon className="h-5 w-auto" />
+                <UsersAddIcon className="h-[1.3rem] w-auto" />
                 Invite members
               </Menu.Item>
             </Menu.Group>
