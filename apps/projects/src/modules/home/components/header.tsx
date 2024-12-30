@@ -12,7 +12,7 @@ export const Header = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Overview",
+            name: "Home",
             icon: <HomeIcon className="h-[1.35rem] w-auto" />,
           },
         ]}

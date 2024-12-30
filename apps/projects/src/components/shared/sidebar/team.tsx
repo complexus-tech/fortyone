@@ -11,9 +11,15 @@ type TeamProps = {
   id: string;
   name: string;
   icon?: ReactNode;
+  color?: string;
 };
 
-export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
+export const Team = ({
+  id,
+  name: teamName,
+  icon: teamIcon,
+  color,
+}: TeamProps) => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
     false,
@@ -22,7 +28,12 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
   const links = [
     {
       name: "Stories",
-      icon: <StoryIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <StoryIcon
+          className="h-5 w-auto text-gray dark:text-gray-300"
+          strokeWidth={2}
+        />
+      ),
       href: `/teams/${id}/stories`,
     },
     // {
@@ -32,7 +43,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     // },
     {
       name: "Sprints",
-      icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+      icon: <SprintsIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
       href: `/teams/${id}/sprints`,
     },
     // {
@@ -42,7 +53,12 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     // },
     {
       name: "Objectives",
-      icon: <ObjectiveIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <ObjectiveIcon
+          className="h-[1.15rem] w-auto text-gray dark:text-gray-300"
+          strokeWidth={2}
+        />
+      ),
       href: `/teams/${id}/objectives`,
     },
     // {
@@ -61,7 +77,7 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
     <Box>
       <Flex
         align="center"
-        className="group h-[2.5rem] select-none rounded-lg pl-2.5 pr-2 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
+        className="group h-[2.5rem] select-none rounded-lg pl-3 pr-2 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/20 focus:dark:bg-dark-50/20"
         justify="between"
         onClick={() => {
           setIsOpen(!isOpen);
@@ -75,21 +91,27 @@ export const Team = ({ id, name: teamName, icon: teamIcon }: TeamProps) => {
         tabIndex={0}
       >
         <span className="flex items-center gap-2">
-          <span className="text-lg">{teamIcon}</span>
+          <span
+            className="inline-block size-3.5 rounded"
+            style={{ backgroundColor: color }}
+          />
           <span className="block max-w-[15ch] truncate">{teamName}</span>
         </span>
         <ArrowDownIcon
           suppressHydrationWarning
-          className={cn("h-3.5 w-auto -rotate-90", {
-            "rotate-0": isOpen,
-          })}
+          className={cn(
+            "h-3.5 w-auto -rotate-90 text-gray dark:text-gray-300",
+            {
+              "rotate-0": isOpen,
+            },
+          )}
           strokeWidth={3.5}
         />
       </Flex>
       <Flex
         suppressHydrationWarning
         className={cn(
-          "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-250/15 pl-2 transition-all duration-300 dark:border-dark-100/80",
+          "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-250/40 pl-2 transition-all duration-300 dark:border-dark-100",
           {
             "mt-2 h-max": isOpen,
           },

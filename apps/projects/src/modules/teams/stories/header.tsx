@@ -13,7 +13,7 @@ import {
 import { useTeamOptions } from "./provider";
 import { useParams } from "next/navigation";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "@/modules/teams/hooks/teams";
 
 export const Header = ({
   isExpanded,

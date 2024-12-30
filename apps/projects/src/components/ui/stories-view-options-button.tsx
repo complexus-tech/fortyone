@@ -81,8 +81,12 @@ export const StoriesViewOptionsButton = ({
         <Button
           className="relative"
           color="tertiary"
-          leftIcon={<PreferencesIcon className="h-4 w-auto" />}
-          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
+          leftIcon={
+            <PreferencesIcon className="h-4 w-auto text-gray dark:text-gray-300" />
+          }
+          rightIcon={
+            <ArrowDownIcon className="h-3.5 w-auto text-gray dark:text-gray-300" />
+          }
           size="sm"
           variant="outline"
         >

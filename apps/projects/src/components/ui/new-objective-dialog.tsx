@@ -1,12 +1,31 @@
 "use client";
 import { type Dispatch, type SetStateAction } from "react";
-import { Button, Badge, Dialog, Flex, TextEditor, DatePicker } from "ui";
+import {
+  Button,
+  Badge,
+  Text,
+  Dialog,
+  Flex,
+  TextEditor,
+  DatePicker,
+  Menu,
+} from "ui";
 import { useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import { CalendarPlusIcon, CalendarIcon, PlusIcon, ObjectiveIcon } from "icons";
+import {
+  CalendarPlusIcon,
+  CalendarIcon,
+  PlusIcon,
+  CheckIcon,
+  ArrowRightIcon,
+} from "icons";
+import { useMembers } from "@/lib/hooks/members";
+import { useLocalStorage } from "@/hooks";
+import { Team } from "@/modules/teams/types";
+import { useTeams } from "@/modules/teams/hooks/teams";
 
 export const NewObjectiveDialog = ({
   isOpen,
@@ -15,6 +34,12 @@ export const NewObjectiveDialog = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
+  const { data: teams = [] } = useTeams();
+  const { data: members = [] } = useMembers();
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+    "activeTeam",
+    teams.at(0)!!,
+  );
   const titleEditor = useEditor({
     extensions: [
       Document,
@@ -30,7 +55,9 @@ export const NewObjectiveDialog = ({
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Enter description..." }),
+      Placeholder.configure({
+        placeholder: "Write a description, goals, etc. for this objective...",
+      }),
     ],
     content: "",
     editable: true,
@@ -41,31 +68,51 @@ export const NewObjectiveDialog = ({
       <Dialog.Content hideClose size="lg">
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
-            <Badge color="tertiary" rounded="sm">
-              New objective
-            </Badge>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  size="xs"
+                  className="gap-1 font-semibold tracking-wide"
+                  leftIcon={<span>{activeTeam.icon}</span>}
+                  color="tertiary"
+                >
+                  {activeTeam.code}
+                </Button>
+              </Menu.Button>
+              <Menu.Items className="w-52" align="start">
+                <Menu.Group>
+                  {teams.map((team) => (
+                    <Menu.Item
+                      active={team.id === activeTeam.id}
+                      onClick={() => {
+                        setActiveTeam(team);
+                      }}
+                      className="justify-between gap-3"
+                      key={team.id}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span className="shrink-0">{team.icon}</span>
+                        <span className="block truncate">{team.name}</span>
+                      </span>
+                      {team.id === activeTeam.id && (
+                        <CheckIcon className="h-[1.1rem] w-auto" />
+                      )}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
+            <Text color="muted">New objective</Text>
           </Dialog.Title>
           <Dialog.Close />
         </Dialog.Header>
         <Dialog.Body className="pt-0">
-          <Flex gap={2}>
-            <Button
-              className="relative top-[0.1rem] aspect-square"
-              color="tertiary"
-              leftIcon={
-                <ObjectiveIcon className="relative left-[0.15rem] h-5 w-auto opacity-80" />
-              }
-              size="xs"
-              variant="outline"
-            >
-              <span className="sr-only">Change objective icon</span>
-            </Button>
-            <TextEditor
-              asTitle
-              className="text-2xl font-medium"
-              editor={titleEditor}
-            />
-          </Flex>
+          <TextEditor
+            asTitle
+            className="text-3xl font-medium"
+            editor={titleEditor}
+          />
           <TextEditor editor={descriptionEditor} />
           <Flex className="mt-8" gap={1}>
             <DatePicker>

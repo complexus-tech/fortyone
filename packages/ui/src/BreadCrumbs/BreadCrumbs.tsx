@@ -24,7 +24,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           key={idx}
           href={url}
           className={cn(
-            "flex items-center gap-2 font-medium group first-letter:uppercase transition",
+            "flex items-center gap-1.5 font-medium group first-letter:uppercase transition",
             {
               "text-gray/80 dark:text-gray-300/80":
                 idx + 1 === breadCrumbs.length,
@@ -36,7 +36,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           {icon && <span className="group-hover:text-primary">{icon}</span>}
           <span className="group-hover:text-primary">{name}</span>
           <ArrowRightIcon
-            className={cn("h-[0.8rem] w-auto", {
+            className={cn("h-[0.8rem] w-auto opacity-80", {
               hidden: idx + 1 === breadCrumbs.length,
             })}
           />

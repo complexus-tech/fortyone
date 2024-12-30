@@ -11,7 +11,6 @@ import {
   Menu,
   Tooltip,
   Avatar,
-  Box,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -47,11 +46,10 @@ import { useLocalStorage } from "@/hooks";
 import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
-import { useTeams } from "@/lib/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
-
+import { useTeams } from "@/modules/teams/hooks/teams";
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,

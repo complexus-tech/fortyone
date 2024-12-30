@@ -11,7 +11,7 @@ import {
 import { useSprintStories } from "./provider";
 import { useParams } from "next/navigation";
 import { useSprints } from "@/lib/hooks/sprints";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "../../hooks/teams";
 
 export const Header = ({
   isExpanded,

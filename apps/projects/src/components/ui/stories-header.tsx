@@ -52,7 +52,7 @@ export const StoriesHeader = ({
       <Flex align="center" justify="between">
         <Flex align="center" className="relative gap-1.5">
           <Checkbox
-            className="absolute -left-[1.6rem]"
+            className="absolute -left-[1.6rem] rounded-[0.35rem]"
             checked={groupedStories.every((s) => selectedStories.includes(s))}
             onCheckedChange={(checked) => {
               if (checked) {
@@ -73,9 +73,12 @@ export const StoriesHeader = ({
             }}
             rightIcon={
               <ArrowDownIcon
-                className={cn("h-4 w-auto transition dark:text-gray-200", {
-                  "-rotate-90": isCollapsed,
-                })}
+                className={cn(
+                  "h-4 w-auto text-gray transition dark:text-gray-300",
+                  {
+                    "-rotate-90": isCollapsed,
+                  },
+                )}
                 strokeWidth={1}
               />
             }
@@ -117,7 +120,10 @@ export const StoriesHeader = ({
           </Button>
           <Tooltip side="bottom" title="Total stories">
             <span>
-              <StoryIcon className="ml-3 h-5 w-auto" strokeWidth={2} />
+              <StoryIcon
+                className="ml-1 h-5 w-auto text-gray dark:text-gray-300"
+                strokeWidth={2}
+              />
             </span>
           </Tooltip>
           <Text color="muted">{count} stories</Text>
@@ -126,6 +132,7 @@ export const StoriesHeader = ({
           <Tooltip side="top" title="New Story">
             <Button
               color="tertiary"
+              variant="outline"
               leftIcon={
                 <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
               }

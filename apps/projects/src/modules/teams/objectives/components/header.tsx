@@ -5,7 +5,7 @@ import { PlusIcon, ObjectiveIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
 import { useParams } from "next/navigation";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "@/modules/teams/hooks/teams";
 
 export const ObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();

@@ -10,8 +10,9 @@ import {
   RoadmapIcon,
   WorkIcon,
   ChatIcon,
+  UserIcon,
 } from "icons";
-import { NavLink } from "@/components/ui";
+import { NavLink, PriorityIcon } from "@/components/ui";
 
 type MenuItem = {
   name: string;
@@ -24,46 +25,63 @@ export const Navigation = () => {
   const pathname = usePathname();
   const links: MenuItem[] = [
     {
-      name: "Overview",
-      icon: <HomeIcon className="h-[1.3rem] w-auto" />,
+      name: "Home",
+      icon: <HomeIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
       href: "/",
     },
     {
       name: "My Work",
-      icon: <WorkIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <UserIcon
+          className="h-5 w-auto text-gray dark:text-gray-300"
+          strokeWidth={2}
+        />
+      ),
       href: "/my-work",
     },
     {
-      name: "Reporting",
-      icon: <AnalyticsIcon className="h-[1.3rem] w-auto" />,
+      name: "Analytics",
+      icon: (
+        <PriorityIcon
+          priority="High"
+          className="h-5 w-auto text-gray dark:text-gray-300"
+        />
+      ),
       href: "/reports",
     },
 
     // {
     //   name: "Messages",
-    //   icon: <ChatIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+    //   icon: <ChatIcon className="h-5 w-auto text-gray dark:text-gray-300" strokeWidth={2} />,
     //   href: "/messages",
     //   messages: 1,
     // },
     {
       name: "Roadmap",
-      icon: <RoadmapIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <RoadmapIcon
+          className="h-5 w-auto text-gray dark:text-gray-300"
+          strokeWidth={2}
+        />
+      ),
       href: "/roadmaps",
     },
     // {
     //   name: "Objectives",
-    //   icon: <ObjectiveIcon className="relative left-px h-[1.3rem] w-auto" />,
+    //   icon: <ObjectiveIcon className="relative left-px h-5 w-auto text-gray dark:text-gray-300" />,
     //   href: "/objectives",
     // },
     {
       name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
+      icon: (
+        <NotificationsIcon className="h-[1.3rem] w-auto text-gray dark:text-gray-300" />
+      ),
       href: "/notifications",
       messages: 3,
     },
     // {
     //   name: "Running Sprints",
-    //   icon: <SprintsIcon className="h-[1.3rem] w-auto" />,
+    //   icon: <SprintsIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
     //   href: "/sprints",
     // },
   ];

@@ -59,7 +59,7 @@ export const Header = () => {
                 />
               }
               rightIcon={
-                <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto" />
+                <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto text-gray dark:text-gray-300" />
               }
               size="sm"
               variant="naked"
@@ -189,7 +189,9 @@ export const Header = () => {
           fullWidth
           color="tertiary"
           variant="outline"
-          leftIcon={<NewStoryIcon className="h-5 w-auto" />}
+          leftIcon={
+            <NewStoryIcon className="h-5 w-auto text-gray dark:text-gray-300" />
+          }
           onClick={() => {
             setIsOpen(!isOpen);
           }}
@@ -200,7 +202,12 @@ export const Header = () => {
           asIcon
           className="rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
-          leftIcon={<SearchIcon className="h-4 w-auto" strokeWidth={3} />}
+          leftIcon={
+            <SearchIcon
+              className="h-4 w-auto text-gray dark:text-gray-300"
+              strokeWidth={3}
+            />
+          }
           size="sm"
           variant="outline"
         >

@@ -5,7 +5,6 @@ export const UserIcon = (props: Icon) => {
     <svg
       {...props}
       fill="currentColor"
-      fillOpacity={0.1}
       height="24"
       viewBox="0 0 24 24"
       width="24"
@@ -16,12 +15,10 @@ export const UserIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
       <path
         d="M16.5 6.5C16.5 8.98528 14.4853 11 12 11C9.51472 11 7.5 8.98528 7.5 6.5C7.5 4.01472 9.51472 2 12 2C14.4853 2 16.5 4.01472 16.5 6.5Z"
         stroke="currentColor"
-        strokeWidth="2"
       />
     </svg>
   );

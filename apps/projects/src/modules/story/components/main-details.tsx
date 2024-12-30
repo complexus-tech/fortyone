@@ -1,5 +1,5 @@
 "use client";
-import { Container, Divider, TextEditor } from "ui";
+import { Container, Divider, TextEditor, Button, Flex } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -11,7 +11,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { BodyContainer } from "@/components/shared";
-import { Header, Activities, Attachments, Reactions } from ".";
+import { Activities, Attachments, Reactions } from ".";
 import { DetailedStory } from "../types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
@@ -23,6 +23,8 @@ import { cn } from "lib";
 import { SubStories } from "./sub-stories";
 import { useStoryActivities } from "../hooks/story-activities";
 import { StoryActivity } from "@/modules/stories/types";
+import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
+import { UndoIcon } from "icons";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -75,6 +77,12 @@ export const MainDetails = () => {
     reporterId,
   } = data!;
   const isDeleted = !!deletedAt;
+
+  const { mutateAsync } = useRestoreStoryMutation();
+
+  const restoreStory = async () => {
+    mutateAsync(storyId);
+  };
 
   const createStoryActivity: StoryActivity = {
     id: "1",
@@ -143,41 +151,34 @@ export const MainDetails = () => {
   });
 
   return (
-    <>
-      <Header
-        sequenceId={sequenceId}
-        teamId={teamId}
-        isDeleted={isDeleted}
-        storyId={storyId}
-      />
-      <BodyContainer className="overflow-y-auto pb-8">
-        <Container className="pt-7">
-          <TextEditor
-            asTitle
-            className="relative -left-1 text-4xl font-medium"
-            editor={titleEditor}
-          />
-          <TextEditor className="mt-8" editor={descriptionEditor} />
-          <Reactions />
-          <SubStories
-            subStories={subStories}
-            parentId={storyId}
-            teamId={teamId}
-            setIsSubStoriesOpen={setIsSubStoriesOpen}
-            isSubStoriesOpen={isSubStoriesOpen}
-          />
-          <Attachments
-            className={cn(
-              "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
-              {
-                "mt-0 border-0": isSubStoriesOpen && subStories.length > 0,
-              },
-            )}
-          />
-          <Divider className="my-6" />
-          <Activities activities={allActivities} storyId={storyId} />
-        </Container>
-      </BodyContainer>
-    </>
+    <BodyContainer className="h-screen overflow-y-auto pb-8">
+      <Container className="pt-7">
+        <TextEditor
+          asTitle
+          className="relative -left-1 text-4xl font-medium"
+          editor={titleEditor}
+        />
+
+        <TextEditor className="mt-8" editor={descriptionEditor} />
+        <Reactions />
+        <SubStories
+          subStories={subStories}
+          parentId={storyId}
+          teamId={teamId}
+          setIsSubStoriesOpen={setIsSubStoriesOpen}
+          isSubStoriesOpen={isSubStoriesOpen}
+        />
+        <Attachments
+          className={cn(
+            "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
+            {
+              "mt-0 border-0": isSubStoriesOpen && subStories.length > 0,
+            },
+          )}
+        />
+        <Divider className="my-6" />
+        <Activities activities={allActivities} storyId={storyId} />
+      </Container>
+    </BodyContainer>
   );
 };

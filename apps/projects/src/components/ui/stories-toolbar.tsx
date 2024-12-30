@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { StoryPriority } from "@/modules/stories/types";
 import { useSprints } from "@/lib/hooks/sprints";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 

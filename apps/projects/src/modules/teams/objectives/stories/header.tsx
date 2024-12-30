@@ -12,7 +12,7 @@ import {
 } from "@/components/ui";
 import { useObjectiveOptions } from "./provider";
 import { useParams } from "next/navigation";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
 

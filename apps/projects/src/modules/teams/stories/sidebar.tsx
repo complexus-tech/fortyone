@@ -3,21 +3,42 @@ import { StoryIcon } from "icons";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useParams } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { useTeams } from "../hooks/teams";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 export const Sidebar = () => {
   const { teamId } = useParams<{ teamId: string }>();
+  const tabs = ["all", "active", "backlog"] as const;
+  const [tab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault("all"),
+  );
   const { data: stories = [] } = useTeamStories(teamId);
+  const { data: teams = [] } = useTeams();
+  const { data: objectives = [] } = useObjectives();
+
+  const team = teams.find((team) => team.id === teamId)!;
   const totalStories = stories.length;
+
   return (
     <Box className="py-8">
       <Flex align="center" className="mb-6 px-6" justify="between">
-        <Text className="flex items-center gap-2" fontSize="lg">
+        <Text className="flex items-center gap-2">
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />
-          All stories
+          <span className="first-letter:uppercase">
+            {tab} {tab !== "backlog" && "stories"}
+          </span>
         </Text>
-        <Badge className="uppercase" color="tertiary">
-          Web design
-        </Badge>
+        <Text className="flex items-center gap-1.5">
+          {team?.icon}
+          <span
+            title={team?.name}
+            className="inline-block max-w-[16ch] truncate"
+          >
+            {team?.name}
+          </span>
+        </Text>
       </Flex>
 
       <Divider className="mb-6" />
@@ -29,8 +50,7 @@ export const Sidebar = () => {
         <Tabs defaultValue="status">
           <Tabs.List className="mx-0 mb-3">
             <Tabs.Tab value="assignees">Assignees</Tabs.Tab>
-            <Tabs.Tab value="status">Status</Tabs.Tab>
-            <Tabs.Tab value="labels">Labels</Tabs.Tab>
+            <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
             <Tabs.Tab value="priority">Priority</Tabs.Tab>
           </Tabs.List>
           <Tabs.Panel value="assignees">
@@ -61,7 +81,7 @@ export const Sidebar = () => {
               </RowWrapper>
             ))}
           </Tabs.Panel>
-          <Tabs.Panel value="labels">
+          <Tabs.Panel value="objectives">
             {new Array(4).fill(1).map((_, idx) => (
               <RowWrapper className="px-1 py-2 md:px-0" key={idx}>
                 <Flex align="center" gap={2}>

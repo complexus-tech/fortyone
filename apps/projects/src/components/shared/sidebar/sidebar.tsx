@@ -1,5 +1,5 @@
 "use client";
-import { Box } from "ui";
+import { Box, Button, Text } from "ui";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
@@ -11,6 +11,16 @@ export const Sidebar = () => {
         <Header />
         <Navigation />
         <Teams />
+      </Box>
+
+      <Box className="rounded-xl bg-white p-4 shadow dark:bg-dark-300">
+        <Text>You&apos;re on the free plan</Text>
+        <Text className="mt-2.5" color="muted">
+          You can upgrade to a paid plan to get more features.
+        </Text>
+        <Button className="mt-3 px-3" color="tertiary" size="sm">
+          Upgrade to Pro
+        </Button>
       </Box>
     </Box>
   );

@@ -22,7 +22,7 @@ import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
 import { slugify } from "@/utils";
-import { useTeams } from "@/lib/hooks/teams";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
