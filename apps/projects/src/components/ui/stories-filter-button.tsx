@@ -115,7 +115,7 @@ export const StoriesFilterButton = ({
     if (filtersCount()) {
       return `${filtersCount()} filter${filtersCount() > 1 ? "s" : ""} applied`;
     }
-    return "Filter";
+    return "Filters";
   };
 
   return (

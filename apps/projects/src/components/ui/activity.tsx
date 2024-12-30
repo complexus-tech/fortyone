@@ -1,10 +1,15 @@
 import { useMembers } from "@/lib/hooks/members";
-import { StoryActivity } from "@/modules/stories/types";
+import { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { cn } from "lib";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useSprints } from "@/lib/hooks/sprints";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import { PriorityIcon } from "./priority-icon";
+import { StoryStatusIcon } from "./story-status-icon";
 
 export const Activity = ({
   userId,
@@ -17,6 +22,8 @@ export const Activity = ({
 }: StoryActivity) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
+  const { data: objectives = [] } = useObjectives();
+  const { data: sprints = [] } = useSprints();
   const member = members.find((member) => member.id === userId);
 
   const Comment = ({
@@ -51,12 +58,20 @@ export const Activity = ({
     status_id: {
       label: "Status",
       render: (value: string) => (
-        <span>{statuses.find((status) => status.id === value)?.name}</span>
+        <span className="flex items-center gap-1">
+          <StoryStatusIcon className="h-4" statusId={value} />
+          {statuses.find((status) => status.id === value)?.name}
+        </span>
       ),
     },
     priority: {
       label: "Priority",
-      render: (value: string) => <span>{value}</span>,
+      render: (value: string) => (
+        <span className="flex items-center gap-1">
+          <PriorityIcon className="h-4" priority={value as StoryPriority} />
+          {value}
+        </span>
+      ),
     },
     assignee_id: {
       label: "Assignee",
@@ -66,8 +81,15 @@ export const Activity = ({
             <span>Unassigned</span>
           ) : (
             <Link
+              className="flex items-center gap-1.5"
               href={`/profile/${members?.find((member) => member.id === value)?.id}`}
             >
+              <Avatar
+                className="relative top-px"
+                name={members?.find((member) => member.id === value)?.fullName}
+                src={members?.find((member) => member.id === value)?.avatarUrl}
+                size="xs"
+              />
               {members?.find((member) => member.id === value)?.username}
             </Link>
           )}
@@ -77,18 +99,38 @@ export const Activity = ({
     start_date: {
       label: "Start date",
       render: (value: string) => (
-        <span>{format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}</span>
+        <span className="flex items-center gap-1">
+          <CalendarIcon className="h-4" />
+          {format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}
+        </span>
       ),
     },
     end_date: {
       label: "Due date",
       render: (value: string) => (
-        <span>{format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}</span>
+        <span className="flex items-center gap-1">
+          <CalendarIcon className="h-4" />
+          {format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}
+        </span>
       ),
     },
     sprint_id: {
       label: "Sprint",
-      render: (value: string) => <span>{value}</span>,
+      render: (value: string) => (
+        <>
+          {!value || value?.includes("nil") ? (
+            <span>No sprint</span>
+          ) : (
+            <Link
+              className="flex items-center gap-1"
+              href={`/teams/${sprints?.find((sprint) => sprint.id === value)?.teamId}/sprints/${sprints?.find((sprint) => sprint.id === value)?.id}/stories`}
+            >
+              <SprintsIcon className="h-4" />
+              {sprints?.find((sprint) => sprint.id === value)?.name}
+            </Link>
+          )}
+        </>
+      ),
     },
     epic_id: {
       label: "Epic",
@@ -96,7 +138,21 @@ export const Activity = ({
     },
     objective_id: {
       label: "Objective",
-      render: (value: string) => <span>{value}</span>,
+      render: (value: string) => (
+        <>
+          {!value || value?.includes("nil") ? (
+            <span>No objective</span>
+          ) : (
+            <Link
+              className="flex items-center gap-1"
+              href={`/teams/${objectives?.find((objective) => objective.id === value)?.teamId}/objectives/${objectives?.find((objective) => objective.id === value)?.id}`}
+            >
+              <ObjectiveIcon className="h-4" />
+              {objectives?.find((objective) => objective.id === value)?.name}
+            </Link>
+          )}
+        </>
+      ),
     },
     blocked_by_id: {
       label: "Blocked by",

@@ -37,11 +37,11 @@ export const Header = ({
           breadCrumbs={[
             {
               name: "My Work",
-              icon: <StoryIcon className="h-5 w-auto" strokeWidth={2} />,
+              icon: <UserIcon />,
             },
             {
               name: tab,
-              icon: <UserIcon className="h-4 w-auto" />,
+              icon: <StoryIcon strokeWidth={2} />,
               className: "capitalize",
             },
           ]}

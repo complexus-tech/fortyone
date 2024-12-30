@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
 import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
-import { NavLink } from "../../ui";
+import { NavLink, TeamColor } from "../../ui";
 
 type TeamProps = {
   id: string;
@@ -28,12 +28,7 @@ export const Team = ({
   const links = [
     {
       name: "Stories",
-      icon: (
-        <StoryIcon
-          className="h-5 w-auto text-gray dark:text-gray-300"
-          strokeWidth={2}
-        />
-      ),
+      icon: <StoryIcon strokeWidth={2} />,
       href: `/teams/${id}/stories`,
     },
     // {
@@ -43,7 +38,7 @@ export const Team = ({
     // },
     {
       name: "Sprints",
-      icon: <SprintsIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
+      icon: <SprintsIcon />,
       href: `/teams/${id}/sprints`,
     },
     // {
@@ -53,12 +48,7 @@ export const Team = ({
     // },
     {
       name: "Objectives",
-      icon: (
-        <ObjectiveIcon
-          className="h-[1.15rem] w-auto text-gray dark:text-gray-300"
-          strokeWidth={2}
-        />
-      ),
+      icon: <ObjectiveIcon className="h-[1.15rem]" strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
     },
     // {
@@ -91,10 +81,7 @@ export const Team = ({
         tabIndex={0}
       >
         <span className="flex items-center gap-2">
-          <span
-            className="inline-block size-3.5 rounded"
-            style={{ backgroundColor: color }}
-          />
+          <TeamColor color={color} />
           <span className="block max-w-[15ch] truncate">{teamName}</span>
         </span>
         <ArrowDownIcon

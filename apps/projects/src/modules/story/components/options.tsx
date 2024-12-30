@@ -374,7 +374,7 @@ export const Options = () => {
                   disabled={isDeleted}
                   leftIcon={
                     objectiveId ? (
-                      <ObjectiveIcon className="h-5 w-auto" />
+                      <ObjectiveIcon className="h-[1.15rem] w-auto" />
                     ) : (
                       <PlusIcon className="h-5 w-auto" />
                     )

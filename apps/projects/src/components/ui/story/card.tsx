@@ -52,7 +52,7 @@ export const StoryCard = ({
       <StoryContextMenu story={story}>
         <Box
           className={cn(
-            "w-[340px] cursor-pointer select-none rounded-[0.45rem] border border-gray-100 bg-white px-4 py-3 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/50 dark:bg-dark-300/60 dark:hover:bg-dark-200/60",
+            "w-[340px] cursor-pointer select-none rounded-xl border border-gray-100/80 bg-white px-4 pb-4 pt-3 shadow shadow-gray-100 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-100/40 dark:bg-dark-300 dark:shadow-none dark:hover:bg-dark-200/60",
             {
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,
@@ -60,7 +60,7 @@ export const StoryCard = ({
             className,
           )}
         >
-          <Flex className="mb-0.5" gap={2} justify="between">
+          <Flex className="mb-2" gap={2} justify="between">
             <Flex align="center" gap={2}>
               <Checkbox
                 checked={selectedStories.includes(story.id)}
@@ -126,7 +126,7 @@ export const StoryCard = ({
             )}
           </Flex>
           <Link className="flex-1" href={`/story/${id}/${slugify(title)}`}>
-            <Text className="mb-2 line-clamp-2">{title}</Text>
+            <Text className="mb-3 line-clamp-2">{title}</Text>
           </Link>
           <Flex gap={1} wrap>
             {isColumnVisible("Status") && (

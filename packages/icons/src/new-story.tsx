@@ -6,8 +6,8 @@ export const NewStoryIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="none"
-      className={cn("h-5 w-auto", className)}
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"

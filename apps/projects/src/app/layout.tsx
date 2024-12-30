@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
@@ -11,10 +11,10 @@ import { Toaster } from "./toaster";
 //   ssr: false,
 // });
 
-const font = Inter({
+const font = Instrument_Sans({
   subsets: ["latin"],
   display: "swap",
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {

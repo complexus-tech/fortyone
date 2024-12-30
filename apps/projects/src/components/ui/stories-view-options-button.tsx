@@ -90,7 +90,7 @@ export const StoriesViewOptionsButton = ({
           size="sm"
           variant="outline"
         >
-          View
+          Options
           {hasFilters && (
             <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
           )}

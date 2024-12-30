@@ -26,17 +26,12 @@ export const Navigation = () => {
   const links: MenuItem[] = [
     {
       name: "Home",
-      icon: <HomeIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
+      icon: <HomeIcon />,
       href: "/",
     },
     {
       name: "My Work",
-      icon: (
-        <UserIcon
-          className="h-5 w-auto text-gray dark:text-gray-300"
-          strokeWidth={2}
-        />
-      ),
+      icon: <UserIcon strokeWidth={2} />,
       href: "/my-work",
     },
     {
@@ -52,18 +47,13 @@ export const Navigation = () => {
 
     // {
     //   name: "Messages",
-    //   icon: <ChatIcon className="h-5 w-auto text-gray dark:text-gray-300" strokeWidth={2} />,
+    //   icon: <ChatIcon  strokeWidth={2} />,
     //   href: "/messages",
     //   messages: 1,
     // },
     {
       name: "Roadmap",
-      icon: (
-        <RoadmapIcon
-          className="h-5 w-auto text-gray dark:text-gray-300"
-          strokeWidth={2}
-        />
-      ),
+      icon: <RoadmapIcon strokeWidth={2} />,
       href: "/roadmaps",
     },
     // {
@@ -73,15 +63,13 @@ export const Navigation = () => {
     // },
     {
       name: "Notifications",
-      icon: (
-        <NotificationsIcon className="h-[1.3rem] w-auto text-gray dark:text-gray-300" />
-      ),
+      icon: <NotificationsIcon className="h-[1.3rem]" />,
       href: "/notifications",
       messages: 3,
     },
     // {
     //   name: "Running Sprints",
-    //   icon: <SprintsIcon className="h-5 w-auto text-gray dark:text-gray-300" />,
+    //   icon: <SprintsIcon  />,
     //   href: "/sprints",
     // },
   ];

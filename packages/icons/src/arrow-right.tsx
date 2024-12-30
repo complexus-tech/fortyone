@@ -1,9 +1,12 @@
+import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const ArrowRightIcon = (props: Icon) => {
+  const { className, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="currentColor"
       height="24"
       viewBox="0 0 24 24"

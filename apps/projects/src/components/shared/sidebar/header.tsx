@@ -202,12 +202,7 @@ export const Header = () => {
           asIcon
           className="rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
-          leftIcon={
-            <SearchIcon
-              className="h-4 w-auto text-gray dark:text-gray-300"
-              strokeWidth={3}
-            />
-          }
+          leftIcon={<SearchIcon className="h-4" />}
           size="sm"
           variant="outline"
         >

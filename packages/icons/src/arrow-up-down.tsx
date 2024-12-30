@@ -1,11 +1,14 @@
+import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const ArrowUpDownIcon = (props: Icon) => {
-  const { strokeWidth = 3, fill = "none", ...rest } = props;
+  const { className, strokeWidth = 2, ...rest } = props;
   return (
     <svg
       {...rest}
-      fill={fill}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      fill="currentColor"
+      fillOpacity={0.1}
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"

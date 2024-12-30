@@ -1,10 +1,12 @@
+import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const SprintsIcon = (props: Icon) => {
-  const { strokeWidth = 2, ...rest } = props;
+  const { strokeWidth = 2, className, ...rest } = props;
   return (
     <svg
       {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="none"
       strokeWidth={strokeWidth}
       height="24"

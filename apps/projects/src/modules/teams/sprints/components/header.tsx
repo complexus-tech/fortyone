@@ -8,15 +8,24 @@ import {
   SprintsIcon,
 } from "icons";
 import { HeaderContainer } from "@/components/shared";
+import { useParams } from "next/navigation";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { TeamColor } from "@/components/ui";
 
 export const SprintsHeader = () => {
+  const { teamId } = useParams<{
+    teamId: string;
+  }>();
+  const { data: teams = [] } = useTeams();
+
+  const { name, color } = teams.find((team) => team.id === teamId)!;
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Engineering",
-            icon: "🚀",
+            name,
+            icon: <TeamColor color={color} />,
           },
           {
             name: "Sprints",

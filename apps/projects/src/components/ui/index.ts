@@ -18,6 +18,7 @@ export * from "./layout-switcher";
 export * from "./side-details-switch";
 export * from "./board-divided-panel";
 export * from "./logo";
+export * from "./team-color";
 export * from "./stories-view-options-button";
 export { StoriesFilterButton } from "./stories-filter-button";
 

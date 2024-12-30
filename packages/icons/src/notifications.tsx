@@ -1,9 +1,12 @@
+import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const NotificationsIcon = (props: Icon) => {
+  const { strokeWidth = 2, className, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       height="24"
       fill="none"
       viewBox="0 0 24 24"

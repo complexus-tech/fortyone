@@ -1,10 +1,12 @@
+import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const WhiteboardIcon = (props: Icon) => {
-  const { strokeWidth = 2, ...rest } = props;
+  const { className, strokeWidth = 2, ...rest } = props;
   return (
     <svg
       {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="currentColor"
       fillOpacity={0.1}
       strokeWidth={strokeWidth}

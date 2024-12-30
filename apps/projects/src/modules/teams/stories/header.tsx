@@ -9,6 +9,7 @@ import {
   SideDetailsSwitch,
   StoriesFilterButton,
   StoriesViewOptionsButton,
+  TeamColor,
 } from "@/components/ui";
 import { useTeamOptions } from "./provider";
 import { useParams } from "next/navigation";
@@ -29,7 +30,7 @@ export const Header = ({
   const { teamId } = useParams<{ teamId: string }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
-  const { name, icon } = teams.find((team) => team.id === teamId)!!;
+  const { name, color } = teams.find((team) => team.id === teamId)!!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
   return (
@@ -39,7 +40,7 @@ export const Header = ({
           breadCrumbs={[
             {
               name,
-              icon,
+              icon: <TeamColor color={color} />,
             },
             {
               name: "Stories",

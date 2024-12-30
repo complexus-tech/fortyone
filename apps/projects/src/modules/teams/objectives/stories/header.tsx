@@ -9,6 +9,7 @@ import {
   SideDetailsSwitch,
   StoriesFilterButton,
   StoriesViewOptionsButton,
+  TeamColor,
 } from "@/components/ui";
 import { useObjectiveOptions } from "./provider";
 import { useParams } from "next/navigation";
@@ -34,7 +35,7 @@ export const Header = ({
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();
-  const { name: teamName, icon: teamIcon } = teams.find(
+  const { name: teamName, color: teamColor } = teams.find(
     (team) => team.id === teamId,
   )!!;
   const { name: objectiveName } = objectives.find(
@@ -49,7 +50,7 @@ export const Header = ({
           breadCrumbs={[
             {
               name: teamName,
-              icon: teamIcon,
+              icon: <TeamColor color={teamColor} />,
             },
             {
               name: objectiveName,
