@@ -306,7 +306,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
 	query := `
         SELECT
-          s.id,
+					s.id,
 					s.title,
 					s.priority,
 					s.sequence_id,
@@ -325,13 +325,27 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.updated_at,
 					s.deleted_at,
 					(
-						SELECT json_agg(sub.*)
-						FROM stories sub
-						WHERE sub.parent_id = s.id
-					) AS sub_stories
-				FROM stories s
-        WHERE
-            s.id = :id AND s.workspace_id = :workspace_id;
+						SELECT
+							json_agg(sub.*)
+						FROM
+							stories sub
+						WHERE
+							sub.parent_id = s.id
+					) AS sub_stories,
+					(
+						SELECT
+							json_agg(l.label_id)
+						FROM
+							labels l
+							INNER JOIN story_labels sl ON sl.label_id = l.label_id
+						WHERE
+							sl.story_id = s.id
+					) AS labels
+				FROM
+					stories s
+				WHERE
+					s.id =:id
+					AND s.workspace_id =:workspace_id;
     `
 
 	params := map[string]interface{}{
@@ -355,6 +369,10 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 		}
 		r.log.Error(ctx, fmt.Sprintf("failed to execute query: %s", err), "id", id)
 		return dbStory{}, err
+	}
+
+	if story.Labels != nil {
+		fmt.Printf("Raw labels JSON: %s\n", string(*story.Labels))
 	}
 
 	return story, nil

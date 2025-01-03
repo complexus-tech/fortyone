@@ -6,6 +6,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type CoreLabel struct {
+	LabelID     uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	ProjectID   uuid.UUID  `json:"projectId"`
+	TeamID      *uuid.UUID `json:"teamId"`
+	WorkspaceID *uuid.UUID `json:"workspaceId"`
+	Color       string     `json:"color"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+}
+
 // CoreStoryList represents a list of stories.
 type CoreStoryList struct {
 	ID         uuid.UUID
@@ -53,6 +64,7 @@ type CoreSingleStory struct {
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time
 	SubStories      []CoreStoryList
+	Labels          []uuid.UUID
 }
 
 type CoreNewStory struct {

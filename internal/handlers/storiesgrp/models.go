@@ -55,6 +55,17 @@ type AppBulkRestoreRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`
 }
 
+type AppLabel struct {
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	ProjectID   uuid.UUID  `json:"projectId"`
+	TeamID      *uuid.UUID `json:"teamId"`
+	WorkspaceID *uuid.UUID `json:"workspaceId"`
+	Color       string     `json:"color"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+}
+
 // AppSingleStory represents a single story in the application.
 type AppSingleStory struct {
 	ID              uuid.UUID      `json:"id"`
@@ -81,6 +92,7 @@ type AppSingleStory struct {
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       *time.Time     `json:"deletedAt"`
 	SubStories      []AppStoryList `json:"subStories"`
+	Labels          []uuid.UUID    `json:"labels"`
 }
 
 // AppStoryList represents a single story in the list of stories in the application.
@@ -128,6 +140,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Related:         i.Related,
 		Reporter:        i.Reporter,
 		SubStories:      toAppStories(i.SubStories),
+		Labels:          i.Labels,
 	}
 }
 
@@ -153,6 +166,23 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 		}
 	}
 	return appStories
+}
+
+func toAppLabels(labels []stories.CoreLabel) []AppLabel {
+	appLabels := make([]AppLabel, len(labels))
+	for i, label := range labels {
+		appLabels[i] = AppLabel{
+			ID:          label.LabelID,
+			Name:        label.Name,
+			ProjectID:   label.ProjectID,
+			TeamID:      label.TeamID,
+			WorkspaceID: label.WorkspaceID,
+			Color:       label.Color,
+			CreatedAt:   label.CreatedAt,
+			UpdatedAt:   label.UpdatedAt,
+		}
+	}
+	return appLabels
 }
 
 type AppNewStory struct {

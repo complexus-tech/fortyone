@@ -38,11 +38,32 @@ type dbStory struct {
 	DeletedAt       *time.Time       `db:"deleted_at"`
 	ArchivedAt      *time.Time       `db:"archived_at"`
 	SubStories      *json.RawMessage `db:"sub_stories"`
+	Labels          *json.RawMessage `db:"labels"`
+}
+
+type dbLabel struct {
+	ID          uuid.UUID  `json:"id" db:"label_id"`
+	Name        string     `json:"name" db:"name"`
+	ProjectID   uuid.UUID  `json:"projectId" db:"project_id"`
+	TeamID      *uuid.UUID `json:"teamId" db:"team_id"`
+	WorkspaceID *uuid.UUID `json:"workspaceId" db:"workspace_id"`
+	Color       string     `json:"color" db:"color"`
+	CreatedAt   time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updatedAt" db:"updated_at"`
 }
 
 // toCoreStory converts a dbStory to a CoreSingleStory.
 func toCoreStory(i dbStory) stories.CoreSingleStory {
 	var subStories []stories.CoreStoryList
+	var labels []uuid.UUID
+
+	if i.Labels != nil {
+		err := json.Unmarshal(*i.Labels, &labels)
+		if err != nil {
+			log.Printf("Failed to unmarshal labels: %s", err)
+		}
+	}
+
 	if i.SubStories != nil {
 		err := json.Unmarshal(*i.SubStories, &subStories)
 		if err != nil {
@@ -74,6 +95,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
 		SubStories:      subStories,
+		Labels:          labels,
 	}
 }
 
