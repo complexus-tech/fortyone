@@ -21,7 +21,7 @@ export const ObjectivesHeader = () => {
             icon: <TeamColor color={color} />,
           },
           {
-            name: "Objectives",
+            name: "All objectives",
             icon: <ObjectiveIcon className="h-[1.1rem] w-auto" />,
           },
         ]}

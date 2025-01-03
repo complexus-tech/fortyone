@@ -40,7 +40,8 @@ const initialViewOptions: StoriesViewOptions = {
     "Due date",
     "Created",
     "Updated",
-    // "Sprint",
+    "Sprint",
+    "Objective",
     // "Labels",
   ],
 };
@@ -66,9 +67,9 @@ export const StoriesViewOptionsButton = ({
     "Due date",
     "Created",
     "Updated",
-    // "Sprint",
+    "Sprint",
+    "Objective",
     // "Epic",
-    // "Objective",
     // "Labels",
   ];
 
@@ -90,7 +91,7 @@ export const StoriesViewOptionsButton = ({
           size="sm"
           variant="outline"
         >
-          Options
+          Customise
           {hasFilters && (
             <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
           )}

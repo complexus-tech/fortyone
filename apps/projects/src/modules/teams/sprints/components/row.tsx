@@ -1,123 +1,60 @@
 "use client";
-import { Flex, Text, Avatar, Button, Menu, ProgressBar, Box } from "ui";
+import { Flex, Text, ProgressBar, Box, Badge } from "ui";
 import Link from "next/link";
-import {
-  CalendarIcon,
-  DeleteIcon,
-  MoreHorizontalIcon,
-  SettingsIcon,
-  StarIcon,
-} from "icons";
+import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { StoryStatusIcon, TableCheckbox } from "@/components/ui";
 import { Sprint } from "@/modules/sprints/types";
 import { useParams } from "next/navigation";
+import { format } from "date-fns";
 
-export const SprintRow = ({ id, name }: Sprint) => {
+type SprintStatus = "completed" | "in progress" | "upcoming";
+
+export const SprintRow = ({ id, name, startDate, endDate }: Sprint) => {
   const { teamId } = useParams<{ teamId: string }>();
+  let sprintStatus: SprintStatus = "completed";
+
+  if (new Date(startDate) < new Date() && new Date(endDate) > new Date()) {
+    sprintStatus = "in progress";
+  } else if (new Date(startDate) > new Date()) {
+    sprintStatus = "upcoming";
+  }
 
   return (
-    <RowWrapper>
-      <Flex align="center" className="relative select-none" gap={2}>
-        <TableCheckbox />
-        <Link
-          className="flex items-center gap-1"
-          href={`/teams/${teamId}/sprints/${id}/stories`}
-        >
-          <Text className="w-[250px] truncate hover:opacity-90">{name}</Text>
-        </Link>
-      </Flex>
-      <Flex align="center" gap={5}>
-        <Flex align="center" className="w-32" gap={2}>
-          <ProgressBar className="h-1.5 w-24" progress={20} />
-          <Text color="muted" fontWeight="medium">
-            20%
-          </Text>
+    <RowWrapper className="py-5">
+      <Link
+        href={`/teams/${teamId}/sprints/${id}/stories`}
+        className="flex items-center gap-2"
+      >
+        <SprintsIcon />
+        <Text fontWeight="medium">{name}</Text>
+        <Text className="ml-2 flex w-60 items-center gap-1.5" color="muted">
+          <CalendarIcon className="relative -top-px" />
+          {format(new Date(startDate), "MMM d, yyyy")}
+          <ArrowRightIcon className="h-3" />
+          {format(new Date(endDate), "MMM d, yyyy")}
+        </Text>
+      </Link>
+      <Flex gap={4}>
+        <Box className="">
+          <Badge
+            className="h-7 px-2 text-[0.9rem] capitalize tracking-wide"
+            color={sprintStatus === "in progress" ? "success" : "tertiary"}
+          >
+            {sprintStatus}
+          </Badge>
+        </Box>
+        <Flex align="center" className="w-24" gap={2}>
+          <ProgressBar className="h-1.5 w-12" progress={30} />
+          <Text>30%</Text>
         </Flex>
-        <Text className="w-30 flex items-center gap-1" color="muted">
-          <CalendarIcon className="h-5 w-auto" strokeWidth={2} />
-          Sep 27, 2024
+        <Text className="flex w-24 items-center gap-1.5">
+          <span className="font-medium">5</span>
+          <Text color="muted">completed</Text>
         </Text>
-        <Text className="flex w-32 items-center gap-1" color="muted">
-          <CalendarIcon className="h-5 w-auto text-primary" strokeWidth={2} />
-          Sep 27, 2024
+        <Text className="flex w-20 items-center gap-1.5">
+          <span className="font-medium">5</span>
+          <Text color="muted">stories</Text>
         </Text>
-        <Box className="w-12">
-          <AssigneesMenu>
-            <AssigneesMenu.Trigger>
-              <button className="flex" type="button">
-                <Avatar
-                  name="Joseph Mukorivo"
-                  size="xs"
-                  src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                />
-              </button>
-            </AssigneesMenu.Trigger>
-            <AssigneesMenu.Items onAssigneeSelected={(assigneeid) => {}} />
-          </AssigneesMenu>
-        </Box>
-        <Text className="w-28 text-left" color="muted">
-          Sep 27, 2024
-        </Text>
-        <Box className="w-8">
-          <Menu>
-            <Menu.Button>
-              <Button
-                color="tertiary"
-                leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
-                size="sm"
-                variant="naked"
-              >
-                <span className="sr-only">More options</span>
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end" className="w-64">
-              <Menu.Group className="mb-3 mt-1 px-4">
-                <Text color="muted" textOverflow="truncate">
-                  Manage objective
-                </Text>
-              </Menu.Group>
-              <Menu.Separator className="mb-1.5" />
-              <Menu.Group>
-                <Menu.Item>
-                  <SettingsIcon className="h-5 w-auto" />
-                  Settings
-                </Menu.Item>
-                <Menu.Item>
-                  <StoryStatusIcon className="h-[1.2rem] w-auto" />
-                  Status
-                </Menu.Item>
-                <Menu.Item>
-                  <Avatar
-                    className="h-5 w-auto"
-                    color="naked"
-                    name="Joseph Mukorivo"
-                    size="sm"
-                    src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                  />
-                  Lead
-                </Menu.Item>
-                <Menu.Item>
-                  <CalendarIcon className="h-5 w-auto" />
-                  Start date
-                </Menu.Item>
-                <Menu.Item>
-                  <CalendarIcon className="h-5 w-auto" />
-                  Due date
-                </Menu.Item>
-                <Menu.Item>
-                  <StarIcon className="h-[1.2rem] w-auto" />
-                  Favourite
-                </Menu.Item>
-                <Menu.Item>
-                  <DeleteIcon className="h-[1.2rem] w-auto" />
-                  Delete
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Box>
       </Flex>
     </RowWrapper>
   );

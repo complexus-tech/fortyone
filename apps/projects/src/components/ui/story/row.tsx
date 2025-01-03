@@ -42,6 +42,7 @@ import { useSprints } from "@/lib/hooks/sprints";
 import { SprintsMenu } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { ObjectivesMenu } from "./objectives-menu";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -164,12 +165,11 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
 
     return (
       <Box>
-        <Flex align="center" justify="between">
-          <Text fontSize="md">{selectedSprint?.name}</Text>
-
+        <Text fontSize="md" className="flex items-center gap-1">
           <SprintsIcon className="h-5 w-auto shrink-0" />
-        </Flex>
-        <Flex align="center" gap={6} className="mb-2 mt-3" justify="between">
+          {selectedSprint?.name}
+        </Text>
+        <Flex align="center" gap={6} className="mb-3 mt-4" justify="between">
           <Text fontSize="md" className="flex items-center gap-1">
             <CalendarIcon
               className={cn("h-5 w-auto", {
@@ -182,8 +182,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             {format(new Date(selectedSprint?.endDate!!), "MMM dd")}
           </Text>
           <Badge
-            className="border-opacity-50 bg-opacity-40 text-xs font-semibold uppercase"
-            rounded="full"
+            className="h-7 border-opacity-50 bg-opacity-40 text-[0.95rem] font-medium capitalize"
             color={getBadgeColor()}
           >
             {getBadgeText()}
@@ -243,7 +242,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               </Tooltip>
             )}
             <Link href={`/story/${id}/${slugify(title)}`}>
-              <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
+              <Text
+                fontWeight="medium"
+                className="line-clamp-1 hover:opacity-90"
+              >
+                {title}
+              </Text>
             </Link>
           </Flex>
           <Flex align="center" className="shrink-0" gap={3}>
@@ -282,39 +286,67 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               </PrioritiesMenu>
             )}
             {isColumnVisible("Objective") && selectedObjective && (
-              <Tooltip
-                className="max-w-80 py-3"
-                title={
-                  <Flex align="start" gap={2}>
-                    <ObjectiveIcon className="relative top-[2.5px] h-5 w-auto shrink-0" />
-                    <Box>
-                      <Text fontSize="md" className="mb-1.5">
-                        {selectedObjective?.name}
-                      </Text>
-                      <Text
-                        color="muted"
-                        className="line-clamp-4"
-                        fontSize="md"
-                      >
-                        {selectedObjective?.description}
-                      </Text>
-                    </Box>
-                  </Flex>
-                }
-              >
-                <Button
-                  color="tertiary"
-                  className="pl-1.5 pr-2"
-                  size="xs"
-                  rounded="xl"
-                  type="button"
+              <ObjectivesMenu>
+                <Tooltip
+                  className="max-w-80 py-3"
+                  title={
+                    <Flex align="start" gap={2}>
+                      <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
+                      <Box>
+                        <Text fontSize="md" className="mb-1.5">
+                          {selectedObjective?.name}
+                        </Text>
+                        <Text
+                          color="muted"
+                          className="line-clamp-4"
+                          fontSize="md"
+                        >
+                          {selectedObjective?.description}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  }
                 >
-                  <ObjectiveIcon className="h-5 w-auto" />
-                  <span className="inline-block max-w-36 truncate">
-                    {selectedObjective?.name}
+                  <span>
+                    <ObjectivesMenu.Trigger>
+                      <Button
+                        color="tertiary"
+                        className="gap-1 px-2"
+                        size="xs"
+                        rounded="xl"
+                        type="button"
+                        rightIcon={
+                          objectiveId && (
+                            <span
+                              tabIndex={0}
+                              role="button"
+                              aria-label="Remove objective"
+                              className="flex aspect-square items-center gap-1"
+                              onClick={() => {
+                                handleUpdate({ objectiveId: null });
+                              }}
+                            >
+                              <CloseIcon className="h-4" strokeWidth={3} />
+                              <span className="sr-only">Remove objective</span>
+                            </span>
+                          )
+                        }
+                      >
+                        <ObjectiveIcon className="h-4" />
+                        <span className="inline-block max-w-36 truncate">
+                          {selectedObjective?.name}
+                        </span>
+                      </Button>
+                    </ObjectivesMenu.Trigger>
                   </span>
-                </Button>
-              </Tooltip>
+                </Tooltip>
+                <ObjectivesMenu.Items
+                  objectiveId={objectiveId ?? undefined}
+                  setObjectiveId={(objectiveId) => {
+                    handleUpdate({ objectiveId });
+                  }}
+                />
+              </ObjectivesMenu>
             )}
 
             {isColumnVisible("Sprint") && selectedSprint && (
@@ -327,29 +359,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     <SprintsMenu.Trigger>
                       <Button
                         color="tertiary"
-                        className="pl-1.5 pr-2"
+                        className="gap-1 pl-1.5 pr-2"
                         size="xs"
                         rounded="xl"
                         type="button"
-                        rightIcon={
-                          sprintId && (
-                            <span
-                              tabIndex={0}
-                              className="flex aspect-square items-center gap-1"
-                              onClick={() => {
-                                handleUpdate({ sprintId: null });
-                              }}
-                            >
-                              <CloseIcon
-                                strokeWidth={2}
-                                className="h-5 w-auto text-primary"
-                              />
-                              <span className="sr-only">Remove sprint</span>
-                            </span>
-                          )
-                        }
                       >
-                        <SprintsIcon className="h-5 w-auto" />
+                        <SprintsIcon className="relative -top-[0.3px] h-[1.1rem]" />
                         <span className="inline-block max-w-36 truncate">
                           {selectedSprint?.name}
                         </span>

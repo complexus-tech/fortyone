@@ -7,11 +7,13 @@ import {
   LayoutSwitcher,
   StoriesViewOptionsButton,
   SideDetailsSwitch,
+  TeamColor,
 } from "@/components/ui";
 import { useSprintStories } from "./provider";
 import { useParams } from "next/navigation";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useTeams } from "../../hooks/teams";
+import { format } from "date-fns";
 
 export const Header = ({
   isExpanded,
@@ -36,6 +38,9 @@ export const Header = ({
 
   const team = teams.find((team) => team.id === teamId)!;
   const sprint = sprints.find((sprint) => sprint.id === sprintId)!;
+  const startDate = format(new Date(sprint.startDate), "MMM d");
+  const endDate = format(new Date(sprint.endDate), "MMM d");
+  const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
 
   return (
     <HeaderContainer className="justify-between">
@@ -44,11 +49,11 @@ export const Header = ({
           breadCrumbs={[
             {
               name: team?.name,
-              icon: team?.icon,
+              icon: <TeamColor color={team?.color} />,
               url: `/teams/${team?.id}/stories`,
             },
             {
-              name: sprint?.name,
+              name: sprintName,
               icon: <SprintsIcon className="h-4 w-auto" />,
               url: `/teams/${team?.id}/sprints/${sprint?.id}`,
             },

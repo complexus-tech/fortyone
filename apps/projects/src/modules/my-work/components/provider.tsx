@@ -24,7 +24,8 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
       "Due date",
       "Created",
       "Updated",
-      // "Sprint",
+      "Sprint",
+      "Objective",
       // "Labels",
     ],
   };

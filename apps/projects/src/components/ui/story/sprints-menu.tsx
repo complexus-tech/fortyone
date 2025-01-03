@@ -59,7 +59,7 @@ const Items = ({
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Change sprint..."
+          placeholder="Add to sprint..."
           value={query}
           onValueChange={(value) => {
             if (Number.parseInt(value) < sprints.length) {
@@ -76,6 +76,25 @@ const Items = ({
           <Text color="muted">No sprint found.</Text>
         </Command.Empty>
         <Command.Group>
+          <Command.Item
+            active={!sprintId}
+            onSelect={() => {
+              setSprintId(null);
+              setOpen(false);
+            }}
+            className="justify-between gap-4"
+          >
+            <Box className="grid grid-cols-[24px_auto] items-center">
+              <SprintsIcon />
+              <Text>No sprint</Text>
+            </Box>
+            <Flex align="center" gap={1}>
+              {!sprintId && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
+              <Text color="muted">0</Text>
+            </Flex>
+          </Command.Item>
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
             <Command.Item
               active={id === sprintId}
@@ -84,7 +103,7 @@ const Items = ({
                 setSprintId(id);
                 setOpen(false);
               }}
-              className="justify-between"
+              className="justify-between gap-4"
               key={id}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
@@ -97,11 +116,11 @@ const Items = ({
                   </Text>
                 </Text>
               </Box>
-              <Flex align="center" gap={2}>
+              <Flex align="center" gap={1}>
                 {id === sprintId && (
                   <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 )}
-                <Text color="muted">{idx}</Text>
+                <Text color="muted">{idx + 1}</Text>
               </Flex>
             </Command.Item>
           ))}

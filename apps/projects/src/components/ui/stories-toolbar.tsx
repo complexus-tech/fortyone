@@ -40,19 +40,17 @@ export const StoriesToolbar = () => {
     <>
       <Flex
         align="center"
-        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-[0.55rem] border border-gray-100 bg-white/60 px-2.5 py-2 shadow-lg shadow-dark/10 backdrop-blur dark:border-dark-50 dark:bg-dark-300/70 dark:shadow-dark/20"
+        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-xl border border-gray-100 bg-white/60 px-2.5 py-2 shadow-lg shadow-dark/10 backdrop-blur dark:border-dark-100 dark:bg-dark-300/70 dark:shadow-dark/20"
         gap={2}
       >
         <Text
           as="span"
-          className="ml-2 mr-4 flex items-center gap-1.5 px-1 opacity-80"
+          className="mr-4 flex items-center gap-1.5 px-1 opacity-80"
         >
           <Tooltip title="Clear selection">
             <Button
               color="tertiary"
-              leftIcon={
-                <CloseIcon className="relative h-4 w-auto" strokeWidth={3} />
-              }
+              leftIcon={<CloseIcon className="h-4" strokeWidth={3} />}
               onClick={() => {
                 setSelectedStories([]);
               }}
@@ -71,7 +69,7 @@ export const StoriesToolbar = () => {
           onClick={() => {
             setIsSprintsOpen(true);
           }}
-          leftIcon={<SprintsIcon className="h-[1.15rem] w-auto" />}
+          leftIcon={<SprintsIcon className="h-[1.15rem]" />}
           variant="outline"
         >
           Add to sprint
@@ -83,13 +81,15 @@ export const StoriesToolbar = () => {
           onClick={() => {
             setIsObjectivesOpen(true);
           }}
-          leftIcon={<ObjectiveIcon className="h-[1.15rem] w-auto" />}
+          leftIcon={<ObjectiveIcon className="h-[1.15rem]" />}
           variant="outline"
         >
           Add to objective
         </Button>
         <Button
-          leftIcon={<DeleteIcon className="h-[1.15rem] w-auto" />}
+          leftIcon={
+            <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
+          }
           onClick={() => {
             setIsOpen(true);
           }}
@@ -122,7 +122,9 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={<DeleteIcon className="h-5 w-auto" />}
+                leftIcon={
+                  <DeleteIcon className="text-white dark:text-gray-200" />
+                }
                 onClick={handleBulkDelete}
               >
                 Delete
@@ -200,7 +202,9 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={<DeleteIcon className="h-5 w-auto" />}
+                leftIcon={
+                  <DeleteIcon className="text-white dark:text-gray-200" />
+                }
                 onClick={handleBulkDelete}
               >
                 Delete

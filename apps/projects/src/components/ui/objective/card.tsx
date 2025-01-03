@@ -19,11 +19,12 @@ export const ObjectiveCard = ({
   const { data: members = [] } = useMembers();
   const lead = members.find((member) => member.id === leadUser);
   return (
-    <RowWrapper>
+    <RowWrapper className="py-5">
       <Link
-        className="w-[250px] truncate hover:opacity-90"
+        className="flex w-[250px] items-center gap-2 truncate hover:opacity-90"
         href={`/teams/${teamId}/objectives/${id}`}
       >
+        <ObjectiveIcon className="relative -top-px h-[1.1rem]" />
         {name}
       </Link>
       <Flex align="center" gap={5}>
@@ -61,64 +62,6 @@ export const ObjectiveCard = ({
         <Text className="w-40 text-left" color="muted">
           {format(new Date(createdAt), "MMM dd, yyyy")}
         </Text>
-        {/* <Box className="w-8">
-          <Menu>
-            <Menu.Button>
-              <Button
-                color="tertiary"
-                leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
-                size="sm"
-                variant="naked"
-              >
-                <span className="sr-only">More options</span>
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end" className="w-64">
-              <Menu.Group className="mb-3 mt-1 px-4">
-                <Text color="muted" textOverflow="truncate">
-                  Manage objective
-                </Text>
-              </Menu.Group>
-              <Menu.Separator className="mb-1.5" />
-              <Menu.Group>
-                <Menu.Item>
-                  <SettingsIcon className="h-5 w-auto" />
-                  Settings
-                </Menu.Item>
-                <Menu.Item>
-                  <StoryStatusIcon className="h-[1.2rem] w-auto" />
-                  Status
-                </Menu.Item>
-                <Menu.Item>
-                  <Avatar
-                    className="h-5 w-auto"
-                    color="naked"
-                    name="Joseph Mukorivo"
-                    size="sm"
-                    src="https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo"
-                  />
-                  Lead
-                </Menu.Item>
-                <Menu.Item>
-                  <CalendarIcon className="h-5 w-auto" />
-                  Start date
-                </Menu.Item>
-                <Menu.Item>
-                  <CalendarIcon className="h-5 w-auto" />
-                  Due date
-                </Menu.Item>
-                <Menu.Item>
-                  <StarIcon className="h-[1.2rem] w-auto" />
-                  Favourite
-                </Menu.Item>
-                <Menu.Item>
-                  <DeleteIcon className="h-[1.2rem] w-auto" />
-                  Delete
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Box> */}
       </Flex>
     </RowWrapper>
   );

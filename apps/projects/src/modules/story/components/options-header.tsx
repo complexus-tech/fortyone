@@ -76,22 +76,22 @@ export const OptionsHeader = () => {
           {isDeleted ? (
             <Tooltip title="Restore Story">
               <Button
-                color="danger"
+                color="tertiary"
                 onClick={restoreStory}
-                leftIcon={<UndoIcon className="h-5 w-auto" />}
+                leftIcon={<UndoIcon />}
                 variant="naked"
               >
-                <span className="sr-only">Delete story</span>
+                <span className="sr-only">Restore story</span>
               </Button>
             </Tooltip>
           ) : (
             <Tooltip title="Delete Story">
               <Button
-                color="danger"
+                color="tertiary"
                 onClick={() => {
                   setIsOpen(true);
                 }}
-                leftIcon={<DeleteIcon className="h-5 w-auto" />}
+                leftIcon={<DeleteIcon />}
                 variant="naked"
               >
                 <span className="sr-only">Delete story</span>
@@ -123,7 +123,9 @@ export const OptionsHeader = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={<DeleteIcon className="h-5 w-auto" />}
+                leftIcon={
+                  <DeleteIcon className="text-white dark:text-gray-200" />
+                }
                 onClick={handleDelete}
               >
                 Delete

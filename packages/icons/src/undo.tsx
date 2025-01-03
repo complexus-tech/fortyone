@@ -2,21 +2,30 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const UndoIcon = (props: Icon) => {
-  const { className, strokeWidth = 2, ...rest } = props;
+  const { className, strokeWidth = 2.4, ...rest } = props;
   return (
     <svg
       {...rest}
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
-      fill="currentColor"
-      fillOpacity={0.1}
+      fill="none"
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M3 7v6h6" />
-      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+      <path
+        d="M3 8H15C18.3137 8 21 10.6863 21 14C21 17.3137 18.3137 20 15 20H11"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 4L5.8462 4.87652C3.94873 6.31801 3 7.03875 3 8C3 8.96125 3.94873 9.68199 5.8462 11.1235L7 12"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 };

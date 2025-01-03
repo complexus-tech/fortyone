@@ -142,15 +142,13 @@ export const Options = () => {
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
       <OptionsHeader />
       <Container className="px-8 pt-4 text-gray-300/90">
-        <Flex className="mb-5" align="center" justify="between">
-          <Text fontWeight="semibold">
-            Properties <br />
-          </Text>
+        <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
+          <Text fontWeight="semibold">Properties</Text>
           {isDeleted && (
             <Badge
-              rounded="full"
-              color="warning"
-              className="text-dark dark:bg-opacity-50 dark:text-white"
+              size="lg"
+              color="tertiary"
+              className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
             >
               {differenceInDays(
                 addDays(new Date(deletedAt), 30),
@@ -159,7 +157,7 @@ export const Options = () => {
               days left in bin
             </Badge>
           )}
-        </Flex>
+        </Box>
         <Option
           label="Reporter"
           value={

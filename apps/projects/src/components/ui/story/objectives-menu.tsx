@@ -75,6 +75,25 @@ const Items = ({
           <Text color="muted">No objective found.</Text>
         </Command.Empty>
         <Command.Group>
+          <Command.Item
+            active={!objectiveId}
+            onSelect={() => {
+              setObjectiveId(null);
+              setOpen(false);
+            }}
+            className="justify-between gap-4"
+          >
+            <Box className="grid grid-cols-[24px_auto] items-center">
+              <ObjectiveIcon className="h-[1.1rem]" />
+              <Text>No objective</Text>
+            </Box>
+            <Flex align="center" gap={1}>
+              {!objectiveId && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
+              <Text color="muted">0</Text>
+            </Flex>
+          </Command.Item>
           {objectives.map(({ id, name }, idx) => (
             <Command.Item
               active={id === objectiveId}
@@ -83,18 +102,18 @@ const Items = ({
                 setObjectiveId(id);
                 setOpen(false);
               }}
-              className="justify-between"
+              className="justify-between gap-4"
               key={id}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <ObjectiveIcon className="h-5 w-auto" />
+                <ObjectiveIcon className="h-[1.1rem]" />
                 <Text>{name}</Text>
               </Box>
-              <Flex align="center" gap={2}>
+              <Flex align="center" gap={1}>
                 {id === objectiveId && (
                   <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 )}
-                <Text color="muted">{idx}</Text>
+                <Text color="muted">{idx + 1}</Text>
               </Flex>
             </Command.Item>
           ))}

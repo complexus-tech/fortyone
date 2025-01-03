@@ -126,7 +126,9 @@ export const StoryCard = ({
             )}
           </Flex>
           <Link className="flex-1" href={`/story/${id}/${slugify(title)}`}>
-            <Text className="mb-3 line-clamp-2">{title}</Text>
+            <Text className="mb-3 line-clamp-2" fontWeight="medium">
+              {title}
+            </Text>
           </Link>
           <Flex gap={1} wrap>
             {isColumnVisible("Status") && (

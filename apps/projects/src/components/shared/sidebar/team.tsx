@@ -3,7 +3,14 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
-import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
+import {
+  ArrowDownIcon,
+  DocsIcon,
+  EpicsIcon,
+  ObjectiveIcon,
+  SprintsIcon,
+  StoryIcon,
+} from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink, TeamColor } from "../../ui";
 
@@ -33,7 +40,7 @@ export const Team = ({
     },
     // {
     //   name: "Epics",
-    //   icon: <EpicsIcon className="h-[1.3rem] w-auto" />,
+    //   icon: <EpicsIcon className="h-[1.4rem] w-auto" />,
     //   href: `/teams/${id}/epics`,
     // },
     {
