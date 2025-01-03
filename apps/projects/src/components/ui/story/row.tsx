@@ -84,10 +84,31 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
 
   const getDueDateMessage = (date: Date) => {
     if (date < new Date()) {
+      const daysOverdue = differenceInDays(new Date(), date);
+      if (daysOverdue === 0) {
+        return (
+          <>
+            <Text fontSize="md">The story is due today</Text>
+            <Text color="muted" fontSize="md">
+              Zero days overdue
+            </Text>
+          </>
+        );
+      }
+      if (daysOverdue === 1) {
+        return (
+          <>
+            <Text fontSize="md">This was due on yesterday</Text>
+            <Text color="muted" fontSize="md">
+              One day overdue
+            </Text>
+          </>
+        );
+      }
       return (
         <>
           <Text fontSize="md">
-            This was overdue on {format(date, "MMMM dd")}
+            This was due on {format(date, "MMM d, yyyy")}
           </Text>
           <Text color="muted" fontSize="md">
             {differenceInDays(new Date(), date)} days overdue
@@ -98,12 +119,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     if (date <= addDays(new Date(), 7) && date >= new Date()) {
       return (
         <>
-          <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+          <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
           <Text fontSize="md" color="muted">
             {isTomorrow(date) ? (
-              "Tomorrow"
+              "Due tomorrow"
             ) : (
-              <>Due in {differenceInDays(date, new Date())} days</>
+              <>Due in {differenceInDays(date, new Date()) + 1} days</>
             )}
           </Text>
         </>
@@ -111,12 +132,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     }
     return (
       <>
-        <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
+        <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
         <Text color="muted" fontSize="md">
           {isTomorrow(date) ? (
             "Tomorrow"
           ) : (
-            <>Due in {differenceInDays(date, new Date())} days</>
+            <>Due in {differenceInDays(date, new Date()) + 1} days</>
           )}
         </Text>
       </>
@@ -418,10 +439,16 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                           type="button"
                         >
                           <CalendarIcon
-                            className="h-4 w-auto"
-                            strokeWidth={2.5}
+                            className={cn("h-4", {
+                              "text-primary dark:text-primary":
+                                new Date(endDate) < new Date(),
+                              "text-warning dark:text-warning":
+                                new Date(endDate) <= addDays(new Date(), 7) &&
+                                new Date(endDate) >= new Date(),
+                            })}
+                            strokeWidth={3}
                           />
-                          {format(new Date(endDate), "MMM dd")}
+                          {format(new Date(endDate), "MMM d")}
                         </Button>
                       </DatePicker.Trigger>
                     </span>
