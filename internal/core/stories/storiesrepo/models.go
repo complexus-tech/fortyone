@@ -41,17 +41,6 @@ type dbStory struct {
 	Labels          *json.RawMessage `db:"labels"`
 }
 
-type dbLabel struct {
-	ID          uuid.UUID  `json:"id" db:"label_id"`
-	Name        string     `json:"name" db:"name"`
-	ProjectID   uuid.UUID  `json:"projectId" db:"project_id"`
-	TeamID      *uuid.UUID `json:"teamId" db:"team_id"`
-	WorkspaceID *uuid.UUID `json:"workspaceId" db:"workspace_id"`
-	Color       string     `json:"color" db:"color"`
-	CreatedAt   time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt   time.Time  `json:"updatedAt" db:"updated_at"`
-}
-
 // toCoreStory converts a dbStory to a CoreSingleStory.
 func toCoreStory(i dbStory) stories.CoreSingleStory {
 	var subStories []stories.CoreStoryList

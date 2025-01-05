@@ -160,6 +160,69 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 	return cs, err
 }
 
+func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.UpdateLabels")
+	defer span.End()
+
+	// Start a transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// First, delete all existing labels for the story
+	deleteQuery := `
+		DELETE FROM story_labels 
+		WHERE story_id = :story_id 
+		AND story_id IN (
+			SELECT id FROM stories 
+			WHERE id = :story_id 
+			AND workspace_id = :workspace_id
+		)
+	`
+	params := map[string]interface{}{
+		"story_id":     id,
+		"workspace_id": workspaceId,
+	}
+
+	if _, err = tx.NamedExecContext(ctx, deleteQuery, params); err != nil {
+		return fmt.Errorf("failed to delete existing labels: %w", err)
+	}
+
+	// If we have new labels to insert
+	if len(labels) > 0 {
+		// Prepare values for bulk insert
+		values := make([]string, len(labels))
+		args := make([]interface{}, 0, len(labels)*2)
+		for i, labelID := range labels {
+			values[i] = fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
+			args = append(args, id, labelID)
+		}
+
+		// Insert new labels
+		insertQuery := fmt.Sprintf(`
+			INSERT INTO story_labels (story_id, label_id)
+			VALUES %s
+		`, strings.Join(values, ","))
+
+		if _, err = tx.ExecContext(ctx, insertQuery, args...); err != nil {
+			return fmt.Errorf("failed to insert new labels: %w", err)
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // List returns a list of stories for a workspace with additional filters.
 func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
@@ -324,23 +387,26 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.created_at,
 					s.updated_at,
 					s.deleted_at,
-					(
-						SELECT
-							json_agg(sub.*)
-						FROM
-							stories sub
-						WHERE
-							sub.parent_id = s.id
+					COALESCE(
+							(
+									SELECT
+											json_agg(sub.*)
+									FROM
+											stories sub
+									WHERE
+											sub.parent_id = s.id
+							), '[]'
 					) AS sub_stories,
-					(
-						SELECT
-							json_agg(l.label_id)
-						FROM
-							labels l
-							INNER JOIN story_labels sl ON sl.label_id = l.label_id
-						WHERE
-							sl.story_id = s.id
-					) AS labels
+					COALESCE(
+						(
+								SELECT
+										json_agg(l.label_id)
+								FROM
+										labels l
+										INNER JOIN story_labels sl ON sl.label_id = l.label_id
+								WHERE
+										sl.story_id = s.id
+						), '[]') AS labels
 				FROM
 					stories s
 				WHERE
@@ -369,10 +435,6 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 		}
 		r.log.Error(ctx, fmt.Sprintf("failed to execute query: %s", err), "id", id)
 		return dbStory{}, err
-	}
-
-	if story.Labels != nil {
-		fmt.Printf("Raw labels JSON: %s\n", string(*story.Labels))
 	}
 
 	return story, nil

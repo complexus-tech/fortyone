@@ -23,6 +23,11 @@ type AppActivity struct {
 	CreatedAt    time.Time  `json:"createdAt"`
 }
 
+// AppNewLabels represents a new label in the application.
+type AppNewLabels struct {
+	Labels []uuid.UUID `json:"labels"`
+}
+
 func toAppActivity(i stories.CoreActivity) AppActivity {
 	return AppActivity{
 		ID:           i.ID,
@@ -166,23 +171,6 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 		}
 	}
 	return appStories
-}
-
-func toAppLabels(labels []stories.CoreLabel) []AppLabel {
-	appLabels := make([]AppLabel, len(labels))
-	for i, label := range labels {
-		appLabels[i] = AppLabel{
-			ID:          label.LabelID,
-			Name:        label.Name,
-			ProjectID:   label.ProjectID,
-			TeamID:      label.TeamID,
-			WorkspaceID: label.WorkspaceID,
-			Color:       label.Color,
-			CreatedAt:   label.CreatedAt,
-			UpdatedAt:   label.UpdatedAt,
-		}
-	}
-	return appLabels
 }
 
 type AppNewStory struct {

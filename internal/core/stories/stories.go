@@ -26,6 +26,7 @@ type Repository interface {
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
+	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
@@ -74,6 +75,19 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 	return cs, nil
 }
 
+// UpdateLabels replaces the labels for a story.
+func (s *Service) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.UpdateLabels")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.UpdateLabels")
+	defer span.End()
+
+	if err := s.repo.UpdateLabels(ctx, id, workspaceId, labels); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	return nil
+}
+
 // MyStories returns a list of stories.
 func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error) {
 	s.log.Info(ctx, "business.core.stories.list")
@@ -119,22 +133,6 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
-
-	subStories, err := s.repo.GetSubStories(ctx, id, workspaceId)
-	if err != nil {
-		span.RecordError(err)
-		return CoreSingleStory{}, err
-	}
-
-	story.SubStories = subStories
-
-	// Fetch labels later when implemented
-	// labels, err := s.repo.GetLabels(ctx, id, workspaceId)
-	// if err != nil {
-	//     span.RecordError(err)
-	//     return CoreSingleStory{}, err
-	// }
-	// story.Labels = labels
 
 	return story, nil
 }

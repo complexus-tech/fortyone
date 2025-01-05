@@ -77,7 +77,6 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	r.log.Info(ctx, "objectives retrieved successfully.")
 	span.AddEvent("objectives retrieved.", trace.WithAttributes(
 		attribute.Int("objectives.count", len(objectives)),
-		attribute.String("query", q),
 	))
 
 	return toCoreObjectives(objectives), nil

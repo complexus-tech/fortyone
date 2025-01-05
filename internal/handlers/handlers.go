@@ -4,6 +4,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/healthgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/labelsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
@@ -41,6 +42,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the objectives routes
 	objectivesgrp.Routes(objectivesgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the labels routes
+	labelsgrp.Routes(labelsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,

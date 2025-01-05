@@ -174,6 +174,36 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
+// UpdateLabels replaces the labels for a story.
+func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var req AppNewLabels
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	if err := h.stories.UpdateLabels(ctx, storyId, workspaceId, req.Labels); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
 // MyStories returns a list of stories.
 func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspaceIdParam := web.Params(r, "workspaceId")
