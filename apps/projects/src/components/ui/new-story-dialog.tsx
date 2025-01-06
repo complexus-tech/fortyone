@@ -243,7 +243,7 @@ export const NewStoryDialog = ({
             <Dialog.Close />
           </Flex>
         </Dialog.Header>
-        <Dialog.Body className="pt-0">
+        <Dialog.Body className="max-h-[60vh] pt-0">
           <TextEditor
             asTitle
             className="text-2xl font-medium"

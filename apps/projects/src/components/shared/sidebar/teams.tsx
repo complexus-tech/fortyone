@@ -10,7 +10,7 @@ export const Teams = () => {
   return (
     <Box className="mt-5">
       <Text
-        className="mb-2.5 flex items-center gap-1 pl-2.5 font-medium"
+        className="mb-2.5 flex items-center gap-1 pl-2.5 font-medium opacity-70"
         color="muted"
       >
         <TeamIcon className="h-[1.2rem]" />

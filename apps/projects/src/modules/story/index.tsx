@@ -10,7 +10,7 @@ export const StoryPage = () => {
         <MainDetails />
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
-      <ResizablePanel.Panel defaultSize={28} maxSize={35} minSize={20}>
+      <ResizablePanel.Panel defaultSize={28} maxSize={35} minSize={25}>
         <Options />
       </ResizablePanel.Panel>
     </ResizablePanel>

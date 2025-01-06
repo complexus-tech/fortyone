@@ -15,3 +15,13 @@ export type Member = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Label = {
+  id: string;
+  name: string;
+  color: string;
+  teamId: string;
+  workspaceId: string;
+  createdAt: string;
+  updatedAt: string;
+};

@@ -1,90 +1,58 @@
+import { useLabels } from "@/lib/hooks/labels";
+import { Badge, Flex, Tooltip } from "ui";
+import { StoryLabel } from "../label";
+import { Dot } from "../dot";
 import { TagsIcon } from "icons";
-import type { Icon } from "icons/src/types";
-import { Button, Flex } from "ui";
 
-const Dot = (props: Icon) => {
+export const Labels = ({
+  storyLabels = [],
+  storyId,
+  teamId,
+}: {
+  storyLabels: string[];
+  storyId: string;
+  teamId: string;
+}) => {
+  const { data: allLabels = [] } = useLabels();
+  // const labels = allLabels.filter(
+  //   (label) => label.teamId === teamId || label.teamId === null,
+  // );
+
+  const labels = allLabels.filter((label) => storyLabels.includes(label.id));
+  const firstTwoLabels = labels.slice(0, 2);
+  const remainingLabels = labels.slice(2);
+
   return (
-    <svg
-      fill="none"
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <circle cx={12} cy={12} fill="currentColor" r={12} />
-    </svg>
-  );
-};
-
-export const Labels = () => {
-  const labelss = [
-    {
-      color: "#06b6d4",
-      name: "Feature",
-    },
-    {
-      color: "#f43f5e",
-      name: "Bug",
-    },
-    {
-      color: "#f59e0b",
-      name: "Improvement",
-    },
-    {
-      color: "#6ee7b7",
-      name: "Task",
-    },
-    {
-      color: "#f59e0b",
-      name: "Story",
-    },
-  ];
-
-  const labels: any[] = [];
-
-  if (labels.length === 0)
-    return (
-      <Button
-        className="gap-1 pl-1.5"
-        color="tertiary"
-        leftIcon={<TagsIcon className="h-4 w-auto" />}
-        rounded="xl"
-        size="xs"
-        variant="outline"
-      >
-        <span className="sr-only">No labels</span>
-      </Button>
-    );
-  return (
-    <Flex align="center" gap={1}>
-      {labels.length <= 2 ? (
-        labels.map(({ name, color }, idx) => (
-          <Button
-            key={idx}
-            className="gap-1 pl-1.5"
-            color="tertiary"
-            leftIcon={
-              <Dot className="size-[0.45rem]" style={{ color: color }} />
-            }
-            rounded="xl"
-            size="xs"
-            variant="outline"
-          >
-            {name}
-          </Button>
-        ))
-      ) : (
-        <Button
-          className="gap-1 pl-1.5"
-          color="tertiary"
-          leftIcon={<Dot className="size-[0.45rem] text-info" />}
-          rounded="xl"
-          size="xs"
-          variant="outline"
+    <Flex align="center" gap={1} wrap>
+      {firstTwoLabels.map((label) => (
+        <StoryLabel key={label.id} {...label} />
+      ))}
+      {remainingLabels.length > 0 && (
+        <Tooltip
+          title={
+            <Flex className="min-w-28" direction="column" gap={2}>
+              {remainingLabels.map((label) => (
+                <Flex key={label.id} align="center" gap={1}>
+                  <TagsIcon className="h-4" style={{ color: label.color }} />
+                  {label.name}
+                </Flex>
+              ))}
+            </Flex>
+          }
         >
-          {labels.length} labels
-        </Button>
+          <Badge
+            rounded="xl"
+            color="tertiary"
+            className="h-[1.85rem] text-[0.95rem] font-normal"
+          >
+            <TagsIcon
+              className="h-4"
+              style={{ color: remainingLabels[0]?.color }}
+            />{" "}
+            + {remainingLabels.length} label
+            {remainingLabels.length > 1 ? "s" : ""}
+          </Badge>
+        </Tooltip>
       )}
     </Flex>
   );

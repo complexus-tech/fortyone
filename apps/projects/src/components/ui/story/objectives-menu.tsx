@@ -78,7 +78,9 @@ const Items = ({
           <Command.Item
             active={!objectiveId}
             onSelect={() => {
-              setObjectiveId(null);
+              if (objectiveId) {
+                setObjectiveId(null);
+              }
               setOpen(false);
             }}
             className="justify-between gap-4"
@@ -99,7 +101,9 @@ const Items = ({
               active={id === objectiveId}
               value={name}
               onSelect={() => {
-                setObjectiveId(id);
+                if (id !== objectiveId) {
+                  setObjectiveId(id);
+                }
                 setOpen(false);
               }}
               className="justify-between gap-4"

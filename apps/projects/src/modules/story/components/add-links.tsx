@@ -6,19 +6,22 @@ export const AddLinks = () => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <Flex align="center">
-        <Text fontWeight="medium">Links</Text>
+      <Flex align="center" justify="end">
         <Button
-          className="ml-auto"
           color="tertiary"
-          leftIcon={<PlusIcon className="h-5 w-auto" strokeWidth={2} />}
+          leftIcon={
+            <PlusIcon
+              className="text-white dark:text-gray-200"
+              strokeWidth={2}
+            />
+          }
           onClick={() => {
             setIsOpen(true);
           }}
           size="sm"
           variant="outline"
         >
-          Add
+          Add link
         </Button>
       </Flex>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -40,12 +43,15 @@ export const AddLinks = () => {
                 onClick={() => {
                   setIsOpen(false);
                 }}
-                size="md"
                 variant="outline"
               >
                 Cancel
               </Button>
-              <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="md">
+              <Button
+                leftIcon={
+                  <PlusIcon className="text-white dark:text-gray-200" />
+                }
+              >
                 Add link
               </Button>
             </Flex>

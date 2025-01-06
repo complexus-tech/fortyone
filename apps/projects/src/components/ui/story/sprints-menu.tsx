@@ -79,7 +79,9 @@ const Items = ({
           <Command.Item
             active={!sprintId}
             onSelect={() => {
-              setSprintId(null);
+              if (sprintId) {
+                setSprintId(null);
+              }
               setOpen(false);
             }}
             className="justify-between gap-4"
@@ -100,7 +102,9 @@ const Items = ({
               active={id === sprintId}
               value={name}
               onSelect={() => {
-                setSprintId(id);
+                if (id !== sprintId) {
+                  setSprintId(id);
+                }
                 setOpen(false);
               }}
               className="justify-between gap-4"

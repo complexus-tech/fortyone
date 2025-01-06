@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ApplicationLayout } from "@/components/layouts";
@@ -12,6 +11,8 @@ import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { memberKeys } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/contants";
+import { getLabels } from "@/lib/queries/labels/get-labels";
+import { labelKeys } from "@/constants/keys";
 
 export default async function RootLayout({
   children,
@@ -41,6 +42,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.list(),
       queryFn: getObjectives,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: labelKeys.lists(),
+      queryFn: () => getLabels(),
     }),
   ]);
 

@@ -1,6 +1,5 @@
 "use client";
 import { Button, Tooltip } from "ui";
-import { SidebarCollapseIcon, SidebarExpandIcon } from "icons";
 
 export const SideDetailsSwitch = ({
   isExpanded,
@@ -13,19 +12,13 @@ export const SideDetailsSwitch = ({
     <Tooltip title={isExpanded ? "Hide panel" : "Show panel"}>
       <Button
         color="tertiary"
-        leftIcon={
-          isExpanded ? (
-            <SidebarCollapseIcon className="h-5 w-auto" />
-          ) : (
-            <SidebarExpandIcon className="h-5 w-auto" />
-          )
-        }
         onClick={() => {
           setIsExpanded(!isExpanded);
         }}
         size="sm"
-        variant="solid"
+        variant="outline"
       >
+        Analytics
         <span className="sr-only">
           {isExpanded ? "Hide panel" : "Show panel"}
         </span>

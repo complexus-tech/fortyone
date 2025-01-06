@@ -21,6 +21,8 @@ export * from "./logo";
 export * from "./team-color";
 export * from "./stories-view-options-button";
 export { StoriesFilterButton } from "./stories-filter-button";
+export * from "./label";
+export * from "./dot";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";
@@ -29,4 +31,5 @@ export * from "./story/statuses-menu";
 export * from "./story/modules-menu";
 export * from "./story/sprints-menu";
 export * from "./story/context-menu";
+export * from "./story/labels-menu";
 export * from "./story/card";

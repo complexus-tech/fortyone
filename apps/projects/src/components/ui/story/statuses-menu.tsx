@@ -82,7 +82,9 @@ const Items = ({
               active={id === defaultStateId}
               value={name}
               onSelect={() => {
-                setStatusId(id);
+                if (id !== defaultStateId) {
+                  setStatusId(id);
+                }
                 setOpen(false);
               }}
               className="justify-between"

@@ -35,7 +35,7 @@ export const OptionsHeader = () => {
   };
   return (
     <>
-      <Container className="flex h-16 w-full items-center justify-between px-7">
+      <Container className="flex h-16 w-full items-center justify-between md:px-6">
         <Text color="muted" transform="uppercase" fontWeight="semibold">
           {code}-{sequenceId}
         </Text>
@@ -44,9 +44,7 @@ export const OptionsHeader = () => {
             <Button
               color="tertiary"
               suppressHydrationWarning
-              leftIcon={
-                <LinkIcon className="h-5 w-auto -rotate-45" strokeWidth={2.5} />
-              }
+              leftIcon={<LinkIcon className="-rotate-45" strokeWidth={2.5} />}
               variant="naked"
               onClick={async () => {
                 await copyText(window.location.href);
@@ -61,7 +59,7 @@ export const OptionsHeader = () => {
           <Tooltip title="Copy Story ID">
             <Button
               color="tertiary"
-              leftIcon={<CopyIcon className="h-5 w-auto" />}
+              leftIcon={<CopyIcon />}
               variant="naked"
               onClick={async () => {
                 await copyText(id);

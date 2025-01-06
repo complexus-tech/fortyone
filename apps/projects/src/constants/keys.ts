@@ -39,3 +39,19 @@ export const memberTags = {
   details: () => `${memberTags.all}-detail` as const,
   detail: (id: string) => `${memberTags.details()}-${id}` as const,
 };
+
+export const labelTags = {
+  all: "labels" as const,
+  lists: () => `${labelTags.all}-list` as const,
+  details: () => `${labelTags.all}-detail` as const,
+  detail: (id: string) => `${labelTags.details()}-${id}` as const,
+  team: (teamId: string) => `${labelTags.all}-${teamId}` as const,
+};
+
+export const labelKeys = {
+  all: ["labels"] as const,
+  lists: () => [...labelKeys.all, "list"] as const,
+  details: () => [...labelKeys.all, "detail"] as const,
+  detail: (id: string) => [...labelKeys.details(), id] as const,
+  team: (teamId: string) => [...labelKeys.all, teamId] as const,
+};

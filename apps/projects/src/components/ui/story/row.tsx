@@ -26,13 +26,7 @@ import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { slugify } from "@/utils";
 import { CalendarIcon, ObjectiveIcon, SprintsIcon, CloseIcon } from "icons";
-import {
-  format,
-  addDays,
-  differenceInDays,
-  isTomorrow,
-  formatISO,
-} from "date-fns";
+import { format, addDays, formatISO } from "date-fns";
 import { StateCategory } from "@/types/states";
 import { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
@@ -43,6 +37,8 @@ import { SprintsMenu } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { ObjectivesMenu } from "./objectives-menu";
+import { getDueDateMessage } from "./due-date-tooltip";
+import { sprintTooltip } from "./sprint-tooltip";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -57,6 +53,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     objectiveId,
     sprintId,
     priority = "No Priority",
+    labels: storyLabels,
   } = story;
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
@@ -80,145 +77,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
   );
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
-  };
-
-  const getDueDateMessage = (date: Date) => {
-    if (date < new Date()) {
-      const daysOverdue = differenceInDays(new Date(), date);
-      if (daysOverdue === 0) {
-        return (
-          <>
-            <Text fontSize="md">The story is due today</Text>
-            <Text color="muted" fontSize="md">
-              Zero days overdue
-            </Text>
-          </>
-        );
-      }
-      if (daysOverdue === 1) {
-        return (
-          <>
-            <Text fontSize="md">This was due on yesterday</Text>
-            <Text color="muted" fontSize="md">
-              One day overdue
-            </Text>
-          </>
-        );
-      }
-      return (
-        <>
-          <Text fontSize="md">
-            This was due on {format(date, "MMM d, yyyy")}
-          </Text>
-          <Text color="muted" fontSize="md">
-            {differenceInDays(new Date(), date)} days overdue
-          </Text>
-        </>
-      );
-    }
-    if (date <= addDays(new Date(), 7) && date >= new Date()) {
-      return (
-        <>
-          <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
-          <Text fontSize="md" color="muted">
-            {isTomorrow(date) ? (
-              "Due tomorrow"
-            ) : (
-              <>Due in {differenceInDays(date, new Date()) + 1} days</>
-            )}
-          </Text>
-        </>
-      );
-    }
-    return (
-      <>
-        <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
-        <Text color="muted" fontSize="md">
-          {isTomorrow(date) ? (
-            "Tomorrow"
-          ) : (
-            <>Due in {differenceInDays(date, new Date()) + 1} days</>
-          )}
-        </Text>
-      </>
-    );
-  };
-
-  const sprintTooltip = () => {
-    const isCompleted = new Date(selectedSprint?.endDate!!) < new Date();
-    const inProgress =
-      new Date(selectedSprint?.startDate!!) < new Date() &&
-      new Date(selectedSprint?.endDate!!) > new Date();
-    const daysLeft = differenceInDays(
-      new Date(selectedSprint?.endDate!!),
-      new Date(),
-    );
-    const isPanned = new Date(selectedSprint?.startDate!!) > new Date();
-
-    const getBadgeColor = () => {
-      if (isCompleted || isPanned) {
-        return "tertiary";
-      }
-      if (inProgress && daysLeft < 5) {
-        return "primary";
-      }
-      if (inProgress && daysLeft < 8) {
-        return "warning";
-      }
-      return "info";
-    };
-
-    const getBadgeText = () => {
-      if (isCompleted) {
-        return "Completed";
-      }
-      if (isPanned) {
-        return "Planned";
-      }
-      if (inProgress && daysLeft < 5) {
-        return `${daysLeft} days left`;
-      }
-      if (inProgress && daysLeft < 8) {
-        return "Ending in a week";
-      }
-      return "In progress";
-    };
-
-    return (
-      <Box>
-        <Text fontSize="md" className="flex items-center gap-1">
-          <SprintsIcon className="h-5 w-auto shrink-0" />
-          {selectedSprint?.name}
-        </Text>
-        <Flex align="center" gap={6} className="mb-3 mt-4" justify="between">
-          <Text fontSize="md" className="flex items-center gap-1">
-            <CalendarIcon
-              className={cn("h-5 w-auto", {
-                "text-primary dark:text-primary": getBadgeColor() === "primary",
-                "text-warning dark:text-warning": getBadgeColor() === "warning",
-                "text-info dark:text-info": getBadgeColor() === "info",
-              })}
-            />{" "}
-            {format(new Date(selectedSprint?.startDate!!), "MMM dd")} -{" "}
-            {format(new Date(selectedSprint?.endDate!!), "MMM dd")}
-          </Text>
-          <Badge
-            className="h-7 border-opacity-50 bg-opacity-40 text-[0.95rem] font-medium capitalize"
-            color={getBadgeColor()}
-          >
-            {getBadgeText()}
-          </Badge>
-        </Flex>
-        {selectedSprint?.goal && (
-          <>
-            <Text fontSize="md">Sprint Goal:</Text>
-            <Text color="muted" className="mt-1 line-clamp-4" fontSize="md">
-              {selectedSprint?.goal}
-            </Text>
-          </>
-        )}
-      </Box>
-    );
   };
 
   const { mutateAsync } = useUpdateStoryMutation();
@@ -374,7 +232,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
               <SprintsMenu>
                 <Tooltip
                   className="pointer-events-none max-w-96 py-3"
-                  title={sprintTooltip()}
+                  title={sprintTooltip(selectedSprint)}
                 >
                   <span>
                     <SprintsMenu.Trigger>
@@ -401,7 +259,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 />
               </SprintsMenu>
             )}
-            {isColumnVisible("Labels") && <Labels />}
+            {isColumnVisible("Labels") && storyLabels.length > 0 && (
+              <Labels storyLabels={storyLabels} storyId={id} teamId={teamId} />
+            )}
             {isColumnVisible("Due date") &&
               endDate &&
               !completedOrCancelled(status?.category) && (

@@ -65,7 +65,9 @@ const Items = ({
               active={pr === priority}
               value={pr}
               onSelect={() => {
-                setPriority(pr);
+                if (pr !== priority) {
+                  setPriority(pr);
+                }
                 setOpen(false);
               }}
               className="justify-between"

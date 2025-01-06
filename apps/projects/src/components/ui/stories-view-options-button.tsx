@@ -42,7 +42,7 @@ const initialViewOptions: StoriesViewOptions = {
     "Updated",
     "Sprint",
     "Objective",
-    // "Labels",
+    "Labels",
   ],
 };
 
@@ -70,7 +70,7 @@ export const StoriesViewOptionsButton = ({
     "Sprint",
     "Objective",
     // "Epic",
-    // "Labels",
+    "Labels",
   ];
 
   const hasFilters =

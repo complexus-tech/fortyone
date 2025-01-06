@@ -63,12 +63,12 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <NewStoryButton teamId={teamId} />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}
         />
+        <NewStoryButton teamId={teamId} />
       </Flex>
     </HeaderContainer>
   );

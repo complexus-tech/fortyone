@@ -3,7 +3,6 @@ import { useMembers } from "@/lib/hooks/members";
 import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
-import { cn } from "lib";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -67,7 +66,9 @@ const Items = ({
             active={!assigneeId}
             className="justify-between"
             onSelect={() => {
-              onAssigneeSelected(null);
+              if (assigneeId) {
+                onAssigneeSelected(null);
+              }
               setOpen(false);
             }}
           >
@@ -92,7 +93,9 @@ const Items = ({
               className="justify-between"
               key={id}
               onSelect={() => {
-                onAssigneeSelected(id);
+                if (id !== assigneeId) {
+                  onAssigneeSelected(id);
+                }
                 setOpen(false);
               }}
             >

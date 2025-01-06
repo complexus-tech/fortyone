@@ -2,7 +2,6 @@ import { Flex, Badge, Button } from "ui";
 import { NewSubStory } from "@/components/ui/new-sub-story";
 import { StoriesBoard } from "@/components/ui";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
-import { useLocalStorage } from "@/hooks";
 import { Story } from "@/modules/stories/types";
 import { useState } from "react";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -22,6 +21,7 @@ export const SubStories = ({
 }) => {
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const { data: statuses = [] } = useStatuses();
+
   const completedStatus = statuses?.find(
     (status) => status?.category === "completed",
   );
@@ -57,15 +57,17 @@ export const SubStories = ({
             </Badge>
           </Flex>
         )}
-        <Button
-          color="tertiary"
-          leftIcon={<PlusIcon className="h-5 w-auto" />}
-          size="sm"
-          variant="naked"
-          onClick={() => setIsCreateSubStoryOpen(true)}
-        >
-          Add Sub Story
-        </Button>
+        <Flex gap={2}>
+          <Button
+            color="tertiary"
+            leftIcon={<PlusIcon className="h-5 w-auto" />}
+            size="sm"
+            variant="naked"
+            onClick={() => setIsCreateSubStoryOpen(true)}
+          >
+            Add Sub Story
+          </Button>
+        </Flex>
       </Flex>
       <NewSubStory
         teamId={teamId}

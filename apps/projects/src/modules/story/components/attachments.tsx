@@ -36,7 +36,7 @@ export const Attachments = ({ className }: { className?: string }) => {
         fontWeight="medium"
       >
         <AttachmentIcon className="h-5 w-auto" />
-        Attachements
+        Attachments
       </Text>
       <DropZone>
         <DropZone.Root isDragActive={isDragActive} rootProps={getRootProps()}>

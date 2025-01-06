@@ -7,6 +7,7 @@ import {
   StoriesViewOptionsButton,
   LayoutSwitcher,
   SideDetailsSwitch,
+  NewStoryButton,
 } from "@/components/ui";
 import { useMyWork } from "./provider";
 import { useMyStories } from "../hooks/my-stories";
@@ -62,6 +63,7 @@ export const Header = ({
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}
         />
+        <NewStoryButton />
       </Flex>
     </HeaderContainer>
   );

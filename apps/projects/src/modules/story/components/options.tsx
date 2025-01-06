@@ -19,23 +19,17 @@ import {
   isTomorrow,
   formatISO,
 } from "date-fns";
-import {
-  CalendarIcon,
-  CloseIcon,
-  ObjectiveIcon,
-  PlusIcon,
-  SprintsIcon,
-} from "icons";
+import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import {
   PrioritiesMenu,
   StatusesMenu,
   AssigneesMenu,
-  ModulesMenu,
   SprintsMenu,
   StoryStatusIcon,
   PriorityIcon,
+  LabelsMenu,
+  StoryLabel,
 } from "@/components/ui";
-import { Labels } from "@/components/ui/story/labels";
 import { AddLinks, OptionsHeader } from ".";
 import { DetailedStory } from "../types";
 import { cn } from "lib";
@@ -48,10 +42,25 @@ import { useMembers } from "@/lib/hooks/members";
 import Link from "next/link";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useLabels } from "@/lib/hooks/labels";
+import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 
-const Option = ({ label, value }: { label: string; value: ReactNode }) => {
+const Option = ({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  className?: string;
+}) => {
   return (
-    <Box className="my-3 grid grid-cols-[9rem_auto] items-center gap-3">
+    <Box
+      className={cn(
+        "my-4 grid grid-cols-[9rem_auto] items-center gap-3",
+        className,
+      )}
+    >
       <Text
         className="flex items-center gap-1 truncate"
         color="muted"
@@ -76,6 +85,8 @@ export const Options = () => {
     objectiveId,
     assigneeId,
     reporterId,
+    teamId,
+    labels: storyLabels,
     sprintId,
     deletedAt,
   } = data!;
@@ -90,49 +101,9 @@ export const Options = () => {
   const isDeleted = !!deletedAt;
   const assignee = members.find((m) => m.id === assigneeId);
   const reporter = members.find((m) => m.id === reporterId);
-
+  const { data: allLabels = [] } = useLabels();
+  const labels = allLabels.filter((label) => storyLabels.includes(label.id));
   const { mutateAsync } = useUpdateStoryMutation();
-
-  const getDueDateMessage = (date: Date) => {
-    if (date < new Date()) {
-      return (
-        <>
-          <Text fontSize="md">
-            This was overdue on {format(date, "MMMM dd")}
-          </Text>
-          <Text color="muted" fontSize="md">
-            {differenceInDays(new Date(), date)} days overdue
-          </Text>
-        </>
-      );
-    }
-    if (date <= addDays(new Date(), 7) && date >= new Date()) {
-      return (
-        <>
-          <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
-          <Text fontSize="md" color="muted">
-            {isTomorrow(date) ? (
-              "Tomorrow"
-            ) : (
-              <>Due in {differenceInDays(date, new Date())} days</>
-            )}
-          </Text>
-        </>
-      );
-    }
-    return (
-      <>
-        <Text fontSize="md">Due on {format(date, "MMMM dd")}</Text>
-        <Text color="muted" fontSize="md">
-          {isTomorrow(date) ? (
-            "Tomorrow"
-          ) : (
-            <>Due in {differenceInDays(date, new Date())} days</>
-          )}
-        </Text>
-      </>
-    );
-  };
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {
     await mutateAsync({ storyId: id, payload: data });
@@ -141,7 +112,7 @@ export const Options = () => {
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
       <OptionsHeader />
-      <Container className="px-8 pt-4 text-gray-300/90">
+      <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           <Text fontWeight="semibold">Properties</Text>
           {isDeleted && (
@@ -266,7 +237,6 @@ export const Options = () => {
             </AssigneesMenu>
           }
         />
-        {/* <Option label="Labels" value={<Labels />} /> */}
         <Option
           label="Start date"
           value={
@@ -285,7 +255,7 @@ export const Options = () => {
                   variant="naked"
                 >
                   {startDate ? (
-                    format(new Date(startDate), "MMM dd, yyyy")
+                    format(new Date(startDate), "MMM d, yyyy")
                   ) : (
                     <Text color="muted">Add start date</Text>
                   )}
@@ -342,7 +312,7 @@ export const Options = () => {
                       variant="naked"
                     >
                       {endDate ? (
-                        format(new Date(endDate), "MMM dd, yyyy")
+                        format(new Date(endDate), "MMM d, yyyy")
                       ) : (
                         <Text color="muted">Add due date</Text>
                       )}
@@ -426,6 +396,69 @@ export const Options = () => {
                 }}
               />
             </SprintsMenu>
+          }
+        />
+        <Option
+          label="Labels"
+          className={cn("items-start pt-1", {
+            "items-center pt-0": labels.length === 0,
+          })}
+          value={
+            <>
+              {labels?.length > 0 ? (
+                <Flex align="center" className="gap-1.5" wrap>
+                  {labels.slice(0, labels.length - 1).map((label) => (
+                    <StoryLabel key={label.id} {...label} />
+                  ))}
+                  <Flex gap={1}>
+                    <StoryLabel {...labels.at(-1)!} />
+                    <LabelsMenu>
+                      <LabelsMenu.Trigger>
+                        <Button
+                          color="tertiary"
+                          asIcon
+                          rounded="full"
+                          title="Add labels"
+                          size="sm"
+                          leftIcon={<PlusIcon />}
+                          type="button"
+                          variant="naked"
+                        >
+                          <span className="sr-only">Add labels</span>
+                        </Button>
+                      </LabelsMenu.Trigger>
+                      <LabelsMenu.Items
+                        teamId={teamId}
+                        labelIds={storyLabels}
+                        setLabelIds={(labelIds) => {
+                          console.log(labelIds);
+                        }}
+                      />
+                    </LabelsMenu>
+                  </Flex>
+                </Flex>
+              ) : (
+                <LabelsMenu>
+                  <LabelsMenu.Trigger>
+                    <Button
+                      color="tertiary"
+                      leftIcon={<PlusIcon />}
+                      type="button"
+                      variant="naked"
+                    >
+                      Add labels
+                    </Button>
+                  </LabelsMenu.Trigger>
+                  <LabelsMenu.Items
+                    teamId={teamId}
+                    labelIds={storyLabels}
+                    setLabelIds={(labelIds) => {
+                      console.log(labelIds);
+                    }}
+                  />
+                </LabelsMenu>
+              )}
+            </>
           }
         />
         {/* 

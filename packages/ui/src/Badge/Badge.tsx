@@ -16,6 +16,7 @@ const badge = cva(
         sm: "rounded",
         md: "ßrounded-[0.4rem]",
         lg: "rounded-xl",
+        xl: "rounded-2xl",
         full: "rounded-full",
       },
       color: {
