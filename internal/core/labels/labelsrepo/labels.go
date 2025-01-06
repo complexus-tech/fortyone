@@ -36,7 +36,6 @@ func (r *repo) GetLabels(ctx context.Context, workspaceId uuid.UUID, filters map
 		SELECT 
 			label_id,
 			name,
-			project_id,
 			team_id,
 			workspace_id,
 			color,
@@ -84,11 +83,11 @@ func (r *repo) CreateLabel(ctx context.Context, cnl labels.CoreNewLabel) (labels
 	var label dbLabel
 	query := `
 			INSERT INTO
-				labels (name, project_id, team_id, workspace_id, color)
+				labels (name, team_id, workspace_id, color)
 			VALUES
-				(:name,:project_id,:team_id,:workspace_id,:color)
+				(:name, :team_id, :workspace_id, :color)
 			RETURNING
-				label_id, name, project_id, team_id,
+				label_id, name, team_id,
 				workspace_id, color, created_at,
 				updated_at
 	`
@@ -118,7 +117,6 @@ func (r *repo) GetLabel(ctx context.Context, labelID uuid.UUID, workspaceID uuid
 		SELECT
 			label_id,
 			name,
-			project_id,
 			team_id,
 			workspace_id,
 			color,

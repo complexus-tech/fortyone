@@ -230,24 +230,35 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 
 	query := `
 		SELECT
-			id,
-			sequence_id,
-			title,
-			priority,
-			description,
-			status_id,
-			start_date,
-			end_date,
-			sprint_id,
-			team_id,
-			objective_id,
-			workspace_id,
-			assignee_id,
-			reporter_id,
-			created_at,
-			updated_at
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.description,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
 		FROM
-			stories
+			stories s
 	`
 	var setClauses []string
 
@@ -304,27 +315,38 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 
 	q := `
 		SELECT
-			id,
-			sequence_id,
-			title,
-			priority,
-			description,
-			status_id,
-			start_date,
-			end_date,
-			sprint_id,
-			team_id,
-			objective_id,
-			workspace_id,
-			assignee_id,
-			reporter_id,
-			created_at,
-			updated_at
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.description,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
 		FROM
-			stories
-		WHERE workspace_id = :workspace_id AND deleted_at IS NULL 
-		AND (assignee_id = :current_user OR reporter_id = :current_user)
-		ORDER BY created_at DESC;
+			stories s
+		WHERE s.workspace_id = :workspace_id AND s.deleted_at IS NULL 
+		AND (s.assignee_id = :current_user OR s.reporter_id = :current_user)
+		ORDER BY s.created_at DESC;
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

@@ -77,6 +77,13 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 }
 
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
 	var req AppNewLabel
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return err
@@ -84,9 +91,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	input := labels.CoreNewLabel{
 		Name:        req.Name,
-		ProjectID:   req.ProjectID,
 		TeamID:      req.TeamID,
-		WorkspaceID: req.WorkspaceID,
+		WorkspaceID: workspaceId,
 		Color:       req.Color,
 	}
 

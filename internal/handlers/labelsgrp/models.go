@@ -10,7 +10,6 @@ import (
 type AppLabel struct {
 	ID          uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`
-	ProjectID   *uuid.UUID `json:"projectId"`
 	TeamID      *uuid.UUID `json:"teamId"`
 	WorkspaceID uuid.UUID  `json:"workspaceId"`
 	Color       string     `json:"color"`
@@ -19,11 +18,9 @@ type AppLabel struct {
 }
 
 type AppNewLabel struct {
-	Name        string     `json:"name"`
-	ProjectID   *uuid.UUID `json:"projectId"`
-	TeamID      *uuid.UUID `json:"teamId"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	Color       string     `json:"color"`
+	Name   string     `json:"name"`
+	TeamID *uuid.UUID `json:"teamId"`
+	Color  string     `json:"color"`
 }
 
 type AppFilters struct {
@@ -34,7 +31,6 @@ func toAppLabel(label labels.CoreLabel) AppLabel {
 	return AppLabel{
 		ID:          label.LabelID,
 		Name:        label.Name,
-		ProjectID:   label.ProjectID,
 		TeamID:      label.TeamID,
 		WorkspaceID: label.WorkspaceID,
 		Color:       label.Color,
