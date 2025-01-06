@@ -44,6 +44,7 @@ import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
+import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
 
 const Option = ({
   label,
@@ -104,9 +105,14 @@ export const Options = () => {
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels.includes(label.id));
   const { mutateAsync } = useUpdateStoryMutation();
+  const { mutateAsync: updateLabels } = useUpdateLabelsMutation();
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {
     await mutateAsync({ storyId: id, payload: data });
+  };
+
+  const handleUpdateLabels = async (labels: string[] = []) => {
+    await updateLabels({ storyId: id, labels });
   };
 
   return (
@@ -408,14 +414,41 @@ export const Options = () => {
               {labels?.length > 0 ? (
                 <Flex align="center" className="gap-1.5" wrap>
                   {labels.slice(0, labels.length - 1).map((label) => (
-                    <StoryLabel key={label.id} {...label} />
+                    <LabelsMenu key={label.id}>
+                      <LabelsMenu.Trigger>
+                        <span>
+                          <StoryLabel {...label} />
+                        </span>
+                      </LabelsMenu.Trigger>
+                      <LabelsMenu.Items
+                        teamId={teamId}
+                        labelIds={storyLabels}
+                        setLabelIds={(labelIds) => {
+                          handleUpdateLabels(labelIds);
+                        }}
+                      />
+                    </LabelsMenu>
                   ))}
-                  <Flex gap={1}>
-                    <StoryLabel {...labels.at(-1)!} />
+                  <Flex gap={1} align="center">
+                    <LabelsMenu>
+                      <LabelsMenu.Trigger>
+                        <span>
+                          <StoryLabel {...labels.at(-1)!} />
+                        </span>
+                      </LabelsMenu.Trigger>
+                      <LabelsMenu.Items
+                        teamId={teamId}
+                        labelIds={storyLabels}
+                        setLabelIds={(labelIds) => {
+                          handleUpdateLabels(labelIds);
+                        }}
+                      />
+                    </LabelsMenu>
                     <LabelsMenu>
                       <LabelsMenu.Trigger>
                         <Button
                           color="tertiary"
+                          className="m-0"
                           asIcon
                           rounded="full"
                           title="Add labels"
@@ -431,7 +464,7 @@ export const Options = () => {
                         teamId={teamId}
                         labelIds={storyLabels}
                         setLabelIds={(labelIds) => {
-                          console.log(labelIds);
+                          handleUpdateLabels(labelIds);
                         }}
                       />
                     </LabelsMenu>
@@ -453,7 +486,7 @@ export const Options = () => {
                     teamId={teamId}
                     labelIds={storyLabels}
                     setLabelIds={(labelIds) => {
-                      console.log(labelIds);
+                      handleUpdateLabels(labelIds);
                     }}
                   />
                 </LabelsMenu>

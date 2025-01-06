@@ -39,6 +39,7 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { ObjectivesMenu } from "./objectives-menu";
 import { getDueDateMessage } from "./due-date-tooltip";
 import { sprintTooltip } from "./sprint-tooltip";
+import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -194,22 +195,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         size="xs"
                         rounded="xl"
                         type="button"
-                        rightIcon={
-                          objectiveId && (
-                            <span
-                              tabIndex={0}
-                              role="button"
-                              aria-label="Remove objective"
-                              className="flex aspect-square items-center gap-1"
-                              onClick={() => {
-                                handleUpdate({ objectiveId: null });
-                              }}
-                            >
-                              <CloseIcon className="h-4" strokeWidth={3} />
-                              <span className="sr-only">Remove objective</span>
-                            </span>
-                          )
-                        }
                       >
                         <ObjectiveIcon className="h-4" />
                         <span className="inline-block max-w-36 truncate">

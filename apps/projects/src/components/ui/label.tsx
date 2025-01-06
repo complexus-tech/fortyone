@@ -15,7 +15,7 @@ export const StoryLabel = ({ color, name }: Label) => {
       }
     >
       <Badge
-        className="h-[1.85rem] select-none gap-1.5 px-2 text-[0.95rem] font-normal"
+        className="h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem] font-normal"
         color="tertiary"
         rounded="xl"
         variant="outline"

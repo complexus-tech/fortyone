@@ -1,9 +1,11 @@
 "use client";
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { Box, Button, Command, Divider, Flex, Popover, Text } from "ui";
+import { Button, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, PlusIcon } from "icons";
 import { useLabels } from "@/lib/hooks/labels";
 import { Dot } from "../dot";
+import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
+import { generateRandomColor } from "@/utils";
 
 const LabelsContext = createContext<{
   open: boolean;
@@ -51,18 +53,39 @@ const Items = ({
   setLabelIds: (labelIds: string[]) => void;
   align?: "center" | "start" | "end" | undefined;
 }) => {
+  const { mutateAsync: createLabel } = useCreateLabelMutation();
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter(
-    (label) => label.teamId === teamId || label.teamId === null,
+    (label) => label?.teamId === teamId || label?.teamId === null,
   );
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreateLabel = async () => {
+    const usedColors = labels.map((label) => label.color);
+    const color = generateRandomColor({ exclude: usedColors });
+    try {
+      setIsLoading(true);
+      await createLabel(
+        { name: query, color, teamId },
+        {
+          onSuccess(data) {
+            setLabelIds([...labelIds, data.id]);
+          },
+        },
+      );
+      setQuery("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Popover.Content align={align}>
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Add labels..."
+          placeholder="Update labels..."
           value={query}
           onValueChange={(value) => {
             setQuery(value);
@@ -74,6 +97,9 @@ const Items = ({
             color="tertiary"
             fullWidth
             className="mx-0 border-0 text-base font-medium"
+            loading={isLoading}
+            loadingText="Creating label..."
+            onClick={handleCreateLabel}
           >
             <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
             <span className="font-medium text-gray-300">
@@ -88,6 +114,8 @@ const Items = ({
               onSelect={() => {
                 if (!labelIds?.includes(id)) {
                   setLabelIds([...labelIds, id]);
+                } else {
+                  setLabelIds(labelIds.filter((labelId) => labelId !== id));
                 }
               }}
               className="justify-between gap-4"

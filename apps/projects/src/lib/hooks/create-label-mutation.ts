@@ -1,0 +1,36 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { labelKeys } from "@/constants/keys";
+import { createLabelAction, NewLabel } from "../actions/labels/create-label";
+import { Label } from "@/types";
+
+export const useCreateLabelMutation = () => {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (newLabel: NewLabel) => createLabelAction(newLabel),
+    onError: (_, variables) => {
+      toast.error("Failed to create label", {
+        description: "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => mutation.mutate(variables),
+        },
+      });
+    },
+    onSettled: (newLabel) => {
+      const previousLabels = queryClient.getQueryData<Label[]>(
+        labelKeys.lists(),
+      );
+      if (previousLabels) {
+        queryClient.setQueryData<Label[]>(labelKeys.lists(), [
+          ...previousLabels,
+          newLabel!!,
+        ]);
+      }
+      queryClient.invalidateQueries({ queryKey: labelKeys.lists() });
+    },
+  });
+
+  return mutation;
+};

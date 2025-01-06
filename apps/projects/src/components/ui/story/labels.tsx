@@ -1,8 +1,9 @@
 import { useLabels } from "@/lib/hooks/labels";
 import { Badge, Flex, Tooltip } from "ui";
 import { StoryLabel } from "../label";
-import { Dot } from "../dot";
 import { TagsIcon } from "icons";
+import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
+import { LabelsMenu } from "@/components/ui";
 
 export const Labels = ({
   storyLabels = [],
@@ -13,19 +14,33 @@ export const Labels = ({
   storyId: string;
   teamId: string;
 }) => {
+  const { mutateAsync } = useUpdateLabelsMutation();
   const { data: allLabels = [] } = useLabels();
-  // const labels = allLabels.filter(
-  //   (label) => label.teamId === teamId || label.teamId === null,
-  // );
-
   const labels = allLabels.filter((label) => storyLabels.includes(label.id));
   const firstTwoLabels = labels.slice(0, 2);
   const remainingLabels = labels.slice(2);
 
+  const handleUpdateLabels = async (labels: string[] = []) => {
+    await mutateAsync({ storyId, labels });
+  };
+
   return (
     <Flex align="center" gap={1} wrap>
       {firstTwoLabels.map((label) => (
-        <StoryLabel key={label.id} {...label} />
+        <LabelsMenu key={label.id}>
+          <LabelsMenu.Trigger>
+            <span>
+              <StoryLabel {...label} />
+            </span>
+          </LabelsMenu.Trigger>
+          <LabelsMenu.Items
+            teamId={teamId}
+            labelIds={storyLabels}
+            setLabelIds={(labelIds) => {
+              handleUpdateLabels(labelIds);
+            }}
+          />
+        </LabelsMenu>
       ))}
       {remainingLabels.length > 0 && (
         <Tooltip
@@ -40,18 +55,29 @@ export const Labels = ({
             </Flex>
           }
         >
-          <Badge
-            rounded="xl"
-            color="tertiary"
-            className="h-[1.85rem] text-[0.95rem] font-normal"
-          >
-            <TagsIcon
-              className="h-4"
-              style={{ color: remainingLabels[0]?.color }}
-            />{" "}
-            + {remainingLabels.length} label
-            {remainingLabels.length > 1 ? "s" : ""}
-          </Badge>
+          <LabelsMenu>
+            <LabelsMenu.Trigger>
+              <Badge
+                rounded="xl"
+                color="tertiary"
+                className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+              >
+                <TagsIcon
+                  className="h-4"
+                  style={{ color: remainingLabels[0]?.color }}
+                />{" "}
+                + {remainingLabels.length} label
+                {remainingLabels.length > 1 ? "s" : ""}
+              </Badge>
+            </LabelsMenu.Trigger>
+            <LabelsMenu.Items
+              teamId={teamId}
+              labelIds={storyLabels}
+              setLabelIds={(labelIds) => {
+                handleUpdateLabels(labelIds);
+              }}
+            />
+          </LabelsMenu>
         </Tooltip>
       )}
     </Flex>

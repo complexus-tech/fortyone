@@ -40,7 +40,7 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 );
 
 const Items = ({
-  placeholder = "Assign user...",
+  placeholder = "Assign to...",
   align,
   assigneeId,
   onAssigneeSelected,
@@ -87,6 +87,7 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
+          {members?.length > 0 && <Divider className="my-2" />}
           {members.map(({ id, fullName, avatarUrl }, idx) => (
             <Command.Item
               active={id === assigneeId}

@@ -96,6 +96,7 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
+          {objectives?.length > 0 && <Divider className="my-2" />}
           {objectives.map(({ id, name }, idx) => (
             <Command.Item
               active={id === objectiveId}

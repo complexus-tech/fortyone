@@ -97,6 +97,7 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
+          {sprints?.length > 0 && <Divider className="my-2" />}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
             <Command.Item
               active={id === sprintId}
