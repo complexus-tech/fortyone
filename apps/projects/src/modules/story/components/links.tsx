@@ -19,92 +19,119 @@ import { Link as LinkType } from "@/types";
 import { useCopyToClipboard } from "@/hooks/clipboard";
 import { toast } from "sonner";
 import { useLinkMetadata } from "@/lib/hooks/link-metadata";
+import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
 
 const StoryLink = ({ link }: { link: LinkType }) => {
   const [_, copyLink] = useCopyToClipboard();
   const { data: metadata } = useLinkMetadata(link.url);
-  console.log(metadata);
+  const { mutateAsync: deleteLink } = useDeleteLinkMutation();
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <RowWrapper key={link.id} className="gap-8 p-2">
-      <Link href={link.url} target="_blank" className="flex- gap-2">
-        <Flex align="center" gap={2}>
-          {metadata?.image ? (
-            <img
-              src={metadata?.image}
-              alt={metadata?.title || link?.title || link?.url}
-              loading="lazy"
-              className="size-5 rounded-full object-cover"
-            />
-          ) : (
-            <LinkIcon className="-rotate-45" />
-          )}
-          <Text
-            title={link?.title || metadata?.title}
-            className="max-w-[24ch] shrink-0 truncate font-medium"
-          >
-            {link?.title || metadata?.title}
-          </Text>
-          {metadata?.description && (
+    <>
+      <RowWrapper key={link.id} className="gap-8 px-1 py-2">
+        <Link href={link.url} target="_blank" className="flex- gap-2">
+          <Flex align="center" gap={2}>
+            {metadata?.image ? (
+              <img
+                src={metadata?.image}
+                alt={metadata?.title || link?.title || link?.url}
+                loading="lazy"
+                className="size-6 rounded-full object-cover"
+              />
+            ) : (
+              <LinkIcon className="size-6 -rotate-45" />
+            )}
             <Text
-              color="muted"
-              className="line-clamp-1 opacity-80"
-              title={metadata?.description}
+              title={link?.title || metadata?.title}
+              className="max-w-[24ch] shrink-0 truncate font-medium"
             >
-              {metadata?.description?.replace("No description", "")}
+              {link?.title || metadata?.title}
             </Text>
-          )}
-        </Flex>
-      </Link>
-      <Flex align="center" gap={3} className="shrink-0">
-        <Text color="muted">
-          <TimeAgo timestamp={link.createdAt} />
-        </Text>
-        <Menu>
-          <Menu.Button>
-            <Button
-              asIcon
-              leftIcon={<MoreHorizontalIcon />}
-              color="tertiary"
-              variant="naked"
-              size="sm"
-            >
-              <span className="sr-only">Delete link</span>
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="end" className="min-w-44">
-            <Menu.Group>
-              <Menu.Item
-                className="tracking-wide"
-                onSelect={() => {
-                  copyLink(link.url).then(() => {
-                    toast.success("Success", {
-                      description: "Link copied to clipboard",
-                    });
-                  });
-                }}
+            {metadata?.description && (
+              <Text
+                color="muted"
+                className="line-clamp-1 opacity-80"
+                title={metadata?.description}
               >
-                <CopyIcon />
-                Copy link
-              </Menu.Item>
-            </Menu.Group>
-            <Menu.Separator className="my-1.5" />
-            <Menu.Group>
-              <Menu.Item className="tracking-wide">
-                <EditIcon />
-                Edit...
-              </Menu.Item>
-            </Menu.Group>
-            <Menu.Separator className="my-1.5" />
-            <Menu.Group>
-              <Menu.Item className="tracking-wide">
-                <DeleteIcon />
-                Delete...
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
-      </Flex>
-    </RowWrapper>
+                {metadata?.description?.replace("No description", "")}
+              </Text>
+            )}
+          </Flex>
+        </Link>
+        <Flex align="center" gap={3} className="shrink-0">
+          <Text color="muted">
+            <TimeAgo timestamp={link.createdAt} />
+          </Text>
+          <Menu>
+            <Menu.Button>
+              <Button
+                asIcon
+                leftIcon={<MoreHorizontalIcon />}
+                color="tertiary"
+                variant="naked"
+                rounded="full"
+                size="sm"
+              >
+                <span className="sr-only">Delete link</span>
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end" className="min-w-44">
+              <Menu.Group>
+                <Menu.Item
+                  className="tracking-wide"
+                  onSelect={() => {
+                    copyLink(link.url).then(() => {
+                      toast.success("Success", {
+                        description: "Link copied to clipboard",
+                      });
+                    });
+                  }}
+                >
+                  <CopyIcon />
+                  Copy link
+                </Menu.Item>
+              </Menu.Group>
+              <Menu.Separator className="my-1.5" />
+              <Menu.Group>
+                <Menu.Item
+                  className="tracking-wide"
+                  onSelect={() => setIsOpen(true)}
+                >
+                  <EditIcon />
+                  Edit link
+                </Menu.Item>
+              </Menu.Group>
+              <Menu.Separator className="my-1.5" />
+              <Menu.Group>
+                <Menu.Item
+                  className="tracking-wide"
+                  onSelect={() => {
+                    deleteLink({
+                      linkId: link.id,
+                      storyId: link.storyId,
+                    }).then(() => {
+                      toast.success("Success", {
+                        description: "Link deleted",
+                      });
+                    });
+                  }}
+                >
+                  <DeleteIcon />
+                  Delete link
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
+      </RowWrapper>
+      <AddLinkDialog
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        storyId={link.storyId}
+        link={link}
+      />
+    </>
   );
 };
 

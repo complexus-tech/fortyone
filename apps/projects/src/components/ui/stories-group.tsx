@@ -100,16 +100,17 @@ export const StoriesGroup = ({
       {!isCollapsed && (
         <RowWrapper>
           <Text color="muted">
-            Showing <b>{filteredStories.length}</b> stor
+            Showing{" "}
+            <span className="font-semibold">{filteredStories.length}</span> stor
             {filteredStories.length === 1 ? "y" : "ies"} with{" "}
             {groupBy.toLowerCase()}{" "}
-            <b>
+            <span className="font-semibold">
               {groupBy === "Status"
                 ? status?.name
                 : groupBy === "Assignee"
                   ? assignee?.username || "Unassigned"
                   : priority}
-            </b>
+            </span>
           </Text>
         </RowWrapper>
       )}

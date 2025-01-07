@@ -105,7 +105,10 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
           className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
         >
           <ArrowUpDownIcon className="h-4 w-auto" />
-          Ordering by <b className="capitalize">{viewOptions.orderBy}</b>
+          Ordering by{" "}
+          <span className="font-semibold capitalize">
+            {viewOptions.orderBy}
+          </span>
         </Text>
       </Box>
 

@@ -14,7 +14,7 @@ import { Toaster } from "./toaster";
 const font = Instrument_Sans({
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
