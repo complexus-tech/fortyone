@@ -55,3 +55,13 @@ export const labelKeys = {
   detail: (id: string) => [...labelKeys.details(), id] as const,
   team: (teamId: string) => [...labelKeys.all, teamId] as const,
 };
+
+export const linkKeys = {
+  story: (storyId: string) => ["story-links", storyId] as const,
+  metadata: (url: string) => ["link-metadata", url] as const,
+};
+
+export const linkTags = {
+  story: (storyId: string) => `story-links-${storyId}` as const,
+  metadata: (url: string) => `link-metadata-${url}` as const,
+};

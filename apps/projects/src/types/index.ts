@@ -25,3 +25,12 @@ export type Label = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Link = {
+  id: string;
+  url: string;
+  title: string;
+  storyId: string;
+  createdAt: string;
+  updatedAt: string;
+};

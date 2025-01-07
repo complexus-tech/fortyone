@@ -25,6 +25,7 @@ import { useStoryActivities } from "../hooks/story-activities";
 import { StoryActivity } from "@/modules/stories/types";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
 import { UndoIcon } from "icons";
+import { Links } from "./links";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -168,6 +169,7 @@ export const MainDetails = () => {
           setIsSubStoriesOpen={setIsSubStoriesOpen}
           isSubStoriesOpen={isSubStoriesOpen}
         />
+        <Links storyId={storyId} />
         <Attachments
           className={cn(
             "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",

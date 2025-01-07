@@ -1,14 +1,17 @@
 import type { Icon } from "./types";
+import { cn } from "lib";
 
 export const MoreVerticalIcon = (props: Icon) => {
+  const { className, ...rest } = props;
   return (
     <svg
-      {...props}
+      {...rest}
       fill="none"
       height="24"
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
     >
       <path
         d="M11.992 12H12.001"

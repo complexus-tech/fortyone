@@ -530,7 +530,7 @@ export const Options = () => {
         /> */}
 
         <Divider className="my-4" />
-        <AddLinks />
+        <AddLinks storyId={id} />
       </Container>
     </Box>
   );
