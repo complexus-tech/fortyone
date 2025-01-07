@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/core/links"
+	"github.com/complexus-tech/projects-api/internal/core/links/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -158,6 +160,45 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 	))
 
 	return cs, err
+}
+
+func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
+	r.log.Info(ctx, "business.repository.stories.GetStoryLinks")
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetStoryLinks")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("storyId", storyID.String()))
+
+	var dbLinks []linksrepo.DbLink
+	query := `
+		SELECT 
+			link_id,
+			title,
+			url,
+			story_id,
+			created_at,
+			updated_at
+		FROM story_links
+		WHERE story_id = :story_id
+	`
+
+	params := map[string]interface{}{
+		"story_id": storyID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "error preparing statement", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbLinks, params); err != nil {
+		r.log.Error(ctx, "error selecting links", err)
+		return nil, err
+	}
+
+	return linksrepo.ToCoreLinks(dbLinks), nil
 }
 
 func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error {

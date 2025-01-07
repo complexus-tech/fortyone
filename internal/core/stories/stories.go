@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -27,6 +28,7 @@ type Repository interface {
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
+	GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error)
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
@@ -86,6 +88,25 @@ func (s *Service) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uu
 		return err
 	}
 	return nil
+}
+
+// GetStoryLinks returns the links for a story.
+func (s *Service) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
+	s.log.Info(ctx, "business.core.stories.GetStoryLinks")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.GetStoryLinks")
+	defer span.End()
+
+	links, err := s.repo.GetStoryLinks(ctx, storyID)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("links retrieved.", trace.WithAttributes(
+		attribute.Int("link.count", len(links)),
+	))
+
+	return links, nil
 }
 
 // MyStories returns a list of stories.

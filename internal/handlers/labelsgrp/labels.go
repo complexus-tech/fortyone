@@ -2,7 +2,6 @@ package labelsgrp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -46,7 +45,8 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	labels, err := h.labels.GetLabels(ctx, workspaceId, filters)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
 	}
 
 	return web.Respond(ctx, w, toAppLabels(labels), http.StatusOK)
@@ -70,7 +70,8 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 
 	label, err := h.labels.GetLabel(ctx, labelId, workspaceId)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
 	}
 
 	return web.Respond(ctx, w, toAppLabel(label), http.StatusOK)
@@ -85,8 +86,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	var req AppNewLabel
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return err
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
 	}
 
 	input := labels.CoreNewLabel{
@@ -98,7 +100,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	label, err := h.labels.CreateLabel(ctx, input)
 	if err != nil {
-		return err
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
 	}
 
 	return web.Respond(ctx, w, toAppLabel(label), http.StatusCreated)

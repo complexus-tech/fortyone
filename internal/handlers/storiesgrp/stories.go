@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/handlers/linksgrp"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -202,6 +203,24 @@ func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *h
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
+}
+
+// GetStoryLinks returns the links for a story.
+func (h *Handlers) GetStoryLinks(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyID, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	links, err := h.stories.GetStoryLinks(ctx, storyID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	return web.Respond(ctx, w, linksgrp.ToLinks(links), http.StatusOK)
 }
 
 // MyStories returns a list of stories.
