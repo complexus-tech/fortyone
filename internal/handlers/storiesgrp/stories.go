@@ -339,21 +339,40 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	ca := stories.CoreActivity{
-		StoryID:      storyId,
-		Parent:       requestData.Parent,
-		UserID:       userID,
-		Type:         "comment",
-		Field:        "comment",
-		CurrentValue: requestData.Comment,
+	ca := stories.CoreNewComment{
+		StoryID: storyId,
+		Parent:  requestData.Parent,
+		UserID:  userID,
+		Comment: requestData.Comment,
 	}
 
-	activities, err := h.stories.CreateComment(ctx, ca)
+	comment, err := h.stories.CreateComment(ctx, ca)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	web.Respond(ctx, w, toAppActivities(activities), http.StatusCreated)
+	web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
 
 	return nil
+}
+
+// GetComments returns the comments for a story.
+func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		h.log.Error(ctx, "invalid story id", "error", err)
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	comments, err := h.stories.GetComments(ctx, storyId)
+	if err != nil {
+		h.log.Error(ctx, "failed to get comments", "error", err)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	web.Respond(ctx, w, toAppComments(comments), http.StatusOK)
+	return nil
+
 }

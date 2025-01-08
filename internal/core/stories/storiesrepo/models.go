@@ -152,14 +152,13 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 
 // dbActivity represents the database model for an dbActivity.
 type dbActivity struct {
-	ID           uuid.UUID  `db:"activity_id"`
-	Parent       *uuid.UUID `db:"parent_activity_id"`
-	StoryID      uuid.UUID  `db:"story_id"`
-	UserID       uuid.UUID  `db:"user_id"`
-	Type         string     `db:"activity_type"`
-	Field        string     `db:"field_changed"`
-	CurrentValue string     `db:"current_value"`
-	CreatedAt    time.Time  `db:"created_at"`
+	ID           uuid.UUID `db:"activity_id"`
+	StoryID      uuid.UUID `db:"story_id"`
+	UserID       uuid.UUID `db:"user_id"`
+	Type         string    `db:"activity_type"`
+	Field        string    `db:"field_changed"`
+	CurrentValue string    `db:"current_value"`
+	CreatedAt    time.Time `db:"created_at"`
 }
 
 // toCoreActivity converts a dbActivity to a CoreActivity.
@@ -167,7 +166,6 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 	return stories.CoreActivity{
 		ID:           i.ID,
 		StoryID:      i.StoryID,
-		Parent:       i.Parent,
 		UserID:       i.UserID,
 		Type:         i.Type,
 		Field:        i.Field,
@@ -180,7 +178,6 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 func toDBActivity(i stories.CoreActivity) dbActivity {
 	return dbActivity{
 		StoryID:      i.StoryID,
-		Parent:       i.Parent,
 		UserID:       i.UserID,
 		Type:         i.Type,
 		Field:        i.Field,
@@ -195,4 +192,55 @@ func toCoreActivities(is []dbActivity) []stories.CoreActivity {
 		ca[i] = toCoreActivity(activity)
 	}
 	return ca
+}
+
+// dbComment represents the database model for an dbComment.
+type dbComment struct {
+	ID          uuid.UUID        `db:"comment_id"`
+	StoryID     uuid.UUID        `db:"story_id"`
+	Parent      *uuid.UUID       `db:"parent_id"`
+	UserID      uuid.UUID        `db:"commenter_id"`
+	Comment     string           `db:"content"`
+	CreatedAt   time.Time        `db:"created_at"`
+	UpdatedAt   time.Time        `db:"updated_at"`
+	SubComments *json.RawMessage `db:"sub_comments"`
+}
+
+// toCoreComment converts a dbComment to a CoreComment.
+func toCoreComment(i dbComment) stories.CoreComment {
+	var subComments []stories.CoreComment
+
+	err := json.Unmarshal(*i.SubComments, &subComments)
+	if err != nil {
+		log.Printf("Failed to unmarshal sub_comments: %s", err)
+	}
+
+	return stories.CoreComment{
+		ID:          i.ID,
+		StoryID:     i.StoryID,
+		Parent:      i.Parent,
+		UserID:      i.UserID,
+		Comment:     i.Comment,
+		CreatedAt:   i.CreatedAt,
+		UpdatedAt:   i.UpdatedAt,
+		SubComments: subComments,
+	}
+}
+
+// toCoreComments converts a slice of dbComments to a slice of CoreComment.
+func toCoreComments(is []dbComment) []stories.CoreComment {
+	cc := make([]stories.CoreComment, len(is))
+	for i, comment := range is {
+		cc[i] = toCoreComment(comment)
+	}
+	return cc
+}
+
+func toDBNewComment(i stories.CoreNewComment) dbComment {
+	return dbComment{
+		StoryID: i.StoryID,
+		Parent:  i.Parent,
+		UserID:  i.UserID,
+		Comment: i.Comment,
+	}
 }

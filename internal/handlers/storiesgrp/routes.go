@@ -24,6 +24,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth)
 	app.Get("/workspaces/{workspaceId}/stories/{id}/activities", h.GetActivities, auth)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/comments", h.CreateComment, auth)
+	app.Get("/workspaces/{workspaceId}/stories/{id}/comments", h.GetComments, auth)
 	app.Put("/workspaces/{workspaceId}/stories/{id}/labels", h.UpdateLabels, auth)
 	app.Get("/workspaces/{workspaceId}/stories/{id}/links", h.GetStoryLinks, auth)
 	app.Get("/workspaces/{workspaceId}/my-stories", h.MyStories, auth)

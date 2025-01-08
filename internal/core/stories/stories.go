@@ -36,6 +36,8 @@ type Repository interface {
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
+	CreateComment(ctx context.Context, comment CoreNewComment) (CoreComment, error)
+	GetComments(ctx context.Context, storyID uuid.UUID) ([]CoreComment, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -273,17 +275,40 @@ func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreA
 }
 
 // CreateComment creates a comment for a story.
-func (s *Service) CreateComment(ctx context.Context, comment CoreActivity) ([]CoreActivity, error) {
+func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (CoreComment, error) {
 	s.log.Info(ctx, "business.core.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateComment")
 	defer span.End()
 
-	ca := []CoreActivity{comment}
-
-	activities, err := s.repo.RecordActivities(ctx, ca)
+	comment, err := s.repo.CreateComment(ctx, cnc)
 	if err != nil {
+		span.RecordError(err)
+		return CoreComment{}, err
+	}
+
+	span.AddEvent("comment created.", trace.WithAttributes(
+		attribute.String("comment.comment", comment.Comment),
+	))
+
+	return comment, nil
+}
+
+// GetComments returns the comments for a story.
+func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]CoreComment, error) {
+	s.log.Info(ctx, "business.core.stories.GetComments")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.GetComments")
+	defer span.End()
+
+	comments, err := s.repo.GetComments(ctx, storyID)
+	if err != nil {
+		s.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
 		span.RecordError(err)
 		return nil, err
 	}
-	return activities, nil
+
+	span.AddEvent("comments retrieved.", trace.WithAttributes(
+		attribute.Int("comment.count", len(comments)),
+	))
+
+	return comments, nil
 }

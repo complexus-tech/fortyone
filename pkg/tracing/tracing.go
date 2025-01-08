@@ -32,11 +32,15 @@ func New(service, version, environ string) *config {
 
 // StartTracing starts the tracing provider and returns the tracer provider.
 func (c *config) StartTracing() (*trace.TracerProvider, error) {
-	ctx := context.Background()
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure())
+	exporter, err := otlptracehttp.New(context.Background(), otlptracehttp.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
+
+	// exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	res, err := resource.Merge(
 		resource.Default(),

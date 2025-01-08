@@ -132,12 +132,29 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 
 // CoreActivity represents the core model for an activity.
 type CoreActivity struct {
-	ID           uuid.UUID  `json:"id"`
-	StoryID      uuid.UUID  `json:"storyId"`
-	Parent       *uuid.UUID `json:"parentId"`
-	UserID       uuid.UUID  `json:"userId"`
-	Type         string     `json:"type"`
-	Field        string     `json:"field"`
-	CurrentValue string     `json:"currentValue"`
-	CreatedAt    time.Time  `json:"createdAt"`
+	ID           uuid.UUID `json:"id"`
+	StoryID      uuid.UUID `json:"storyId"`
+	UserID       uuid.UUID `json:"userId"`
+	Type         string    `json:"type"`
+	Field        string    `json:"field"`
+	CurrentValue string    `json:"currentValue"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+type CoreComment struct {
+	ID          uuid.UUID     `json:"comment_id"`
+	StoryID     uuid.UUID     `json:"story_id"`
+	Parent      *uuid.UUID    `json:"parent_id"`
+	UserID      uuid.UUID     `json:"commenter_id"`
+	Comment     string        `json:"content"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+	SubComments []CoreComment `json:"sub_comments"`
+}
+
+type CoreNewComment struct {
+	StoryID uuid.UUID
+	Parent  *uuid.UUID
+	UserID  uuid.UUID
+	Comment string
 }

@@ -624,6 +624,7 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uui
 
 // Update updates the story with the specified ID.
 func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+	r.log.Info(ctx, "business.repository.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
 	defer span.End()
 
@@ -781,16 +782,14 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			activity_type, 
 			field_changed, 
 			current_value,
-			user_id,
-			parent_activity_id
+			user_id
 		)
 		VALUES (
 			:story_id, 
 			:activity_type, 
 			:field_changed, 
 			:current_value,
-			:user_id,
-			:parent_activity_id
+			:user_id
 		)
 		RETURNING story_activities.*;
 	`
@@ -856,7 +855,6 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 			activity_type,
 			field_changed,
 			current_value,
-			parent_activity_id,
 			created_at
 		FROM story_activities
 		WHERE story_id = :story_id
@@ -882,4 +880,77 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 	}
 
 	return toCoreActivities(activities), nil
+}
+
+func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (stories.CoreComment, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.CreateComment")
+	defer span.End()
+
+	q := `
+	INSERT INTO story_comments (
+		content, story_id, commenter_id, parent_id
+	) VALUES (
+		:content, :story_id, :commenter_id, :parent_id
+	) RETURNING story_comments.*;
+`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err))
+		return stories.CoreComment{}, err
+	}
+	defer stmt.Close()
+
+	var comment dbComment
+	if err := stmt.GetContext(ctx, &comment, toDBNewComment(cnc)); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to insert comment: %s", err))
+		return stories.CoreComment{}, err
+	}
+
+	return toCoreComment(comment), nil
+}
+
+func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]stories.CoreComment, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComments")
+	defer span.End()
+
+	q := `
+		SELECT 
+			sc.comment_id,
+			sc.story_id,
+			sc.commenter_id,
+			sc.content,
+			sc.parent_id,
+			sc.created_at,
+			sc.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(sub.*)
+					FROM
+						story_comments sub
+					WHERE
+						sub.parent_id = sc.comment_id
+						
+				), '[]'
+			) AS sub_comments
+		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL
+	`
+
+	params := map[string]interface{}{"story_id": storyID}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err))
+		return nil, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var comments []dbComment
+	if err := stmt.SelectContext(ctx, &comments, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
+		return nil, fmt.Errorf("failed to get comments: %w", err)
+	}
+
+	return toCoreComments(comments), nil
 }

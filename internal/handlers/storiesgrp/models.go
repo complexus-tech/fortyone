@@ -13,14 +13,13 @@ import (
 
 // AppActivity represents an activity in the application layer
 type AppActivity struct {
-	ID           uuid.UUID  `json:"id"`
-	StoryID      uuid.UUID  `json:"storyId"`
-	Parent       *uuid.UUID `json:"parentId"`
-	UserID       uuid.UUID  `json:"userId"`
-	Type         string     `json:"type"`
-	Field        string     `json:"field"`
-	CurrentValue string     `json:"currentValue"`
-	CreatedAt    time.Time  `json:"createdAt"`
+	ID           uuid.UUID `json:"id"`
+	StoryID      uuid.UUID `json:"storyId"`
+	UserID       uuid.UUID `json:"userId"`
+	Type         string    `json:"type"`
+	Field        string    `json:"field"`
+	CurrentValue string    `json:"currentValue"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 // AppNewLabels represents a new label in the application.
@@ -32,7 +31,6 @@ func toAppActivity(i stories.CoreActivity) AppActivity {
 	return AppActivity{
 		ID:           i.ID,
 		StoryID:      i.StoryID,
-		Parent:       i.Parent,
 		UserID:       i.UserID,
 		Type:         i.Type,
 		Field:        i.Field,
@@ -211,6 +209,17 @@ type AppNewComment struct {
 	Parent  *uuid.UUID `json:"parentId"`
 }
 
+type AppComment struct {
+	ID          uuid.UUID    `json:"id"`
+	StoryID     uuid.UUID    `json:"storyId"`
+	Parent      *uuid.UUID   `json:"parentId"`
+	UserID      uuid.UUID    `json:"userId"`
+	Comment     string       `json:"comment"`
+	CreatedAt   time.Time    `json:"createdAt"`
+	UpdatedAt   time.Time    `json:"updatedAt"`
+	SubComments []AppComment `json:"subComments"`
+}
+
 // AppFilters represents the filters for stories.
 type AppFilters struct {
 	Parent    *uuid.UUID `json:"parentId" db:"parent_id"`
@@ -222,6 +231,27 @@ type AppFilters struct {
 	Team      *uuid.UUID `json:"teamId" db:"team_id"`
 	Epic      *uuid.UUID `json:"epicId" db:"epic_id"`
 	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
+}
+
+func toAppComment(i stories.CoreComment) AppComment {
+	return AppComment{
+		ID:          i.ID,
+		StoryID:     i.StoryID,
+		Parent:      i.Parent,
+		UserID:      i.UserID,
+		Comment:     i.Comment,
+		CreatedAt:   i.CreatedAt,
+		UpdatedAt:   i.UpdatedAt,
+		SubComments: toAppComments(i.SubComments),
+	}
+}
+
+func toAppComments(i []stories.CoreComment) []AppComment {
+	appComments := make([]AppComment, len(i))
+	for i, comment := range i {
+		appComments[i] = toAppComment(comment)
+	}
+	return appComments
 }
 
 func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
