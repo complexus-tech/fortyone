@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Debug, Flex, Tabs, Text, TextEditor } from "ui";
+import { Avatar, Box, Button, Flex, Tabs, Text, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -6,13 +6,14 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { AttachmentIcon, ClockIcon, CommentIcon, UpdatesIcon } from "icons";
+import { ClockIcon, CommentIcon } from "icons";
 import { Activity } from "@/components/ui";
 import { StoryActivity } from "@/modules/stories/types";
 import { useSession } from "next-auth/react";
-import { cn } from "lib";
 import { useCommentStoryMutation } from "../hooks/comment-mutation";
 import { toast } from "sonner";
+import { Comment } from "@/types";
+import { Comments } from "@/components/ui/comments";
 
 export const Activities = ({
   activities,
@@ -42,25 +43,6 @@ export const Activities = ({
     editable: true,
   });
 
-  const nestedActivities = () => {
-    const activitiesById: Record<string, StoryActivity> = {};
-    const results: StoryActivity[] = [];
-
-    activities.forEach((activity) => {
-      activitiesById[activity.id] = { ...activity, children: [] };
-    });
-
-    activities.forEach((activity) => {
-      if (activity.parentId) {
-        activitiesById[activity.parentId].children?.push(activity);
-      } else {
-        results.push(activitiesById[activity.id]);
-      }
-    });
-
-    return results;
-  };
-
   const handleComment = async () => {
     const comment = editor?.getHTML() ?? "";
     if (editor?.isEmpty) {
@@ -71,14 +53,14 @@ export const Activities = ({
     }
     await mutateAsync({
       storyId,
-      payload: { comment, parentId: null, userId: session?.user?.id! },
+      payload: { comment, parentId: null },
     }).then(() => {
       editor?.commands?.clearContent();
     });
   };
 
   return (
-    <Box>
+    <Box className={className}>
       <Text
         as="h4"
         className="mb-4 flex items-center gap-1"
@@ -88,7 +70,7 @@ export const Activities = ({
         Activity feed
       </Text>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="comments">
         <Tabs.List className="mx-0 mb-5">
           <Tabs.Tab
             className="gap-1 px-2"
@@ -104,70 +86,57 @@ export const Activities = ({
             leftIcon={
               <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
             }
-            value="all"
+            value="updates"
           >
-            Activities
+            Updates
           </Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="all">
-          <Flex direction="column">
-            {nestedActivities().map((activity) => (
-              <Activity key={activity.id} {...activity} />
-            ))}
-            <Flex align="start">
-              <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
-                <Avatar
-                  name={session?.user?.name ?? undefined}
-                  src={session?.user?.image ?? undefined}
-                  size="xs"
-                />
-              </Box>
-              <Flex
-                className="ml-1 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
-                direction="column"
-                gap={2}
-                justify="between"
-              >
-                <TextEditor className="prose-base" editor={editor} />
-                <Flex gap={1} justify="end">
-                  {/* <Button
-                    className="px-3"
-                    color="tertiary"
-                    leftIcon={<AttachmentIcon className="h-4 w-auto" />}
-                    size="sm"
-                    variant="naked"
-                  >
-                    <span className="sr-only">Attach files</span>
-                  </Button> */}
-                  <Button
-                    className="px-3"
-                    color="tertiary"
-                    disabled={editor?.isEmpty}
-                    size="sm"
-                    variant="outline"
-                    onClick={handleComment}
-                  >
-                    Comment
-                  </Button>
-                </Flex>
-              </Flex>
-            </Flex>
-          </Flex>
-        </Tabs.Panel>
+
         <Tabs.Panel value="updates">
-          <Flex className="relative" direction="column" gap={4}>
-            <Box className="pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-100 dark:border-dark-200" />
-            {activities.filter((a) => a.type === "update").length === 0 ? (
+          <Flex direction="column">
+            {activities.length === 0 ? (
               <Text>No updates available</Text>
             ) : (
-              activities
-                .filter((a) => a.type === "update")
-                .map((activity) => <Activity key={activity.id} {...activity} />)
+              activities.map((activity) => (
+                <Activity key={activity.id} {...activity} />
+              ))
             )}
           </Flex>
         </Tabs.Panel>
         <Tabs.Panel value="comments">
-          <Text>No comments available</Text>
+          <Comments storyId={storyId} />
+          <Flex align="start">
+            <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+              <Avatar
+                name={session?.user?.name ?? undefined}
+                src={session?.user?.image ?? undefined}
+                size="xs"
+              />
+            </Box>
+            <Flex
+              className="ml-1 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
+              direction="column"
+              gap={2}
+              justify="between"
+            >
+              <TextEditor
+                className="prose-base font-normal antialiased"
+                editor={editor}
+              />
+              <Flex justify="end">
+                <Button
+                  className="px-3"
+                  color="tertiary"
+                  disabled={editor?.isEmpty}
+                  size="sm"
+                  variant="outline"
+                  onClick={handleComment}
+                >
+                  Comment
+                </Button>
+              </Flex>
+            </Flex>
+          </Flex>
         </Tabs.Panel>
       </Tabs>
     </Box>

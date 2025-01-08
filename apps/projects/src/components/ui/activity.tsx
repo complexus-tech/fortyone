@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { useMembers } from "@/lib/hooks/members";
 import { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { format } from "date-fns";
@@ -13,36 +14,16 @@ import { StoryStatusIcon } from "./story-status-icon";
 
 export const Activity = ({
   userId,
-  parentId,
   field,
   currentValue,
   type,
   createdAt,
-  children,
 }: StoryActivity) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { data: objectives = [] } = useObjectives();
   const { data: sprints = [] } = useSprints();
   const member = members.find((member) => member.id === userId);
-
-  const Comment = ({
-    parentId,
-    currentValue,
-  }: {
-    parentId: string | null;
-    currentValue: string;
-  }) => (
-    <Box
-      className={cn(
-        "prose prose-stone ml-9 mt-1 max-w-full rounded-lg rounded-br-none bg-gray-50/60 p-4 text-[0.95rem] leading-6 dark:prose-invert prose-headings:font-medium prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:bg-dark-200/70 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200",
-        {
-          "ml-12": parentId,
-        },
-      )}
-      html={currentValue}
-    />
-  );
 
   const fieldMap = {
     title: {
@@ -169,19 +150,19 @@ export const Activity = ({
   } as {
     [key: string]: {
       label: string;
-      icon?: React.ReactNode;
-      render: (value: string) => React.ReactNode;
+      icon?: ReactNode;
+      render: (value: string) => ReactNode;
     };
   };
 
   return (
-    <Box className="relative pb-4">
+    <Box className="relative pb-4 last-of-type:pb-0">
       <Box
         className={cn(
           "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-200 dark:border-dark-50",
         )}
       />
-      <Flex align="center" className="z[1]" gap={1}>
+      <Flex align="center" className="z-[1]" gap={1}>
         <Tooltip
           className="py-2.5"
           title={
@@ -236,13 +217,8 @@ export const Activity = ({
           </Flex>
         </Tooltip>
         <Text className="text-[0.95rem]" color="muted">
-          {type === "create"
-            ? "created the story"
-            : type === "update"
-              ? "changed"
-              : "commented"}
+          {type === "create" ? "created the story" : "changed"}
         </Text>
-
         {type === "update" && (
           <>
             <Text
@@ -263,21 +239,13 @@ export const Activity = ({
             </Text>
           </>
         )}
-        <Text className="text-[0.95rem]" color="muted">
+        <Text className="mx-0.5 text-[0.95rem]" color="muted">
           ·
         </Text>
         <Text className="text-[0.95rem]" color="muted">
           <TimeAgo timestamp={createdAt} />
         </Text>
       </Flex>
-      {type === "comment" && (
-        <>
-          <Comment parentId={parentId} currentValue={currentValue} />
-          {children &&
-            children?.length > 0 &&
-            children.map((child) => <Comment key={child.id} {...child} />)}
-        </>
-      )}
     </Box>
   );
 };

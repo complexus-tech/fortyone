@@ -1,5 +1,5 @@
 "use client";
-import { Container, Divider, TextEditor, Button, Flex } from "ui";
+import { Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -11,11 +11,11 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { BodyContainer } from "@/components/shared";
-import { Activities, Attachments, Reactions } from ".";
+import { Activities, Attachments } from ".";
 import { DetailedStory } from "../types";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useStoryById } from "../hooks/story";
 import { useLocalStorage } from "@/hooks";
@@ -23,9 +23,9 @@ import { cn } from "lib";
 import { SubStories } from "./sub-stories";
 import { useStoryActivities } from "../hooks/story-activities";
 import { StoryActivity } from "@/modules/stories/types";
-import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
-import { UndoIcon } from "icons";
 import { Links } from "./links";
+import { useLinks } from "@/lib/hooks/links";
+import { useStoryComments } from "../hooks/story-comments";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -60,17 +60,19 @@ const useDebounce = (callback: (...args: any[]) => void, delay = 500) => {
 export const MainDetails = () => {
   const params = useParams<{ storyId: string }>();
   const { data } = useStoryById(params.storyId);
+  const { data: links = [] } = useLinks(params.storyId);
   const { data: activities = [] } = useStoryActivities(params.storyId);
+
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
     true,
   );
+  const [isLinksOpen, setIsLinksOpen] = useLocalStorage("isLinksOpen", true);
   const {
     id: storyId,
     title,
     descriptionHTML,
     description,
-    sequenceId,
     teamId,
     deletedAt,
     subStories,
@@ -79,12 +81,6 @@ export const MainDetails = () => {
   } = data!;
   const isDeleted = !!deletedAt;
 
-  const { mutateAsync } = useRestoreStoryMutation();
-
-  const restoreStory = async () => {
-    mutateAsync(storyId);
-  };
-
   const createStoryActivity: StoryActivity = {
     id: "1",
     type: "create",
@@ -92,7 +88,6 @@ export const MainDetails = () => {
     storyId,
     userId: reporterId,
     field: "title",
-    parentId: null,
     currentValue: title,
   };
   const allActivities = reporterId
@@ -103,7 +98,6 @@ export const MainDetails = () => {
     try {
       await updateStoryAction(storyId, data);
     } catch (error) {
-      console.log(error);
       toast.error("Error updating story", {
         description: "Failed to update story, reverted changes.",
       });
@@ -159,9 +153,7 @@ export const MainDetails = () => {
           className="relative -left-1 text-4xl font-medium"
           editor={titleEditor}
         />
-
         <TextEditor className="mt-8" editor={descriptionEditor} />
-        <Reactions />
         <SubStories
           subStories={subStories}
           parentId={storyId}
@@ -169,12 +161,19 @@ export const MainDetails = () => {
           setIsSubStoriesOpen={setIsSubStoriesOpen}
           isSubStoriesOpen={isSubStoriesOpen}
         />
-        <Links storyId={storyId} />
+        <Links
+          storyId={storyId}
+          isLinksOpen={isLinksOpen}
+          setIsLinksOpen={setIsLinksOpen}
+          links={links}
+        />
         <Attachments
           className={cn(
             "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
             {
-              "mt-0 border-0": isSubStoriesOpen && subStories.length > 0,
+              "mt-2 border-0":
+                (isSubStoriesOpen || isLinksOpen) &&
+                (subStories.length > 0 || links.length > 0),
             },
           )}
         />

@@ -87,3 +87,5 @@ export * from "./sun";
 export * from "./moon";
 export * from "./cancel";
 export * from "./system";
+export * from "./internet";
+export * from "./reply";

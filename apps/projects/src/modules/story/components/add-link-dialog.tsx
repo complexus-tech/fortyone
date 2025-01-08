@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import { NewLink } from "@/lib/actions/links/create-link";
 import { Link } from "@/types";
 import { cn } from "lib";
+import { useUpdateLinkMutation } from "@/lib/hooks/update-link-mutation";
 
 export const AddLinkDialog = ({
   isOpen,
@@ -18,6 +19,7 @@ export const AddLinkDialog = ({
   link?: Link;
 }) => {
   const { mutateAsync: createLink } = useCreateLinkMutation();
+  const { mutateAsync: updateLink } = useUpdateLinkMutation();
   const [form, setForm] = useState<NewLink>({
     url: link?.url || "",
     title: link?.title || "",
@@ -31,9 +33,22 @@ export const AddLinkDialog = ({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await createLink(form).then(() => {
-      setIsOpen(false);
-    });
+    if (isEditing) {
+      await updateLink({
+        linkId: link.id,
+        payload: {
+          title: form.title,
+          url: form.url,
+        },
+        storyId,
+      }).then(() => {
+        setIsOpen(false);
+      });
+    } else {
+      await createLink(form).then(() => {
+        setIsOpen(false);
+      });
+    }
   };
 
   return (
@@ -51,6 +66,7 @@ export const AddLinkDialog = ({
             <Input
               label="URL"
               name="url"
+              value={form.url}
               onChange={handleChange}
               placeholder="https://..."
               required
@@ -59,6 +75,7 @@ export const AddLinkDialog = ({
             <Input
               label="Title"
               name="title"
+              value={form.title}
               onChange={handleChange}
               placeholder="Enter title..."
             />
@@ -84,7 +101,7 @@ export const AddLinkDialog = ({
                 })}
                 type="submit"
               >
-                {isEditing ? "Save" : "Add link"}
+                {isEditing ? "Update" : "Add link"}
               </Button>
             </Flex>
           </form>

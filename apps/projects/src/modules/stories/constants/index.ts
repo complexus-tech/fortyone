@@ -11,6 +11,7 @@ export const storyKeys = {
   objectives: () => [...storyKeys.all, "objectives"] as const,
   objective: (objectiveId: string) =>
     [...storyKeys.objectives(), objectiveId] as const,
+  comments: (id: string) => [...storyKeys.detail(id), "comments"] as const,
 };
 
 export const storyTags = {
@@ -24,4 +25,5 @@ export const storyTags = {
   objectives: () => `${storyTags.all}-objectives` as const,
   objective: (objectiveId: string) =>
     `${storyTags.objectives()}-${objectiveId}` as const,
+  comments: (id: string) => `${storyTags.detail(id)}-comments` as const,
 };

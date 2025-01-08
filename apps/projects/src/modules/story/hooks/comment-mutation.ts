@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
-import { StoryActivity } from "@/modules/stories/types";
 import { commentStoryAction } from "../actions/comment-story";
+import { Comment } from "@/types";
 
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -16,7 +16,6 @@ export const useCommentStoryMutation = () => {
       payload: {
         comment: string;
         parentId?: string | null;
-        userId: string;
       };
     }) =>
       commentStoryAction(storyId, {
@@ -33,31 +32,28 @@ export const useCommentStoryMutation = () => {
       });
     },
     onMutate: ({ storyId, payload }) => {
-      const previousActivities = queryClient.getQueryData<StoryActivity[]>(
-        storyKeys.activities(storyId),
+      const previousComments = queryClient.getQueryData<Comment[]>(
+        storyKeys.comments(storyId),
       );
-      if (previousActivities) {
-        queryClient.setQueryData<StoryActivity[]>(
-          storyKeys.activities(storyId),
-          [
-            ...previousActivities,
-            {
-              id: payload?.userId,
-              userId: payload?.userId,
-              field: "comment",
-              storyId: storyId,
-              type: "comment",
-              createdAt: new Date().toISOString(),
-              currentValue: payload.comment,
-              parentId: payload.parentId ?? null,
-            },
-          ],
-        );
+      if (previousComments) {
+        queryClient.setQueryData<Comment[]>(storyKeys.comments(storyId), [
+          ...previousComments,
+          {
+            id: "new comment",
+            userId: "",
+            comment: payload.comment,
+            storyId: storyId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            parentId: payload.parentId ?? null,
+            subComments: [],
+          },
+        ]);
       }
     },
     onSettled: (_, __, { storyId }) => {
       queryClient.invalidateQueries({
-        queryKey: storyKeys.activities(storyId!),
+        queryKey: storyKeys.comments(storyId!),
       });
     },
   });

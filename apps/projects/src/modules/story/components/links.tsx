@@ -5,16 +5,14 @@ import {
   CopyIcon,
   DeleteIcon,
   EditIcon,
-  LinkIcon,
+  InternetIcon,
   MoreHorizontalIcon,
   PlusIcon,
 } from "icons";
 import { useState } from "react";
-import { useLinks } from "@/lib/hooks/links";
 import { AddLinkDialog } from "./add-link-dialog";
 import { cn } from "lib";
 import { RowWrapper } from "@/components/ui";
-import Link from "next/link";
 import { Link as LinkType } from "@/types";
 import { useCopyToClipboard } from "@/hooks/clipboard";
 import { toast } from "sonner";
@@ -30,7 +28,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
   return (
     <>
       <RowWrapper key={link.id} className="gap-8 px-1 py-2">
-        <Link href={link.url} target="_blank" className="flex- gap-2">
+        <a href={link.url} target="_blank" className="flex-1 gap-2">
           <Flex align="center" gap={2}>
             {metadata?.image ? (
               <img
@@ -40,7 +38,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
                 className="size-6 rounded-full object-cover"
               />
             ) : (
-              <LinkIcon className="size-6 -rotate-45" />
+              <InternetIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
             )}
             <Text
               title={link?.title || metadata?.title}
@@ -58,7 +56,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
               </Text>
             )}
           </Flex>
-        </Link>
+        </a>
         <Flex align="center" gap={3} className="shrink-0">
           <Text color="muted">
             <TimeAgo timestamp={link.createdAt} />
@@ -135,21 +133,28 @@ const StoryLink = ({ link }: { link: LinkType }) => {
   );
 };
 
-export const Links = ({ storyId }: { storyId: string }) => {
-  const { data: links = [] } = useLinks(storyId);
-
-  const [isOpen, setIsOpen] = useState(true);
+export const Links = ({
+  storyId,
+  isLinksOpen,
+  setIsLinksOpen,
+  links,
+}: {
+  storyId: string;
+  isLinksOpen: boolean;
+  setIsLinksOpen: (isOpen: boolean) => void;
+  links: LinkType[];
+}) => {
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
 
   return (
-    <Box className="mt-3">
+    <Box className="mt-4">
       {links.length > 0 && (
         <Flex
           align="center"
           justify={links.length > 0 ? "between" : "end"}
           className={cn({
             "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
-              !isOpen,
+              !isLinksOpen,
           })}
         >
           <Button
@@ -157,10 +162,10 @@ export const Links = ({ storyId }: { storyId: string }) => {
             variant="naked"
             size="sm"
             onClick={() => {
-              setIsOpen(!isOpen);
+              setIsLinksOpen(!isLinksOpen);
             }}
             rightIcon={
-              isOpen ? (
+              isLinksOpen ? (
                 <ArrowDownIcon className="h-4 w-auto" />
               ) : (
                 <ArrowUpIcon className="h-4 w-auto" />
@@ -184,7 +189,7 @@ export const Links = ({ storyId }: { storyId: string }) => {
         </Flex>
       )}
 
-      {isOpen && links.length > 0 && (
+      {isLinksOpen && links.length > 0 && (
         <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
