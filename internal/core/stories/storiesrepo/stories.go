@@ -457,7 +457,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 									FROM
 											stories sub
 									WHERE
-											sub.parent_id = s.id
+											sub.parent_id = s.id AND sub.deleted_at IS NULL
 							), '[]'
 					) AS sub_stories,
 					COALESCE(
