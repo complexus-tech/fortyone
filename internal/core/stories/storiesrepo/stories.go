@@ -936,7 +936,7 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.C
 						sub.parent_id = sc.comment_id			
 				), '[]'
 			) AS sub_comments
-		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL
+		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL ORDER BY sc.created_at ASC
 	`
 
 	params := map[string]interface{}{"story_id": storyID}
