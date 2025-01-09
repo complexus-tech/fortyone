@@ -119,11 +119,11 @@ const MainComment = ({
           className="pointer-events-none ml-2 gap-2.5 opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
         >
           <button title="Edit" onClick={() => setIsEditing(true)}>
-            <EditIcon className="h-[1.2rem]" />
+            <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Edit</span>
           </button>
           <button title="Delete" onClick={() => setIsOpen(true)}>
-            <DeleteIcon className="h-[1.1rem]" />
+            <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Delete</span>
           </button>
         </Flex>

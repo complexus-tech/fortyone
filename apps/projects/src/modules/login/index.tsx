@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { Box, Flex, Input, Text, Button } from "ui";
 import { ComplexusLogo } from "@/components/ui";
 import { logIn } from "./actions";
@@ -10,7 +10,7 @@ export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
   const logInAction = logIn.bind(null, callbackUrl);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     setLoading(true);

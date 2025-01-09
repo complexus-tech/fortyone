@@ -55,29 +55,31 @@ export const Labels = ({
             </Flex>
           }
         >
-          <LabelsMenu>
-            <LabelsMenu.Trigger>
-              <Badge
-                rounded="xl"
-                color="tertiary"
-                className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
-              >
-                <TagsIcon
-                  className="h-4"
-                  style={{ color: remainingLabels[0]?.color }}
-                />{" "}
-                + {remainingLabels.length} label
-                {remainingLabels.length > 1 ? "s" : ""}
-              </Badge>
-            </LabelsMenu.Trigger>
-            <LabelsMenu.Items
-              teamId={teamId}
-              labelIds={storyLabels}
-              setLabelIds={(labelIds) => {
-                handleUpdateLabels(labelIds);
-              }}
-            />
-          </LabelsMenu>
+          <span>
+            <LabelsMenu>
+              <LabelsMenu.Trigger>
+                <Badge
+                  rounded="xl"
+                  color="tertiary"
+                  className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+                >
+                  <TagsIcon
+                    className="h-4"
+                    style={{ color: remainingLabels[0]?.color }}
+                  />{" "}
+                  + {remainingLabels.length} label
+                  {remainingLabels.length > 1 ? "s" : ""}
+                </Badge>
+              </LabelsMenu.Trigger>
+              <LabelsMenu.Items
+                teamId={teamId}
+                labelIds={storyLabels}
+                setLabelIds={(labelIds) => {
+                  handleUpdateLabels(labelIds);
+                }}
+              />
+            </LabelsMenu>
+          </span>
         </Tooltip>
       )}
     </Flex>

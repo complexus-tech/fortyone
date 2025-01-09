@@ -206,7 +206,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           >
             {loading ? (
               <>
-                <LoadingIcon className="animate-spin h-5 w-auto" />
+                <LoadingIcon className="animate-spin" />
                 {loadingText || "Loading..."}
               </>
             ) : (
