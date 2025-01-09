@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -36,8 +37,8 @@ type Repository interface {
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
-	CreateComment(ctx context.Context, comment CoreNewComment) (CoreComment, error)
-	GetComments(ctx context.Context, storyID uuid.UUID) ([]CoreComment, error)
+	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
+	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -275,7 +276,7 @@ func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreA
 }
 
 // CreateComment creates a comment for a story.
-func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (CoreComment, error) {
+func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (comments.CoreComment, error) {
 	s.log.Info(ctx, "business.core.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateComment")
 	defer span.End()
@@ -283,7 +284,7 @@ func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (CoreCo
 	comment, err := s.repo.CreateComment(ctx, cnc)
 	if err != nil {
 		span.RecordError(err)
-		return CoreComment{}, err
+		return comments.CoreComment{}, err
 	}
 
 	span.AddEvent("comment created.", trace.WithAttributes(
@@ -294,7 +295,7 @@ func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (CoreCo
 }
 
 // GetComments returns the comments for a story.
-func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]CoreComment, error) {
+func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error) {
 	s.log.Info(ctx, "business.core.stories.GetComments")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.GetComments")
 	defer span.End()

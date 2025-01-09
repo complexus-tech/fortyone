@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -233,7 +234,7 @@ type AppFilters struct {
 	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
 }
 
-func toAppComment(i stories.CoreComment) AppComment {
+func toAppComment(i comments.CoreComment) AppComment {
 	return AppComment{
 		ID:          i.ID,
 		StoryID:     i.StoryID,
@@ -246,7 +247,7 @@ func toAppComment(i stories.CoreComment) AppComment {
 	}
 }
 
-func toAppComments(i []stories.CoreComment) []AppComment {
+func toAppComments(i []comments.CoreComment) []AppComment {
 	appComments := make([]AppComment, len(i))
 	for i, comment := range i {
 		appComments[i] = toAppComment(comment)
@@ -292,7 +293,7 @@ func (a AppNewStory) Validate() error {
 					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
 				}
 			}
-			return fmt.Errorf(strings.Join(errorMessages, "; "))
+			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
 		}
 	}
 	return err

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/core/comments"
+	"github.com/complexus-tech/projects-api/internal/core/comments/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/core/links/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
@@ -882,7 +884,8 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 	return toCoreActivities(activities), nil
 }
 
-func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (stories.CoreComment, error) {
+func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (comments.CoreComment, error) {
+	r.log.Info(ctx, "business.repository.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.CreateComment")
 	defer span.End()
 
@@ -897,20 +900,20 @@ func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (s
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err))
-		return stories.CoreComment{}, err
+		return comments.CoreComment{}, err
 	}
 	defer stmt.Close()
 
-	var comment dbComment
+	var comment commentsrepo.DbComment
 	if err := stmt.GetContext(ctx, &comment, toDBNewComment(cnc)); err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to insert comment: %s", err))
-		return stories.CoreComment{}, err
+		return comments.CoreComment{}, err
 	}
 
 	return toCoreComment(comment), nil
 }
 
-func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]stories.CoreComment, error) {
+func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComments")
 	defer span.End()
 
@@ -930,8 +933,7 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]stories.Co
 					FROM
 						story_comments sub
 					WHERE
-						sub.parent_id = sc.comment_id
-						
+						sub.parent_id = sc.comment_id			
 				), '[]'
 			) AS sub_comments
 		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL
@@ -946,7 +948,7 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]stories.Co
 	}
 	defer stmt.Close()
 
-	var comments []dbComment
+	var comments []commentsrepo.DbComment
 	if err := stmt.SelectContext(ctx, &comments, params); err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
 		return nil, fmt.Errorf("failed to get comments: %w", err)

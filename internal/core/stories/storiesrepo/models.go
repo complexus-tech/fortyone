@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/comments"
+	"github.com/complexus-tech/projects-api/internal/core/comments/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/google/uuid"
 )
@@ -194,28 +196,18 @@ func toCoreActivities(is []dbActivity) []stories.CoreActivity {
 	return ca
 }
 
-// dbComment represents the database model for an dbComment.
-type dbComment struct {
-	ID          uuid.UUID        `db:"comment_id"`
-	StoryID     uuid.UUID        `db:"story_id"`
-	Parent      *uuid.UUID       `db:"parent_id"`
-	UserID      uuid.UUID        `db:"commenter_id"`
-	Comment     string           `db:"content"`
-	CreatedAt   time.Time        `db:"created_at"`
-	UpdatedAt   time.Time        `db:"updated_at"`
-	SubComments *json.RawMessage `db:"sub_comments"`
-}
-
 // toCoreComment converts a dbComment to a CoreComment.
-func toCoreComment(i dbComment) stories.CoreComment {
-	var subComments []stories.CoreComment
+func toCoreComment(i commentsrepo.DbComment) comments.CoreComment {
+	var subComments []comments.CoreComment
 
-	err := json.Unmarshal(*i.SubComments, &subComments)
-	if err != nil {
-		log.Printf("Failed to unmarshal sub_comments: %s", err)
+	if i.SubComments != nil {
+		err := json.Unmarshal(*i.SubComments, &subComments)
+		if err != nil {
+			log.Printf("Failed to unmarshal sub_comments: %s", err)
+		}
 	}
 
-	return stories.CoreComment{
+	return comments.CoreComment{
 		ID:          i.ID,
 		StoryID:     i.StoryID,
 		Parent:      i.Parent,
@@ -228,16 +220,16 @@ func toCoreComment(i dbComment) stories.CoreComment {
 }
 
 // toCoreComments converts a slice of dbComments to a slice of CoreComment.
-func toCoreComments(is []dbComment) []stories.CoreComment {
-	cc := make([]stories.CoreComment, len(is))
+func toCoreComments(is []commentsrepo.DbComment) []comments.CoreComment {
+	cc := make([]comments.CoreComment, len(is))
 	for i, comment := range is {
 		cc[i] = toCoreComment(comment)
 	}
 	return cc
 }
 
-func toDBNewComment(i stories.CoreNewComment) dbComment {
-	return dbComment{
+func toDBNewComment(i stories.CoreNewComment) commentsrepo.DbNewComment {
+	return commentsrepo.DbNewComment{
 		StoryID: i.StoryID,
 		Parent:  i.Parent,
 		UserID:  i.UserID,
