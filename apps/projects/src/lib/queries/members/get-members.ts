@@ -2,7 +2,7 @@
 import { memberTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { get } from "@/lib/http";
-import { ApiResponse, Member } from "@/types";
+import type { ApiResponse, Member } from "@/types";
 
 export const getMembers = async () => {
   const members = await get<ApiResponse<Member[]>>("members", {
@@ -11,5 +11,5 @@ export const getMembers = async () => {
       tags: [memberTags.lists()],
     },
   });
-  return members?.data;
+  return members.data;
 };

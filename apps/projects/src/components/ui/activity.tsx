@@ -1,14 +1,14 @@
-import { ReactNode } from "react";
-import { useMembers } from "@/lib/hooks/members";
-import { StoryActivity, StoryPriority } from "@/modules/stories/types";
+import type { ReactNode } from "react";
 import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
-import { useStatuses } from "@/lib/hooks/statuses";
 import { cn } from "lib";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import { useMembers } from "@/lib/hooks/members";
+import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useSprints } from "@/lib/hooks/sprints";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 
@@ -58,20 +58,20 @@ export const Activity = ({
       label: "Assignee",
       render: (value: string) => (
         <>
-          {!value || value?.includes("nil") ? (
+          {!value || value.includes("nil") ? (
             <span>Unassigned</span>
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={`/profile/${members?.find((member) => member.id === value)?.id}`}
+              href={`/profile/${members.find((member) => member.id === value)?.id}`}
             >
               <Avatar
                 className="relative top-px"
-                name={members?.find((member) => member.id === value)?.fullName}
-                src={members?.find((member) => member.id === value)?.avatarUrl}
+                name={members.find((member) => member.id === value)?.fullName}
                 size="xs"
+                src={members.find((member) => member.id === value)?.avatarUrl}
               />
-              {members?.find((member) => member.id === value)?.username}
+              {members.find((member) => member.id === value)?.username}
             </Link>
           )}
         </>
@@ -99,15 +99,15 @@ export const Activity = ({
       label: "Sprint",
       render: (value: string) => (
         <>
-          {!value || value?.includes("nil") ? (
+          {!value || value.includes("nil") ? (
             <span>No sprint</span>
           ) : (
             <Link
               className="flex items-center gap-1"
-              href={`/teams/${sprints?.find((sprint) => sprint.id === value)?.teamId}/sprints/${sprints?.find((sprint) => sprint.id === value)?.id}/stories`}
+              href={`/teams/${sprints.find((sprint) => sprint.id === value)?.teamId}/sprints/${sprints.find((sprint) => sprint.id === value)?.id}/stories`}
             >
               <SprintsIcon className="h-4" />
-              {sprints?.find((sprint) => sprint.id === value)?.name}
+              {sprints.find((sprint) => sprint.id === value)?.name}
             </Link>
           )}
         </>
@@ -121,15 +121,15 @@ export const Activity = ({
       label: "Objective",
       render: (value: string) => (
         <>
-          {!value || value?.includes("nil") ? (
+          {!value || value.includes("nil") ? (
             <span>No objective</span>
           ) : (
             <Link
               className="flex items-center gap-1"
-              href={`/teams/${objectives?.find((objective) => objective.id === value)?.teamId}/objectives/${objectives?.find((objective) => objective.id === value)?.id}`}
+              href={`/teams/${objectives.find((objective) => objective.id === value)?.teamId}/objectives/${objectives.find((objective) => objective.id === value)?.id}`}
             >
               <ObjectiveIcon className="h-4" />
-              {objectives?.find((objective) => objective.id === value)?.name}
+              {objectives.find((objective) => objective.id === value)?.name}
             </Link>
           )}
         </>
@@ -147,13 +147,11 @@ export const Activity = ({
       label: "Related to",
       render: (value: string) => <span>{value}</span>,
     },
-  } as {
-    [key: string]: {
+  } as Record<string, {
       label: string;
       icon?: ReactNode;
       render: (value: string) => ReactNode;
-    };
-  };
+    }>;
 
   return (
     <Box className="relative pb-4 last-of-type:pb-0">
@@ -166,41 +164,39 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member && (
-              <Box>
+            member ? <Box>
                 <Flex gap={2}>
                   <Avatar
-                    name={member?.fullName}
-                    src={member?.avatarUrl}
                     className="mt-0.5"
+                    name={member.fullName}
+                    src={member.avatarUrl}
                   />
                   <Box>
                     <Link
-                      href={`/profile/${member?.id}`}
                       className="mb-2 flex gap-1"
+                      href={`/profile/${member.id}`}
                     >
-                      <Text fontWeight="medium" fontSize="md">
-                        {member?.fullName}
+                      <Text fontSize="md" fontWeight="medium">
+                        {member.fullName}
                       </Text>
                       <Text color="muted" fontSize="md">
-                        ({member?.username})
+                        ({member.username})
                       </Text>
                     </Link>
                     <Button
-                      size="xs"
-                      color="tertiary"
                       className="mb-0.5 ml-px px-2"
-                      href={`/profile/${member?.id}`}
+                      color="tertiary"
+                      href={`/profile/${member.id}`}
+                      size="xs"
                     >
                       Go to profile
                     </Button>
                   </Box>
                 </Flex>
-              </Box>
-            )
+              </Box> : null
           }
         >
-          <Flex gap={1} className="cursor-pointer">
+          <Flex className="cursor-pointer" gap={1}>
             <Box className="relative top-[1px] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
                 name={member?.fullName}
@@ -225,17 +221,17 @@ export const Activity = ({
               className="text-[0.95rem] text-black dark:text-white"
               fontWeight="medium"
             >
-              {fieldMap[field]?.label}
+              {fieldMap[field].label}
             </Text>
             <Text className="text-[0.95rem]" color="muted">
               to
             </Text>
             <Text
-              className="text-[0.95rem] text-black dark:text-white"
               as="span"
+              className="text-[0.95rem] text-black dark:text-white"
               fontWeight="medium"
             >
-              {fieldMap[field]?.render(currentValue)}
+              {fieldMap[field].render(currentValue)}
             </Text>
           </>
         )}

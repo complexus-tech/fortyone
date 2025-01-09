@@ -1,8 +1,8 @@
 "use server";
 
-import { post } from "@/lib/http";
 import { revalidateTag } from "next/cache";
-import { ApiResponse, Label } from "@/types";
+import { post } from "@/lib/http";
+import type { ApiResponse, Label } from "@/types";
 import { labelTags } from "@/constants/keys";
 
 export type NewLabel = {

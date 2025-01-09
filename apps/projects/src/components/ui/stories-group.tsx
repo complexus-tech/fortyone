@@ -6,12 +6,12 @@ import { Text } from "ui";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
+import type { State, StateCategory } from "@/types/states";
+import { useStatuses } from "@/lib/hooks/statuses";
+import type { Member } from "@/types";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
-import { State, StateCategory } from "@/types/states";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { Member } from "@/types";
 
 export const StoriesGroup = ({
   stories,
@@ -30,15 +30,13 @@ export const StoriesGroup = ({
 }) => {
   const pathname = usePathname();
   const { data: statuses = [] } = useStatuses();
-  const { id: defaultStatusId } = statuses.at(0)!!;
+  const { id: defaultStatusId } = statuses.at(0)!;
   const { groupBy, showEmptyGroups } = viewOptions;
-  const id = (
-    groupBy === "Status"
+  const id = (groupBy === "Status"
       ? status?.id
       : groupBy === "Assignee"
         ? assignee?.id
-        : priority
-  ) as string;
+        : priority)!;
 
   const collapseKey = pathname + id;
   const defaultClosedStatuses: StateCategory[] = [
@@ -51,7 +49,7 @@ export const StoriesGroup = ({
     if (
       groupBy === "Status" &&
       status &&
-      defaultClosedStatuses.includes(status?.category)
+      defaultClosedStatuses.includes(status.category)
     ) {
       return true;
     }
@@ -87,14 +85,14 @@ export const StoriesGroup = ({
       ref={setNodeRef}
     >
       <StoriesHeader
+        assignee={assignee}
         className={className}
-        stories={filteredStories}
         groupBy={groupBy}
         isCollapsed={isCollapsed}
         priority={priority}
         setIsCollapsed={setIsCollapsed}
         status={status}
-        assignee={assignee}
+        stories={filteredStories}
       />
       {!isCollapsed && <StoriesList stories={filteredStories} />}
       {!isCollapsed && (

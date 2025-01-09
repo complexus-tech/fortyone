@@ -1,7 +1,7 @@
 "use client";
 
 import { ObjectiveCard } from "@/components/ui/objective/card";
-import { Objective } from "@/modules/objectives/types";
+import type { Objective } from "@/modules/objectives/types";
 import { BodyContainer } from "@/components/shared/body";
 import { ObjectivesHeader } from "./components/header";
 import { Heading } from "./components/heading";

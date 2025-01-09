@@ -1,5 +1,6 @@
 "use client";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import type { Dispatch, SetStateAction} from "react";
+import { useEffect, useState } from "react";
 import { Button, Flex, TextEditor, DatePicker, Box, Avatar } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -12,21 +13,21 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
 import { CalendarIcon, CloseIcon, PlusIcon, TagsIcon } from "icons";
-import type { StoryPriority } from "@/modules/stories/types";
-import { StatusesMenu } from "./story/statuses-menu";
-import { StoryStatusIcon } from "./story-status-icon";
-import { PrioritiesMenu } from "./story/priorities-menu";
-import { PriorityIcon } from "./priority-icon";
-import { NewStory } from "@/modules/story/types";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
+import type { NewStory } from "@/modules/story/types";
+import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
+import { PriorityIcon } from "./priority-icon";
+import { PrioritiesMenu } from "./story/priorities-menu";
+import { StoryStatusIcon } from "./story-status-icon";
+import { StatusesMenu } from "./story/statuses-menu";
 
 export const NewSubStory = ({
   statusId,
@@ -48,13 +49,13 @@ export const NewSubStory = ({
   const { data: members = [] } = useMembers();
   const { id: defaultStateId } = (statuses.find(
     (state) => state.id === statusId,
-  ) || statuses.at(0))!!;
+  ) || statuses.at(0))!;
 
   const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
-    teamId: teamId,
+    teamId,
     statusId: defaultStateId,
     endDate: null,
     startDate: null,
@@ -114,7 +115,7 @@ export const NewSubStory = ({
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
-      reporterId: session?.data?.user?.id,
+      reporterId: session.data?.user?.id,
       parentId,
       assigneeId: storyForm.assigneeId,
     };
@@ -140,8 +141,7 @@ export const NewSubStory = ({
 
   return (
     <Box>
-      {isOpen && (
-        <Box className="mt-2 rounded-lg border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
+      {isOpen ? <Box className="mt-2 rounded-lg border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
           <TextEditor
             asTitle
             className="text-xl font-medium"
@@ -172,10 +172,10 @@ export const NewSubStory = ({
                   </Button>
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
-                  statusId={storyForm.statusId}
                   setStatusId={(id) => {
                     setStoryForm((prev) => ({ ...prev, statusId: id }));
                   }}
+                  statusId={storyForm.statusId}
                 />
               </StatusesMenu>
               <PrioritiesMenu>
@@ -209,19 +209,17 @@ export const NewSubStory = ({
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
-                      storyForm.startDate && (
-                        <CloseIcon
-                          role="button"
+                      storyForm.startDate ? <CloseIcon
+                          aria-label="Remove date"
+                          className="h-4 w-auto"
                           onClick={() => {
                             setStoryForm((prev) => ({
                               ...prev,
                               startDate: null,
                             }));
                           }}
-                          aria-label="Remove date"
-                          className="h-4 w-auto"
-                        />
-                      )
+                          role="button"
+                        /> : null
                     }
                     size="xs"
                     variant="outline"
@@ -256,19 +254,17 @@ export const NewSubStory = ({
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
-                      storyForm.endDate && (
-                        <CloseIcon
-                          role="button"
+                      storyForm.endDate ? <CloseIcon
+                          aria-label="Remove date"
+                          className="h-4 w-auto"
                           onClick={() => {
                             setStoryForm((prev) => ({
                               ...prev,
                               endDate: null,
                             }));
                           }}
-                          aria-label="Remove date"
-                          className="h-4 w-auto"
-                        />
-                      )
+                          role="button"
+                        /> : null
                     }
                     size="xs"
                     variant="outline"
@@ -328,32 +324,31 @@ export const NewSubStory = ({
             </Flex>
             <Flex gap={1}>
               <Button
-                size="xs"
                 className="px-2"
-                variant="naked"
                 color="tertiary"
                 onClick={() => {
                   setIsOpen(false);
                   titleEditor?.commands.setContent("");
                   editor?.commands.setContent("");
                 }}
+                size="xs"
+                variant="naked"
               >
                 Cancel
               </Button>
               <Button
-                leftIcon={<PlusIcon className="h-4 w-auto" />}
-                size="xs"
                 color="tertiary"
-                onClick={handleCreateStory}
+                leftIcon={<PlusIcon className="h-4 w-auto" />}
                 loading={loading}
                 loadingText="Creating story..."
+                onClick={handleCreateStory}
+                size="xs"
               >
                 Create
               </Button>
             </Flex>
           </Flex>
-        </Box>
-      )}
+        </Box> : null}
     </Box>
   );
 };

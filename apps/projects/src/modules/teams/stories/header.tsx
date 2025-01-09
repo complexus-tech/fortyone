@@ -1,6 +1,7 @@
 "use client";
 import { Badge, BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
+import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -11,10 +12,9 @@ import {
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
-import { useTeamOptions } from "./provider";
-import { useParams } from "next/navigation";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTeamOptions } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -30,7 +30,7 @@ export const Header = ({
   const { teamId } = useParams<{ teamId: string }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
-  const { name, color } = teams.find((team) => team.id === teamId)!!;
+  const { name, color } = teams.find((team) => team.id === teamId)!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
   return (

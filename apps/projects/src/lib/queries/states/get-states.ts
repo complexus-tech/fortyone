@@ -2,8 +2,8 @@
 import { statusTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { get } from "@/lib/http";
-import { ApiResponse } from "@/types";
-import { State } from "@/types/states";
+import type { ApiResponse } from "@/types";
+import type { State } from "@/types/states";
 
 export const getStatuses = async () => {
   const statuses = await get<ApiResponse<State[]>>("states", {
@@ -12,5 +12,5 @@ export const getStatuses = async () => {
       tags: [statusTags.lists()],
     },
   });
-  return statuses?.data;
+  return statuses.data;
 };

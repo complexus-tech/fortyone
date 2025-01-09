@@ -1,8 +1,8 @@
 import { get } from "@/lib/http";
-import { Objective } from "../types";
-import { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types";
+import type { Objective } from "../types";
 
 export const getObjectives = async () => {
   const objectives = await get<ApiResponse<Objective[]>>("objectives");
-  return objectives?.data ?? [];
+  return objectives.data ?? [];
 };

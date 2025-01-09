@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import "../styles/global.css";
+import dynamic from "next/dynamic";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
-import dynamic from "next/dynamic";
 import { Toaster } from "./toaster";
 
 // const PostHogPageView = dynamic(() => import("./posthog-page-view"), {

@@ -12,7 +12,7 @@ export const StoryStatusIcon = ({
   if (!statuses.length) return null;
   const state =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const { category } = state!!;
+  const { category } = state!;
   return (
     <>
       {category === "backlog" && (

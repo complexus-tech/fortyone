@@ -14,6 +14,11 @@ import { CalendarIcon, TagsIcon } from "icons";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import type { Story as StoryProps } from "@/modules/stories/types";
+import { slugify } from "@/utils";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { useBoard } from "../board-context";
@@ -21,11 +26,6 @@ import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StatusesMenu } from "./statuses-menu";
 import { PrioritiesMenu } from "./priorities-menu";
-import { slugify } from "@/utils";
-import { useTeams } from "@/modules/teams/hooks/teams";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 export const StoryCard = ({
   story,
@@ -41,7 +41,7 @@ export const StoryCard = ({
   const { data: objectives = [] } = useObjectives();
   const activeStatus =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const { code: teamCode } = teams.find((team) => team.id === teamId)!!;
+  const { code: teamCode } = teams.find((team) => team.id === teamId)!;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
   });
@@ -64,6 +64,7 @@ export const StoryCard = ({
             <Flex align="center" gap={2}>
               <Checkbox
                 checked={selectedStories.includes(story.id)}
+                className="rounded-[0.35rem]"
                 onCheckedChange={(checked) => {
                   setSelectedStories(
                     checked
@@ -73,7 +74,6 @@ export const StoryCard = ({
                         ),
                   );
                 }}
-                className="rounded-[0.35rem]"
               />
               {isColumnVisible("ID") && (
                 <Link
@@ -151,8 +151,8 @@ export const StoryCard = ({
                   </Button>
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
-                  statusId={statusId}
                   setStatusId={(s) => {}}
+                  statusId={statusId}
                 />
               </StatusesMenu>
             )}

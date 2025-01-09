@@ -1,9 +1,9 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
 import { linkTags } from "@/constants/keys";
 import { put } from "@/lib/http";
-import { ApiResponse, Link } from "@/types";
-import { revalidateTag } from "next/cache";
+import type { ApiResponse, Link } from "@/types";
 
 export type UpdateLink = {
   url?: string;

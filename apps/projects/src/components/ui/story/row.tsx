@@ -13,7 +13,20 @@ import {
 } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon, CloseIcon } from "icons";
+import { format, addDays, formatISO } from "date-fns";
 import type { Story as StoryProps } from "@/modules/stories/types";
+import { slugify } from "@/utils";
+import type { StateCategory } from "@/types/states";
+import type { DetailedStory } from "@/modules/story/types";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
+import { SprintsMenu } from "@/components/ui";
+import { useMembers } from "@/lib/hooks/members";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 import { RowWrapper } from "../row-wrapper";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
@@ -24,22 +37,9 @@ import { DragHandle } from "./drag-handle";
 import { Labels } from "./labels";
 import { PrioritiesMenu } from "./priorities-menu";
 import { StatusesMenu } from "./statuses-menu";
-import { slugify } from "@/utils";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon, CloseIcon } from "icons";
-import { format, addDays, formatISO } from "date-fns";
-import { StateCategory } from "@/types/states";
-import { DetailedStory } from "@/modules/story/types";
-import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { useTeams } from "@/modules/teams/hooks/teams";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
-import { SprintsMenu } from "@/components/ui";
-import { useMembers } from "@/lib/hooks/members";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { ObjectivesMenu } from "./objectives-menu";
 import { getDueDateMessage } from "./due-date-tooltip";
 import { sprintTooltip } from "./sprint-tooltip";
-import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const {
@@ -74,7 +74,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
   );
   const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
   const selectedAssignee = members.find(
-    (member) => member.id === story?.assigneeId,
+    (member) => member.id === story.assigneeId,
   );
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
@@ -123,8 +123,8 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             )}
             <Link href={`/story/${id}/${slugify(title)}`}>
               <Text
-                fontWeight="medium"
                 className="line-clamp-1 hover:opacity-90"
+                fontWeight="medium"
               >
                 {title}
               </Text>
@@ -139,10 +139,10 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   </button>
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
-                  statusId={statusId}
                   setStatusId={(id) => {
                     handleUpdate({ statusId: id });
                   }}
+                  statusId={statusId}
                 />
               </StatusesMenu>
             )}
@@ -165,23 +165,22 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 />
               </PrioritiesMenu>
             )}
-            {isColumnVisible("Objective") && selectedObjective && (
-              <ObjectivesMenu>
+            {isColumnVisible("Objective") && selectedObjective ? <ObjectivesMenu>
                 <Tooltip
                   className="max-w-80 py-3"
                   title={
                     <Flex align="start" gap={2}>
                       <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
                       <Box>
-                        <Text fontSize="md" className="mb-1.5">
-                          {selectedObjective?.name}
+                        <Text className="mb-1.5" fontSize="md">
+                          {selectedObjective.name}
                         </Text>
                         <Text
-                          color="muted"
                           className="line-clamp-4"
+                          color="muted"
                           fontSize="md"
                         >
-                          {selectedObjective?.description}
+                          {selectedObjective.description}
                         </Text>
                       </Box>
                     </Flex>
@@ -190,15 +189,15 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   <span>
                     <ObjectivesMenu.Trigger>
                       <Button
-                        color="tertiary"
                         className="gap-1 px-2"
-                        size="xs"
+                        color="tertiary"
                         rounded="xl"
+                        size="xs"
                         type="button"
                       >
                         <ObjectiveIcon className="h-4" />
                         <span className="inline-block max-w-36 truncate">
-                          {selectedObjective?.name}
+                          {selectedObjective.name}
                         </span>
                       </Button>
                     </ObjectivesMenu.Trigger>
@@ -210,11 +209,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     handleUpdate({ objectiveId });
                   }}
                 />
-              </ObjectivesMenu>
-            )}
+              </ObjectivesMenu> : null}
 
-            {isColumnVisible("Sprint") && selectedSprint && (
-              <SprintsMenu>
+            {isColumnVisible("Sprint") && selectedSprint ? <SprintsMenu>
                 <Tooltip
                   className="pointer-events-none max-w-96 py-3"
                   title={sprintTooltip(selectedSprint)}
@@ -222,35 +219,33 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   <span>
                     <SprintsMenu.Trigger>
                       <Button
-                        color="tertiary"
                         className="gap-1 pl-1.5 pr-2"
-                        size="xs"
+                        color="tertiary"
                         rounded="xl"
+                        size="xs"
                         type="button"
                       >
                         <SprintsIcon className="relative -top-[0.3px] h-[1.1rem]" />
                         <span className="inline-block max-w-36 truncate">
-                          {selectedSprint?.name}
+                          {selectedSprint.name}
                         </span>
                       </Button>
                     </SprintsMenu.Trigger>
                   </span>
                 </Tooltip>
                 <SprintsMenu.Items
-                  sprintId={sprintId ?? undefined}
                   setSprintId={(sprintId) => {
                     handleUpdate({ sprintId });
                   }}
+                  sprintId={sprintId ?? undefined}
                 />
-              </SprintsMenu>
-            )}
+              </SprintsMenu> : null}
             {isColumnVisible("Labels") && storyLabels.length > 0 && (
-              <Labels storyLabels={storyLabels} storyId={id} teamId={teamId} />
+              <Labels storyId={id} storyLabels={storyLabels} teamId={teamId} />
             )}
             {isColumnVisible("Due date") &&
               endDate &&
-              !completedOrCancelled(status?.category) && (
-                <DatePicker>
+              !completedOrCancelled(status?.category) ? <DatePicker>
                   <Tooltip
                     className="py-3"
                     title={
@@ -271,7 +266,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     <span>
                       <DatePicker.Trigger>
                         <Button
-                          color="tertiary"
                           className={cn("px-2", {
                             "text-primary dark:text-primary":
                               new Date(endDate) < new Date(),
@@ -279,8 +273,9 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                               new Date(endDate) <= addDays(new Date(), 7) &&
                               new Date(endDate) >= new Date(),
                           })}
-                          size="xs"
+                          color="tertiary"
                           rounded="xl"
+                          size="xs"
                           type="button"
                         >
                           <CalendarIcon
@@ -299,13 +294,12 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     </span>
                   </Tooltip>
                   <DatePicker.Calendar
-                    selected={new Date(endDate)}
                     onDayClick={(day) => {
                       handleUpdate({ endDate: formatISO(day) });
                     }}
+                    selected={new Date(endDate)}
                   />
-                </DatePicker>
-              )}
+                </DatePicker> : null}
             {isColumnVisible("Created") && (
               <Tooltip
                 title={`Created on ${format(new Date(createdAt), "MMM dd, yyyy HH:mm")}`}
@@ -337,27 +331,27 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                       <Box>
                         <Flex gap={2}>
                           <Avatar
-                            name={selectedAssignee?.fullName}
-                            src={selectedAssignee?.avatarUrl}
                             className="mt-0.5"
+                            name={selectedAssignee.fullName}
+                            src={selectedAssignee.avatarUrl}
                           />
                           <Box>
                             <Link
-                              href={`/profile/${selectedAssignee?.id}`}
                               className="mb-2 flex gap-1"
+                              href={`/profile/${selectedAssignee.id}`}
                             >
-                              <Text fontWeight="medium" fontSize="md">
-                                {selectedAssignee?.fullName}
+                              <Text fontSize="md" fontWeight="medium">
+                                {selectedAssignee.fullName}
                               </Text>
                               <Text color="muted" fontSize="md">
-                                ({selectedAssignee?.username})
+                                ({selectedAssignee.username})
                               </Text>
                             </Link>
                             <Button
-                              size="xs"
-                              color="tertiary"
                               className="mb-0.5 ml-px px-2"
-                              href={`/profile/${selectedAssignee?.id}`}
+                              color="tertiary"
+                              href={`/profile/${selectedAssignee.id}`}
+                              size="xs"
                             >
                               Go to profile
                             </Button>

@@ -2,8 +2,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
-import { StoryStatusIcon } from "../story-status-icon";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { StoryStatusIcon } from "../story-status-icon";
 
 const StatusContext = createContext<{
   open: boolean;
@@ -21,7 +21,7 @@ export const useStatusMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useStatusMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -52,7 +52,7 @@ const Items = ({
   if (!statuses.length) return null;
   const state =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const { id: defaultStateId } = state!!;
+  const { id: defaultStateId } = state!;
   const { setOpen } = useStatusMenu();
 
   return (
@@ -60,8 +60,6 @@ const Items = ({
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Change status..."
-          value={query}
           onValueChange={(value) => {
             if (Number.parseInt(value) < statuses.length) {
               setStatusId(statuses[Number.parseInt(value)].id);
@@ -71,6 +69,8 @@ const Items = ({
             }
             setQuery(value);
           }}
+          placeholder="Change status..."
+          value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
@@ -80,15 +80,15 @@ const Items = ({
           {statuses.map(({ id, name }, idx) => (
             <Command.Item
               active={id === defaultStateId}
-              value={name}
+              className="justify-between"
+              key={id}
               onSelect={() => {
                 if (id !== defaultStateId) {
                   setStatusId(id);
                 }
                 setOpen(false);
               }}
-              className="justify-between"
-              key={id}
+              value={name}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <StoryStatusIcon statusId={id} />

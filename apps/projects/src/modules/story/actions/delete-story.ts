@@ -1,7 +1,7 @@
 "use server";
 
-import { remove } from "@/lib/http";
 import { revalidateTag } from "next/cache";
+import { remove } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
 
 export const deleteStoryAction = async (storyId: string) => {

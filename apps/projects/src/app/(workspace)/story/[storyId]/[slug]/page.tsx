@@ -1,10 +1,10 @@
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { getQueryClient } from "@/app/get-query-client";
 import { storyKeys } from "@/modules/stories/constants";
 import { StoryPage } from "@/modules/story";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
 import { getStory } from "@/modules/story/queries/get-story";
-import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Story",

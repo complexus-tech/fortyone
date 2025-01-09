@@ -1,12 +1,12 @@
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Dialog } from "ui";
-import { useStoryComments } from "@/modules/story/hooks/story-comments";
-import { useMembers } from "@/lib/hooks/members";
-import { Comment } from "@/types";
 import Link from "next/link";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
 import { useState } from "react";
+import type { Comment } from "@/types";
+import { useMembers } from "@/lib/hooks/members";
+import { useStoryComments } from "@/modules/story/hooks/story-comments";
 import { CommentInput } from "@/modules/story/components/comment-input";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
 
@@ -54,45 +54,43 @@ const MainComment = ({
         className,
       )}
     >
-      <Flex align="center" gap={1} className="group">
+      <Flex align="center" className="group" gap={1}>
         <Tooltip
           className="py-2.5"
           title={
-            member && (
-              <Box>
+            member ? <Box>
                 <Flex gap={2}>
                   <Avatar
-                    name={member?.fullName}
-                    src={member?.avatarUrl}
                     className="mt-0.5"
+                    name={member.fullName}
+                    src={member.avatarUrl}
                   />
                   <Box>
                     <Link
-                      href={`/profile/${member?.id}`}
                       className="mb-2 flex gap-1"
+                      href={`/profile/${member.id}`}
                     >
-                      <Text fontWeight="medium" fontSize="md">
-                        {member?.fullName}
+                      <Text fontSize="md" fontWeight="medium">
+                        {member.fullName}
                       </Text>
                       <Text color="muted" fontSize="md">
-                        ({member?.username})
+                        ({member.username})
                       </Text>
                     </Link>
                     <Button
-                      size="xs"
-                      color="tertiary"
                       className="mb-0.5 ml-px px-2"
-                      href={`/profile/${member?.id}`}
+                      color="tertiary"
+                      href={`/profile/${member.id}`}
+                      size="xs"
                     >
                       Go to profile
                     </Button>
                   </Box>
                 </Flex>
-              </Box>
-            )
+              </Box> : null
           }
         >
-          <Flex gap={1} className="cursor-pointer">
+          <Flex className="cursor-pointer" gap={1}>
             <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
                 name={member?.fullName}
@@ -118,11 +116,11 @@ const MainComment = ({
           align="center"
           className="pointer-events-none ml-2 gap-2.5 opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
         >
-          <button title="Edit" onClick={() => setIsEditing(true)}>
+          <button onClick={() => { setIsEditing(true); }} title="Edit">
             <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Edit</span>
           </button>
-          <button title="Delete" onClick={() => setIsOpen(true)}>
+          <button onClick={() => { setIsOpen(true); }} title="Delete">
             <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Delete</span>
           </button>
@@ -139,47 +137,43 @@ const MainComment = ({
         <Box className="mt-2">
           {subComments.map((subComment) => (
             <MainComment
-              key={subComment.id}
-              storyId={storyId}
               comment={subComment}
               isSubComment
+              key={subComment.id}
+              storyId={storyId}
             />
           ))}
         </Box>
       )}
       {!isSubComment && !isReplying && !isEditing && (
         <Button
-          size="sm"
-          color="tertiary"
           className="ml-10 mt-3 px-2"
+          color="tertiary"
           leftIcon={<ReplyIcon className="h-4" />}
-          onClick={() => setIsReplying(true)}
+          onClick={() => { setIsReplying(true); }}
+          size="sm"
         >
           Reply
         </Button>
       )}
-      {isReplying && (
-        <Box className="mt-3 pl-[2.4rem] pr-1">
+      {isReplying ? <Box className="mt-3 pl-[2.4rem] pr-1">
           <CommentInput
             className="mb-2 min-h-[3rem] focus-within:shadow-none"
-            storyId={storyId}
+            onCancel={handleCancel}
             parentId={id}
-            onCancel={handleCancel}
+            storyId={storyId}
           />
-        </Box>
-      )}
+        </Box> : null}
 
-      {isEditing && (
-        <Box className="mt-3 pl-8 pr-1">
+      {isEditing ? <Box className="mt-3 pl-8 pr-1">
           <CommentInput
             className="mb-2 min-h-[3rem] focus-within:shadow-none"
-            storyId={storyId}
-            onCancel={handleCancel}
-            initialComment={comment}
             commentId={id}
+            initialComment={comment}
+            onCancel={handleCancel}
+            storyId={storyId}
           />
-        </Box>
-      )}
+        </Box> : null}
 
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content>
@@ -194,7 +188,7 @@ const MainComment = ({
                 ? "This comment will be permanently deleted."
                 : "This comment will be permanently deleted and all replies will be deleted."}
             </Text>
-            <Flex align="center" gap={2} justify="end" className="mt-4">
+            <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
                 color="tertiary"
                 onClick={() => {
@@ -225,7 +219,7 @@ export const Comments = ({ storyId }: { storyId: string }) => {
   return (
     <Box>
       {comments.map((comment) => (
-        <MainComment key={comment.id} comment={comment} storyId={storyId} />
+        <MainComment comment={comment} key={comment.id} storyId={storyId} />
       ))}
     </Box>
   );

@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
-import { DetailedStory } from "../types";
+import type { Story } from "@/modules/stories/types";
+import type { DetailedStory } from "../types";
 import { updateStoryAction } from "../actions/update-story";
-import { Story } from "@/modules/stories/types";
 
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -21,7 +21,7 @@ export const useUpdateStoryMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
     },

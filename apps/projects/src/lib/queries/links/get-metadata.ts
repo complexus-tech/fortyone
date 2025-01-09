@@ -1,7 +1,7 @@
 "use server";
+import ky from "ky";
 import { linkTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import ky from "ky";
 
 export type LinkMetadata = {
   title?: string;

@@ -7,8 +7,8 @@ import {
   ArrowDownIcon,
   SprintsIcon,
 } from "icons";
-import { HeaderContainer } from "@/components/shared";
 import { useParams } from "next/navigation";
+import { HeaderContainer } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { TeamColor } from "@/components/ui";
 

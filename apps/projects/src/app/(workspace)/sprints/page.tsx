@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { getRunningSprints } from "@/lib/queries/sprints/get-running-sprints";
 import { DetailedSprintList } from "@/modules/sprints";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Sprints",

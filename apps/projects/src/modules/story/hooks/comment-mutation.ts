@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
+import type { Comment } from "@/types";
 import { commentStoryAction } from "../actions/comment-story";
-import { Comment } from "@/types";
 
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -19,15 +19,15 @@ export const useCommentStoryMutation = () => {
       };
     }) =>
       commentStoryAction(storyId, {
-        comment: payload?.comment,
-        parentId: payload?.parentId,
+        comment: payload.comment,
+        parentId: payload.parentId,
       }),
     onError: (_, variables) => {
       toast.error("Failed to comment story", {
         description: "Your comment was not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
     },
@@ -40,7 +40,7 @@ export const useCommentStoryMutation = () => {
           id: "new comment",
           userId: "",
           comment: payload.comment,
-          storyId: storyId,
+          storyId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           parentId: payload.parentId ?? null,
@@ -64,7 +64,7 @@ export const useCommentStoryMutation = () => {
     },
     onSettled: (_, __, { storyId }) => {
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(storyId!),
+        queryKey: storyKeys.comments(storyId),
       });
     },
   });

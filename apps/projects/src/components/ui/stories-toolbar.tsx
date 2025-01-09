@@ -1,14 +1,14 @@
 "use client";
 import { Button, Flex, Text, Tooltip, Dialog, Command, Divider, Box } from "ui";
 import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
-import { useBoard } from "./board-context";
 import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
-import { StoryPriority } from "@/modules/stories/types";
+import type { StoryPriority } from "@/modules/stories/types";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useBoard } from "./board-context";
 
 export const StoriesToolbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,24 +64,24 @@ export const StoriesToolbar = () => {
         </Text>
         <Button
           color="tertiary"
-          title="This is not available yet"
           disabled
+          leftIcon={<SprintsIcon className="h-[1.15rem]" />}
           onClick={() => {
             setIsSprintsOpen(true);
           }}
-          leftIcon={<SprintsIcon className="h-[1.15rem]" />}
+          title="This is not available yet"
           variant="outline"
         >
           Add to sprint
         </Button>
         <Button
-          title="This is not available yet"
-          disabled
           color="tertiary"
+          disabled
+          leftIcon={<ObjectiveIcon className="h-[1.15rem]" />}
           onClick={() => {
             setIsObjectivesOpen(true);
           }}
-          leftIcon={<ObjectiveIcon className="h-[1.15rem]" />}
+          title="This is not available yet"
           variant="outline"
         >
           Add to objective
@@ -112,7 +112,7 @@ export const StoriesToolbar = () => {
               permanently deleted after 30 days. You can restore them at any
               time before that.
             </Text>
-            <Flex align="center" gap={2} justify="end" className="mt-4">
+            <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
                 color="tertiary"
                 onClick={() => {
@@ -156,12 +156,12 @@ export const StoriesToolbar = () => {
               <Command.Group className="px-0">
                 {sprints.map(({ id, name }, idx) => (
                   <Command.Item
-                    value={name}
+                    className="justify-between py-2.5"
+                    key={id}
                     onSelect={() => {
                       setIsSprintsOpen(false);
                     }}
-                    className="justify-between py-2.5"
-                    key={id}
+                    value={name}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center">
                       <SprintsIcon />
@@ -192,7 +192,7 @@ export const StoriesToolbar = () => {
               permanently deleted after 30 days. You can restore them at any
               time before that.
             </Text>
-            <Flex align="center" gap={2} justify="end" className="mt-4">
+            <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
                 color="tertiary"
                 onClick={() => {

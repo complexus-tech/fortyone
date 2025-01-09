@@ -24,10 +24,10 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useTheme } from "next-themes";
 import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { logOut } from "./actions";
-import { useTheme } from "next-themes";
 
 export const Header = () => {
   const pathname = usePathname();
@@ -123,28 +123,28 @@ export const Header = () => {
                 <Menu.SubItems className="rounded-xl pt-1.5 md:w-48">
                   <Menu.Group>
                     <Menu.Item
+                      active={theme === "light"}
                       onSelect={() => {
                         setTheme("light");
                       }}
-                      active={theme === "light"}
                     >
                       <SunIcon className="h-[1.15rem]" />
                       Light mode
                     </Menu.Item>
                     <Menu.Item
+                      active={theme === "dark"}
                       onSelect={() => {
                         setTheme("dark");
                       }}
-                      active={theme === "dark"}
                     >
                       <MoonIcon className="h-[1.15rem]" />
                       Dark mode
                     </Menu.Item>
                     <Menu.Item
+                      active={theme === "system"}
                       onSelect={() => {
                         setTheme("system");
                       }}
-                      active={theme === "system"}
                     >
                       <SystemIcon className="h-[1.15rem]" />
                       System default
@@ -183,18 +183,18 @@ export const Header = () => {
           </Menu.Items>
         </Menu>
       </Flex>
-      <Flex gap={2} className="mb-4">
+      <Flex className="mb-4" gap={2}>
         <Button
           className="rounded-[0.6rem] md:h-[2.5rem]"
-          fullWidth
           color="tertiary"
-          variant="outline"
+          fullWidth
           leftIcon={
             <NewStoryIcon className="h-5 w-auto text-gray dark:text-gray-300" />
           }
           onClick={() => {
             setIsOpen(!isOpen);
           }}
+          variant="outline"
         >
           Create Story
         </Button>

@@ -5,12 +5,12 @@ import { cn } from "lib";
 import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
+import type { State } from "@/types/states";
+import { useBoard } from "@/components/ui/board-context";
+import type { Member } from "@/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
-import { State } from "@/types/states";
-import { useBoard } from "@/components/ui/board-context";
-import { Member } from "@/types";
 
 type StoryHeaderProps = {
   status?: State;
@@ -52,8 +52,8 @@ export const StoriesHeader = ({
       <Flex align="center" justify="between">
         <Flex align="center" className="relative gap-1.5">
           <Checkbox
-            className="absolute -left-[1.6rem] rounded-[0.35rem]"
             checked={groupedStories.every((s) => selectedStories.includes(s))}
+            className="absolute -left-[1.6rem] rounded-[0.35rem]"
             onCheckedChange={(checked) => {
               if (checked) {
                 setSelectedStories(
@@ -88,18 +88,18 @@ export const StoriesHeader = ({
             {groupBy === "Assignee" && (
               <Flex align="center" className="gap-1.5">
                 <Avatar
-                  name={assignee?.fullName}
-                  size="xs"
                   className={cn({
                     "text-black dark:text-white": !assignee?.fullName,
                   })}
+                  name={assignee?.fullName}
+                  size="xs"
                   src={assignee?.avatarUrl}
                 />
                 <Text
-                  fontWeight="medium"
                   className={cn("relative -top-[1px]", {
                     "top-[0px]": !assignee?.fullName,
                   })}
+                  fontWeight="medium"
                 >
                   {assignee?.username || "Unassigned"}
                 </Text>
@@ -132,7 +132,6 @@ export const StoriesHeader = ({
           <Tooltip side="top" title="New Story">
             <Button
               color="tertiary"
-              variant="outline"
               leftIcon={
                 <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
               }
@@ -140,6 +139,7 @@ export const StoriesHeader = ({
                 setIsOpen(true);
               }}
               size="sm"
+              variant="outline"
             >
               <span className="sr-only">New Story</span>
             </Button>
@@ -147,11 +147,11 @@ export const StoriesHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
+        assigneeId={assignee?.id || null}
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
         statusId={status?.id}
-        assigneeId={assignee?.id || null}
       />
     </Container>
   );

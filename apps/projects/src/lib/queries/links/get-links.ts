@@ -1,7 +1,7 @@
 "use server";
 import { linkTags } from "@/constants/keys";
 import { get } from "@/lib/http";
-import { ApiResponse, Link } from "@/types";
+import type { ApiResponse, Link } from "@/types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 
 export const getLinks = async (storyId: string) => {

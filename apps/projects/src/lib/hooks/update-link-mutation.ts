@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { linkKeys } from "@/constants/keys";
-import { Link } from "@/types";
-import { UpdateLink, updateLinkAction } from "../actions/links/update-link";
+import type { Link } from "@/types";
+import type { UpdateLink} from "../actions/links/update-link";
+import { updateLinkAction } from "../actions/links/update-link";
 
 export const useUpdateLinkMutation = () => {
   const queryClient = useQueryClient();
@@ -22,7 +23,7 @@ export const useUpdateLinkMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
       queryClient.invalidateQueries({
@@ -38,7 +39,7 @@ export const useUpdateLinkMutation = () => {
           link.id === newLink.linkId ? { ...link, ...newLink.payload } : link,
         );
         queryClient.setQueryData<Link[]>(
-          linkKeys.story(newLink?.storyId as string),
+          linkKeys.story(newLink.storyId),
           updatedLinks,
         );
       }

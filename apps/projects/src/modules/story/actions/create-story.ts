@@ -1,10 +1,10 @@
 "use server";
 
-import { post } from "@/lib/http";
-import { DetailedStory, NewStory } from "../types";
 import { revalidateTag } from "next/cache";
+import { post } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
-import { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types";
+import type { DetailedStory, NewStory } from "../types";
 
 export const createStoryAction = async (newStory: NewStory) => {
   const story = await post<NewStory, ApiResponse<DetailedStory>>(

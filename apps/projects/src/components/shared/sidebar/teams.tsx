@@ -1,8 +1,8 @@
 "use client";
 import { Box, Flex, Text } from "ui";
-import { Team } from "./team";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import { TeamIcon } from "icons";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { Team } from "./team";
 
 export const Teams = () => {
   const { data: teams = [] } = useTeams();
@@ -19,6 +19,7 @@ export const Teams = () => {
       <Flex direction="column" gap={1}>
         {teams.map(({ id, icon, name, color }) => (
           <Team
+            color={color}
             icon={
               <Box className="flex w-6 items-center justify-center rounded-xl text-lg">
                 {icon || "🌟"}
@@ -27,7 +28,6 @@ export const Teams = () => {
             id={id}
             key={id}
             name={name}
-            color={color}
           />
         ))}
       </Flex>

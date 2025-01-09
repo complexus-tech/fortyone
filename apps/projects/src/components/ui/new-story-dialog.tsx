@@ -32,25 +32,26 @@ import {
   PlusIcon,
   TagsIcon,
 } from "icons";
-import type { StoryPriority } from "@/modules/stories/types";
-import { StatusesMenu } from "./story/statuses-menu";
-import { StoryStatusIcon } from "./story-status-icon";
-import { PrioritiesMenu } from "./story/priorities-menu";
-import { PriorityIcon } from "./priority-icon";
-import { NewStory } from "@/modules/story/types";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
-import { useLocalStorage } from "@/hooks";
-import { Team } from "@/modules/teams/types";
 import { useSession } from "next-auth/react";
+import { useLocalStorage } from "@/hooks";
+import type { Team } from "@/modules/teams/types";
+import type { NewStory } from "@/modules/story/types";
+import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { PriorityIcon } from "./priority-icon";
+import { PrioritiesMenu } from "./story/priorities-menu";
+import { StoryStatusIcon } from "./story-status-icon";
+import { StatusesMenu } from "./story/statuses-menu";
 import { TeamColor } from "./team-color";
+
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
@@ -73,11 +74,11 @@ export const NewStoryDialog = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
-    teams.at(0)!!,
+    teams.at(0)!,
   );
   const { id: defaultStateId } = (statuses.find(
     (state) => state.id === statusId,
-  ) || statuses.at(0))!!;
+  ) || statuses.at(0))!;
 
   const initialForm: NewStory = {
     title: "",
@@ -144,7 +145,7 @@ export const NewStoryDialog = ({
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
-      reporterId: session?.data?.user?.id,
+      reporterId: session.data?.user?.id,
       assigneeId: storyForm.assigneeId,
     };
 
@@ -185,27 +186,27 @@ export const NewStoryDialog = ({
             <Menu>
               <Menu.Button>
                 <Button
-                  size="xs"
                   className="gap-1.5 font-semibold tracking-wide"
-                  leftIcon={<TeamColor color={activeTeam.color} />}
                   color="tertiary"
+                  leftIcon={<TeamColor color={activeTeam.color} />}
+                  size="xs"
                 >
                   {activeTeam.code}
                 </Button>
               </Menu.Button>
-              <Menu.Items className="w-52" align="start">
+              <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
                       active={team.id === activeTeam.id}
+                      className="justify-between gap-3"
+                      key={team.id}
                       onClick={() => {
                         setActiveTeam(team);
                       }}
-                      className="justify-between gap-3"
-                      key={team.id}
                     >
                       <span className="flex items-center gap-1.5">
-                        <TeamColor color={team?.color} className="shrink-0" />
+                        <TeamColor className="shrink-0" color={team.color} />
                         <span className="block truncate">{team.name}</span>
                       </span>
                       {team.id === activeTeam.id && (
@@ -224,11 +225,11 @@ export const NewStoryDialog = ({
               <Button
                 className="px-[0.35rem] dark:hover:bg-dark-100"
                 color="tertiary"
-                size="xs"
-                variant="naked"
                 onClick={() => {
                   setIsExpanded((prev) => !prev);
                 }}
+                size="xs"
+                variant="naked"
               >
                 {isExpanded ? (
                   <MinimizeIcon className="h-[1.2rem] w-auto" />
@@ -250,10 +251,10 @@ export const NewStoryDialog = ({
             editor={titleEditor}
           />
           <TextEditor
-            editor={editor}
             className={cn({
               "min-h-96": isExpanded,
             })}
+            editor={editor}
           />
           <Flex className="mt-4" gap={1}>
             <StatusesMenu>
@@ -277,10 +278,10 @@ export const NewStoryDialog = ({
                 </Button>
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
-                statusId={storyForm.statusId}
                 setStatusId={(statusId) => {
                   setStoryForm((prev) => ({ ...prev, statusId }));
                 }}
+                statusId={storyForm.statusId}
               />
             </StatusesMenu>
             <PrioritiesMenu>
@@ -314,19 +315,17 @@ export const NewStoryDialog = ({
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
-                    storyForm.startDate && (
-                      <CloseIcon
-                        role="button"
+                    storyForm.startDate ? <CloseIcon
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
                         onClick={() => {
                           setStoryForm((prev) => ({
                             ...prev,
                             startDate: null,
                           }));
                         }}
-                        aria-label="Remove date"
-                        className="h-4 w-auto"
-                      />
-                    )
+                        role="button"
+                      /> : null
                   }
                   size="xs"
                   variant="outline"
@@ -357,16 +356,14 @@ export const NewStoryDialog = ({
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
-                    storyForm.endDate && (
-                      <CloseIcon
-                        role="button"
+                    storyForm.endDate ? <CloseIcon
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
                         onClick={() => {
                           setStoryForm((prev) => ({ ...prev, endDate: null }));
                         }}
-                        aria-label="Remove date"
-                        className="h-4 w-auto"
-                      />
-                    )
+                        role="button"
+                      /> : null
                   }
                   size="xs"
                   variant="outline"
@@ -438,18 +435,18 @@ export const NewStoryDialog = ({
             <label className="flex items-center gap-2" htmlFor="more">
               Create more{" "}
               <Switch
-                id="more"
                 checked={createMore}
+                id="more"
                 onCheckedChange={setCreateMore}
               />
             </label>
           </Text>
           <Button
             leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
-            size="md"
-            onClick={handleCreateStory}
             loading={loading}
             loadingText="Creating story..."
+            onClick={handleCreateStory}
+            size="md"
           >
             Create story
           </Button>

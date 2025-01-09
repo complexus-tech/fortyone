@@ -4,7 +4,7 @@ import { Box, Container, Flex, Tabs, Text } from "ui";
 import { DocsIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
 import { DocumentRow, Header } from "./components";
-import { DocumentModel } from "./types";
+import type { DocumentModel } from "./types";
 
 export const DocumentsPage = ({
   documents,

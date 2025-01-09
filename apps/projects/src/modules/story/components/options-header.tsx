@@ -1,14 +1,14 @@
 "use client";
 import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, LinkIcon, UndoIcon } from "icons";
-import { useCopyToClipboard } from "@/hooks";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useCopyToClipboard } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
-import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
+import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 
 export const OptionsHeader = () => {
   const params = useParams<{ storyId: string }>();
@@ -17,8 +17,8 @@ export const OptionsHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
-  const { code } = teams.find((team) => team.id === teamId)!!;
-  const isDeleted = !!deletedAt;
+  const { code } = teams.find((team) => team.id === teamId)!;
+  const isDeleted = Boolean(deletedAt);
   const { mutateAsync: deleteAsync } = useDeleteStoryMutation();
   const { mutateAsync } = useRestoreStoryMutation();
 
@@ -36,22 +36,22 @@ export const OptionsHeader = () => {
   return (
     <>
       <Container className="flex h-16 w-full items-center justify-between md:px-6">
-        <Text color="muted" transform="uppercase" fontWeight="semibold">
+        <Text color="muted" fontWeight="semibold" transform="uppercase">
           {code}-{sequenceId}
         </Text>
         <Flex gap={2}>
           <Tooltip title="Copy Story Link">
             <Button
               color="tertiary"
-              suppressHydrationWarning
               leftIcon={<LinkIcon className="-rotate-45" strokeWidth={2.5} />}
-              variant="naked"
               onClick={async () => {
                 await copyText(window.location.href);
                 toast.info("Success", {
                   description: "Link copied to clipboard",
                 });
               }}
+              suppressHydrationWarning
+              variant="naked"
             >
               <span className="sr-only">Copy story link</span>
             </Button>
@@ -60,13 +60,13 @@ export const OptionsHeader = () => {
             <Button
               color="tertiary"
               leftIcon={<CopyIcon />}
-              variant="naked"
               onClick={async () => {
                 await copyText(id);
                 toast.info("Success", {
                   description: "Story ID copied to clipboard",
                 });
               }}
+              variant="naked"
             >
               <span className="sr-only">Copy story id</span>
             </Button>
@@ -75,8 +75,8 @@ export const OptionsHeader = () => {
             <Tooltip title="Restore Story">
               <Button
                 color="tertiary"
-                onClick={restoreStory}
                 leftIcon={<UndoIcon />}
+                onClick={restoreStory}
                 variant="naked"
               >
                 <span className="sr-only">Restore story</span>
@@ -86,10 +86,10 @@ export const OptionsHeader = () => {
             <Tooltip title="Delete Story">
               <Button
                 color="tertiary"
+                leftIcon={<DeleteIcon />}
                 onClick={() => {
                   setIsOpen(true);
                 }}
-                leftIcon={<DeleteIcon />}
                 variant="naked"
               >
                 <span className="sr-only">Delete story</span>
@@ -111,7 +111,7 @@ export const OptionsHeader = () => {
               permanently deleted after 30 days. You can restore it at any time
               before that.
             </Text>
-            <Flex align="center" gap={2} justify="end" className="mt-4">
+            <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
                 color="tertiary"
                 onClick={() => {

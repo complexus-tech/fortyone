@@ -1,6 +1,7 @@
 "use client";
 import { BreadCrumbs, Flex, Badge } from "ui";
 import { StoryIcon, UserIcon } from "icons";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -9,9 +10,8 @@ import {
   SideDetailsSwitch,
   NewStoryButton,
 } from "@/components/ui";
-import { useMyWork } from "./provider";
 import { useMyStories } from "../hooks/my-stories";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { useMyWork } from "./provider";
 
 export const Header = ({
   isExpanded,

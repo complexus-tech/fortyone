@@ -1,5 +1,5 @@
-import { getStories } from "@/modules/stories/queries/get-stories";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { getStories } from "@/modules/stories/queries/get-stories";
 import { storyKeys, storyTags } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 import { DURATION_FROM_SECONDS } from "@/constants/time";

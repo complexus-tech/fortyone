@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Comment } from "@/types";
-import { deleteCommentAction } from "../actions/comments/delete-comment";
+import type { Comment } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
+import { deleteCommentAction } from "../actions/comments/delete-comment";
 
 export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
@@ -20,7 +20,7 @@ export const useDeleteCommentMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
       queryClient.invalidateQueries({

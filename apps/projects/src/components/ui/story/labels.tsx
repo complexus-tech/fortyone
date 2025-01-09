@@ -1,9 +1,9 @@
-import { useLabels } from "@/lib/hooks/labels";
 import { Badge, Flex, Tooltip } from "ui";
-import { StoryLabel } from "../label";
 import { TagsIcon } from "icons";
+import { useLabels } from "@/lib/hooks/labels";
 import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 import { LabelsMenu } from "@/components/ui";
+import { StoryLabel } from "../label";
 
 export const Labels = ({
   storyLabels = [],
@@ -34,11 +34,11 @@ export const Labels = ({
             </span>
           </LabelsMenu.Trigger>
           <LabelsMenu.Items
-            teamId={teamId}
             labelIds={storyLabels}
             setLabelIds={(labelIds) => {
               handleUpdateLabels(labelIds);
             }}
+            teamId={teamId}
           />
         </LabelsMenu>
       ))}
@@ -47,7 +47,7 @@ export const Labels = ({
           title={
             <Flex className="min-w-28" direction="column" gap={2}>
               {remainingLabels.map((label) => (
-                <Flex key={label.id} align="center" gap={1}>
+                <Flex align="center" gap={1} key={label.id}>
                   <TagsIcon className="h-4" style={{ color: label.color }} />
                   {label.name}
                 </Flex>
@@ -59,9 +59,9 @@ export const Labels = ({
             <LabelsMenu>
               <LabelsMenu.Trigger>
                 <Badge
-                  rounded="xl"
-                  color="tertiary"
                   className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+                  color="tertiary"
+                  rounded="xl"
                 >
                   <TagsIcon
                     className="h-4"
@@ -72,11 +72,11 @@ export const Labels = ({
                 </Badge>
               </LabelsMenu.Trigger>
               <LabelsMenu.Items
-                teamId={teamId}
                 labelIds={storyLabels}
                 setLabelIds={(labelIds) => {
                   handleUpdateLabels(labelIds);
                 }}
+                teamId={teamId}
               />
             </LabelsMenu>
           </span>

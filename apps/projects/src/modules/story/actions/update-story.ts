@@ -1,9 +1,9 @@
 "use server";
 
-import { patch } from "@/lib/http";
 import { revalidateTag } from "next/cache";
-import { DetailedStory } from "../types";
+import { patch } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
+import type { DetailedStory } from "../types";
 
 export const updateStoryAction = async (
   storyId: string,

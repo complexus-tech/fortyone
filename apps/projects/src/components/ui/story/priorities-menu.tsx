@@ -1,6 +1,7 @@
 "use client";
 import { Box, Command, Flex, Popover, Text, Divider } from "ui";
-import { ReactNode, createContext, useContext, useState } from "react";
+import type { ReactNode} from "react";
+import { createContext, useContext, useState } from "react";
 import { CheckIcon } from "icons";
 import type { StoryPriority } from "@/modules/stories/types";
 import { PriorityIcon } from "../priority-icon";
@@ -21,7 +22,7 @@ export const usePriorityMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = usePriorityMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -63,15 +64,15 @@ const Items = ({
           {priorities.map((pr, idx) => (
             <Command.Item
               active={pr === priority}
-              value={pr}
+              className="justify-between"
+              key={pr}
               onSelect={() => {
                 if (pr !== priority) {
                   setPriority(pr);
                 }
                 setOpen(false);
               }}
-              className="justify-between"
-              key={pr}
+              value={pr}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <PriorityIcon priority={pr} />

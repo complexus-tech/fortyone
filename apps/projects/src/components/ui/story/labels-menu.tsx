@@ -3,9 +3,9 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Button, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, PlusIcon } from "icons";
 import { useLabels } from "@/lib/hooks/labels";
-import { Dot } from "../dot";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
 import { generateRandomColor } from "@/utils";
+import { Dot } from "../dot";
 
 const LabelsContext = createContext<{
   open: boolean;
@@ -23,7 +23,7 @@ export const useLabelsMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useLabelsMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -56,7 +56,7 @@ const Items = ({
   const { mutateAsync: createLabel } = useCreateLabelMutation();
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter(
-    (label) => label?.teamId === teamId || label?.teamId === null,
+    (label) => label.teamId === teamId || label.teamId === null,
   );
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,18 +85,18 @@ const Items = ({
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Update labels..."
-          value={query}
           onValueChange={(value) => {
             setQuery(value);
           }}
+          placeholder="Update labels..."
+          value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="justify-center px-1 py-0">
           <Button
+            className="mx-0 border-0 text-base font-medium"
             color="tertiary"
             fullWidth
-            className="mx-0 border-0 text-base font-medium"
             loading={isLoading}
             loadingText="Creating label..."
             onClick={handleCreateLabel}
@@ -110,25 +110,23 @@ const Items = ({
         <Command.Group>
           {labels.map(({ id, name, color }) => (
             <Command.Item
-              value={name}
+              className="justify-between gap-4"
+              key={id}
               onSelect={() => {
-                if (!labelIds?.includes(id)) {
+                if (!labelIds.includes(id)) {
                   setLabelIds([...labelIds, id]);
                 } else {
                   setLabelIds(labelIds.filter((labelId) => labelId !== id));
                 }
               }}
-              className="justify-between gap-4"
-              key={id}
+              value={name}
             >
-              <Flex gap={2} align="center">
+              <Flex align="center" gap={2}>
                 <Dot color={color} />
                 <Text className="mr-4 flex items-center gap-3">{name}</Text>
               </Flex>
               <Flex align="center" gap={1}>
-                {labelIds?.includes(id) && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
+                {labelIds.includes(id) ? <CheckIcon className="h-5 w-auto" strokeWidth={2.1} /> : null}
               </Flex>
             </Command.Item>
           ))}

@@ -1,5 +1,5 @@
-import { storyKeys } from "@/modules/stories/constants";
 import { useQuery } from "@tanstack/react-query";
+import { storyKeys } from "@/modules/stories/constants";
 import { getStoryComments } from "../queries/get-comments";
 
 export const useStoryComments = (id: string) => {

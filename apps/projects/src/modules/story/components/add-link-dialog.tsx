@@ -1,10 +1,11 @@
 import { Button, Flex, Text, Dialog, Input } from "ui";
 import { PlusIcon } from "icons";
-import { useCreateLinkMutation } from "@/lib/hooks/create-link-mutation";
-import { ChangeEvent, FormEvent, useState } from "react";
-import { NewLink } from "@/lib/actions/links/create-link";
-import { Link } from "@/types";
+import type { ChangeEvent, FormEvent} from "react";
+import { useState } from "react";
 import { cn } from "lib";
+import { useCreateLinkMutation } from "@/lib/hooks/create-link-mutation";
+import type { NewLink } from "@/lib/actions/links/create-link";
+import type { Link } from "@/types";
 import { useUpdateLinkMutation } from "@/lib/hooks/update-link-mutation";
 
 export const AddLinkDialog = ({
@@ -25,7 +26,7 @@ export const AddLinkDialog = ({
     title: link?.title || "",
     storyId,
   });
-  const isEditing = !!link;
+  const isEditing = Boolean(link);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -66,39 +67,39 @@ export const AddLinkDialog = ({
             <Input
               label="URL"
               name="url"
-              value={form.url}
               onChange={handleChange}
               placeholder="https://..."
               required
               type="url"
+              value={form.url}
             />
             <Input
               label="Title"
               name="title"
-              value={form.title}
               onChange={handleChange}
               placeholder="Enter title..."
+              value={form.title}
             />
             <Flex align="center" className="mt-2" gap={2} justify="end">
               <Button
                 color="tertiary"
-                type="button"
                 onClick={() => {
                   setIsOpen(false);
                 }}
+                type="button"
                 variant="outline"
               >
                 Cancel
               </Button>
               <Button
+                className={cn({
+                  "px-4": isEditing,
+                })}
                 leftIcon={
                   isEditing ? null : (
                     <PlusIcon className="text-white dark:text-gray-200" />
                   )
                 }
-                className={cn({
-                  "px-4": isEditing,
-                })}
                 type="submit"
               >
                 {isEditing ? "Update" : "Add link"}

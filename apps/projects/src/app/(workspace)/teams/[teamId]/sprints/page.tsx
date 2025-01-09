@@ -12,5 +12,5 @@ export default async function Page(props: {
 
   const sprints = await getTeamSprints(teamId);
 
-  return <SprintsList sprints={sprints?.data!} />;
+  return <SprintsList sprints={sprints.data!} />;
 }

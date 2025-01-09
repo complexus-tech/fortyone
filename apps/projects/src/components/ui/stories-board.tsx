@@ -4,22 +4,23 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { StoryMissingIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
 } from "@/components/ui/stories-view-options-button";
+import type { DetailedStory } from "@/modules/story/types";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
+import { NewStoryButton } from "@/components/ui";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
 import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
-import { DetailedStory } from "@/modules/story/types";
-import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { StoryMissingIcon } from "icons";
-import { NewStoryButton } from "@/components/ui";
-import { useTeams } from "@/modules/teams/hooks/teams";
+
 export type StoriesLayout = "list" | "kanban" | null;
 
 const StoryOverlay = ({

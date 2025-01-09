@@ -37,7 +37,7 @@ export const getDueDateMessage = (date: Date) => {
     return (
       <>
         <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
-        <Text fontSize="md" color="muted">
+        <Text color="muted" fontSize="md">
           {isTomorrow(date) ? (
             "Due tomorrow"
           ) : (

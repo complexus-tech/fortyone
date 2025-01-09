@@ -24,7 +24,7 @@ import {
 } from "icons";
 import { useMembers } from "@/lib/hooks/members";
 import { useLocalStorage } from "@/hooks";
-import { Team } from "@/modules/teams/types";
+import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 
 export const NewObjectiveDialog = ({
@@ -38,7 +38,7 @@ export const NewObjectiveDialog = ({
   const { data: members = [] } = useMembers();
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
-    teams.at(0)!!,
+    teams.at(0)!,
   );
   const titleEditor = useEditor({
     extensions: [
@@ -71,24 +71,24 @@ export const NewObjectiveDialog = ({
             <Menu>
               <Menu.Button>
                 <Button
-                  size="xs"
                   className="gap-1 font-semibold tracking-wide"
-                  leftIcon={<span>{activeTeam.icon}</span>}
                   color="tertiary"
+                  leftIcon={<span>{activeTeam.icon}</span>}
+                  size="xs"
                 >
                   {activeTeam.code}
                 </Button>
               </Menu.Button>
-              <Menu.Items className="w-52" align="start">
+              <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
                       active={team.id === activeTeam.id}
+                      className="justify-between gap-3"
+                      key={team.id}
                       onClick={() => {
                         setActiveTeam(team);
                       }}
-                      className="justify-between gap-3"
-                      key={team.id}
                     >
                       <span className="flex items-center gap-1.5">
                         <span className="shrink-0">{team.icon}</span>

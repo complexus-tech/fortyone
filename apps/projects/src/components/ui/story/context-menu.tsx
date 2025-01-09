@@ -16,10 +16,10 @@ import {
   StarIcon,
   TagsIcon,
 } from "icons";
+import type { Story } from "@/modules/stories/types";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { ContextMenuItem } from "./context-menu-item";
-import { Story } from "@/modules/stories/types";
 
 export const contextMenu = [
   {

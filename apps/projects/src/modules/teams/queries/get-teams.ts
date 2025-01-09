@@ -1,8 +1,8 @@
 "use server";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { get } from "@/lib/http";
-import { Team } from "@/modules/teams/types";
-import { ApiResponse } from "@/types";
+import type { Team } from "@/modules/teams/types";
+import type { ApiResponse } from "@/types";
 
 export const getTeams = async () => {
   const teams = await get<ApiResponse<Team[]>>("teams", {
@@ -11,5 +11,5 @@ export const getTeams = async () => {
       tags: ["teams"],
     },
   });
-  return teams?.data;
+  return teams.data;
 };

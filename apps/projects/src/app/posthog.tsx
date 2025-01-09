@@ -1,7 +1,7 @@
 "use client";
 import posthog from "posthog-js";
 import { PostHogProvider as PostHogProviderPrimitive } from "posthog-js/react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 if (typeof window !== "undefined") {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {

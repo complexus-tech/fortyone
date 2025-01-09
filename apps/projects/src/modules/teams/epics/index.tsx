@@ -5,7 +5,7 @@ import { ArrowDownIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
 import { StoryStatusIcon } from "@/components/ui";
 import { EpicRow, Header } from "./components";
-import { Epic } from "./types";
+import type { Epic } from "./types";
 
 export const EpicsPage = ({ epics }: { epics: Epic[] }) => {
   return (

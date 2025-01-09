@@ -5,9 +5,9 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { Box, Tabs, Text } from "ui";
+import { ArrowUpDownIcon } from "icons";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import { ArrowUpDownIcon } from "icons";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useObjectiveOptions } from "@/modules/teams/objectives/stories/provider";
@@ -93,7 +93,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   );
 
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+    <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
           <Tabs.Tab value="all">All stories</Tabs.Tab>
@@ -101,8 +101,8 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>
         <Text
-          color="muted"
           className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
+          color="muted"
         >
           <ArrowUpDownIcon className="h-4 w-auto" />
           Ordering by <b className="capitalize">{viewOptions.orderBy}</b>

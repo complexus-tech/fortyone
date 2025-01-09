@@ -1,8 +1,8 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
 import { StoryIcon } from "icons";
+import { useParams } from "next/navigation";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
-import { useParams } from "next/navigation";
 
 export const Sidebar = () => {
   const { teamId } = useParams<{ teamId: string }>();

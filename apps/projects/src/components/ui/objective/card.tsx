@@ -1,11 +1,11 @@
 import { Flex, Text, Avatar, ProgressBar, Box } from "ui";
 import Link from "next/link";
 import { CalendarIcon, ObjectiveIcon } from "icons";
+import { format } from "date-fns";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { Objective } from "../../../modules/objectives/types";
-import { format } from "date-fns";
 import { useMembers } from "@/lib/hooks/members";
+import type { Objective } from "../../../modules/objectives/types";
 
 export const ObjectiveCard = ({
   id,

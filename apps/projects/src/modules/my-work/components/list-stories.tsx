@@ -1,11 +1,11 @@
 "use client";
 import { Box, Tabs } from "ui";
-import type { StoriesLayout } from "@/components/ui";
-import { StoriesBoard } from "@/components/ui";
-import { useMyWork } from "./provider";
-import { useMyStories } from "../hooks/my-stories";
 import { useSession } from "next-auth/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import type { StoriesLayout } from "@/components/ui";
+import { StoriesBoard } from "@/components/ui";
+import { useMyStories } from "../hooks/my-stories";
+import { useMyWork } from "./provider";
 
 export const ListStories = ({ layout }: { layout: StoriesLayout }) => {
   const { viewOptions } = useMyWork();
@@ -27,7 +27,7 @@ export const ListStories = ({ layout }: { layout: StoriesLayout }) => {
 
   return (
     <Box className="h-[calc(100vh-4rem)]">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+      <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
         <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>

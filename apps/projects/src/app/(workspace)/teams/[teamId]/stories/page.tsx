@@ -1,10 +1,10 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { ListStories } from "@/modules/teams/stories/list-stories";
 import { getStories } from "@/modules/stories/queries/get-stories";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { storyKeys, storyTags } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Stories",

@@ -20,7 +20,7 @@ export const useObjectivesMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useObjectivesMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -58,8 +58,6 @@ const Items = ({
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Change objective..."
-          value={query}
           onValueChange={(value) => {
             if (Number.parseInt(value) < objectives.length) {
               setObjectiveId(objectives[Number.parseInt(value)].id);
@@ -69,6 +67,8 @@ const Items = ({
             }
             setQuery(value);
           }}
+          placeholder="Change objective..."
+          value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
@@ -77,13 +77,13 @@ const Items = ({
         <Command.Group>
           <Command.Item
             active={!objectiveId}
+            className="justify-between gap-4"
             onSelect={() => {
               if (objectiveId) {
                 setObjectiveId(null);
               }
               setOpen(false);
             }}
-            className="justify-between gap-4"
           >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <ObjectiveIcon className="h-[1.1rem]" />
@@ -96,19 +96,19 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
-          {objectives?.length > 0 && <Divider className="my-2" />}
+          {objectives.length > 0 && <Divider className="my-2" />}
           {objectives.map(({ id, name }, idx) => (
             <Command.Item
               active={id === objectiveId}
-              value={name}
+              className="justify-between gap-4"
+              key={id}
               onSelect={() => {
                 if (id !== objectiveId) {
                   setObjectiveId(id);
                 }
                 setOpen(false);
               }}
-              className="justify-between gap-4"
-              key={id}
+              value={name}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <ObjectiveIcon className="h-[1.1rem]" />

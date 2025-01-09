@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { ListUserStories } from "@/modules/profile";
 import { getStories } from "@/modules/stories/queries/get-stories";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Profile",

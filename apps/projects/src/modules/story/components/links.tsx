@@ -10,14 +10,14 @@ import {
   PlusIcon,
 } from "icons";
 import { useState } from "react";
-import { AddLinkDialog } from "./add-link-dialog";
 import { cn } from "lib";
-import { RowWrapper } from "@/components/ui";
-import { Link as LinkType } from "@/types";
-import { useCopyToClipboard } from "@/hooks/clipboard";
 import { toast } from "sonner";
+import { RowWrapper } from "@/components/ui";
+import type { Link as LinkType } from "@/types";
+import { useCopyToClipboard } from "@/hooks/clipboard";
 import { useLinkMetadata } from "@/lib/hooks/link-metadata";
 import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
+import { AddLinkDialog } from "./add-link-dialog";
 
 const StoryLink = ({ link }: { link: LinkType }) => {
   const [_, copyLink] = useCopyToClipboard();
@@ -27,37 +27,35 @@ const StoryLink = ({ link }: { link: LinkType }) => {
 
   return (
     <>
-      <RowWrapper key={link.id} className="gap-8 px-1 py-2">
-        <a href={link.url} target="_blank" className="flex-1 gap-2">
+      <RowWrapper className="gap-8 px-1 py-2" key={link.id}>
+        <a className="flex-1 gap-2" href={link.url} rel="noopener" target="_blank">
           <Flex align="center" gap={2}>
             {metadata?.image ? (
               <img
-                src={metadata?.image}
-                alt={metadata?.title || link?.title || link?.url}
-                loading="lazy"
+                alt={metadata.title || link.title || link.url}
                 className="size-6 rounded-full object-cover"
+                loading="lazy"
+                src={metadata.image}
               />
             ) : (
               <InternetIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
             )}
             <Text
-              title={link?.title || metadata?.title}
               className="max-w-[24ch] shrink-0 truncate font-medium"
+              title={link.title || metadata?.title}
             >
-              {link?.title || metadata?.title}
+              {link.title || metadata?.title}
             </Text>
-            {metadata?.description && (
-              <Text
-                color="muted"
+            {metadata?.description ? <Text
                 className="line-clamp-1 opacity-80"
-                title={metadata?.description}
+                color="muted"
+                title={metadata.description}
               >
-                {metadata?.description?.replace("No description", "")}
-              </Text>
-            )}
+                {metadata.description.replace("No description", "")}
+              </Text> : null}
           </Flex>
         </a>
-        <Flex align="center" gap={3} className="shrink-0">
+        <Flex align="center" className="shrink-0" gap={3}>
           <Text color="muted">
             <TimeAgo timestamp={link.createdAt} />
           </Text>
@@ -65,11 +63,11 @@ const StoryLink = ({ link }: { link: LinkType }) => {
             <Menu.Button>
               <Button
                 asIcon
-                leftIcon={<MoreHorizontalIcon />}
                 color="tertiary"
-                variant="naked"
+                leftIcon={<MoreHorizontalIcon />}
                 rounded="full"
                 size="sm"
+                variant="naked"
               >
                 <span className="sr-only">Delete link</span>
               </Button>
@@ -94,7 +92,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
               <Menu.Group>
                 <Menu.Item
                   className="tracking-wide"
-                  onSelect={() => setIsOpen(true)}
+                  onSelect={() => { setIsOpen(true); }}
                 >
                   <EditIcon />
                   Edit link
@@ -125,9 +123,9 @@ const StoryLink = ({ link }: { link: LinkType }) => {
       </RowWrapper>
       <AddLinkDialog
         isOpen={isOpen}
+        link={link}
         setIsOpen={setIsOpen}
         storyId={link.storyId}
-        link={link}
       />
     </>
   );
@@ -151,16 +149,14 @@ export const Links = ({
       {links.length > 0 && (
         <Flex
           align="center"
-          justify={links.length > 0 ? "between" : "end"}
           className={cn({
             "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
               !isLinksOpen,
           })}
+          justify={links.length > 0 ? "between" : "end"}
         >
           <Button
             color="tertiary"
-            variant="naked"
-            size="sm"
             onClick={() => {
               setIsLinksOpen(!isLinksOpen);
             }}
@@ -171,6 +167,8 @@ export const Links = ({
                 <ArrowUpIcon className="h-4 w-auto" />
               )
             }
+            size="sm"
+            variant="naked"
           >
             Links
           </Button>
@@ -179,9 +177,9 @@ export const Links = ({
             <Button
               color="tertiary"
               leftIcon={<PlusIcon />}
+              onClick={() => { setIsAddLinkDialogOpen(true); }}
               size="sm"
               variant="naked"
-              onClick={() => setIsAddLinkDialogOpen(true)}
             >
               <span className="sr-only">Add Link</span>
             </Button>
@@ -189,13 +187,11 @@ export const Links = ({
         </Flex>
       )}
 
-      {isLinksOpen && links.length > 0 && (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
+      {isLinksOpen && links.length > 0 ? <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}
-        </Box>
-      )}
+        </Box> : null}
 
       <AddLinkDialog
         isOpen={isAddLinkDialogOpen}

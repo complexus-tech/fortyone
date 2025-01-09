@@ -2,11 +2,11 @@ import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
-import { BodyContainer } from "../shared/body";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { StoriesList } from "./stories-list";
 import { useMembers } from "@/lib/hooks/members";
-import { Member } from "@/types";
+import type { Member } from "@/types";
+import { BodyContainer } from "../shared/body";
+import { StoriesList } from "./stories-list";
 
 export const ListBoard = ({
   stories,
@@ -67,9 +67,9 @@ export const ListBoard = ({
       {groupBy === "Assignee" &&
         [...members, unassignedMember].map((member) => (
           <StoriesGroup
+            assignee={member}
             className="-top-[0.5px]"
             key={member.id}
-            assignee={member}
             stories={stories}
             viewOptions={viewOptions}
           />

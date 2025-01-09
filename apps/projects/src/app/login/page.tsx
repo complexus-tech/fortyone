@@ -1,7 +1,7 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LoginPage } from "@/modules/login";
-import { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Login",

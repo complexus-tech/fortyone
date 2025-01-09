@@ -1,7 +1,7 @@
 "use server";
 
-import { post } from "@/lib/http";
 import { revalidateTag } from "next/cache";
+import { post } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
 
 export const restoreStoryAction = async (storyId: string) => {

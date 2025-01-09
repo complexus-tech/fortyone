@@ -1,8 +1,8 @@
 "use client";
-import { useMembers } from "@/lib/hooks/members";
 import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
+import { useMembers } from "@/lib/hooks/members";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -20,7 +20,7 @@ export const useAssigneesMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useAssigneesMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -74,9 +74,9 @@ const Items = ({
           >
             <Flex align="center" gap={2}>
               <Avatar
+                className="text-dark/80 dark:text-gray-200"
                 color="primary"
                 size="sm"
-                className="text-dark/80 dark:text-gray-200"
               />
               <Text className="max-w-[10rem] truncate">No assignee</Text>
             </Flex>
@@ -87,7 +87,7 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
-          {members?.length > 0 && <Divider className="my-2" />}
+          {members.length > 0 && <Divider className="my-2" />}
           {members.map(({ id, fullName, avatarUrl }, idx) => (
             <Command.Item
               active={id === assigneeId}

@@ -20,6 +20,13 @@ import {
   formatISO,
 } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
+import { cn } from "lib";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useSprints } from "@/lib/hooks/sprints";
+import { useMembers } from "@/lib/hooks/members";
+import { useStoryById } from "@/modules/story/hooks/story";
 import {
   PrioritiesMenu,
   StatusesMenu,
@@ -30,21 +37,14 @@ import {
   LabelsMenu,
   StoryLabel,
 } from "@/components/ui";
-import { AddLinks, OptionsHeader } from ".";
-import { DetailedStory } from "../types";
-import { cn } from "lib";
-import { useParams } from "next/navigation";
-import { useStoryById } from "@/modules/story/hooks/story";
-import { useUpdateStoryMutation } from "../hooks/update-mutation";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
-import { useMembers } from "@/lib/hooks/members";
-import Link from "next/link";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
+import { useUpdateStoryMutation } from "../hooks/update-mutation";
+import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
+import { AddLinks, OptionsHeader } from ".";
 
 const Option = ({
   label,
@@ -98,8 +98,8 @@ export const Options = () => {
   const sprint = sprints.find((s) => s.id === sprintId);
   const objective = objectives.find((o) => o.id === objectiveId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
-    statuses.at(0))!!;
-  const isDeleted = !!deletedAt;
+    statuses.at(0))!;
+  const isDeleted = Boolean(deletedAt);
   const assignee = members.find((m) => m.id === assigneeId);
   const reporter = members.find((m) => m.id === reporterId);
   const { data: allLabels = [] } = useLabels();
@@ -121,19 +121,17 @@ export const Options = () => {
       <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           <Text fontWeight="semibold">Properties</Text>
-          {isDeleted && (
-            <Badge
-              size="lg"
-              color="tertiary"
+          {isDeleted ? <Badge
               className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
+              color="tertiary"
+              size="lg"
             >
               {differenceInDays(
                 addDays(new Date(deletedAt), 30),
                 new Date(deletedAt),
               )}{" "}
               days left in bin
-            </Badge>
-          )}
+            </Badge> : null}
         </Box>
         <Option
           label="Reporter"
@@ -148,8 +146,8 @@ export const Options = () => {
                 src={reporter?.avatarUrl}
               />
               <Link
-                href={`/profile/${reporter?.id}`}
                 className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
+                href={`/profile/${reporter?.id}`}
               >
                 {reporter?.username}
               </Link>
@@ -172,10 +170,10 @@ export const Options = () => {
                 </Button>
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
-                statusId={statusId}
                 setStatusId={(statusId) => {
                   handleUpdate({ statusId });
                 }}
+                statusId={statusId}
               />
             </StatusesMenu>
           }
@@ -212,8 +210,8 @@ export const Options = () => {
                   className={cn("font-medium", {
                     "text-gray-200 dark:text-gray-300": !assigneeId,
                   })}
-                  disabled={isDeleted}
                   color="tertiary"
+                  disabled={isDeleted}
                   leftIcon={
                     <Avatar
                       className={cn({
@@ -228,7 +226,7 @@ export const Options = () => {
                   variant="naked"
                 >
                   {assignee?.username || (
-                    <Text color="muted" as="span">
+                    <Text as="span" color="muted">
                       Assign
                     </Text>
                   )}
@@ -268,12 +266,12 @@ export const Options = () => {
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar
-                selected={startDate ? new Date(startDate) : undefined}
                 onDayClick={(day) => {
                   handleUpdate({
                     startDate: formatISO(day),
                   });
                 }}
+                selected={startDate ? new Date(startDate) : undefined}
               />
             </DatePicker>
           }
@@ -283,27 +281,26 @@ export const Options = () => {
           value={
             <DatePicker>
               <Tooltip
-                hidden={!endDate}
                 className="py-3"
+                hidden={!endDate}
                 title={
                   <Flex align="start" gap={2}>
                     <CalendarIcon
                       className={cn("relative top-[2.5px] h-5 w-auto", {
                         "text-primary dark:text-primary":
-                          new Date(endDate!!) < new Date(),
+                          new Date(endDate!) < new Date(),
                         "text-warning dark:text-warning":
-                          new Date(endDate!!) <= addDays(new Date(), 7) &&
-                          new Date(endDate!!) >= new Date(),
+                          new Date(endDate!) <= addDays(new Date(), 7) &&
+                          new Date(endDate!) >= new Date(),
                       })}
                     />
-                    <Box>{getDueDateMessage(new Date(endDate!!))}</Box>
+                    <Box>{getDueDateMessage(new Date(endDate!))}</Box>
                   </Flex>
                 }
               >
                 <span>
                   <DatePicker.Trigger>
                     <Button
-                      color="tertiary"
                       className={cn({
                         "text-primary dark:text-primary":
                           endDate && new Date(endDate) < new Date(),
@@ -313,6 +310,7 @@ export const Options = () => {
                           new Date(endDate) >= new Date(),
                         "text-gray/80 dark:text-gray-300/80": !endDate,
                       })}
+                      color="tertiary"
                       disabled={isDeleted}
                       leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
                       variant="naked"
@@ -327,12 +325,12 @@ export const Options = () => {
                 </span>
               </Tooltip>
               <DatePicker.Calendar
-                selected={endDate ? new Date(endDate) : undefined}
                 onDayClick={(day) => {
                   handleUpdate({
                     endDate: formatISO(day),
                   });
                 }}
+                selected={endDate ? new Date(endDate) : undefined}
               />
             </DatePicker>
           }
@@ -344,7 +342,6 @@ export const Options = () => {
               <ObjectivesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  title={objectiveId ? objective?.name : undefined}
                   disabled={isDeleted}
                   leftIcon={
                     objectiveId ? (
@@ -353,6 +350,7 @@ export const Options = () => {
                       <PlusIcon className="h-5 w-auto" />
                     )
                   }
+                  title={objectiveId ? objective?.name : undefined}
                   type="button"
                   variant="naked"
                 >
@@ -396,22 +394,22 @@ export const Options = () => {
               </SprintsMenu.Trigger>
               <SprintsMenu.Items
                 align="end"
-                sprintId={sprintId ?? undefined}
                 setSprintId={(sprintId) => {
                   handleUpdate({ sprintId });
                 }}
+                sprintId={sprintId ?? undefined}
               />
             </SprintsMenu>
           }
         />
         <Option
-          label="Labels"
           className={cn("items-start pt-1", {
             "items-center pt-0": labels.length === 0,
           })}
+          label="Labels"
           value={
             <>
-              {labels?.length > 0 ? (
+              {labels.length > 0 ? (
                 <Flex align="center" className="gap-1.5" wrap>
                   {labels.slice(0, labels.length - 1).map((label) => (
                     <LabelsMenu key={label.id}>
@@ -421,15 +419,15 @@ export const Options = () => {
                         </span>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        teamId={teamId}
                         labelIds={storyLabels}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
+                        teamId={teamId}
                       />
                     </LabelsMenu>
                   ))}
-                  <Flex gap={1} align="center">
+                  <Flex align="center" gap={1}>
                     <LabelsMenu>
                       <LabelsMenu.Trigger>
                         <span>
@@ -437,23 +435,23 @@ export const Options = () => {
                         </span>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        teamId={teamId}
                         labelIds={storyLabels}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
+                        teamId={teamId}
                       />
                     </LabelsMenu>
                     <LabelsMenu>
                       <LabelsMenu.Trigger>
                         <Button
-                          color="tertiary"
-                          className="m-0"
                           asIcon
-                          rounded="full"
-                          title="Add labels"
-                          size="sm"
+                          className="m-0"
+                          color="tertiary"
                           leftIcon={<PlusIcon />}
+                          rounded="full"
+                          size="sm"
+                          title="Add labels"
                           type="button"
                           variant="naked"
                         >
@@ -461,11 +459,11 @@ export const Options = () => {
                         </Button>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        teamId={teamId}
                         labelIds={storyLabels}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
+                        teamId={teamId}
                       />
                     </LabelsMenu>
                   </Flex>
@@ -483,11 +481,11 @@ export const Options = () => {
                     </Button>
                   </LabelsMenu.Trigger>
                   <LabelsMenu.Items
-                    teamId={teamId}
                     labelIds={storyLabels}
                     setLabelIds={(labelIds) => {
                       handleUpdateLabels(labelIds);
                     }}
+                    teamId={teamId}
                   />
                 </LabelsMenu>
               )}

@@ -1,8 +1,8 @@
 "use server";
+import qs from "qs";
 import { labelTags } from "@/constants/keys";
 import { get } from "@/lib/http";
-import { ApiResponse, Label } from "@/types";
-import qs from "qs";
+import type { ApiResponse, Label } from "@/types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 
 export const getLabels = async (
@@ -19,7 +19,7 @@ export const getLabels = async (
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
       tags: [
-        params?.teamId ? labelTags.team(params.teamId) : labelTags.lists(),
+        params.teamId ? labelTags.team(params.teamId) : labelTags.lists(),
       ],
     },
   });

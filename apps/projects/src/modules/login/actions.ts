@@ -1,6 +1,6 @@
 "use server";
-import { signIn } from "@/auth";
 import { redirect } from "next/navigation";
+import { signIn } from "@/auth";
 
 export const logIn = async (callbackUrl: string, formData: FormData) => {
   try {

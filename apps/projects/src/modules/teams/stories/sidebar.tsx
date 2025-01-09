@@ -1,11 +1,11 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
 import { StoryIcon } from "icons";
-import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useTeams } from "../hooks/teams";
+import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
+import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeams } from "../hooks/teams";
 
 export const Sidebar = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -31,12 +31,12 @@ export const Sidebar = () => {
           </span>
         </Text>
         <Text className="flex items-center gap-1.5">
-          {team?.icon}
+          {team.icon}
           <span
-            title={team?.name}
             className="inline-block max-w-[16ch] truncate"
+            title={team.name}
           >
-            {team?.name}
+            {team.name}
           </span>
         </Text>
       </Flex>

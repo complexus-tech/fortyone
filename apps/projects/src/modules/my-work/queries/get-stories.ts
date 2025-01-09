@@ -2,8 +2,8 @@
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { get } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
-import { Story } from "@/modules/stories/types";
-import { ApiResponse } from "@/types";
+import type { Story } from "@/modules/stories/types";
+import type { ApiResponse } from "@/types";
 
 export const getMyStories = async () => {
   const stories = await get<ApiResponse<Story[]>>("my-stories", {
@@ -12,5 +12,5 @@ export const getMyStories = async () => {
       tags: [storyTags.mine()],
     },
   });
-  return stories?.data;
+  return stories.data;
 };

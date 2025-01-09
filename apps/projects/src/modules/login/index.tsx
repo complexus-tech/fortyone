@@ -1,10 +1,11 @@
 "use client";
-import { FormEvent, useState } from "react";
+import type { FormEvent} from "react";
+import { useState } from "react";
 import { Box, Flex, Input, Text, Button } from "ui";
-import { ComplexusLogo } from "@/components/ui";
-import { logIn } from "./actions";
 import { toast } from "sonner";
 import nProgress from "nprogress";
+import { ComplexusLogo } from "@/components/ui";
+import { logIn } from "./actions";
 
 export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
   const logInAction = logIn.bind(null, callbackUrl);
@@ -17,7 +18,7 @@ export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
     nProgress.start();
     try {
       const result = await logInAction(formData);
-      if (result?.error) {
+      if (result.error) {
         toast.error("Failed to log in", {
           description: result.error,
         });
@@ -30,49 +31,49 @@ export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
   };
 
   return (
-    <Flex align="center" justify="center" className="h-screen">
+    <Flex align="center" className="h-screen" justify="center">
       <Box className="mx-auto w-full max-w-md rounded-xl">
         <Box className="mx-auto w-max rounded-full bg-primary p-3.5">
           <ComplexusLogo className="h-8 w-auto text-white" />
         </Box>
         <Text
+          align="center"
           as="h1"
+          className="mb-10 mt-3"
           fontSize="3xl"
           fontWeight="medium"
-          align="center"
-          className="mb-10 mt-3"
         >
           Log in to your account
         </Text>
         <form onSubmit={handleSubmit}>
           <Input
-            label="Email"
-            type="email"
             autoFocus
-            required
+            className="mb-4 h-12 rounded-lg"
+            label="Email"
             name="email"
             placeholder="e.g john@example.com"
-            className="mb-4 h-12 rounded-lg"
+            required
+            type="email"
           />
           <Input
-            label="Password"
-            required
-            name="password"
-            type="password"
             className="mb-5 h-12 rounded-lg"
+            label="Password"
+            name="password"
+            required
+            type="password"
           />
           <Button
+            align="center"
+            className="md:h-12"
+            fullWidth
+            loading={loading}
             loadingText="Logging in..."
             type="submit"
-            loading={loading}
-            className="md:h-12"
-            align="center"
-            fullWidth
           >
             Login
           </Button>
         </form>
-        <Text color="muted" className="textt-[90%] mt-3 pl-[1px]">
+        <Text className="textt-[90%] mt-3 pl-[1px]" color="muted">
           &copy; {new Date().getFullYear()} &bull; Powered by Complexus &bull;
           All Rights Reserved.
         </Text>

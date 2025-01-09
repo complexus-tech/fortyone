@@ -38,8 +38,8 @@ export const Navigation = () => {
       name: "Analytics",
       icon: (
         <PriorityIcon
-          priority="High"
           className="h-5 w-auto text-gray dark:text-gray-300"
+          priority="High"
         />
       ),
       href: "/reports",

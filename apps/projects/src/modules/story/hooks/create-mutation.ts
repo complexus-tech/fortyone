@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createStoryAction } from "../actions/create-story";
-import { Story } from "@/modules/stories/types";
 import { toast } from "sonner";
 import nProgress from "nprogress";
-import { slugify } from "@/utils";
 import { useRouter } from "next/navigation";
+import { slugify } from "@/utils";
+import type { Story } from "@/modules/stories/types";
 import { storyKeys } from "@/modules/stories/constants";
+import { createStoryAction } from "../actions/create-story";
 
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -27,7 +27,7 @@ export const useCreateStoryMutation = () => {
         description: "An error occurred while creating the story",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(story),
+          onClick: () => { mutation.mutate(story); },
         },
       });
     },

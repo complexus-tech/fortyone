@@ -1,14 +1,14 @@
-import { Label } from "@/types";
 import { Badge, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
+import type { Label } from "@/types";
 
 export const StoryLabel = ({ color, name }: Label) => {
   return (
     <Tooltip
       title={
-        name?.length > 12 ? (
+        name.length > 12 ? (
           <Flex align="center" gap={1}>
-            <TagsIcon style={{ color }} className="h-4" />
+            <TagsIcon className="h-4" style={{ color }} />
             {name}
           </Flex>
         ) : null
@@ -20,7 +20,7 @@ export const StoryLabel = ({ color, name }: Label) => {
         rounded="xl"
         variant="outline"
       >
-        <TagsIcon style={{ color }} className="h-4" />
+        <TagsIcon className="h-4" style={{ color }} />
         <span className="inline-block max-w-[12ch] truncate">{name}</span>
       </Badge>
     </Tooltip>

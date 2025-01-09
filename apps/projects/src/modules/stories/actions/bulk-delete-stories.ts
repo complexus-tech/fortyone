@@ -1,9 +1,9 @@
 "use server";
 
-import { remove } from "@/lib/http";
 import { revalidateTag } from "next/cache";
+import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { storyTags } from "../constants";
-import { ApiResponse } from "@/types";
 
 type Payload = {
   storyIds: string[];

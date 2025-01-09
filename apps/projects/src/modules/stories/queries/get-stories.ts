@@ -1,8 +1,8 @@
-import { get } from "@/lib/http";
-import { Story } from "@/modules/stories/types";
-import { ApiResponse } from "@/types";
-import { Options } from "ky";
+import type { Options } from "ky";
 import qs from "qs";
+import { get } from "@/lib/http";
+import type { Story } from "@/modules/stories/types";
+import type { ApiResponse } from "@/types";
 
 export const getStories = async (
   params: {

@@ -40,22 +40,18 @@
     "react-select": "^5.8.0",
     "react-time-ago": "^7.3.3"
   },
-  "overrides": {
-    "@types/react": "npm:types-react@rc",
-    "@types/react-dom": "npm:types-react-dom@rc"
-  },
   "devDependencies": {
     "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
-    "@types/react": "npm:types-react@rc",
-    "@types/react-dom": "npm:types-react-dom@rc",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "19.0.2",
     "eslint-config-custom": "workspace:*",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "tailwind-config": "workspace:*",
     "tailwindcss": "^3.4.3",
     "tsconfig": "workspace:*",
-    "typescript": "^4.9.5"
+    "typescript": "^5.5.4"
   }
 }

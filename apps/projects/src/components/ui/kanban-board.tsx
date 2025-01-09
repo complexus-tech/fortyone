@@ -1,11 +1,11 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
-import { useStatuses } from "@/lib/hooks/statuses";
 
 export const KanbanBoard = ({
   stories,

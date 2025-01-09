@@ -5,11 +5,11 @@ import { cn } from "lib";
 import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { State } from "@/types/states";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
 import { useBoard } from "./board-context";
-import { State } from "@/types/states";
 
 const List = ({
   children,
@@ -66,7 +66,7 @@ export const KanbanGroup = ({
 
   return (
     <List
-      id={(groupBy === "Status" ? status?.id : priority) as string}
+      id={(groupBy === "Status" ? status?.id : priority)!}
       key={groupBy === "Status" ? status?.id : priority}
       totalStories={filteredStories.length}
     >

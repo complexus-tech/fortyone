@@ -1,9 +1,9 @@
 "use server";
 import { get } from "@/lib/http";
-import { DocumentModel } from "../types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { TAGS } from "@/constants/tags";
-import { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types";
+import type { DocumentModel } from "../types";
 
 export const getDocuments = async () => {
   const documents = await get<ApiResponse<DocumentModel[]>>("documents", {
@@ -12,5 +12,5 @@ export const getDocuments = async () => {
       tags: [TAGS.documents],
     },
   });
-  return documents?.data;
+  return documents.data;
 };

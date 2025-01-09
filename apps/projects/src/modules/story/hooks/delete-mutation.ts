@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
 import { deleteStoryAction } from "../actions/delete-story";
-import { DetailedStory } from "../types";
+import type { DetailedStory } from "../types";
 import { useRestoreStoryMutation } from "./restore-mutation";
 
 export const useDeleteStoryMutation = () => {
@@ -17,7 +17,7 @@ export const useDeleteStoryMutation = () => {
         description: "An error occurred while deleting the story",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(storyId),
+          onClick: () => { mutation.mutate(storyId); },
         },
       });
     },

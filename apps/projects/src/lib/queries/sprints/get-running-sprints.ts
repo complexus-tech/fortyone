@@ -2,8 +2,8 @@
 import { sprintTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { get } from "@/lib/http";
-import { Sprint } from "@/modules/sprints/types";
-import { ApiResponse } from "@/types";
+import type { Sprint } from "@/modules/sprints/types";
+import type { ApiResponse } from "@/types";
 
 export const getRunningSprints = async () => {
   const sprints = await get<ApiResponse<Sprint[]>>("sprints", {
@@ -12,5 +12,5 @@ export const getRunningSprints = async () => {
       tags: [sprintTags.lists()],
     },
   });
-  return sprints?.data;
+  return sprints.data;
 };

@@ -1,4 +1,4 @@
-import { Story, StoryPriority } from "@/modules/stories/types";
+import type { Story, StoryPriority } from "@/modules/stories/types";
 
 export type DetailedStory = {
   id: string;

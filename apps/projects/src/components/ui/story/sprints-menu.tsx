@@ -2,8 +2,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, SprintsIcon } from "icons";
-import { useSprints } from "@/lib/hooks/sprints";
 import { format } from "date-fns";
+import { useSprints } from "@/lib/hooks/sprints";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -21,7 +21,7 @@ export const useSprintsMenu = () => {
 const Menu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useSprintsMenu();
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       {children}
     </Popover>
   );
@@ -59,8 +59,6 @@ const Items = ({
       <Command>
         <Command.Input
           autoFocus
-          placeholder="Add to sprint..."
-          value={query}
           onValueChange={(value) => {
             if (Number.parseInt(value) < sprints.length) {
               setSprintId(sprints[Number.parseInt(value)].id);
@@ -70,6 +68,8 @@ const Items = ({
             }
             setQuery(value);
           }}
+          placeholder="Add to sprint..."
+          value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
@@ -78,13 +78,13 @@ const Items = ({
         <Command.Group>
           <Command.Item
             active={!sprintId}
+            className="justify-between gap-4"
             onSelect={() => {
               if (sprintId) {
                 setSprintId(null);
               }
               setOpen(false);
             }}
-            className="justify-between gap-4"
           >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <SprintsIcon />
@@ -97,19 +97,19 @@ const Items = ({
               <Text color="muted">0</Text>
             </Flex>
           </Command.Item>
-          {sprints?.length > 0 && <Divider className="my-2" />}
+          {sprints.length > 0 && <Divider className="my-2" />}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
             <Command.Item
               active={id === sprintId}
-              value={name}
+              className="justify-between gap-4"
+              key={id}
               onSelect={() => {
                 if (id !== sprintId) {
                   setSprintId(id);
                 }
                 setOpen(false);
               }}
-              className="justify-between gap-4"
-              key={id}
+              value={name}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <SprintsIcon className="h-5 w-auto" />

@@ -92,9 +92,7 @@ export const StoriesViewOptionsButton = ({
           variant="outline"
         >
           Customise
-          {hasFilters && (
-            <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
-          )}
+          {hasFilters ? <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" /> : null}
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">

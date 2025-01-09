@@ -10,22 +10,22 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
-import { BodyContainer } from "@/components/shared";
-import { Activities, Attachments } from ".";
-import { DetailedStory } from "../types";
-import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { toast } from "sonner";
 import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { useStoryById } from "../hooks/story";
-import { useLocalStorage } from "@/hooks";
 import { cn } from "lib";
-import { SubStories } from "./sub-stories";
-import { useStoryActivities } from "../hooks/story-activities";
-import { StoryActivity } from "@/modules/stories/types";
-import { Links } from "./links";
+import { useLocalStorage } from "@/hooks";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { BodyContainer } from "@/components/shared";
+import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
+import { useStoryById } from "../hooks/story";
+import type { DetailedStory } from "../types";
+import { useStoryActivities } from "../hooks/story-activities";
 import { useStoryComments } from "../hooks/story-comments";
+import { Links } from "./links";
+import { SubStories } from "./sub-stories";
+import { Activities, Attachments } from ".";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
@@ -79,7 +79,7 @@ export const MainDetails = () => {
     createdAt,
     reporterId,
   } = data!;
-  const isDeleted = !!deletedAt;
+  const isDeleted = Boolean(deletedAt);
 
   const createStoryActivity: StoryActivity = {
     id: "1",
@@ -155,17 +155,17 @@ export const MainDetails = () => {
         />
         <TextEditor className="mt-8" editor={descriptionEditor} />
         <SubStories
-          subStories={subStories}
-          parentId={storyId}
-          teamId={teamId}
-          setIsSubStoriesOpen={setIsSubStoriesOpen}
           isSubStoriesOpen={isSubStoriesOpen}
+          parentId={storyId}
+          setIsSubStoriesOpen={setIsSubStoriesOpen}
+          subStories={subStories}
+          teamId={teamId}
         />
         <Links
-          storyId={storyId}
           isLinksOpen={isLinksOpen}
-          setIsLinksOpen={setIsLinksOpen}
           links={links}
+          setIsLinksOpen={setIsLinksOpen}
+          storyId={storyId}
         />
         <Attachments
           className={cn(

@@ -7,11 +7,11 @@ import TaskList from "@tiptap/extension-task-list";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { ClockIcon, CommentIcon } from "icons";
-import { Activity } from "@/components/ui";
-import { StoryActivity } from "@/modules/stories/types";
 import { useSession } from "next-auth/react";
-import { useCommentStoryMutation } from "../hooks/comment-mutation";
 import { toast } from "sonner";
+import { Activity } from "@/components/ui";
+import type { StoryActivity } from "@/modules/stories/types";
+import { useCommentStoryMutation } from "../hooks/comment-mutation";
 import { CommentInput } from "./comment-input";
 import { Comments } from "./comments";
 
@@ -55,7 +55,7 @@ export const Activities = ({
       storyId,
       payload: { comment, parentId: null },
     }).then(() => {
-      editor?.commands?.clearContent();
+      editor?.commands.clearContent();
     });
   };
 
@@ -105,8 +105,8 @@ export const Activities = ({
             <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
                 name={session?.user?.name ?? undefined}
-                src={session?.user?.image ?? undefined}
                 size="xs"
+                src={session?.user?.image ?? undefined}
               />
             </Box>
             <CommentInput storyId={storyId} />

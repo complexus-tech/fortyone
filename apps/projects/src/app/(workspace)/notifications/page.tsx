@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { BodyContainer } from "@/components/shared";
 import { ListNotifications } from "@/modules/notifications/list";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Notifications",

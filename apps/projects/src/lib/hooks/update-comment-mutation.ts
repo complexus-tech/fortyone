@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
-import { Comment } from "@/types";
+import type { Comment } from "@/types";
+import type {
+  UpdateComment} from "../actions/comments/update-comment";
 import {
-  UpdateComment,
   updateCommentAction,
 } from "../actions/comments/update-comment";
 
@@ -25,7 +26,7 @@ export const useUpdateCommentMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
       queryClient.invalidateQueries({
@@ -43,7 +44,7 @@ export const useUpdateCommentMutation = () => {
             : comment,
         );
         queryClient.setQueryData<Comment[]>(
-          storyKeys.comments(newComment?.storyId as string),
+          storyKeys.comments(newComment.storyId),
           updatedComments,
         );
       }

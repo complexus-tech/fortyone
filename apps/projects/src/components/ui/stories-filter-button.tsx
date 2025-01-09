@@ -22,8 +22,8 @@ import { useState, type ReactNode } from "react";
 import { cn } from "lib";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { StoryStatusIcon } from "./story-status-icon";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { StoryStatusIcon } from "./story-status-icon";
 
 export type StoriesFilter = {
   activeSprints: boolean;
@@ -254,11 +254,11 @@ export const StoriesFilterButton = ({
                     </Button>
                   </DatePicker.Trigger>
                   <DatePicker.Calendar
+                    initialFocus
                     mode="range"
                     // selected={date}
 
                     numberOfMonths={2}
-                    initialFocus
                   />
                 </DatePicker>
               </Box>

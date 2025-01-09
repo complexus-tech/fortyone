@@ -1,10 +1,10 @@
 "use client";
 import { Box, Tabs } from "ui";
+import { useSession } from "next-auth/react";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useProfile } from "./provider";
-import { useSession } from "next-auth/react";
 
 export const AllStories = ({
   stories,

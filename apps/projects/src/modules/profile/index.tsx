@@ -1,4 +1,5 @@
 "use client";
+import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
@@ -7,7 +8,6 @@ import { Header } from "./components/header";
 import { Sidebar } from "./components/sidebar";
 import { AllStories } from "./components/all-stories";
 import { ProfileProvider } from "./components/provider";
-import { useParams } from "next/navigation";
 
 export const ListUserStories = ({ stories }: { stories: Story[] }) => {
   const { userId } = useParams<{

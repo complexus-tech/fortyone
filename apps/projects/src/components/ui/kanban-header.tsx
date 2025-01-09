@@ -4,12 +4,12 @@ import { Flex, Button, Text, Box, Tooltip } from "ui";
 import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { State } from "@/types/states";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
 import { useBoard } from "./board-context";
-import { State } from "@/types/states";
 
 export const StoriesKanbanHeader = ({
   status,

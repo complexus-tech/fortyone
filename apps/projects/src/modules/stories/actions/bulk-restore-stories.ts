@@ -1,9 +1,9 @@
 "use server";
 
-import { post } from "@/lib/http";
 import { revalidateTag } from "next/cache";
+import { post } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
-import { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types";
 
 type Payload = {
   storyIds: string[];

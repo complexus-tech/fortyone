@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { ObjectivesList } from "@/modules/objectives";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Objectives",

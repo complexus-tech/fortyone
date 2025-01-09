@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { StoryStatusIcon, PriorityIcon, RowWrapper } from "@/components/ui";
-import { Sprint } from "../types";
+import type { Sprint } from "../types";
 
 export const SprintCard = ({ name }: Sprint) => {
   const recentStories = [
@@ -66,9 +66,9 @@ export const SprintCard = ({ name }: Sprint) => {
           </Text>
           <Flex align="center" gap={1}>
             <Badge
-              rounded="sm"
               className="border-opacity-20 bg-opacity-20 text-base"
               color="primary"
+              rounded="sm"
             >
               5 days left
             </Badge>

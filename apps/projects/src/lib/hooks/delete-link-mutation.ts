@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { linkKeys } from "@/constants/keys";
-import { Link } from "@/types";
+import type { Link } from "@/types";
 import { deleteLinkAction } from "../actions/links/delete-link";
 
 export const useDeleteLinkMutation = () => {
@@ -15,7 +15,7 @@ export const useDeleteLinkMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(variables),
+          onClick: () => { mutation.mutate(variables); },
         },
       });
       queryClient.invalidateQueries({

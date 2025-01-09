@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
-import { DetailedStory } from "../types";
+import type { DetailedStory } from "../types";
 import { restoreStoryAction } from "../actions/restore-story";
 
 export const useRestoreStoryMutation = () => {
@@ -14,7 +14,7 @@ export const useRestoreStoryMutation = () => {
         description: "An error occurred while restoring the story",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(storyId),
+          onClick: () => { mutation.mutate(storyId); },
         },
       });
     },

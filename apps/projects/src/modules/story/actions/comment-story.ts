@@ -1,8 +1,8 @@
 "use server";
 
 import { post } from "@/lib/http";
-import { ApiResponse } from "@/types";
-import { StoryActivity } from "@/modules/stories/types";
+import type { ApiResponse } from "@/types";
+import type { StoryActivity } from "@/modules/stories/types";
 
 type Payload = {
   comment: string;

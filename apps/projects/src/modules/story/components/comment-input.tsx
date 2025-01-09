@@ -5,10 +5,10 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
 import { cn } from "lib";
+import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 
 export const CommentInput = ({
@@ -63,11 +63,11 @@ export const CommentInput = ({
     if (commentId) {
       // update comment
       await updateComment({
-        commentId: commentId!,
+        commentId,
         payload: { content: comment },
         storyId,
       }).then(() => {
-        editor?.commands?.clearContent();
+        editor?.commands.clearContent();
         onCancel?.();
       });
     } else {
@@ -75,7 +75,7 @@ export const CommentInput = ({
         storyId,
         payload: { comment, parentId: parentId ?? null },
       }).then(() => {
-        editor?.commands?.clearContent();
+        editor?.commands.clearContent();
         onCancel?.();
       });
     }
@@ -95,25 +95,23 @@ export const CommentInput = ({
         className="prose-base font-normal leading-6 antialiased"
         editor={editor}
       />
-      <Flex justify="end" gap={2}>
-        {onCancel && (
-          <Button
+      <Flex gap={2} justify="end">
+        {onCancel ? <Button
             className="px-3"
             color="tertiary"
+            onClick={onCancel}
             size="sm"
             variant="outline"
-            onClick={onCancel}
           >
             Cancel
-          </Button>
-        )}
+          </Button> : null}
         <Button
           className="px-3"
           color="tertiary"
           disabled={editor?.isEmpty}
+          onClick={handleComment}
           size="sm"
           variant="outline"
-          onClick={handleComment}
         >
           {parentId ? "Reply" : commentId ? "Update" : "Comment"}
         </Button>

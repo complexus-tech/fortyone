@@ -5,7 +5,7 @@ import { StoryStatusIcon } from "@/components/ui";
 import { BodyContainer } from "../../components/shared";
 import { ObjectiveCard } from "../../components/ui/objective/card";
 import { ObjectivesHeader } from "./components/header";
-import { Objective } from "./types";
+import type { Objective } from "./types";
 
 export const ObjectivesList = ({ objectives }: { objectives: Objective[] }) => {
   return (

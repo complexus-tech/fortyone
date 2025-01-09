@@ -1,6 +1,7 @@
 "use client";
 import { Badge, BreadCrumbs, Flex } from "ui";
 import { ObjectiveIcon, StoryIcon } from "icons";
+import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -11,11 +12,10 @@ import {
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
-import { useObjectiveOptions } from "./provider";
-import { useParams } from "next/navigation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
+import { useObjectiveOptions } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -37,10 +37,10 @@ export const Header = ({
   const { data: objectives = [] } = useObjectives();
   const { name: teamName, color: teamColor } = teams.find(
     (team) => team.id === teamId,
-  )!!;
+  )!;
   const { name: objectiveName } = objectives.find(
     (objective) => objective.id === objectiveId,
-  )!!;
+  )!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useObjectiveOptions();
   return (

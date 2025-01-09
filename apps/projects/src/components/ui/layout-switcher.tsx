@@ -33,7 +33,7 @@ export const LayoutSwitcher = ({
         title="List view"
         type="button"
       >
-        <ListIcon strokeWidth={3} className="h-[1.1rem] w-auto" />
+        <ListIcon className="h-[1.1rem] w-auto" strokeWidth={3} />
         List
       </button>
       <button

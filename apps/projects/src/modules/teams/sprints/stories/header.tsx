@@ -1,6 +1,8 @@
 "use client";
 import { BreadCrumbs, Flex, Badge } from "ui";
 import { SprintsIcon, StoryIcon } from "icons";
+import { useParams } from "next/navigation";
+import { format } from "date-fns";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -9,11 +11,9 @@ import {
   SideDetailsSwitch,
   TeamColor,
 } from "@/components/ui";
-import { useSprintStories } from "./provider";
-import { useParams } from "next/navigation";
 import { useSprints } from "@/lib/hooks/sprints";
 import { useTeams } from "../../hooks/teams";
-import { format } from "date-fns";
+import { useSprintStories } from "./provider";
 
 export const Header = ({
   isExpanded,
@@ -48,14 +48,14 @@ export const Header = ({
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: team?.name,
-              icon: <TeamColor color={team?.color} />,
-              url: `/teams/${team?.id}/stories`,
+              name: team.name,
+              icon: <TeamColor color={team.color} />,
+              url: `/teams/${team.id}/stories`,
             },
             {
               name: sprintName,
               icon: <SprintsIcon className="h-4 w-auto" />,
-              url: `/teams/${team?.id}/sprints/${sprint?.id}`,
+              url: `/teams/${team.id}/sprints/${sprint.id}`,
             },
             {
               name: "Stories",

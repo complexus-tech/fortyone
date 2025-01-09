@@ -2,10 +2,10 @@
 import { Flex, Text, ProgressBar, Box, Badge } from "ui";
 import Link from "next/link";
 import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
-import { RowWrapper } from "@/components/ui/row-wrapper";
-import { Sprint } from "@/modules/sprints/types";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { RowWrapper } from "@/components/ui/row-wrapper";
+import type { Sprint } from "@/modules/sprints/types";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -22,8 +22,8 @@ export const SprintRow = ({ id, name, startDate, endDate }: Sprint) => {
   return (
     <RowWrapper className="py-5">
       <Link
-        href={`/teams/${teamId}/sprints/${id}/stories`}
         className="flex items-center gap-2"
+        href={`/teams/${teamId}/sprints/${id}/stories`}
       >
         <SprintsIcon />
         <Text fontWeight="medium">{name}</Text>

@@ -1,7 +1,7 @@
 "use server";
 
-import { put } from "@/lib/http";
 import { revalidateTag } from "next/cache";
+import { put } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
 import { labelTags } from "@/constants/keys";
 

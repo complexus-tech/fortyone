@@ -1,10 +1,10 @@
 import type { Icon } from "icons/src/types";
 
-export const ComplexusLogo = (props: Icon) => {
+export const ComplexusLogo = ({ className }: Icon) => {
   return (
     <svg
+      className={className}
       fill="none"
-      {...props}
       viewBox="0 0 260 254"
       xmlns="http://www.w3.org/2000/svg"
     >

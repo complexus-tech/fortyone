@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ["custom/next"],
+  extends: ["eslint-config-custom/next.js"],
   rules: {
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",

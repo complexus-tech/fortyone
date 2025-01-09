@@ -1,7 +1,7 @@
 {
   "extends": "tsconfig/nextjs.json",
   "compilerOptions": {
-    "types": ["@testing-library/jest-dom"],
+    // "types": ["@testing-library/jest-dom"],
     "plugins": [
       {
         "name": "next"

@@ -92,7 +92,6 @@ export const Team = ({
           <span className="block max-w-[15ch] truncate">{teamName}</span>
         </span>
         <ArrowDownIcon
-          suppressHydrationWarning
           className={cn(
             "h-3.5 w-auto -rotate-90 text-gray dark:text-gray-300",
             {
@@ -100,10 +99,10 @@ export const Team = ({
             },
           )}
           strokeWidth={3.5}
+          suppressHydrationWarning
         />
       </Flex>
       <Flex
-        suppressHydrationWarning
         className={cn(
           "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-250/40 pl-2 transition-all duration-300 dark:border-dark-100",
           {
@@ -112,6 +111,7 @@ export const Team = ({
         )}
         direction="column"
         gap={1}
+        suppressHydrationWarning
       >
         {links.map(({ name, icon, href }) => {
           const isActive =

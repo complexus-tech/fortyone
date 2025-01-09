@@ -2,7 +2,7 @@
 import { BodyContainer } from "../../components/shared/body";
 import { SprintCard } from "./components/card";
 import { ActiveSprintsHeader } from "./components/header";
-import { Sprint } from "./types";
+import type { Sprint } from "./types";
 
 export const DetailedSprintList = ({ sprints }: { sprints: Sprint[] }) => {
   return (

@@ -1,10 +1,10 @@
 "use client";
 import { Box, Button, Flex, Tabs, Text } from "ui";
+import { SprintsIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
+import type { Sprint } from "@/modules/sprints/types";
 import { SprintRow } from "./components/row";
 import { SprintsHeader } from "./components/header";
-import { Sprint } from "@/modules/sprints/types";
-import { SprintsIcon } from "icons";
 
 export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
   return (
