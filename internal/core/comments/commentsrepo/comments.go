@@ -66,9 +66,9 @@ func (r *repo) DeleteComment(ctx context.Context, commentID uuid.UUID) error {
 
 	span.SetAttributes(attribute.String("commentId", commentID.String()))
 
+	// This will delete the comment and all child comments because of the cascade delete on the parent_id column
 	query := `
-		DELETE FROM story_comments
-		WHERE comment_id = :comment_id
+		DELETE FROM story_comments WHERE comment_id = :comment_id
 	`
 	params := map[string]interface{}{
 		"comment_id": commentID,
