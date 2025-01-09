@@ -1,3 +1,3 @@
-import type { SVGProps } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
-export type Icon = SVGProps<SVGSVGElement>;
+export type Icon = ComponentPropsWithoutRef<"svg">;

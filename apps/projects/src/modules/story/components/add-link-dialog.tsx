@@ -1,6 +1,6 @@
 import { Button, Flex, Text, Dialog, Input } from "ui";
 import { PlusIcon } from "icons";
-import type { ChangeEvent, FormEvent} from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { cn } from "lib";
 import { useCreateLinkMutation } from "@/lib/hooks/create-link-mutation";
@@ -36,7 +36,7 @@ export const AddLinkDialog = ({
     e.preventDefault();
     if (isEditing) {
       await updateLink({
-        linkId: link.id,
+        linkId: link?.id!,
         payload: {
           title: form.title,
           url: form.url,

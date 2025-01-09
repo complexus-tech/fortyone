@@ -233,7 +233,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
               <Text className="mb-4" color="muted">
                 Burndown chart shows the amount of work remaining in the sprint.
               </Text>
-              <ResponsiveContainer height={150} width="100%">
+              {/* <ResponsiveContainer height={150} width="100%">
                 <AreaChart
                   data={data}
                   margin={{
@@ -277,7 +277,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
                     type="monotone"
                   />
                 </AreaChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer> */}
             </Box>
             <Divider className="mb-6 mt-8" />
             <Box className="px-6">

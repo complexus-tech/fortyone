@@ -119,7 +119,7 @@ export const SprintCard = ({ name }: Sprint) => {
             <Text className="mb-2" fontSize="lg" fontWeight="medium">
               Burndown chart
             </Text>
-            <ResponsiveContainer height={110} width="100%">
+            {/* <ResponsiveContainer height={110} width="100%">
               <AreaChart
                 data={data}
                 margin={{
@@ -147,7 +147,7 @@ export const SprintCard = ({ name }: Sprint) => {
                   type="monotone"
                 />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> */}
           </Box>
           <Box className="pl-5">
             <Text className="mb-2" fontSize="lg" fontWeight="medium">

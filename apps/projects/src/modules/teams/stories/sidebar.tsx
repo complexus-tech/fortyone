@@ -1,10 +1,9 @@
-import { Box, Tabs, Text, Flex, ProgressBar, Divider, Badge, Avatar } from "ui";
+import { Box, Tabs, Text, Flex, ProgressBar, Divider, Avatar } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeams } from "../hooks/teams";
 
 export const Sidebar = () => {
@@ -16,9 +15,8 @@ export const Sidebar = () => {
   );
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
-  const { data: objectives = [] } = useObjectives();
 
-  const team = teams.find((team) => team.id === teamId)!;
+  const team = teams.find((t) => t.id === teamId)!;
   const totalStories = stories.length;
 
   return (

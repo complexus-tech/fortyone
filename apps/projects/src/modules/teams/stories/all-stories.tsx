@@ -1,5 +1,5 @@
 "use client";
-import { Box, Tabs, Text, Flex } from "ui";
+import { Box, Tabs, Text } from "ui";
 import { useMemo } from "react";
 import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { useSession } from "next-auth/react";
@@ -93,7 +93,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   );
 
   return (
-    <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
+    <Tabs
+      onValueChange={(v) => {
+        setTab(v as Tab);
+      }}
+      value={tab}
+    >
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
           <Tabs.Tab value="all">All stories</Tabs.Tab>

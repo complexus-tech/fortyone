@@ -121,17 +121,19 @@ export const Options = () => {
       <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           <Text fontWeight="semibold">Properties</Text>
-          {isDeleted ? <Badge
+          {isDeleted ? (
+            <Badge
               className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
               color="tertiary"
               size="lg"
             >
               {differenceInDays(
-                addDays(new Date(deletedAt), 30),
-                new Date(deletedAt),
+                addDays(new Date(deletedAt!), 30),
+                new Date(deletedAt!),
               )}{" "}
               days left in bin
-            </Badge> : null}
+            </Badge>
+          ) : null}
         </Box>
         <Option
           label="Reporter"

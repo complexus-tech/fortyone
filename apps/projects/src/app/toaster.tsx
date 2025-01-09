@@ -7,7 +7,7 @@ import { toasterIcons } from "@/app/toaster-icons";
 
 type ToasterProps = ComponentProps<typeof Sonner>;
 
-export const Toaster = ({ ...props }: ToasterProps) => {
+export const Toaster = (_: ToasterProps) => {
   const { theme = "system" } = useTheme();
 
   return (

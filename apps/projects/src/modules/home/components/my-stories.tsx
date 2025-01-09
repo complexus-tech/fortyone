@@ -44,53 +44,52 @@ export const MyStories = () => {
         <Tabs.Panel value="open">
           <Box className="mt-4 border-t border-gray-50 dark:border-dark-200">
             {new Array(7).fill(0).map((_, i) => (
-              <StoryContextMenu key={i}>
-                <RowWrapper
-                  className={cn("px-1", {
-                    "border-b-0": i === 7 - 1,
-                  })}
-                >
-                  <Flex align="center" className="relative select-none" gap={2}>
-                    <PrioritiesMenu>
-                      <PrioritiesMenu.Trigger>
+              <RowWrapper
+                key={i}
+                className={cn("px-1", {
+                  "border-b-0": i === 7 - 1,
+                })}
+              >
+                <Flex align="center" className="relative select-none" gap={2}>
+                  <PrioritiesMenu>
+                    <PrioritiesMenu.Trigger>
+                      <button className="block" type="button">
+                        <PriorityIcon priority="No Priority" />
+                      </button>
+                    </PrioritiesMenu.Trigger>
+                    <PrioritiesMenu.Items
+                      priority="No Priority"
+                      setPriority={(pr) => {}}
+                    />
+                  </PrioritiesMenu>
+                  <Flex align="center" gap={2}>
+                    <Text
+                      className="w-[55px] truncate"
+                      color="muted"
+                      fontWeight="medium"
+                    >
+                      COM-12
+                    </Text>
+                    <StatusesMenu>
+                      <StatusesMenu.Trigger>
                         <button className="block" type="button">
-                          <PriorityIcon priority="No Priority" />
+                          <StoryStatusIcon />
                         </button>
-                      </PrioritiesMenu.Trigger>
-                      <PrioritiesMenu.Items
-                        priority="No Priority"
-                        setPriority={(pr) => {}}
-                      />
-                    </PrioritiesMenu>
-                    <Flex align="center" gap={2}>
-                      <Text
-                        className="w-[55px] truncate"
-                        color="muted"
-                        fontWeight="medium"
-                      >
-                        COM-12
-                      </Text>
-                      <StatusesMenu>
-                        <StatusesMenu.Trigger>
-                          <button className="block" type="button">
-                            <StoryStatusIcon />
-                          </button>
-                        </StatusesMenu.Trigger>
-                        <StatusesMenu.Items setStatusId={(statusId) => {}} />
-                      </StatusesMenu>
-                      <Text className="overflow-hidden text-ellipsis whitespace-nowrap pl-2 hover:opacity-90">
-                        Design a new homepage
-                      </Text>
-                    </Flex>
-                  </Flex>
-                  <Flex align="center" gap={3}>
-                    <Text className="flex items-center gap-1" color="muted">
-                      Sep 27
-                      <CalendarIcon className="h-4 w-auto" />
+                      </StatusesMenu.Trigger>
+                      <StatusesMenu.Items setStatusId={(statusId) => {}} />
+                    </StatusesMenu>
+                    <Text className="overflow-hidden text-ellipsis whitespace-nowrap pl-2 hover:opacity-90">
+                      Design a new homepage
                     </Text>
                   </Flex>
-                </RowWrapper>
-              </StoryContextMenu>
+                </Flex>
+                <Flex align="center" gap={3}>
+                  <Text className="flex items-center gap-1" color="muted">
+                    Sep 27
+                    <CalendarIcon className="h-4 w-auto" />
+                  </Text>
+                </Flex>
+              </RowWrapper>
             ))}
           </Box>
         </Tabs.Panel>
