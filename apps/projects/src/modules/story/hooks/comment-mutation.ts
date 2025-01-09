@@ -36,19 +36,30 @@ export const useCommentStoryMutation = () => {
         storyKeys.comments(storyId),
       );
       if (previousComments) {
-        queryClient.setQueryData<Comment[]>(storyKeys.comments(storyId), [
-          ...previousComments,
-          {
-            id: "new comment",
-            userId: "",
-            comment: payload.comment,
-            storyId: storyId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            parentId: payload.parentId ?? null,
-            subComments: [],
-          },
-        ]);
+        const newComment = {
+          id: "new comment",
+          userId: "",
+          comment: payload.comment,
+          storyId: storyId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          parentId: payload.parentId ?? null,
+          subComments: [],
+        };
+
+        if (payload.parentId) {
+          const parentComment = previousComments.find(
+            (comment) => comment.id === payload.parentId,
+          );
+          if (parentComment) {
+            parentComment.subComments.push(newComment);
+          }
+        } else {
+          queryClient.setQueryData<Comment[]>(storyKeys.comments(storyId), [
+            ...previousComments,
+            newComment,
+          ]);
+        }
       }
     },
     onSettled: (_, __, { storyId }) => {

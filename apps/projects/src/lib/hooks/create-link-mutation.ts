@@ -17,6 +17,9 @@ export const useCreateLinkMutation = () => {
           onClick: () => mutation.mutate(variables),
         },
       });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onMutate: (newLink) => {
       const optimisticLink: Link = {

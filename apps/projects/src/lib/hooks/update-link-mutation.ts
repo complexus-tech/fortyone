@@ -25,6 +25,9 @@ export const useUpdateLinkMutation = () => {
           onClick: () => mutation.mutate(variables),
         },
       });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onMutate: (newLink) => {
       const previousLinks = queryClient.getQueryData<Link[]>(

@@ -2,14 +2,17 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const PlusIcon = (props: Icon) => {
-  const { className, strokeWidth = 2.3, ...rest } = props;
+  const { className, strokeWidth = 2.5, ...rest } = props;
   return (
     <svg
       {...rest}
       fill="none"
       height="24"
       strokeWidth={strokeWidth}
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn(
+        "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+        className
+      )}
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"

@@ -17,6 +17,9 @@ export const useCreateLabelMutation = () => {
           onClick: () => mutation.mutate(variables),
         },
       });
+      queryClient.invalidateQueries({
+        queryKey: labelKeys.lists(),
+      });
     },
     onSettled: (newLabel) => {
       const previousLabels = queryClient.getQueryData<Label[]>(

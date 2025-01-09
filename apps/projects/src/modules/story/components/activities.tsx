@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Flex, Tabs, Text, TextEditor } from "ui";
+import { Avatar, Box, Flex, Tabs, Text } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -12,8 +12,8 @@ import { StoryActivity } from "@/modules/stories/types";
 import { useSession } from "next-auth/react";
 import { useCommentStoryMutation } from "../hooks/comment-mutation";
 import { toast } from "sonner";
-import { Comment } from "@/types";
-import { Comments } from "@/components/ui/comments";
+import { CommentInput } from "./comment-input";
+import { Comments } from "./comments";
 
 export const Activities = ({
   activities,
@@ -66,7 +66,7 @@ export const Activities = ({
         className="mb-4 flex items-center gap-1"
         fontWeight="medium"
       >
-        <ClockIcon className="h-5 w-auto" />
+        <ClockIcon className="relative -top-px" />
         Activity feed
       </Text>
 
@@ -74,18 +74,14 @@ export const Activities = ({
         <Tabs.List className="mx-0 mb-5">
           <Tabs.Tab
             className="gap-1 px-2"
-            leftIcon={
-              <CommentIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
-            }
+            leftIcon={<CommentIcon className="h-[1.1rem]" />}
             value="comments"
           >
             Comments
           </Tabs.Tab>
           <Tabs.Tab
             className="gap-1 px-2"
-            leftIcon={
-              <ClockIcon className="h-[1.1rem] w-auto" strokeWidth={2.2} />
-            }
+            leftIcon={<ClockIcon className="h-[1.1rem]" />}
             value="updates"
           >
             Updates
@@ -113,29 +109,7 @@ export const Activities = ({
                 size="xs"
               />
             </Box>
-            <Flex
-              className="ml-1 min-h-[6rem] w-full rounded-lg border border-gray-50 bg-gray-50/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear focus-within:shadow-lg dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-200/50"
-              direction="column"
-              gap={2}
-              justify="between"
-            >
-              <TextEditor
-                className="prose-base font-normal antialiased"
-                editor={editor}
-              />
-              <Flex justify="end">
-                <Button
-                  className="px-3"
-                  color="tertiary"
-                  disabled={editor?.isEmpty}
-                  size="sm"
-                  variant="outline"
-                  onClick={handleComment}
-                >
-                  Comment
-                </Button>
-              </Flex>
-            </Flex>
+            <CommentInput storyId={storyId} />
           </Flex>
         </Tabs.Panel>
       </Tabs>

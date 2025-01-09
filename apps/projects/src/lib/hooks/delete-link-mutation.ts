@@ -18,6 +18,9 @@ export const useDeleteLinkMutation = () => {
           onClick: () => mutation.mutate(variables),
         },
       });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onMutate: ({ linkId, storyId }) => {
       const previousLinks = queryClient.getQueryData<Link[]>(
