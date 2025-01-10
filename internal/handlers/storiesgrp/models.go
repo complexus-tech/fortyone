@@ -21,6 +21,7 @@ type AppActivity struct {
 	Field        string    `json:"field"`
 	CurrentValue string    `json:"currentValue"`
 	CreatedAt    time.Time `json:"createdAt"`
+	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
 
 // AppNewLabels represents a new label in the application.
@@ -37,6 +38,7 @@ func toAppActivity(i stories.CoreActivity) AppActivity {
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
 		CreatedAt:    i.CreatedAt,
+		WorkspaceID:  i.WorkspaceID,
 	}
 }
 

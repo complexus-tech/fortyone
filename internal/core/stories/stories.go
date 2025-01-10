@@ -197,6 +197,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 			Field:        field,
 			CurrentValue: currentValue,
 			UserID:       userID,
+			WorkspaceID:  workspaceId,
 		}
 		// ignore if field contains description
 		if strings.Contains(field, "description") {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/complexus-tech/projects-api/internal/handlers/activitiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/commentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
@@ -114,6 +115,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the comments routes
 	commentsgrp.Routes(commentsgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the activities routes
+	activitiesgrp.Routes(activitiesgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,

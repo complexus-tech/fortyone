@@ -161,6 +161,7 @@ type dbActivity struct {
 	Field        string    `db:"field_changed"`
 	CurrentValue string    `db:"current_value"`
 	CreatedAt    time.Time `db:"created_at"`
+	WorkspaceID  uuid.UUID `db:"workspace_id"`
 }
 
 // toCoreActivity converts a dbActivity to a CoreActivity.
@@ -173,6 +174,7 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
 		CreatedAt:    i.CreatedAt,
+		WorkspaceID:  i.WorkspaceID,
 	}
 }
 
@@ -184,6 +186,7 @@ func toDBActivity(i stories.CoreActivity) dbActivity {
 		Type:         i.Type,
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
+		WorkspaceID:  i.WorkspaceID,
 	}
 }
 

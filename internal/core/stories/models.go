@@ -139,6 +139,7 @@ type CoreActivity struct {
 	Field        string    `json:"field"`
 	CurrentValue string    `json:"currentValue"`
 	CreatedAt    time.Time `json:"createdAt"`
+	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
 
 type CoreNewComment struct {
