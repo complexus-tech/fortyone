@@ -19,7 +19,7 @@ func Routes(cfg Config, app *web.App) {
 	activitiesService := activities.New(cfg.Log, activitiesrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	h := New(activitiesService)
+	h := New(cfg.Log, activitiesService)
 
 	app.Get("/workspaces/{workspaceId}/activities", h.GetActivities, auth)
 }

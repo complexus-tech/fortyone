@@ -3,11 +3,13 @@ package activitiesgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/complexus-tech/projects-api/internal/core/activities"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -17,11 +19,13 @@ var ErrInvalidLimit = errors.New("invalid limit")
 
 type Handlers struct {
 	activities *activities.Service
+	log        *logger.Logger
 }
 
-func New(activities *activities.Service) *Handlers {
+func New(log *logger.Logger, activities *activities.Service) *Handlers {
 	return &Handlers{
 		activities: activities,
+		log:        log,
 	}
 }
 
@@ -46,7 +50,9 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	limit := 10
+	fmt.Println(filters)
 	if filters["limit"] != nil {
+
 		limit, err = strconv.Atoi(filters["limit"].(string))
 		if err != nil {
 			web.RespondError(ctx, w, ErrInvalidLimit, http.StatusBadRequest)

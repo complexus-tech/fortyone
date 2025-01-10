@@ -19,7 +19,7 @@ type AppActivity struct {
 }
 
 type AppFilters struct {
-	Limit int `json:"limit"`
+	Limit string `json:"limit"`
 }
 
 func toAppActivity(a activities.CoreActivity) AppActivity {
