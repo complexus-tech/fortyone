@@ -1,7 +1,7 @@
-import { AnalyticsIcon, ArrowLeftIcon } from "icons";
+import { ArrowLeftIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import type { Metadata } from "next";
-import { NewStoryButton } from "@/components/ui";
+import { NewStoryButton, PriorityIcon } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Reports",
@@ -11,7 +11,10 @@ export default function Page() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <AnalyticsIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+        <PriorityIcon
+          className="h-20 w-auto text-gray dark:text-gray-300"
+          priority="High"
+        />
         <Text className="mb-6 mt-10" fontSize="3xl">
           Coming soon...
         </Text>
