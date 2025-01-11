@@ -88,19 +88,19 @@ export const PreferencesSettings = () => {
                     <Select.Option value="light">
                       <Flex align="center" gap={2}>
                         <SunIcon className="h-[1.15rem]" />
-                        Light
+                        Day Mode
                       </Flex>
                     </Select.Option>
                     <Select.Option value="dark">
                       <Flex align="center" gap={2}>
                         <MoonIcon className="h-[1.15rem]" />
-                        Dark
+                        Night Mode
                       </Flex>
                     </Select.Option>
                     <Select.Option value="system">
                       <Flex align="center" gap={2}>
                         <SystemIcon className="h-[1.15rem]" />
-                        System
+                        Auto
                       </Flex>
                     </Select.Option>
                   </Select.Group>

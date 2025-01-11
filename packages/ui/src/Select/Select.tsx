@@ -28,7 +28,7 @@ const Trigger = forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ArrowDownIcon className="h-3.5 w-auto opacity-50" />
+      <ArrowDownIcon className="h-3.5" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
