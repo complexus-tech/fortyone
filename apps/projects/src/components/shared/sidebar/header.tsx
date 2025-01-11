@@ -7,17 +7,12 @@ import {
   LogoutIcon,
   NewStoryIcon,
   PlusIcon,
-  ObjectiveIcon,
   SettingsIcon,
-  SprintsIcon,
   UsersAddIcon,
-  EpicsIcon,
-  SidebarExpandIcon,
   SearchIcon,
   MoonIcon,
   ArrowRightIcon,
   SunIcon,
-  FilterIcon,
   SystemIcon,
   PreferencesIcon,
 } from "icons";
@@ -25,6 +20,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { logOut } from "./actions";
@@ -41,6 +37,12 @@ export const Header = () => {
   useHotkeys("c", () => {
     setIsOpen(true);
   });
+
+  const handleLogout = async () => {
+    await logOut(callbackUrl).catch(() => {
+      toast.error("Failed to log out");
+    });
+  };
 
   return (
     <>
@@ -171,11 +173,7 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
-              <Menu.Item
-                onClick={async () => {
-                  await logOut(callbackUrl);
-                }}
-              >
+              <Menu.Item onSelect={handleLogout}>
                 <LogoutIcon className="h-5 w-auto text-danger" />
                 Log out
               </Menu.Item>
@@ -197,6 +195,13 @@ export const Header = () => {
           variant="outline"
         >
           Create Story
+          <Text
+            as="span"
+            className="ml-auto text-sm opacity-0 md:leading-[2.5rem]"
+            color="muted"
+          >
+            ⌘N
+          </Text>
         </Button>
         <Button
           asIcon

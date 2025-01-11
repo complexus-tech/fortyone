@@ -1,17 +1,7 @@
 import { usePathname } from "next/navigation";
-import { Badge, Flex, Text } from "ui";
+import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import {
-  AnalyticsIcon,
-  HomeIcon,
-  NotificationsIcon,
-  ObjectiveIcon,
-  SprintsIcon,
-  RoadmapIcon,
-  WorkIcon,
-  ChatIcon,
-  UserIcon,
-} from "icons";
+import { HomeIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
 import { NavLink, PriorityIcon } from "@/components/ui";
 
 type MenuItem = {

@@ -23,7 +23,7 @@ export const Activity = ({
   const { data: statuses = [] } = useStatuses();
   const { data: objectives = [] } = useObjectives();
   const { data: sprints = [] } = useSprints();
-  const member = members.find((member) => member.id === userId);
+  const member = members.find((m) => m.id === userId);
 
   const fieldMap = {
     title: {
@@ -63,15 +63,15 @@ export const Activity = ({
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={`/profile/${members.find((member) => member.id === value)?.id}`}
+              href={`/profile/${members.find((m) => m.id === value)?.id}`}
             >
               <Avatar
                 className="relative top-px"
-                name={members.find((member) => member.id === value)?.fullName}
+                name={members.find((m) => m.id === value)?.fullName}
                 size="xs"
-                src={members.find((member) => member.id === value)?.avatarUrl}
+                src={members.find((m) => m.id === value)?.avatarUrl}
               />
-              {members.find((member) => member.id === value)?.username}
+              {members.find((m) => m.id === value)?.username}
             </Link>
           )}
         </>
@@ -147,11 +147,14 @@ export const Activity = ({
       label: "Related to",
       render: (value: string) => <span>{value}</span>,
     },
-  } as Record<string, {
+  } as Record<
+    string,
+    {
       label: string;
       icon?: ReactNode;
       render: (value: string) => ReactNode;
-    }>;
+    }
+  >;
 
   return (
     <Box className="relative pb-4 last-of-type:pb-0">
@@ -164,7 +167,8 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? <Box>
+            member ? (
+              <Box>
                 <Flex gap={2}>
                   <Avatar
                     className="mt-0.5"
@@ -193,7 +197,8 @@ export const Activity = ({
                     </Button>
                   </Box>
                 </Flex>
-              </Box> : null
+              </Box>
+            ) : null
           }
         >
           <Flex className="cursor-pointer" gap={1}>

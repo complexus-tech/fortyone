@@ -17,7 +17,7 @@ export async function authenticateUser({ email = "", password = "" }) {
     name: "Joseph Mukorivo",
     email: "josemukorivo@gmail.com",
     token:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3MzY1OTEzNzIsIm5iZiI6MTczMzk5OTM3MiwiaWF0IjoxNzMzOTk5MzcyfQ.cilfy1OkQBtOuX_zdmbxnl4FRYHyYj24iZIYTvCOGr4",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3MzkxODYxOTUsIm5iZiI6MTczNjU5NDE5NSwiaWF0IjoxNzM2NTk0MTk1fQ.SXbbyE3Q66aHJ9seYQll0bZStkEw-P4r4QbWvxnag7c",
     workspaces: [
       {
         id: "3589aaa4-f1f4-40bb-ae1c-9104dd537d8c",

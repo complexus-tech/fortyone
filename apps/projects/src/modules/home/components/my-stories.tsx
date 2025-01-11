@@ -1,100 +1,169 @@
 "use client";
-import { Box, Button, Flex, Tabs, Text, Menu, Wrapper } from "ui";
-import { cn } from "lib";
-import { ArrowDownIcon, CalendarIcon } from "icons";
-import {
-  RowWrapper,
-  StatusesMenu,
-  PriorityIcon,
-  StoryStatusIcon,
-  PrioritiesMenu,
-  StoryContextMenu,
-} from "@/components/ui";
+import { Avatar, Box, Button, Flex, Tabs, Text, Wrapper } from "ui";
+import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
+import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import Link from "next/link";
+import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { useMyStories } from "@/modules/my-work/hooks/my-stories";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useMembers } from "@/lib/hooks/members";
+import type { Story } from "@/modules/stories/types";
+import { slugify } from "@/utils";
+
+const StoryRow = ({
+  id,
+  title,
+  priority,
+  statusId,
+  sequenceId,
+  teamId,
+  assigneeId,
+  endDate,
+}: Story) => {
+  const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
+
+  const getTeamLabel = () => {
+    return teams.find((team) => team.id === teamId)?.code;
+  };
+
+  const getStoryStatus = () => {
+    return statuses.find((status) => status.id === statusId)?.name;
+  };
+
+  const getStoryMember = () => {
+    return members.find((member) => member.id === assigneeId);
+  };
+  return (
+    <Link href={`/story/${id}/${slugify(title)}`}>
+      <RowWrapper className="gap-4 px-0" key={id}>
+        <Flex align="center" className="relative select-none" gap={2}>
+          <Flex align="center" gap={2}>
+            <Text className="opacity-80" color="muted" fontWeight="normal">
+              {getTeamLabel()}-{sequenceId}
+            </Text>
+            <PriorityIcon className="relative -top-px" priority={priority} />
+            <Text className="max-w-[22rem] truncate hover:opacity-90">
+              {title}
+            </Text>
+          </Flex>
+        </Flex>
+
+        <Flex align="center" gap={3}>
+          <Text className="flex items-center gap-1">
+            <StoryStatusIcon className="relative -top-px" statusId={statusId} />
+            {getStoryStatus()}
+          </Text>
+          {endDate ? (
+            <Text className="flex items-center gap-1">
+              <CalendarIcon className="relative -top-px" />
+              {format(new Date(endDate), "MMM, d")}
+            </Text>
+          ) : null}
+          <Avatar
+            name={getStoryMember()?.fullName}
+            size="xs"
+            src={getStoryMember()?.avatarUrl}
+          />
+        </Flex>
+      </RowWrapper>
+    </Link>
+  );
+};
+
+const List = ({ stories }: { stories: Story[] }) => {
+  return (
+    <Box className="mt-2.5 border-t border-gray-50 dark:border-dark-200">
+      {stories.slice(0, 9).map((story) => (
+        <StoryRow key={story.id} {...story} />
+      ))}
+    </Box>
+  );
+};
 
 export const MyStories = () => {
+  const { data: session } = useSession();
+  const { data: stories = [] } = useMyStories();
+  const { data: statuses = [] } = useStatuses();
+
+  const inProgressStatuses = statuses
+    .filter((status) => {
+      return status.category === "started";
+    })
+    .map((status) => status.id);
+
+  const upcomingDueDates = stories.filter((story) => {
+    return (
+      story.endDate &&
+      new Date(story.endDate) > new Date() &&
+      story.assigneeId === session?.user?.id
+    );
+  });
+
+  const inProgressStories = stories.filter((story) => {
+    return (
+      inProgressStatuses.includes(story.statusId) &&
+      story.assigneeId === session?.user?.id
+    );
+  });
+
   return (
     <Wrapper>
-      <Flex align="center" className="mb-3" justify="between">
-        <Text fontSize="lg">Assigned to me</Text>
-        <Menu>
-          <Menu.Button>
-            <Button
-              color="tertiary"
-              rightIcon={<ArrowDownIcon className="h-4 w-auto" />}
-              size="sm"
-              variant="outline"
-            >
-              Due this week
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="end">
-            <Menu.Group>
-              <Menu.Item>Last week</Menu.Item>
-              <Menu.Item>Last month</Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
+      <Flex align="center" justify="between">
+        <Text className="mb-2" fontSize="lg">
+          Recent stories
+        </Text>
+        <Button
+          color="tertiary"
+          href="/my-work"
+          rightIcon={<ArrowRightIcon className="h-4" />}
+          size="sm"
+        >
+          More stories
+        </Button>
       </Flex>
 
-      <Tabs defaultValue="open">
+      <Tabs defaultValue="inProgress">
         <Tabs.List className="mx-0">
-          <Tabs.Tab value="open">Open</Tabs.Tab>
-          <Tabs.Tab value="closed">Closed</Tabs.Tab>
+          <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
+          <Tabs.Tab value="upcoming">Upcoming</Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="open">
-          <Box className="mt-4 border-t border-gray-50 dark:border-dark-200">
-            {new Array(7).fill(0).map((_, i) => (
-              <RowWrapper
-                key={i}
-                className={cn("px-1", {
-                  "border-b-0": i === 7 - 1,
-                })}
-              >
-                <Flex align="center" className="relative select-none" gap={2}>
-                  <PrioritiesMenu>
-                    <PrioritiesMenu.Trigger>
-                      <button className="block" type="button">
-                        <PriorityIcon priority="No Priority" />
-                      </button>
-                    </PrioritiesMenu.Trigger>
-                    <PrioritiesMenu.Items
-                      priority="No Priority"
-                      setPriority={(pr) => {}}
-                    />
-                  </PrioritiesMenu>
-                  <Flex align="center" gap={2}>
-                    <Text
-                      className="w-[55px] truncate"
-                      color="muted"
-                      fontWeight="medium"
-                    >
-                      COM-12
-                    </Text>
-                    <StatusesMenu>
-                      <StatusesMenu.Trigger>
-                        <button className="block" type="button">
-                          <StoryStatusIcon />
-                        </button>
-                      </StatusesMenu.Trigger>
-                      <StatusesMenu.Items setStatusId={(statusId) => {}} />
-                    </StatusesMenu>
-                    <Text className="overflow-hidden text-ellipsis whitespace-nowrap pl-2 hover:opacity-90">
-                      Design a new homepage
-                    </Text>
-                  </Flex>
-                </Flex>
-                <Flex align="center" gap={3}>
-                  <Text className="flex items-center gap-1" color="muted">
-                    Sep 27
-                    <CalendarIcon className="h-4 w-auto" />
-                  </Text>
-                </Flex>
-              </RowWrapper>
-            ))}
-          </Box>
+        <Tabs.Panel value="inProgress">
+          {inProgressStories.length === 0 ? (
+            <Flex
+              align="center"
+              className="h-[25rem]"
+              direction="column"
+              gap={3}
+              justify="center"
+            >
+              <StoryIcon className="h-24 opacity-70" />
+              <Text color="muted">
+                You do not have any stories in progress.
+              </Text>
+            </Flex>
+          ) : (
+            <List stories={inProgressStories} />
+          )}
         </Tabs.Panel>
-        <Tabs.Panel value="closed">
-          <Text className="pt-1">Closed</Text>
+        <Tabs.Panel value="upcoming">
+          {upcomingDueDates.length === 0 ? (
+            <Flex
+              align="center"
+              className="h-[25rem]"
+              direction="column"
+              gap={3}
+              justify="center"
+            >
+              <StoryIcon className="h-24 opacity-70" />
+              <Text color="muted">You do not have any stories due soon.</Text>
+            </Flex>
+          ) : (
+            <List stories={upcomingDueDates} />
+          )}
         </Tabs.Panel>
       </Tabs>
     </Wrapper>

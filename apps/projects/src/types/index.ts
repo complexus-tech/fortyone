@@ -45,3 +45,11 @@ export type Comment = {
   updatedAt: string;
   subComments: Comment[];
 };
+
+export type StoriesSummary = {
+  closed: number;
+  overdue: number;
+  inProgress: number;
+  created: number;
+  assigned: number;
+};

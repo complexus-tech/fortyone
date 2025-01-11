@@ -1,17 +1,8 @@
 import { Avatar, Box, Flex, Tabs, Text } from "ui";
-import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
 import { ClockIcon, CommentIcon } from "icons";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 import { Activity } from "@/components/ui";
 import type { StoryActivity } from "@/modules/stories/types";
-import { useCommentStoryMutation } from "../hooks/comment-mutation";
 import { CommentInput } from "./comment-input";
 import { Comments } from "./comments";
 
@@ -25,39 +16,6 @@ export const Activities = ({
   storyId: string;
 }) => {
   const { data: session } = useSession();
-  const { mutateAsync } = useCommentStoryMutation();
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-      Placeholder.configure({ placeholder: "Leave a comment..." }),
-    ],
-    content: "",
-    editable: true,
-  });
-
-  const handleComment = async () => {
-    const comment = editor?.getHTML() ?? "";
-    if (editor?.isEmpty) {
-      toast.error("Comment is required", {
-        description: "Please enter a comment before submitting",
-      });
-      return;
-    }
-    await mutateAsync({
-      storyId,
-      payload: { comment, parentId: null },
-    }).then(() => {
-      editor?.commands.clearContent();
-    });
-  };
 
   return (
     <Box className={className}>
