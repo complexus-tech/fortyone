@@ -9,11 +9,10 @@ import {
   Checkbox,
   Box,
   Button,
-  Badge,
 } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon, CloseIcon } from "icons";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
 import { format, addDays, formatISO } from "date-fns";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
@@ -23,14 +22,13 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/lib/hooks/sprints";
-import { SprintsMenu } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 import { RowWrapper } from "../row-wrapper";
 import { StoryStatusIcon } from "../story-status-icon";
 import { PriorityIcon } from "../priority-icon";
 import { useBoard } from "../board-context";
+import { SprintsMenu } from "./sprints-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
@@ -83,7 +81,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { mutateAsync } = useUpdateStoryMutation();
 
   const handleUpdate = async (data: Partial<DetailedStory>) => {
-    mutateAsync({
+    await mutateAsync({
       storyId: id,
       payload: data,
     });
@@ -139,8 +137,8 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   </button>
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
-                  setStatusId={(id) => {
-                    handleUpdate({ statusId: id });
+                  setStatusId={(statusId) => {
+                    handleUpdate({ statusId });
                   }}
                   statusId={statusId}
                 />
@@ -165,7 +163,8 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 />
               </PrioritiesMenu>
             )}
-            {isColumnVisible("Objective") && selectedObjective ? <ObjectivesMenu>
+            {isColumnVisible("Objective") && selectedObjective ? (
+              <ObjectivesMenu>
                 <Tooltip
                   className="max-w-80 py-3"
                   title={
@@ -209,9 +208,11 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                     handleUpdate({ objectiveId });
                   }}
                 />
-              </ObjectivesMenu> : null}
+              </ObjectivesMenu>
+            ) : null}
 
-            {isColumnVisible("Sprint") && selectedSprint ? <SprintsMenu>
+            {isColumnVisible("Sprint") && selectedSprint ? (
+              <SprintsMenu>
                 <Tooltip
                   className="pointer-events-none max-w-96 py-3"
                   title={sprintTooltip(selectedSprint)}
@@ -239,67 +240,70 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   }}
                   sprintId={sprintId ?? undefined}
                 />
-              </SprintsMenu> : null}
+              </SprintsMenu>
+            ) : null}
             {isColumnVisible("Labels") && storyLabels.length > 0 && (
               <Labels storyId={id} storyLabels={storyLabels} teamId={teamId} />
             )}
             {isColumnVisible("Due date") &&
-              endDate &&
-              !completedOrCancelled(status?.category) ? <DatePicker>
-                  <Tooltip
-                    className="py-3"
-                    title={
-                      <Flex align="start" gap={2}>
+            endDate &&
+            !completedOrCancelled(status?.category) ? (
+              <DatePicker>
+                <Tooltip
+                  className="py-3"
+                  title={
+                    <Flex align="start" gap={2}>
+                      <CalendarIcon
+                        className={cn("relative top-[2.5px] h-5 w-auto", {
+                          "text-primary dark:text-primary":
+                            new Date(endDate) < new Date(),
+                          "text-warning dark:text-warning":
+                            new Date(endDate) <= addDays(new Date(), 7) &&
+                            new Date(endDate) >= new Date(),
+                        })}
+                      />
+                      <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                    </Flex>
+                  }
+                >
+                  <span>
+                    <DatePicker.Trigger>
+                      <Button
+                        className={cn("px-2", {
+                          "text-primary dark:text-primary":
+                            new Date(endDate) < new Date(),
+                          "text-warning dark:text-warning":
+                            new Date(endDate) <= addDays(new Date(), 7) &&
+                            new Date(endDate) >= new Date(),
+                        })}
+                        color="tertiary"
+                        rounded="xl"
+                        size="xs"
+                        type="button"
+                      >
                         <CalendarIcon
-                          className={cn("relative top-[2.5px] h-5 w-auto", {
+                          className={cn("h-4", {
                             "text-primary dark:text-primary":
                               new Date(endDate) < new Date(),
                             "text-warning dark:text-warning":
                               new Date(endDate) <= addDays(new Date(), 7) &&
                               new Date(endDate) >= new Date(),
                           })}
+                          strokeWidth={3}
                         />
-                        <Box>{getDueDateMessage(new Date(endDate))}</Box>
-                      </Flex>
-                    }
-                  >
-                    <span>
-                      <DatePicker.Trigger>
-                        <Button
-                          className={cn("px-2", {
-                            "text-primary dark:text-primary":
-                              new Date(endDate) < new Date(),
-                            "text-warning dark:text-warning":
-                              new Date(endDate) <= addDays(new Date(), 7) &&
-                              new Date(endDate) >= new Date(),
-                          })}
-                          color="tertiary"
-                          rounded="xl"
-                          size="xs"
-                          type="button"
-                        >
-                          <CalendarIcon
-                            className={cn("h-4", {
-                              "text-primary dark:text-primary":
-                                new Date(endDate) < new Date(),
-                              "text-warning dark:text-warning":
-                                new Date(endDate) <= addDays(new Date(), 7) &&
-                                new Date(endDate) >= new Date(),
-                            })}
-                            strokeWidth={3}
-                          />
-                          {format(new Date(endDate), "MMM d")}
-                        </Button>
-                      </DatePicker.Trigger>
-                    </span>
-                  </Tooltip>
-                  <DatePicker.Calendar
-                    onDayClick={(day) => {
-                      handleUpdate({ endDate: formatISO(day) });
-                    }}
-                    selected={new Date(endDate)}
-                  />
-                </DatePicker> : null}
+                        {format(new Date(endDate), "MMM d")}
+                      </Button>
+                    </DatePicker.Trigger>
+                  </span>
+                </Tooltip>
+                <DatePicker.Calendar
+                  onDayClick={(day) => {
+                    handleUpdate({ endDate: formatISO(day) });
+                  }}
+                  selected={new Date(endDate)}
+                />
+              </DatePicker>
+            ) : null}
             {isColumnVisible("Created") && (
               <Tooltip
                 title={`Created on ${format(new Date(createdAt), "MMM dd, yyyy HH:mm")}`}

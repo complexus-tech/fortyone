@@ -1,9 +1,10 @@
 "use client";
-import { Avatar, Box, Button, Flex, Tabs, Text, Wrapper } from "ui";
+import { Avatar, Box, Button, Flex, Tabs, Text, Tooltip, Wrapper } from "ui";
 import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import Link from "next/link";
+import { cn } from "lib";
 import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useMyStories } from "@/modules/my-work/hooks/my-stories";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -11,6 +12,7 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
+import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 
 const StoryRow = ({
   id,
@@ -37,6 +39,7 @@ const StoryRow = ({
   const getStoryMember = () => {
     return members.find((member) => member.id === assigneeId);
   };
+
   return (
     <Link href={`/story/${id}/${slugify(title)}`}>
       <RowWrapper className="gap-4 px-0" key={id}>
@@ -58,10 +61,43 @@ const StoryRow = ({
             {getStoryStatus()}
           </Text>
           {endDate ? (
-            <Text className="flex items-center gap-1">
-              <CalendarIcon className="relative -top-px" />
-              {format(new Date(endDate), "MMM, d")}
-            </Text>
+            <Tooltip
+              title={
+                <Flex align="start" gap={2}>
+                  <CalendarIcon
+                    className={cn("relative top-[2.5px] h-5 w-auto", {
+                      "text-primary dark:text-primary":
+                        new Date(endDate) < new Date(),
+                      "text-warning dark:text-warning":
+                        new Date(endDate) <= addDays(new Date(), 7) &&
+                        new Date(endDate) >= new Date(),
+                    })}
+                  />
+                  <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                </Flex>
+              }
+            >
+              <Text
+                className={cn("flex items-center gap-1", {
+                  "text-primary dark:text-primary":
+                    new Date(endDate) < new Date(),
+                  "text-warning dark:text-warning":
+                    new Date(endDate) <= addDays(new Date(), 7) &&
+                    new Date(endDate) >= new Date(),
+                })}
+              >
+                <CalendarIcon
+                  className={cn("relative -top-px", {
+                    "text-primary dark:text-primary":
+                      new Date(endDate) < new Date(),
+                    "text-warning dark:text-warning":
+                      new Date(endDate) <= addDays(new Date(), 7) &&
+                      new Date(endDate) >= new Date(),
+                  })}
+                />
+                {format(new Date(endDate), "MMM, d")}
+              </Text>
+            </Tooltip>
           ) : null}
           <Avatar
             name={getStoryMember()?.fullName}
@@ -95,11 +131,30 @@ export const MyStories = () => {
     })
     .map((status) => status.id);
 
+  const completedOrCancelledStatuses = statuses
+    .filter((status) => {
+      return (
+        status.category === "completed" ||
+        status.category === "cancelled" ||
+        status.category === "paused"
+      );
+    })
+    .map((status) => status.id);
+
   const upcomingDueDates = stories.filter((story) => {
     return (
       story.endDate &&
       new Date(story.endDate) > new Date() &&
       story.assigneeId === session?.user?.id
+    );
+  });
+
+  const dueStories = stories.filter((story) => {
+    return (
+      story.endDate &&
+      new Date(story.endDate) < new Date() &&
+      story.assigneeId === session?.user?.id &&
+      !completedOrCancelledStatuses.includes(story.statusId)
     );
   });
 
@@ -130,6 +185,7 @@ export const MyStories = () => {
         <Tabs.List className="mx-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Upcoming</Tabs.Tab>
+          <Tabs.Tab value="due">Due</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="inProgress">
           {inProgressStories.length === 0 ? (
@@ -163,6 +219,22 @@ export const MyStories = () => {
             </Flex>
           ) : (
             <List stories={upcomingDueDates} />
+          )}
+        </Tabs.Panel>
+        <Tabs.Panel value="due">
+          {dueStories.length === 0 ? (
+            <Flex
+              align="center"
+              className="h-[25rem]"
+              direction="column"
+              gap={3}
+              justify="center"
+            >
+              <StoryIcon className="h-24 opacity-70" />
+              <Text color="muted">You do not have any stories due.</Text>
+            </Flex>
+          ) : (
+            <List stories={dueStories} />
           )}
         </Tabs.Panel>
       </Tabs>

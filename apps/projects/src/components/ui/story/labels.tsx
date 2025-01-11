@@ -2,8 +2,8 @@ import { Badge, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
 import { useLabels } from "@/lib/hooks/labels";
 import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
-import { LabelsMenu } from "@/components/ui";
 import { StoryLabel } from "../label";
+import { LabelsMenu } from "./labels-menu";
 
 export const Labels = ({
   storyLabels = [],
