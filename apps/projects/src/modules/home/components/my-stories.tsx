@@ -180,7 +180,6 @@ export const MyStories = () => {
           More stories
         </Button>
       </Flex>
-
       <Tabs defaultValue="inProgress">
         <Tabs.List className="mx-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>

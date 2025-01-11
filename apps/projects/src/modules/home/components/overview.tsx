@@ -1,12 +1,29 @@
 "use client";
-import { Box, Text, Wrapper } from "ui";
+import { Box, Flex, Text, Wrapper } from "ui";
 import { useSummary } from "@/lib/hooks/summary";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
   <Wrapper className="px-5">
-    <Text className="mb-1.5 text-3xl antialiased" fontWeight="semibold">
-      {count}
-    </Text>
+    <Flex justify="between">
+      <Text className="mb-1.5 text-2xl antialiased" fontWeight="semibold">
+        {count}
+      </Text>
+      <svg
+        className="h-5 w-auto"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M7 7h10v10" />
+        <path d="M7 17 17 7" />
+      </svg>
+    </Flex>
     <Text className="opacity-80" color="muted">
       {title}
     </Text>
