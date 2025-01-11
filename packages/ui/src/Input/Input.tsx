@@ -30,13 +30,13 @@ export const Input: FC<InputProps> = (props) => {
         required={required}
         value={value}
         className={cn(
-          "w-full rounded-[0.35rem] border bg-white/70 dark:bg-dark/20 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 h-[2.6rem] leading-[2.6rem] focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 dark:focus:ring-dark-50 focus:ring-offset-1 read-only:focus:ring-0",
+          "w-full rounded-[0.45rem] border bg-white/70 dark:bg-dark/20 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 h-[2.6rem] leading-[2.6rem] focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 dark:focus:ring-dark-50 focus:ring-offset-1 read-only:focus:ring-0 dark:placeholder:text-gray-300",
           className
         )}
         {...rest}
       />
       {helpText && (
-        <span className="text-[0.9rem] font-medium inline-block left-[2px] -bottom-5 absolute text-gray-300 first-letter:uppercase">
+        <span className="text-[0.9rem] font-medium inline-block left-[2px] -bottom-6 absolute text-gray-300 first-letter:uppercase">
           {helpText}
         </span>
       )}

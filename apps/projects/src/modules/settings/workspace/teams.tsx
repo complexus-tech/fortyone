@@ -10,7 +10,7 @@ export const WorkspaceTeamsSettings = () => {
       </Text>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <Box className="border-b border-gray-100 p-6 dark:border-dark-100">
+        <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
           <Flex align="center" justify="between">
             <Box>
               <Text as="h3" className="font-medium">

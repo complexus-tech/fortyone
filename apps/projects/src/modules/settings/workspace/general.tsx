@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Input } from "ui";
+import { SectionHeader } from "../components";
 
 export const WorkspaceGeneralSettings = () => {
   return (
@@ -10,14 +11,10 @@ export const WorkspaceGeneralSettings = () => {
       </Text>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <Box className="border-b border-gray-100 p-6 dark:border-dark-100">
-          <Text as="h3" className="font-medium">
-            General Information
-          </Text>
-          <Text className="mt-1" color="muted">
-            Basic information about your workspace.
-          </Text>
-        </Box>
+        <SectionHeader
+          description="Basic information about your workspace."
+          title="General Information"
+        />
 
         <Box className="p-6">
           <Flex direction="column" gap={6}>
