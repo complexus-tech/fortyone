@@ -197,7 +197,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
       <ResizablePanel.Panel defaultSize={82}>
-        <Container className="max-w-[47rem] p-12">{children}</Container>
+        <Container className="max-w-[56rem] p-12">{children}</Container>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );
