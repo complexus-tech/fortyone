@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Input } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const WorkspaceGeneralSettings = () => {
   return (

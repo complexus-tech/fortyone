@@ -2,7 +2,7 @@
 
 import { Box, Flex, Text, Button, Input, Avatar, Badge, Menu } from "ui";
 import { SearchIcon, MoreHorizontalIcon } from "icons";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components/section-header";
 
 export const TeamsSettings = () => {
   return (

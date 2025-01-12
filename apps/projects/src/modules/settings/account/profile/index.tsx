@@ -1,10 +1,18 @@
 "use client";
 
 import { Box, Button, Divider, Input, Text } from "ui";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "../../components";
 import { ProfilePicture } from "./components/profile-picture";
 
 export const ProfileSettings = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleLeaveWorkspace = () => {
+    setIsOpen(true);
+  };
+
   return (
     <Box>
       <Text as="h1" className="mb-6 text-2xl font-semibold">
@@ -26,7 +34,7 @@ export const ProfileSettings = () => {
             />
 
             <Input
-              label="Email address"
+              label="Email"
               name="email"
               placeholder="Enter your email address"
               type="email"
@@ -59,11 +67,28 @@ export const ProfileSettings = () => {
             </ul>
           </Box>
           <Divider className="my-4" />
-          <Button className="bg-primary dark:bg-primary" variant="naked">
+          <Button
+            className="bg-primary dark:bg-primary"
+            onClick={() => {
+              setIsOpen(true);
+            }}
+            variant="naked"
+          >
             Leave Workspace
           </Button>
         </Box>
       </Box>
+
+      <ConfirmDialog
+        confirmText="I understand"
+        description="You will lose access to all workspace data. Your account will remain active."
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+        }}
+        onConfirm={handleLeaveWorkspace}
+        title="Leave Workspace"
+      />
     </Box>
   );
 };

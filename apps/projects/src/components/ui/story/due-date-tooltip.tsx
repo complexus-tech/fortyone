@@ -17,7 +17,7 @@ export const getDueDateMessage = (date: Date) => {
     if (daysOverdue === 1) {
       return (
         <>
-          <Text fontSize="md">This was due on yesterday</Text>
+          <Text fontSize="md">This was due yesterday</Text>
           <Text color="muted" fontSize="md">
             One day overdue
           </Text>

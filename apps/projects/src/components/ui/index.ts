@@ -23,6 +23,7 @@ export * from "./stories-view-options-button";
 export { StoriesFilterButton } from "./stories-filter-button";
 export * from "./label";
 export * from "./dot";
+export * from "./confirm-dialog";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";

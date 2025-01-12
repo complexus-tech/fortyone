@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button, Badge } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components/section-header";
 
 export const BillingSettings = () => {
   return (
