@@ -24,7 +24,7 @@ export const DeleteAccountSettings = () => {
           <Flex direction="column" gap={6}>
             <Box>
               <Text color="muted">Deleting your account will:</Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Delete your profile and personal information</li>
                 <li>Remove you from all teams and workspaces</li>
                 <li>Delete all your stories, comments, and activities</li>

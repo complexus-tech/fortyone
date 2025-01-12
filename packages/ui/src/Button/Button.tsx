@@ -12,7 +12,8 @@ export const buttonVariants = cva(
       variant: {
         outline: null,
         solid: null,
-        naked: "bg-opacity-10",
+        naked:
+          "bg-opacity-10 dark:bg-opacity-10 hover:bg-opacity-20 dark:hover:bg-opacity-20",
       },
       rounded: {
         none: "rounded-none",

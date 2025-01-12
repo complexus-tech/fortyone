@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const AutomationsSettings = () => {
   return (
@@ -35,7 +35,7 @@ export const AutomationsSettings = () => {
               <Text className="mt-1" color="muted">
                 Events that can start an automation:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Story created or updated</li>
                 <li>Comment added</li>
                 <li>Status changed</li>
@@ -49,7 +49,7 @@ export const AutomationsSettings = () => {
               <Text className="mt-1" color="muted">
                 Actions that can be automated:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Assign story</li>
                 <li>Update status</li>
                 <li>Add label</li>

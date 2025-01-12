@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const CustomFieldsSettings = () => {
   return (
@@ -36,7 +36,7 @@ export const CustomFieldsSettings = () => {
               <Text className="mt-1" color="muted">
                 Choose from these field types:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Text (single line)</li>
                 <li>Text area (multi-line)</li>
                 <li>Number</li>

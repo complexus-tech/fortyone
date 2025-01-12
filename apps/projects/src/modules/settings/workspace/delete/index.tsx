@@ -24,7 +24,7 @@ export const WorkspaceDeleteSettings = () => {
           <Flex direction="column" gap={6}>
             <Box>
               <Text color="muted">Deleting your workspace will:</Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Delete all teams and their data</li>
                 <li>Delete all stories, comments, and activities</li>
                 <li>Remove all members from the workspace</li>

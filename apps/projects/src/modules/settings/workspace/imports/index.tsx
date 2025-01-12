@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const ImportsSettings = () => {
   return (
@@ -28,7 +28,7 @@ export const ImportsSettings = () => {
               <Text className="mt-1" color="muted">
                 Import your data from these platforms:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Jira</li>
                 <li>Trello</li>
                 <li>Asana</li>

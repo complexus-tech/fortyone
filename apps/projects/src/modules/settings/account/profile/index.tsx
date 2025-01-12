@@ -40,7 +40,28 @@ export const ProfileSettings = () => {
             />
           </Box>
           <Divider className="my-3" />
-          <Button variant="solid">Save changes</Button>
+          <Button>Save changes</Button>
+        </Box>
+      </Box>
+
+      <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <SectionHeader
+          description="Leave your current workspace. This action cannot be undone."
+          title="Leave Workspace"
+        />
+        <Box className="p-6">
+          <Box>
+            <Text color="muted">When you leave the workspace:</Text>
+            <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
+              <li>You will lose access to all workspace data</li>
+              <li>Your account will remain active</li>
+              <li>You can be invited back by workspace admins</li>
+            </ul>
+          </Box>
+          <Divider className="my-4" />
+          <Button className="bg-primary dark:bg-primary" variant="naked">
+            Leave Workspace
+          </Button>
         </Box>
       </Box>
     </Box>

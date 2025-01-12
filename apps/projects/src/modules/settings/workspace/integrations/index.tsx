@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const IntegrationsSettings = () => {
   return (
@@ -23,7 +23,7 @@ export const IntegrationsSettings = () => {
               <Text className="mt-1" color="muted">
                 Connect with your development workflow:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>GitHub</li>
                 <li>GitLab</li>
                 <li>Bitbucket</li>
@@ -39,7 +39,7 @@ export const IntegrationsSettings = () => {
               <Text className="mt-1" color="muted">
                 Enhance your workflow with these integrations:
               </Text>
-              <ul className="mt-2 list-disc pl-5 text-dark/80 dark:text-[#949496]">
+              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
                 <li>Slack</li>
                 <li>Microsoft Teams</li>
                 <li>Google Workspace</li>
