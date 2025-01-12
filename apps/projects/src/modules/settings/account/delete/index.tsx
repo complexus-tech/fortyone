@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Flex, Text, Button } from "ui";
+import { Box, Text, Button, Divider } from "ui";
+import { SectionHeader } from "../../components";
 
 export const DeleteAccountSettings = () => {
   return (
@@ -10,33 +11,18 @@ export const DeleteAccountSettings = () => {
       </Text>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
-          <Text as="h3" className="font-medium">
-            Delete your account
-          </Text>
-          <Text className="mt-1" color="muted">
-            Once you delete your account, there is no going back. Please be
-            certain.
-          </Text>
-        </Box>
-
+        <SectionHeader
+          description="Once you delete your account, there is no going back. Please be certain."
+          title="Delete your account"
+        />
         <Box className="p-6">
-          <Flex direction="column" gap={6}>
-            <Box>
-              <Text color="muted">Deleting your account will:</Text>
-              <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
-                <li>Delete your profile and personal information</li>
-                <li>Remove you from all teams and workspaces</li>
-                <li>Delete all your stories, comments, and activities</li>
-              </ul>
-            </Box>
-
-            <Box>
-              <Button color="danger" variant="outline">
-                Delete Account
-              </Button>
-            </Box>
-          </Flex>
+          <Text color="muted">Deleting your account will:</Text>
+          <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
+            <li>Delete your profile and personal information</li>
+            <li>Remove you from all teams and workspaces</li>
+          </ul>
+          <Divider className="my-4" />
+          <Button>Delete Account</Button>
         </Box>
       </Box>
     </Box>

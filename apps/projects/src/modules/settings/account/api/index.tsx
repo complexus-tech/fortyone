@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button } from "ui";
-import { SectionHeader } from "../components";
+import { SectionHeader } from "../../components";
 
 export const ApiSettings = () => {
   return (
@@ -13,7 +13,7 @@ export const ApiSettings = () => {
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
-            <Button color="primary" variant="outline">
+            <Button className="bg-primary dark:bg-primary" variant="naked">
               Create API Key
             </Button>
           }
@@ -25,27 +25,6 @@ export const ApiSettings = () => {
           <Flex direction="column" gap={6}>
             <Box>
               <Text color="muted">No API keys created yet.</Text>
-            </Box>
-          </Flex>
-        </Box>
-      </Box>
-
-      <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <SectionHeader
-          description="Learn how to integrate with our API."
-          title="API Documentation"
-        />
-
-        <Box className="p-6">
-          <Flex direction="column" gap={6}>
-            <Box>
-              <Text color="muted">
-                Check out our API documentation to learn how to integrate with
-                our API.
-              </Text>
-              <Button className="mt-4" color="tertiary" variant="outline">
-                View Documentation
-              </Button>
             </Box>
           </Flex>
         </Box>
