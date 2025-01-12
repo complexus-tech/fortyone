@@ -134,6 +134,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         { title: "Sprints", href: "/settings/workspace/sprints" },
         { title: "Custom fields", href: "/settings/workspace/custom-fields" },
         { title: "Templates", href: "/settings/workspace/templates" },
+        { title: "Labels", href: "/settings/workspace/labels" },
       ],
     },
   ];

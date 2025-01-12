@@ -167,8 +167,16 @@ export const Header = () => {
                 </Link>
               </Menu.Item>
               <Menu.Item>
-                <UsersAddIcon className="h-[1.3rem] w-auto" />
-                Invite members
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings/workspace/members"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <UsersAddIcon className="h-[1.3rem] w-auto" />
+                  Invite members
+                </Link>
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator className="my-2" />

@@ -2,6 +2,7 @@ export * from "./Avatar/Avatar";
 export * from "./Badge/Badge";
 export * from "./Box/Box";
 export * from "./Checkbox/Checkbox";
+export * from "./ColorPicker/ColorPicker";
 export * from "./Container/Container";
 export * from "./Dialog/Dialog";
 export * from "./Resizable/Resizable";

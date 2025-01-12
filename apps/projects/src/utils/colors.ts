@@ -1,54 +1,24 @@
 const colors = [
-  "#EA6060",
-  "#EAB308",
-  "#06B6D4",
-  "#34D399",
-  "#FB7185",
-  "#FACC15",
-  "#60A5FA",
-  "#A78BFA",
-  "#F472B6",
-  "#4ADE80",
-  "#2DD4BF",
-  "#818CF8",
-  "#F59E0B",
-  "#D946EF",
-  "#22D3EE",
-  "#F87171",
-  "#10B981",
-  "#A3E635",
-  "#E879F9",
-  "#2DD4BF",
-  "#C084FC",
-  "#06D6A0",
-  "#FFB703",
-  "#118AB2",
-  "#FFD166",
-  "#EF476F",
-  "#073B4C",
-  "#8D99AE",
-  "#38BDF8",
-  "#F4A261",
-  "#E76F51",
-  "#264653",
-  "#D4A373",
-  "#9D8189",
-  "#84A59D",
-  "#99D98C",
-  "#FFCAD4",
-  "#FF77A9",
-  "#90E0EF",
-  "#FFC6FF",
-  "#B9FBC0",
-  "#FF9F1C",
-  "#E63946",
-  "#E5E5E5",
-  "#FFBC42",
-  "#83C5BE",
-  "#FF4800",
-  "#219EBC",
-  "#F72585",
-  "#0096C7",
+  "#EA6060", // Red
+  "#EAB308", // Amber
+  "#06B6D4", // Cyan
+  "#34D399", // Emerald
+  "#FB7185", // Rose
+  "#60A5FA", // Blue
+  "#A78BFA", // Violet
+  "#F472B6", // Pink
+  "#4ADE80", // Green
+  "#F59E0B", // Orange
+  "#D946EF", // Fuchsia
+  "#22D3EE", // Light Blue
+  "#10B981", // Teal
+  "#E879F9", // Purple
+  "#FFB703", // Yellow
+  "#118AB2", // Ocean Blue
+  "#EF476F", // Coral
+  "#073B4C", // Navy
+  "#F4A261", // Peach
+  "#264653", // Slate
 ];
 
 export const generateRandomColor = ({
