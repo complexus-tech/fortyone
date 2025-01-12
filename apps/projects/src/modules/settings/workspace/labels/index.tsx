@@ -1,144 +1,167 @@
 "use client";
 
-import { Box, Flex, Text, Button, Input, ColorPicker, TimeAgo } from "ui";
+import { Box, Flex, Text, Button, Menu } from "ui";
+import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
-import { SearchIcon } from "icons";
 import type { Label } from "@/types";
 import { useLabels } from "@/lib/hooks/labels";
 import { SectionHeader } from "../../components";
+import { LabelDialog } from "./components/label-dialog";
+import { DeleteDialog } from "./components/delete-dialog";
+
+type LabelFormData = {
+  name: string;
+  color: string;
+};
 
 export const WorkspaceLabelsSettings = () => {
   const { data: labels = [] } = useLabels();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [editingLabel, setEditingLabel] = useState<Label | null>(null);
-  const [editedName, setEditedName] = useState("");
-  const [editedColor, setEditedColor] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState<Label | null>(null);
 
-  const handleStartEdit = (label: Label) => {
-    setEditingLabel(label);
-    setEditedName(label.name);
-    setEditedColor(label.color);
+  const handleCreateLabel = (_data: LabelFormData) => {
+    // Handle create label
+    setIsCreateOpen(false);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingLabel) return;
-    // Handle save edit
-    setEditingLabel(null);
+  const handleEditLabel = (_data: LabelFormData) => {
+    // Handle edit label
+    setIsEditOpen(false);
   };
 
-  const handleCancelEdit = () => {
-    setEditingLabel(null);
+  const handleDeleteLabel = () => {
+    // Handle delete label
+    setIsDeleteOpen(false);
   };
-
-  const filteredLabels = labels.filter((label) =>
-    label.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   return (
     <Box>
       <Text as="h1" className="mb-6 text-2xl font-semibold">
-        Workspace level labels
+        Labels
       </Text>
-
-      <Flex className="mb-6" justify="between">
-        <Box className="relative w-[400px]">
-          <SearchIcon className="text-gray-500 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            className="pl-9"
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            placeholder="Filter by name..."
-            type="search"
-            value={searchQuery}
-          />
-        </Box>
-        <Button>New label</Button>
-      </Flex>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
-          description="Labels help you categorize and organize stories."
-          title="Story labels"
+          action={
+            <Button
+              onClick={() => {
+                setIsCreateOpen(true);
+              }}
+            >
+              Create Label
+            </Button>
+          }
+          description="Create and manage labels to categorize stories."
+          title="Workspace level labels"
         />
 
-        <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
-          <Flex>
-            <Text className="w-[400px] font-medium">Name</Text>
-            <Text className="w-[200px] font-medium">Usage</Text>
-            <Text className="w-[200px] font-medium">Created</Text>
-          </Flex>
-        </Box>
-
-        <Box className="divide-y divide-gray-100 dark:divide-dark-100">
-          {filteredLabels.map((label) => (
-            <Box
-              className="px-6 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
-              key={label.id}
-            >
-              <Flex>
-                <Box className="w-[400px]">
-                  {editingLabel?.id === label.id ? (
+        <Box>
+          {labels.length === 0 ? (
+            <Box className="px-6 py-8 text-center">
+              <Text className="font-medium">No labels created yet</Text>
+              <Text className="mt-1" color="muted">
+                Create labels to help organize and categorize your stories
+              </Text>
+              <Button
+                className="mt-4"
+                onClick={() => {
+                  setIsCreateOpen(true);
+                }}
+              >
+                Create your first label
+              </Button>
+            </Box>
+          ) : (
+            <Box className="divide-y divide-gray-100 dark:divide-dark-100">
+              {labels.map((label) => (
+                <Box
+                  className="px-6 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
+                  key={label.id}
+                >
+                  <Flex align="center" justify="between">
                     <Flex align="center" gap={3}>
-                      <ColorPicker
-                        onChange={(color) => {
-                          setEditedColor(color);
-                        }}
-                        value={editedColor}
-                      />
-                      <Input
-                        className="w-[300px]"
-                        onChange={(e) => {
-                          setEditedName(e.target.value);
-                        }}
-                        value={editedName}
-                      />
-                      <Button
-                        className="ml-2"
-                        onClick={() => {
-                          handleSaveEdit();
-                        }}
-                        size="sm"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        color="tertiary"
-                        onClick={() => {
-                          handleCancelEdit();
-                        }}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Cancel
-                      </Button>
-                    </Flex>
-                  ) : (
-                    <Flex
-                      align="center"
-                      className="cursor-pointer"
-                      gap={3}
-                      onClick={() => {
-                        handleStartEdit(label);
-                      }}
-                    >
                       <Box
-                        className="size-3 rounded-full"
+                        className="size-4 rounded"
                         style={{ backgroundColor: label.color }}
                       />
                       <Text className="font-medium">{label.name}</Text>
                     </Flex>
-                  )}
+                    <Flex align="center" gap={3}>
+                      <Menu>
+                        <Menu.Button>
+                          <Button
+                            aria-label="More options"
+                            color="tertiary"
+                            variant="naked"
+                          >
+                            <MoreHorizontalIcon className="h-4 w-4" />
+                          </Button>
+                        </Menu.Button>
+                        <Menu.Items>
+                          <Menu.Group>
+                            <Menu.Item
+                              onClick={() => {
+                                setSelectedLabel(label);
+                                setIsEditOpen(true);
+                              }}
+                            >
+                              <EditIcon /> Edit label
+                            </Menu.Item>
+                          </Menu.Group>
+                          <Menu.Separator />
+                          <Menu.Group>
+                            <Menu.Item
+                              className="text-danger"
+                              onClick={() => {
+                                setSelectedLabel(label);
+                                setIsDeleteOpen(true);
+                              }}
+                            >
+                              <DeleteIcon className="text-danger dark:text-danger" />{" "}
+                              Delete label
+                            </Menu.Item>
+                          </Menu.Group>
+                        </Menu.Items>
+                      </Menu>
+                    </Flex>
+                  </Flex>
                 </Box>
-                <Text className="text-gray-500 w-[200px]">{0} issues</Text>
-                <Text className="text-gray-500 w-[200px]">
-                  <TimeAgo timestamp={label.createdAt} />
-                </Text>
-              </Flex>
+              ))}
             </Box>
-          ))}
+          )}
         </Box>
       </Box>
+
+      <LabelDialog
+        isOpen={isCreateOpen}
+        mode="create"
+        onClose={() => {
+          setIsCreateOpen(false);
+        }}
+        onSubmit={handleCreateLabel}
+      />
+
+      <LabelDialog
+        isOpen={isEditOpen}
+        mode="edit"
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedLabel(null);
+        }}
+        onSubmit={handleEditLabel}
+        selectedLabel={selectedLabel}
+      />
+
+      <DeleteDialog
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          setIsDeleteOpen(false);
+          setSelectedLabel(null);
+        }}
+        onConfirm={handleDeleteLabel}
+      />
     </Box>
   );
 };

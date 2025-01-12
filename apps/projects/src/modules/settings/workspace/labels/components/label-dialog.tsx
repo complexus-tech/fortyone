@@ -1,5 +1,4 @@
-import { Box, Flex, Text, Button, Input, Dialog, ColorPicker } from "ui";
-import { useState } from "react";
+import { Box, Flex, Text, Button, Input, Dialog } from "ui";
 import type { Label } from "@/types";
 
 type LabelFormData = {
@@ -23,13 +22,6 @@ export const LabelDialog = ({
   onSubmit,
 }: LabelDialogProps) => {
   const isEdit = mode === "edit";
-  const [name, setName] = useState(
-    isEdit && selectedLabel ? selectedLabel.name : "",
-  );
-  const [color, setColor] = useState(
-    isEdit && selectedLabel ? selectedLabel.color : "#F8F9FA",
-  );
-
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
       <Dialog.Content>
@@ -47,21 +39,22 @@ export const LabelDialog = ({
         <Dialog.Body>
           <Flex direction="column" gap={6}>
             <Input
+              defaultValue={isEdit ? selectedLabel?.name : ""}
               label="Label name"
               name="name"
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
               placeholder="Enter label name"
               required
-              value={name}
             />
 
             <Box>
               <Text as="label" className="mb-2 block font-medium">
                 Color
               </Text>
-              <ColorPicker onChange={setColor} value={color} />
+              <Input
+                defaultValue={isEdit ? selectedLabel?.color : "#000000"}
+                name="color"
+                type="color"
+              />
             </Box>
           </Flex>
         </Dialog.Body>
@@ -72,8 +65,7 @@ export const LabelDialog = ({
           </Button>
           <Button
             onClick={() => {
-              onSubmit({ name, color });
-              onClose();
+              onSubmit({ name: "", color: "" });
             }}
           >
             {isEdit ? "Save Changes" : "Create Label"}
