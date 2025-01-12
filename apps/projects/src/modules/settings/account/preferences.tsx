@@ -80,27 +80,27 @@ export const PreferencesSettings = () => {
                 }}
                 value={theme}
               >
-                <Select.Trigger className="w-36">
+                <Select.Trigger className="w-max min-w-36">
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
                   <Select.Group>
                     <Select.Option value="light">
                       <Flex align="center" gap={2}>
-                        <SunIcon className="h-[1.15rem]" />
+                        <SunIcon className="h-4" />
                         Day Mode
                       </Flex>
                     </Select.Option>
                     <Select.Option value="dark">
                       <Flex align="center" gap={2}>
-                        <MoonIcon className="h-[1.15rem]" />
+                        <MoonIcon className="h-4" />
                         Night Mode
                       </Flex>
                     </Select.Option>
                     <Select.Option value="system">
                       <Flex align="center" gap={2}>
-                        <SystemIcon className="h-[1.15rem]" />
-                        Auto
+                        <SystemIcon className="h-4" />
+                        System preference
                       </Flex>
                     </Select.Option>
                   </Select.Group>

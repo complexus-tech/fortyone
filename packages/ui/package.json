@@ -33,7 +33,7 @@
     "date-fns": "^2.30.0",
     "icons": "workspace:*",
     "lib": "workspace:*",
-    "next": "14.2.7",
+    "next": "15.1.4",
     "react-day-picker": "^8.10.1",
     "react-dropzone": "^14.2.3",
     "react-resizable-panels": "^2.0.16",

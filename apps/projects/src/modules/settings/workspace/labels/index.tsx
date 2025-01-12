@@ -77,7 +77,7 @@ export const WorkspaceLabelsSettings = () => {
             <Box className="divide-y divide-gray-100 dark:divide-dark-100">
               {labels.map((label) => (
                 <Box
-                  className="px-6 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
+                  className="px-6 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
                   key={label.id}
                 >
                   <Flex align="center" justify="between">
