@@ -76,12 +76,11 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       items: [
         { title: "General", href: "/settings" },
         { title: "Members", href: "/settings/workspace/members" },
-        { title: "Billing", href: "/settings/workspace/billing" },
-        { title: "Imports / Sync", href: "/settings/workspace/imports" },
-        { title: "Integrations", href: "/settings/workspace/integrations" },
-        { title: "Webhooks", href: "/settings/workspace/webhooks" },
-        { title: "Security", href: "/settings/workspace/security" },
-        { title: "Delete workspace", href: "/settings/workspace/delete" },
+        // { title: "Billing", href: "/settings/workspace/billing" },
+        // { title: "Imports / Sync", href: "/settings/workspace/imports" },
+        // { title: "Integrations", href: "/settings/workspace/integrations" },
+        // { title: "Webhooks", href: "/settings/workspace/webhooks" },
+        // { title: "Security", href: "/settings/workspace/security" },
       ],
     },
     // workspace features
@@ -131,9 +130,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       items: [
         { title: "Automations", href: "/settings/workspace/automations" },
         { title: "Teams", href: "/settings/workspace/teams" },
-        { title: "Sprints", href: "/settings/workspace/sprints" },
-        { title: "Custom fields", href: "/settings/workspace/custom-fields" },
-        { title: "Templates", href: "/settings/workspace/templates" },
+        // { title: "Sprints", href: "/settings/workspace/sprints" },
+        // { title: "Custom fields", href: "/settings/workspace/custom-fields" },
+        // { title: "Templates", href: "/settings/workspace/templates" },
         { title: "Labels", href: "/settings/workspace/labels" },
       ],
     },
@@ -195,7 +194,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
       <ResizablePanel.Panel defaultSize={82}>
-        <Container className="max-w-[56rem] p-12">{children}</Container>
+        <Box className="h-screen overflow-y-auto">
+          <Container className="max-w-[54rem] py-12">{children}</Container>
+        </Box>
       </ResizablePanel.Panel>
     </ResizablePanel>
   );

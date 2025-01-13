@@ -32,7 +32,7 @@ export const Navigation = () => {
           priority="High"
         />
       ),
-      href: "/reports",
+      href: "/analytics",
     },
 
     // {

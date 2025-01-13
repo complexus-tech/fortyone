@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text, Input } from "ui";
+import { Box, Text, Input, Button, Avatar } from "ui";
 import { SectionHeader } from "../../components";
 
 export const WorkspaceGeneralSettings = () => {
@@ -10,42 +10,38 @@ export const WorkspaceGeneralSettings = () => {
         Workspace Settings
       </Text>
 
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
+          action={<Avatar name="Complexus Tech" />}
           description="Basic information about your workspace."
           title="General Information"
         />
+        <Box className="p-6">
+          <Box className="mb-4 grid grid-cols-2 gap-6">
+            <Input
+              label="Name"
+              name="name"
+              placeholder="Enter workspace name"
+            />
+            <Input label="URL" name="url" placeholder="your-workspace" />
+          </Box>
+          <Button>Save changes</Button>
+        </Box>
+      </Box>
+
+      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <SectionHeader
+          description="Permanently delete your workspace."
+          title="Delete your workspace"
+        />
 
         <Box className="p-6">
-          <Flex direction="column" gap={6}>
-            <Box>
-              <Input
-                helpText="This is your workspace's visible name in Complexus"
-                label="Workspace name"
-                name="name"
-                placeholder="Enter workspace name"
-              />
-            </Box>
-
-            <Box>
-              <Input
-                helpText="This is your workspace's URL on Complexus"
-                label="Workspace URL"
-                name="url"
-                placeholder="your-workspace"
-                prefix="complexus.tech/"
-              />
-            </Box>
-
-            <Box>
-              <Input
-                helpText="Brief description of your workspace"
-                label="Description"
-                name="description"
-                placeholder="Enter workspace description"
-              />
-            </Box>
-          </Flex>
+          <Text className="mb-4" color="muted">
+            Once you delete your workspace, there is no going back. Please be
+            certain. All data will be lost including all teams, stories, and
+            more.
+          </Text>
+          <Button className="mt-4">Delete Workspace</Button>
         </Box>
       </Box>
     </Box>
