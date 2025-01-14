@@ -106,3 +106,58 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	return web.Respond(ctx, w, toAppLabel(label), http.StatusCreated)
 }
+
+func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	labelIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
+	labelId, err := uuid.Parse(labelIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidLabelID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var req AppUpdateLabel
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	label, err := h.labels.UpdateLabel(ctx, labelId, workspaceId, req.Name, req.Color)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	return web.Respond(ctx, w, toAppLabel(label), http.StatusOK)
+}
+
+func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	labelIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
+	labelId, err := uuid.Parse(labelIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidLabelID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	if err := h.labels.DeleteLabel(ctx, labelId, workspaceId); err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

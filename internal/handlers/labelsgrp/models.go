@@ -23,6 +23,11 @@ type AppNewLabel struct {
 	Color  string     `json:"color"`
 }
 
+type AppUpdateLabel struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
 type AppFilters struct {
 	Team *uuid.UUID `json:"teamId" db:"team_id"`
 }
