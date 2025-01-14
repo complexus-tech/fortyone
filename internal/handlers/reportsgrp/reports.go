@@ -1,0 +1,103 @@
+package reportsgrp
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/complexus-tech/projects-api/internal/core/reports"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
+)
+
+var (
+	ErrInvalidWorkspaceID = errors.New("invalid workspace id")
+	ErrInvalidDays        = errors.New("invalid days parameter")
+)
+
+type Handlers struct {
+	reports *reports.Service
+	log     *logger.Logger
+}
+
+func New(log *logger.Logger, reports *reports.Service) *Handlers {
+	return &Handlers{
+		reports: reports,
+		log:     log,
+	}
+}
+
+// GetStoryStats returns story statistics for a workspace.
+func (h *Handlers) GetStoryStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	stats, err := h.reports.GetStoryStats(ctx, workspaceID)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppStoryStats(stats), http.StatusOK)
+}
+
+// GetContributionStats returns contribution statistics for the logged-in user.
+func (h *Handlers) GetContributionStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var af AppFilters
+	filters, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	days := 30 // Default to 30 days
+	if filters["days"] != nil {
+		days, err = strconv.Atoi(filters["days"].(string))
+		if err != nil || days <= 0 {
+			return web.RespondError(ctx, w, ErrInvalidDays, http.StatusBadRequest)
+		}
+	}
+
+	stats, err := h.reports.GetContributionStats(ctx, userID, workspaceID, days)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppContributionsStats(stats), http.StatusOK)
+}
+
+// GetUserStats returns user-specific statistics for the logged-in user.
+func (h *Handlers) GetUserStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	stats, err := h.reports.GetUserStats(ctx, userID, workspaceID)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppUserStats(stats), http.StatusOK)
+}

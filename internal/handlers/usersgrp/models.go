@@ -21,6 +21,10 @@ type AppUser struct {
 	Token               *string    `json:"token,omitempty"`
 }
 
+type AppFilter struct {
+	TeamID *uuid.UUID `json:"teamId"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
