@@ -56,8 +56,8 @@ export const WorkspaceTeam = ({ name, color }: Team) => {
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
-              <Menu.Item className="text-primary">
-                <DeleteIcon className="text-primary dark:text-primary" />
+              <Menu.Item>
+                <DeleteIcon />
                 Delete team
               </Menu.Item>
             </Menu.Group>

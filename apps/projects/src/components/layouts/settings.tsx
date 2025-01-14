@@ -128,7 +128,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         </svg>
       ),
       items: [
-        { title: "Automations", href: "/settings/workspace/automations" },
+        // { title: "Automations", href: "/settings/workspace/automations" },
         { title: "Teams", href: "/settings/workspace/teams" },
         // { title: "Sprints", href: "/settings/workspace/sprints" },
         // { title: "Custom fields", href: "/settings/workspace/custom-fields" },

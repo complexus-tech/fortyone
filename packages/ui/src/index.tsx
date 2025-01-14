@@ -39,3 +39,4 @@ export * from "./ProgressBar/ProgressBar";
 export * from "./DropZone/DropZone";
 export * from "./NavigationMenu/NavigationMenu";
 export * from "./TimeAgo/TimeAgo";
+export * from "./ColorPicker/ColorPicker";
