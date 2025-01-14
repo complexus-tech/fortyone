@@ -1,5 +1,5 @@
 "use server";
-import qs from "qs";
+import { stringify } from "qs";
 import { labelTags } from "@/constants/keys";
 import { get } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
@@ -10,7 +10,7 @@ export const getLabels = async (
     teamId?: string;
   } = {},
 ) => {
-  const query = qs.stringify(params, {
+  const query = stringify(params, {
     skipNulls: true,
     addQueryPrefix: true,
     encodeValuesOnly: true,
@@ -18,9 +18,7 @@ export const getLabels = async (
   const labels = await get<ApiResponse<Label[]>>(`labels${query}`, {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
-      tags: [
-        params.teamId ? labelTags.team(params.teamId) : labelTags.lists(),
-      ],
+      tags: [params.teamId ? labelTags.team(params.teamId) : labelTags.lists()],
     },
   });
   return labels.data;

@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import type { Label } from "@/types";
 import { ConfirmDialog } from "@/components/ui";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
+import { useEditLabelMutation } from "@/lib/hooks/edit-label-mutation";
+import { useDeleteLabelMutation } from "@/lib/hooks/delete-label-mutation";
 
 export const WorkspaceLabel = ({
   id,
@@ -21,6 +23,8 @@ export const WorkspaceLabel = ({
   setIsCreateOpen,
 }: Partial<Label> & { setIsCreateOpen?: (value: boolean) => void }) => {
   const { mutateAsync: createLabel } = useCreateLabelMutation();
+  const { mutateAsync: editLabel } = useEditLabelMutation();
+  const { mutateAsync: deleteLabel } = useDeleteLabelMutation();
   const isNew = id === "new";
   const [isEditing, setIsEditing] = useState(isNew);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -35,7 +39,9 @@ export const WorkspaceLabel = ({
         setIsCreateOpen?.(false);
       });
     } else {
-      // TODO: update label
+      await editLabel({ labelId: id!, updates: form }).then(() => {
+        setIsEditing(false);
+      });
     }
   };
 
@@ -44,7 +50,8 @@ export const WorkspaceLabel = ({
     setIsCreateOpen?.(false);
   };
 
-  const handleDeleteLabel = () => {
+  const handleDeleteLabel = async () => {
+    await deleteLabel(id!);
     setIsDeleteOpen(false);
   };
 
