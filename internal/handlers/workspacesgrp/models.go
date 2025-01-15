@@ -32,3 +32,13 @@ func toAppWorkspaces(workspaces []workspaces.CoreWorkspace) []AppWorkspace {
 	}
 	return appWorkspaces
 }
+
+type AppNewWorkspace struct {
+	Name string `json:"name" validate:"required"`
+	Slug string `json:"slug,omitempty"`
+}
+
+type AppUpdateWorkspace struct {
+	Name string `json:"name,omitempty"`
+	Slug string `json:"slug,omitempty"`
+}

@@ -13,6 +13,10 @@ import (
 // Repository provides access to the users storage.
 type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
+	Create(ctx context.Context, newWorkspace CoreWorkspace) (CoreWorkspace, error)
+	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
+	Delete(ctx context.Context, workspaceID uuid.UUID) error
+	AddMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 }
 
 // Service provides user-related operations.
@@ -44,4 +48,71 @@ func (s *Service) List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, 
 		attribute.String("user_id", userID.String()),
 	))
 	return workspaces, nil
+}
+
+func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace) (CoreWorkspace, error) {
+	s.log.Info(ctx, "business.core.workspaces.create")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Create")
+	defer span.End()
+
+	workspace, err := s.repo.Create(ctx, newWorkspace)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspace{}, err
+	}
+
+	span.AddEvent("workspace created.", trace.WithAttributes(
+		attribute.String("workspace_id", workspace.ID.String()),
+	))
+	return workspace, nil
+}
+
+func (s *Service) Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error) {
+	s.log.Info(ctx, "business.core.workspaces.update")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Update")
+	defer span.End()
+
+	workspace, err := s.repo.Update(ctx, workspaceID, updates)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspace{}, err
+	}
+
+	span.AddEvent("workspace updated.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return workspace, nil
+}
+
+func (s *Service) Delete(ctx context.Context, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.workspaces.delete")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Delete")
+	defer span.End()
+
+	if err := s.repo.Delete(ctx, workspaceID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace deleted.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return nil
+}
+
+func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.workspaces.addMember")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.AddMember")
+	defer span.End()
+
+	if err := s.repo.AddMember(ctx, workspaceID, userID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace member added.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+	return nil
 }

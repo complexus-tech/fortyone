@@ -8,6 +8,9 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -40,4 +43,127 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 	web.Respond(ctx, w, toAppWorkspaces(workspaces), http.StatusOK)
 	return nil
+}
+
+func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Create")
+	defer span.End()
+
+	var input AppNewWorkspace
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspace := workspaces.CoreWorkspace{
+		Name: input.Name,
+		Slug: input.Slug,
+	}
+
+	result, err := h.workspaces.Create(ctx, workspace)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Add creator as member
+	if err := h.workspaces.AddMember(ctx, result.ID, userID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace created.", trace.WithAttributes(
+		attribute.String("workspace_id", result.ID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusCreated)
+}
+
+func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Update")
+	defer span.End()
+
+	var input AppUpdateWorkspace
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	workspaceIDParam := web.Params(r, "id")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	updates := workspaces.CoreWorkspace{
+		Name: input.Name,
+		Slug: input.Slug,
+	}
+
+	result, err := h.workspaces.Update(ctx, workspaceID, updates)
+	if err != nil {
+		if err.Error() == "workspace not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace updated.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusOK)
+}
+
+func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Delete")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "id")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	if err := h.workspaces.Delete(ctx, workspaceID); err != nil {
+		if err.Error() == "workspace not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace deleted.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.AddMember")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "id")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.workspaces.AddMember(ctx, workspaceID, userID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace member added.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusCreated)
 }
