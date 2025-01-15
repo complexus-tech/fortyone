@@ -65,3 +65,31 @@ export const linkTags = {
   story: (storyId: string) => `story-links-${storyId}` as const,
   metadata: (url: string) => `link-metadata-${url}` as const,
 };
+
+export const workspaceTags = {
+  all: "workspaces" as const,
+  lists: () => `${workspaceTags.all}-list` as const,
+  details: () => `${workspaceTags.all}-detail` as const,
+  detail: (id: string) => `${workspaceTags.details()}-${id}` as const,
+};
+
+export const workspaceKeys = {
+  all: ["workspaces"] as const,
+  lists: () => [...workspaceKeys.all, "list"] as const,
+  details: () => [...workspaceKeys.all, "detail"] as const,
+  detail: (id: string) => [...workspaceKeys.details(), id] as const,
+};
+
+export const teamTags = {
+  all: "teams" as const,
+  lists: () => `${teamTags.all}-list` as const,
+  details: () => `${teamTags.all}-detail` as const,
+  detail: (id: string) => `${teamTags.details()}-${id}` as const,
+};
+
+export const teamKeys = {
+  all: ["teams"] as const,
+  lists: () => [...teamKeys.all, "list"] as const,
+  details: () => [...teamKeys.all, "detail"] as const,
+  detail: (id: string) => [...teamKeys.details(), id] as const,
+};
