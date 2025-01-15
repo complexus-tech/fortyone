@@ -8,10 +8,9 @@ import (
 
 // CoreWorkspace represents a workspace in the application layer.
 type CoreWorkspace struct {
-	ID          uuid.UUID
-	Slug        string
-	Name        string
-	Description string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        uuid.UUID
+	Slug      string
+	Name      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

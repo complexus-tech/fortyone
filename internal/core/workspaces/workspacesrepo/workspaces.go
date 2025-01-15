@@ -42,7 +42,6 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			w.workspace_id,
 			w.slug,
 			w.name,
-			w.description,
 			w.created_at,
 			w.updated_at
 		FROM

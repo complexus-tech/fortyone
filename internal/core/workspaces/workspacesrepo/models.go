@@ -8,22 +8,20 @@ import (
 )
 
 type dbWorkspace struct {
-	ID          uuid.UUID `db:"workspace_id"`
-	Slug        string    `db:"slug"`
-	Name        string    `db:"name"`
-	Description string    `db:"description"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	ID        uuid.UUID `db:"workspace_id"`
+	Slug      string    `db:"slug"`
+	Name      string    `db:"name"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 	return workspaces.CoreWorkspace{
-		ID:          p.ID,
-		Slug:        p.Slug,
-		Name:        p.Name,
-		Description: p.Description,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:        p.ID,
+		Slug:      p.Slug,
+		Name:      p.Name,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
 	}
 }
 
