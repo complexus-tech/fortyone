@@ -99,7 +99,6 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	updates := workspaces.CoreWorkspace{
 		Name: input.Name,
-		Slug: input.Slug,
 	}
 
 	result, err := h.workspaces.Update(ctx, workspaceID, updates)

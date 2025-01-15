@@ -130,7 +130,6 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 		UPDATE workspaces
 		SET 
 			name = CASE WHEN :name = '' THEN name ELSE :name END,
-			slug = CASE WHEN :slug = '' THEN slug ELSE :slug END,
 			updated_at = NOW()
 		WHERE 
 			workspace_id = :workspace_id
@@ -145,7 +144,6 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 	params := map[string]interface{}{
 		"workspace_id": workspaceID,
 		"name":         updates.Name,
-		"slug":         updates.Slug,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

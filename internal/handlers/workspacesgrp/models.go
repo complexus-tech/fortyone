@@ -40,7 +40,6 @@ type AppNewWorkspace struct {
 
 type AppUpdateWorkspace struct {
 	Name string `json:"name,omitempty"`
-	Slug string `json:"slug,omitempty"`
 }
 
 type AppNewWorkspaceMember struct {
