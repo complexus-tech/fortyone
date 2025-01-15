@@ -29,8 +29,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       items: [
         { title: "Profile", href: "/settings/account" },
         { title: "Preferences", href: "/settings/account/preferences" },
-        { title: "API", href: "/settings/account/api" },
-        { title: "Security", href: "/settings/account/security" },
+        // { title: "API", href: "/settings/account/api" },
+        // { title: "Security", href: "/settings/account/security" },
         { title: "Delete account", href: "/settings/account/delete" },
       ],
     },

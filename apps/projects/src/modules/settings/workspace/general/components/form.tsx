@@ -45,7 +45,7 @@ export const WorkspaceForm = () => {
           value={form.name}
         />
         <Input
-          className="lowercase"
+          className="lowercase opacity-80"
           label="URL (read-only)"
           name="slug"
           readOnly

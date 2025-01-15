@@ -1,8 +1,5 @@
 "use server";
 
-import { User } from "next-auth";
-import { post } from "@/lib/http";
-
 export async function authenticateUser({ email = "", password = "" }) {
   // const user = await post<{ email: string; password: string }, User>(
   //   "users/login",
