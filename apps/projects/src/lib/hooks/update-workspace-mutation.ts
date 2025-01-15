@@ -10,6 +10,21 @@ export const useUpdateWorkspaceMutation = (id: string) => {
   return useMutation({
     mutationFn: (input: UpdateWorkspaceInput) =>
       updateWorkspaceAction(id, input),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: workspaceKeys.detail(id) });
+      const previousWorkspace = queryClient.getQueryData<Workspace>(
+        workspaceKeys.detail(id),
+      );
+
+      if (previousWorkspace) {
+        queryClient.setQueryData<Workspace>(workspaceKeys.detail(id), {
+          ...previousWorkspace,
+          ...input,
+        });
+      }
+
+      return { previousWorkspace };
+    },
     onSuccess: (updatedWorkspace: Workspace) => {
       queryClient.setQueryData(workspaceKeys.detail(id), updatedWorkspace);
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
