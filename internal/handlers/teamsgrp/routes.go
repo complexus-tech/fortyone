@@ -16,11 +16,13 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	t := New(teamsService)
-	app.Get("/workspaces/{workspaceId}/teams", t.List, auth)
+	h := New(teamsService)
 
+	app.Get("/workspaces/{workspaceId}/teams", h.List, auth)
+	app.Post("/workspaces/{workspaceId}/teams", h.Create, auth)
+	app.Patch("/workspaces/{workspaceId}/teams/{id}", h.Update, auth)
+	app.Delete("/workspaces/{workspaceId}/teams/{id}", h.Delete, auth)
 }

@@ -8,10 +8,13 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
+	ErrInvalidTeamID      = errors.New("team id is not in its proper form")
 )
 
 type Handlers struct {
@@ -40,4 +43,118 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 	web.Respond(ctx, w, toAppTeams(teams), http.StatusOK)
 	return nil
+}
+
+func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.Create")
+	defer span.End()
+
+	var input AppNewTeam
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	team := teams.CoreTeam{
+		Name:        input.Name,
+		Description: input.Description,
+		Code:        input.Code,
+		Color:       input.Color,
+		Icon:        input.Icon,
+		Workspace:   workspaceID,
+	}
+
+	result, err := h.teams.Create(ctx, team)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team created.", trace.WithAttributes(
+		attribute.String("team_id", result.ID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppTeams([]teams.CoreTeam{result})[0], http.StatusCreated)
+}
+
+func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.Update")
+	defer span.End()
+
+	var input AppUpdateTeam
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	updates := teams.CoreTeam{
+		Name:        input.Name,
+		Description: input.Description,
+		Code:        input.Code,
+		Color:       input.Color,
+		Icon:        input.Icon,
+		Workspace:   workspaceID,
+	}
+
+	result, err := h.teams.Update(ctx, teamID, updates)
+	if err != nil {
+		if err.Error() == "team not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team updated.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppTeams([]teams.CoreTeam{result})[0], http.StatusOK)
+}
+
+func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.Delete")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	if err := h.teams.Delete(ctx, teamID, workspaceID); err != nil {
+		if err.Error() == "team not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team deleted.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }

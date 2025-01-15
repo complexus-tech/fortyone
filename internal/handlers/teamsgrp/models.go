@@ -38,3 +38,19 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 	}
 	return appTeams
 }
+
+type AppNewTeam struct {
+	Name        string  `json:"name" validate:"required"`
+	Description *string `json:"description"`
+	Code        string  `json:"code" validate:"required"`
+	Color       string  `json:"color" validate:"required"`
+	Icon        string  `json:"icon" validate:"required"`
+}
+
+type AppUpdateTeam struct {
+	Name        string  `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Code        string  `json:"code,omitempty"`
+	Color       string  `json:"color,omitempty"`
+	Icon        string  `json:"icon,omitempty"`
+}
