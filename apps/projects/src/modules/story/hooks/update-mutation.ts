@@ -21,7 +21,9 @@ export const useUpdateStoryMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
+          onClick: () => {
+            mutation.mutate(variables);
+          },
         },
       });
     },
@@ -36,10 +38,7 @@ export const useUpdateStoryMutation = () => {
         });
       }
 
-      const activeQueries = queryClient
-        .getQueryCache()
-        .getAll()
-        .filter((query) => query.isActive);
+      const activeQueries = queryClient.getQueryCache().getAll();
 
       activeQueries.forEach((query) => {
         if (
