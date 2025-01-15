@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/teams"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -49,15 +50,20 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Create")
 	defer span.End()
 
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
 	var input AppNewTeam
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	team := teams.CoreTeam{
@@ -71,6 +77,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	result, err := h.teams.Create(ctx, team)
 	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Add creator as member
+	if err := h.teams.AddMember(ctx, result.ID, userID, "admin"); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
