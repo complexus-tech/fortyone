@@ -54,3 +54,7 @@ type AppUpdateTeam struct {
 	Color       string  `json:"color,omitempty"`
 	Icon        string  `json:"icon,omitempty"`
 }
+
+type AppNewTeamMember struct {
+	Role string `json:"role" validate:"required"`
+}

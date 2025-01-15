@@ -249,3 +249,49 @@ func (r *repo) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UU
 
 	return nil
 }
+
+func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.AddMember")
+	defer span.End()
+
+	query := `
+		INSERT INTO team_members (
+			team_id,
+			user_id,
+			role,
+			created_at,
+			updated_at
+		)
+		VALUES (
+			:team_id,
+			:user_id,
+			:role,
+			NOW(),
+			NOW()
+		)
+	`
+
+	params := map[string]interface{}{
+		"team_id": teamID,
+		"user_id": userID,
+		"role":    role,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		errMsg := fmt.Sprintf("failed to add team member: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to add team member"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}

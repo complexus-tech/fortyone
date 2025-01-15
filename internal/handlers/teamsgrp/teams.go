@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/teams"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -157,4 +158,44 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.AddMember")
+	defer span.End()
+
+	var input AppNewTeamMember
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.teams.AddMember(ctx, teamID, userID, input.Role); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team member added.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("role", input.Role),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusCreated)
 }
