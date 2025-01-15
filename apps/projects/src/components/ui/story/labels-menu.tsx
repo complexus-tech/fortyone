@@ -2,9 +2,9 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Button, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, PlusIcon } from "icons";
+import { generateRandomColor } from "lib";
 import { useLabels } from "@/lib/hooks/labels";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
-import { generateRandomColor } from "@/utils";
 import { Dot } from "../dot";
 
 const LabelsContext = createContext<{
@@ -12,6 +12,7 @@ const LabelsContext = createContext<{
   setOpen: (open: boolean) => void;
 }>({
   open: false,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- we don't need to set the open state
   setOpen: () => {},
 });
 
@@ -126,7 +127,9 @@ const Items = ({
                 <Text className="mr-4 flex items-center gap-3">{name}</Text>
               </Flex>
               <Flex align="center" gap={1}>
-                {labelIds.includes(id) ? <CheckIcon className="h-5 w-auto" strokeWidth={2.1} /> : null}
+                {labelIds.includes(id) ? (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                ) : null}
               </Flex>
             </Command.Item>
           ))}

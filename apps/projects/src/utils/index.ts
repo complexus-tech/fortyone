@@ -1,5 +1,3 @@
-export * from "./colors";
-
 export const slugify = (text = "") => {
   return text
     .toString()
