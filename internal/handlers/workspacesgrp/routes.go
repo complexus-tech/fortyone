@@ -23,6 +23,7 @@ func Routes(cfg Config, app *web.App) {
 	h := New(workspacesService, cfg.SecretKey)
 
 	app.Get("/workspaces", h.List, auth)
+	app.Get("/workspaces/{id}", h.Get, auth)
 	app.Post("/workspaces", h.Create, auth)
 	app.Put("/workspaces/{id}", h.Update, auth)
 	app.Delete("/workspaces/{id}", h.Delete, auth)

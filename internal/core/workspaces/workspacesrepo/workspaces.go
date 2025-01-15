@@ -253,3 +253,47 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) err
 
 	return nil
 }
+
+func (r *repo) Get(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreWorkspace, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Get")
+	defer span.End()
+
+	var workspace dbWorkspace
+	query := `
+		SELECT 
+			workspace_id,
+			slug,
+			name,
+			created_at,
+			updated_at
+		FROM 
+			workspaces
+		WHERE 
+			workspace_id = :workspace_id
+	`
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspace{}, errors.New("workspace not found")
+		}
+		errMsg := fmt.Sprintf("failed to get workspace: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+
+	return toCoreWorkspace(workspace), nil
+}

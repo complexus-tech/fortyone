@@ -35,10 +35,15 @@ func toAppWorkspaces(workspaces []workspaces.CoreWorkspace) []AppWorkspace {
 
 type AppNewWorkspace struct {
 	Name string `json:"name" validate:"required"`
-	Slug string `json:"slug,omitempty"`
+	Slug string `json:"slug" validate:"required,min=3,max=255"`
 }
 
 type AppUpdateWorkspace struct {
 	Name string `json:"name,omitempty"`
 	Slug string `json:"slug,omitempty"`
+}
+
+type AppNewWorkspaceMember struct {
+	UserID uuid.UUID `json:"userId" validate:"required"`
+	Role   string    `json:"role" validate:"required,oneof=member guest admin"`
 }
