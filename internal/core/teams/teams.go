@@ -109,6 +109,10 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID, role 
 	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMember")
 	defer span.End()
 
+	if role == "" {
+		role = "member"
+	}
+
 	if err := s.repo.AddMember(ctx, teamID, userID, role); err != nil {
 		span.RecordError(err)
 		return err

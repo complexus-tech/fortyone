@@ -16,7 +16,7 @@ type Repository interface {
 	Create(ctx context.Context, newWorkspace CoreWorkspace) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
 	Delete(ctx context.Context, workspaceID uuid.UUID) error
-	AddMember(ctx context.Context, workspaceID, userID uuid.UUID) error
+	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspace, error)
 }
 
@@ -101,12 +101,16 @@ func (s *Service) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
+func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
 	s.log.Info(ctx, "business.core.workspaces.addMember")
 	ctx, span := web.AddSpan(ctx, "business.core.workspaces.AddMember")
 	defer span.End()
 
-	if err := s.repo.AddMember(ctx, workspaceID, userID); err != nil {
+	if role == "" {
+		role = "member"
+	}
+
+	if err := s.repo.AddMember(ctx, workspaceID, userID, role); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -114,6 +118,7 @@ func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 	span.AddEvent("workspace member added.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.String("user_id", userID.String()),
+		attribute.String("role", role),
 	))
 	return nil
 }

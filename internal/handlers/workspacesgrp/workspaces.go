@@ -70,7 +70,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Add creator as member
-	if err := h.workspaces.AddMember(ctx, result.ID, userID); err != nil {
+	if err := h.workspaces.AddMember(ctx, result.ID, userID, "admin"); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -145,24 +145,31 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.AddMember")
 	defer span.End()
 
+	var input AppNewWorkspaceMember
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
 	workspaceIDParam := web.Params(r, "id")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	// Default to member role if not provided
+	role := input.Role
+	if role == "" {
+		role = "member"
 	}
 
-	if err := h.workspaces.AddMember(ctx, workspaceID, userID); err != nil {
+	if err := h.workspaces.AddMember(ctx, workspaceID, input.UserID, role); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
-		attribute.String("user_id", userID.String()),
+		attribute.String("user_id", input.UserID.String()),
+		attribute.String("role", role),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusCreated)

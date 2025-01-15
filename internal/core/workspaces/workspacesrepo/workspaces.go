@@ -213,7 +213,7 @@ func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 	return nil
 }
 
-func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
+func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.AddMember")
 	defer span.End()
 
@@ -221,11 +221,13 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) err
 		INSERT INTO workspace_members (
 			workspace_id,
 			user_id,
+			role,
 			created_at
 		)
 		VALUES (
 			:workspace_id,
 			:user_id,
+			:role,
 			NOW()
 		)
 	`
@@ -233,6 +235,7 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID) err
 	params := map[string]interface{}{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
+		"role":         role,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
