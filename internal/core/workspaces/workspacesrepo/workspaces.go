@@ -298,3 +298,48 @@ func (r *repo) Get(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreW
 
 	return toCoreWorkspace(workspace), nil
 }
+
+func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.RemoveMember")
+	defer span.End()
+
+	query := `
+		DELETE FROM workspace_members
+		WHERE 
+			workspace_id = :workspace_id
+			AND user_id = :user_id
+	`
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceID,
+		"user_id":      userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to remove workspace member: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to remove workspace member"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("member not found")
+	}
+
+	return nil
+}

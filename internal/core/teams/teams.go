@@ -17,6 +17,7 @@ type Repository interface {
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error
+	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 }
 
 // Service provides team-related operations.
@@ -122,6 +123,24 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID, role 
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
 		attribute.String("role", role),
+	))
+	return nil
+}
+
+func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.teams.removeMember")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.RemoveMember")
+	defer span.End()
+
+	if err := s.repo.RemoveMember(ctx, teamID, userID, workspaceID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("team member removed.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return nil
 }

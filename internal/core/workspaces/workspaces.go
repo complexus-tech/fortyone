@@ -18,6 +18,7 @@ type Repository interface {
 	Delete(ctx context.Context, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspace, error)
+	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 }
 
 // Service provides user-related operations.
@@ -138,4 +139,21 @@ func (s *Service) Get(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspace
 		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return workspace, nil
+}
+
+func (s *Service) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.workspaces.removeMember")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.RemoveMember")
+	defer span.End()
+
+	if err := s.repo.RemoveMember(ctx, workspaceID, userID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace member removed.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+	return nil
 }

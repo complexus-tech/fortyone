@@ -210,3 +210,41 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 
 	return web.Respond(ctx, w, nil, http.StatusCreated)
 }
+
+func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.RemoveMember")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	teamIDParam := web.Params(r, "teamId")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	userIDParam := web.Params(r, "userId")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
+	}
+
+	if err := h.teams.RemoveMember(ctx, teamID, userID, workspaceID); err != nil {
+		if err.Error() == "member not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team member removed.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

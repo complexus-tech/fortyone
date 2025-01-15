@@ -198,3 +198,34 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 
 	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
 }
+
+func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.RemoveMember")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userIDParam := web.Params(r, "userId")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
+	}
+
+	if err := h.workspaces.RemoveMember(ctx, workspaceID, userID); err != nil {
+		if err.Error() == "member not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace member removed.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

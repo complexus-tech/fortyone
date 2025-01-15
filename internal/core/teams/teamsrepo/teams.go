@@ -295,3 +295,52 @@ func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role str
 
 	return nil
 }
+
+func (r *repo) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.RemoveMember")
+	defer span.End()
+
+	query := `
+		DELETE FROM team_members tm
+		USING teams t
+		WHERE 
+			tm.team_id = t.team_id
+			AND tm.team_id = :team_id
+			AND tm.user_id = :user_id
+			AND t.workspace_id = :workspace_id
+	`
+
+	params := map[string]interface{}{
+		"team_id":      teamID,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to remove team member: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to remove team member"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("member not found")
+	}
+
+	return nil
+}
