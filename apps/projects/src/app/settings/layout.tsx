@@ -5,8 +5,15 @@ import { SettingsLayout } from "@/components/layouts";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getLabels } from "@/lib/queries/labels/get-labels";
-import { labelKeys, memberKeys } from "@/constants/keys";
+import {
+  labelKeys,
+  memberKeys,
+  teamKeys,
+  workspaceKeys,
+} from "@/constants/keys";
 import { getMembers } from "@/lib/queries/members/get-members";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { getTeams } from "@/modules/teams/queries/get-teams";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -20,8 +27,7 @@ export default async function RootLayout({
   const session = await auth();
   const queryClient = getQueryClient();
 
-  // prefetch teams, current workspace
-  Promise.all([
+  await Promise.all([
     queryClient.prefetchQuery({
       queryKey: labelKeys.lists(),
       queryFn: () => getLabels(),
@@ -29,6 +35,14 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: memberKeys.lists(),
       queryFn: () => getMembers(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: workspaceKeys.detail(),
+      queryFn: () => getWorkspace(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: teamKeys.lists(),
+      queryFn: () => getTeams(),
     }),
   ]);
 

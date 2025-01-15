@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Text, Input, Button, Avatar } from "ui";
+import { Box, Text, Button, Avatar } from "ui";
 import { SectionHeader } from "../../components";
+import { WorkspaceForm } from "./components/form";
 
 export const WorkspaceGeneralSettings = () => {
   return (
@@ -16,17 +17,7 @@ export const WorkspaceGeneralSettings = () => {
           description="Basic information about your workspace."
           title="General Information"
         />
-        <Box className="p-6">
-          <Box className="mb-4 grid grid-cols-2 gap-6">
-            <Input
-              label="Name"
-              name="name"
-              placeholder="Enter workspace name"
-            />
-            <Input label="URL" name="url" placeholder="your-workspace" />
-          </Box>
-          <Button>Save changes</Button>
-        </Box>
+        <WorkspaceForm />
       </Box>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
@@ -41,7 +32,13 @@ export const WorkspaceGeneralSettings = () => {
             certain. All data will be lost including all teams, stories, and
             more.
           </Text>
-          <Button className="mt-4">Delete Workspace</Button>
+          <Button
+            className="mt-4 bg-primary dark:bg-primary"
+            disabled
+            variant="naked"
+          >
+            Delete Workspace
+          </Button>
         </Box>
       </Box>
     </Box>

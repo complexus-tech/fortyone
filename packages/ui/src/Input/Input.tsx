@@ -36,7 +36,7 @@ export const Input: FC<InputProps> = (props) => {
         {...rest}
       />
       {helpText && (
-        <span className="text-[0.9rem] font-medium inline-block left-[2px] mt-1 text-gray-300 first-letter:uppercase">
+        <span className="text-[0.9rem] font-medium inline-block left-[2px] mt-1 text-gray-300">
           {helpText}
         </span>
       )}

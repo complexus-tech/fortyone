@@ -4,20 +4,19 @@ import type { UpdateWorkspaceInput } from "@/lib/actions/workspaces/update-works
 import type { Workspace } from "@/types";
 import { workspaceKeys } from "@/constants/keys";
 
-export const useUpdateWorkspaceMutation = (id: string) => {
+export const useUpdateWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: UpdateWorkspaceInput) =>
-      updateWorkspaceAction(id, input),
+    mutationFn: (input: UpdateWorkspaceInput) => updateWorkspaceAction(input),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: workspaceKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: workspaceKeys.detail() });
       const previousWorkspace = queryClient.getQueryData<Workspace>(
-        workspaceKeys.detail(id),
+        workspaceKeys.detail(),
       );
 
       if (previousWorkspace) {
-        queryClient.setQueryData<Workspace>(workspaceKeys.detail(id), {
+        queryClient.setQueryData<Workspace>(workspaceKeys.detail(), {
           ...previousWorkspace,
           ...input,
         });
@@ -26,7 +25,7 @@ export const useUpdateWorkspaceMutation = (id: string) => {
       return { previousWorkspace };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });

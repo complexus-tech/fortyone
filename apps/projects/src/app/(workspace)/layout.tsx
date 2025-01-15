@@ -15,9 +15,11 @@ import {
   teamKeys,
   sprintKeys,
   statusKeys,
+  workspaceKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/contants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export default async function RootLayout({
   children,
@@ -51,6 +53,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: labelKeys.lists(),
       queryFn: () => getLabels(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: workspaceKeys.detail(),
+      queryFn: () => getWorkspace(),
     }),
   ]);
 

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
@@ -19,7 +19,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
           {children}
         </ThemeProvider>
       </PostHogProvider>
-      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };

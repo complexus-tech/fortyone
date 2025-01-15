@@ -23,12 +23,14 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
+import { useWorkspace } from "@/lib/hooks/workspace";
 import { logOut } from "./actions";
 
 export const Header = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
+  const { data: workspace } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
 
@@ -54,9 +56,9 @@ export const Header = () => {
               color="tertiary"
               leftIcon={
                 <Avatar
-                  name="Complexus Technologies"
+                  className="h-6"
+                  name={workspace?.name}
                   rounded="md"
-                  size="xs"
                   src="/complexus.png"
                 />
               }
@@ -66,7 +68,7 @@ export const Header = () => {
               size="sm"
               variant="naked"
             >
-              Complexus
+              <span className="max-w-[18ch] truncate">{workspace?.name}</span>
             </Button>
           </Menu.Button>
           <Menu.Items align="start" className="w-72 pt-0">
