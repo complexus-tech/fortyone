@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateTeamAction } from "@/lib/actions/teams/update-team";
-import type { UpdateTeamInput } from "@/lib/actions/teams/update-team";
-import type { Team } from "@/lib/queries/teams/get-team";
+import { updateTeamAction } from "@/modules/teams/update-team";
+import type { UpdateTeamInput } from "@/modules/teams/update-team";
+import type { Team } from "@/modules/teams/types";
 import { teamKeys } from "@/constants/keys";
 
 export const useUpdateTeamMutation = (id: string) => {
@@ -22,8 +22,8 @@ export const useUpdateTeamMutation = (id: string) => {
 
       return { previousTeam };
     },
-    onSuccess: (updatedTeam: Team) => {
-      queryClient.setQueryData(teamKeys.detail(id), updatedTeam);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },
   });

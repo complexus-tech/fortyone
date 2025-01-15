@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getTeams } from "@/modules/teams/queries/get-teams";
+import { teamKeys } from "@/constants/keys";
 
 export const useTeams = () => {
   return useQuery({
-    queryKey: ["teams"],
+    queryKey: teamKeys.lists(),
     queryFn: getTeams,
   });
 };

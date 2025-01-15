@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateWorkspaceAction } from "@/lib/actions/workspaces/update-workspace";
 import type { UpdateWorkspaceInput } from "@/lib/actions/workspaces/update-workspace";
-import type { Workspace } from "@/lib/queries/workspaces/get-workspace";
+import type { Workspace } from "@/types";
 import { workspaceKeys } from "@/constants/keys";
 
 export const useUpdateWorkspaceMutation = (id: string) => {
@@ -25,8 +25,8 @@ export const useUpdateWorkspaceMutation = (id: string) => {
 
       return { previousWorkspace };
     },
-    onSuccess: (updatedWorkspace: Workspace) => {
-      queryClient.setQueryData(workspaceKeys.detail(id), updatedWorkspace);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });

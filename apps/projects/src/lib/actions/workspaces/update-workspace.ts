@@ -2,8 +2,7 @@
 import { revalidateTag } from "next/cache";
 import { put } from "@/lib/http";
 import { workspaceTags } from "@/constants/keys";
-import type { ApiResponse } from "@/types";
-import type { Workspace } from "@/lib/queries/workspaces/get-workspace";
+import type { ApiResponse, Workspace } from "@/types";
 
 export type UpdateWorkspaceInput = {
   name?: string;

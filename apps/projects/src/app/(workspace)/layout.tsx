@@ -9,7 +9,13 @@ import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getMembers } from "@/lib/queries/members/get-members";
-import { memberKeys , labelKeys } from "@/constants/keys";
+import {
+  memberKeys,
+  labelKeys,
+  teamKeys,
+  sprintKeys,
+  statusKeys,
+} from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/contants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 
@@ -23,15 +29,15 @@ export default async function RootLayout({
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: ["statuses"],
+      queryKey: statusKeys.lists(),
       queryFn: getStatuses,
     }),
     queryClient.prefetchQuery({
-      queryKey: ["teams"],
+      queryKey: teamKeys.lists(),
       queryFn: getTeams,
     }),
     queryClient.prefetchQuery({
-      queryKey: ["sprints"],
+      queryKey: sprintKeys.lists(),
       queryFn: getSprints,
     }),
     queryClient.prefetchQuery({

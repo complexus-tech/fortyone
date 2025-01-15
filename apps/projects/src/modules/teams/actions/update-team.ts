@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { put } from "@/lib/http";
 import { teamTags } from "@/constants/keys";
 import type { ApiResponse } from "@/types";
-import type { Team } from "@/lib/queries/teams/get-team";
+import type { Team } from "@/modules/teams/types";
 
 export type UpdateTeamInput = {
   name?: string;
