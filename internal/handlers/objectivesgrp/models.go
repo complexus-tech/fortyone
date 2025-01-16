@@ -9,17 +9,27 @@ import (
 
 // AppObjectiveList represents a list of objectives in the application.
 type AppObjectiveList struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	LeadUser    *uuid.UUID `json:"leadUser"`
-	Team        uuid.UUID  `json:"teamId"`
-	Workspace   uuid.UUID  `json:"workspaceId"`
-	StartDate   *time.Time `json:"startDate"`
-	EndDate     *time.Time `json:"endDate"`
-	IsPrivate   bool       `json:"isPrivate"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID          uuid.UUID      `json:"id"`
+	Name        string         `json:"name"`
+	Description *string        `json:"description"`
+	LeadUser    *uuid.UUID     `json:"leadUser"`
+	Team        uuid.UUID      `json:"teamId"`
+	Workspace   uuid.UUID      `json:"workspaceId"`
+	StartDate   *time.Time     `json:"startDate"`
+	EndDate     *time.Time     `json:"endDate"`
+	IsPrivate   bool           `json:"isPrivate"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	Stats       ObjectiveStats `json:"stats"`
+}
+
+type ObjectiveStats struct {
+	Total     int `json:"total"`
+	Cancelled int `json:"cancelled"`
+	Completed int `json:"completed"`
+	Started   int `json:"started"`
+	Unstarted int `json:"unstarted"`
+	Backlog   int `json:"backlog"`
 }
 
 type AppFilters struct {
@@ -42,6 +52,14 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 			IsPrivate:   objective.IsPrivate,
 			CreatedAt:   objective.CreatedAt,
 			UpdatedAt:   objective.UpdatedAt,
+			Stats: ObjectiveStats{
+				Total:     objective.TotalStories,
+				Cancelled: objective.CancelledStories,
+				Completed: objective.CompletedStories,
+				Started:   objective.StartedStories,
+				Unstarted: objective.UnstartedStories,
+				Backlog:   objective.BacklogStories,
+			},
 		}
 	}
 	return appObjectives

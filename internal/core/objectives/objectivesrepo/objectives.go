@@ -33,29 +33,51 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 
 	var objectives []dbObjective
 	q := `
+		WITH story_stats AS (
+			SELECT 
+				o.objective_id,
+				COUNT(*) as total,
+				COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled,
+				COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed,
+				COUNT(CASE WHEN st.category = 'started' THEN 1 END) as started,
+				COUNT(CASE WHEN st.category = 'unstarted' THEN 1 END) as unstarted,
+				COUNT(CASE WHEN st.category = 'backlog' THEN 1 END) as backlog
+			FROM objectives o
+			LEFT JOIN stories s ON o.objective_id = s.objective_id
+			LEFT JOIN statuses st ON s.status_id = st.status_id
+			WHERE s.deleted_at IS NULL AND s.archived_at IS NULL
+			GROUP BY o.objective_id
+		)
 		SELECT
-			objective_id,
-			name,
-			description,
-			lead_user_id,
-			team_id,
-			workspace_id,
-			start_date,
-			end_date,
-			is_private,
-			created_at,
-			updated_at
+			o.objective_id,
+			o.name,
+			o.description,
+			o.lead_user_id,
+			o.team_id,
+			o.workspace_id,
+			o.start_date,
+			o.end_date,
+			o.is_private,
+			o.created_at,
+			o.updated_at,
+			COALESCE(ss.total, 0) as total_stories,
+			COALESCE(ss.cancelled, 0) as cancelled_stories,
+			COALESCE(ss.completed, 0) as completed_stories,
+			COALESCE(ss.started, 0) as started_stories,
+			COALESCE(ss.unstarted, 0) as unstarted_stories,
+			COALESCE(ss.backlog, 0) as backlog_stories
 		FROM
-			objectives
+			objectives o
+		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
 	`
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
 
 	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		setClauses = append(setClauses, fmt.Sprintf("o.%s = :%s", field, field))
 	}
 
-	q += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY created_at DESC;"
+	q += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY o.created_at DESC;"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {

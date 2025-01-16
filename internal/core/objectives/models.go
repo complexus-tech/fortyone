@@ -7,15 +7,21 @@ import (
 )
 
 type CoreObjective struct {
-	ID          uuid.UUID
-	Name        string
-	Description *string
-	LeadUser    *uuid.UUID
-	Team        uuid.UUID
-	Workspace   uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
-	IsPrivate   bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID               uuid.UUID
+	Name             string
+	Description      *string
+	LeadUser         *uuid.UUID
+	Team             uuid.UUID
+	Workspace        uuid.UUID
+	StartDate        *time.Time
+	EndDate          *time.Time
+	IsPrivate        bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	TotalStories     int
+	CancelledStories int
+	CompletedStories int
+	StartedStories   int
+	UnstartedStories int
+	BacklogStories   int
 }
