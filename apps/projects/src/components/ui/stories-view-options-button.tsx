@@ -1,6 +1,7 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
+import { useEffect } from "react";
 import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
@@ -77,6 +78,20 @@ export const StoriesViewOptionsButton = ({
 
   const hasFilters =
     JSON.stringify(viewOptions) !== JSON.stringify(initialViewOptions);
+
+  useEffect(() => {
+    if (
+      layout === "kanban" &&
+      displayColumns.some((col) => col === "Created" || col === "Updated")
+    ) {
+      setViewOptions({
+        ...viewOptions,
+        displayColumns: displayColumns.filter(
+          (column) => column !== "Created" && column !== "Updated",
+        ),
+      });
+    }
+  }, [layout, displayColumns, setViewOptions, viewOptions]);
 
   return (
     <Popover>
