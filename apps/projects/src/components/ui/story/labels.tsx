@@ -68,7 +68,12 @@ export const Labels = ({
             <LabelsMenu>
               <LabelsMenu.Trigger>
                 <Badge
-                  className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+                  className={cn(
+                    "h-[1.85rem] cursor-pointer text-[0.95rem] font-normal",
+                    {
+                      "px-1.5": isRectangular,
+                    },
+                  )}
                   color="tertiary"
                   rounded={isRectangular ? "md" : "xl"}
                   variant="outline"

@@ -1,5 +1,6 @@
 import { Badge, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
+import { cn } from "lib";
 import type { Label } from "@/types";
 
 export const StoryLabel = ({
@@ -21,7 +22,12 @@ export const StoryLabel = ({
       }
     >
       <Badge
-        className="h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem] font-normal"
+        className={cn(
+          "h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem] font-normal",
+          {
+            "px-1.5": isRectangular,
+          },
+        )}
         color="tertiary"
         rounded={isRectangular ? "md" : "xl"}
         variant="outline"

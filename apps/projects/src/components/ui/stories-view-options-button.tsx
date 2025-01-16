@@ -1,6 +1,7 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
+import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
 export type DisplayColumn =
@@ -51,11 +52,13 @@ export const StoriesViewOptionsButton = ({
   setViewOptions,
   groupByOptions = ["Status", "Assignee", "Priority"],
   orderByOptions = ["Priority", "Due date", "Created", "Updated"],
+  layout,
 }: {
   viewOptions: StoriesViewOptions;
   setViewOptions: (v: StoriesViewOptions) => void;
   groupByOptions?: ViewOptionsGroupBy[];
   orderByOptions?: ViewOptionsOrderBy[];
+  layout: StoriesLayout;
 }) => {
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
@@ -65,8 +68,7 @@ export const StoriesViewOptionsButton = ({
     "Assignee",
     "Priority",
     "Due date",
-    "Created",
-    "Updated",
+    ...(layout !== "kanban" ? (["Created", "Updated"] as DisplayColumn[]) : []),
     "Sprint",
     "Objective",
     // "Epic",
@@ -92,7 +94,9 @@ export const StoriesViewOptionsButton = ({
           variant="outline"
         >
           Customise
-          {hasFilters ? <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" /> : null}
+          {hasFilters ? (
+            <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
+          ) : null}
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">

@@ -58,7 +58,7 @@ export const StoryProperties = ({
           <StatusesMenu.Trigger>
             {asKanban ? (
               <Button
-                className="gap-1 px-2"
+                className="gap-1 pr-2"
                 color="tertiary"
                 size="xs"
                 type="button"
@@ -86,7 +86,7 @@ export const StoryProperties = ({
           <PrioritiesMenu.Trigger>
             {asKanban ? (
               <Button
-                className="gap-1 px-2"
+                className="gap-1 pr-2"
                 color="tertiary"
                 size="xs"
                 type="button"
@@ -134,7 +134,9 @@ export const StoryProperties = ({
             <span>
               <ObjectivesMenu.Trigger>
                 <Button
-                  className="gap-1 px-2"
+                  className={cn("gap-1 pr-2", {
+                    "px-2": !asKanban,
+                  })}
                   color="tertiary"
                   rounded={asKanban ? "md" : "xl"}
                   size="xs"
@@ -166,7 +168,7 @@ export const StoryProperties = ({
             <span>
               <SprintsMenu.Trigger>
                 <Button
-                  className="gap-1 pl-1.5 pr-2"
+                  className="gap-1 pr-2"
                   color="tertiary"
                   rounded={asKanban ? "md" : "xl"}
                   size="xs"
@@ -221,12 +223,13 @@ export const StoryProperties = ({
             <span>
               <DatePicker.Trigger>
                 <Button
-                  className={cn("px-2", {
+                  className={cn("pr-2", {
                     "text-primary dark:text-primary":
                       new Date(endDate) < new Date(),
                     "text-warning dark:text-warning":
                       new Date(endDate) <= addDays(new Date(), 7) &&
                       new Date(endDate) >= new Date(),
+                    "px-2": !asKanban,
                   })}
                   color="tertiary"
                   rounded={asKanban ? "md" : "xl"}
