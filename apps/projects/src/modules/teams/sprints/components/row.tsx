@@ -9,7 +9,13 @@ import type { Sprint } from "@/modules/sprints/types";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
-export const SprintRow = ({ id, name, startDate, endDate }: Sprint) => {
+export const SprintRow = ({
+  id,
+  name,
+  startDate,
+  endDate,
+  stats: { total, completed, cancelled, started, unstarted, backlog },
+}: Sprint) => {
   const { teamId } = useParams<{ teamId: string }>();
   let sprintStatus: SprintStatus = "completed";
 
@@ -18,6 +24,8 @@ export const SprintRow = ({ id, name, startDate, endDate }: Sprint) => {
   } else if (new Date(startDate) > new Date()) {
     sprintStatus = "upcoming";
   }
+
+  const progress = Math.round((completed / total) * 100);
 
   return (
     <RowWrapper className="py-5">
@@ -44,16 +52,16 @@ export const SprintRow = ({ id, name, startDate, endDate }: Sprint) => {
           </Badge>
         </Box>
         <Flex align="center" className="w-24" gap={2}>
-          <ProgressBar className="h-1.5 w-12" progress={30} />
-          <Text>30%</Text>
+          <ProgressBar className="h-1.5 w-12" progress={progress} />
+          <Text>{progress}%</Text>
         </Flex>
         <Text className="flex w-24 items-center gap-1.5">
-          <span className="font-medium">5</span>
+          <span className="font-medium">{completed}</span>
           <Text color="muted">completed</Text>
         </Text>
         <Text className="flex w-20 items-center gap-1.5">
-          <span className="font-medium">5</span>
-          <Text color="muted">stories</Text>
+          <span className="font-medium">{total}</span>
+          <Text color="muted">total</Text>
         </Text>
       </Flex>
     </RowWrapper>
