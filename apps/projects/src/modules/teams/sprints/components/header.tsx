@@ -1,12 +1,6 @@
 "use client";
-import { Avatar, BreadCrumbs, Button, Flex } from "ui";
-import {
-  PlusIcon,
-  SearchIcon,
-  PreferencesIcon,
-  ArrowDownIcon,
-  SprintsIcon,
-} from "icons";
+import { BreadCrumbs, Button } from "ui";
+import { PlusIcon, SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";

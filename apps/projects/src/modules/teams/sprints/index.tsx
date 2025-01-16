@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, Flex, Tabs, Text } from "ui";
+import { Box, Button, Flex, Text } from "ui";
 import { SprintsIcon } from "icons";
 import { BodyContainer } from "@/components/shared";
 import type { Sprint } from "@/modules/sprints/types";
@@ -21,7 +21,7 @@ export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
                 No sprints found
               </Text>
               <Text className="mb-6 max-w-md text-center" color="muted">
-                Oops! This team doesn't have any sprints yet. Create a new
+                Oops! This team doesn&apos;t have any sprints yet. Create a new
                 sprint to get started.
               </Text>
               <Flex gap={2}>
