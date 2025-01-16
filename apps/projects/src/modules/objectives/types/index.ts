@@ -10,4 +10,12 @@ export type Objective = {
   isPrivate: boolean;
   createdAt: string;
   updatedAt: string;
+  stats: {
+    total: number;
+    cancelled: number;
+    completed: number;
+    started: number;
+    unstarted: number;
+    backlog: number;
+  };
 };
