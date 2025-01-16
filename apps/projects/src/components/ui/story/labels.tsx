@@ -1,5 +1,6 @@
 import { Badge, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
+import { cn } from "lib";
 import { useLabels } from "@/lib/hooks/labels";
 import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
 import { StoryLabel } from "../label";
@@ -9,10 +10,12 @@ export const Labels = ({
   storyLabels = [],
   storyId,
   teamId,
+  isRectangular,
 }: {
   storyLabels: string[];
   storyId: string;
   teamId: string;
+  isRectangular?: boolean;
 }) => {
   const { mutateAsync } = useUpdateLabelsMutation();
   const { data: allLabels = [] } = useLabels();
@@ -25,12 +28,18 @@ export const Labels = ({
   };
 
   return (
-    <Flex align="center" gap={1} wrap>
+    <Flex
+      align="center"
+      className={cn("gap-2", {
+        "gap-1.5": isRectangular,
+      })}
+      wrap
+    >
       {firstTwoLabels.map((label) => (
         <LabelsMenu key={label.id}>
           <LabelsMenu.Trigger>
             <span>
-              <StoryLabel {...label} />
+              <StoryLabel {...label} isRectangular={isRectangular} />
             </span>
           </LabelsMenu.Trigger>
           <LabelsMenu.Items
@@ -61,7 +70,8 @@ export const Labels = ({
                 <Badge
                   className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
                   color="tertiary"
-                  rounded="xl"
+                  rounded={isRectangular ? "md" : "xl"}
+                  variant="outline"
                 >
                   <TagsIcon
                     className="h-4"

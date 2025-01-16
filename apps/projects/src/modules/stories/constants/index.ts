@@ -1,8 +1,8 @@
 export const storyKeys = {
   all: ["stories"] as const,
   lists: () => [...storyKeys.all, "list"] as const,
-  teams: () => [...storyKeys.all, "list", "team"] as const,
   mine: () => [...storyKeys.all, "list", "mine"] as const,
+  teams: () => [...storyKeys.all, "list", "team"] as const,
   team: (teamId: string) => [...storyKeys.teams(), teamId] as const,
   list: (filter: string) => [...storyKeys.lists(), filter] as const,
   details: () => [...storyKeys.all, "detail"] as const,
@@ -11,6 +11,8 @@ export const storyKeys = {
   objectives: () => [...storyKeys.all, "objectives"] as const,
   objective: (objectiveId: string) =>
     [...storyKeys.objectives(), objectiveId] as const,
+  sprints: () => [...storyKeys.all, "sprints"] as const,
+  sprint: (sprintId: string) => [...storyKeys.sprints(), sprintId] as const,
   comments: (id: string) => [...storyKeys.detail(id), "comments"] as const,
 };
 
@@ -25,5 +27,7 @@ export const storyTags = {
   objectives: () => `${storyTags.all}-objectives` as const,
   objective: (objectiveId: string) =>
     `${storyTags.objectives()}-${objectiveId}` as const,
+  sprints: () => `${storyTags.all}-sprints` as const,
+  sprint: (sprintId: string) => `${storyTags.sprints()}-${sprintId}` as const,
   comments: (id: string) => `${storyTags.detail(id)}-comments` as const,
 };

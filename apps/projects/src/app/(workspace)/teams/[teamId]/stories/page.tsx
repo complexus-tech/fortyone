@@ -29,7 +29,7 @@ export default async function Page(props: {
         {
           next: {
             revalidate: DURATION_FROM_SECONDS.MINUTE * 5,
-            tags: [storyTags.teams(), storyTags.team(teamId)],
+            tags: [storyTags.team(teamId)],
           },
         },
       ),

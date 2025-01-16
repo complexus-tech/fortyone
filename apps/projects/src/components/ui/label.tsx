@@ -2,7 +2,13 @@ import { Badge, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
 import type { Label } from "@/types";
 
-export const StoryLabel = ({ color, name }: Label) => {
+export const StoryLabel = ({
+  color,
+  name,
+  isRectangular,
+}: Label & {
+  isRectangular?: boolean;
+}) => {
   return (
     <Tooltip
       title={
@@ -17,7 +23,7 @@ export const StoryLabel = ({ color, name }: Label) => {
       <Badge
         className="h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem] font-normal"
         color="tertiary"
-        rounded="xl"
+        rounded={isRectangular ? "md" : "xl"}
         variant="outline"
       >
         <TagsIcon className="h-4" style={{ color }} />
