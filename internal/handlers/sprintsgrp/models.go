@@ -9,16 +9,26 @@ import (
 
 // AppSprintList represents a sprint in the application layer.
 type AppSprintsList struct {
-	ID        uuid.UUID  `json:"id"`
-	Name      string     `json:"name"`
-	Goal      *string    `json:"goal"`
-	Objective *uuid.UUID `json:"objectiveId"`
-	Team      uuid.UUID  `json:"teamId"`
-	Workspace uuid.UUID  `json:"workspaceId"`
-	StartDate time.Time  `json:"startDate"`
-	EndDate   time.Time  `json:"endDate"`
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt time.Time  `json:"updatedAt"`
+	ID        uuid.UUID   `json:"id"`
+	Name      string      `json:"name"`
+	Goal      *string     `json:"goal"`
+	Objective *uuid.UUID  `json:"objectiveId"`
+	Team      uuid.UUID   `json:"teamId"`
+	Workspace uuid.UUID   `json:"workspaceId"`
+	StartDate time.Time   `json:"startDate"`
+	EndDate   time.Time   `json:"endDate"`
+	CreatedAt time.Time   `json:"createdAt"`
+	UpdatedAt time.Time   `json:"updatedAt"`
+	Stats     SprintStats `json:"stats"`
+}
+
+type SprintStats struct {
+	Total     int `json:"total"`
+	Cancelled int `json:"cancelled"`
+	Completed int `json:"completed"`
+	Started   int `json:"started"`
+	Unstarted int `json:"unstarted"`
+	Backlog   int `json:"backlog"`
 }
 
 type AppFilters struct {
@@ -41,6 +51,14 @@ func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 			EndDate:   sprint.EndDate,
 			CreatedAt: sprint.CreatedAt,
 			UpdatedAt: sprint.UpdatedAt,
+			Stats: SprintStats{
+				Total:     sprint.TotalStories,
+				Cancelled: sprint.CancelledStories,
+				Completed: sprint.CompletedStories,
+				Started:   sprint.StartedStories,
+				Unstarted: sprint.UnstartedStories,
+				Backlog:   sprint.BacklogStories,
+			},
 		}
 	}
 	return appSprints
