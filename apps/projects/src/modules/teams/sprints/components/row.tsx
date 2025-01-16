@@ -1,68 +1,123 @@
 "use client";
-import { Flex, Text, ProgressBar, Box, Badge } from "ui";
+import { Flex, Text, ProgressBar, Box, Badge, Tooltip } from "ui";
 import Link from "next/link";
 import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
+import { StoryStatusIcon } from "@/components/ui";
+import { useStatuses } from "@/lib/hooks/statuses";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
+
+const statusColors = {
+  completed: "tertiary",
+  "in progress": "primary",
+  upcoming: "tertiary",
+} as const;
 
 export const SprintRow = ({
   id,
   name,
   startDate,
   endDate,
-  stats: { total, completed, cancelled, started, unstarted, backlog },
+  stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
+  const { data: statuses = [] } = useStatuses();
   const { teamId } = useParams<{ teamId: string }>();
-  let sprintStatus: SprintStatus = "completed";
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
 
-  if (new Date(startDate) < new Date() && new Date(endDate) > new Date()) {
+  let sprintStatus: SprintStatus = "completed";
+  if (startDateObj < new Date() && endDateObj > new Date()) {
     sprintStatus = "in progress";
-  } else if (new Date(startDate) > new Date()) {
+  } else if (startDateObj > new Date()) {
     sprintStatus = "upcoming";
   }
+
+  const completedStatus = statuses.find(
+    (status) => status.category === "completed",
+  );
+  const activeStatus = statuses.find((status) => status.category === "started");
+  const todoStatus = statuses.find((status) => status.category === "unstarted");
+  const plannedStatus = statuses.find(
+    (status) => status.category === "backlog",
+  );
 
   const progress = Math.round((completed / total) * 100);
 
   return (
-    <RowWrapper className="py-5">
+    <RowWrapper>
       <Link
-        className="flex items-center gap-2"
+        className="flex flex-1 items-center gap-4"
         href={`/teams/${teamId}/sprints/${id}/stories`}
       >
-        <SprintsIcon />
-        <Text fontWeight="medium">{name}</Text>
-        <Text className="ml-2 flex w-60 items-center gap-1.5" color="muted">
-          <CalendarIcon className="relative -top-px" />
-          {format(new Date(startDate), "MMM d, yyyy")}
-          <ArrowRightIcon className="h-3" />
-          {format(new Date(endDate), "MMM d, yyyy")}
-        </Text>
-      </Link>
-      <Flex gap={4}>
-        <Box className="">
-          <Badge
-            className="h-7 px-2 text-[0.9rem] capitalize tracking-wide"
-            color={sprintStatus === "in progress" ? "success" : "tertiary"}
-          >
-            {sprintStatus}
-          </Badge>
-        </Box>
-        <Flex align="center" className="w-24" gap={2}>
-          <ProgressBar className="h-1.5 w-12" progress={progress} />
-          <Text>{progress}%</Text>
+        <Flex
+          align="center"
+          className="size-10 rounded-lg bg-gray-100/50 dark:bg-dark-200"
+          justify="center"
+        >
+          <SprintsIcon />
         </Flex>
-        <Text className="flex w-24 items-center gap-1.5">
-          <span className="font-medium">{completed}</span>
-          <Text color="muted">completed</Text>
-        </Text>
-        <Text className="flex w-20 items-center gap-1.5">
-          <span className="font-medium">{total}</span>
-          <Text color="muted">total</Text>
-        </Text>
+        <Box className="space-y-1">
+          <Text className="text-[1.05rem] antialiased" fontWeight="semibold">
+            {name}
+          </Text>
+          <Text className="flex items-center gap-1.5" color="muted">
+            <CalendarIcon className="h-[1.1rem]" />
+            {format(startDateObj, "MMM d")}
+            <ArrowRightIcon className="h-3" />
+            {format(endDateObj, "MMM d")}
+          </Text>
+        </Box>
+      </Link>
+
+      <Flex className="items-center" gap={4}>
+        <Badge
+          className="h-8 px-2 text-base capitalize tracking-wide"
+          color={statusColors[sprintStatus]}
+        >
+          {sprintStatus}
+        </Badge>
+
+        <Tooltip title={`${progress}% Complete`}>
+          <Flex align="center" className="w-36" gap={3}>
+            <ProgressBar className="h-2 flex-1" progress={progress} />
+            <Text>{progress}%</Text>
+          </Flex>
+        </Tooltip>
+
+        <Flex className="min-w-[300px]" gap={4}>
+          <Flex align="center" className="min-w-[80px] gap-1.5">
+            <StoryStatusIcon statusId={completedStatus?.id} />
+            <Text>
+              {completed}
+              <span className="text-muted ml-1.5">Done</span>
+            </Text>
+          </Flex>
+          <Flex align="center" className="min-w-[80px] gap-1.5">
+            <StoryStatusIcon statusId={activeStatus?.id} />
+            <Text className="whitespace-nowrap">
+              {started}
+              <span className="text-muted ml-2">Active</span>
+            </Text>
+          </Flex>
+          <Flex align="center" className="min-w-[80px] gap-1.5">
+            <StoryStatusIcon statusId={todoStatus?.id} />
+            <Text className="whitespace-nowrap">
+              {unstarted}
+              <span className="text-muted ml-1.5">Todo</span>
+            </Text>
+          </Flex>
+          <Flex align="center" className="min-w-[80px] gap-1.5">
+            <StoryStatusIcon statusId={plannedStatus?.id} />
+            <Text className="whitespace-nowrap">
+              {backlog}
+              <span className="text-muted ml-1.5">Backlog</span>
+            </Text>
+          </Flex>
+        </Flex>
       </Flex>
     </RowWrapper>
   );
