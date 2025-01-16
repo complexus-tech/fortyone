@@ -1,6 +1,14 @@
 "use client";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { DndContext, DragOverlay } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragOverlay,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  PointerSensor,
+  TouchSensor,
+} from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -12,7 +20,6 @@ import type {
 } from "@/components/ui/stories-view-options-button";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { NewStoryButton } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -20,6 +27,7 @@ import { StoryCard } from "./story/card";
 import { ListBoard } from "./list-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
+import { NewStoryButton } from "./new-story-button";
 
 export type StoriesLayout = "list" | "kanban" | null;
 
@@ -103,7 +111,7 @@ export const StoriesBoard = ({
     storyId: string,
     payload: Partial<DetailedStory>,
   ) => {
-    mutateAsync({ storyId, payload });
+    await mutateAsync({ storyId, payload });
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -152,10 +160,11 @@ export const StoriesBoard = ({
           return new Date(story.createdAt).getTime();
         case "Updated":
           return new Date(story.updatedAt).getTime();
-        case "Due date":
+        case "Due date": {
           const date = new Date(story.endDate!);
           return isNaN(date.getTime()) ? Infinity : date.getTime();
-        case "Priority":
+        }
+        case "Priority": {
           const prioritiesMap: Record<StoryPriority, number> = {
             "No Priority": 0,
             Low: 1,
@@ -167,6 +176,7 @@ export const StoriesBoard = ({
             prioritiesMap[story.priority] * 1e15 -
             new Date(story.createdAt).getTime()
           );
+        }
         default:
           return 0;
       }
@@ -174,6 +184,28 @@ export const StoriesBoard = ({
 
     return stories.sort((a, b) => getSortValue(b) - getSortValue(a));
   };
+
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      tolerance: 10,
+      delay: 50,
+    },
+  });
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      tolerance: 10,
+      delay: 50,
+    },
+  });
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      tolerance: 10,
+      delay: 50,
+    },
+  });
+
+  const sensors = useSensors(mouseSensor, pointerSensor, touchSensor);
 
   useEffect(() => {
     setStoriesBoard(stories);
@@ -188,7 +220,11 @@ export const StoriesBoard = ({
         isColumnVisible,
       }}
     >
-      <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+      <DndContext
+        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
+        sensors={sensors}
+      >
         <Box>
           {storiesBoard.length === 0 && (
             <Box className="flex h-[70vh] items-center justify-center">
