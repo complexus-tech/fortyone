@@ -1,99 +1,75 @@
-import { Flex, Text, Avatar, ProgressBar, Box, Badge, Tooltip } from "ui";
+import { Flex, Text, ProgressBar, Box, Badge } from "ui";
 import Link from "next/link";
-import { CalendarIcon, ObjectiveIcon } from "icons";
+import { ObjectiveIcon } from "icons";
 import { format } from "date-fns";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { TeamColor } from "@/components/ui";
 import type { Objective } from "../../../modules/objectives/types";
-
-type ObjectiveStatus = "completed" | "in progress" | "upcoming";
-
-const statusColors = {
-  completed: "tertiary",
-  "in progress": "primary",
-  upcoming: "tertiary",
-} as const;
 
 export const ObjectiveCard = ({
   id,
   name,
   leadUser,
   teamId,
-  startDate,
   endDate,
+  stats: { completed, total },
   createdAt,
-  stats: { completed, started, total, backlog, cancelled },
 }: Objective) => {
   const { data: members = [] } = useMembers();
+  const { data: teams = [] } = useTeams();
   const lead = members.find((member) => member.id === leadUser);
-
-  let objectiveStatus: ObjectiveStatus = "completed";
-  const startDateObj = new Date(startDate);
-  const endDateObj = new Date(endDate);
-
-  if (startDateObj < new Date() && endDateObj > new Date()) {
-    objectiveStatus = "in progress";
-  } else if (startDateObj > new Date()) {
-    objectiveStatus = "upcoming";
-  }
-  const progress = Math.round((completed / total) * 100);
+  const team = teams.find((team) => team.id === teamId);
+  const progress = Math.round((completed / total) * 100) || 0;
 
   return (
-    <RowWrapper>
-      <Link
-        className="flex flex-1 items-center gap-4"
-        href={`/teams/${teamId}/objectives/${id}`}
-      >
-        <Flex
-          align="center"
-          className="size-10 rounded-lg bg-gray-100/50 dark:bg-dark-200"
-          justify="center"
+    <RowWrapper className="px-6 py-3">
+      <Box className="flex w-[300px] shrink-0 items-center gap-2">
+        <Link
+          className="flex w-full items-center gap-2 hover:opacity-90"
+          href={`/teams/${teamId}/objectives/${id}`}
         >
-          <ObjectiveIcon />
-        </Flex>
-        <Box className="space-y-1">
-          <Text className="text-[1.05rem] antialiased" fontWeight="semibold">
-            {name}
-          </Text>
-          <Text className="flex items-center gap-1.5" color="muted">
-            <CalendarIcon className="h-[1.1rem]" />
-            {format(startDateObj, "MMM d")} - {format(endDateObj, "MMM d")}
+          <Flex
+            align="center"
+            className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-200"
+            justify="center"
+          >
+            <ObjectiveIcon className="h-4" />
+          </Flex>
+          <Text className="truncate font-medium">{name}</Text>
+        </Link>
+      </Box>
+      <Flex align="center" gap={4}>
+        <Box className="flex w-[120px] shrink-0 items-center gap-2">
+          <TeamColor color={team?.color} />
+          <Text className="truncate" color="muted">
+            {team?.name}
           </Text>
         </Box>
-      </Link>
 
-      <Flex className="items-center" gap={4}>
-        <Badge
-          className="h-8 px-2 text-base capitalize tracking-wide"
-          color={statusColors[objectiveStatus]}
-        >
-          {objectiveStatus}
-        </Badge>
+        <Box className="w-[140px] shrink-0">
+          <Text className="truncate" color="muted">
+            {lead?.username}
+          </Text>
+        </Box>
 
-        <Tooltip title={`${progress}% Complete`}>
-          <Flex align="center" className="w-36" gap={3}>
-            <ProgressBar className="h-2 flex-1" progress={progress} />
-            <Text>{progress}%</Text>
-          </Flex>
-        </Tooltip>
+        <Box className="w-[120px] shrink-0">
+          <ProgressBar className="h-1.5" progress={progress} />
+        </Box>
 
-        <Box className="w-40">
-          <AssigneesMenu>
-            <AssigneesMenu.Trigger>
-              <button className="flex items-center gap-1.5" type="button">
-                <Avatar name={lead?.fullName} size="xs" src={lead?.avatarUrl} />
-                <Text
-                  className="relative -top-px max-w-[14ch] truncate"
-                  // color="muted"
-                  fontWeight="medium"
-                >
-                  {lead?.username || "Lead"}
-                </Text>
-              </button>
-            </AssigneesMenu.Trigger>
-            <AssigneesMenu.Items onAssigneeSelected={(_assigneeId) => {}} />
-          </AssigneesMenu>
+        <Box className="w-[120px] shrink-0">
+          <Text color="muted">{format(new Date(endDate), "MMM dd, yyyy")}</Text>
+        </Box>
+
+        <Box className="w-[120px] shrink-0">
+          <Text color="muted">
+            {format(new Date(createdAt), "MMM dd, yyyy")}
+          </Text>
+        </Box>
+
+        <Box className="w-[100px] shrink-0">
+          <Badge color="tertiary">No Health</Badge>
         </Box>
       </Flex>
     </RowWrapper>
