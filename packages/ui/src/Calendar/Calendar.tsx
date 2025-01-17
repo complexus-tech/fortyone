@@ -8,7 +8,6 @@ import {
 } from "react-day-picker";
 
 import { cn } from "lib";
-import { ArrowLeftIcon, ArrowRightIcon } from "icons";
 
 export type CalendarProps =
   | DayPickerDefaultProps
@@ -37,7 +36,7 @@ export const Calendar = ({
         caption_label: "text-base font-medium",
         nav: "space-x-1 flex items-center",
         nav_button:
-          "h-8 aspect-square border border-gray-100 dark:border-dark-50 rounded-lg flex items-center justify-center",
+          "h-8 aspect-square border border-gray-100 dark:border-dark-50 rounded-lg flex items-center justify-center [&_svg]:h-2.5 [&_svg]:w-auto",
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
@@ -45,7 +44,7 @@ export const Calendar = ({
         head_cell: "w-10 font-semibold border-0 text-[1rem]",
         row: "flex w-full mt-2",
         cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
-        day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
+        day: "size-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
         day_selected: "bg-primary border-primary rounded-lg",
         day_today:
           "border border-gray-200 dark:border-dark-50 hover:border-primary",
@@ -62,10 +61,10 @@ export const Calendar = ({
         dropdown_month: "relative inline-flex items-center",
         ...classNames,
       }}
-      components={{
-        IconLeft: () => <ArrowLeftIcon className="h-4 w-auto" />,
-        IconRight: () => <ArrowRightIcon className="h-4 w-auto" />,
-      }}
+      // components={{
+      //   IconLeft: () => <ArrowLeftIcon className="h-4 w-auto" />,
+      //   IconRight: () => <ArrowRightIcon className="h-4 w-auto" />,
+      // }}
       {...props}
     />
   );

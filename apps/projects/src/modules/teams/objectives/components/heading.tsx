@@ -1,30 +1,47 @@
-import { Container, Flex, Text } from "ui";
+import { Flex, Text, Box } from "ui";
 
-export const Heading = () => {
+export const TableHeader = () => {
   return (
-    <Container className="sticky top-0 z-[1] h-[3.2rem] border-b-[0.5px] border-gray-100/60 bg-gray-50/60 leading-[3.2rem] backdrop-blur dark:border-dark-100 dark:bg-dark-300/90">
-      <Flex align="center" justify="between">
-        <Text color="muted" fontWeight="medium">
-          Name
-        </Text>
-        <Flex align="center" gap={5}>
-          <Text className="w-40 text-left" color="muted">
-            Progress
+    <Box className="sticky top-0 z-[1] border-b-[0.5px] border-gray-100/60 bg-gray-50/60 py-3 backdrop-blur dark:border-dark-100 dark:bg-dark-300/90">
+      <Flex align="center" className="px-6" justify="between">
+        <Box className="w-[300px] shrink-0">
+          <Text color="muted" fontWeight="medium">
+            Name
           </Text>
-          <Text className="w-40 text-left" color="muted">
-            Start date
-          </Text>
-          <Text className="w-40 text-left" color="muted">
-            Target
-          </Text>
-          <Text className="w-40 text-left" color="muted">
-            Lead
-          </Text>
-          <Text className="w-40 text-left" color="muted">
-            Created
-          </Text>
+        </Box>
+        <Flex gap={4}>
+          <Box className="w-[120px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              Team
+            </Text>
+          </Box>
+          <Box className="w-[140px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              Owner
+            </Text>
+          </Box>
+          <Box className="w-[120px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              KR Progress
+            </Text>
+          </Box>
+          <Box className="w-[120px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              Target
+            </Text>
+          </Box>
+          <Box className="w-[120px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              Created On
+            </Text>
+          </Box>
+          <Box className="w-[100px] shrink-0">
+            <Text color="muted" fontWeight="medium">
+              Health
+            </Text>
+          </Box>
         </Flex>
       </Flex>
-    </Container>
+    </Box>
   );
 };

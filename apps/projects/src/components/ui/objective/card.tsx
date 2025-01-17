@@ -1,4 +1,4 @@
-import { Flex, Text, ProgressBar, Box, Badge } from "ui";
+import { Flex, Text, ProgressBar, Box, Badge, Avatar } from "ui";
 import Link from "next/link";
 import { ObjectiveIcon } from "icons";
 import { format } from "date-fns";
@@ -48,14 +48,20 @@ export const ObjectiveCard = ({
           </Text>
         </Box>
 
-        <Box className="w-[140px] shrink-0">
+        <Box className="flex w-[140px] shrink-0 items-center gap-2">
+          <Avatar
+            className="relative top-px shrink-0"
+            name={lead?.fullName}
+            size="xs"
+            src={lead?.avatarUrl}
+          />
           <Text className="truncate" color="muted">
             {lead?.username}
           </Text>
         </Box>
 
-        <Box className="w-[120px] shrink-0">
-          <ProgressBar className="h-1.5" progress={progress} />
+        <Box className="flex w-[120px] shrink-0 items-center gap-2 pr-1">
+          <ProgressBar className="h-1.5" progress={progress} /> {progress}%
         </Box>
 
         <Box className="w-[120px] shrink-0">
@@ -69,7 +75,9 @@ export const ObjectiveCard = ({
         </Box>
 
         <Box className="w-[100px] shrink-0">
-          <Badge color="tertiary">No Health</Badge>
+          <Badge className="h-7" color="tertiary">
+            No Health
+          </Badge>
         </Box>
       </Flex>
     </RowWrapper>
