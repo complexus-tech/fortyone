@@ -10,6 +10,7 @@ import {
   Menu,
   Avatar,
   Box,
+  Divider,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -72,9 +73,11 @@ type NewObjective = {
 const KeyResultEditor = ({
   keyResult,
   onUpdate,
+  onRemove,
 }: {
   keyResult: KeyResult;
   onUpdate: (id: string, updates: Partial<KeyResult>) => void;
+  onRemove: (id: string) => void;
 }) => {
   const editor = useEditor({
     extensions: [
@@ -82,8 +85,7 @@ const KeyResultEditor = ({
       Paragraph,
       TextExt,
       Placeholder.configure({
-        placeholder:
-          "Example: Increase Iteration velocity from 30 to 50 points",
+        placeholder: "Example: Increase user adoption from 100 to 150",
       }),
     ],
     content: keyResult.name,
@@ -94,76 +96,88 @@ const KeyResultEditor = ({
   });
 
   return (
-    <Box className="mb-6 space-y-4">
-      <Box>
-        <Flex align="center" className="mb-2" gap={2}>
-          <Text className="font-medium">Name</Text>
-          <Text color="muted">Required</Text>
-        </Flex>
+    <Box className="mb-6 rounded-lg border border-gray-200 px-6 pb-6 dark:border-dark-100">
+      <Box className="space-y-3">
         <TextEditor className="flex-1" editor={editor} />
+        <Flex gap={4}>
+          <Box className="flex-1">
+            <Flex align="center" className="mb-2" gap={2}>
+              <Text className="font-medium">Measure as</Text>
+              <Text color="muted">Required</Text>
+            </Flex>
+            <Menu>
+              <Menu.Button className="w-full">
+                <Button
+                  className="w-full justify-between"
+                  color="tertiary"
+                  rightIcon={<ArrowRightIcon className="h-4 w-4 rotate-90" />}
+                  size="md"
+                  variant="outline"
+                >
+                  {keyResult.measureType}
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="start" className="w-full">
+                <Menu.Group>
+                  {[
+                    "Number",
+                    "Percent (%)",
+                    "Boolean (Complete/Incomplete)",
+                  ].map((type) => (
+                    <Menu.Item
+                      active={type === keyResult.measureType}
+                      key={type}
+                      onClick={() => {
+                        onUpdate(keyResult.id, {
+                          measureType: type as MeasureType,
+                        });
+                      }}
+                    >
+                      {type}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Box>
+          <Box className="flex-1">
+            <Text className="mb-2 font-medium">Starting Value</Text>
+            <input
+              className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
+              onChange={(e) => {
+                onUpdate(keyResult.id, { startValue: Number(e.target.value) });
+              }}
+              placeholder="0"
+              type="number"
+              value={keyResult.startValue || ""}
+            />
+          </Box>
+          <Box className="flex-1">
+            <Text className="mb-2 font-medium">Target Value</Text>
+            <input
+              className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
+              onChange={(e) => {
+                onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
+              }}
+              placeholder="0"
+              type="number"
+              value={keyResult.targetValue || ""}
+            />
+          </Box>
+        </Flex>
+        <Flex className="mb-4" gap={2}>
+          <Button
+            color="tertiary"
+            onClick={() => {
+              onRemove(keyResult.id);
+            }}
+            size="sm"
+          >
+            Remove
+          </Button>
+          <Button size="sm">Create Key Result</Button>
+        </Flex>
       </Box>
-      <Flex gap={4}>
-        <Box className="flex-1">
-          <Flex align="center" className="mb-2" gap={2}>
-            <Text className="font-medium">Measure as</Text>
-            <Text color="muted">Required</Text>
-          </Flex>
-          <Menu>
-            <Menu.Button className="w-full">
-              <Button
-                className="w-full justify-between"
-                color="tertiary"
-                rightIcon={<ArrowRightIcon className="h-4 w-4 rotate-90" />}
-                size="md"
-                variant="outline"
-              >
-                {keyResult.measureType}
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="start" className="w-full">
-              {["Number", "Percent (%)", "Boolean (Complete/Incomplete)"].map(
-                (type) => (
-                  <Menu.Item
-                    active={type === keyResult.measureType}
-                    key={type}
-                    onClick={() => {
-                      onUpdate(keyResult.id, {
-                        measureType: type as MeasureType,
-                      });
-                    }}
-                  >
-                    {type}
-                  </Menu.Item>
-                ),
-              )}
-            </Menu.Items>
-          </Menu>
-        </Box>
-        <Box className="flex-1">
-          <Text className="mb-2 font-medium">Starting Value</Text>
-          <input
-            className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
-            onChange={(e) => {
-              onUpdate(keyResult.id, { startValue: Number(e.target.value) });
-            }}
-            placeholder="0"
-            type="number"
-            value={keyResult.startValue || ""}
-          />
-        </Box>
-        <Box className="flex-1">
-          <Text className="mb-2 font-medium">Target Value</Text>
-          <input
-            className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
-            onChange={(e) => {
-              onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
-            }}
-            placeholder="0"
-            type="number"
-            value={keyResult.targetValue || ""}
-          />
-        </Box>
-      </Flex>
     </Box>
   );
 };
@@ -317,7 +331,7 @@ export const NewObjectiveDialog = ({
               </Menu.Items>
             </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New objective</Text>
+            <Text color="muted">New Objective</Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button
@@ -552,13 +566,19 @@ export const NewObjectiveDialog = ({
               </Menu.Items>
             </Menu>
           </Flex>
-
-          <Box className="mt-8">
-            <Text className="mb-4 font-medium">Key Results</Text>
+          <Divider className="my-4" />
+          <Box>
+            <Text className="mb-4 font-medium">Key Results (OKRs)</Text>
             {objectiveForm.keyResults.map((kr) => (
               <KeyResultEditor
                 key={kr.id}
                 keyResult={kr}
+                onRemove={(id) => {
+                  setObjectiveForm((prev) => ({
+                    ...prev,
+                    keyResults: prev.keyResults.filter((k) => k.id !== id),
+                  }));
+                }}
                 onUpdate={(id, updates) => {
                   setObjectiveForm((prev) => ({
                     ...prev,
