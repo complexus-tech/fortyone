@@ -6,7 +6,7 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { TeamColor } from "@/components/ui";
-import type { Objective } from "../../../modules/objectives/types";
+import type { Objective } from "../types";
 
 export const ObjectiveCard = ({
   id,
@@ -16,7 +16,8 @@ export const ObjectiveCard = ({
   endDate,
   stats: { completed, total },
   createdAt,
-}: Objective) => {
+  isInTeam,
+}: Objective & { isInTeam?: boolean }) => {
   const { data: members = [] } = useMembers();
   const { data: teams = [] } = useTeams();
   const lead = members.find((member) => member.id === leadUser);
@@ -35,18 +36,23 @@ export const ObjectiveCard = ({
             className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-200"
             justify="center"
           >
-            <ObjectiveIcon className="h-4" />
+            <ObjectiveIcon
+              className="h-4"
+              {...(!isInTeam && { style: { color: team?.color } })}
+            />
           </Flex>
           <Text className="truncate font-medium">{name}</Text>
         </Link>
       </Box>
       <Flex align="center" gap={4}>
-        <Box className="flex w-[120px] shrink-0 items-center gap-2">
-          <TeamColor color={team?.color} />
-          <Text className="truncate" color="muted">
-            {team?.name}
-          </Text>
-        </Box>
+        {!isInTeam ? (
+          <Box className="flex w-[120px] shrink-0 items-center gap-2">
+            <TeamColor color={team?.color} />
+            <Text className="truncate" color="muted">
+              {team?.name}
+            </Text>
+          </Box>
+        ) : null}
 
         <Box className="flex w-[140px] shrink-0 items-center gap-2">
           <Avatar

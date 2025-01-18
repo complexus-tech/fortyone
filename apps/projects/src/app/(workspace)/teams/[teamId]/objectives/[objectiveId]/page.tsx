@@ -3,7 +3,7 @@ import { getStories } from "@/modules/stories/queries/get-stories";
 import { storyKeys, storyTags } from "@/modules/stories/constants";
 import { getQueryClient } from "@/app/get-query-client";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import { ListStories } from "@/modules/teams/objectives/stories/list-stories";
+import { ListStories } from "@/modules/objectives/stories/list-stories";
 
 export default async function Page(props: {
   params: Promise<{

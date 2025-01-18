@@ -3,14 +3,7 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
-import {
-  ArrowDownIcon,
-  DocsIcon,
-  EpicsIcon,
-  ObjectiveIcon,
-  SprintsIcon,
-  StoryIcon,
-} from "icons";
+import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import { NavLink, TeamColor } from "../../ui";
 
@@ -21,12 +14,7 @@ type TeamProps = {
   color?: string;
 };
 
-export const Team = ({
-  id,
-  name: teamName,
-  icon: teamIcon,
-  color,
-}: TeamProps) => {
+export const Team = ({ id, name: teamName, color }: TeamProps) => {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
     false,
@@ -38,36 +26,17 @@ export const Team = ({
       icon: <StoryIcon strokeWidth={2} />,
       href: `/teams/${id}/stories`,
     },
-    // {
-    //   name: "Epics",
-    //   icon: <EpicsIcon className="h-[1.4rem] w-auto" />,
-    //   href: `/teams/${id}/epics`,
-    // },
     {
       name: "Sprints",
       icon: <SprintsIcon />,
       href: `/teams/${id}/sprints`,
     },
-    // {
-    //   name: "Documents",
-    //   icon: <DocsIcon className="h-[1.3rem] w-auto" />,
-    //   href: `/teams/${id}/documents`,
-    // },
+
     {
       name: "Objectives",
-      icon: <ObjectiveIcon className="h-[1.15rem]" strokeWidth={2} />,
+      icon: <ObjectiveIcon className="h-[1.1rem]" strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
     },
-    // {
-    //   name: "Whiteboards",
-    //   icon: <WhiteboardIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-    //   href: `/teams/${id}/whiteboards`,
-    // },
-    // {
-    //   name: "Retrospectives",
-    //   icon: <RetroIcon className="h-[1.3rem] w-auto" strokeWidth={2} />,
-    //   href: `/teams/${id}/retrospectives`,
-    // },
   ];
 
   return (

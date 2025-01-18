@@ -76,6 +76,7 @@ export const Header = ({
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
+          layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />

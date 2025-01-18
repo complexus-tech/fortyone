@@ -1,6 +1,6 @@
 import { Flex, Text, Box } from "ui";
 
-export const TableHeader = () => {
+export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
   return (
     <Box className="sticky top-0 z-[1] border-b-[0.5px] border-gray-100/60 bg-gray-50/60 py-3 backdrop-blur dark:border-dark-100 dark:bg-dark-300/90">
       <Flex align="center" className="px-6" justify="between">
@@ -10,11 +10,14 @@ export const TableHeader = () => {
           </Text>
         </Box>
         <Flex gap={4}>
-          <Box className="w-[120px] shrink-0">
-            <Text color="muted" fontWeight="medium">
-              Team
-            </Text>
-          </Box>
+          {!isInTeam && (
+            <Box className="w-[120px] shrink-0">
+              <Text color="muted" fontWeight="medium">
+                Team
+              </Text>
+            </Box>
+          )}
+
           <Box className="w-[140px] shrink-0">
             <Text color="muted" fontWeight="medium">
               Owner

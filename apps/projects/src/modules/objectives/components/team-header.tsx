@@ -1,17 +1,15 @@
 "use client";
-import { Badge, BreadCrumbs, Button, Flex } from "ui";
+import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog, TeamColor } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
-export const ObjectivesHeader = () => {
+export const TeamObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
-  const { data: objectives = [] } = useObjectives();
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,16 +23,13 @@ export const ObjectivesHeader = () => {
               icon: <TeamColor color={color} />,
             },
             {
-              name: "All objectives",
+              name: "Objectives",
               icon: (
                 <ObjectiveIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
               ),
             },
           ]}
         />
-        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {objectives.length} Objectives
-        </Badge>
       </Flex>
       <Flex align="center" gap={2}>
         <Button
@@ -45,7 +40,7 @@ export const ObjectivesHeader = () => {
           }}
           size="sm"
         >
-          Create Objective
+          New Objective
         </Button>
       </Flex>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
