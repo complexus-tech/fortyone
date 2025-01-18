@@ -30,7 +30,8 @@ import {
   MaximizeIcon,
   MinimizeIcon,
   PlusIcon,
-  TagsIcon,
+  ObjectiveIcon,
+  SprintsIcon,
 } from "icons";
 import { toast } from "sonner";
 import nProgress from "nprogress";
@@ -46,11 +47,15 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useSprints } from "@/lib/hooks/sprints";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StatusesMenu } from "./story/statuses-menu";
 import { TeamColor } from "./team-color";
+import { ObjectivesMenu } from "./story/objectives-menu";
+import { SprintsMenu } from "./story/sprints-menu";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -71,6 +76,8 @@ export const NewStoryDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { data: objectives = [] } = useObjectives();
+  const { data: sprints = [] } = useSprints();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
@@ -90,11 +97,16 @@ export const NewStoryDialog = ({
     startDate: null,
     assigneeId,
     priority,
+    objectiveId: null,
+    sprintId: null,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const mutation = useCreateStoryMutation();
+  const objective = objectives.find((o) => o.id === storyForm.objectiveId);
+  const sprint = sprints.find((s) => s.id === storyForm.sprintId);
+  const member = members.find((m) => m.id === storyForm.assigneeId);
 
   const titleEditor = useEditor({
     extensions: [
@@ -147,6 +159,8 @@ export const NewStoryDialog = ({
       startDate: storyForm.startDate,
       reporterId: session.data?.user?.id,
       assigneeId: storyForm.assigneeId,
+      objectiveId: storyForm.objectiveId,
+      sprintId: storyForm.sprintId,
     };
 
     try {
@@ -158,8 +172,6 @@ export const NewStoryDialog = ({
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
       setStoryForm(initialForm);
-    } catch (error) {
-      console.log(error);
     } finally {
       setLoading(false);
       nProgress.done();
@@ -176,7 +188,7 @@ export const NewStoryDialog = ({
         setActiveTeam(team);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -256,7 +268,7 @@ export const NewStoryDialog = ({
             })}
             editor={editor}
           />
-          <Flex className="mt-4" gap={1}>
+          <Flex align="center" className="mt-4 gap-1.5" wrap>
             <StatusesMenu>
               <StatusesMenu.Trigger>
                 <Button
@@ -267,7 +279,7 @@ export const NewStoryDialog = ({
                       statusId={storyForm.statusId}
                     />
                   }
-                  size="xs"
+                  size="sm"
                   type="button"
                   variant="outline"
                 >
@@ -294,7 +306,7 @@ export const NewStoryDialog = ({
                       priority={storyForm.priority}
                     />
                   }
-                  size="xs"
+                  size="sm"
                   type="button"
                   variant="outline"
                 >
@@ -315,7 +327,8 @@ export const NewStoryDialog = ({
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
-                    storyForm.startDate ? <CloseIcon
+                    storyForm.startDate ? (
+                      <CloseIcon
                         aria-label="Remove date"
                         className="h-4 w-auto"
                         onClick={() => {
@@ -325,9 +338,10 @@ export const NewStoryDialog = ({
                           }));
                         }}
                         role="button"
-                      /> : null
+                      />
+                    ) : null
                   }
-                  size="xs"
+                  size="sm"
                   variant="outline"
                 >
                   {storyForm.startDate
@@ -356,16 +370,18 @@ export const NewStoryDialog = ({
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
-                    storyForm.endDate ? <CloseIcon
+                    storyForm.endDate ? (
+                      <CloseIcon
                         aria-label="Remove date"
                         className="h-4 w-auto"
                         onClick={() => {
                           setStoryForm((prev) => ({ ...prev, endDate: null }));
                         }}
                         role="button"
-                      /> : null
+                      />
+                    ) : null
                   }
-                  size="xs"
+                  size="sm"
                   variant="outline"
                 >
                   {storyForm.endDate
@@ -392,24 +408,17 @@ export const NewStoryDialog = ({
                   leftIcon={
                     <Avatar
                       color="tertiary"
-                      name={
-                        members.find(
-                          (member) => member.id === storyForm.assigneeId,
-                        )?.fullName
-                      }
+                      name={member?.fullName}
                       size="xs"
-                      src={
-                        members.find(
-                          (member) => member.id === storyForm.assigneeId,
-                        )?.avatarUrl
-                      }
+                      src={member?.avatarUrl}
                     />
                   }
-                  size="xs"
+                  size="sm"
                   variant="outline"
                 >
-                  {members.find((member) => member.id === storyForm.assigneeId)
-                    ?.username || "Assignee"}
+                  <span className="relative -top-px inline-block max-w-[12ch] truncate">
+                    {member?.username || "Assignee"}
+                  </span>
                 </Button>
               </AssigneesMenu.Trigger>
               <AssigneesMenu.Items
@@ -419,21 +428,54 @@ export const NewStoryDialog = ({
                 }}
               />
             </AssigneesMenu>
-            {/* <Button
-              className="px-2 text-sm"
-              color="tertiary"
-              leftIcon={<TagsIcon className="h-4 w-auto" />}
-              size="xs"
-              variant="outline"
-            >
-              <span className="sr-only">Add labels to the story</span>
-            </Button> */}
+            <ObjectivesMenu>
+              <ObjectivesMenu.Trigger>
+                <Button
+                  className="gap-1 px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                  size="sm"
+                  variant="outline"
+                >
+                  <span className="inline-block max-w-[12ch] truncate">
+                    {objective?.name || "Objective"}
+                  </span>
+                </Button>
+              </ObjectivesMenu.Trigger>
+              <ObjectivesMenu.Items
+                objectiveId={storyForm.objectiveId ?? undefined}
+                setObjectiveId={(objectiveId) => {
+                  setStoryForm({ ...storyForm, objectiveId });
+                }}
+              />
+            </ObjectivesMenu>
+            <SprintsMenu>
+              <SprintsMenu.Trigger>
+                <Button
+                  className="gap-1 px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<SprintsIcon className="h-4 w-auto" />}
+                  size="sm"
+                  variant="outline"
+                >
+                  <span className="inline-block max-w-[12ch] truncate">
+                    {sprint?.name || "Sprint"}
+                  </span>
+                </Button>
+              </SprintsMenu.Trigger>
+              <SprintsMenu.Items
+                setSprintId={(sprintId) => {
+                  setStoryForm({ ...storyForm, sprintId });
+                }}
+                sprintId={storyForm.sprintId ?? undefined}
+              />
+            </SprintsMenu>
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-between gap-2">
           <Text color="muted">
             <label className="flex items-center gap-2" htmlFor="more">
-              Create more{" "}
+              Create more
               <Switch
                 checked={createMore}
                 id="more"

@@ -183,8 +183,8 @@ export const MyStories = () => {
       <Tabs defaultValue="inProgress">
         <Tabs.List className="mx-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
-          <Tabs.Tab value="upcoming">Upcoming</Tabs.Tab>
-          <Tabs.Tab value="due">Due</Tabs.Tab>
+          <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
+          <Tabs.Tab value="due">Overdue</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="inProgress">
           {inProgressStories.length === 0 ? (

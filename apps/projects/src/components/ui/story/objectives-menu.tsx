@@ -9,6 +9,7 @@ const ObjectivesContext = createContext<{
   setOpen: (open: boolean) => void;
 }>({
   open: false,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- empty function is ok
   setOpen: () => {},
 });
 
@@ -50,8 +51,8 @@ const Items = ({
 }) => {
   const { data: objectives = [] } = useObjectives();
   const [query, setQuery] = useState("");
-  if (!objectives.length) return null;
   const { setOpen } = useObjectivesMenu();
+  if (!objectives.length) return null;
 
   return (
     <Popover.Content align={align}>
