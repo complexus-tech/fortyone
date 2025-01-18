@@ -6,7 +6,10 @@ export const ObjectiveIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn(
+        "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+        className
+      )}
       fill="currentColor"
       strokeWidth={strokeWidth}
       height="24"

@@ -4,7 +4,7 @@ import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { Header } from "./components/header";
 import { Sidebar } from "./components/sidebar";
-import { ListStories } from "./components/list-stories";
+import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
 
 export const ListMyStories = () => {
@@ -27,7 +27,7 @@ export const ListMyStories = () => {
       />
       <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <ListStories layout={layout} />
+          <ListMyWork layout={layout} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Sidebar />

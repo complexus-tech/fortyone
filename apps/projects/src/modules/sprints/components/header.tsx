@@ -1,21 +1,37 @@
 "use client";
 import { BreadCrumbs, Button } from "ui";
 import { PlusIcon, SprintsIcon } from "icons";
-import { HeaderContainer } from "../../../components/shared/header-container";
+import { useParams } from "next/navigation";
+import { HeaderContainer } from "@/components/shared";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { TeamColor } from "@/components/ui";
 
-export const ActiveSprintsHeader = () => {
+export const SprintsHeader = () => {
+  const { teamId } = useParams<{
+    teamId: string;
+  }>();
+  const { data: teams = [] } = useTeams();
+
+  const { name, color } = teams.find((team) => team.id === teamId)!;
   return (
     <HeaderContainer className="justify-between">
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: "Running Sprints",
-            icon: <SprintsIcon className="h-5 w-auto" />,
+            name,
+            icon: <TeamColor color={color} />,
+          },
+          {
+            name: "All sprints",
+            icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
           },
         ]}
       />
-      <Button leftIcon={<PlusIcon className="h-5 w-auto" />} size="sm">
-        New Sprint
+      <Button
+        leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+        size="sm"
+      >
+        New sprint
       </Button>
     </HeaderContainer>
   );

@@ -1,13 +1,13 @@
 "use server";
 
-import qs from "qs";
+import { stringify } from "qs";
 import { get } from "@/lib/http";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import type { Sprint } from "@/modules/sprints/types";
 import type { ApiResponse } from "@/types";
 
 export const getTeamSprints = async (teamId: string) => {
-  const query = qs.stringify(
+  const query = stringify(
     { teamId },
     {
       skipNulls: true,

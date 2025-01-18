@@ -1,5 +1,5 @@
-import { SprintsList } from "@/modules/teams/sprints";
-import { getTeamSprints } from "@/modules/teams/sprints/queries/get-sprints";
+import { SprintsList } from "@/modules/sprints";
+import { getTeamSprints } from "@/modules/sprints/queries/get-team-sprints";
 
 export default async function Page(props: {
   params: Promise<{

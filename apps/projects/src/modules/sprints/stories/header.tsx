@@ -12,7 +12,7 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useSprints } from "@/lib/hooks/sprints";
-import { useTeams } from "../../hooks/teams";
+import { useTeams } from "../../teams/hooks/teams";
 import { useSprintStories } from "./provider";
 
 export const Header = ({

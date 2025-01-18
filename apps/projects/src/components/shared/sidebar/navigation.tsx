@@ -1,7 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import { HomeIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
+import { NotificationsIcon, ObjectiveIcon, RoadmapIcon, UserIcon } from "icons";
 import { NavLink, PriorityIcon } from "@/components/ui";
 
 type MenuItem = {
@@ -15,9 +15,10 @@ export const Navigation = () => {
   const pathname = usePathname();
   const links: MenuItem[] = [
     {
-      name: "Home",
-      icon: <HomeIcon />,
-      href: "/",
+      name: "Inbox",
+      icon: <NotificationsIcon className="h-[1.3rem]" />,
+      href: "/notifications",
+      messages: 3,
     },
     {
       name: "My Work",
@@ -34,34 +35,16 @@ export const Navigation = () => {
       ),
       href: "/analytics",
     },
-
-    // {
-    //   name: "Messages",
-    //   icon: <ChatIcon  strokeWidth={2} />,
-    //   href: "/messages",
-    //   messages: 1,
-    // },
     {
       name: "Roadmap",
       icon: <RoadmapIcon strokeWidth={2} />,
       href: "/roadmaps",
     },
-    // {
-    //   name: "Objectives",
-    //   icon: <ObjectiveIcon className="relative left-px h-5 w-auto text-gray dark:text-gray-300" />,
-    //   href: "/objectives",
-    // },
     {
-      name: "Notifications",
-      icon: <NotificationsIcon className="h-[1.3rem]" />,
-      href: "/notifications",
-      messages: 3,
+      name: "Objectives",
+      icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
+      href: "/objectives",
     },
-    // {
-    //   name: "Running Sprints",
-    //   icon: <SprintsIcon  />,
-    //   href: "/sprints",
-    // },
   ];
 
   return (

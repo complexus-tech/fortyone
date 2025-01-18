@@ -60,15 +60,15 @@ export const ObjectiveCard = ({
           </Text>
         </Box>
 
-        <Box className="flex w-[120px] shrink-0 items-center gap-2 pr-1">
+        <Box className="flex w-[120px] shrink-0 items-center gap-2 pr-4">
           <ProgressBar className="h-1.5" progress={progress} /> {progress}%
         </Box>
 
-        <Box className="w-[120px] shrink-0">
+        <Box className="w-[100px] shrink-0">
           <Text color="muted">{format(new Date(endDate), "MMM dd, yyyy")}</Text>
         </Box>
 
-        <Box className="w-[120px] shrink-0">
+        <Box className="w-[100px] shrink-0">
           <Text color="muted">
             {format(new Date(createdAt), "MMM dd, yyyy")}
           </Text>

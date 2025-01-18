@@ -1,6 +1,6 @@
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { getStories } from "@/modules/stories/queries/get-stories";
-import { ListSprintStories } from "@/modules/teams/sprints/stories/list-stories";
+import { ListSprintStories } from "@/modules/sprints/stories/list-stories";
 
 export default async function Page(props: {
   params: Promise<{

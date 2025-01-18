@@ -31,13 +31,6 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 );
 
 export const Overview = () => {
-  const timeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
-  };
-
   const { data: summary } = useSummary();
   const overview = [
     {
@@ -63,13 +56,10 @@ export const Overview = () => {
   ];
   return (
     <Box>
-      <Text as="h2" fontSize="3xl" fontWeight="medium">
-        Good {timeOfDay()}, Joseph.
-      </Text>
-      <Text color="muted">
+      <Text fontSize="lg">
         Here&rsquo;s what&rsquo;s happening with your stories.
       </Text>
-      <Box className="my-4 grid grid-cols-5 gap-4">
+      <Box className="mb-4 mt-2 grid grid-cols-5 gap-4">
         {overview.map((item) => (
           <Card key={item.title} {...item} />
         ))}

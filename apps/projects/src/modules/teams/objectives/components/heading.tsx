@@ -25,12 +25,12 @@ export const TableHeader = () => {
               KR Progress
             </Text>
           </Box>
-          <Box className="w-[120px] shrink-0">
+          <Box className="w-[100px] shrink-0">
             <Text color="muted" fontWeight="medium">
               Target
             </Text>
           </Box>
-          <Box className="w-[120px] shrink-0">
+          <Box className="w-[100px] shrink-0">
             <Text color="muted" fontWeight="medium">
               Created On
             </Text>
