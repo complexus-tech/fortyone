@@ -1,0 +1,344 @@
+"use client";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { Button, Dialog, Flex, Text, TextEditor, Menu, DatePicker } from "ui";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import TextExt from "@tiptap/extension-text";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  PlusIcon,
+  ObjectiveIcon,
+  CalendarIcon,
+  CloseIcon,
+} from "icons";
+import { toast } from "sonner";
+import nProgress from "nprogress";
+import { cn } from "lib";
+import { format } from "date-fns";
+import { useLocalStorage } from "@/hooks";
+import type { Team } from "@/modules/teams/types";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import type { NewSprint } from "@/modules/sprints/types";
+import { TeamColor } from "./team-color";
+import { ObjectivesMenu } from "./story/objectives-menu";
+
+export const NewSprintDialog = ({
+  isOpen,
+  setIsOpen,
+  teamId: initialTeamId,
+}: {
+  isOpen: boolean;
+  setIsOpen: Dispatch<SetStateAction<boolean>>;
+  teamId?: string;
+}) => {
+  const { data: teams = [] } = useTeams();
+  const { data: objectives = [] } = useObjectives();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+    "activeTeam",
+    teams.at(0)!,
+  );
+
+  const initialForm: NewSprint = {
+    name: "",
+    goal: "",
+    teamId: initialTeamId || activeTeam.id,
+    objectiveId: null,
+    startDate: "",
+    endDate: "",
+  };
+
+  const [sprintForm, setSprintForm] = useState<NewSprint>(initialForm);
+  const [loading, setLoading] = useState(false);
+
+  const titleEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      TextExt,
+      Placeholder.configure({ placeholder: "Enter sprint name..." }),
+    ],
+    content: "",
+    editable: true,
+  });
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link.configure({
+        autolink: true,
+      }),
+      Placeholder.configure({ placeholder: "Sprint goal" }),
+    ],
+    content: "",
+    editable: true,
+  });
+
+  const handleCreateSprint = async () => {
+    if (!titleEditor || !editor) return;
+    if (!titleEditor.getText()) {
+      titleEditor.commands.focus();
+      toast.warning("Validation Error", {
+        description: "Title is required",
+      });
+      return;
+    }
+    if (!sprintForm.startDate || !sprintForm.endDate) {
+      toast.warning("Validation Error", {
+        description: "Start and end dates are required",
+      });
+      return;
+    }
+    setLoading(true);
+    nProgress.start();
+
+    try {
+      // TODO: Implement sprint creation mutation
+      await Promise.resolve(); // Placeholder for actual API call
+      setIsOpen(false);
+      setIsExpanded(false);
+      titleEditor.commands.setContent("");
+      editor.commands.setContent("");
+      setSprintForm(initialForm);
+    } finally {
+      setLoading(false);
+      nProgress.done();
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      titleEditor?.commands.focus();
+    }
+    if (initialTeamId) {
+      const team = teams.find((team) => team.id === initialTeamId);
+      if (team) {
+        setActiveTeam(team);
+      }
+    }
+  }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
+
+  const objective = objectives.find((o) => o.id === sprintForm.objectiveId);
+
+  return (
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
+        <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+          <Dialog.Title className="flex items-center gap-1 text-lg">
+            <Menu>
+              <Menu.Button>
+                <Button
+                  className="gap-1.5 font-semibold tracking-wide"
+                  color="tertiary"
+                  leftIcon={<TeamColor color={activeTeam.color} />}
+                  size="xs"
+                >
+                  {activeTeam.code}
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="start" className="w-52">
+                <Menu.Group>
+                  {teams.map((team) => (
+                    <Menu.Item
+                      active={team.id === activeTeam.id}
+                      className="justify-between gap-3"
+                      key={team.id}
+                      onClick={() => {
+                        setActiveTeam(team);
+                        setSprintForm((prev) => ({
+                          ...prev,
+                          teamId: team.id,
+                        }));
+                      }}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <TeamColor className="shrink-0" color={team.color} />
+                        <span className="block truncate">{team.name}</span>
+                      </span>
+                      {team.id === activeTeam.id && (
+                        <CheckIcon className="h-[1.1rem] w-auto" />
+                      )}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
+            <Text color="muted">New Sprint</Text>
+          </Dialog.Title>
+          <Flex gap={2}>
+            <Button
+              className="px-[0.35rem] dark:hover:bg-dark-100"
+              color="tertiary"
+              onClick={() => {
+                setIsExpanded((prev) => !prev);
+              }}
+              size="xs"
+              variant="naked"
+            >
+              {isExpanded ? (
+                <MinimizeIcon className="h-[1.2rem] w-auto" />
+              ) : (
+                <MaximizeIcon className="h-[1.2rem] w-auto" />
+              )}
+              <span className="sr-only">
+                {isExpanded ? "Minimize" : "Expand"} dialog
+              </span>
+            </Button>
+            <Dialog.Close />
+          </Flex>
+        </Dialog.Header>
+        <Dialog.Body className="max-h-[60vh] pt-0">
+          <TextEditor
+            asTitle
+            className="text-2xl font-medium"
+            editor={titleEditor}
+          />
+          <TextEditor
+            className={cn({
+              "min-h-96": isExpanded,
+            })}
+            editor={editor}
+          />
+          <Flex align="center" className="mt-4 gap-1.5" wrap>
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  className="px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                  rightIcon={
+                    sprintForm.startDate ? (
+                      <CloseIcon
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSprintForm((prev) => ({
+                            ...prev,
+                            startDate: "",
+                          }));
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
+                  size="sm"
+                  variant="outline"
+                >
+                  {sprintForm.startDate
+                    ? format(new Date(sprintForm.startDate), "MMM d, yyyy")
+                    : "Start date"}
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar
+                onDayClick={(date) => {
+                  setSprintForm((prev) => ({
+                    ...prev,
+                    startDate: date.toISOString(),
+                  }));
+                }}
+              />
+            </DatePicker>
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  className="px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                  rightIcon={
+                    sprintForm.endDate ? (
+                      <CloseIcon
+                        aria-label="Remove date"
+                        className="h-4 w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSprintForm((prev) => ({
+                            ...prev,
+                            endDate: "",
+                          }));
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
+                  size="sm"
+                  variant="outline"
+                >
+                  {sprintForm.endDate
+                    ? format(new Date(sprintForm.endDate), "MMM d, yyyy")
+                    : "End date"}
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar
+                fromDate={
+                  sprintForm.startDate
+                    ? new Date(sprintForm.startDate)
+                    : undefined
+                }
+                onDayClick={(date) => {
+                  setSprintForm((prev) => ({
+                    ...prev,
+                    endDate: date.toISOString(),
+                  }));
+                }}
+              />
+            </DatePicker>
+            <ObjectivesMenu>
+              <ObjectivesMenu.Trigger>
+                <Button
+                  className="gap-1 px-2 text-sm"
+                  color="tertiary"
+                  leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                  size="sm"
+                  variant="outline"
+                >
+                  <span className="inline-block max-w-[12ch] truncate">
+                    {objective?.name || "Objective"}
+                  </span>
+                </Button>
+              </ObjectivesMenu.Trigger>
+              <ObjectivesMenu.Items
+                objectiveId={sprintForm.objectiveId ?? undefined}
+                setObjectiveId={(objectiveId) => {
+                  setSprintForm({ ...sprintForm, objectiveId });
+                }}
+              />
+            </ObjectivesMenu>
+          </Flex>
+        </Dialog.Body>
+        <Dialog.Footer className="flex items-center justify-end gap-2">
+          <Button
+            className="px-5"
+            color="tertiary"
+            onClick={() => {
+              setIsOpen(false);
+            }}
+            variant="outline"
+          >
+            Discard
+          </Button>
+          <Button
+            leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+            loading={loading}
+            loadingText="Creating sprint..."
+            onClick={handleCreateSprint}
+            size="md"
+          >
+            Create sprint
+          </Button>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog>
+  );
+};

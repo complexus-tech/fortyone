@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 
 const SprintsContext = createContext<{
   open: boolean;

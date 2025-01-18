@@ -34,3 +34,5 @@ export * from "./story/sprints-menu";
 export * from "./story/context-menu";
 export * from "./story/labels-menu";
 export * from "./story/card";
+
+export * from "./new-sprint-button";

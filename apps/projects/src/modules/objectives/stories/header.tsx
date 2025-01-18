@@ -54,13 +54,11 @@ export const Header = ({
             },
             {
               name: objectiveName,
-              icon: (
-                <ObjectiveIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
-              ),
+              icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
             },
             {
               name: "Stories",
-              icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
+              icon: <StoryIcon className="h-[1.1rem]" strokeWidth={2} />,
             },
           ]}
         />

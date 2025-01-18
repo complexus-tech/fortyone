@@ -4,7 +4,7 @@ import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
 import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import type { StoryPriority } from "@/modules/stories/types";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";

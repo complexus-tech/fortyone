@@ -17,6 +17,7 @@ export const sprintTags = {
   lists: () => `${sprintTags.all}-list` as const,
   details: () => `${sprintTags.all}-detail` as const,
   detail: (id: string) => `${sprintTags.details()}-${id}` as const,
+  team: (teamId: string) => `${sprintTags.all}-${teamId}` as const,
 };
 
 export const sprintKeys = {
@@ -24,6 +25,7 @@ export const sprintKeys = {
   lists: () => [...sprintKeys.all, "list"] as const,
   details: () => [...sprintKeys.all, "detail"] as const,
   detail: (id: string) => [...sprintKeys.details(), id] as const,
+  team: (teamId: string) => [...sprintKeys.all, teamId] as const,
 };
 
 export const memberKeys = {

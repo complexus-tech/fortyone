@@ -18,3 +18,14 @@ export type Sprint = {
     backlog: number;
   };
 };
+
+export type NewSprint = {
+  name: string;
+  goal?: string;
+  objectiveId?: string | null;
+  teamId: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type UpdateSprint = Partial<Omit<NewSprint, "teamId">>;

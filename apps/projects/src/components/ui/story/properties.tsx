@@ -15,7 +15,7 @@ import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 type StoryPropertiesProps = Story & {

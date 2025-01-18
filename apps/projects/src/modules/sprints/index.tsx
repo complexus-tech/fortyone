@@ -1,12 +1,20 @@
 "use client";
-import { Box, Button, Flex, Text } from "ui";
+import { Box, Flex, Text } from "ui";
 import { SprintsIcon } from "icons";
+import { useParams } from "next/navigation";
 import { BodyContainer } from "@/components/shared";
-import type { Sprint } from "@/modules/sprints/types";
+import { NewSprintButton } from "@/components/ui";
 import { SprintsHeader } from "./components/header";
 import { SprintRow } from "./components/row";
+import { useTeamSprints } from "./hooks/team-sprints";
 
-export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
+export const SprintsList = () => {
+  const { teamId } = useParams<{
+    teamId: string;
+  }>();
+
+  const { data: sprints = [] } = useTeamSprints(teamId);
+
   return (
     <>
       <SprintsHeader />
@@ -23,9 +31,9 @@ export const SprintsList = ({ sprints }: { sprints: Sprint[] }) => {
                 sprint to get started.
               </Text>
               <Flex gap={2}>
-                <Button color="tertiary" size="md">
+                <NewSprintButton color="tertiary" size="md" teamId={teamId}>
                   Create new sprint
-                </Button>
+                </NewSprintButton>
               </Flex>
             </Box>
           </Box>

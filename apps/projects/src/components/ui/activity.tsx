@@ -8,7 +8,7 @@ import { useMembers } from "@/lib/hooks/members";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 

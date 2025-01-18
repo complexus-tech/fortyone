@@ -1,10 +1,10 @@
 "use client";
-import { BreadCrumbs, Button } from "ui";
-import { PlusIcon, SprintsIcon } from "icons";
+import { BreadCrumbs } from "ui";
+import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { TeamColor } from "@/components/ui";
+import { NewSprintButton, TeamColor } from "@/components/ui";
 
 export const SprintsHeader = () => {
   const { teamId } = useParams<{
@@ -27,12 +27,7 @@ export const SprintsHeader = () => {
           },
         ]}
       />
-      <Button
-        leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
-        size="sm"
-      >
-        New sprint
-      </Button>
+      <NewSprintButton teamId={teamId} />
     </HeaderContainer>
   );
 };

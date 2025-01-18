@@ -9,7 +9,7 @@ import { ArrowUpDownIcon } from "icons";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
 
