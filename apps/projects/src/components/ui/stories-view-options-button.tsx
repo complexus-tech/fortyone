@@ -54,12 +54,14 @@ export const StoriesViewOptionsButton = ({
   groupByOptions = ["Status", "Assignee", "Priority"],
   orderByOptions = ["Priority", "Due date", "Created", "Updated"],
   layout,
+  disabled,
 }: {
   viewOptions: StoriesViewOptions;
   setViewOptions: (v: StoriesViewOptions) => void;
   groupByOptions?: ViewOptionsGroupBy[];
   orderByOptions?: ViewOptionsOrderBy[];
   layout: StoriesLayout;
+  disabled?: boolean;
 }) => {
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
@@ -99,6 +101,7 @@ export const StoriesViewOptionsButton = ({
         <Button
           className="relative"
           color="tertiary"
+          disabled={disabled}
           leftIcon={
             <PreferencesIcon className="h-4 w-auto text-gray dark:text-gray-300" />
           }

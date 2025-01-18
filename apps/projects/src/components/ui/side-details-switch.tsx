@@ -4,14 +4,23 @@ import { Button, Tooltip } from "ui";
 export const SideDetailsSwitch = ({
   isExpanded,
   setIsExpanded,
+  disabled,
 }: {
   isExpanded: boolean | null;
   setIsExpanded: (isExpanded: boolean) => void;
+  disabled?: boolean;
 }) => {
+  const title = () => {
+    if (disabled) return null;
+    if (isExpanded) return "Hide panel";
+    return "Show panel";
+  };
+
   return (
-    <Tooltip title={isExpanded ? "Hide panel" : "Show panel"}>
+    <Tooltip title={title()}>
       <Button
         color="tertiary"
+        disabled={disabled}
         onClick={() => {
           setIsExpanded(!isExpanded);
         }}

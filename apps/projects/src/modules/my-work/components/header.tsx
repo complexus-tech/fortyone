@@ -54,8 +54,13 @@ export const Header = ({
         )}
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
+        <LayoutSwitcher
+          disabled={tab === "summary"}
+          layout={layout}
+          setLayout={setLayout}
+        />
         <StoriesViewOptionsButton
+          disabled={tab === "summary"}
           groupByOptions={["Status", "Priority", "Assignee", "None"]}
           layout={layout}
           setViewOptions={setViewOptions}
@@ -63,9 +68,11 @@ export const Header = ({
         />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
+          disabled={tab === "summary"}
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}
         />
+
         <NewStoryButton />
       </Flex>
     </HeaderContainer>
