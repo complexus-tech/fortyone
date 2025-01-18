@@ -28,6 +28,9 @@ import {
   MaximizeIcon,
   MinimizeIcon,
   PlusIcon,
+  EditIcon,
+  DeleteIcon,
+  ObjectiveIcon,
 } from "icons";
 import { toast } from "sonner";
 import nProgress from "nprogress";
@@ -70,14 +73,68 @@ type NewObjective = {
   keyResults: KeyResult[];
 };
 
+type KeyResultFormMode = "add" | "edit" | null;
+
+const KeyResultsList = ({
+  keyResults,
+  onEdit,
+  onRemove,
+}: {
+  keyResults: KeyResult[];
+  onEdit: (id: string) => void;
+  onRemove: (id: string) => void;
+}) => {
+  return (
+    <Box className="space-y-2">
+      {keyResults.map((kr) => (
+        <Flex
+          align="center"
+          className="group rounded-lg border border-gray-100 px-4 py-3 hover:border-gray-200 dark:border-dark-100 dark:hover:border-dark-200"
+          justify="between"
+          key={kr.id}
+        >
+          <Flex align="center" gap={3}>
+            <ObjectiveIcon className="text-gray-500 h-5 w-5" />
+            <Text>{kr.name || "Untitled"}</Text>
+          </Flex>
+          <Flex className="invisible gap-2 group-hover:visible">
+            <Button
+              color="tertiary"
+              onClick={() => {
+                onEdit(kr.id);
+              }}
+              size="xs"
+              variant="naked"
+            >
+              <EditIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              color="danger"
+              onClick={() => {
+                onRemove(kr.id);
+              }}
+              size="xs"
+              variant="naked"
+            >
+              <DeleteIcon className="h-4 w-4" />
+            </Button>
+          </Flex>
+        </Flex>
+      ))}
+    </Box>
+  );
+};
+
 const KeyResultEditor = ({
   keyResult,
   onUpdate,
-  onRemove,
+  onCancel,
+  onSave,
 }: {
   keyResult: KeyResult;
   onUpdate: (id: string, updates: Partial<KeyResult>) => void;
-  onRemove: (id: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
 }) => {
   const editor = useEditor({
     extensions: [
@@ -96,9 +153,15 @@ const KeyResultEditor = ({
   });
 
   return (
-    <Box className="mb-6 rounded-lg border border-gray-200 px-6 pb-6 dark:border-dark-100">
-      <Box className="space-y-3">
-        <TextEditor className="flex-1" editor={editor} />
+    <Box className="mb-6 rounded-lg border border-gray-200 p-6 dark:border-dark-100">
+      <Box className="space-y-4">
+        <Box>
+          <Flex align="center" className="mb-2" gap={2}>
+            <Text className="font-medium">Name</Text>
+            <Text color="muted">Required</Text>
+          </Flex>
+          <TextEditor className="flex-1" editor={editor} />
+        </Box>
         <Flex gap={4}>
           <Box className="flex-1">
             <Flex align="center" className="mb-2" gap={2}>
@@ -165,17 +228,18 @@ const KeyResultEditor = ({
             />
           </Box>
         </Flex>
-        <Flex className="mb-4" gap={2}>
+        <Flex className="pt-2" gap={2}>
           <Button
             color="tertiary"
-            onClick={() => {
-              onRemove(keyResult.id);
-            }}
+            onClick={onCancel}
             size="sm"
+            variant="outline"
           >
-            Remove
+            Cancel
           </Button>
-          <Button size="sm">Create Key Result</Button>
+          <Button onClick={onSave} size="sm">
+            Save Key Result
+          </Button>
         </Flex>
       </Box>
     </Box>
@@ -218,6 +282,10 @@ export const NewObjectiveDialog = ({
   const [keyResultEditors, setKeyResultEditors] = useState<
     Record<string, ReturnType<typeof useEditor>>
   >({});
+  const [keyResultMode, setKeyResultMode] = useState<KeyResultFormMode>(null);
+  const [editingKeyResult, setEditingKeyResult] = useState<KeyResult | null>(
+    null,
+  );
 
   const titleEditor = useEditor({
     extensions: [
@@ -568,51 +636,80 @@ export const NewObjectiveDialog = ({
           </Flex>
           <Divider className="my-4" />
           <Box>
-            <Text className="mb-4 font-medium">Key Results (OKRs)</Text>
-            {objectiveForm.keyResults.map((kr) => (
+            <Text className="mb-4 font-medium">Key Results</Text>
+            {keyResultMode === null ? (
+              <>
+                <KeyResultsList
+                  keyResults={objectiveForm.keyResults}
+                  onEdit={(id) => {
+                    const kr = objectiveForm.keyResults.find(
+                      (k) => k.id === id,
+                    );
+                    if (kr) {
+                      setEditingKeyResult(kr);
+                      setKeyResultMode("edit");
+                    }
+                  }}
+                  onRemove={(id) => {
+                    setObjectiveForm((prev) => ({
+                      ...prev,
+                      keyResults: prev.keyResults.filter((k) => k.id !== id),
+                    }));
+                  }}
+                />
+                <Button
+                  className="mt-4"
+                  color="tertiary"
+                  leftIcon={<PlusIcon />}
+                  onClick={() => {
+                    const newKr = {
+                      id: crypto.randomUUID(),
+                      name: "",
+                      measureType: "Number" as const,
+                      startValue: 0,
+                      targetValue: 0,
+                    };
+                    setEditingKeyResult(newKr);
+                    setKeyResultMode("add");
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  Add Key Result
+                </Button>
+              </>
+            ) : (
               <KeyResultEditor
-                key={kr.id}
-                keyResult={kr}
-                onRemove={(id) => {
-                  setObjectiveForm((prev) => ({
-                    ...prev,
-                    keyResults: prev.keyResults.filter((k) => k.id !== id),
-                  }));
+                keyResult={editingKeyResult!}
+                onCancel={() => {
+                  setKeyResultMode(null);
+                  setEditingKeyResult(null);
+                }}
+                onSave={() => {
+                  if (keyResultMode === "add") {
+                    setObjectiveForm((prev) => ({
+                      ...prev,
+                      keyResults: [...prev.keyResults, editingKeyResult!],
+                    }));
+                  } else {
+                    setObjectiveForm((prev) => ({
+                      ...prev,
+                      keyResults: prev.keyResults.map((kr) =>
+                        kr.id === editingKeyResult!.id ? editingKeyResult! : kr,
+                      ),
+                    }));
+                  }
+                  setKeyResultMode(null);
+                  setEditingKeyResult(null);
                 }}
                 onUpdate={(id, updates) => {
-                  setObjectiveForm((prev) => ({
-                    ...prev,
-                    keyResults: prev.keyResults.map((k) =>
-                      k.id === id ? { ...k, ...updates } : k,
-                    ),
+                  setEditingKeyResult((prev) => ({
+                    ...prev!,
+                    ...updates,
                   }));
                 }}
               />
-            ))}
-            <Button
-              className="mt-2"
-              color="tertiary"
-              leftIcon={<PlusIcon />}
-              onClick={() => {
-                setObjectiveForm((prev) => ({
-                  ...prev,
-                  keyResults: [
-                    ...prev.keyResults,
-                    {
-                      id: crypto.randomUUID(),
-                      name: "",
-                      measureType: "Number",
-                      startValue: 0,
-                      targetValue: 0,
-                    },
-                  ],
-                }));
-              }}
-              size="sm"
-              variant="outline"
-            >
-              Add Key Result
-            </Button>
+            )}
           </Box>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-end gap-2">
