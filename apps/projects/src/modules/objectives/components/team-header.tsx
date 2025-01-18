@@ -24,9 +24,7 @@ export const TeamObjectivesHeader = () => {
             },
             {
               name: "Objectives",
-              icon: (
-                <ObjectiveIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
-              ),
+              icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
             },
           ]}
         />
@@ -34,7 +32,7 @@ export const TeamObjectivesHeader = () => {
       <Flex align="center" gap={2}>
         <Button
           color="tertiary"
-          leftIcon={<PlusIcon className="h-[1.1rem] w-auto" />}
+          leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={() => {
             setIsOpen(true);
           }}
