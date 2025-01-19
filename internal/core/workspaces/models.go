@@ -11,6 +11,7 @@ type CoreWorkspace struct {
 	ID        uuid.UUID
 	Slug      string
 	Name      string
+	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

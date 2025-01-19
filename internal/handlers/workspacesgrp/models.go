@@ -11,6 +11,7 @@ type AppWorkspace struct {
 	ID        uuid.UUID `json:"id"`
 	Slug      string    `json:"slug"`
 	Name      string    `json:"name"`
+	IsActive  bool      `json:"isActive"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -20,6 +21,7 @@ func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 		ID:        workspace.ID,
 		Slug:      workspace.Slug,
 		Name:      workspace.Name,
+		IsActive:  workspace.IsActive,
 		CreatedAt: workspace.CreatedAt,
 		UpdatedAt: workspace.UpdatedAt,
 	}

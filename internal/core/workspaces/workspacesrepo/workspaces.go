@@ -43,12 +43,26 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			w.workspace_id,
 			w.slug,
 			w.name,
+			CASE 
+				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
+				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (
+					SELECT w2.workspace_id 
+					FROM workspaces w2 
+					INNER JOIN workspace_members wm2 ON w2.workspace_id = wm2.workspace_id 
+					WHERE wm2.user_id = :user_id
+					ORDER BY w2.created_at ASC
+					LIMIT 1
+				) THEN TRUE
+				ELSE FALSE
+			END as is_active,
 			w.created_at,
 			w.updated_at
 		FROM
 			workspaces w
 		INNER JOIN
 			workspace_members wm ON w.workspace_id = wm.workspace_id
+		INNER JOIN
+			users u ON wm.user_id = u.user_id
 		WHERE
 			wm.user_id = :user_id
 	`
@@ -255,26 +269,44 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, rol
 	return nil
 }
 
-func (r *repo) Get(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreWorkspace, error) {
+func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspaces.CoreWorkspace, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Get")
 	defer span.End()
 
 	var workspace dbWorkspace
 	query := `
 		SELECT 
-			workspace_id,
-			slug,
-			name,
-			created_at,
-			updated_at
+			w.workspace_id,
+			w.slug,
+			w.name,
+			CASE 
+				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
+				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (
+					SELECT w2.workspace_id 
+					FROM workspaces w2 
+					INNER JOIN workspace_members wm2 ON w2.workspace_id = wm2.workspace_id 
+					WHERE wm2.user_id = :user_id
+					ORDER BY w2.created_at ASC
+					LIMIT 1
+				) THEN TRUE
+				ELSE FALSE
+			END as is_active,
+			w.created_at,
+			w.updated_at
 		FROM 
-			workspaces
+			workspaces w
+		INNER JOIN
+			workspace_members wm ON w.workspace_id = wm.workspace_id
+		INNER JOIN
+			users u ON wm.user_id = u.user_id
 		WHERE 
-			workspace_id = :workspace_id
+			w.workspace_id = :workspace_id
+			AND wm.user_id = :user_id
 	`
 
 	params := map[string]interface{}{
 		"workspace_id": workspaceID,
+		"user_id":      userID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

@@ -11,6 +11,7 @@ type dbWorkspace struct {
 	ID        uuid.UUID `db:"workspace_id"`
 	Slug      string    `db:"slug"`
 	Name      string    `db:"name"`
+	IsActive  bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -20,6 +21,7 @@ func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 		ID:        p.ID,
 		Slug:      p.Slug,
 		Name:      p.Name,
+		IsActive:  p.IsActive,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
 	}

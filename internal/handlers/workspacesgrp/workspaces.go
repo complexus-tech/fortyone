@@ -175,26 +175,24 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Get")
-	defer span.End()
-
 	workspaceIDParam := web.Params(r, "id")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	workspace, err := h.workspaces.Get(ctx, workspaceID)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("not authenticated"), http.StatusUnauthorized)
+	}
+
+	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
 	if err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-
-	span.AddEvent("workspace retrieved.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
-	))
 
 	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
 }
