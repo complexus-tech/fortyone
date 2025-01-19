@@ -18,7 +18,6 @@ import { cn } from "lib";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -35,6 +34,7 @@ import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";

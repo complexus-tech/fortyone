@@ -9,7 +9,7 @@ const ObjectivesContext = createContext<{
   setOpen: (open: boolean) => void;
 }>({
   open: false,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function -- empty function is ok
+
   setOpen: () => {},
 });
 
@@ -78,7 +78,7 @@ const Items = ({
         <Command.Group>
           <Command.Item
             active={!objectiveId}
-            className="justify-between gap-4"
+            className="justify-between gap-4 opacity-70"
             onSelect={() => {
               if (objectiveId) {
                 setObjectiveId(null);

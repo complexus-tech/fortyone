@@ -21,9 +21,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { NewStoryDialog } from "@/components/ui";
+import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { useWorkspace } from "@/lib/hooks/workspace";
+import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { logOut } from "./actions";
 
 export const Header = () => {
@@ -32,12 +33,22 @@ export const Header = () => {
   const { theme, setTheme } = useTheme();
   const { data: workspace } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSprintsOpen, setIsSprintsOpen] = useState(false);
+  const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
 
   const callbackUrl = `${pathname}?${searchParams.toString()}`;
 
-  useHotkeys("c", () => {
+  useHotkeys("shift+n", () => {
     setIsOpen(true);
+  });
+
+  useHotkeys("shift+o", () => {
+    setIsObjectivesOpen(true);
+  });
+
+  useHotkeys("shift+s", () => {
+    setIsSprintsOpen(true);
   });
 
   const handleLogout = async () => {
@@ -225,6 +236,11 @@ export const Header = () => {
         </Button>
       </Flex>
       <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+      <NewSprintDialog isOpen={isSprintsOpen} setIsOpen={setIsSprintsOpen} />
+      <NewObjectiveDialog
+        isOpen={isObjectivesOpen}
+        setIsOpen={setIsObjectivesOpen}
+      />
     </>
   );
 };

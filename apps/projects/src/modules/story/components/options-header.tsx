@@ -31,7 +31,7 @@ export const OptionsHeader = () => {
   };
 
   const restoreStory = async () => {
-    mutateAsync(id);
+    await mutateAsync(id);
   };
   return (
     <>

@@ -11,7 +11,7 @@ import { useTeamOptions } from "@/modules/teams/stories/provider";
 import { StoriesBoard } from "@/components/ui";
 import type { StoriesLayout } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/lib/hooks/sprints";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();

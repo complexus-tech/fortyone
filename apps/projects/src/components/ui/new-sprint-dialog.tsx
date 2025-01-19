@@ -20,7 +20,6 @@ import {
   CloseIcon,
 } from "icons";
 import { toast } from "sonner";
-import nProgress from "nprogress";
 import { cn } from "lib";
 import { format } from "date-fns";
 import { useLocalStorage } from "@/hooks";
@@ -28,6 +27,7 @@ import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { NewSprint } from "@/modules/sprints/types";
+import { useCreateSprintMutation } from "@/modules/sprints/hooks/create-sprint-mutation";
 import { TeamColor } from "./team-color";
 import { ObjectivesMenu } from "./story/objectives-menu";
 
@@ -58,14 +58,15 @@ export const NewSprintDialog = ({
   };
 
   const [sprintForm, setSprintForm] = useState<NewSprint>(initialForm);
-  const [loading, setLoading] = useState(false);
 
   const titleEditor = useEditor({
     extensions: [
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Enter sprint name..." }),
+      Placeholder.configure({
+        placeholder: "Sprint name eg. Sprint 1",
+      }),
     ],
     content: "",
     editable: true,
@@ -78,18 +79,22 @@ export const NewSprintDialog = ({
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Sprint goal" }),
+      Placeholder.configure({
+        placeholder: "What does the team want to accomplish in this sprint?",
+      }),
     ],
     content: "",
     editable: true,
   });
 
-  const handleCreateSprint = async () => {
+  const { mutateAsync } = useCreateSprintMutation();
+
+  const handleCreateSprint = () => {
     if (!titleEditor || !editor) return;
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
       toast.warning("Validation Error", {
-        description: "Title is required",
+        description: "Sprint name is required",
       });
       return;
     }
@@ -99,21 +104,18 @@ export const NewSprintDialog = ({
       });
       return;
     }
-    setLoading(true);
-    nProgress.start();
 
-    try {
-      // TODO: Implement sprint creation mutation
-      await Promise.resolve(); // Placeholder for actual API call
+    mutateAsync({
+      ...sprintForm,
+      name: titleEditor.getText(),
+      goal: editor.getHTML(),
+    }).then(() => {
       setIsOpen(false);
       setIsExpanded(false);
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
       setSprintForm(initialForm);
-    } finally {
-      setLoading(false);
-      nProgress.done();
-    }
+    });
   };
 
   useEffect(() => {
@@ -330,8 +332,6 @@ export const NewSprintDialog = ({
           </Button>
           <Button
             leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
-            loading={loading}
-            loadingText="Creating sprint..."
             onClick={handleCreateSprint}
             size="md"
           >

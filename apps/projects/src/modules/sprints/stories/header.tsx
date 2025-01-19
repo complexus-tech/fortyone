@@ -11,8 +11,8 @@ import {
   SideDetailsSwitch,
   TeamColor,
 } from "@/components/ui";
-import { useSprints } from "@/lib/hooks/sprints";
 import { useTeams } from "../../teams/hooks/teams";
+import { useSprints } from "../hooks/sprints";
 import { useSprintStories } from "./provider";
 
 export const Header = ({
@@ -70,6 +70,7 @@ export const Header = ({
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesViewOptionsButton
+          layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />

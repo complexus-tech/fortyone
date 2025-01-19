@@ -64,7 +64,7 @@ const Items = ({
         <Command.Group>
           <Command.Item
             active={!assigneeId}
-            className="justify-between"
+            className="justify-between opacity-70"
             onSelect={() => {
               if (assigneeId) {
                 onAssigneeSelected(null);

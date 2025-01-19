@@ -1,17 +1,14 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import { post } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import { put } from "@/lib/http";
 import { sprintTags } from "@/constants/keys";
-import type { Sprint, UpdateSprint } from "../types";
+import type { UpdateSprint } from "../types";
 
-export const updateSprintAction = async (id: string, params: UpdateSprint) => {
-  const sprint = await post<UpdateSprint, ApiResponse<Sprint>>(
-    `sprints/${id}`,
-    params,
-  );
+export const updateSprintAction = async (
+  sprintId: string,
+  updates: UpdateSprint,
+) => {
+  await put(`sprints/${sprintId}`, updates);
   revalidateTag(sprintTags.lists());
-
-  return sprint.data!;
 };

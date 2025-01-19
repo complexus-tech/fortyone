@@ -51,8 +51,8 @@ const Items = ({
 }) => {
   const { data: sprints = [] } = useSprints();
   const [query, setQuery] = useState("");
-  if (!sprints.length) return null;
   const { setOpen } = useSprintsMenu();
+  if (!sprints.length) return null;
 
   return (
     <Popover.Content align={align}>
@@ -78,7 +78,7 @@ const Items = ({
         <Command.Group>
           <Command.Item
             active={!sprintId}
-            className="justify-between gap-4"
+            className="justify-between gap-4 opacity-70"
             onSelect={() => {
               if (sprintId) {
                 setSprintId(null);

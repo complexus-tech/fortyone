@@ -20,7 +20,7 @@ export const getTeamSprints = async (teamId: string) => {
   const sprints = await get<ApiResponse<Sprint[]>>(`sprints${query}`, {
     next: {
       revalidate: DURATION_FROM_SECONDS.MINUTE * 30,
-      tags: [sprintTags.team(teamId)],
+      tags: [sprintTags.lists(), sprintTags.team(teamId)],
     },
   });
   return sprints.data!;
