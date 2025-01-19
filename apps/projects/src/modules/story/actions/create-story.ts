@@ -13,6 +13,8 @@ export const createStoryAction = async (newStory: NewStory) => {
   );
   revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
+  revalidateTag(storyTags.objectives());
+  revalidateTag(storyTags.sprints());
   if (newStory.parentId) {
     revalidateTag(storyTags.detail(newStory.parentId));
   }

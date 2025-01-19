@@ -13,6 +13,8 @@ export const updateStoryAction = async (
   revalidateTag(storyTags.detail(storyId));
   revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
+  revalidateTag(storyTags.objectives());
+  revalidateTag(storyTags.sprints());
 
   return storyId;
 };

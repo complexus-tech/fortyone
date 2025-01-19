@@ -20,14 +20,6 @@ import {
   EditIcon,
   DocsIcon,
 } from "icons";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import type { StoriesLayout } from "@/components/ui";
 import {
   BoardDividedPanel,
@@ -36,12 +28,11 @@ import {
   PriorityIcon,
 } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import type { Story } from "@/modules/stories/types";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
 import { AllStories } from "./all-stories";
 
-export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
+export const ListSprintStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:sprints:layout",
     "list",
@@ -51,43 +42,9 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
     false,
   );
 
-  const data = [
-    {
-      name: "Feb 1",
-      uv: 4000,
-      pv: 2400,
-      amt: 2400,
-    },
-    {
-      name: "Feb 4",
-      uv: 3000,
-      pv: 1398,
-      amt: 2210,
-    },
-    {
-      name: "Feb 8",
-      uv: 2000,
-      pv: 9800,
-      amt: 2290,
-    },
-    {
-      name: "Feb 12",
-      uv: 2780,
-      pv: 3908,
-      amt: 2000,
-    },
-    {
-      name: "Feb 20",
-      uv: 1890,
-      pv: 4800,
-      amt: 2181,
-    },
-  ];
-
   return (
     <SprintStoriesProvider>
       <Header
-        allStories={stories.length}
         isExpanded={isExpanded}
         layout={layout}
         setIsExpanded={setIsExpanded}
@@ -95,7 +52,7 @@ export const ListSprintStories = ({ stories }: { stories: Story[] }) => {
       />
       <BoardDividedPanel autoSaveId="my-stories:divided-panel">
         <BoardDividedPanel.MainPanel>
-          <AllStories layout={layout} stories={stories} />
+          <AllStories layout={layout} />
         </BoardDividedPanel.MainPanel>
         <BoardDividedPanel.SideBar isExpanded={isExpanded}>
           <Box className="py-6">

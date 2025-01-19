@@ -11,6 +11,8 @@ export const updateLabelsAction = async (storyId: string, labels: string[]) => {
   revalidateTag(storyTags.mine());
   revalidateTag(storyTags.teams());
   revalidateTag(labelTags.lists());
+  revalidateTag(storyTags.objectives());
+  revalidateTag(storyTags.sprints());
 
   return storyId;
 };

@@ -50,7 +50,7 @@ export const SprintStoriesProvider = ({
   );
 };
 
-export const useSprintStories = () => {
+export const useSprintOptions = () => {
   const context = useContext(SprintStoriesContext);
   if (!context) {
     throw new Error(

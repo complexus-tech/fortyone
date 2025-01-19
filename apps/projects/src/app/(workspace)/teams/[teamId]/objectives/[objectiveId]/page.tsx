@@ -13,7 +13,7 @@ export default async function Page(props: {
 }) {
   const params = await props.params;
 
-  const { teamId, objectiveId } = params;
+  const { objectiveId } = params;
 
   const queryClient = getQueryClient();
 
@@ -21,7 +21,7 @@ export default async function Page(props: {
     queryKey: storyKeys.objective(objectiveId),
     queryFn: () =>
       getStories(
-        { teamId, objectiveId },
+        { objectiveId },
         {
           next: {
             revalidate: DURATION_FROM_SECONDS.MINUTE * 5,

@@ -11,30 +11,30 @@ import {
   SideDetailsSwitch,
   TeamColor,
 } from "@/components/ui";
+import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprints } from "../hooks/sprints";
-import { useSprintStories } from "./provider";
+import { useSprintOptions } from "./provider";
 
 export const Header = ({
   isExpanded,
-  allStories,
   setIsExpanded,
   layout,
   setLayout,
 }: {
   isExpanded: boolean | null;
-  allStories: number;
   setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { viewOptions, setViewOptions } = useSprintStories();
+  const { viewOptions, setViewOptions } = useSprintOptions();
   const { teamId, sprintId } = useParams<{
     teamId: string;
     sprintId: string;
   }>();
   const { data: sprints = [] } = useSprints();
   const { data: teams = [] } = useTeams();
+  const { data: stories = [] } = useSprintStories(sprintId);
 
   const team = teams.find((team) => team.id === teamId)!;
   const sprint = sprints.find((sprint) => sprint.id === sprintId)!;
@@ -64,7 +64,7 @@ export const Header = ({
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {allStories} stories
+          {stories.length} stories
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

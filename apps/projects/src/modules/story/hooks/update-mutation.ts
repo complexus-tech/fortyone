@@ -57,6 +57,8 @@ export const useUpdateStoryMutation = () => {
       queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId!) });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
     },
   });
 
