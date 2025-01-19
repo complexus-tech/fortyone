@@ -5,11 +5,13 @@ import { DURATION_FROM_SECONDS } from "@/constants/time";
 import type { ApiResponse, Workspace } from "@/types";
 import { auth } from "@/auth";
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+
 export const getWorkspaces = async (): Promise<Workspace[]> => {
   // this is directly using ky because we are not injecting the workspace id.
   const session = await auth();
   const workspaces = await ky
-    .get("workspaces", {
+    .get(`${apiURL}/workspaces`, {
       next: {
         revalidate: DURATION_FROM_SECONDS.MINUTE * 30,
         tags: [workspaceTags.lists()],

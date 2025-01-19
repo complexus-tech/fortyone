@@ -25,6 +25,7 @@ import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { useWorkspace } from "@/lib/hooks/workspace";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut } from "./actions";
 
 export const Header = () => {
@@ -32,6 +33,7 @@ export const Header = () => {
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const { data: workspace } = useWorkspace();
+  const { data: workspaces = [] } = useWorkspaces();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
@@ -88,30 +90,25 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="pt-1.5">
-              <Menu.Item className="justify-between">
-                <span className="flex items-center gap-2">
-                  <Avatar
-                    name="Complexus Technologies"
-                    rounded="md"
-                    size="xs"
-                    src="/complexus.png"
-                  />
-                  Complexus
-                </span>
-                <CheckIcon
-                  className="h-5 w-auto text-primary"
-                  strokeWidth={2.1}
-                />
-              </Menu.Item>
-              <Menu.Item>
-                <Avatar
-                  color="secondary"
-                  name="Amaka Studio"
-                  rounded="md"
-                  size="xs"
-                />
-                Amaka Studio
-              </Menu.Item>
+              {workspaces.map(({ id, name, isActive }) => (
+                <Menu.Item className="justify-between" key={id}>
+                  <span className="flex items-center gap-2">
+                    <Avatar
+                      className="h-6 text-xs"
+                      color="secondary"
+                      name={name}
+                      rounded="md"
+                    />
+                    <span className="inline-block max-w-[20ch] truncate">
+                      {name}
+                    </span>
+                  </span>
+                  {isActive ? (
+                    <CheckIcon className="shrink-0" strokeWidth={2.1} />
+                  ) : null}
+                </Menu.Item>
+              ))}
+
               <Menu.Item asChild>
                 <Button
                   color="tertiary"
@@ -216,13 +213,12 @@ export const Header = () => {
           variant="outline"
         >
           Create Story
-          <Text
-            as="span"
-            className="ml-auto text-sm opacity-0 md:leading-[2.5rem]"
+          <kbd
+            className="ml-auto text-xs font-bold text-gray md:leading-[2.5rem]"
             color="muted"
           >
-            ⌘N
-          </Text>
+            Shift+N
+          </kbd>
         </Button>
         <Button
           asIcon

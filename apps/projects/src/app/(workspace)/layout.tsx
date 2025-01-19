@@ -20,6 +20,7 @@ import {
 import { objectiveKeys } from "@/modules/objectives/contants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 
 export default async function RootLayout({
   children,
@@ -57,6 +58,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.detail(),
       queryFn: () => getWorkspace(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: workspaceKeys.lists(),
+      queryFn: () => getWorkspaces(),
     }),
   ]);
 
