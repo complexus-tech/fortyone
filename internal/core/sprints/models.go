@@ -24,3 +24,21 @@ type CoreSprint struct {
 	UnstartedStories int
 	BacklogStories   int
 }
+
+type CoreNewSprint struct {
+	Name      string
+	Goal      *string
+	Objective *uuid.UUID
+	Team      uuid.UUID
+	Workspace uuid.UUID
+	StartDate time.Time
+	EndDate   time.Time
+}
+
+type CoreUpdateSprint struct {
+	Name      *string
+	Goal      *string
+	Objective *uuid.UUID
+	StartDate *time.Time
+	EndDate   *time.Time
+}

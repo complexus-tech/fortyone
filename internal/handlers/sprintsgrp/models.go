@@ -36,6 +36,23 @@ type AppFilters struct {
 	Team      *uuid.UUID `json:"teamId" db:"team_id"`
 }
 
+type AppNewSprint struct {
+	Name      string     `json:"name" validate:"required"`
+	Goal      *string    `json:"goal"`
+	Objective *uuid.UUID `json:"objectiveId"`
+	Team      uuid.UUID  `json:"teamId" validate:"required"`
+	StartDate time.Time  `json:"startDate" validate:"required"`
+	EndDate   time.Time  `json:"endDate" validate:"required"`
+}
+
+type AppUpdateSprint struct {
+	Name      *string    `json:"name,omitempty"`
+	Goal      *string    `json:"goal,omitempty"`
+	Objective *uuid.UUID `json:"objectiveId,omitempty"`
+	StartDate *time.Time `json:"startDate,omitempty"`
+	EndDate   *time.Time `json:"endDate,omitempty"`
+}
+
 // toAppSprints converts a list of core sprints to a list of application sprints.
 func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 	appSprints := make([]AppSprintsList, len(sprints))
