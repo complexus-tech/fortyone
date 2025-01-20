@@ -1,8 +1,3 @@
-export type ObjectiveHealth =
-  | "On Track"
-  | "At Risk"
-  | "Off Track"
-  | "Not Started";
 export type ObjectiveStatus =
   | "Not Started"
   | "In Progress"
@@ -28,7 +23,6 @@ export type NewObjective = {
   descriptionHTML: string;
   teamId: string;
   status: ObjectiveStatus;
-  health: ObjectiveHealth;
   startDate: string | null;
   endDate: string | null;
   leadUserId: string | null;

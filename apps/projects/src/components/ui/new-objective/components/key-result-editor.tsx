@@ -5,6 +5,7 @@ import TextExt from "@tiptap/extension-text";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Box, Button, Flex, Input, Select, Text, TextEditor } from "ui";
 import { CloseIcon } from "icons";
+import { toast } from "sonner";
 import type { KeyResult } from "../types";
 
 type KeyResultEditorProps = {
@@ -36,8 +37,24 @@ export const KeyResultEditor = ({
     },
   });
 
+  const handleSave = () => {
+    if (editor?.isEmpty) {
+      toast.warning("Validation error", {
+        description: "Please enter a name for the key result",
+      });
+      return;
+    }
+    if (!keyResult.targetValue) {
+      toast.warning("Validation error", {
+        description: "Please enter a target value for the key result",
+      });
+      return;
+    }
+    onSave();
+  };
+
   return (
-    <Box className="mb-6 rounded-lg border border-gray-200 px-4 pb-3 dark:border-dark-100">
+    <Box className="mb-6 rounded-lg border border-gray-200 px-4 pb-3.5 dark:border-dark-100">
       <Flex align="center" className="relative -top-2" justify="between">
         <TextEditor className="prose-base" editor={editor} />
         <Button
@@ -95,7 +112,11 @@ export const KeyResultEditor = ({
           value={keyResult.targetValue || ""}
         />
       </Box>
-      <Button className="relative -top-0.5" color="tertiary" onClick={onSave}>
+      <Button
+        className="relative -top-0.5"
+        color="tertiary"
+        onClick={handleSave}
+      >
         Add Key Result
       </Button>
     </Box>

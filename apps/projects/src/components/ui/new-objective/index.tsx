@@ -41,12 +41,7 @@ import { useMembers } from "@/lib/hooks/members";
 import { TeamColor } from "../team-color";
 import { KeyResultsList } from "./components/key-results-list";
 import { KeyResultEditor } from "./components/key-result-editor";
-import type {
-  KeyResult,
-  NewObjective,
-  ObjectiveHealth,
-  ObjectiveStatus,
-} from "./types";
+import type { KeyResult, NewObjective, ObjectiveStatus } from "./types";
 
 type KeyResultFormMode = "add" | "edit" | null;
 
@@ -74,7 +69,6 @@ export const NewObjectiveDialog = ({
     descriptionHTML: "",
     teamId: initialTeamId || activeTeam.id,
     status: "Not Started",
-    health: "Not Started",
     startDate: null,
     endDate: null,
     leadUserId: session.data?.user?.id || null,
@@ -233,66 +227,6 @@ export const NewObjectiveDialog = ({
             editor={editor}
           />
           <Flex align="center" className="mt-4 gap-1.5" wrap>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  color="tertiary"
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {objectiveForm.status}
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-52">
-                {["Not Started", "In Progress", "Completed", "Cancelled"].map(
-                  (status) => (
-                    <Menu.Item
-                      active={status === objectiveForm.status}
-                      key={status}
-                      onClick={() => {
-                        setObjectiveForm((prev) => ({
-                          ...prev,
-                          status: status as ObjectiveStatus,
-                        }));
-                      }}
-                    >
-                      {status}
-                    </Menu.Item>
-                  ),
-                )}
-              </Menu.Items>
-            </Menu>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  color="tertiary"
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {objectiveForm.health}
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-52">
-                {["Not Started", "On Track", "At Risk", "Off Track"].map(
-                  (health) => (
-                    <Menu.Item
-                      active={health === objectiveForm.health}
-                      key={health}
-                      onClick={() => {
-                        setObjectiveForm((prev) => ({
-                          ...prev,
-                          health: health as ObjectiveHealth,
-                        }));
-                      }}
-                    >
-                      {health}
-                    </Menu.Item>
-                  ),
-                )}
-              </Menu.Items>
-            </Menu>
             <DatePicker>
               <DatePicker.Trigger>
                 <Button
@@ -430,10 +364,40 @@ export const NewObjectiveDialog = ({
                 </Menu.Group>
               </Menu.Items>
             </Menu>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  color="tertiary"
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {objectiveForm.status}
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="start" className="w-52">
+                {["Not Started", "In Progress", "Completed", "Cancelled"].map(
+                  (status) => (
+                    <Menu.Item
+                      active={status === objectiveForm.status}
+                      key={status}
+                      onClick={() => {
+                        setObjectiveForm((prev) => ({
+                          ...prev,
+                          status: status as ObjectiveStatus,
+                        }));
+                      }}
+                    >
+                      {status}
+                    </Menu.Item>
+                  ),
+                )}
+              </Menu.Items>
+            </Menu>
           </Flex>
           <Divider className="my-4" />
           <Box>
-            <Text className="mb-4 font-medium">Key Results</Text>
+            <Text className="mb-4 font-medium">Objective Key Results</Text>
             {keyResultMode === null ? (
               <>
                 <KeyResultsList
@@ -521,6 +485,7 @@ export const NewObjectiveDialog = ({
             Discard
           </Button>
           <Button
+            disabled={editingKeyResult !== null}
             leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
             loading={loading}
             loadingText="Creating objective..."
