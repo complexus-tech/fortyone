@@ -213,12 +213,6 @@ export const Header = () => {
           variant="outline"
         >
           Create Story
-          <kbd
-            className="ml-auto text-xs font-bold text-gray md:leading-[2.5rem]"
-            color="muted"
-          >
-            Shift+N
-          </kbd>
         </Button>
         <Button
           asIcon

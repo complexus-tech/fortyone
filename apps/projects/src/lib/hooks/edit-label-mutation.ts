@@ -16,6 +16,7 @@ export const useEditLabelMutation = () => {
   const mutation = useMutation({
     mutationFn: ({ labelId, updates }: EditLabelParams) =>
       editLabelAction(labelId, updates),
+
     onMutate: async ({ labelId, updates }) => {
       await queryClient.cancelQueries({ queryKey: labelKeys.lists() });
       const previousLabels = queryClient.getQueryData<Label[]>(

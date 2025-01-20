@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function Page(): JSX.Element {
-  return <div>New home</div>;
+  return redirect("/my-work");
 }
