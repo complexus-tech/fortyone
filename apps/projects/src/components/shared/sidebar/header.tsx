@@ -204,9 +204,7 @@ export const Header = () => {
           className="rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
           fullWidth
-          leftIcon={
-            <NewStoryIcon className="h-5 w-auto text-gray dark:text-gray-300" />
-          }
+          leftIcon={<NewStoryIcon />}
           onClick={() => {
             setIsOpen(!isOpen);
           }}

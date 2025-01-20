@@ -65,7 +65,8 @@ const DialogContent = forwardRef<
             "max-w-xl": size === "md",
             "max-w-5xl": size === "lg",
             "max-w-7xl": size === "xl",
-          }
+          },
+          className
         )}
         {...props}
       >

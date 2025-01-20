@@ -30,7 +30,7 @@ import {
   PlusIcon,
   EditIcon,
   DeleteIcon,
-  ObjectiveIcon,
+  OKRIcon,
 } from "icons";
 import { toast } from "sonner";
 import nProgress from "nprogress";
@@ -41,7 +41,7 @@ import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
-import { TeamColor } from "./team-color";
+import { TeamColor } from "../team-color";
 
 type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | "Not Started";
 type ObjectiveStatus =
@@ -87,36 +87,33 @@ const KeyResultsList = ({
   return (
     <Box className="space-y-2">
       {keyResults.map((kr) => (
-        <Flex
-          align="center"
-          className="group rounded-lg border border-gray-100 px-4 py-3 hover:border-gray-200 dark:border-dark-100 dark:hover:border-dark-200"
-          justify="between"
-          key={kr.id}
-        >
-          <Flex align="center" gap={3}>
-            <ObjectiveIcon className="text-gray-500 h-5 w-5" />
-            <Text>{kr.name || "Untitled"}</Text>
+        <Flex align="center" justify="between" key={kr.id}>
+          <Flex align="center" gap={1}>
+            <OKRIcon />
+            <Text>{kr.name}</Text>
           </Flex>
-          <Flex className="invisible gap-2 group-hover:visible">
+          <Flex className="gap-2">
             <Button
+              asIcon
               color="tertiary"
               onClick={() => {
                 onEdit(kr.id);
               }}
-              size="xs"
+              size="sm"
               variant="naked"
             >
-              <EditIcon className="h-4 w-4" />
+              <EditIcon />
             </Button>
             <Button
+              asIcon
               color="danger"
               onClick={() => {
                 onRemove(kr.id);
               }}
-              size="xs"
+              size="sm"
               variant="naked"
             >
-              <DeleteIcon className="h-4 w-4" />
+              <DeleteIcon />
             </Button>
           </Flex>
         </Flex>
