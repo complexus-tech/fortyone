@@ -28,9 +28,6 @@ import {
   MaximizeIcon,
   MinimizeIcon,
   PlusIcon,
-  EditIcon,
-  DeleteIcon,
-  OKRIcon,
 } from "icons";
 import { toast } from "sonner";
 import nProgress from "nprogress";
@@ -42,206 +39,16 @@ import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
 import { TeamColor } from "../team-color";
-
-type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | "Not Started";
-type ObjectiveStatus =
-  | "Not Started"
-  | "In Progress"
-  | "Completed"
-  | "Cancelled";
-
-type MeasureType = "Number" | "Percent (%)" | "Boolean (Complete/Incomplete)";
-
-type KeyResult = {
-  id: string;
-  name: string;
-  measureType: MeasureType;
-  startValue: number;
-  targetValue: number;
-};
-
-type NewObjective = {
-  name: string;
-  description: string;
-  descriptionHTML: string;
-  teamId: string;
-  status: ObjectiveStatus;
-  health: ObjectiveHealth;
-  startDate: string | null;
-  endDate: string | null;
-  leadUserId: string | null;
-  keyResults: KeyResult[];
-};
+import { KeyResultsList } from "./components/key-results-list";
+import { KeyResultEditor } from "./components/key-result-editor";
+import type {
+  KeyResult,
+  NewObjective,
+  ObjectiveHealth,
+  ObjectiveStatus,
+} from "./types";
 
 type KeyResultFormMode = "add" | "edit" | null;
-
-const KeyResultsList = ({
-  keyResults,
-  onEdit,
-  onRemove,
-}: {
-  keyResults: KeyResult[];
-  onEdit: (id: string) => void;
-  onRemove: (id: string) => void;
-}) => {
-  return (
-    <Box className="space-y-2">
-      {keyResults.map((kr) => (
-        <Flex align="center" justify="between" key={kr.id}>
-          <Flex align="center" gap={1}>
-            <OKRIcon />
-            <Text>{kr.name}</Text>
-          </Flex>
-          <Flex className="gap-2">
-            <Button
-              asIcon
-              color="tertiary"
-              onClick={() => {
-                onEdit(kr.id);
-              }}
-              size="sm"
-              variant="naked"
-            >
-              <EditIcon />
-            </Button>
-            <Button
-              asIcon
-              color="danger"
-              onClick={() => {
-                onRemove(kr.id);
-              }}
-              size="sm"
-              variant="naked"
-            >
-              <DeleteIcon />
-            </Button>
-          </Flex>
-        </Flex>
-      ))}
-    </Box>
-  );
-};
-
-const KeyResultEditor = ({
-  keyResult,
-  onUpdate,
-  onCancel,
-  onSave,
-}: {
-  keyResult: KeyResult;
-  onUpdate: (id: string, updates: Partial<KeyResult>) => void;
-  onCancel: () => void;
-  onSave: () => void;
-}) => {
-  const editor = useEditor({
-    extensions: [
-      Document,
-      Paragraph,
-      TextExt,
-      Placeholder.configure({
-        placeholder: "Example: Increase user adoption from 100 to 150",
-      }),
-    ],
-    content: keyResult.name,
-    editable: true,
-    onUpdate: ({ editor }) => {
-      onUpdate(keyResult.id, { name: editor.getText() });
-    },
-  });
-
-  return (
-    <Box className="mb-6 rounded-lg border border-gray-200 p-6 dark:border-dark-100">
-      <Box className="space-y-4">
-        <Box>
-          <Flex align="center" className="mb-2" gap={2}>
-            <Text className="font-medium">Name</Text>
-            <Text color="muted">Required</Text>
-          </Flex>
-          <TextEditor className="flex-1" editor={editor} />
-        </Box>
-        <Flex gap={4}>
-          <Box className="flex-1">
-            <Flex align="center" className="mb-2" gap={2}>
-              <Text className="font-medium">Measure as</Text>
-              <Text color="muted">Required</Text>
-            </Flex>
-            <Menu>
-              <Menu.Button className="w-full">
-                <Button
-                  className="w-full justify-between"
-                  color="tertiary"
-                  rightIcon={<ArrowRightIcon className="h-4 w-4 rotate-90" />}
-                  size="md"
-                  variant="outline"
-                >
-                  {keyResult.measureType}
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-full">
-                <Menu.Group>
-                  {[
-                    "Number",
-                    "Percent (%)",
-                    "Boolean (Complete/Incomplete)",
-                  ].map((type) => (
-                    <Menu.Item
-                      active={type === keyResult.measureType}
-                      key={type}
-                      onClick={() => {
-                        onUpdate(keyResult.id, {
-                          measureType: type as MeasureType,
-                        });
-                      }}
-                    >
-                      {type}
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Box>
-          <Box className="flex-1">
-            <Text className="mb-2 font-medium">Starting Value</Text>
-            <input
-              className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
-              onChange={(e) => {
-                onUpdate(keyResult.id, { startValue: Number(e.target.value) });
-              }}
-              placeholder="0"
-              type="number"
-              value={keyResult.startValue || ""}
-            />
-          </Box>
-          <Box className="flex-1">
-            <Text className="mb-2 font-medium">Target Value</Text>
-            <input
-              className="w-full rounded-md border border-gray-200 px-3 py-2 dark:border-dark-100 dark:bg-dark-200"
-              onChange={(e) => {
-                onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
-              }}
-              placeholder="0"
-              type="number"
-              value={keyResult.targetValue || ""}
-            />
-          </Box>
-        </Flex>
-        <Flex className="pt-2" gap={2}>
-          <Button
-            color="tertiary"
-            onClick={onCancel}
-            size="sm"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button onClick={onSave} size="sm">
-            Save Key Result
-          </Button>
-        </Flex>
-      </Box>
-    </Box>
-  );
-};
 
 export const NewObjectiveDialog = ({
   isOpen,
@@ -276,9 +83,6 @@ export const NewObjectiveDialog = ({
 
   const [objectiveForm, setObjectiveForm] = useState<NewObjective>(initialForm);
   const [loading, setLoading] = useState(false);
-  const [keyResultEditors, setKeyResultEditors] = useState<
-    Record<string, ReturnType<typeof useEditor>>
-  >({});
   const [keyResultMode, setKeyResultMode] = useState<KeyResultFormMode>(null);
   const [editingKeyResult, setEditingKeyResult] = useState<KeyResult | null>(
     null,
@@ -327,11 +131,7 @@ export const NewObjectiveDialog = ({
       setIsExpanded(false);
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
-      Object.values(keyResultEditors).forEach((editor) => {
-        editor?.commands.setContent("");
-      });
       setObjectiveForm(initialForm);
-      setKeyResultEditors({});
     } finally {
       setLoading(false);
       nProgress.done();
