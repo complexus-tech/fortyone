@@ -38,6 +38,7 @@ import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
+import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { TeamColor } from "../team-color";
 import { KeyResultsList } from "./components/key-results-list";
 import { KeyResultEditor } from "./components/key-result-editor";
@@ -310,8 +311,8 @@ export const NewObjectiveDialog = ({
                 }}
               />
             </DatePicker>
-            <Menu>
-              <Menu.Button>
+            <AssigneesMenu>
+              <AssigneesMenu.Trigger>
                 <Button
                   className="gap-1.5 px-2 text-sm"
                   color="tertiary"
@@ -330,40 +331,17 @@ export const NewObjectiveDialog = ({
                     {lead?.username || "Lead"}
                   </span>
                 </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-52">
-                <Menu.Group>
-                  {members.map((member) => (
-                    <Menu.Item
-                      active={member.id === objectiveForm.leadUserId}
-                      className="justify-between gap-3"
-                      key={member.id}
-                      onClick={() => {
-                        setObjectiveForm((prev) => ({
-                          ...prev,
-                          leadUserId: member.id,
-                        }));
-                      }}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Avatar
-                          className="shrink-0"
-                          name={member.fullName}
-                          size="xs"
-                          src={member.avatarUrl}
-                        />
-                        <span className="block truncate">
-                          {member.username}
-                        </span>
-                      </span>
-                      {member.id === objectiveForm.leadUserId && (
-                        <CheckIcon className="h-[1.1rem] w-auto" />
-                      )}
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
+              </AssigneesMenu.Trigger>
+              <AssigneesMenu.Items
+                assigneeId={objectiveForm.leadUserId}
+                onAssigneeSelected={(leadUserId) => {
+                  setObjectiveForm((prev) => ({
+                    ...prev,
+                    leadUserId,
+                  }));
+                }}
+              />
+            </AssigneesMenu>
             <Menu>
               <Menu.Button>
                 <Button
