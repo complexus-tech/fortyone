@@ -1,18 +1,18 @@
 import { Box, Tabs, Text, Flex, ProgressBar, Divider, Avatar } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
+import {
+  RowWrapper,
+  StoryStatusIcon,
+  PriorityIcon,
+  TeamColor,
+} from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeams } from "../hooks/teams";
 
 export const Sidebar = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const tabs = ["all", "active", "backlog"] as const;
-  const [tab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
-  );
+
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
 
@@ -24,12 +24,10 @@ export const Sidebar = () => {
       <Flex align="center" className="mb-6 px-6" justify="between">
         <Text className="flex items-center gap-2">
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />
-          <span className="first-letter:uppercase">
-            {tab} {tab !== "backlog" && "stories"}
-          </span>
+          <span className="first-letter:uppercase">Team stories</span>
         </Text>
         <Text className="flex items-center gap-1.5">
-          {team.icon}
+          <TeamColor color={team.color} />
           <span
             className="inline-block max-w-[16ch] truncate"
             title={team.name}
