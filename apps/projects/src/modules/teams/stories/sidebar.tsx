@@ -9,7 +9,7 @@ import {
   Tooltip,
   Badge,
 } from "ui";
-import { StoryIcon, SprintsIcon, TeamIcon } from "icons";
+import { StoryIcon, SprintsIcon, TeamIcon, TagsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format, addDays, isAfter, isBefore, isToday } from "date-fns";
 import {
@@ -96,20 +96,25 @@ export const Sidebar = () => {
 
   // Calculate label statistics
   const allLabels = stories.reduce<Record<string, number>>((acc, story) => {
-    story.labels.forEach((label) => {
-      if (!acc[label]) {
-        acc[label] = 0;
+    story.labels.forEach((labelId) => {
+      if (!acc[labelId]) {
+        acc[labelId] = 0;
       }
-      acc[label]++;
+      acc[labelId]++;
     });
     return acc;
   }, {});
 
-  const labelStats = Object.entries(allLabels).map(([label, count]) => ({
-    label,
-    count,
-    percentage: (count / totalStories) * 100,
-  }));
+  const labelStats = Object.entries(allLabels)
+    .map(([labelId, count]) => {
+      const label = labels.find((l) => l.id === labelId);
+      return {
+        label,
+        count,
+        percentage: (count / totalStories) * 100,
+      };
+    })
+    .filter((stat) => stat.label); // Filter out any labels that don't exist anymore
 
   return (
     <Box className="py-6">
@@ -346,13 +351,13 @@ export const Sidebar = () => {
           <Tabs.Panel value="labels">
             {labelStats.map(({ label, count }) => (
               <Tooltip
-                key={label}
-                title={`${count} ${count === 1 ? "story" : "stories"} with label ${label}`}
+                key={label!.id}
+                title={`${count} ${count === 1 ? "story" : "stories"} with label ${label!.name}`}
               >
                 <RowWrapper className="px-1 py-2 md:px-0">
                   <Flex align="center" gap={2}>
-                    <span className="block h-2 w-2 rounded-full bg-primary" />
-                    <Text color="muted">{label}</Text>
+                    <TagsIcon className="h-4" style={{ color: label!.color }} />
+                    <Text color="muted">{label!.name}</Text>
                   </Flex>
                   <Text color="muted">
                     {count} of {totalStories}
