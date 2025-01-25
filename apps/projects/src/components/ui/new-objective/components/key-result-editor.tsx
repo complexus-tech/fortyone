@@ -6,7 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Box, Button, Flex, Input, Select, Text, TextEditor } from "ui";
 import { CloseIcon } from "icons";
 import { toast } from "sonner";
-import type { KeyResult } from "../types";
+import type { KeyResult, MeasureType } from "../types";
 
 type KeyResultEditorProps = {
   keyResult: KeyResult;
@@ -44,7 +44,10 @@ export const KeyResultEditor = ({
       });
       return;
     }
-    if (!keyResult.targetValue) {
+    if (
+      keyResult.measureType !== "Boolean (Complete/Incomplete)" &&
+      !keyResult.targetValue
+    ) {
       toast.warning("Validation error", {
         description: "Please enter a target value for the key result",
       });
@@ -68,10 +71,30 @@ export const KeyResultEditor = ({
           <span className="sr-only">Cancel</span>
         </Button>
       </Flex>
-      <Box className="relative -top-4 grid grid-cols-3 gap-4">
-        <Box>
+      <Box className="relative -top-4">
+        <Box className="mb-4">
           <Text className="mb-1.5 font-medium">Measure as</Text>
-          <Select defaultValue={keyResult.measureType}>
+          <Select
+            defaultValue={keyResult.measureType}
+            onValueChange={(value) => {
+              const measureType = value as MeasureType;
+              onUpdate(keyResult.id, {
+                measureType,
+                startValue:
+                  measureType === "Boolean (Complete/Incomplete)"
+                    ? 0
+                    : undefined,
+                targetValue:
+                  measureType === "Boolean (Complete/Incomplete)"
+                    ? 1
+                    : undefined,
+                currentValue:
+                  measureType === "Boolean (Complete/Incomplete)"
+                    ? 0
+                    : undefined,
+              });
+            }}
+          >
             <Select.Trigger className="h-[2.7rem] text-base">
               <Select.Input />
             </Select.Trigger>
@@ -88,29 +111,55 @@ export const KeyResultEditor = ({
             </Select.Content>
           </Select>
         </Box>
-        <Input
-          autoFocus
-          className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
-          label="Starting Value"
-          onChange={(e) => {
-            onUpdate(keyResult.id, { startValue: Number(e.target.value) });
-          }}
-          placeholder="0"
-          required
-          type="number"
-          value={keyResult.startValue || ""}
-        />
-        <Input
-          className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
-          label="Target Value"
-          onChange={(e) => {
-            onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
-          }}
-          placeholder="0"
-          required
-          type="number"
-          value={keyResult.targetValue || ""}
-        />
+
+        {keyResult.measureType === "Boolean (Complete/Incomplete)" ? (
+          <Flex className="mb-4" gap={2}>
+            <Button
+              color={keyResult.currentValue === 0 ? "primary" : "tertiary"}
+              onClick={() => {
+                onUpdate(keyResult.id, { currentValue: 0 });
+              }}
+              variant={keyResult.currentValue === 0 ? "solid" : "outline"}
+            >
+              Incomplete
+            </Button>
+            <Button
+              color={keyResult.currentValue === 1 ? "primary" : "tertiary"}
+              onClick={() => {
+                onUpdate(keyResult.id, { currentValue: 1 });
+              }}
+              variant={keyResult.currentValue === 1 ? "solid" : "outline"}
+            >
+              Complete
+            </Button>
+          </Flex>
+        ) : (
+          <Box className="grid grid-cols-2 gap-4">
+            <Input
+              autoFocus
+              className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
+              label="Starting Value"
+              onChange={(e) => {
+                onUpdate(keyResult.id, { startValue: Number(e.target.value) });
+              }}
+              placeholder="0"
+              required
+              type="number"
+              value={keyResult.startValue?.toString() || ""}
+            />
+            <Input
+              className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
+              label="Target Value"
+              onChange={(e) => {
+                onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
+              }}
+              placeholder="0"
+              required
+              type="number"
+              value={keyResult.targetValue?.toString() || ""}
+            />
+          </Box>
+        )}
       </Box>
       <Button
         className="relative -top-0.5"

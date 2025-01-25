@@ -13,8 +13,9 @@ export type KeyResult = {
   id: string;
   name: string;
   measureType: MeasureType;
-  startValue: number;
-  targetValue: number;
+  startValue?: number;
+  targetValue?: number;
+  currentValue?: number;
 };
 
 export type NewObjective = {

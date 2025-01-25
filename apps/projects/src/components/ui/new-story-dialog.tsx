@@ -64,11 +64,15 @@ export const NewStoryDialog = ({
   teamId,
   priority = "No Priority",
   assigneeId,
+  objectiveId,
+  sprintId,
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   statusId?: string;
   teamId?: string;
+  objectiveId?: string;
+  sprintId?: string;
   priority?: StoryPriority;
   assigneeId?: string | null;
 }) => {
@@ -97,8 +101,8 @@ export const NewStoryDialog = ({
     startDate: null,
     assigneeId,
     priority,
-    objectiveId: null,
-    sprintId: null,
+    objectiveId: objectiveId || null,
+    sprintId: sprintId || null,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);

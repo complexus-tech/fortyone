@@ -27,7 +27,9 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { teamId } = useParams<{ teamId: string }>();
+  const { teamId } = useParams<{
+    teamId: string;
+  }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
   const { name, color } = teams.find((team) => team.id === teamId)!;
@@ -60,6 +62,7 @@ export const Header = ({
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
+          layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />

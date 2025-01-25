@@ -10,9 +10,13 @@ export const NewStoryButton = ({
   children,
   leftIcon = <PlusIcon className="text-white dark:text-gray-200" />,
   teamId,
+  sprintId,
+  objectiveId,
   ...rest
 }: ButtonProps & {
   teamId?: string;
+  sprintId?: string;
+  objectiveId?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -27,7 +31,13 @@ export const NewStoryButton = ({
       >
         {children || "New Story"}
       </Button>
-      <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} teamId={teamId} />
+      <NewStoryDialog
+        isOpen={isOpen}
+        objectiveId={objectiveId}
+        setIsOpen={setIsOpen}
+        sprintId={sprintId}
+        teamId={teamId}
+      />
     </>
   );
 };

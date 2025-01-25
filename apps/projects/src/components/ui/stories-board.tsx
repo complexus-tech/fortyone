@@ -13,6 +13,7 @@ import { Box, Flex, Text } from "ui";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { StoryMissingIcon } from "icons";
+import { useParams } from "next/navigation";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
   DisplayColumn,
@@ -93,6 +94,11 @@ export const StoriesBoard = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
+  const { objectiveId, sprintId, teamId } = useParams<{
+    objectiveId: string;
+    sprintId: string;
+    teamId: string;
+  }>();
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
@@ -240,7 +246,13 @@ export const StoriesBoard = ({
                   Oops! This board is empty. Why not create a story?
                 </Text>
                 <Flex gap={2}>
-                  <NewStoryButton color="tertiary" size="md">
+                  <NewStoryButton
+                    color="tertiary"
+                    objectiveId={objectiveId}
+                    size="md"
+                    sprintId={sprintId}
+                    teamId={teamId}
+                  >
                     Create new story
                   </NewStoryButton>
                 </Flex>

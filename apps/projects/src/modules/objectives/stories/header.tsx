@@ -78,7 +78,7 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <NewStoryButton teamId={teamId} />
+        <NewStoryButton objectiveId={objectiveId} teamId={teamId} />
         <span className="text-gray-200 dark:text-dark-100">|</span>
         <SideDetailsSwitch
           isExpanded={isExpanded}
