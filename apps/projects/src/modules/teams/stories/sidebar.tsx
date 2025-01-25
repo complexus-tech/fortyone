@@ -167,10 +167,114 @@ export const Sidebar = () => {
         </Flex>
       </Box>
 
+      <Divider className="mb-4" />
+
+      {/* Stories Overview Section */}
+      <Box className="px-6">
+        <Text className="mb-3">Stories Overview</Text>
+        <Tabs defaultValue="status">
+          <Tabs.List className="mx-0 mb-3">
+            <Tabs.Tab value="status">Status</Tabs.Tab>
+            <Tabs.Tab value="assignees">Assignees</Tabs.Tab>
+            <Tabs.Tab value="priority">Priority</Tabs.Tab>
+            <Tabs.Tab value="labels">Labels</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="status">
+            {storiesByStatus.map(({ status, count }) => (
+              <RowWrapper
+                className="px-1 py-2 last-of-type:border-0 md:px-0"
+                key={status.id}
+              >
+                <Flex align="center" gap={2}>
+                  <StoryStatusIcon statusId={status.id} />
+                  <Text color="muted">{status.name}</Text>
+                </Flex>
+                <Text color="muted">
+                  {count} of {totalStories}
+                </Text>
+              </RowWrapper>
+            ))}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="assignees">
+            {storiesByAssignee.map(({ member, count }) => (
+              <RowWrapper
+                className="px-1 py-2 last-of-type:border-0 md:px-0"
+                key={member.id}
+              >
+                <Flex align="center" gap={2}>
+                  <Avatar
+                    className="h-6"
+                    name={member.fullName}
+                    src={member.avatarUrl}
+                  />
+                  <Text color="muted">{member.username}</Text>
+                </Flex>
+                <Text color="muted">
+                  {count} of {totalStories}
+                </Text>
+              </RowWrapper>
+            ))}
+            {/* Unassigned stories */}
+            {(() => {
+              const unassignedCount = stories.filter(
+                (s) => !s.assigneeId,
+              ).length;
+              return (
+                <RowWrapper className="border-b-0 px-1 py-2 md:px-0">
+                  <Flex align="center" gap={2}>
+                    <Avatar className="h-6" />
+                    <Text color="muted">Unassigned</Text>
+                  </Flex>
+                  <Text color="muted">
+                    {unassignedCount} of {totalStories}
+                  </Text>
+                </RowWrapper>
+              );
+            })()}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="priority">
+            {storiesByPriority.map(({ priority, count }) => (
+              <RowWrapper
+                className="px-1 py-2 last-of-type:border-0 md:px-0"
+                key={priority}
+              >
+                <Flex align="center" gap={2}>
+                  <PriorityIcon priority={priority} />
+                  <Text color="muted">{priority}</Text>
+                </Flex>
+                <Text color="muted">
+                  {count} of {totalStories}
+                </Text>
+              </RowWrapper>
+            ))}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="labels">
+            {labelStats.map(({ label, count }) => (
+              <RowWrapper
+                className="px-1 py-2 last-of-type:border-0 md:px-0"
+                key={label!.id}
+              >
+                <Flex align="center" gap={2}>
+                  <TagsIcon className="h-4" style={{ color: label!.color }} />
+                  <Text color="muted">{label!.name}</Text>
+                </Flex>
+                <Text color="muted">
+                  {count} of {totalStories}
+                </Text>
+              </RowWrapper>
+            ))}
+          </Tabs.Panel>
+        </Tabs>
+      </Box>
+
       {/* Active Sprint Section */}
       {activeSprint ? (
         <>
-          <Divider className="mb-4" />
+          <Divider className="mb-4 mt-4" />
           <Box className="mb-4 px-6">
             <Text className="mb-4">Active Sprint</Text>
             <Flex direction="column" gap={3}>
@@ -252,121 +356,6 @@ export const Sidebar = () => {
             <Text color="muted">{dueThisWeekTasks}</Text>
           </Flex>
         </Flex>
-      </Box>
-
-      <Divider className="mb-4" />
-
-      <Box className="px-6">
-        <Text className="mb-3">Stories Overview</Text>
-        <Tabs defaultValue="status">
-          <Tabs.List className="mx-0 mb-3">
-            <Tabs.Tab value="status">Status</Tabs.Tab>
-            <Tabs.Tab value="assignees">Assignees</Tabs.Tab>
-            <Tabs.Tab value="priority">Priority</Tabs.Tab>
-            <Tabs.Tab value="labels">Labels</Tabs.Tab>
-          </Tabs.List>
-
-          <Tabs.Panel value="status">
-            {storiesByStatus.map(({ status, count }) => (
-              <Tooltip
-                key={status.id}
-                title={`${count} ${count === 1 ? "story" : "stories"} in ${status.name}`}
-              >
-                <RowWrapper className="px-1 py-2 md:px-0">
-                  <Flex align="center" gap={2}>
-                    <StoryStatusIcon statusId={status.id} />
-                    <Text color="muted">{status.name}</Text>
-                  </Flex>
-                  <Text color="muted">
-                    {count} of {totalStories}
-                  </Text>
-                </RowWrapper>
-              </Tooltip>
-            ))}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="assignees">
-            {storiesByAssignee.map(({ member, count }) => (
-              <Tooltip
-                key={member.id}
-                title={`${count} ${count === 1 ? "story" : "stories"} assigned to ${member.id}`}
-              >
-                <RowWrapper className="px-1 py-2 md:px-0">
-                  <Flex align="center" gap={2}>
-                    <Avatar
-                      className="h-6"
-                      name={member.fullName}
-                      src={member.avatarUrl}
-                    />
-                    <Text color="muted">{member.username}</Text>
-                  </Flex>
-                  <Text color="muted">
-                    {count} of {totalStories}
-                  </Text>
-                </RowWrapper>
-              </Tooltip>
-            ))}
-            {/* Unassigned stories */}
-            {(() => {
-              const unassignedCount = stories.filter(
-                (s) => !s.assigneeId,
-              ).length;
-              return (
-                <Tooltip
-                  title={`${unassignedCount} unassigned ${unassignedCount === 1 ? "story" : "stories"}`}
-                >
-                  <RowWrapper className="px-1 py-2 md:px-0">
-                    <Flex align="center" gap={2}>
-                      <Avatar className="h-6" />
-                      <Text color="muted">Unassigned</Text>
-                    </Flex>
-                    <Text color="muted">
-                      {unassignedCount} of {totalStories}
-                    </Text>
-                  </RowWrapper>
-                </Tooltip>
-              );
-            })()}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="priority">
-            {storiesByPriority.map(({ priority, count }) => (
-              <Tooltip
-                key={priority}
-                title={`${count} ${count === 1 ? "story" : "stories"} with ${priority} priority`}
-              >
-                <RowWrapper className="px-1 py-2 md:px-0">
-                  <Flex align="center" gap={2}>
-                    <PriorityIcon priority={priority} />
-                    <Text color="muted">{priority}</Text>
-                  </Flex>
-                  <Text color="muted">
-                    {count} of {totalStories}
-                  </Text>
-                </RowWrapper>
-              </Tooltip>
-            ))}
-          </Tabs.Panel>
-
-          <Tabs.Panel value="labels">
-            {labelStats.map(({ label, count }) => (
-              <Tooltip
-                key={label!.id}
-                title={`${count} ${count === 1 ? "story" : "stories"} with label ${label!.name}`}
-              >
-                <RowWrapper className="px-1 py-2 md:px-0">
-                  <Flex align="center" gap={2}>
-                    <TagsIcon className="h-4" style={{ color: label!.color }} />
-                    <Text color="muted">{label!.name}</Text>
-                  </Flex>
-                  <Text color="muted">
-                    {count} of {totalStories}
-                  </Text>
-                </RowWrapper>
-              </Tooltip>
-            ))}
-          </Tabs.Panel>
-        </Tabs>
       </Box>
     </Box>
   );
