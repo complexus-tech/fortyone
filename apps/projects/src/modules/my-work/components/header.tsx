@@ -7,20 +7,15 @@ import type { StoriesLayout } from "@/components/ui";
 import {
   StoriesViewOptionsButton,
   LayoutSwitcher,
-  SideDetailsSwitch,
   NewStoryButton,
 } from "@/components/ui";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
 export const Header = ({
-  isExpanded,
-  setIsExpanded,
   layout,
   setLayout,
 }: {
-  isExpanded: boolean | null;
-  setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
@@ -67,12 +62,6 @@ export const Header = ({
           viewOptions={viewOptions}
         />
         <span className="text-gray-200 dark:text-dark-100">|</span>
-        <SideDetailsSwitch
-          disabled={tab === "summary"}
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-        />
-
         <NewStoryButton />
       </Flex>
     </HeaderContainer>

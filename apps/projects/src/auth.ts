@@ -24,7 +24,13 @@ declare module "next-auth" {
   }
 }
 
-export const { handlers, auth, signOut, signIn } = NextAuth({
+export const {
+  handlers,
+  auth,
+  signOut,
+  signIn,
+  unstable_update: updateSession,
+} = NextAuth({
   providers: [
     Credentials({
       name: "Credentials",

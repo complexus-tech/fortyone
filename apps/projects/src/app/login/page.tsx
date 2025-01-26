@@ -18,5 +18,6 @@ export default async function Page(props: {
   if (session) {
     redirect("/");
   }
+
   return <LoginPage callbackUrl={callbackUrl} />;
 }

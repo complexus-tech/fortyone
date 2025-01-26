@@ -1,17 +1,11 @@
 "use client";
 import type { StoriesLayout } from "@/components/ui";
-import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { Header } from "./components/header";
-import { Sidebar } from "./components/sidebar";
 import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
 
 export const ListMyStories = () => {
-  const [isExpanded, setIsExpanded] = useLocalStorage(
-    "my-stories:expanded",
-    false,
-  );
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
     "list",
@@ -19,20 +13,8 @@ export const ListMyStories = () => {
 
   return (
     <MyWorkProvider>
-      <Header
-        isExpanded={isExpanded}
-        layout={layout}
-        setIsExpanded={setIsExpanded}
-        setLayout={setLayout}
-      />
-      <BoardDividedPanel autoSaveId="my-stories:divided-panel">
-        <BoardDividedPanel.MainPanel>
-          <ListMyWork layout={layout} />
-        </BoardDividedPanel.MainPanel>
-        <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-          <Sidebar />
-        </BoardDividedPanel.SideBar>
-      </BoardDividedPanel>
+      <Header layout={layout} setLayout={setLayout} />
+      <ListMyWork layout={layout} />
     </MyWorkProvider>
   );
 };
