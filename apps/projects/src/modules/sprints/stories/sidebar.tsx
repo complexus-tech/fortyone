@@ -17,47 +17,133 @@ import {
   DeleteIcon,
   StarIcon,
   EditIcon,
-  DocsIcon,
 } from "icons";
+import { useParams } from "next/navigation";
+import { format } from "date-fns";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
+import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
+import { useMembers } from "@/lib/hooks/members";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useLabels } from "@/lib/hooks/labels";
+import type { StoryPriority } from "@/modules/stories/types";
+import { useSprints } from "../hooks/sprints";
 
 export const Sidebar = () => {
+  const { sprintId } = useParams<{ sprintId: string }>();
+  const { data: stories = [] } = useSprintStories(sprintId);
+  const { data: sprints = [] } = useSprints();
+  const { data: members = [] } = useMembers();
+  const { data: statuses = [] } = useStatuses();
+  const { data: labels = [] } = useLabels();
+
+  const sprint = sprints.find((s) => s.id === sprintId)!;
+  const totalStories = stories.length;
+
+  // Compute sprint status
+  const getSprintStatus = () => {
+    const now = new Date();
+    const startDate = new Date(sprint.startDate);
+    const endDate = new Date(sprint.endDate);
+
+    if (now < startDate) return "Not Started";
+    if (now > endDate) return "Completed";
+    return "In Progress";
+  };
+
+  // Calculate story statistics
+  const storiesByStatus = statuses.map((status) => {
+    const count = stories.filter((s) => s.statusId === status.id).length;
+    const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
+    return { status, count, percentage };
+  });
+
+  const priorities: StoryPriority[] = [
+    "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
+  ];
+  const storiesByPriority = priorities.map((priority) => {
+    const count = stories.filter((s) => s.priority === priority).length;
+    const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
+    return { priority, count, percentage };
+  });
+
+  const storiesByAssignee = members.map((member) => {
+    const count = stories.filter((s) => s.assigneeId === member.id).length;
+    const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
+    return { member, count, percentage };
+  });
+
+  const unassignedCount = stories.filter((s) => !s.assigneeId).length;
+  const unassignedPercentage =
+    totalStories > 0 ? (unassignedCount / totalStories) * 100 : 0;
+
+  // Calculate label statistics
+  const allLabels = stories.reduce<Record<string, number>>((acc, story) => {
+    story.labels.forEach((labelId) => {
+      if (!acc[labelId]) acc[labelId] = 0;
+      acc[labelId]++;
+    });
+    return acc;
+  }, {});
+
+  const labelStats = Object.entries(allLabels)
+    .map(([labelId, count]) => {
+      const label = labels.find((l) => l.id === labelId);
+      const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
+      return { label, count, percentage };
+    })
+    .filter((stat) => stat.label);
+
+  const completedStories = stories.filter((s) => {
+    const status = statuses.find((st) => st.id === s.statusId);
+    return status?.category === "completed";
+  }).length;
+
+  const sprintProgress =
+    totalStories > 0 ? (completedStories / totalStories) * 100 : 0;
+
   return (
     <Box className="py-6">
       <Box className="px-6">
         <Flex align="center" justify="between">
           <Text className="flex items-center gap-1.5" fontSize="lg">
             <SprintsIcon className="relative -top-px h-[1.4rem] w-auto" />
-            Sprint 1
+            {sprint.name}
           </Text>
           <Menu>
             <Menu.Button>
               <Button
-                className="aspect-square"
+                asIcon
                 color="tertiary"
-                leftIcon={<MoreVerticalIcon className="h-5 w-auto" />}
+                leftIcon={<MoreVerticalIcon />}
+                rounded="full"
                 size="sm"
-                variant="outline"
+                variant="naked"
               >
                 <span className="sr-only">More options</span>
               </Button>
             </Menu.Button>
-            <Menu.Items align="end" className="w-64">
+            <Menu.Items align="end" className="w-56">
               <Menu.Group className="px-4">
-                <Text className="mt-1">Manage Sprint</Text>
+                <Text className="mb-2 mt-1" color="muted">
+                  Manage Sprint
+                </Text>
               </Menu.Group>
-              <Menu.Separator className="mb-2" />
+              <Menu.Separator className="mb-1.5" />
               <Menu.Group>
                 <Menu.Item>
                   <EditIcon className="h-[1.1rem] w-auto" />
                   Edit sprint
                 </Menu.Item>
                 <Menu.Item>
-                  <LinkIcon className="h-5 w-auto" />
+                  <LinkIcon />
                   Copy link
                 </Menu.Item>
                 <Menu.Item>
-                  <StarIcon className="h-[1.15rem] w-auto" />
+                  <StarIcon />
                   Favorite
                 </Menu.Item>
                 <Menu.Item>
@@ -69,152 +155,135 @@ export const Sidebar = () => {
           </Menu>
         </Flex>
         <Flex align="center" className="my-4" gap={2}>
-          <Badge>Current</Badge>
-          <Badge color="tertiary">21 Feb - 21 Mar</Badge>
+          <Badge
+            className="h-8 px-2 text-base capitalize tracking-wide"
+            color={getSprintStatus() === "In Progress" ? "primary" : "tertiary"}
+          >
+            {getSprintStatus()}
+          </Badge>
+          <Badge
+            className="h-8 px-2 text-base capitalize tracking-wide"
+            color="tertiary"
+          >
+            {format(new Date(sprint.startDate), "d MMM")} -{" "}
+            {format(new Date(sprint.endDate), "d MMM")}
+          </Badge>
         </Flex>
         <Flex align="center" className="mb-2 mt-3" gap={2} justify="between">
           <Text>Sprint Progress</Text>
-          <Text>40%</Text>
+          <Text>{Math.round(sprintProgress)}%</Text>
         </Flex>
-        <ProgressBar className="h-1" progress={40} />
+        <ProgressBar className="h-1.5" progress={sprintProgress} />
       </Box>
-      <Divider className="mb-8 mt-6" />
+      <Divider className="mb-6 mt-6" />
       <Box className="px-6">
+        <Text className="mb-3">Stories Overview</Text>
         <Tabs defaultValue="assignees">
-          <Tabs.List className="mx-0 mb-1">
+          <Tabs.List className="mx-0 mb-3">
             <Tabs.Tab value="assignees">Assignees</Tabs.Tab>
-            <Tabs.Tab value="labels">Labels</Tabs.Tab>
             <Tabs.Tab value="status">Status</Tabs.Tab>
+            <Tabs.Tab value="labels">Labels</Tabs.Tab>
             <Tabs.Tab value="priority">Priority</Tabs.Tab>
           </Tabs.List>
+
           <Tabs.Panel value="assignees">
-            {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
+            {storiesByAssignee
+              .filter((stat) => stat.count > 0)
+              .map(({ member, count, percentage }) => (
+                <RowWrapper className="px-1 py-2 md:px-0" key={member.id}>
+                  <Flex align="center" gap={2}>
+                    <Avatar
+                      name={member.fullName}
+                      size="xs"
+                      src={member.avatarUrl}
+                    />
+                    <Text color="muted">{member.username}</Text>
+                  </Flex>
+                  <Flex align="center" gap={2}>
+                    <ProgressBar className="w-20" progress={percentage} />
+                    <Text color="muted">
+                      {count} of {totalStories}
+                    </Text>
+                  </Flex>
+                </RowWrapper>
+              ))}
+            {unassignedCount > 0 && (
+              <RowWrapper className="px-1 py-2 md:px-0">
                 <Flex align="center" gap={2}>
-                  <Avatar name="Joseph Mukorivo" size="xs" />
-                  <Text color="muted">josemukorivo</Text>
+                  <Avatar size="xs" />
+                  <Text color="muted">Unassigned</Text>
                 </Flex>
                 <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
+                  <ProgressBar
+                    className="w-20"
+                    progress={unassignedPercentage}
+                  />
+                  <Text color="muted">
+                    {unassignedCount} of {totalStories}
+                  </Text>
                 </Flex>
               </RowWrapper>
-            ))}
+            )}
           </Tabs.Panel>
-          <Tabs.Panel value="labels">
-            {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
-                <Flex align="center" gap={2}>
-                  <span className="block size-2 rounded-full bg-primary" />
-                  <Text color="muted">Feature</Text>
-                </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
-              </RowWrapper>
-            ))}
-          </Tabs.Panel>
+
           <Tabs.Panel value="status">
-            {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
+            {storiesByStatus
+              .filter((stat) => stat.count > 0)
+              .map(({ status, count, percentage }) => (
+                <RowWrapper className="px-1 py-2 md:px-0" key={status.id}>
+                  <Flex align="center" gap={2}>
+                    <StoryStatusIcon statusId={status.id} />
+                    <Text color="muted">{status.name}</Text>
+                  </Flex>
+                  <Flex align="center" gap={2}>
+                    <ProgressBar className="w-20" progress={percentage} />
+                    <Text color="muted">
+                      {count} of {totalStories}
+                    </Text>
+                  </Flex>
+                </RowWrapper>
+              ))}
+          </Tabs.Panel>
+
+          <Tabs.Panel value="labels">
+            {labelStats.map(({ label, count, percentage }) => (
+              <RowWrapper className="px-1 py-2 md:px-0" key={label!.id}>
                 <Flex align="center" gap={2}>
-                  <StoryStatusIcon />
-                  <Text color="muted">Backlog</Text>
+                  <span
+                    className="block size-2 rounded-full"
+                    style={{ backgroundColor: label!.color }}
+                  />
+                  <Text color="muted">{label!.name}</Text>
                 </Flex>
                 <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
+                  <ProgressBar className="w-20" progress={percentage} />
+                  <Text color="muted">
+                    {count} of {totalStories}
+                  </Text>
                 </Flex>
               </RowWrapper>
             ))}
           </Tabs.Panel>
+
           <Tabs.Panel value="priority">
-            {new Array(4).fill(1).map((_, idx) => (
-              <RowWrapper className="px-1 py-2 md:px-1" key={idx}>
-                <Flex align="center" gap={2}>
-                  <PriorityIcon priority="High" />
-                  <Text color="muted">High</Text>
-                </Flex>
-                <Flex align="center" gap={2}>
-                  <ProgressBar className="w-20" progress={25} />
-                  <Text color="muted">25% of 4</Text>
-                </Flex>
-              </RowWrapper>
-            ))}
+            {storiesByPriority
+              .filter((stat) => stat.count > 0)
+              .map(({ priority, count, percentage }) => (
+                <RowWrapper className="px-1 py-2 md:px-0" key={priority}>
+                  <Flex align="center" gap={2}>
+                    <PriorityIcon priority={priority} />
+                    <Text color="muted">{priority}</Text>
+                  </Flex>
+                  <Flex align="center" gap={2}>
+                    <ProgressBar className="w-20" progress={percentage} />
+                    <Text color="muted">
+                      {count} of {totalStories}
+                    </Text>
+                  </Flex>
+                </RowWrapper>
+              ))}
           </Tabs.Panel>
         </Tabs>
-      </Box>
-      <Divider className="mb-6 mt-8" />
-      <Box className="px-6">
-        <Text as="h3" fontSize="lg" fontWeight="medium">
-          Burndown chart
-        </Text>
-        <Text className="mb-4" color="muted">
-          Burndown chart shows the amount of work remaining in the sprint.
-        </Text>
-        {/* <ResponsiveContainer height={150} width="100%">
-      <AreaChart
-        data={data}
-        margin={{
-          top: 0,
-          right: 0,
-          left: -13,
-          bottom: -12,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <defs>
-          <linearGradient id="colorUv" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="5%" stopColor="#eab308" stopOpacity={0.6} />
-            <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <defs>
-          <linearGradient id="colorAmt" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="5%" stopColor="#002F61" stopOpacity={0.6} />
-            <stop offset="95%" stopColor="#002F61" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-
-        <XAxis dataKey="name" fontSize="0.9rem" />
-        <Tooltip />
-        <Area
-          dataKey="uv"
-          fill="url(#colorUv)"
-          fillOpacity={1}
-          stackId="1"
-          stroke="#eab308"
-          strokeDasharray="5 5"
-          type="monotone"
-        />
-        <Area
-          dataKey="amt"
-          fill="url(#colorAmt)"
-          fillOpacity={1}
-          stackId="1"
-          stroke="#002F61"
-          type="monotone"
-        />
-      </AreaChart>
-    </ResponsiveContainer> */}
-      </Box>
-      <Divider className="mb-6 mt-8" />
-      <Box className="px-6">
-        <Text as="h3" className="mb-3" fontSize="lg" fontWeight="medium">
-          Documents
-        </Text>
-        <Flex
-          align="center"
-          className="rounded-xl bg-gray-50/80 px-4 py-10 dark:bg-dark-200/20"
-          direction="column"
-          justify="center"
-        >
-          <DocsIcon className="h-20 w-auto rotate-12" strokeWidth={1} />
-          <Text className="mt-4" color="muted">
-            No documents for this sprint
-          </Text>
-        </Flex>
       </Box>
     </Box>
   );
