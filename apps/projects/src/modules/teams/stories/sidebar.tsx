@@ -65,6 +65,8 @@ export const Sidebar = () => {
     return { member, count, percentage };
   });
 
+  const unassignedCount = stories.filter((s) => !s.assigneeId).length;
+
   const completedStories = stories.filter((s) => {
     const status = statuses.find((st) => st.id === s.statusId);
     return status?.category === "completed";
@@ -216,23 +218,15 @@ export const Sidebar = () => {
                 </Text>
               </RowWrapper>
             ))}
-            {/* Unassigned stories */}
-            {(() => {
-              const unassignedCount = stories.filter(
-                (s) => !s.assigneeId,
-              ).length;
-              return (
-                <RowWrapper className="border-b-0 px-1 py-2 md:px-0">
-                  <Flex align="center" gap={2}>
-                    <Avatar className="h-6" />
-                    <Text color="muted">Unassigned</Text>
-                  </Flex>
-                  <Text color="muted">
-                    {unassignedCount} of {totalStories}
-                  </Text>
-                </RowWrapper>
-              );
-            })()}
+            <RowWrapper className="border-b-0 px-1 py-2 md:px-0">
+              <Flex align="center" gap={2}>
+                <Avatar className="h-6" />
+                <Text color="muted">Unassigned</Text>
+              </Flex>
+              <Text color="muted">
+                {unassignedCount} of {totalStories}
+              </Text>
+            </RowWrapper>
           </Tabs.Panel>
 
           <Tabs.Panel value="priority">
@@ -280,10 +274,15 @@ export const Sidebar = () => {
             <Flex direction="column" gap={3}>
               <Flex align="center" justify="between">
                 <Flex align="center" gap={2}>
-                  <SprintsIcon className="h-4 w-4" />
+                  <SprintsIcon />
                   <Text>{activeSprint.name}</Text>
                 </Flex>
-                <Badge color="primary">In Progress</Badge>
+                <Badge
+                  className="h-8 px-2 text-base capitalize tracking-wide"
+                  color="primary"
+                >
+                  In Progress
+                </Badge>
               </Flex>
               <Flex align="center" justify="between">
                 <Text color="muted">Sprint Progress</Text>
