@@ -20,27 +20,19 @@ const config: Omit<Config, "content"> = {
       info: "#06b6d4",
       sidebar: "#FCF5E5",
       light: "#fffff0",
-      // gray: {
-      //   DEFAULT: "#44403c",
-      //   50: "#f5f5f4",
-      //   100: "#e7e5e4",
-      //   200: "#d6d3d1",
-      //   250: "#4b5563",
-      //   300: "#a3a3a3",
-      // },
       gray: {
-        DEFAULT: "#6B665C", // A softer, warm gray
-        50: "#F8F6F2", // Very light warm gray, almost off-white
-        100: "#ECE9E4", // Light warm gray
-        200: "#DAD6D0", // Medium light warm gray
-        250: "#5E5A52", // A slightly darker warm gray
+        DEFAULT: "#6B665C",
+        50: "#F8F6F2",
+        100: "#ECE9E4",
+        200: "#DAD6D0",
+        250: "#5E5A52",
         300: "#A19B94",
       },
       dark: {
-        DEFAULT: "#0b0b0b",
+        DEFAULT: "#0e0e0e",
         300: "#161616",
         200: "#1b1b1b",
-        100: "#232323",
+        100: "#242424",
         50: "#2F2F2F",
       },
     },
