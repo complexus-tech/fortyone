@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/labelsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/linksgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/objectivestatusgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/reportsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
@@ -46,6 +47,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the objectives routes
 	objectivesgrp.Routes(objectivesgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the objective statuses routes
+	objectivestatusgrp.Routes(objectivestatusgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
