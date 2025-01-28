@@ -13,7 +13,7 @@ type dbObjective struct {
 	Name             string     `db:"name"`
 	Description      *string    `db:"description"`
 	LeadUser         *uuid.UUID `db:"lead_user_id"`
-	Team             *uuid.UUID `db:"team_id"`
+	Team             uuid.UUID  `db:"team_id"`
 	Workspace        uuid.UUID  `db:"workspace_id"`
 	StartDate        *time.Time `db:"start_date"`
 	EndDate          *time.Time `db:"end_date"`

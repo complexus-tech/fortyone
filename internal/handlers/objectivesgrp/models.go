@@ -75,7 +75,7 @@ type AppNewObjective struct {
 	Name        string            `json:"name" validate:"required"`
 	Description *string           `json:"description"`
 	LeadUser    *uuid.UUID        `json:"leadUserId"`
-	Team        *uuid.UUID        `json:"teamId"`
+	Team        uuid.UUID         `json:"teamId" validate:"required"`
 	StartDate   time.Time         `json:"startDate"`
 	EndDate     time.Time         `json:"endDate"`
 	IsPrivate   bool              `json:"isPrivate"`

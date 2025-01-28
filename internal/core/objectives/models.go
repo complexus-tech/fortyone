@@ -11,7 +11,7 @@ type CoreObjective struct {
 	Name             string
 	Description      *string
 	LeadUser         *uuid.UUID
-	Team             *uuid.UUID
+	Team             uuid.UUID
 	Workspace        uuid.UUID
 	StartDate        *time.Time
 	EndDate          *time.Time
@@ -32,7 +32,7 @@ type CoreNewObjective struct {
 	Name        string
 	Description *string
 	LeadUser    *uuid.UUID
-	Team        *uuid.UUID
+	Team        uuid.UUID
 	StartDate   time.Time
 	EndDate     time.Time
 	IsPrivate   bool
