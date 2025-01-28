@@ -28,6 +28,8 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { NewSprint } from "@/modules/sprints/types";
 import { useCreateSprintMutation } from "@/modules/sprints/hooks/create-sprint-mutation";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { validateSprintDates } from "@/modules/sprints/utils/validate-sprint-dates";
 import { TeamColor } from "./team-color";
 import { ObjectivesMenu } from "./story/objectives-menu";
 
@@ -56,8 +58,8 @@ export const NewSprintDialog = ({
     startDate: "",
     endDate: "",
   };
-
   const [sprintForm, setSprintForm] = useState<NewSprint>(initialForm);
+  const { data: teamSprints = [] } = useTeamSprints(sprintForm.teamId);
 
   const titleEditor = useEditor({
     extensions: [
@@ -101,6 +103,19 @@ export const NewSprintDialog = ({
     if (!sprintForm.startDate || !sprintForm.endDate) {
       toast.warning("Validation Error", {
         description: "Start and end dates are required",
+      });
+      return;
+    }
+
+    const dateValidation = validateSprintDates(
+      sprintForm.startDate,
+      sprintForm.endDate,
+      teamSprints
+    );
+
+    if (!dateValidation.isValid) {
+      toast.warning("Validation Error", {
+        description: dateValidation.error,
       });
       return;
     }
