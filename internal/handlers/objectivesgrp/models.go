@@ -96,3 +96,42 @@ func toCoreNewObjective(ano AppNewObjective) objectives.CoreNewObjective {
 		Priority:    ano.Priority,
 	}
 }
+
+// toAppObjective converts a single core objective to an application objective.
+func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
+	return AppObjectiveList{
+		ID:          objective.ID,
+		Name:        objective.Name,
+		Description: objective.Description,
+		LeadUser:    objective.LeadUser,
+		Team:        objective.Team,
+		Workspace:   objective.Workspace,
+		StartDate:   objective.StartDate,
+		EndDate:     objective.EndDate,
+		IsPrivate:   objective.IsPrivate,
+		CreatedAt:   objective.CreatedAt,
+		UpdatedAt:   objective.UpdatedAt,
+		Status:      objective.Status,
+		Priority:    objective.Priority,
+		Stats: ObjectiveStats{
+			Total:     objective.TotalStories,
+			Cancelled: objective.CancelledStories,
+			Completed: objective.CompletedStories,
+			Started:   objective.StartedStories,
+			Unstarted: objective.UnstartedStories,
+			Backlog:   objective.BacklogStories,
+		},
+	}
+}
+
+// AppUpdateObjective represents the data needed to update an objective
+type AppUpdateObjective struct {
+	Name        *string    `json:"name" db:"name"`
+	Description *string    `json:"description" db:"description"`
+	LeadUser    *uuid.UUID `json:"leadUser" db:"lead_user_id"`
+	StartDate   *time.Time `json:"startDate" db:"start_date"`
+	EndDate     *time.Time `json:"endDate" db:"end_date"`
+	IsPrivate   *bool      `json:"isPrivate" db:"is_private"`
+	Status      *uuid.UUID `json:"statusId" db:"status_id"`
+	Priority    *string    `json:"priority" db:"priority"`
+}

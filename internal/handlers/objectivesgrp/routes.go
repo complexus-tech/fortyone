@@ -22,5 +22,7 @@ func Routes(cfg Config, app *web.App) {
 	h := New(objectivesService)
 
 	app.Get("/workspaces/{workspaceId}/objectives", h.List, auth)
-
+	app.Get("/workspaces/{workspaceId}/objectives/{id}", h.Get, auth)
+	app.Put("/workspaces/{workspaceId}/objectives/{id}", h.Update, auth)
+	app.Delete("/workspaces/{workspaceId}/objectives/{id}", h.Delete, auth)
 }
