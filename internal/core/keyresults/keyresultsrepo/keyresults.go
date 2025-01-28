@@ -86,9 +86,14 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Update")
 	defer span.End()
 
+	// Verify the key result exists and belongs to the workspace
+	if _, err := r.getKeyResultById(ctx, id, workspaceId); err != nil {
+		return err
+	}
+
 	query := "UPDATE key_results SET "
 	var setClauses []string
-	params := map[string]any{"id": id, "workspace_id": workspaceId}
+	params := map[string]any{"id": id}
 
 	for field, value := range updates {
 		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
@@ -97,7 +102,7 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 
 	setClauses = append(setClauses, "updated_at = NOW()")
 	query += strings.Join(setClauses, ", ")
-	query += " WHERE id = :id AND id IN (SELECT kr.id FROM key_results kr INNER JOIN objectives o ON kr.objective_id = o.objective_id WHERE kr.id = :id AND o.workspace_id = :workspace_id);"
+	query += " WHERE id = :id"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -109,21 +114,11 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	defer stmt.Close()
 
 	r.log.Info(ctx, fmt.Sprintf("Updating key result #%s", id), "id", id)
-	result, err := stmt.ExecContext(ctx, params)
-	if err != nil {
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
 		errMsg := fmt.Sprintf("failed to update key result: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update key result"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return ErrNotFound
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Key result #%s updated successfully", id), "id", id)
