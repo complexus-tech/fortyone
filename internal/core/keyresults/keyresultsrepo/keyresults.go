@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -85,25 +86,18 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Update")
 	defer span.End()
 
-	// Verify the key result exists and belongs to the workspace
-	if _, err := r.getKeyResultById(ctx, id, workspaceId); err != nil {
-		return err
-	}
-
-	updates["updated_at"] = "NOW()"
-
-	// Build the update query dynamically based on the provided updates
 	query := "UPDATE key_results SET "
 	var setClauses []string
-	for field := range updates {
+	params := map[string]any{"id": id, "workspace_id": workspaceId}
+
+	for field, value := range updates {
 		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
-	}
-	query += fmt.Sprintf("%s WHERE id = :id", setClauses[0])
-	for _, clause := range setClauses[1:] {
-		query += fmt.Sprintf(", %s", clause)
+		params[field] = value
 	}
 
-	updates["id"] = id
+	setClauses = append(setClauses, "updated_at = NOW()")
+	query += strings.Join(setClauses, ", ")
+	query += " WHERE id = :id AND id IN (SELECT kr.id FROM key_results kr INNER JOIN objectives o ON kr.objective_id = o.objective_id WHERE kr.id = :id AND o.workspace_id = :workspace_id);"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -114,15 +108,25 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, "updating key result")
-	if _, err := stmt.ExecContext(ctx, updates); err != nil {
+	r.log.Info(ctx, fmt.Sprintf("Updating key result #%s", id), "id", id)
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		errMsg := fmt.Sprintf("failed to update key result: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update key result"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 
-	r.log.Info(ctx, "key result updated successfully")
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Key result #%s updated successfully", id), "id", id)
 	span.AddEvent("key result updated", trace.WithAttributes(
 		attribute.String("key_result.id", id.String()),
 	))
