@@ -56,6 +56,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			o.team_id,
 			o.workspace_id,
 			o.start_date,
+			o.status_id,
+			o.priority,
 			o.end_date,
 			o.is_private,
 			o.created_at,

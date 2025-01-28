@@ -12,13 +12,15 @@ type dbObjective struct {
 	Name             string     `db:"name"`
 	Description      *string    `db:"description"`
 	LeadUser         *uuid.UUID `db:"lead_user_id"`
-	Team             uuid.UUID  `db:"team_id"`
+	Team             *uuid.UUID `db:"team_id"`
 	Workspace        uuid.UUID  `db:"workspace_id"`
 	StartDate        *time.Time `db:"start_date"`
 	EndDate          *time.Time `db:"end_date"`
 	IsPrivate        bool       `db:"is_private"`
 	CreatedAt        time.Time  `db:"created_at"`
 	UpdatedAt        time.Time  `db:"updated_at"`
+	Status           uuid.UUID  `db:"status_id"`
+	Priority         *string    `db:"priority"`
 	TotalStories     int        `db:"total_stories"`
 	CancelledStories int        `db:"cancelled_stories"`
 	CompletedStories int        `db:"completed_stories"`
@@ -40,6 +42,8 @@ func toCoreObjective(p dbObjective) objectives.CoreObjective {
 		IsPrivate:        p.IsPrivate,
 		CreatedAt:        p.CreatedAt,
 		UpdatedAt:        p.UpdatedAt,
+		Status:           p.Status,
+		Priority:         p.Priority,
 		TotalStories:     p.TotalStories,
 		CancelledStories: p.CancelledStories,
 		CompletedStories: p.CompletedStories,

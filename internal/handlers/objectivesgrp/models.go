@@ -13,13 +13,15 @@ type AppObjectiveList struct {
 	Name        string         `json:"name"`
 	Description *string        `json:"description"`
 	LeadUser    *uuid.UUID     `json:"leadUser"`
-	Team        uuid.UUID      `json:"teamId"`
+	Team        *uuid.UUID     `json:"teamId"`
 	Workspace   uuid.UUID      `json:"workspaceId"`
 	StartDate   *time.Time     `json:"startDate"`
 	EndDate     *time.Time     `json:"endDate"`
 	IsPrivate   bool           `json:"isPrivate"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
+	Status      uuid.UUID      `json:"statusId"`
+	Priority    *string        `json:"priority"`
 	Stats       ObjectiveStats `json:"stats"`
 }
 
@@ -52,6 +54,8 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 			IsPrivate:   objective.IsPrivate,
 			CreatedAt:   objective.CreatedAt,
 			UpdatedAt:   objective.UpdatedAt,
+			Status:      objective.Status,
+			Priority:    objective.Priority,
 			Stats: ObjectiveStats{
 				Total:     objective.TotalStories,
 				Cancelled: objective.CancelledStories,
@@ -63,4 +67,32 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 		}
 	}
 	return appObjectives
+}
+
+// AppNewObjective represents the data needed to create a new objective
+type AppNewObjective struct {
+	Name        string     `json:"name"`
+	Description *string    `json:"description"`
+	LeadUser    *uuid.UUID `json:"leadUserId"`
+	Team        *uuid.UUID `json:"teamId"`
+	StartDate   time.Time  `json:"startDate"`
+	EndDate     time.Time  `json:"endDate"`
+	IsPrivate   bool       `json:"isPrivate"`
+	Status      uuid.UUID  `json:"statusId"`
+	Priority    *string    `json:"priority"`
+}
+
+// toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
+func toCoreNewObjective(ano AppNewObjective) objectives.CoreNewObjective {
+	return objectives.CoreNewObjective{
+		Name:        ano.Name,
+		Description: ano.Description,
+		LeadUser:    ano.LeadUser,
+		Team:        ano.Team,
+		StartDate:   ano.StartDate,
+		EndDate:     ano.EndDate,
+		IsPrivate:   ano.IsPrivate,
+		Status:      ano.Status,
+		Priority:    ano.Priority,
+	}
 }
