@@ -3,6 +3,7 @@ package objectivesgrp
 import (
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/google/uuid"
 )
@@ -134,4 +135,37 @@ type AppUpdateObjective struct {
 	IsPrivate   *bool      `json:"isPrivate" db:"is_private"`
 	Status      *uuid.UUID `json:"statusId" db:"status_id"`
 	Priority    *string    `json:"priority" db:"priority"`
+}
+
+// AppKeyResult represents a key result in the application
+type AppKeyResult struct {
+	ID              uuid.UUID `json:"id"`
+	ObjectiveID     uuid.UUID `json:"objectiveId"`
+	Name            string    `json:"name"`
+	MeasurementType string    `json:"measurementType"`
+	StartValue      *float64  `json:"startValue"`
+	TargetValue     *float64  `json:"targetValue"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
+	return AppKeyResult{
+		ID:              kr.ID,
+		ObjectiveID:     kr.ObjectiveID,
+		Name:            kr.Name,
+		MeasurementType: kr.MeasurementType,
+		StartValue:      kr.StartValue,
+		TargetValue:     kr.TargetValue,
+		CreatedAt:       kr.CreatedAt,
+		UpdatedAt:       kr.UpdatedAt,
+	}
+}
+
+func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
+	result := make([]AppKeyResult, len(krs))
+	for i, kr := range krs {
+		result[i] = toAppKeyResult(kr)
+	}
+	return result
 }

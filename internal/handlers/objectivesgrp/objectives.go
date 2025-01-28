@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 
 type Handlers struct {
 	objectives *objectives.Service
+	keyResults *keyresults.Service
 	// audit  *audit.Service
 }
 
@@ -21,9 +23,10 @@ var (
 )
 
 // New constructs a new objectives handlers instance.
-func New(objectives *objectives.Service) *Handlers {
+func New(objectives *objectives.Service, keyResults *keyresults.Service) *Handlers {
 	return &Handlers{
 		objectives: objectives,
+		keyResults: keyResults,
 	}
 }
 
@@ -169,5 +172,32 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
+// GetKeyResults returns all key results for an objective.
+func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	objectiveID := web.Params(r, "id")
+	workspaceID := web.Params(r, "workspaceId")
+
+	objID, err := uuid.Parse(objectiveID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
+		return nil
+	}
+
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	krs, err := h.keyResults.List(ctx, objID, wsID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	web.Respond(ctx, w, toAppKeyResults(krs), http.StatusOK)
 	return nil
 }
