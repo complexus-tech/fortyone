@@ -1,0 +1,134 @@
+package keyresults
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/complexus-tech/projects-api/internal/core/keyresults/keyresultsrepo"
+	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+)
+
+// Set of error variables for key result operations
+var (
+	ErrNotFound = errors.New("key result not found")
+)
+
+// Service manages the key result operations
+type Service struct {
+	repo keyresultsrepo.Repository
+	log  *logger.Logger
+}
+
+// New creates a new key result service
+func New(log *logger.Logger, repo keyresultsrepo.Repository) *Service {
+	return &Service{
+		repo: repo,
+		log:  log,
+	}
+}
+
+// Create creates a new key result in the system
+func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResult, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Create")
+	defer span.End()
+
+	now := time.Now()
+	kr := keyresultsrepo.CoreKeyResult{
+		ID:              uuid.New(),
+		ObjectiveID:     nkr.ObjectiveID,
+		Name:            nkr.Name,
+		MeasurementType: nkr.MeasurementType,
+		StartValue:      nkr.StartValue,
+		TargetValue:     nkr.TargetValue,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+
+	if err := s.repo.Create(ctx, &kr); err != nil {
+		return CoreKeyResult{}, err
+	}
+
+	span.AddEvent("key result created", trace.WithAttributes(
+		attribute.String("key_result.id", kr.ID.String()),
+		attribute.String("key_result.name", kr.Name),
+	))
+
+	return CoreKeyResult(kr), nil
+}
+
+// Update updates a key result in the system
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Update")
+	defer span.End()
+
+	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
+		if errors.Is(err, keyresultsrepo.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	span.AddEvent("key result updated", trace.WithAttributes(
+		attribute.String("key_result.id", id.String()),
+	))
+
+	return nil
+}
+
+// Delete removes a key result from the system
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Delete")
+	defer span.End()
+
+	if err := s.repo.Delete(ctx, id, workspaceId); err != nil {
+		if errors.Is(err, keyresultsrepo.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	span.AddEvent("key result deleted", trace.WithAttributes(
+		attribute.String("key_result.id", id.String()),
+	))
+
+	return nil
+}
+
+// Get retrieves a key result from the system
+func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Get")
+	defer span.End()
+
+	kr, err := s.repo.Get(ctx, id, workspaceId)
+	if err != nil {
+		if errors.Is(err, keyresultsrepo.ErrNotFound) {
+			return CoreKeyResult{}, ErrNotFound
+		}
+		return CoreKeyResult{}, err
+	}
+
+	return CoreKeyResult(kr), nil
+}
+
+// List retrieves all key results for an objective
+func (s *Service) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]CoreKeyResult, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.List")
+	defer span.End()
+
+	krs, err := s.repo.List(ctx, objectiveId, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]CoreKeyResult, len(krs))
+	for i, kr := range krs {
+		results[i] = CoreKeyResult(kr)
+	}
+
+	return results, nil
+}
