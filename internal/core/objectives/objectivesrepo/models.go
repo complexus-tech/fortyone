@@ -3,6 +3,7 @@ package objectivesrepo
 import (
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/google/uuid"
 )
@@ -17,10 +18,10 @@ type dbObjective struct {
 	StartDate        *time.Time `db:"start_date"`
 	EndDate          *time.Time `db:"end_date"`
 	IsPrivate        bool       `db:"is_private"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
 	Status           uuid.UUID  `db:"status_id"`
 	Priority         *string    `db:"priority"`
+	CreatedAt        time.Time  `db:"created_at"`
+	UpdatedAt        time.Time  `db:"updated_at"`
 	TotalStories     int        `db:"total_stories"`
 	CancelledStories int        `db:"cancelled_stories"`
 	CompletedStories int        `db:"completed_stories"`
@@ -29,27 +30,53 @@ type dbObjective struct {
 	BacklogStories   int        `db:"backlog_stories"`
 }
 
-func toCoreObjective(p dbObjective) objectives.CoreObjective {
+type dbKeyResult struct {
+	ID              uuid.UUID `db:"id"`
+	ObjectiveID     uuid.UUID `db:"objective_id"`
+	Name            string    `db:"name"`
+	MeasurementType string    `db:"measurement_type"`
+	StartValue      *float64  `db:"start_value"`
+	TargetValue     *float64  `db:"target_value"`
+	CreatedAt       time.Time `db:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at"`
+}
+
+func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObjective {
+	return dbObjective{
+		Name:        co.Name,
+		Description: co.Description,
+		LeadUser:    co.LeadUser,
+		Team:        co.Team,
+		Workspace:   workspaceID,
+		StartDate:   &co.StartDate,
+		EndDate:     &co.EndDate,
+		IsPrivate:   co.IsPrivate,
+		Status:      co.Status,
+		Priority:    co.Priority,
+	}
+}
+
+func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 	return objectives.CoreObjective{
-		ID:               p.ID,
-		Name:             p.Name,
-		Description:      p.Description,
-		LeadUser:         p.LeadUser,
-		Team:             p.Team,
-		Workspace:        p.Workspace,
-		StartDate:        p.StartDate,
-		EndDate:          p.EndDate,
-		IsPrivate:        p.IsPrivate,
-		CreatedAt:        p.CreatedAt,
-		UpdatedAt:        p.UpdatedAt,
-		Status:           p.Status,
-		Priority:         p.Priority,
-		TotalStories:     p.TotalStories,
-		CancelledStories: p.CancelledStories,
-		CompletedStories: p.CompletedStories,
-		StartedStories:   p.StartedStories,
-		UnstartedStories: p.UnstartedStories,
-		BacklogStories:   p.BacklogStories,
+		ID:               dbo.ID,
+		Name:             dbo.Name,
+		Description:      dbo.Description,
+		LeadUser:         dbo.LeadUser,
+		Team:             dbo.Team,
+		Workspace:        dbo.Workspace,
+		StartDate:        dbo.StartDate,
+		EndDate:          dbo.EndDate,
+		IsPrivate:        dbo.IsPrivate,
+		CreatedAt:        dbo.CreatedAt,
+		UpdatedAt:        dbo.UpdatedAt,
+		Status:           dbo.Status,
+		Priority:         dbo.Priority,
+		TotalStories:     dbo.TotalStories,
+		CancelledStories: dbo.CancelledStories,
+		CompletedStories: dbo.CompletedStories,
+		StartedStories:   dbo.StartedStories,
+		UnstartedStories: dbo.UnstartedStories,
+		BacklogStories:   dbo.BacklogStories,
 	}
 }
 
@@ -59,4 +86,27 @@ func toCoreObjectives(do []dbObjective) []objectives.CoreObjective {
 		objectives[i] = toCoreObjective(o)
 	}
 	return objectives
+}
+
+func toDBKeyResult(kr keyresults.CoreNewKeyResult) dbKeyResult {
+	return dbKeyResult{
+		ObjectiveID:     kr.ObjectiveID,
+		Name:            kr.Name,
+		MeasurementType: kr.MeasurementType,
+		StartValue:      kr.StartValue,
+		TargetValue:     kr.TargetValue,
+	}
+}
+
+func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
+	return keyresults.CoreKeyResult{
+		ID:              dbkr.ID,
+		ObjectiveID:     dbkr.ObjectiveID,
+		Name:            dbkr.Name,
+		MeasurementType: dbkr.MeasurementType,
+		StartValue:      dbkr.StartValue,
+		TargetValue:     dbkr.TargetValue,
+		CreatedAt:       dbkr.CreatedAt,
+		UpdatedAt:       dbkr.UpdatedAt,
+	}
 }

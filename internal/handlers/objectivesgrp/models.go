@@ -72,15 +72,23 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 
 // AppNewObjective represents the data needed to create a new objective
 type AppNewObjective struct {
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	LeadUser    *uuid.UUID `json:"leadUserId"`
-	Team        *uuid.UUID `json:"teamId"`
-	StartDate   time.Time  `json:"startDate"`
-	EndDate     time.Time  `json:"endDate"`
-	IsPrivate   bool       `json:"isPrivate"`
-	Status      uuid.UUID  `json:"statusId"`
-	Priority    *string    `json:"priority"`
+	Name        string            `json:"name" validate:"required"`
+	Description *string           `json:"description"`
+	LeadUser    *uuid.UUID        `json:"leadUserId"`
+	Team        *uuid.UUID        `json:"teamId"`
+	StartDate   time.Time         `json:"startDate"`
+	EndDate     time.Time         `json:"endDate"`
+	IsPrivate   bool              `json:"isPrivate"`
+	Status      uuid.UUID         `json:"statusId"`
+	Priority    *string           `json:"priority"`
+	KeyResults  []AppNewKeyResult `json:"keyResults,omitempty"`
+}
+
+type AppNewKeyResult struct {
+	Name            string   `json:"name" validate:"required"`
+	MeasurementType string   `json:"measurementType" validate:"required,oneof=percentage number boolean"`
+	StartValue      *float64 `json:"startValue"`
+	TargetValue     *float64 `json:"targetValue"`
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective

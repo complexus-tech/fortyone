@@ -201,3 +201,46 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 	web.Respond(ctx, w, toAppKeyResults(krs), http.StatusOK)
 	return nil
 }
+
+// Create creates a new objective with optional key results
+func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceID := web.Params(r, "workspaceId")
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var newObj AppNewObjective
+	if err := web.Decode(r, &newObj); err != nil {
+		return err
+	}
+
+	// Convert key results if they exist
+	var keyResults []keyresults.CoreNewKeyResult
+	for _, kr := range newObj.KeyResults {
+		keyResults = append(keyResults, keyresults.CoreNewKeyResult{
+			Name:            kr.Name,
+			MeasurementType: kr.MeasurementType,
+			StartValue:      kr.StartValue,
+			TargetValue:     kr.TargetValue,
+		})
+	}
+
+	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj), wsID, keyResults)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	response := struct {
+		Objective  AppObjectiveList `json:"objective"`
+		KeyResults []AppKeyResult   `json:"keyResults,omitempty"`
+	}{
+		Objective:  toAppObjective(objective),
+		KeyResults: toAppKeyResults(createdKRs),
+	}
+
+	web.Respond(ctx, w, response, http.StatusCreated)
+	return nil
+}

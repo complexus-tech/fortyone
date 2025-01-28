@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -22,6 +23,7 @@ type Repository interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreObjective, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
+	Create(ctx context.Context, objective CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (CoreObjective, []keyresults.CoreKeyResult, error)
 }
 
 // Service provides story-related operations.
@@ -114,4 +116,24 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	))
 
 	return nil
+}
+
+// Create creates a new objective with optional key results
+func (s *Service) Create(ctx context.Context, newObjective CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (CoreObjective, []keyresults.CoreKeyResult, error) {
+	s.log.Info(ctx, "business.core.objectives.Create")
+	ctx, span := web.AddSpan(ctx, "business.core.objectives.Create")
+	defer span.End()
+
+	createdObj, createdKRs, err := s.repo.Create(ctx, newObjective, workspaceID, keyResults)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjective{}, nil, err
+	}
+
+	span.AddEvent("objective created.", trace.WithAttributes(
+		attribute.String("objective.id", createdObj.ID.String()),
+		attribute.Int("key_results.count", len(createdKRs)),
+	))
+
+	return createdObj, createdKRs, nil
 }

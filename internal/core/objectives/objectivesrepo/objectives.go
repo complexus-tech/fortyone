@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -31,6 +32,80 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 		db:  db,
 		log: log,
 	}
+}
+
+func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (objectives.CoreObjective, []keyresults.CoreKeyResult, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.objectives.Create")
+	defer span.End()
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return objectives.CoreObjective{}, nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Insert objective
+	const objQuery = `
+		INSERT INTO objectives (
+			name, description, lead_user_id, team_id,
+			workspace_id, start_date, end_date, is_private,
+			status_id, priority
+		) VALUES (
+			:name, :description, :lead_user_id, :team_id,
+			:workspace_id, :start_date, :end_date, :is_private,
+			:status_id, :priority
+		) RETURNING *;
+	`
+
+	var createdObj dbObjective
+	stmt, err := tx.PrepareNamedContext(ctx, objQuery)
+	if err != nil {
+		return objectives.CoreObjective{}, nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &createdObj, toDBObjective(objective, workspaceID)); err != nil {
+		return objectives.CoreObjective{}, nil, err
+	}
+
+	var createdKRs []keyresults.CoreKeyResult
+	if len(keyResults) > 0 {
+		// Bulk insert key results
+		const krQuery = `
+			INSERT INTO key_results (
+				objective_id, name, measurement_type,
+				start_value, target_value
+			) VALUES (
+				:objective_id, :name, :measurement_type,
+				:start_value, :target_value
+			) RETURNING *;
+		`
+
+		krstmt, err := tx.PrepareNamedContext(ctx, krQuery)
+		if err != nil {
+			return objectives.CoreObjective{}, nil, err
+		}
+		defer krstmt.Close()
+
+		for _, kr := range keyResults {
+			kr.ObjectiveID = createdObj.ID
+			var dbKR dbKeyResult
+			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr)); err != nil {
+				return objectives.CoreObjective{}, nil, err
+			}
+			createdKRs = append(createdKRs, toCoreKeyResult(dbKR))
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return objectives.CoreObjective{}, nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return toCoreObjective(createdObj), createdKRs, nil
 }
 
 func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]objectives.CoreObjective, error) {
