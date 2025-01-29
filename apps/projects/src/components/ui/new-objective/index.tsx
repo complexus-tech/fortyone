@@ -39,12 +39,15 @@ import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import type { NewKeyResult, NewObjective } from "@/modules/objectives/types";
+import { useCreateObjectiveMutation } from "@/modules/objectives/hooks";
 import { TeamColor } from "../team-color";
 import { KeyResultsList } from "./components/key-results-list";
 import { KeyResultEditor } from "./components/key-result-editor";
-import type { KeyResult, NewObjective, ObjectiveStatus } from "./types";
 
 type KeyResultFormMode = "add" | "edit" | null;
+
+type KeyResultUpdate = Partial<NewKeyResult>;
 
 export const NewObjectiveDialog = ({
   isOpen,
@@ -67,21 +70,23 @@ export const NewObjectiveDialog = ({
   const initialForm: NewObjective = {
     name: "",
     description: "",
-    descriptionHTML: "",
+    leadUser: session.data?.user?.id || undefined,
     teamId: initialTeamId || activeTeam.id,
-    status: "Not Started",
     startDate: null,
     endDate: null,
-    leadUserId: session.data?.user?.id || null,
+    statusId: "4cee9b45-e49a-419f-8964-1ee06b5ee797",
+    priority: "No Priority",
     keyResults: [],
   };
 
   const [objectiveForm, setObjectiveForm] = useState<NewObjective>(initialForm);
   const [loading, setLoading] = useState(false);
   const [keyResultMode, setKeyResultMode] = useState<KeyResultFormMode>(null);
-  const [editingKeyResult, setEditingKeyResult] = useState<KeyResult | null>(
+  const [editingKeyResult, setEditingKeyResult] = useState<NewKeyResult | null>(
     null,
   );
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const createMutation = useCreateObjectiveMutation();
 
   const titleEditor = useEditor({
     extensions: [
@@ -116,12 +121,16 @@ export const NewObjectiveDialog = ({
       });
       return;
     }
+
     setLoading(true);
     nProgress.start();
 
     try {
-      // TODO: Implement objective creation mutation
-      await Promise.resolve(); // Placeholder for actual API call
+      await createMutation.mutateAsync({
+        ...objectiveForm,
+        name: titleEditor.getText(),
+        description: editor.getText(),
+      });
       setIsOpen(false);
       setIsExpanded(false);
       titleEditor.commands.setContent("");
@@ -145,7 +154,7 @@ export const NewObjectiveDialog = ({
     }
   }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
 
-  const lead = members.find((member) => member.id === objectiveForm.leadUserId);
+  const lead = members.find((member) => member.id === objectiveForm.leadUser);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -333,45 +342,15 @@ export const NewObjectiveDialog = ({
                 </Button>
               </AssigneesMenu.Trigger>
               <AssigneesMenu.Items
-                assigneeId={objectiveForm.leadUserId}
-                onAssigneeSelected={(leadUserId) => {
+                assigneeId={objectiveForm.leadUser || null}
+                onAssigneeSelected={(leadUserId: string | null) => {
                   setObjectiveForm((prev) => ({
                     ...prev,
-                    leadUserId,
+                    leadUser: leadUserId || undefined,
                   }));
                 }}
               />
             </AssigneesMenu>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  color="tertiary"
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {objectiveForm.status}
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-52">
-                {["Not Started", "In Progress", "Completed", "Cancelled"].map(
-                  (status) => (
-                    <Menu.Item
-                      active={status === objectiveForm.status}
-                      key={status}
-                      onClick={() => {
-                        setObjectiveForm((prev) => ({
-                          ...prev,
-                          status: status as ObjectiveStatus,
-                        }));
-                      }}
-                    >
-                      {status}
-                    </Menu.Item>
-                  ),
-                )}
-              </Menu.Items>
-            </Menu>
           </Flex>
           <Divider className="my-4" />
           <Box>
@@ -379,20 +358,20 @@ export const NewObjectiveDialog = ({
             {keyResultMode === null ? (
               <>
                 <KeyResultsList
-                  keyResults={objectiveForm.keyResults}
-                  onEdit={(id) => {
-                    const kr = objectiveForm.keyResults.find(
-                      (k) => k.id === id,
-                    );
+                  keyResults={objectiveForm.keyResults || []}
+                  onEdit={(index) => {
+                    const kr = objectiveForm.keyResults?.[index];
                     if (kr) {
                       setEditingKeyResult(kr);
+                      setEditingIndex(index);
                       setKeyResultMode("edit");
                     }
                   }}
-                  onRemove={(id) => {
+                  onRemove={(index) => {
                     setObjectiveForm((prev) => ({
                       ...prev,
-                      keyResults: prev.keyResults.filter((k) => k.id !== id),
+                      keyResults:
+                        prev.keyResults?.filter((_, i) => i !== index) || [],
                     }));
                   }}
                 />
@@ -401,14 +380,14 @@ export const NewObjectiveDialog = ({
                   color="tertiary"
                   leftIcon={<PlusIcon />}
                   onClick={() => {
-                    const newKr = {
-                      id: crypto.randomUUID(),
+                    const newKr: NewKeyResult = {
                       name: "",
-                      measureType: "Number" as const,
+                      measurementType: "number",
                       startValue: 0,
                       targetValue: 0,
                     };
                     setEditingKeyResult(newKr);
+                    setEditingIndex(null);
                     setKeyResultMode("add");
                   }}
                   size="sm"
@@ -419,33 +398,42 @@ export const NewObjectiveDialog = ({
               </>
             ) : (
               <KeyResultEditor
-                keyResult={editingKeyResult!}
+                keyResult={editingKeyResult}
                 onCancel={() => {
                   setKeyResultMode(null);
                   setEditingKeyResult(null);
+                  setEditingIndex(null);
                 }}
                 onSave={() => {
                   if (keyResultMode === "add") {
                     setObjectiveForm((prev) => ({
                       ...prev,
-                      keyResults: [...prev.keyResults, editingKeyResult!],
+                      keyResults: [
+                        ...(prev.keyResults || []),
+                        editingKeyResult!,
+                      ],
                     }));
-                  } else {
+                  } else if (editingIndex !== null) {
                     setObjectiveForm((prev) => ({
                       ...prev,
-                      keyResults: prev.keyResults.map((kr) =>
-                        kr.id === editingKeyResult!.id ? editingKeyResult! : kr,
-                      ),
+                      keyResults:
+                        prev.keyResults?.map((kr, i) =>
+                          i === editingIndex ? editingKeyResult! : kr,
+                        ) || [],
                     }));
                   }
                   setKeyResultMode(null);
                   setEditingKeyResult(null);
+                  setEditingIndex(null);
                 }}
-                onUpdate={(id, updates) => {
-                  setEditingKeyResult((prev) => ({
-                    ...prev!,
-                    ...updates,
-                  }));
+                onUpdate={(_index: number, updates: KeyResultUpdate) => {
+                  setEditingKeyResult((prev) => {
+                    if (!prev) return null;
+                    return {
+                      ...prev,
+                      ...updates,
+                    };
+                  });
                 }}
               />
             )}

@@ -1,12 +1,12 @@
 import { Button, Flex, Text } from "ui";
 import { DeleteIcon, EditIcon, OKRIcon } from "icons";
-import type { KeyResult } from "../types";
+import type { NewKeyResult } from "@/modules/objectives/types";
 import { RowWrapper } from "../../row-wrapper";
 
 type KeyResultsListProps = {
-  keyResults: KeyResult[];
-  onEdit: (id: string) => void;
-  onRemove: (id: string) => void;
+  keyResults: NewKeyResult[];
+  onEdit: (index: number) => void;
+  onRemove: (index: number) => void;
 };
 
 export const KeyResultsList = ({
@@ -16,8 +16,8 @@ export const KeyResultsList = ({
 }: KeyResultsListProps) => {
   return (
     <>
-      {keyResults.map((kr) => (
-        <RowWrapper className="px-0 py-1.5" key={kr.id}>
+      {keyResults.map((kr, index) => (
+        <RowWrapper className="px-0 py-1.5" key={index}>
           <Flex align="center" gap={2}>
             <OKRIcon />
             <Text>{kr.name}</Text>
@@ -27,7 +27,7 @@ export const KeyResultsList = ({
               asIcon
               color="tertiary"
               onClick={() => {
-                onEdit(kr.id);
+                onEdit(index);
               }}
               size="sm"
               variant="naked"
@@ -38,7 +38,7 @@ export const KeyResultsList = ({
               asIcon
               color="tertiary"
               onClick={() => {
-                onRemove(kr.id);
+                onRemove(index);
               }}
               size="sm"
               variant="naked"

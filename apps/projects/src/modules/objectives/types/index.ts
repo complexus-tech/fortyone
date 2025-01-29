@@ -1,3 +1,5 @@
+import type { StoryPriority } from "@/modules/stories/types";
+
 export type Objective = {
   id: string;
   name: string;
@@ -20,10 +22,12 @@ export type Objective = {
   };
 };
 
+export type MeasureType = "percentage" | "number" | "boolean";
+
 export type KeyResult = {
   id: string;
   name: string;
-  measurementType: "number" | "percentage" | "boolean";
+  measurementType: MeasureType;
   objectiveId: string;
   startValue: number;
   targetValue: number;
@@ -31,15 +35,11 @@ export type KeyResult = {
   updatedAt: string;
 };
 
-export type NewKeyResults = {
+export type NewKeyResult = {
   name: string;
-  measurementType: "percentage" | "number" | "boolean";
+  measurementType: MeasureType;
   startValue: number;
   targetValue: number;
-}[];
-
-export type NewKeyResult = NewKeyResults[number] & {
-  objectiveId: string;
 };
 
 export type NewObjective = {
@@ -47,12 +47,12 @@ export type NewObjective = {
   description?: string;
   leadUser?: string;
   teamId: string;
-  startDate?: string;
-  endDate?: string;
-  isPrivate: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+  isPrivate?: boolean;
   statusId: string;
-  priority?: string;
-  keyResults?: NewKeyResults;
+  priority?: StoryPriority;
+  keyResults?: NewKeyResult[];
 };
 
 export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">>;

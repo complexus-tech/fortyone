@@ -6,11 +6,11 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Box, Button, Flex, Input, Select, Text, TextEditor } from "ui";
 import { CloseIcon } from "icons";
 import { toast } from "sonner";
-import type { KeyResult, MeasureType } from "../types";
+import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
 
 type KeyResultEditorProps = {
-  keyResult: KeyResult;
-  onUpdate: (id: string, updates: Partial<KeyResult>) => void;
+  keyResult: NewKeyResult | null;
+  onUpdate: (index: number, updates: Partial<NewKeyResult>) => void;
   onCancel: () => void;
   onSave: () => void;
 };
@@ -30,24 +30,21 @@ export const KeyResultEditor = ({
         placeholder: "Example: Increase user adoption from 100 to 150",
       }),
     ],
-    content: keyResult.name,
+    content: keyResult?.name || "",
     editable: true,
     onUpdate: ({ editor }) => {
-      onUpdate(keyResult.id, { name: editor.getText() });
+      onUpdate(0, { name: editor.getText() });
     },
   });
 
   const handleSave = () => {
-    if (editor?.isEmpty) {
+    if (!keyResult || editor?.isEmpty) {
       toast.warning("Validation error", {
         description: "Please enter a name for the key result",
       });
       return;
     }
-    if (
-      keyResult.measureType !== "Boolean (Complete/Incomplete)" &&
-      !keyResult.targetValue
-    ) {
+    if (keyResult.measurementType !== "boolean" && !keyResult.targetValue) {
       toast.warning("Validation error", {
         description: "Please enter a target value for the key result",
       });
@@ -55,6 +52,8 @@ export const KeyResultEditor = ({
     }
     onSave();
   };
+
+  if (!keyResult) return null;
 
   return (
     <Box className="mb-6 rounded-lg border border-gray-200 px-4 pb-3.5 dark:border-dark-100">
@@ -75,23 +74,13 @@ export const KeyResultEditor = ({
         <Box className="mb-4">
           <Text className="mb-1.5 font-medium">Measure as</Text>
           <Select
-            defaultValue={keyResult.measureType}
+            defaultValue={keyResult.measurementType}
             onValueChange={(value) => {
-              const measureType = value as MeasureType;
-              onUpdate(keyResult.id, {
-                measureType,
-                startValue:
-                  measureType === "Boolean (Complete/Incomplete)"
-                    ? 0
-                    : undefined,
-                targetValue:
-                  measureType === "Boolean (Complete/Incomplete)"
-                    ? 1
-                    : undefined,
-                currentValue:
-                  measureType === "Boolean (Complete/Incomplete)"
-                    ? 0
-                    : undefined,
+              const measurementType = value.toLowerCase() as MeasureType;
+              onUpdate(0, {
+                measurementType,
+                startValue: measurementType === "boolean" ? 0 : 0,
+                targetValue: measurementType === "boolean" ? 1 : 0,
               });
             }}
           >
@@ -100,35 +89,33 @@ export const KeyResultEditor = ({
             </Select.Trigger>
             <Select.Content>
               <Select.Group>
-                {["Number", "Percent (%)", "Boolean (Complete/Incomplete)"].map(
-                  (option) => (
-                    <Select.Option key={option} value={option}>
-                      {option}
-                    </Select.Option>
-                  ),
-                )}
+                {["Number", "Percentage", "Boolean"].map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
               </Select.Group>
             </Select.Content>
           </Select>
         </Box>
 
-        {keyResult.measureType === "Boolean (Complete/Incomplete)" ? (
+        {keyResult.measurementType === "boolean" ? (
           <Flex className="mb-4" gap={2}>
             <Button
-              color={keyResult.currentValue === 0 ? "primary" : "tertiary"}
+              color={keyResult.startValue === 0 ? "primary" : "tertiary"}
               onClick={() => {
-                onUpdate(keyResult.id, { currentValue: 0 });
+                onUpdate(0, { startValue: 0 });
               }}
-              variant={keyResult.currentValue === 0 ? "solid" : "outline"}
+              variant={keyResult.startValue === 0 ? "solid" : "outline"}
             >
               Incomplete
             </Button>
             <Button
-              color={keyResult.currentValue === 1 ? "primary" : "tertiary"}
+              color={keyResult.startValue === 1 ? "primary" : "tertiary"}
               onClick={() => {
-                onUpdate(keyResult.id, { currentValue: 1 });
+                onUpdate(0, { startValue: 1 });
               }}
-              variant={keyResult.currentValue === 1 ? "solid" : "outline"}
+              variant={keyResult.startValue === 1 ? "solid" : "outline"}
             >
               Complete
             </Button>
@@ -140,23 +127,23 @@ export const KeyResultEditor = ({
               className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
               label="Starting Value"
               onChange={(e) => {
-                onUpdate(keyResult.id, { startValue: Number(e.target.value) });
+                onUpdate(0, { startValue: Number(e.target.value) });
               }}
               placeholder="0"
               required
               type="number"
-              value={keyResult.startValue?.toString() || ""}
+              value={keyResult.startValue.toString() || ""}
             />
             <Input
               className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
               label="Target Value"
               onChange={(e) => {
-                onUpdate(keyResult.id, { targetValue: Number(e.target.value) });
+                onUpdate(0, { targetValue: Number(e.target.value) });
               }}
               placeholder="0"
               required
               type="number"
-              value={keyResult.targetValue?.toString() || ""}
+              value={keyResult.targetValue.toString() || ""}
             />
           </Box>
         )}
