@@ -2,7 +2,7 @@ import { get } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import type { KeyResult } from "../types";
-import { objectiveTags } from "../contants";
+import { objectiveTags } from "../constants";
 
 export const getKeyResults = async (objectiveId: string) => {
   const keyResults = await get<ApiResponse<KeyResult[]>>(

@@ -3,7 +3,7 @@
 import { revalidateTag } from "next/cache";
 import { put } from "@/lib/http";
 import type { ObjectiveUpdate } from "../types";
-import { objectiveTags } from "../contants";
+import { objectiveTags } from "../constants";
 
 export const updateObjective = async (
   objectiveId: string,

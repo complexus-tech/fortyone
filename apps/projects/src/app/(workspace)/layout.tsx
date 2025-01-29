@@ -17,7 +17,7 @@ import {
   statusKeys,
   workspaceKeys,
 } from "@/constants/keys";
-import { objectiveKeys } from "@/modules/objectives/contants";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
