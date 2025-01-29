@@ -31,33 +31,28 @@ export type KeyResult = {
   updatedAt: string;
 };
 
-export type NewKeyResult = {
+export type NewKeyResults = {
   name: string;
   measurementType: "percentage" | "number" | "boolean";
   startValue: number;
   targetValue: number;
+}[];
+
+export type NewKeyResult = NewKeyResults[number] & {
+  objectiveId: string;
 };
 
 export type NewObjective = {
   name: string;
   description?: string;
-  leadUserId?: string;
+  leadUser?: string;
   teamId: string;
   startDate?: string;
   endDate?: string;
   isPrivate: boolean;
   statusId: string;
   priority?: string;
-  keyResults?: NewKeyResult[];
+  keyResults?: NewKeyResults;
 };
 
-export type ObjectiveUpdate = Partial<{
-  name: string;
-  description: string;
-  leadUser: string;
-  startDate: string;
-  endDate: string;
-  isPrivate: boolean;
-  statusId: string;
-  priority: string;
-}>;
+export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">>;
