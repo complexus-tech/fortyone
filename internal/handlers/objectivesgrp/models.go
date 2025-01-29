@@ -14,7 +14,7 @@ type AppObjectiveList struct {
 	Name        string         `json:"name"`
 	Description *string        `json:"description"`
 	LeadUser    *uuid.UUID     `json:"leadUser"`
-	Team        *uuid.UUID     `json:"teamId"`
+	Team        uuid.UUID      `json:"teamId"`
 	Workspace   uuid.UUID      `json:"workspaceId"`
 	StartDate   *time.Time     `json:"startDate"`
 	EndDate     *time.Time     `json:"endDate"`
@@ -74,7 +74,7 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 type AppNewObjective struct {
 	Name        string            `json:"name" validate:"required"`
 	Description *string           `json:"description"`
-	LeadUser    *uuid.UUID        `json:"leadUserId"`
+	LeadUser    *uuid.UUID        `json:"leadUser"`
 	Team        uuid.UUID         `json:"teamId" validate:"required"`
 	StartDate   time.Time         `json:"startDate"`
 	EndDate     time.Time         `json:"endDate"`
@@ -85,10 +85,10 @@ type AppNewObjective struct {
 }
 
 type AppNewKeyResult struct {
-	Name            string   `json:"name" validate:"required"`
-	MeasurementType string   `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      *float64 `json:"startValue"`
-	TargetValue     *float64 `json:"targetValue"`
+	Name            string  `json:"name" validate:"required"`
+	MeasurementType string  `json:"measurementType" validate:"required,oneof=percentage number boolean"`
+	StartValue      float64 `json:"startValue" validate:"required"`
+	TargetValue     float64 `json:"targetValue" validate:"required"`
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
@@ -151,8 +151,8 @@ type AppKeyResult struct {
 	ObjectiveID     uuid.UUID `json:"objectiveId"`
 	Name            string    `json:"name"`
 	MeasurementType string    `json:"measurementType"`
-	StartValue      *float64  `json:"startValue"`
-	TargetValue     *float64  `json:"targetValue"`
+	StartValue      float64   `json:"startValue"`
+	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }

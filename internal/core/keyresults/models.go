@@ -11,8 +11,8 @@ type CoreNewKeyResult struct {
 	ObjectiveID     uuid.UUID
 	Name            string
 	MeasurementType string
-	StartValue      *float64
-	TargetValue     *float64
+	StartValue      float64
+	TargetValue     float64
 }
 
 // CoreKeyResult represents a key result in the system
@@ -21,8 +21,8 @@ type CoreKeyResult struct {
 	ObjectiveID     uuid.UUID
 	Name            string
 	MeasurementType string
-	StartValue      *float64
-	TargetValue     *float64
+	StartValue      float64
+	TargetValue     float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

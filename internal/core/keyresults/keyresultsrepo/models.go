@@ -21,8 +21,8 @@ type dbKeyResult struct {
 	ObjectiveID     uuid.UUID `db:"objective_id"`
 	Name            string    `db:"name"`
 	MeasurementType string    `db:"measurement_type"`
-	StartValue      *float64  `db:"start_value"`
-	TargetValue     *float64  `db:"target_value"`
+	StartValue      float64   `db:"start_value"`
+	TargetValue     float64   `db:"target_value"`
 	CreatedAt       time.Time `db:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at"`
 }
@@ -33,8 +33,8 @@ type CoreKeyResult struct {
 	ObjectiveID     uuid.UUID
 	Name            string
 	MeasurementType string
-	StartValue      *float64
-	TargetValue     *float64
+	StartValue      float64
+	TargetValue     float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

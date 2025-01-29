@@ -17,8 +17,8 @@ type AppKeyResult struct {
 	ObjectiveID     uuid.UUID `json:"objectiveId"`
 	Name            string    `json:"name"`
 	MeasurementType string    `json:"measurementType"`
-	StartValue      *float64  `json:"startValue"`
-	TargetValue     *float64  `json:"targetValue"`
+	StartValue      float64   `json:"startValue"`
+	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -28,8 +28,8 @@ type AppNewKeyResult struct {
 	ObjectiveID     uuid.UUID `json:"objectiveId" validate:"required"`
 	Name            string    `json:"name" validate:"required"`
 	MeasurementType string    `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      *float64  `json:"startValue"`
-	TargetValue     *float64  `json:"targetValue"`
+	StartValue      float64   `json:"startValue"`
+	TargetValue     float64   `json:"targetValue"`
 }
 
 // AppUpdateKeyResult represents the data needed to update a key result
