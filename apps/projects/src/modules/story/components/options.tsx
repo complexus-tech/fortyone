@@ -40,7 +40,7 @@ import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
 import { AddLinks, OptionsHeader } from ".";
 
-const Option = ({
+export const Option = ({
   label,
   value,
   className,

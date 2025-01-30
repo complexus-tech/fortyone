@@ -12,7 +12,7 @@ const config: Omit<Config, "content"> = {
       current: "currentColor",
       primary: "#EA6060",
       secondary: "#002F61",
-      black: "#010101",
+      black: "#0a0a0a",
       white: "#ffffff",
       success: "#22c55e",
       warning: "#eab308",

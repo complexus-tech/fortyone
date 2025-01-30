@@ -21,6 +21,7 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { OnlineStatusMonitor } from "../online-monitor";
 
 export default async function RootLayout({
   children,
@@ -70,6 +71,7 @@ export default async function RootLayout({
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ApplicationLayout>{children}</ApplicationLayout>
       </HydrationBoundary>
+      <OnlineStatusMonitor />
     </SessionProvider>
   );
 }

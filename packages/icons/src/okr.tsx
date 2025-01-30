@@ -2,25 +2,24 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const OKRIcon = (props: Icon) => {
-  const { className, strokeWidth = 2, ...rest } = props;
+  const { className, strokeWidth = 2.5, ...rest } = props;
   return (
     <svg
       {...rest}
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
-      fill="currentColor"
+      fill="none"
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <circle cx="12" cy="12" r="11" stroke="currentColor" fill="none" />
-      <circle cx="12" cy="12" r="7" stroke="currentColor" fill="none" />
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-      <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" />
-      <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" />
-      <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" />
-      <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" />
+      <path
+        d="M4.94436 8.04069L10.8282 8.04069M2 18L7.49762 12.5862C7.70914 12.3779 8.03957 12.3544 8.27806 12.5308L12.5239 15.6712C12.774 15.8563 13.1229 15.8204 13.3306 15.5883L21.2849 6.70262M18.1084 6H20.9306C21.4785 6 21.9259 6.44077 21.9371 6.99179L22 10.0649"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 };

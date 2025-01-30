@@ -1,29 +1,33 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { Box, Tabs, Text } from "ui";
-import { ArrowUpDownIcon } from "icons";
+import { Box, Button, Flex, Menu, Tabs, Text } from "ui";
+import { ArrowDownIcon, ArrowUpDownIcon, CopyIcon, DeleteIcon } from "icons";
+import { toast } from "sonner";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
+import { useCopyToClipboard } from "@/hooks";
+import { Overview } from "./overview";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const session = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
+  const [_, copyText] = useCopyToClipboard();
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
 
-  const tabs = ["all", "active", "backlog"] as const;
+  const tabs = ["overview", "all", "active", "backlog"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
+    parseAsStringLiteral(tabs).withDefault("overview"),
   );
   type Tab = (typeof tabs)[number];
   // a sprint is active if it has a start date and end date and the current date is between the start and end date
@@ -92,22 +96,70 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     activeStatuses.includes(story.statusId),
   );
 
+  const [isCopied, setIsCopied] = useState(false);
+
   return (
     <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="all">All stories</Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>
-        <Text
-          className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
-          color="muted"
-        >
-          <ArrowUpDownIcon className="h-4 w-auto" />
-          Ordering by <b className="capitalize">{viewOptions.orderBy}</b>
-        </Text>
+        {tab !== "overview" ? (
+          <Text
+            className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
+            color="muted"
+          >
+            <ArrowUpDownIcon className="h-4 w-auto" />
+            Ordering by <b className="capitalize">{viewOptions.orderBy}</b>
+          </Text>
+        ) : (
+          <Flex gap={2}>
+            <Button
+              className="gap-1 px-3"
+              color="tertiary"
+              leftIcon={<CopyIcon className="h-4" />}
+              onClick={async () => {
+                await copyText(window.location.href);
+                setIsCopied(true);
+                toast.info("Success", {
+                  description: "Objective link copied to clipboard",
+                });
+                setTimeout(() => {
+                  setIsCopied(false);
+                }, 5000);
+              }}
+              size="sm"
+            >
+              {isCopied ? "Copied" : "Copy link"}
+            </Button>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  className="gap-1 pl-2.5"
+                  color="tertiary"
+                  rightIcon={<ArrowDownIcon className="h-4" />}
+                  size="sm"
+                >
+                  More
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end" className="w-36">
+                <Menu.Group>
+                  <Menu.Item>
+                    <DeleteIcon /> Delete...
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Flex>
+        )}
       </Box>
+      <Tabs.Panel value="overview">
+        <Overview />
+      </Tabs.Panel>
 
       <Tabs.Panel value="all">
         <StoriesBoard

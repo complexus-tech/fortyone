@@ -7,7 +7,6 @@ import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
   NewStoryButton,
-  SideDetailsSwitch,
   StoriesFilterButton,
   StoriesViewOptionsButton,
   TeamColor,
@@ -18,13 +17,9 @@ import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
 import { useObjectiveOptions } from "./provider";
 
 export const Header = ({
-  isExpanded,
-  setIsExpanded,
   layout,
   setLayout,
 }: {
-  isExpanded: boolean | null;
-  setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
@@ -78,12 +73,8 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <NewStoryButton objectiveId={objectiveId} teamId={teamId} />
         <span className="text-gray-200 dark:text-dark-100">|</span>
-        <SideDetailsSwitch
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-        />
+        <NewStoryButton objectiveId={objectiveId} teamId={teamId} />
       </Flex>
     </HeaderContainer>
   );
