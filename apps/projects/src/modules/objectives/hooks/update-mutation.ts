@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { objectiveKeys } from "../constants";
 import { updateObjective } from "../actions/update-objective";
-import type { ObjectiveUpdate } from "../types";
+import type { Objective, ObjectiveUpdate } from "../types";
 
 export type UpdateObjectiveVariables = {
   objectiveId: string;
@@ -27,10 +27,28 @@ export const useUpdateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: () => {
-      toast.success("Success", {
-        description: "Objective updated successfully",
-      });
+    onMutate: ({ objectiveId, data }) => {
+      const prevObjective = queryClient.getQueryData<Objective>(
+        objectiveKeys.objective(objectiveId),
+      );
+
+      if (prevObjective) {
+        queryClient.setQueryData<Objective>(
+          objectiveKeys.objective(objectiveId),
+          {
+            ...prevObjective,
+            name: data.name ?? prevObjective.name,
+            description: data.description ?? prevObjective.description,
+            leadUser: data.leadUser ?? prevObjective.leadUser,
+            startDate: data.startDate ?? prevObjective.startDate,
+            endDate: data.endDate ?? prevObjective.endDate,
+            statusId: data.statusId ?? prevObjective.statusId,
+            priority: data.priority ?? prevObjective.priority,
+          },
+        );
+      }
+
+      return { prevObjective };
     },
     onSettled: (_, __, { objectiveId }) => {
       queryClient.invalidateQueries({

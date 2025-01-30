@@ -8,25 +8,29 @@ import {
   Button,
   ProgressBar,
   Menu,
-  CircleProgressBar,
 } from "ui";
 import { MoreHorizontalIcon, OKRIcon } from "icons";
+import { useParams } from "next/navigation";
 import { BoardDividedPanel } from "@/components/ui";
+import { useObjective } from "../../hooks";
 import { Sidebar } from "../sidebar";
 import { Activity } from "./activity";
 import { Properties } from "./properties";
 
 export const Overview = () => {
+  const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { data: objective } = useObjective(objectiveId);
+
   return (
     <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
       <BoardDividedPanel.MainPanel>
         <Container className="h-[calc(100vh-7.7rem)] overflow-y-auto pt-6">
           <Box>
             <Text className="mb-4 text-3xl antialiased" fontWeight="semibold">
-              Overview
+              {objective?.name}
             </Text>
             <Text className="opacity-80" color="muted" fontSize="lg">
-              objective description
+              {objective?.description}
             </Text>
           </Box>
           <Properties />
@@ -41,7 +45,6 @@ export const Overview = () => {
                 Add Key Result
               </Button>
             </Flex>
-            <CircleProgressBar className="size-24" progress={56} />
             <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem]">
               <Flex align="center" gap={3}>
                 <OKRIcon strokeWidth={2.8} />

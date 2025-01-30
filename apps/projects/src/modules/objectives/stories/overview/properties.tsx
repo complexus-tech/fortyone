@@ -1,7 +1,8 @@
 import { CalendarIcon } from "icons";
 import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
+import { useParams } from "next/navigation";
 import {
   AssigneesMenu,
   PrioritiesMenu,
@@ -9,9 +10,28 @@ import {
   StatusesMenu,
   StoryStatusIcon,
 } from "@/components/ui";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { useMembers } from "@/lib/hooks/members";
+import type { ObjectiveUpdate } from "../../types";
+import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 
 export const Properties = () => {
-  const endDate = new Date().toISOString();
+  const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { data: objective } = useObjective(objectiveId);
+  const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
+  const updateMutation = useUpdateObjectiveMutation();
+  const leadUser = members.find((m) => m.id === objective?.leadUser);
+
+  const handleUpdate = (data: ObjectiveUpdate) => {
+    updateMutation.mutate({
+      objectiveId,
+      data,
+    });
+  };
+
+  const status = statuses.find((s) => s.id === objective?.statusId);
+
   return (
     <Flex align="center" className="mt-6" gap={2} wrap>
       <Text color="muted" fontWeight="semibold">
@@ -21,60 +41,75 @@ export const Properties = () => {
         <StatusesMenu.Trigger>
           <Button
             color="tertiary"
-            leftIcon={<StoryStatusIcon />}
+            leftIcon={<StoryStatusIcon statusId={objective?.statusId} />}
             size="sm"
             type="button"
             variant="naked"
           >
-            Backlog
+            {status?.name ?? "Backlog"}
           </Button>
         </StatusesMenu.Trigger>
         <StatusesMenu.Items
-          setStatusId={(_) => {}}
-          // statusId={statusId}
+          setStatusId={(statusId) => {
+            handleUpdate({ statusId });
+          }}
+          statusId={objective?.statusId}
         />
       </StatusesMenu>
       <PrioritiesMenu>
         <PrioritiesMenu.Trigger>
           <Button
             color="tertiary"
-            leftIcon={<PriorityIcon />}
+            leftIcon={<PriorityIcon priority={objective?.priority} />}
             size="sm"
             type="button"
             variant="naked"
           >
-            No Priority
+            {objective?.priority ?? "No Priority"}
           </Button>
         </PrioritiesMenu.Trigger>
-        <PrioritiesMenu.Items setPriority={(_) => {}} />
+        <PrioritiesMenu.Items
+          priority={objective?.priority}
+          setPriority={(priority) => {
+            handleUpdate({ priority });
+          }}
+        />
       </PrioritiesMenu>
       <AssigneesMenu>
         <AssigneesMenu.Trigger>
           <Button
             className={cn("font-medium", {
-              "text-gray-200 dark:text-gray-300": false,
+              "text-gray-200 dark:text-gray-300": !objective?.leadUser,
             })}
             color="tertiary"
             leftIcon={
               <Avatar
                 className={cn({
-                  "text-dark/80 dark:text-gray-200": false,
+                  "text-dark/80 dark:text-gray-200": !objective?.leadUser,
                 })}
+                name={leadUser?.username}
                 size="xs"
+                src={leadUser?.avatarUrl}
               />
             }
             size="sm"
             type="button"
             variant="naked"
           >
-            <Text as="span" color="muted">
-              Assign lead
-            </Text>
+            {leadUser ? (
+              leadUser.username
+            ) : (
+              <Text as="span" color="muted">
+                Assign lead
+              </Text>
+            )}
           </Button>
         </AssigneesMenu.Trigger>
         <AssigneesMenu.Items
-          // assigneeId={assigneeId}
-          onAssigneeSelected={(_) => {}}
+          assigneeId={objective?.leadUser}
+          onAssigneeSelected={(leadUser) => {
+            handleUpdate({ leadUser: leadUser ?? undefined });
+          }}
         />
       </AssigneesMenu>
       <DatePicker>
@@ -84,72 +119,75 @@ export const Properties = () => {
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem] w-auto", {
-                  "text-gray/80 dark:text-gray-300/80": false,
+                  "text-gray/80 dark:text-gray-300/80": !objective?.startDate,
                 })}
               />
             }
             size="sm"
             variant="naked"
           >
-            {/* {startDate ? (
-        format(new Date(), "MMM d, yyyy")
-      ) : (
-        <Text as="span" color="muted">Add start date</Text>
-      )} */}
-            <Text as="span" color="muted">
-              Start date
-            </Text>
+            {objective?.startDate ? (
+              format(new Date(objective.startDate), "MMM d, yyyy")
+            ) : (
+              <Text as="span" color="muted">
+                Start date
+              </Text>
+            )}
           </Button>
         </DatePicker.Trigger>
         <DatePicker.Calendar
-          onDayClick={(_) => {
-            // handleUpdate({
-            //   startDate: formatISO(day),
-            // });
+          onDayClick={(day) => {
+            handleUpdate({ startDate: day.toISOString() });
           }}
-          // selected={startDate ? new Date(startDate) : undefined}
+          selected={
+            objective?.startDate ? new Date(objective.startDate) : undefined
+          }
         />
       </DatePicker>
       <DatePicker>
         <DatePicker.Trigger>
           <Button
             className={cn({
-              "text-primary dark:text-primary": new Date(endDate) < new Date(),
+              "text-primary dark:text-primary":
+                objective?.endDate && new Date(objective.endDate) < new Date(),
               "text-warning dark:text-warning":
-                new Date(endDate) <= addDays(new Date(), 7) &&
-                new Date(endDate) >= new Date(),
-              "text-gray/80 dark:text-gray-300/80": !endDate,
+                objective?.endDate &&
+                new Date(objective.endDate) <= new Date() &&
+                new Date(objective.endDate) >= new Date(),
+              "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
             })}
             color="tertiary"
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem]", {
                   "text-primary dark:text-primary":
-                    new Date(endDate) < new Date(),
+                    objective?.endDate &&
+                    new Date(objective.endDate) < new Date(),
                   "text-warning dark:text-warning":
-                    new Date(endDate) <= addDays(new Date(), 7) &&
-                    new Date(endDate) >= new Date(),
-                  "text-gray/80 dark:text-gray-300/80": !endDate,
+                    objective?.endDate &&
+                    new Date(objective.endDate) <= new Date() &&
+                    new Date(objective.endDate) >= new Date(),
+                  "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
                 })}
               />
             }
             size="sm"
             variant="naked"
           >
-            {endDate ? (
-              format(new Date(endDate), "MMM d, yy")
+            {objective?.endDate ? (
+              format(new Date(objective.endDate), "MMM d, yy")
             ) : (
               <Text color="muted">Target date</Text>
             )}
           </Button>
         </DatePicker.Trigger>
         <DatePicker.Calendar
-          onDayClick={(_) => {
-            // handleUpdate({
-            //   endDate: formatISO(day),
-            // });
+          onDayClick={(day) => {
+            handleUpdate({ endDate: day.toISOString() });
           }}
-          selected={endDate ? new Date(endDate) : undefined}
+          selected={
+            objective?.endDate ? new Date(objective.endDate) : undefined
+          }
         />
       </DatePicker>
     </Flex>

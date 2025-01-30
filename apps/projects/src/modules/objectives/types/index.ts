@@ -12,6 +12,8 @@ export type Objective = {
   isPrivate: boolean;
   createdAt: string;
   updatedAt: string;
+  statusId: string;
+  priority?: StoryPriority;
   stats: {
     total: number;
     cancelled: number;
