@@ -14,7 +14,7 @@ import { useParams } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { CalendarIcon, TagsIcon } from "icons";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import {
   RowWrapper,
   StoryStatusIcon,
@@ -28,6 +28,11 @@ import { useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import type { StoryPriority } from "@/modules/stories/types";
+import {
+  useObjective,
+  useUpdateObjectiveMutation,
+} from "@/modules/objectives/hooks";
+import type { ObjectiveUpdate } from "@/modules/objectives/types";
 
 const Option = ({
   label,
@@ -59,14 +64,23 @@ const Option = ({
 
 export const Sidebar = ({ className }: { className?: string }) => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { data: objective } = useObjective(objectiveId);
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { data: labels = [] } = useLabels();
+  const updateMutation = useUpdateObjectiveMutation();
 
-  const endDate = new Date().toISOString();
+  const handleUpdate = (data: ObjectiveUpdate) => {
+    updateMutation.mutate({
+      objectiveId,
+      data,
+    });
+  };
 
   const totalStories = stories.length;
+  const status = statuses.find((s) => s.id === objective?.statusId);
+  const leadUser = members.find((m) => m.id === objective?.leadUser);
 
   const storiesByStatus = statuses.map((status) => {
     const count = stories.filter((s) => s.statusId === status.id).length;
@@ -126,16 +140,18 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <StatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<StoryStatusIcon />}
+                  leftIcon={<StoryStatusIcon statusId={objective?.statusId} />}
                   type="button"
                   variant="naked"
                 >
-                  Backlog
+                  {status?.name ?? "Backlog"}
                 </Button>
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
-                setStatusId={(_) => {}}
-                // statusId={statusId}
+                setStatusId={(statusId) => {
+                  handleUpdate({ statusId });
+                }}
+                statusId={objective?.statusId}
               />
             </StatusesMenu>
           }
@@ -147,14 +163,19 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<PriorityIcon />}
+                  leftIcon={<PriorityIcon priority={objective?.priority} />}
                   type="button"
                   variant="naked"
                 >
-                  No Priority
+                  {objective?.priority ?? "No Priority"}
                 </Button>
               </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items setPriority={(_) => {}} />
+              <PrioritiesMenu.Items
+                priority={objective?.priority}
+                setPriority={(priority) => {
+                  handleUpdate({ priority });
+                }}
+              />
             </PrioritiesMenu>
           }
         />
@@ -165,28 +186,36 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <AssigneesMenu.Trigger>
                 <Button
                   className={cn("font-medium", {
-                    "text-gray-200 dark:text-gray-300": false,
+                    "text-gray-200 dark:text-gray-300": !objective?.leadUser,
                   })}
                   color="tertiary"
                   leftIcon={
                     <Avatar
                       className={cn({
-                        "text-dark/80 dark:text-gray-200": false,
+                        "text-dark/80 dark:text-gray-200": !objective?.leadUser,
                       })}
+                      name={leadUser?.username}
                       size="xs"
+                      src={leadUser?.avatarUrl}
                     />
                   }
                   type="button"
                   variant="naked"
                 >
-                  <Text as="span" color="muted">
-                    Assign lead
-                  </Text>
+                  {leadUser ? (
+                    leadUser.username
+                  ) : (
+                    <Text as="span" color="muted">
+                      Assign lead
+                    </Text>
+                  )}
                 </Button>
               </AssigneesMenu.Trigger>
               <AssigneesMenu.Items
-                // assigneeId={assigneeId}
-                onAssigneeSelected={(_) => {}}
+                assigneeId={objective?.leadUser}
+                onAssigneeSelected={(leadUser) => {
+                  handleUpdate({ leadUser: leadUser ?? undefined });
+                }}
               />
             </AssigneesMenu>
           }
@@ -202,29 +231,31 @@ export const Sidebar = ({ className }: { className?: string }) => {
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem] w-auto", {
-                        "text-gray/80 dark:text-gray-300/80": false,
+                        "text-gray/80 dark:text-gray-300/80":
+                          !objective?.startDate,
                       })}
                     />
                   }
                   variant="naked"
                 >
-                  {/* {startDate ? (
-                    format(new Date(), "MMM d, yy")
+                  {objective?.startDate ? (
+                    format(new Date(objective.startDate), "MMM d, yy")
                   ) : (
-                    <Text as="span" color="muted">Add start date</Text>
-                  )} */}
-                  <Text as="span" color="muted">
-                    Start date
-                  </Text>
+                    <Text as="span" color="muted">
+                      Start date
+                    </Text>
+                  )}
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar
-                onDayClick={(_) => {
-                  // handleUpdate({
-                  //   startDate: formatISO(day),
-                  // });
+                onDayClick={(day: Date) => {
+                  handleUpdate({ startDate: day.toISOString() });
                 }}
-                // selected={startDate ? new Date(startDate) : undefined}
+                selected={
+                  objective?.startDate
+                    ? new Date(objective.startDate)
+                    : undefined
+                }
               />
             </DatePicker>
           }
@@ -237,41 +268,46 @@ export const Sidebar = ({ className }: { className?: string }) => {
                 <Button
                   className={cn({
                     "text-primary dark:text-primary":
-                      new Date(endDate) < new Date(),
+                      objective?.endDate &&
+                      new Date(objective.endDate) < new Date(),
                     "text-warning dark:text-warning":
-                      new Date(endDate) <= addDays(new Date(), 7) &&
-                      new Date(endDate) >= new Date(),
-                    "text-gray/80 dark:text-gray-300/80": !endDate,
+                      objective?.endDate &&
+                      new Date(objective.endDate) <= new Date() &&
+                      new Date(objective.endDate) >= new Date(),
+                    "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
                   })}
                   color="tertiary"
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem]", {
                         "text-primary dark:text-primary":
-                          new Date(endDate) < new Date(),
+                          objective?.endDate &&
+                          new Date(objective.endDate) < new Date(),
                         "text-warning dark:text-warning":
-                          new Date(endDate) <= addDays(new Date(), 7) &&
-                          new Date(endDate) >= new Date(),
-                        "text-gray/80 dark:text-gray-300/80": !endDate,
+                          objective?.endDate &&
+                          new Date(objective.endDate) <= new Date() &&
+                          new Date(objective.endDate) >= new Date(),
+                        "text-gray/80 dark:text-gray-300/80":
+                          !objective?.endDate,
                       })}
                     />
                   }
                   variant="naked"
                 >
-                  {endDate ? (
-                    format(new Date(endDate), "MMM d, yy")
+                  {objective?.endDate ? (
+                    format(new Date(objective.endDate), "MMM d, yy")
                   ) : (
                     <Text color="muted">Target date</Text>
                   )}
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar
-                onDayClick={(_) => {
-                  // handleUpdate({
-                  //   endDate: formatISO(day),
-                  // });
+                onDayClick={(day: Date) => {
+                  handleUpdate({ endDate: day.toISOString() });
                 }}
-                selected={endDate ? new Date(endDate) : undefined}
+                selected={
+                  objective?.endDate ? new Date(objective.endDate) : undefined
+                }
               />
             </DatePicker>
           }
@@ -362,7 +398,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
             </RowWrapper>
           ))}
         </Tabs.Panel>
-
         <Tabs.Panel value="priority">
           {storiesByPriority
             .filter((stat) => stat.count > 0)
