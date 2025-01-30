@@ -8,6 +8,7 @@ import {
   Button,
   ProgressBar,
   Menu,
+  CircleProgressBar,
 } from "ui";
 import { MoreHorizontalIcon, OKRIcon } from "icons";
 import { BoardDividedPanel } from "@/components/ui";
@@ -40,6 +41,7 @@ export const Overview = () => {
                 Add Key Result
               </Button>
             </Flex>
+            <CircleProgressBar className="size-24" progress={56} />
             <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem]">
               <Flex align="center" gap={3}>
                 <OKRIcon strokeWidth={2.8} />
