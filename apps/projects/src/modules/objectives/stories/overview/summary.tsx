@@ -14,12 +14,12 @@ export const Summary = () => {
           Progress
         </Text>
         <Text fontSize="lg">
-          50%{" "}
+          33%{" "}
           <Text as="span" color="muted" fontSize="md">
             completed
           </Text>
         </Text>
-        <ProgressBar className="mt-2" progress={50} />
+        <ProgressBar className="mt-2" progress={33} />
       </Wrapper>
       <Wrapper className="px-5">
         <Text
@@ -31,12 +31,12 @@ export const Summary = () => {
           Key Result Progress
         </Text>
         <Text fontSize="lg">
-          50%{" "}
+          65%{" "}
           <Text as="span" color="muted" fontSize="md">
             completed
           </Text>
         </Text>
-        <ProgressBar className="mt-2" progress={50} />
+        <ProgressBar className="mt-2" progress={65} />
       </Wrapper>
       <Wrapper className="px-5">
         <Text

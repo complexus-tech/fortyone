@@ -42,11 +42,44 @@ export const Overview = () => {
             </Flex>
             <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem]">
               <Flex align="center" gap={3}>
-                <OKRIcon strokeWidth={2.8} />{" "}
+                <OKRIcon strokeWidth={2.8} />
                 <Text>Deploy to production by end of Q3</Text>
               </Flex>
-              <Flex align="center" gap={3}>
-                <ProgressBar className="w-16" progress={75} />
+              <Flex
+                align="center"
+                className="divide-x divide-gray-100 dark:divide-dark-100/80"
+              >
+                <Flex
+                  align="center"
+                  className="px-6"
+                  direction="column"
+                  gap={1}
+                >
+                  <Text color="muted">Current</Text>
+                  <Text fontSize="sm">75%</Text>
+                </Flex>
+                <Flex
+                  align="center"
+                  className="px-6"
+                  direction="column"
+                  gap={1}
+                >
+                  <Text color="muted">Current</Text>
+                  <Text fontSize="sm">75%</Text>
+                </Flex>
+                <Flex
+                  align="center"
+                  className="px-6"
+                  direction="column"
+                  gap={1}
+                >
+                  <Text color="muted">Progress</Text>
+                  <Flex align="center" gap={2}>
+                    <ProgressBar className="w-16" progress={75} />
+                    <Text fontSize="sm">75%</Text>
+                  </Flex>
+                </Flex>
+
                 <Menu>
                   <Menu.Button>
                     <Button
