@@ -1,4 +1,4 @@
-import { ArrowDownIcon, HealthIcon, ObjectiveIcon } from "icons";
+import { ArrowDownIcon, ClockIcon, HealthIcon, ObjectiveIcon } from "icons";
 import { Button, Flex, Text, Tabs } from "ui";
 import { Summary } from "./summary";
 import { Updates } from "./updates";
@@ -17,7 +17,7 @@ export const Activity = () => {
           </Tabs.Tab>
           <Tabs.Tab
             className="gap-1.5"
-            leftIcon={<HealthIcon />}
+            leftIcon={<ClockIcon />}
             value="updates"
           >
             Updates

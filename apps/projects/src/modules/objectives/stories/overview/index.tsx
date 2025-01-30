@@ -1,112 +1,102 @@
-import {
-  Container,
-  Text,
-  Box,
-  Divider,
-  Flex,
-  Wrapper,
-  Button,
-  ProgressBar,
-  Menu,
-} from "ui";
-import { MoreHorizontalIcon, OKRIcon } from "icons";
+import { Container, Box, Divider, TextEditor } from "ui";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import TextExtension from "@tiptap/extension-text";
 import { BoardDividedPanel } from "@/components/ui";
-import { useObjective } from "../../hooks";
+import { useDebounce } from "@/hooks";
+import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { Sidebar } from "../sidebar";
+import type { ObjectiveUpdate } from "../../types";
 import { Activity } from "./activity";
 import { Properties } from "./properties";
+import { KeyResults } from "./key-results";
+
+const DEBOUNCE_DELAY = 700; // 700ms delay
 
 export const Overview = () => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
+  const updateMutation = useUpdateObjectiveMutation();
+
+  const handleUpdate = (data: ObjectiveUpdate) => {
+    updateMutation.mutate({
+      objectiveId,
+      data,
+    });
+  };
+
+  const debouncedHandleUpdate = useDebounce<ObjectiveUpdate>(
+    handleUpdate,
+    DEBOUNCE_DELAY,
+  );
+
+  const nameEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      TextExtension,
+      Placeholder.configure({ placeholder: "Objective name..." }),
+    ],
+    content: objective?.name || "",
+    editable: true,
+    onUpdate: ({ editor }) => {
+      debouncedHandleUpdate({
+        name: editor.getText(),
+      });
+    },
+  });
+
+  const descriptionEditor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link.configure({
+        autolink: true,
+      }),
+      Placeholder.configure({ placeholder: "Objective description..." }),
+    ],
+    content: objective?.description || "",
+    editable: true,
+    onUpdate: ({ editor }) => {
+      debouncedHandleUpdate({
+        description: editor.getHTML(),
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (objective) {
+      nameEditor?.commands.setContent(objective.name);
+      descriptionEditor?.commands.setContent(objective.description);
+    }
+  }, [objective, nameEditor, descriptionEditor]);
 
   return (
     <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
       <BoardDividedPanel.MainPanel>
         <Container className="h-[calc(100vh-7.7rem)] overflow-y-auto pt-6">
           <Box>
-            <Text className="mb-4 text-3xl antialiased" fontWeight="semibold">
-              {objective?.name}
-            </Text>
-            <Text className="opacity-80" color="muted" fontSize="lg">
-              {objective?.description}
-            </Text>
+            <TextEditor
+              asTitle
+              className="text-4xl font-medium"
+              editor={nameEditor}
+            />
+            <TextEditor
+              className="text-gray antialiased dark:text-gray-300"
+              editor={descriptionEditor}
+            />
           </Box>
           <Properties />
           <Divider className="my-8" />
           <Activity />
-          <Box className="my-8">
-            <Flex align="center" className="mb-3" justify="between">
-              <Text className="text-lg antialiased" fontWeight="semibold">
-                Key Results
-              </Text>
-              <Button color="tertiary" size="sm">
-                Add Key Result
-              </Button>
-            </Flex>
-            <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem]">
-              <Flex align="center" gap={3}>
-                <OKRIcon strokeWidth={2.8} />
-                <Text>Deploy to production by end of Q3</Text>
-              </Flex>
-              <Flex
-                align="center"
-                className="divide-x divide-gray-100 dark:divide-dark-100/80"
-              >
-                <Flex
-                  align="center"
-                  className="px-6"
-                  direction="column"
-                  gap={1}
-                >
-                  <Text color="muted">Current</Text>
-                  <Text fontSize="sm">75%</Text>
-                </Flex>
-                <Flex
-                  align="center"
-                  className="px-6"
-                  direction="column"
-                  gap={1}
-                >
-                  <Text color="muted">Current</Text>
-                  <Text fontSize="sm">75%</Text>
-                </Flex>
-                <Flex
-                  align="center"
-                  className="px-6"
-                  direction="column"
-                  gap={1}
-                >
-                  <Text color="muted">Progress</Text>
-                  <Flex align="center" gap={2}>
-                    <ProgressBar className="w-16" progress={75} />
-                    <Text fontSize="sm">75%</Text>
-                  </Flex>
-                </Flex>
-
-                <Menu>
-                  <Menu.Button>
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      leftIcon={<MoreHorizontalIcon />}
-                      rounded="full"
-                      size="sm"
-                    >
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                  </Menu.Button>
-                  <Menu.Items>
-                    <Menu.Group>
-                      <Menu.Item>Edit</Menu.Item>
-                      <Menu.Item>Delete</Menu.Item>
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              </Flex>
-            </Wrapper>
-          </Box>
+          <KeyResults />
         </Container>
       </BoardDividedPanel.MainPanel>
       <BoardDividedPanel.SideBar className="h-[calc(100vh-7.7rem)]" isExpanded>

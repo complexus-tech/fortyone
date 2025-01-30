@@ -11,10 +11,9 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { toast } from "sonner";
-import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
-import { useLocalStorage } from "@/hooks";
+import { useDebounce, useLocalStorage } from "@/hooks";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
@@ -22,40 +21,11 @@ import { useLinks } from "@/lib/hooks/links";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
 import { useStoryActivities } from "../hooks/story-activities";
-import { useStoryComments } from "../hooks/story-comments";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { Activities, Attachments } from ".";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
-
-// Custom debounce hook
-const useDebounce = (callback: (...args: any[]) => void, delay = 500) => {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const debouncedCallback = useCallback(
-    (...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      timeoutRef.current = setTimeout(() => {
-        callback(...args);
-      }, delay);
-    },
-    [callback, delay],
-  );
-
-  return debouncedCallback;
-};
 
 export const MainDetails = () => {
   const params = useParams<{ storyId: string }>();

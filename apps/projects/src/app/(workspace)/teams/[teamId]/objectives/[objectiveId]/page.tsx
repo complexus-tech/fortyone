@@ -6,6 +6,7 @@ import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { ListStories } from "@/modules/objectives/stories/list-stories";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { objectiveKeys } from "@/modules/objectives/constants";
+import { getKeyResults } from "@/modules/objectives/queries/get-key-results";
 
 export default async function Page(props: {
   params: Promise<{
@@ -36,6 +37,10 @@ export default async function Page(props: {
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.objective(objectiveId),
       queryFn: () => getObjective(objectiveId),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: objectiveKeys.keyResults(objectiveId),
+      queryFn: () => getKeyResults(objectiveId),
     }),
   ]);
 

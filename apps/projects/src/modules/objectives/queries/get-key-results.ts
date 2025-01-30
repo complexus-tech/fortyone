@@ -6,7 +6,7 @@ import { objectiveTags } from "../constants";
 
 export const getKeyResults = async (objectiveId: string) => {
   const keyResults = await get<ApiResponse<KeyResult[]>>(
-    `objectives/${objectiveId}key-results`,
+    `objectives/${objectiveId}/key-results`,
     {
       next: {
         revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
