@@ -44,6 +44,14 @@ export type NewKeyResult = {
   targetValue: number;
 };
 
+export type KeyResultUpdate = Partial<
+  Omit<NewKeyResult, "measurementType" | "startValue">
+>;
+
+export type NewObjectiveKeyResult = NewKeyResult & {
+  objectiveId: string;
+};
+
 export type NewObjective = {
   name: string;
   description?: string;
