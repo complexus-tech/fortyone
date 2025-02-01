@@ -84,11 +84,13 @@ type AppNewObjective struct {
 	KeyResults  []AppNewKeyResult `json:"keyResults,omitempty"`
 }
 
+// AppNewKeyResult represents a new key result to be created
 type AppNewKeyResult struct {
 	Name            string  `json:"name" validate:"required"`
 	MeasurementType string  `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      float64 `json:"startValue" validate:"required"`
-	TargetValue     float64 `json:"targetValue" validate:"required"`
+	StartValue      float64 `json:"startValue"`
+	CurrentValue    float64 `json:"currentValue"`
+	TargetValue     float64 `json:"targetValue"`
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
@@ -152,6 +154,7 @@ type AppKeyResult struct {
 	Name            string    `json:"name"`
 	MeasurementType string    `json:"measurementType"`
 	StartValue      float64   `json:"startValue"`
+	CurrentValue    float64   `json:"currentValue"`
 	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
@@ -164,6 +167,7 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
 		StartValue:      kr.StartValue,
+		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,

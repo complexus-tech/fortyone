@@ -87,6 +87,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if ukr.StartValue != nil {
 		updates["start_value"] = ukr.StartValue
 	}
+	if ukr.CurrentValue != nil {
+		updates["current_value"] = ukr.CurrentValue
+	}
 	if ukr.TargetValue != nil {
 		updates["target_value"] = ukr.TargetValue
 	}

@@ -12,6 +12,7 @@ type CoreNewKeyResult struct {
 	Name            string
 	MeasurementType string
 	StartValue      float64
+	CurrentValue    float64
 	TargetValue     float64
 }
 
@@ -22,6 +23,7 @@ type CoreKeyResult struct {
 	Name            string
 	MeasurementType string
 	StartValue      float64
+	CurrentValue    float64
 	TargetValue     float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time

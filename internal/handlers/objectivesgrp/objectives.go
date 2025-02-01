@@ -223,6 +223,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 			Name:            kr.Name,
 			MeasurementType: kr.MeasurementType,
 			StartValue:      kr.StartValue,
+			CurrentValue:    kr.CurrentValue,
 			TargetValue:     kr.TargetValue,
 		})
 	}

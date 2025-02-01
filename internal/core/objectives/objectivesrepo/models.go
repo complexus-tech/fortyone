@@ -36,6 +36,7 @@ type dbKeyResult struct {
 	Name            string    `db:"name"`
 	MeasurementType string    `db:"measurement_type"`
 	StartValue      float64   `db:"start_value"`
+	CurrentValue    float64   `db:"current_value"`
 	TargetValue     float64   `db:"target_value"`
 	CreatedAt       time.Time `db:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at"`
@@ -94,6 +95,7 @@ func toDBKeyResult(kr keyresults.CoreNewKeyResult) dbKeyResult {
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
 		StartValue:      kr.StartValue,
+		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
 	}
 }
@@ -105,6 +107,7 @@ func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
 		Name:            dbkr.Name,
 		MeasurementType: dbkr.MeasurementType,
 		StartValue:      dbkr.StartValue,
+		CurrentValue:    dbkr.CurrentValue,
 		TargetValue:     dbkr.TargetValue,
 		CreatedAt:       dbkr.CreatedAt,
 		UpdatedAt:       dbkr.UpdatedAt,

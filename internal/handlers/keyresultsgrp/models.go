@@ -18,6 +18,7 @@ type AppKeyResult struct {
 	Name            string    `json:"name"`
 	MeasurementType string    `json:"measurementType"`
 	StartValue      float64   `json:"startValue"`
+	CurrentValue    float64   `json:"currentValue"`
 	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
@@ -28,8 +29,9 @@ type AppNewKeyResult struct {
 	ObjectiveID     uuid.UUID `json:"objectiveId" validate:"required"`
 	Name            string    `json:"name" validate:"required"`
 	MeasurementType string    `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      float64   `json:"startValue"`
-	TargetValue     float64   `json:"targetValue"`
+	StartValue      float64   `json:"startValue" validate:"required"`
+	CurrentValue    float64   `json:"currentValue" validate:"required"`
+	TargetValue     float64   `json:"targetValue" validate:"required"`
 }
 
 // AppUpdateKeyResult represents the data needed to update a key result
@@ -37,6 +39,7 @@ type AppUpdateKeyResult struct {
 	Name            string   `json:"name" db:"name"`
 	MeasurementType string   `json:"measurementType" db:"measurement_type" validate:"omitempty,oneof=percentage number boolean"`
 	StartValue      *float64 `json:"startValue" db:"start_value"`
+	CurrentValue    *float64 `json:"currentValue" db:"current_value"`
 	TargetValue     *float64 `json:"targetValue" db:"target_value"`
 }
 
@@ -101,6 +104,7 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
 		StartValue:      kr.StartValue,
+		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
@@ -123,6 +127,7 @@ func toCoreNewKeyResult(akr AppNewKeyResult) keyresults.CoreNewKeyResult {
 		Name:            akr.Name,
 		MeasurementType: akr.MeasurementType,
 		StartValue:      akr.StartValue,
+		CurrentValue:    akr.CurrentValue,
 		TargetValue:     akr.TargetValue,
 	}
 }
