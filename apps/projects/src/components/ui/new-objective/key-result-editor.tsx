@@ -28,9 +28,10 @@ export const KeyResultEditor = ({
       Paragraph,
       TextExt,
       Placeholder.configure({
-        placeholder: "Example: Increase user adoption from 100 to 150",
+        placeholder: "eg. Increase user adoption from 100 to 150",
       }),
     ],
+    autofocus: true,
     content: keyResult?.name || "",
     editable: true,
     onUpdate: ({ editor }) => {
@@ -57,9 +58,9 @@ export const KeyResultEditor = ({
   if (!keyResult) return null;
 
   return (
-    <Box className="mb-6 rounded-lg border border-gray-200 px-4 pb-3.5 dark:border-dark-100">
+    <Box className="mb-6 rounded-xl border border-gray-200 px-5 pb-4 dark:border-dark-100">
       <Flex align="center" className="relative -top-2" justify="between">
-        <TextEditor className="prose-base" editor={editor} />
+        <TextEditor className="prose-lg text-xl" editor={editor} />
         <Button
           asIcon
           color="tertiary"
@@ -88,10 +89,10 @@ export const KeyResultEditor = ({
             <Select.Trigger className="h-[2.7rem] text-base">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content>
+            <Select.Content defaultValue="number">
               <Select.Group>
                 {["Number", "Percentage", "Boolean"].map((option) => (
-                  <Select.Option key={option} value={option}>
+                  <Select.Option key={option} value={option.toLowerCase()}>
                     {option}
                   </Select.Option>
                 ))}

@@ -93,7 +93,7 @@ export const NewObjectiveDialog = ({
       Document,
       Paragraph,
       TextExt,
-      Placeholder.configure({ placeholder: "Enter objective name..." }),
+      Placeholder.configure({ placeholder: "eg. Increase revenue by 20%" }),
     ],
     content: "",
     editable: true,
@@ -106,7 +106,7 @@ export const NewObjectiveDialog = ({
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Objective description" }),
+      Placeholder.configure({ placeholder: "Add description..." }),
     ],
     content: "",
     editable: true,
@@ -354,7 +354,7 @@ export const NewObjectiveDialog = ({
           </Flex>
           <Divider className="my-4" />
           <Box>
-            <Text className="mb-4 font-medium">Key Results</Text>
+            <Text className="mb-3 font-medium">Key Results</Text>
             {keyResultMode === null ? (
               <>
                 <KeyResultsList

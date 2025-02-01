@@ -8,6 +8,7 @@ import {
   Menu,
   Badge,
   TimeAgo,
+  Divider,
 } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -42,9 +43,8 @@ const RenderValue = ({
   if (measurementType === "boolean") {
     return (
       <Badge
-        className="px-1"
+        className="rounded-[0.35rem] px-1"
         color={value ? "success" : "warning"}
-        rounded="full"
       >
         {value ? "Complete" : "Incomplete"}
       </Badge>
@@ -61,7 +61,7 @@ const Okr = ({
   updatedAt,
 }: KeyResult) => {
   return (
-    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem]">
+    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-3">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
@@ -136,17 +136,37 @@ export const KeyResults = () => {
     <Box className="my-8">
       <Flex align="center" className="mb-3" justify="between">
         <Text className="text-lg antialiased" fontWeight="semibold">
-          Key Results ({keyResults.length})
+          Key Results
         </Text>
-        <Button color="tertiary" size="sm">
-          Add Key Result
-        </Button>
+        {keyResults.length > 0 && (
+          <Button color="tertiary" size="sm">
+            Add Key Result
+          </Button>
+        )}
       </Flex>
-      <Flex direction="column" gap={3}>
-        {keyResults.map((keyResult) => (
-          <Okr key={keyResult.id} {...keyResult} />
-        ))}
-      </Flex>
+      <Divider />
+      {keyResults.length > 0 ? (
+        <Flex className="mt-3" direction="column" gap={3}>
+          {keyResults.map((keyResult) => (
+            <Okr key={keyResult.id} {...keyResult} />
+          ))}
+        </Flex>
+      ) : (
+        <Flex
+          align="center"
+          className="mt-12"
+          direction="column"
+          gap={4}
+          justify="center"
+        >
+          <OKRIcon className="h-12" />
+          <Text className="max-w-lg text-center" color="muted">
+            You haven&apos;t added any key results yet, add key results to your
+            objective to track your progress
+          </Text>
+          <Button color="tertiary">Add Key Result</Button>
+        </Flex>
+      )}
     </Box>
   );
 };
