@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button, Dialog, Input } from "ui";
 import { useCreateKeyResultMutation } from "../../hooks";
+import type { NewKeyResult } from "../../types";
 
 export const NewKeyResultButton = ({
   color = "tertiary",
@@ -11,14 +12,17 @@ export const NewKeyResultButton = ({
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const [form, setForm] = useState<NewKeyResult>({
+    name: "",
+    startValue: 0,
+    targetValue: 0,
+    measurementType: "number",
+  });
 
   const handleCreate = () => {
     keyResultMutation.mutate({
       objectiveId,
-      name: "",
-      startValue: 0,
-      targetValue: 0,
-      measurementType: "number",
+      ...form,
     });
   };
 
