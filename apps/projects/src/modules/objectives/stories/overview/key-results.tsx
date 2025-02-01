@@ -12,8 +12,12 @@ import {
 } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
+import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
+import { NewKeyResultButton } from "./new-key-result";
 
 const RenderValue = ({
   value,
@@ -54,12 +58,21 @@ const RenderValue = ({
 };
 
 const Okr = ({
+  id,
+  objectiveId,
   name,
   startValue,
   targetValue,
   measurementType,
   updatedAt,
 }: KeyResult) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
+
+  const handleDelete = () => {
+    deleteKeyResult({ keyResultId: id, objectiveId });
+  };
+
   return (
     <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-3">
       <Flex align="center" gap={3}>
@@ -115,7 +128,11 @@ const Okr = ({
                   <EditIcon />
                   Edit
                 </Menu.Item>
-                <Menu.Item>
+                <Menu.Item
+                  onClick={() => {
+                    setIsOpen(true);
+                  }}
+                >
                   <DeleteIcon />
                   Delete
                 </Menu.Item>
@@ -124,6 +141,16 @@ const Okr = ({
           </Menu>
         </Box>
       </Flex>
+      <ConfirmDialog
+        confirmText="Yes, Delete"
+        description="Are you sure you want to delete this key result? This action cannot be undone."
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Key Result"
+      />
     </Wrapper>
   );
 };
@@ -138,11 +165,7 @@ export const KeyResults = () => {
         <Text className="text-lg antialiased" fontWeight="semibold">
           Key Results
         </Text>
-        {keyResults.length > 0 && (
-          <Button color="tertiary" size="sm">
-            Add Key Result
-          </Button>
-        )}
+        {keyResults.length > 0 && <NewKeyResultButton />}
       </Flex>
       <Divider />
       {keyResults.length > 0 ? (
@@ -164,7 +187,7 @@ export const KeyResults = () => {
             You haven&apos;t added any key results yet, add key results to your
             objective to track your progress
           </Text>
-          <Button color="tertiary">Add Key Result</Button>
+          <NewKeyResultButton />
         </Flex>
       )}
     </Box>
