@@ -4,8 +4,8 @@ import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { Box, Button, Flex, Menu, Tabs, Text } from "ui";
-import { ArrowDownIcon, ArrowUpDownIcon, CopyIcon, DeleteIcon } from "icons";
+import { Box, Button, Tabs, Text } from "ui";
+import { ArrowUpDownIcon, CopyIcon } from "icons";
 import { toast } from "sonner";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
@@ -116,45 +116,24 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
             Ordering by <b className="capitalize">{viewOptions.orderBy}</b>
           </Text>
         ) : (
-          <Flex gap={2}>
-            <Button
-              className="gap-1 px-3"
-              color="tertiary"
-              leftIcon={<CopyIcon className="h-4" />}
-              onClick={async () => {
-                await copyText(window.location.href);
-                setIsCopied(true);
-                toast.info("Success", {
-                  description: "Objective link copied to clipboard",
-                });
-                setTimeout(() => {
-                  setIsCopied(false);
-                }, 5000);
-              }}
-              size="sm"
-            >
-              {isCopied ? "Copied" : "Copy link"}
-            </Button>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  className="gap-1 pl-2.5"
-                  color="tertiary"
-                  rightIcon={<ArrowDownIcon className="h-4" />}
-                  size="sm"
-                >
-                  More
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="end" className="w-36">
-                <Menu.Group>
-                  <Menu.Item>
-                    <DeleteIcon /> Delete...
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Flex>
+          <Button
+            className="gap-1 px-3"
+            color="tertiary"
+            leftIcon={<CopyIcon className="h-4" />}
+            onClick={async () => {
+              await copyText(window.location.href);
+              setIsCopied(true);
+              toast.info("Success", {
+                description: "Objective link copied to clipboard",
+              });
+              setTimeout(() => {
+                setIsCopied(false);
+              }, 5000);
+            }}
+            size="sm"
+          >
+            {isCopied ? "Copied" : "Copy link"}
+          </Button>
         )}
       </Box>
       <Tabs.Panel value="overview">

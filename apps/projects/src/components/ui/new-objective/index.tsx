@@ -42,8 +42,8 @@ import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import type { NewKeyResult, NewObjective } from "@/modules/objectives/types";
 import { useCreateObjectiveMutation } from "@/modules/objectives/hooks";
 import { TeamColor } from "../team-color";
-import { KeyResultsList } from "./components/key-results-list";
-import { KeyResultEditor } from "./components/key-result-editor";
+import { KeyResultsList } from "./key-results-list";
+import { KeyResultEditor } from "./key-result-editor";
 
 type KeyResultFormMode = "add" | "edit" | null;
 
@@ -354,7 +354,7 @@ export const NewObjectiveDialog = ({
           </Flex>
           <Divider className="my-4" />
           <Box>
-            <Text className="mb-4 font-medium">Objective Key Results</Text>
+            <Text className="mb-4 font-medium">Key Results</Text>
             {keyResultMode === null ? (
               <>
                 <KeyResultsList

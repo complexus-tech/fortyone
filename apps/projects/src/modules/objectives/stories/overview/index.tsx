@@ -1,6 +1,6 @@
-import { Container, Box, Divider, TextEditor } from "ui";
-import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { Container, Box, Divider, TextEditor, Menu, Button, Flex } from "ui";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -9,9 +9,14 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
-import { BoardDividedPanel } from "@/components/ui";
+import { DeleteIcon, ArrowDownIcon } from "icons";
+import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
 import { useDebounce } from "@/hooks";
-import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
+import {
+  useDeleteObjectiveMutation,
+  useObjective,
+  useUpdateObjectiveMutation,
+} from "../../hooks";
 import { Sidebar } from "../sidebar";
 import type { ObjectiveUpdate } from "../../types";
 import { Activity } from "./activity";
@@ -21,15 +26,26 @@ import { KeyResults } from "./key-results";
 const DEBOUNCE_DELAY = 700; // 700ms delay
 
 export const Overview = () => {
-  const { objectiveId } = useParams<{ objectiveId: string }>();
+  const router = useRouter();
+  const { objectiveId, teamId } = useParams<{
+    objectiveId: string;
+    teamId: string;
+  }>();
   const { data: objective } = useObjective(objectiveId);
+  const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
+  const deleteMutation = useDeleteObjectiveMutation();
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
       objectiveId,
       data,
     });
+  };
+
+  const handleDelete = async () => {
+    await deleteMutation.mutateAsync(objectiveId);
+    router.push(`/teams/${teamId}/objectives`);
   };
 
   const debouncedHandleUpdate = useDebounce<ObjectiveUpdate>(
@@ -83,11 +99,37 @@ export const Overview = () => {
       <BoardDividedPanel.MainPanel>
         <Container className="h-[calc(100vh-7.7rem)] overflow-y-auto pt-6">
           <Box>
-            <TextEditor
-              asTitle
-              className="text-4xl font-medium"
-              editor={nameEditor}
-            />
+            <Flex align="center" gap={6} justify="between">
+              <TextEditor
+                asTitle
+                className="text-4xl font-medium"
+                editor={nameEditor}
+              />
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    className="gap-1 pl-2.5"
+                    color="tertiary"
+                    rightIcon={<ArrowDownIcon className="h-4" />}
+                    size="sm"
+                  >
+                    More
+                  </Button>
+                </Menu.Button>
+                <Menu.Items align="end" className="w-36">
+                  <Menu.Group>
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsOpen(true);
+                      }}
+                    >
+                      <DeleteIcon /> Delete...
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            </Flex>
+
             <TextEditor
               className="text-gray antialiased dark:text-gray-300"
               editor={descriptionEditor}
@@ -102,6 +144,16 @@ export const Overview = () => {
       <BoardDividedPanel.SideBar className="h-[calc(100vh-7.7rem)]" isExpanded>
         <Sidebar className="h-[calc(100vh-7.7rem)] overflow-y-auto" />
       </BoardDividedPanel.SideBar>
+
+      <ConfirmDialog
+        description="Are you sure you want to delete this objective? This action is irreversible."
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+        }}
+        onConfirm={handleDelete}
+        title="Delete objective"
+      />
     </BoardDividedPanel>
   );
 };

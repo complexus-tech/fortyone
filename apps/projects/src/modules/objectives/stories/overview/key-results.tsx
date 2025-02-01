@@ -142,9 +142,11 @@ export const KeyResults = () => {
           Add Key Result
         </Button>
       </Flex>
-      {keyResults.map((keyResult) => (
-        <Okr key={keyResult.id} {...keyResult} />
-      ))}
+      <Flex direction="column" gap={3}>
+        {keyResults.map((keyResult) => (
+          <Okr key={keyResult.id} {...keyResult} />
+        ))}
+      </Flex>
     </Box>
   );
 };

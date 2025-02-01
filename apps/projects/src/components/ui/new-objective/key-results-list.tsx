@@ -1,7 +1,7 @@
 import { Button, Flex, Text } from "ui";
 import { DeleteIcon, EditIcon, OKRIcon } from "icons";
 import type { NewKeyResult } from "@/modules/objectives/types";
-import { RowWrapper } from "../../row-wrapper";
+import { RowWrapper } from "../row-wrapper";
 
 type KeyResultsListProps = {
   keyResults: NewKeyResult[];
@@ -17,7 +17,7 @@ export const KeyResultsList = ({
   return (
     <>
       {keyResults.map((kr, index) => (
-        <RowWrapper className="px-0 py-1.5" key={index}>
+        <RowWrapper className="px-0 py-1.5" key={kr.name}>
           <Flex align="center" gap={2}>
             <OKRIcon />
             <Text>{kr.name}</Text>

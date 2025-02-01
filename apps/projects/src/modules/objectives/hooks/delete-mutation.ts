@@ -47,7 +47,7 @@ export const useDeleteObjectiveMutation = () => {
       });
     },
     onSettled: (_, __, objectiveId) => {
-      queryClient.invalidateQueries({
+      queryClient.removeQueries({
         queryKey: objectiveKeys.objective(objectiveId),
       });
       queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });

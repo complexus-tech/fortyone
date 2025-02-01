@@ -6,6 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Box, Button, Flex, Input, Select, Text, TextEditor } from "ui";
 import { CloseIcon } from "icons";
 import { toast } from "sonner";
+import { cn } from "lib";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
 
 type KeyResultEditorProps = {
@@ -70,8 +71,8 @@ export const KeyResultEditor = ({
           <span className="sr-only">Cancel</span>
         </Button>
       </Flex>
-      <Box className="relative -top-4">
-        <Box className="mb-4">
+      <Box className="relative -top-4 grid grid-cols-3 gap-4">
+        <Box>
           <Text className="mb-1.5 font-medium">Measure as</Text>
           <Select
             defaultValue={keyResult.measurementType}
@@ -100,28 +101,48 @@ export const KeyResultEditor = ({
         </Box>
 
         {keyResult.measurementType === "boolean" ? (
-          <Flex className="mb-4" gap={2}>
-            <Button
-              color={keyResult.startValue === 0 ? "primary" : "tertiary"}
-              onClick={() => {
-                onUpdate(0, { startValue: 0 });
-              }}
-              variant={keyResult.startValue === 0 ? "solid" : "outline"}
+          <Box>
+            <Text className="mb-1.5 font-medium">Current status</Text>
+            <Flex
+              className="rounded-[0.6rem] border p-1 dark:border-dark-50/80 dark:bg-dark-100/50"
+              gap={1}
             >
-              Incomplete
-            </Button>
-            <Button
-              color={keyResult.startValue === 1 ? "primary" : "tertiary"}
-              onClick={() => {
-                onUpdate(0, { startValue: 1 });
-              }}
-              variant={keyResult.startValue === 1 ? "solid" : "outline"}
-            >
-              Complete
-            </Button>
-          </Flex>
+              <Button
+                align="center"
+                className={cn("rounded-[0.4rem] border-0", {
+                  "bg-transparent dark:bg-transparent":
+                    keyResult.startValue !== 0,
+                })}
+                color={keyResult.startValue === 0 ? "primary" : "tertiary"}
+                fullWidth
+                onClick={() => {
+                  onUpdate(0, { startValue: 0 });
+                }}
+                size="sm"
+                variant={keyResult.startValue === 0 ? "solid" : "outline"}
+              >
+                Incomplete
+              </Button>
+              <Button
+                align="center"
+                className={cn("rounded-[0.4rem] border-0", {
+                  "bg-transparent dark:bg-transparent":
+                    keyResult.startValue !== 1,
+                })}
+                color={keyResult.startValue === 1 ? "primary" : "tertiary"}
+                fullWidth
+                onClick={() => {
+                  onUpdate(0, { startValue: 1 });
+                }}
+                size="sm"
+                variant={keyResult.startValue === 1 ? "solid" : "outline"}
+              >
+                Complete
+              </Button>
+            </Flex>
+          </Box>
         ) : (
-          <Box className="grid grid-cols-2 gap-4">
+          <>
             <Input
               autoFocus
               className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
@@ -145,7 +166,7 @@ export const KeyResultEditor = ({
               type="number"
               value={keyResult.targetValue.toString() || ""}
             />
-          </Box>
+          </>
         )}
       </Box>
       <Button
