@@ -43,6 +43,11 @@ export const useDeleteKeyResultMutation = () => {
 
       return { previousKeyResults };
     },
+    onSuccess: () => {
+      toast.success("Success", {
+        description: "Key result deleted successfully",
+      });
+    },
     onSettled: (_, __, { objectiveId }) => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),

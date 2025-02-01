@@ -97,10 +97,15 @@ const Okr = ({
           <Text color="muted">Current</Text>
           <RenderValue measurementType={measurementType} value={startValue} />
         </Flex>
-        <Flex align="center" className="px-6" direction="column" gap={1}>
-          <Text color="muted">Target</Text>
-          <RenderValue measurementType={measurementType} value={targetValue} />
-        </Flex>
+        {measurementType !== "boolean" && (
+          <Flex align="center" className="px-6" direction="column" gap={1}>
+            <Text color="muted">Target</Text>
+            <RenderValue
+              measurementType={measurementType}
+              value={targetValue}
+            />
+          </Flex>
+        )}
         <Flex align="center" className="px-5" direction="column" gap={1}>
           <Text color="muted">Progress</Text>
           <Flex align="center" gap={2}>
@@ -122,11 +127,11 @@ const Okr = ({
                 <span className="sr-only">Edit</span>
               </Button>
             </Menu.Button>
-            <Menu.Items className="w-32">
+            <Menu.Items>
               <Menu.Group>
                 <Menu.Item>
                   <EditIcon />
-                  Edit
+                  Update...
                 </Menu.Item>
                 <Menu.Item
                   onClick={() => {
@@ -165,7 +170,7 @@ export const KeyResults = () => {
         <Text className="text-lg antialiased" fontWeight="semibold">
           Key Results
         </Text>
-        {keyResults.length > 0 && <NewKeyResultButton />}
+        {keyResults.length > 0 && <NewKeyResultButton size="sm" />}
       </Flex>
       <Divider />
       {keyResults.length > 0 ? (

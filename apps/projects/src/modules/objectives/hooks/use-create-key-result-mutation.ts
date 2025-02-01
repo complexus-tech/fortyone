@@ -44,11 +44,6 @@ export const useCreateKeyResultMutation = () => {
 
       return { previousKeyResults };
     },
-    onSuccess: () => {
-      toast.success("Success", {
-        description: "Key result created successfully",
-      });
-    },
     onSettled: (_, __, newKeyResult) => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
