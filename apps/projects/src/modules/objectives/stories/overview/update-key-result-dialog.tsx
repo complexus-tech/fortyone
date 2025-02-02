@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
@@ -53,6 +53,15 @@ export const UpdateKeyResultDialog = ({
     });
   };
 
+  useEffect(() => {
+    setForm({
+      name: keyResult.name,
+      startValue: keyResult.startValue,
+      targetValue: keyResult.targetValue,
+      currentValue: keyResult.currentValue,
+    });
+  }, [keyResult]);
+
   return (
     <Dialog onOpenChange={onOpenChange} open={isOpen}>
       <Dialog.Content>
@@ -70,9 +79,9 @@ export const UpdateKeyResultDialog = ({
               required
               value={form.name}
             />
-            <Box className="grid grid-cols-2 gap-4">
+            <Box className="grid grid-cols-3 gap-4">
               {keyResult.measurementType === "boolean" ? (
-                <Box className="col-span-2">
+                <Box className="col-span-3">
                   <Text className="mb-[0.35rem]">Current Value</Text>
                   <Flex
                     className="rounded-[0.45rem] border bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
@@ -129,6 +138,20 @@ export const UpdateKeyResultDialog = ({
                     required
                     type="number"
                     value={form.startValue}
+                  />
+                  <Input
+                    className="h-[2.7rem]"
+                    label="Current Value"
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        currentValue: Number(e.target.value),
+                      });
+                    }}
+                    placeholder="0"
+                    required
+                    type="number"
+                    value={form.currentValue}
                   />
                   <Input
                     className="h-[2.7rem]"
