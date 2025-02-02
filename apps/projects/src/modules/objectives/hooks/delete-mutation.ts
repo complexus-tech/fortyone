@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
 import { objectiveKeys } from "../constants";
 import { deleteObjective } from "../actions/delete-objective";
-import type { Objective } from "../types";
 
 export const useDeleteObjectiveMutation = () => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -21,36 +23,15 @@ export const useDeleteObjectiveMutation = () => {
         },
       });
     },
-    onMutate: async (objectiveId) => {
-      await queryClient.cancelQueries({ queryKey: objectiveKeys.list() });
-      await queryClient.cancelQueries({
-        queryKey: objectiveKeys.objective(objectiveId),
-      });
-
-      const previousObjectives = queryClient.getQueryData<Objective[]>(
-        objectiveKeys.list(),
-      );
-
-      if (previousObjectives) {
-        queryClient.setQueryData<Objective[]>(
-          objectiveKeys.list(),
-          previousObjectives.filter(
-            (objective) => objective.id !== objectiveId,
-          ),
-        );
-      }
-      return { previousObjectives };
-    },
-    onSuccess: () => {
+    onSuccess: (_, objectiveId) => {
       toast.success("Success", {
         description: "Objective deleted successfully",
       });
-    },
-    onSettled: (_, __, objectiveId) => {
       queryClient.removeQueries({
         queryKey: objectiveKeys.objective(objectiveId),
       });
       queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
+      router.replace(`/teams/${teamId}/objectives`);
     },
   });
 

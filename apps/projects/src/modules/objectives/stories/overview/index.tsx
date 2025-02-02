@@ -1,5 +1,5 @@
 import { Container, Box, Divider, TextEditor, Menu, Button, Flex } from "ui";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -26,10 +26,8 @@ import { KeyResults } from "./key-results";
 const DEBOUNCE_DELAY = 700; // 700ms delay
 
 export const Overview = () => {
-  const router = useRouter();
-  const { objectiveId, teamId } = useParams<{
+  const { objectiveId } = useParams<{
     objectiveId: string;
-    teamId: string;
   }>();
   const { data: objective } = useObjective(objectiveId);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +43,6 @@ export const Overview = () => {
 
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(objectiveId);
-    router.push(`/teams/${teamId}/objectives`);
   };
 
   const debouncedHandleUpdate = useDebounce<ObjectiveUpdate>(
@@ -146,6 +143,7 @@ export const Overview = () => {
       </BoardDividedPanel.SideBar>
 
       <ConfirmDialog
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
         description="Are you sure you want to delete this objective? This action is irreversible."
         isOpen={isOpen}
         onClose={() => {
