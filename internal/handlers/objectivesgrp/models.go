@@ -76,8 +76,8 @@ type AppNewObjective struct {
 	Description *string           `json:"description"`
 	LeadUser    *uuid.UUID        `json:"leadUser"`
 	Team        uuid.UUID         `json:"teamId" validate:"required"`
-	StartDate   time.Time         `json:"startDate"`
-	EndDate     time.Time         `json:"endDate"`
+	StartDate   *time.Time        `json:"startDate"`
+	EndDate     *time.Time        `json:"endDate"`
 	IsPrivate   bool              `json:"isPrivate"`
 	Status      uuid.UUID         `json:"statusId"`
 	Priority    *string           `json:"priority"`

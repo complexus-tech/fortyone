@@ -33,8 +33,8 @@ type CoreNewObjective struct {
 	Description *string
 	LeadUser    *uuid.UUID
 	Team        uuid.UUID
-	StartDate   time.Time
-	EndDate     time.Time
+	StartDate   *time.Time
+	EndDate     *time.Time
 	IsPrivate   bool
 	Status      uuid.UUID
 	Priority    *string
