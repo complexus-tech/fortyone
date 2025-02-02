@@ -158,7 +158,12 @@ export const NewObjectiveDialog = ({
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
-      <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
+      <Dialog.Content
+        className={cn("max-w-4xl", {
+          "max-w-5xl": isExpanded,
+        })}
+        hideClose
+      >
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
@@ -376,13 +381,13 @@ export const NewObjectiveDialog = ({
                   }}
                 />
                 <Button
-                  className="mt-4"
                   color="tertiary"
                   leftIcon={<PlusIcon />}
                   onClick={() => {
                     const newKr: NewKeyResult = {
                       name: "",
                       measurementType: "number",
+                      currentValue: 0,
                       startValue: 0,
                       targetValue: 0,
                     };

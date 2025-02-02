@@ -1,12 +1,7 @@
-import { useEditor } from "@tiptap/react";
-import Document from "@tiptap/extension-document";
-import Paragraph from "@tiptap/extension-paragraph";
-import TextExt from "@tiptap/extension-text";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Box, Button, Flex, Input, Select, Text, TextEditor } from "ui";
-import { CloseIcon } from "icons";
+import { Box, Button, Flex, Input, Select, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import type { FormEvent } from "react";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
 
 type KeyResultEditorProps = {
@@ -22,25 +17,9 @@ export const KeyResultEditor = ({
   onCancel,
   onSave,
 }: KeyResultEditorProps) => {
-  const editor = useEditor({
-    extensions: [
-      Document,
-      Paragraph,
-      TextExt,
-      Placeholder.configure({
-        placeholder: "eg. Increase user adoption from 100 to 150",
-      }),
-    ],
-    autofocus: true,
-    content: keyResult?.name || "",
-    editable: true,
-    onUpdate: ({ editor }) => {
-      onUpdate(0, { name: editor.getText() });
-    },
-  });
-
-  const handleSave = () => {
-    if (!keyResult || editor?.isEmpty) {
+  const handleSave = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!keyResult?.name) {
       toast.warning("Validation error", {
         description: "Please enter a name for the key result",
       });
@@ -58,21 +37,25 @@ export const KeyResultEditor = ({
   if (!keyResult) return null;
 
   return (
-    <Box className="mb-6 rounded-xl border border-gray-200 px-5 pb-4 dark:border-dark-100">
-      <Flex align="center" className="relative -top-2" justify="between">
-        <TextEditor className="prose-lg text-xl" editor={editor} />
-        <Button
-          asIcon
-          color="tertiary"
-          leftIcon={<CloseIcon />}
-          onClick={onCancel}
-          size="sm"
-          variant="naked"
-        >
-          <span className="sr-only">Cancel</span>
-        </Button>
-      </Flex>
-      <Box className="relative -top-4 grid grid-cols-3 gap-4">
+    <form
+      className="mb-6 space-y-4 rounded-xl border border-gray-200 px-5 py-4 dark:border-dark-100"
+      onSubmit={handleSave}
+    >
+      <Input
+        autoFocus
+        label="Name"
+        onChange={(e) => {
+          onUpdate(0, { name: e.target.value });
+        }}
+        placeholder="eg. Increase user adoption from 100 to 150"
+        required
+        value={keyResult.name}
+      />
+      <Box
+        className={cn("grid grid-cols-3 gap-4", {
+          "grid-cols-2": keyResult.measurementType === "boolean",
+        })}
+      >
         <Box>
           <Text className="mb-1.5 font-medium">Measure as</Text>
           <Select
@@ -86,7 +69,7 @@ export const KeyResultEditor = ({
               });
             }}
           >
-            <Select.Trigger className="h-[2.7rem] text-base">
+            <Select.Trigger className="h-[2.7rem] bg-white/70 text-base dark:bg-dark/20">
               <Select.Input />
             </Select.Trigger>
             <Select.Content defaultValue="number">
@@ -120,6 +103,7 @@ export const KeyResultEditor = ({
                   onUpdate(0, { startValue: 0 });
                 }}
                 size="sm"
+                type="button"
                 variant={keyResult.startValue === 0 ? "solid" : "outline"}
               >
                 Incomplete
@@ -136,6 +120,7 @@ export const KeyResultEditor = ({
                   onUpdate(0, { startValue: 1 });
                 }}
                 size="sm"
+                type="button"
                 variant={keyResult.startValue === 1 ? "solid" : "outline"}
               >
                 Complete
@@ -145,38 +130,43 @@ export const KeyResultEditor = ({
         ) : (
           <>
             <Input
-              autoFocus
-              className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
               label="Starting Value"
+              max={keyResult.measurementType === "percentage" ? 100 : undefined}
+              min={keyResult.measurementType === "percentage" ? 0 : undefined}
               onChange={(e) => {
                 onUpdate(0, { startValue: Number(e.target.value) });
               }}
               placeholder="0"
               required
               type="number"
-              value={keyResult.startValue.toString() || ""}
+              value={keyResult.startValue}
             />
             <Input
-              className="h-[2.7rem] bg-gray-50/30 dark:bg-dark-100/40"
               label="Target Value"
+              max={keyResult.measurementType === "percentage" ? 100 : undefined}
+              min={keyResult.measurementType === "percentage" ? 0 : undefined}
               onChange={(e) => {
                 onUpdate(0, { targetValue: Number(e.target.value) });
               }}
               placeholder="0"
               required
               type="number"
-              value={keyResult.targetValue.toString() || ""}
+              value={keyResult.targetValue}
             />
           </>
         )}
       </Box>
-      <Button
-        className="relative -top-0.5"
-        color="tertiary"
-        onClick={handleSave}
-      >
-        Add Key Result
-      </Button>
-    </Box>
+      <Flex gap={2}>
+        <Button type="submit">Add Key Result</Button>
+        <Button
+          className="px-7"
+          color="tertiary"
+          onClick={onCancel}
+          type="button"
+        >
+          Cancel
+        </Button>
+      </Flex>
+    </form>
   );
 };
