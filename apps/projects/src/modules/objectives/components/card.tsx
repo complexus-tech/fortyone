@@ -1,12 +1,31 @@
-import { Flex, Text, ProgressBar, Box, Badge, Avatar } from "ui";
+"use client";
+import {
+  Flex,
+  Text,
+  Box,
+  Avatar,
+  Button,
+  DatePicker,
+  CircleProgressBar,
+} from "ui";
 import Link from "next/link";
-import { ObjectiveIcon } from "icons";
+import { ObjectiveIcon, CalendarIcon } from "icons";
 import { format } from "date-fns";
+import { cn } from "lib";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { TeamColor } from "@/components/ui";
-import type { Objective } from "../types";
+import {
+  TeamColor,
+  AssigneesMenu,
+  PrioritiesMenu,
+  PriorityIcon,
+  StoryStatusIcon,
+} from "@/components/ui";
+import { useStatuses } from "@/lib/hooks/statuses";
+import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
+import { useUpdateObjectiveMutation } from "../hooks";
+import type { Objective, ObjectiveUpdate } from "../types";
 
 export const ObjectiveCard = ({
   id,
@@ -15,17 +34,29 @@ export const ObjectiveCard = ({
   teamId,
   endDate,
   stats: { completed, total },
-  createdAt,
   isInTeam,
+  statusId,
+  priority,
 }: Objective & { isInTeam?: boolean }) => {
   const { data: members = [] } = useMembers();
   const { data: teams = [] } = useTeams();
+  const { data: statuses = [] } = useStatuses();
+  const updateMutation = useUpdateObjectiveMutation();
+
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
+  const status = statuses.find((s) => s.id === statusId);
   const progress = Math.round((completed / total) * 100) || 0;
 
+  const handleUpdate = (data: ObjectiveUpdate) => {
+    updateMutation.mutate({
+      objectiveId: id,
+      data,
+    });
+  };
+
   return (
-    <RowWrapper className="px-6 py-3">
+    <RowWrapper className="px-5 py-3 md:px-12">
       <Box className="flex w-[300px] shrink-0 items-center gap-2">
         <Link
           className="flex w-full items-center gap-2 hover:opacity-90"
@@ -36,54 +67,140 @@ export const ObjectiveCard = ({
             className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-200"
             justify="center"
           >
-            <ObjectiveIcon
-              className="h-4"
-              {...(!isInTeam && { style: { color: team?.color } })}
-            />
+            <ObjectiveIcon className="h-4" />
           </Flex>
           <Text className="truncate font-medium">{name}</Text>
         </Link>
       </Box>
       <Flex align="center" gap={4}>
         {!isInTeam ? (
-          <Box className="flex w-[120px] shrink-0 items-center gap-2">
+          <Box className="flex w-[45px] shrink-0 items-center gap-1.5">
             <TeamColor color={team?.color} />
-            <Text className="truncate" color="muted">
-              {team?.name}
+            <Text className="truncate uppercase" color="muted">
+              {team?.code}
             </Text>
           </Box>
         ) : null}
 
-        <Box className="flex w-[140px] shrink-0 items-center gap-2">
-          <Avatar
-            className="relative top-px shrink-0"
-            name={lead?.fullName}
-            size="xs"
-            src={lead?.avatarUrl}
-          />
-          <Text className="truncate" color="muted">
-            {lead?.username}
-          </Text>
+        <Box className="flex w-[40px] shrink-0 items-center">
+          <AssigneesMenu>
+            <AssigneesMenu.Trigger>
+              <Button
+                className={cn("font-medium", {
+                  "text-gray-200 dark:text-gray-300": !leadUser,
+                })}
+                color="tertiary"
+                leftIcon={
+                  <Avatar
+                    className={cn({
+                      "text-dark/80 dark:text-gray-200": !leadUser,
+                    })}
+                    name={lead?.username}
+                    size="xs"
+                    src={lead?.avatarUrl}
+                  />
+                }
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                <span className="sr-only">{lead?.username}</span>
+              </Button>
+            </AssigneesMenu.Trigger>
+            <AssigneesMenu.Items
+              assigneeId={leadUser}
+              onAssigneeSelected={(leadUser) => {
+                handleUpdate({ leadUser });
+              }}
+            />
+          </AssigneesMenu>
         </Box>
 
-        <Box className="flex w-[120px] shrink-0 items-center gap-2 pr-4">
-          <ProgressBar className="h-1.5" progress={progress} /> {progress}%
+        <Box className="flex w-[60px] shrink-0 items-center gap-1.5 pl-0.5">
+          <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+          {progress}%
+        </Box>
+        <Box className="w-[85px] shrink-0">
+          <ObjectiveStatusesMenu>
+            <ObjectiveStatusesMenu.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={<StoryStatusIcon statusId={statusId} />}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                <span className="inline-block max-w-[7ch] truncate">
+                  {status?.name ?? "Backlog"}
+                </span>
+              </Button>
+            </ObjectiveStatusesMenu.Trigger>
+            <ObjectiveStatusesMenu.Items
+              setStatusId={(statusId) => {
+                handleUpdate({ statusId });
+              }}
+              statusId={statusId}
+            />
+          </ObjectiveStatusesMenu>
+        </Box>
+        <Box className="w-[90px] shrink-0">
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={<PriorityIcon priority={priority} />}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                {priority ?? "No Priority"}
+              </Button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items
+              priority={priority}
+              setPriority={(priority) => {
+                handleUpdate({ priority });
+              }}
+            />
+          </PrioritiesMenu>
         </Box>
 
         <Box className="w-[100px] shrink-0">
-          <Text color="muted">{format(new Date(endDate), "MMM dd, yyyy")}</Text>
+          <DatePicker>
+            <DatePicker.Trigger>
+              <Button
+                className={cn({
+                  "text-gray/80 dark:text-gray-300/80": !endDate,
+                })}
+                color="tertiary"
+                leftIcon={
+                  <CalendarIcon
+                    className={cn("h-[1.15rem]", {
+                      "text-gray/80 dark:text-gray-300/80": !endDate,
+                    })}
+                  />
+                }
+                size="sm"
+                variant="naked"
+              >
+                {endDate ? (
+                  format(new Date(endDate), "MMM d, yy")
+                ) : (
+                  <Text color="muted">Target date</Text>
+                )}
+              </Button>
+            </DatePicker.Trigger>
+            <DatePicker.Calendar
+              onDayClick={(day) => {
+                handleUpdate({ endDate: day.toISOString() });
+              }}
+              selected={endDate ? new Date(endDate) : undefined}
+            />
+          </DatePicker>
         </Box>
 
         <Box className="w-[100px] shrink-0">
-          <Text color="muted">
-            {format(new Date(createdAt), "MMM dd, yyyy")}
-          </Text>
-        </Box>
-
-        <Box className="w-[100px] shrink-0">
-          <Badge className="h-7" color="tertiary">
-            No Health
-          </Badge>
+          <Text color="muted">Health</Text>
         </Box>
       </Flex>
     </RowWrapper>

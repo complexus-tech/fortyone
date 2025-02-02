@@ -1,5 +1,7 @@
 import type { StoryPriority } from "@/modules/stories/types";
 
+export type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
+
 export type Objective = {
   id: string;
   name: string;
@@ -14,6 +16,7 @@ export type Objective = {
   updatedAt: string;
   statusId: string;
   priority?: StoryPriority;
+  health: ObjectiveHealth;
   stats: {
     total: number;
     cancelled: number;
@@ -65,4 +68,6 @@ export type NewObjective = {
   keyResults?: NewKeyResult[];
 };
 
-export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">>;
+export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">> & {
+  health?: ObjectiveHealth;
+};
