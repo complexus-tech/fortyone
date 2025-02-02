@@ -17,6 +17,21 @@ export const KeyResultEditor = ({
   onCancel,
   onSave,
 }: KeyResultEditorProps) => {
+  const measurementTypes: { label: string; value: MeasureType }[] = [
+    {
+      label: "Number",
+      value: "number",
+    },
+    {
+      label: "Percentage (0-100%)",
+      value: "percentage",
+    },
+    {
+      label: "Boolean (Complete/Incomplete)",
+      value: "boolean",
+    },
+  ];
+
   const handleSave = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!keyResult?.name) {
@@ -60,8 +75,7 @@ export const KeyResultEditor = ({
           <Text className="mb-1.5 font-medium">Measure as</Text>
           <Select
             defaultValue={keyResult.measurementType}
-            onValueChange={(value) => {
-              const measurementType = value.toLowerCase() as MeasureType;
+            onValueChange={(measurementType: MeasureType) => {
               onUpdate(0, {
                 measurementType,
                 startValue: measurementType === "boolean" ? 0 : 0,
@@ -74,9 +88,9 @@ export const KeyResultEditor = ({
             </Select.Trigger>
             <Select.Content defaultValue="number">
               <Select.Group>
-                {["Number", "Percentage", "Boolean"].map((option) => (
-                  <Select.Option key={option} value={option.toLowerCase()}>
-                    {option}
+                {measurementTypes.map((option) => (
+                  <Select.Option key={option.value} value={option.value}>
+                    {option.label}
                   </Select.Option>
                 ))}
               </Select.Group>

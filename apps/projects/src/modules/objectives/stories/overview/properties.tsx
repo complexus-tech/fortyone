@@ -7,13 +7,13 @@ import {
   AssigneesMenu,
   PrioritiesMenu,
   PriorityIcon,
-  StatusesMenu,
   StoryStatusIcon,
 } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
+import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
 
 export const Properties = () => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
@@ -37,8 +37,8 @@ export const Properties = () => {
       <Text color="muted" fontWeight="semibold">
         Properties:
       </Text>
-      <StatusesMenu>
-        <StatusesMenu.Trigger>
+      <ObjectiveStatusesMenu>
+        <ObjectiveStatusesMenu.Trigger>
           <Button
             color="tertiary"
             leftIcon={<StoryStatusIcon statusId={objective?.statusId} />}
@@ -48,14 +48,14 @@ export const Properties = () => {
           >
             {status?.name ?? "Backlog"}
           </Button>
-        </StatusesMenu.Trigger>
-        <StatusesMenu.Items
+        </ObjectiveStatusesMenu.Trigger>
+        <ObjectiveStatusesMenu.Items
           setStatusId={(statusId) => {
             handleUpdate({ statusId });
           }}
           statusId={objective?.statusId}
         />
-      </StatusesMenu>
+      </ObjectiveStatusesMenu>
       <PrioritiesMenu>
         <PrioritiesMenu.Trigger>
           <Button
@@ -148,25 +148,12 @@ export const Properties = () => {
         <DatePicker.Trigger>
           <Button
             className={cn({
-              "text-primary dark:text-primary":
-                objective?.endDate && new Date(objective.endDate) < new Date(),
-              "text-warning dark:text-warning":
-                objective?.endDate &&
-                new Date(objective.endDate) <= new Date() &&
-                new Date(objective.endDate) >= new Date(),
               "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
             })}
             color="tertiary"
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem]", {
-                  "text-primary dark:text-primary":
-                    objective?.endDate &&
-                    new Date(objective.endDate) < new Date(),
-                  "text-warning dark:text-warning":
-                    objective?.endDate &&
-                    new Date(objective.endDate) <= new Date() &&
-                    new Date(objective.endDate) >= new Date(),
                   "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
                 })}
               />

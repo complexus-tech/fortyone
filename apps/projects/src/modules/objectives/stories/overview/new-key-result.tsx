@@ -15,6 +15,20 @@ export const NewKeyResultButton = ({
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const measurementTypes: { label: string; value: MeasureType }[] = [
+    {
+      label: "Number",
+      value: "number",
+    },
+    {
+      label: "Percentage (0-100%)",
+      value: "percentage",
+    },
+    {
+      label: "Boolean (Complete/Incomplete)",
+      value: "boolean",
+    },
+  ];
   const [form, setForm] = useState<NewKeyResult>({
     name: "",
     startValue: 0,
@@ -101,9 +115,7 @@ export const NewKeyResultButton = ({
                   <Text className="mb-[0.35rem]">Measurement Type</Text>
                   <Select
                     defaultValue={form.measurementType}
-                    onValueChange={(value) => {
-                      const measurementType =
-                        value.toLowerCase() as MeasureType;
+                    onValueChange={(measurementType: MeasureType) => {
                       setForm({
                         ...form,
                         measurementType,
@@ -117,12 +129,12 @@ export const NewKeyResultButton = ({
                     </Select.Trigger>
                     <Select.Content>
                       <Select.Group>
-                        {["Number", "Percentage", "Boolean"].map((option) => (
+                        {measurementTypes.map((option) => (
                           <Select.Option
-                            key={option}
-                            value={option.toLowerCase()}
+                            key={option.value}
+                            value={option.value}
                           >
-                            {option}
+                            {option.label}
                           </Select.Option>
                         ))}
                       </Select.Group>

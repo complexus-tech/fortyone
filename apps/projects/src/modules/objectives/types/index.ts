@@ -55,7 +55,7 @@ export type NewObjectiveKeyResult = NewKeyResult & {
 export type NewObjective = {
   name: string;
   description?: string;
-  leadUser?: string;
+  leadUser?: string | null;
   teamId: string;
   startDate?: string | null;
   endDate?: string | null;

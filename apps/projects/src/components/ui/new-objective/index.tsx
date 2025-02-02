@@ -33,7 +33,6 @@ import { toast } from "sonner";
 import nProgress from "nprogress";
 import { format } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "next-auth/react";
 import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -41,9 +40,14 @@ import { useMembers } from "@/lib/hooks/members";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import type { NewKeyResult, NewObjective } from "@/modules/objectives/types";
 import { useCreateObjectiveMutation } from "@/modules/objectives/hooks";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { TeamColor } from "../team-color";
-import { KeyResultsList } from "./key-results-list";
+import { PriorityIcon } from "../priority-icon";
+import { StoryStatusIcon } from "../story-status-icon";
+import { PrioritiesMenu } from "../story/priorities-menu";
+import { ObjectiveStatusesMenu } from "../objective-statuses-menu";
 import { KeyResultEditor } from "./key-result-editor";
+import { KeyResultsList } from "./key-results-list";
 
 type KeyResultFormMode = "add" | "edit" | null;
 
@@ -58,23 +62,24 @@ export const NewObjectiveDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   teamId?: string;
 }) => {
-  const session = useSession();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
+  const { data: statuses = [] } = useObjectiveStatuses();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
     teams.at(0)!,
   );
+  const defaultStatusId = statuses.at(0)?.id;
 
   const initialForm: NewObjective = {
     name: "",
     description: "",
-    leadUser: session.data?.user?.id || undefined,
+    leadUser: null,
     teamId: initialTeamId || activeTeam.id,
     startDate: null,
     endDate: null,
-    statusId: "4cee9b45-e49a-419f-8964-1ee06b5ee797",
+    statusId: defaultStatusId!,
     priority: "No Priority",
     keyResults: [],
   };
@@ -242,6 +247,53 @@ export const NewObjectiveDialog = ({
             editor={editor}
           />
           <Flex align="center" className="mt-4 gap-1.5" wrap>
+            <ObjectiveStatusesMenu>
+              <ObjectiveStatusesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={
+                    <StoryStatusIcon statusId={objectiveForm.statusId} />
+                  }
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {statuses.find((s) => s.id === objectiveForm.statusId)
+                    ?.name ?? "Backlog"}
+                </Button>
+              </ObjectiveStatusesMenu.Trigger>
+              <ObjectiveStatusesMenu.Items
+                setStatusId={(statusId) => {
+                  setObjectiveForm((prev) => ({
+                    ...prev,
+                    statusId,
+                  }));
+                }}
+                statusId={objectiveForm.statusId}
+              />
+            </ObjectiveStatusesMenu>
+            <PrioritiesMenu>
+              <PrioritiesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<PriorityIcon priority={objectiveForm.priority} />}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {objectiveForm.priority ?? "No Priority"}
+                </Button>
+              </PrioritiesMenu.Trigger>
+              <PrioritiesMenu.Items
+                priority={objectiveForm.priority}
+                setPriority={(priority) => {
+                  setObjectiveForm((prev) => ({
+                    ...prev,
+                    priority,
+                  }));
+                }}
+              />
+            </PrioritiesMenu>
             <DatePicker>
               <DatePicker.Trigger>
                 <Button

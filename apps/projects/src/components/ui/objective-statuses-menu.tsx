@@ -2,8 +2,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { StoryStatusIcon } from "../story-status-icon";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { StoryStatusIcon } from "./story-status-icon";
 
 const StatusContext = createContext<{
   open: boolean;
@@ -27,7 +27,11 @@ const Menu = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const StatusesMenu = ({ children }: { children: ReactNode }) => {
+export const ObjectiveStatusesMenu = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const [open, setOpen] = useState(false);
   return (
     <StatusContext.Provider value={{ open, setOpen }}>
@@ -47,7 +51,7 @@ const Items = ({
   statusId?: string;
   setStatusId: (statusId: string) => void;
 }) => {
-  const { data: statuses = [] } = useStatuses();
+  const { data: statuses = [] } = useObjectiveStatuses();
   const [query, setQuery] = useState("");
 
   const state =
@@ -109,5 +113,5 @@ const Items = ({
   );
 };
 
-StatusesMenu.Trigger = Trigger;
-StatusesMenu.Items = Items;
+ObjectiveStatusesMenu.Trigger = Trigger;
+ObjectiveStatusesMenu.Items = Items;
