@@ -44,6 +44,7 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResu
 		Name:            nkr.Name,
 		MeasurementType: nkr.MeasurementType,
 		StartValue:      nkr.StartValue,
+		CurrentValue:    nkr.CurrentValue,
 		TargetValue:     nkr.TargetValue,
 		CreatedAt:       now,
 		UpdatedAt:       now,
