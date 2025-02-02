@@ -197,6 +197,7 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.objective_id = :objective_id
 		AND o.workspace_id = :workspace_id
+		ORDER BY kr.created_at DESC
 	`
 
 	params := map[string]interface{}{
