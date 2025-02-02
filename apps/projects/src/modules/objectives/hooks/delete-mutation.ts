@@ -31,7 +31,11 @@ export const useDeleteObjectiveMutation = () => {
         queryKey: objectiveKeys.objective(objectiveId),
       });
       queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
-      router.replace(`/teams/${teamId}/objectives`);
+      if (!teamId) {
+        router.replace("/objectives");
+      } else {
+        router.replace(`/teams/${teamId}/objectives`);
+      }
     },
   });
 
