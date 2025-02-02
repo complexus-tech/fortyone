@@ -31,6 +31,21 @@ export const NewKeyResultButton = ({
       });
       return;
     }
+
+    if (form.measurementType === "percentage") {
+      if (
+        form.startValue < 0 ||
+        form.startValue > 100 ||
+        form.targetValue < 0 ||
+        form.targetValue > 100
+      ) {
+        toast.warning("Validation error", {
+          description: "Percentage values must be between 0 and 100",
+        });
+        return;
+      }
+    }
+
     keyResultMutation.mutate({
       objectiveId,
       ...form,
@@ -162,6 +177,12 @@ export const NewKeyResultButton = ({
                     <Input
                       className="h-[2.7rem] bg-gray-50/30"
                       label="Starting Value"
+                      max={
+                        form.measurementType === "percentage" ? 100 : undefined
+                      }
+                      min={
+                        form.measurementType === "percentage" ? 0 : undefined
+                      }
                       onChange={(e) => {
                         setForm({
                           ...form,
@@ -176,6 +197,12 @@ export const NewKeyResultButton = ({
                     <Input
                       className="h-[2.7rem]"
                       label="Target Value"
+                      max={
+                        form.measurementType === "percentage" ? 100 : undefined
+                      }
+                      min={
+                        form.measurementType === "percentage" ? 0 : undefined
+                      }
                       onChange={(e) => {
                         setForm({
                           ...form,

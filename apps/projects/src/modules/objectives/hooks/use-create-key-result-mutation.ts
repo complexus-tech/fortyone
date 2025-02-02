@@ -41,6 +41,9 @@ export const useCreateKeyResultMutation = () => {
         objectiveKeys.keyResults(newKeyResult.objectiveId),
         (old = []) => [...old, optimisticKeyResult],
       );
+      toast.success("Success", {
+        description: "Key result created successfully",
+      });
 
       return { previousKeyResults };
     },
