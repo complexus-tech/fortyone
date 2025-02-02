@@ -21,9 +21,11 @@ import {
   PrioritiesMenu,
   PriorityIcon,
   StoryStatusIcon,
+  ObjectiveHealthIcon,
 } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
+import { HealthMenu } from "@/components/ui/health-menu";
 import { useUpdateObjectiveMutation } from "../hooks";
 import type { Objective, ObjectiveUpdate } from "../types";
 
@@ -36,6 +38,7 @@ export const ObjectiveCard = ({
   stats: { completed, total },
   isInTeam,
   statusId,
+  health,
   priority,
 }: Objective & { isInTeam?: boolean }) => {
   const { data: members = [] } = useMembers();
@@ -200,7 +203,25 @@ export const ObjectiveCard = ({
         </Box>
 
         <Box className="w-[100px] shrink-0">
-          <Text color="muted">Health</Text>
+          <HealthMenu>
+            <HealthMenu.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={<ObjectiveHealthIcon health={health} />}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                {health ?? "No Health"}
+              </Button>
+            </HealthMenu.Trigger>
+            <HealthMenu.Items
+              health={health}
+              setHealth={(health) => {
+                handleUpdate({ health });
+              }}
+            />
+          </HealthMenu>
         </Box>
       </Flex>
     </RowWrapper>

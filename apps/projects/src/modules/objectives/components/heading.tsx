@@ -50,11 +50,13 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
             Target
           </Text>
 
-          <Box className="w-[100px] shrink-0">
-            <Text color="muted" fontWeight="medium">
-              Health
-            </Text>
-          </Box>
+          <Text
+            className="w-[100px] shrink-0 pl-2.5"
+            color="muted"
+            fontWeight="medium"
+          >
+            Health
+          </Text>
         </Flex>
       </Container>
     </Box>

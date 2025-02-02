@@ -24,6 +24,7 @@ export { StoriesFilterButton } from "./stories-filter-button";
 export * from "./label";
 export * from "./dot";
 export * from "./confirm-dialog";
+export * from "./objective-health-icon";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";

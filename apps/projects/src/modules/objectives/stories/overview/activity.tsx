@@ -1,9 +1,22 @@
-import { ArrowDownIcon, ClockIcon, HealthIcon, ObjectiveIcon } from "icons";
+import { ArrowDownIcon, ClockIcon, ObjectiveIcon } from "icons";
 import { Button, Flex, Text, Tabs } from "ui";
+import { useParams } from "next/navigation";
+import { ObjectiveHealthIcon } from "@/components/ui";
+import { HealthMenu } from "@/components/ui/health-menu";
+import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
+import type { ObjectiveHealth } from "../../types";
 import { Summary } from "./summary";
 import { Updates } from "./updates";
 
 export const Activity = () => {
+  const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { data: objective } = useObjective(objectiveId);
+  const updateMutation = useUpdateObjectiveMutation();
+
+  const handleUpdate = (health: ObjectiveHealth) => {
+    updateMutation.mutate({ objectiveId, data: { health } });
+  };
+
   return (
     <Tabs defaultValue="summary">
       <Flex align="center" className="mb-3" justify="between">
@@ -25,15 +38,26 @@ export const Activity = () => {
         </Tabs.List>
         <Flex align="center" gap={2}>
           <Text color="muted">Health:</Text>
-          <Button
-            className="gap-1"
-            color="tertiary"
-            leftIcon={<HealthIcon />}
-            rightIcon={<ArrowDownIcon className="h-3.5" />}
-            size="sm"
-          >
-            On Track
-          </Button>
+
+          <HealthMenu>
+            <HealthMenu.Trigger>
+              <Button
+                className="gap-1"
+                color="tertiary"
+                leftIcon={<ObjectiveHealthIcon health={objective?.health} />}
+                rightIcon={<ArrowDownIcon className="h-3.5" />}
+                size="sm"
+              >
+                {objective?.health || "No health"}
+              </Button>
+            </HealthMenu.Trigger>
+            <HealthMenu.Items
+              health={objective?.health}
+              setHealth={(health) => {
+                handleUpdate(health);
+              }}
+            />
+          </HealthMenu>
         </Flex>
       </Flex>
       <Tabs.Panel value="summary">
