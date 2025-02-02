@@ -131,6 +131,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if uo.Priority != nil {
 		updates["priority"] = *uo.Priority
 	}
+	if uo.Health != nil {
+		health := objectives.ObjectiveHealth(*uo.Health)
+		updates["health"] = health
+	}
 
 	if err := h.objectives.Update(ctx, objID, wsID, updates); err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {

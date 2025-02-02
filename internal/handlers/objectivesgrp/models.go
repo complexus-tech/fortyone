@@ -23,6 +23,7 @@ type AppObjectiveList struct {
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	Status      uuid.UUID      `json:"statusId"`
 	Priority    *string        `json:"priority"`
+	Health      *string        `json:"health"`
 	Stats       ObjectiveStats `json:"stats"`
 }
 
@@ -43,6 +44,12 @@ type AppFilters struct {
 func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 	appObjectives := make([]AppObjectiveList, len(objectives))
 	for i, objective := range objectives {
+		var healthStr *string
+		if objective.Health != nil {
+			h := string(*objective.Health)
+			healthStr = &h
+		}
+
 		appObjectives[i] = AppObjectiveList{
 			ID:          objective.ID,
 			Name:        objective.Name,
@@ -57,6 +64,7 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 			UpdatedAt:   objective.UpdatedAt,
 			Status:      objective.Status,
 			Priority:    objective.Priority,
+			Health:      healthStr,
 			Stats: ObjectiveStats{
 				Total:     objective.TotalStories,
 				Cancelled: objective.CancelledStories,
@@ -110,6 +118,12 @@ func toCoreNewObjective(ano AppNewObjective) objectives.CoreNewObjective {
 
 // toAppObjective converts a single core objective to an application objective.
 func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
+	var healthStr *string
+	if objective.Health != nil {
+		h := string(*objective.Health)
+		healthStr = &h
+	}
+
 	return AppObjectiveList{
 		ID:          objective.ID,
 		Name:        objective.Name,
@@ -124,6 +138,7 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 		UpdatedAt:   objective.UpdatedAt,
 		Status:      objective.Status,
 		Priority:    objective.Priority,
+		Health:      healthStr,
 		Stats: ObjectiveStats{
 			Total:     objective.TotalStories,
 			Cancelled: objective.CancelledStories,
@@ -145,6 +160,7 @@ type AppUpdateObjective struct {
 	IsPrivate   *bool      `json:"isPrivate" db:"is_private"`
 	Status      *uuid.UUID `json:"statusId" db:"status_id"`
 	Priority    *string    `json:"priority" db:"priority"`
+	Health      *string    `json:"health" db:"health"`
 }
 
 // AppKeyResult represents a key result in the application

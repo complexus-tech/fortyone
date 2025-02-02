@@ -9,25 +9,26 @@ import (
 )
 
 type dbObjective struct {
-	ID               uuid.UUID  `db:"objective_id"`
-	Name             string     `db:"name"`
-	Description      *string    `db:"description"`
-	LeadUser         *uuid.UUID `db:"lead_user_id"`
-	Team             uuid.UUID  `db:"team_id"`
-	Workspace        uuid.UUID  `db:"workspace_id"`
-	StartDate        *time.Time `db:"start_date"`
-	EndDate          *time.Time `db:"end_date"`
-	IsPrivate        bool       `db:"is_private"`
-	Status           uuid.UUID  `db:"status_id"`
-	Priority         *string    `db:"priority"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
-	TotalStories     int        `db:"total_stories"`
-	CancelledStories int        `db:"cancelled_stories"`
-	CompletedStories int        `db:"completed_stories"`
-	StartedStories   int        `db:"started_stories"`
-	UnstartedStories int        `db:"unstarted_stories"`
-	BacklogStories   int        `db:"backlog_stories"`
+	ID               uuid.UUID                   `db:"objective_id"`
+	Name             string                      `db:"name"`
+	Description      *string                     `db:"description"`
+	LeadUser         *uuid.UUID                  `db:"lead_user_id"`
+	Team             uuid.UUID                   `db:"team_id"`
+	Workspace        uuid.UUID                   `db:"workspace_id"`
+	StartDate        *time.Time                  `db:"start_date"`
+	EndDate          *time.Time                  `db:"end_date"`
+	IsPrivate        bool                        `db:"is_private"`
+	Status           uuid.UUID                   `db:"status_id"`
+	Priority         *string                     `db:"priority"`
+	Health           *objectives.ObjectiveHealth `db:"health"`
+	CreatedAt        time.Time                   `db:"created_at"`
+	UpdatedAt        time.Time                   `db:"updated_at"`
+	TotalStories     int                         `db:"total_stories"`
+	CancelledStories int                         `db:"cancelled_stories"`
+	CompletedStories int                         `db:"completed_stories"`
+	StartedStories   int                         `db:"started_stories"`
+	UnstartedStories int                         `db:"unstarted_stories"`
+	BacklogStories   int                         `db:"backlog_stories"`
 }
 
 type dbKeyResult struct {
@@ -72,6 +73,7 @@ func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 		UpdatedAt:        dbo.UpdatedAt,
 		Status:           dbo.Status,
 		Priority:         dbo.Priority,
+		Health:           dbo.Health,
 		TotalStories:     dbo.TotalStories,
 		CancelledStories: dbo.CancelledStories,
 		CompletedStories: dbo.CompletedStories,

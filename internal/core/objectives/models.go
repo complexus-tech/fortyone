@@ -6,6 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// ObjectiveHealth represents the possible health states of an objective
+type ObjectiveHealth string
+
+const (
+	HealthAtRisk   ObjectiveHealth = "At Risk"
+	HealthOnTrack  ObjectiveHealth = "On Track"
+	HealthOffTrack ObjectiveHealth = "Off Track"
+)
+
 type CoreObjective struct {
 	ID               uuid.UUID
 	Name             string
@@ -20,6 +29,7 @@ type CoreObjective struct {
 	UpdatedAt        time.Time
 	Status           uuid.UUID
 	Priority         *string
+	Health           *ObjectiveHealth
 	TotalStories     int
 	CancelledStories int
 	CompletedStories int
@@ -51,4 +61,5 @@ type CoreUpdateObjective struct {
 	Visibility  *string
 	Status      *uuid.UUID
 	Priority    *string
+	Health      *ObjectiveHealth
 }
