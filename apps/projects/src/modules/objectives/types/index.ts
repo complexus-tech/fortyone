@@ -33,6 +33,7 @@ export type KeyResult = {
   objectiveId: string;
   startValue: number;
   targetValue: number;
+  currentValue: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -42,11 +43,10 @@ export type NewKeyResult = {
   measurementType: MeasureType;
   startValue: number;
   targetValue: number;
+  currentValue: number;
 };
 
-export type KeyResultUpdate = Partial<
-  Omit<NewKeyResult, "measurementType" | "startValue">
->;
+export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">>;
 
 export type NewObjectiveKeyResult = NewKeyResult & {
   objectiveId: string;

@@ -19,6 +19,7 @@ export const NewKeyResultButton = ({
     name: "",
     startValue: 0,
     targetValue: 0,
+    currentValue: 0,
     measurementType: "number",
   });
 
@@ -33,12 +34,14 @@ export const NewKeyResultButton = ({
     keyResultMutation.mutate({
       objectiveId,
       ...form,
+      currentValue: form.measurementType === "boolean" ? 0 : form.startValue,
     });
     setIsOpen(false);
     setForm({
       name: "",
       startValue: 0,
       targetValue: 0,
+      currentValue: 0,
       measurementType: "number",
     });
   };
@@ -198,6 +201,7 @@ export const NewKeyResultButton = ({
                     name: "",
                     startValue: 0,
                     targetValue: 0,
+                    currentValue: 0,
                     measurementType: "number",
                   });
                 }}

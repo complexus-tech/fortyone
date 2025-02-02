@@ -18,6 +18,7 @@ import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { NewKeyResultButton } from "./new-key-result";
+import { UpdateKeyResultDialog } from "./update-key-result-dialog";
 
 const RenderValue = ({
   value,
@@ -63,11 +64,26 @@ const Okr = ({
   name,
   startValue,
   targetValue,
+  currentValue,
   measurementType,
   updatedAt,
 }: KeyResult) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
+
+  const getProgress = () => {
+    if (measurementType === "boolean") {
+      return currentValue === 1 ? 100 : 0;
+    }
+    if (measurementType === "percentage") {
+      return currentValue;
+    }
+    // Calculate progress relative to start value
+    const totalChange = targetValue - startValue;
+    const actualChange = currentValue - startValue;
+    return Math.round((actualChange / totalChange) * 100);
+  };
 
   const handleDelete = () => {
     deleteKeyResult({ keyResultId: id, objectiveId });
@@ -95,7 +111,7 @@ const Okr = ({
       >
         <Flex align="center" className="px-6" direction="column" gap={1}>
           <Text color="muted">Current</Text>
-          <RenderValue measurementType={measurementType} value={startValue} />
+          <RenderValue measurementType={measurementType} value={currentValue} />
         </Flex>
         {measurementType !== "boolean" && (
           <Flex align="center" className="px-6" direction="column" gap={1}>
@@ -109,8 +125,8 @@ const Okr = ({
         <Flex align="center" className="px-5" direction="column" gap={1}>
           <Text color="muted">Progress</Text>
           <Flex align="center" gap={2}>
-            <ProgressBar className="w-16" progress={75} />
-            <Text className="text-[0.95rem]">75%</Text>
+            <ProgressBar className="w-16" progress={getProgress()} />
+            <Text className="text-[0.95rem]">{getProgress()}%</Text>
           </Flex>
         </Flex>
 
@@ -129,13 +145,17 @@ const Okr = ({
             </Menu.Button>
             <Menu.Items>
               <Menu.Group>
-                <Menu.Item>
+                <Menu.Item
+                  onSelect={() => {
+                    setIsUpdateOpen(true);
+                  }}
+                >
                   <EditIcon />
                   Update...
                 </Menu.Item>
                 <Menu.Item
-                  onClick={() => {
-                    setIsOpen(true);
+                  onSelect={() => {
+                    setIsDeleteOpen(true);
                   }}
                 >
                   <DeleteIcon />
@@ -149,12 +169,27 @@ const Okr = ({
       <ConfirmDialog
         confirmText="Yes, Delete"
         description="Are you sure you want to delete this key result? This action cannot be undone."
-        isOpen={isOpen}
+        isOpen={isDeleteOpen}
         onClose={() => {
-          setIsOpen(false);
+          setIsDeleteOpen(false);
         }}
         onConfirm={handleDelete}
         title="Delete Key Result"
+      />
+      <UpdateKeyResultDialog
+        isOpen={isUpdateOpen}
+        keyResult={{
+          id,
+          objectiveId,
+          name,
+          startValue,
+          targetValue,
+          currentValue,
+          measurementType,
+          createdAt: "",
+          updatedAt,
+        }}
+        onOpenChange={setIsUpdateOpen}
       />
     </Wrapper>
   );

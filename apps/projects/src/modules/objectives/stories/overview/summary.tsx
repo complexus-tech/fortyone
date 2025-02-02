@@ -6,6 +6,20 @@ import { differenceInDays, format } from "date-fns";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
 import { useUpdateObjectiveMutation } from "../../hooks";
+import type { KeyResult } from "../../types";
+
+const getProgress = (keyResult: KeyResult) => {
+  if (keyResult.measurementType === "boolean") {
+    return keyResult.currentValue === 1 ? 100 : 0;
+  }
+  if (keyResult.measurementType === "percentage") {
+    return keyResult.currentValue;
+  }
+  // Calculate progress relative to start value
+  const totalChange = keyResult.targetValue - keyResult.startValue;
+  const actualChange = keyResult.currentValue - keyResult.startValue;
+  return Math.round((actualChange / totalChange) * 100);
+};
 
 export const Summary = () => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
@@ -40,6 +54,13 @@ export const Summary = () => {
       data: { endDate: date },
     });
   };
+
+  const keyResultProgress = Math.round(
+    keyResults.reduce((acc, keyResult) => {
+      return acc + getProgress(keyResult);
+    }, 0) / keyResults.length,
+  );
+
   return (
     <Box
       className={cn("mt-3 grid grid-cols-2 gap-4", {
@@ -74,12 +95,12 @@ export const Summary = () => {
             Key Result Progress
           </Text>
           <Text fontSize="2xl">
-            65%{" "}
+            {keyResultProgress}%{" "}
             <Text as="span" color="muted" fontSize="md">
               completed
             </Text>
           </Text>
-          <ProgressBar className="mt-2.5" progress={65} />
+          <ProgressBar className="mt-2.5" progress={keyResultProgress} />
         </Wrapper>
       )}
       <Wrapper className="px-5">
