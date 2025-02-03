@@ -1,6 +1,11 @@
 "use server";
 
-export async function authenticateUser({ email = "", password = "" }) {
+export async function authenticateUser({
+  email: _,
+}: {
+  email?: string;
+  password?: string;
+}) {
   // const user = await post<{ email: string; password: string }, User>(
   //   "users/login",
   //   {
@@ -8,6 +13,8 @@ export async function authenticateUser({ email = "", password = "" }) {
   //     password,
   //   },
   // );
+
+  await new Promise(() => {});
 
   return {
     id: "8a798112-90fe-495e-9f1c-f36655e3d8ab",

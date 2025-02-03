@@ -1,5 +1,5 @@
-import { type Sprint } from "../types";
 import { isAfter, isBefore, isEqual } from "date-fns";
+import { type Sprint } from "../types";
 
 export const validateSprintDates = (
   startDate: string,
@@ -30,15 +30,20 @@ export const validateSprintDates = (
 
     // Check if the new sprint overlaps with an existing sprint
     const isStartDateOverlap =
-      (isEqual(newStartDate, sprintStartDate) || isAfter(newStartDate, sprintStartDate)) &&
-      (isEqual(newStartDate, sprintEndDate) || isBefore(newStartDate, sprintEndDate));
+      (isEqual(newStartDate, sprintStartDate) ||
+        isAfter(newStartDate, sprintStartDate)) &&
+      (isEqual(newStartDate, sprintEndDate) ||
+        isBefore(newStartDate, sprintEndDate));
 
     const isEndDateOverlap =
-      (isEqual(newEndDate, sprintStartDate) || isAfter(newEndDate, sprintStartDate)) &&
-      (isEqual(newEndDate, sprintEndDate) || isBefore(newEndDate, sprintEndDate));
+      (isEqual(newEndDate, sprintStartDate) ||
+        isAfter(newEndDate, sprintStartDate)) &&
+      (isEqual(newEndDate, sprintEndDate) ||
+        isBefore(newEndDate, sprintEndDate));
 
     const isSprintEnclosed =
-      isBefore(newStartDate, sprintStartDate) && isAfter(newEndDate, sprintEndDate);
+      isBefore(newStartDate, sprintStartDate) &&
+      isAfter(newEndDate, sprintEndDate);
 
     return isStartDateOverlap || isEndDateOverlap || isSprintEnclosed;
   });
@@ -46,7 +51,8 @@ export const validateSprintDates = (
   if (hasOverlap) {
     return {
       isValid: false,
-      error: "Sprint dates overlap with an existing sprint. Please choose different dates.",
+      error:
+        "Sprint dates overlap with an existing sprint. Please choose different dates.",
     };
   }
 

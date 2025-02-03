@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteTeamAction } from "@/modules/teams/delete-team";
 import { teamKeys } from "@/constants/keys";
 import type { Team } from "@/modules/teams/types";
+import { deleteTeamAction } from "../actions/delete-team";
 
 export const useDeleteTeamMutation = (id: string) => {
   const queryClient = useQueryClient();

@@ -41,6 +41,7 @@ export const Header = ({
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesViewOptionsButton
           groupByOptions={["Status", "Priority"]}
+          layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />

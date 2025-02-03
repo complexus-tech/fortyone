@@ -1,5 +1,5 @@
 import type { Options } from "ky";
-import qs from "qs";
+import { stringify } from "qs";
 import { get } from "@/lib/http";
 import type { Story } from "@/modules/stories/types";
 import type { ApiResponse } from "@/types";
@@ -15,7 +15,7 @@ export const getStories = async (
   } = {},
   options?: Options,
 ) => {
-  const query = qs.stringify(params, {
+  const query = stringify(params, {
     skipNulls: true,
     addQueryPrefix: true,
     encodeValuesOnly: true,

@@ -28,6 +28,27 @@ export const CommentInput = ({
 }) => {
   const { mutateAsync } = useCommentStoryMutation();
   const { mutateAsync: updateComment } = useUpdateCommentMutation();
+
+  const getPlaceHolder = () => {
+    if (commentId) {
+      return "Edit comment...";
+    }
+    if (parentId) {
+      return "Reply to comment...";
+    }
+    return "Leave a comment...";
+  };
+
+  const getButtonLabel = () => {
+    if (commentId) {
+      return "Update";
+    }
+    if (parentId) {
+      return "Reply";
+    }
+    return "Comment";
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -40,11 +61,7 @@ export const CommentInput = ({
         autolink: true,
       }),
       Placeholder.configure({
-        placeholder: commentId
-          ? "Edit comment..."
-          : parentId
-            ? "Reply to comment..."
-            : "Leave a comment...",
+        placeholder: getPlaceHolder(),
       }),
     ],
     content: initialComment ?? "",
@@ -96,7 +113,8 @@ export const CommentInput = ({
         editor={editor}
       />
       <Flex gap={2} justify="end">
-        {onCancel ? <Button
+        {onCancel ? (
+          <Button
             className="px-3"
             color="tertiary"
             onClick={onCancel}
@@ -104,7 +122,8 @@ export const CommentInput = ({
             variant="outline"
           >
             Cancel
-          </Button> : null}
+          </Button>
+        ) : null}
         <Button
           className="px-3"
           color="tertiary"
@@ -113,7 +132,7 @@ export const CommentInput = ({
           size="sm"
           variant="outline"
         >
-          {parentId ? "Reply" : commentId ? "Update" : "Comment"}
+          {getButtonLabel()}
         </Button>
       </Flex>
     </Flex>

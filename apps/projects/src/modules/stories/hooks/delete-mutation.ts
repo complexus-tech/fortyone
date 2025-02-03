@@ -18,15 +18,14 @@ export const useBulkDeleteStoryMutation = () => {
           err.message || "An error occurred while deleting the story",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(storyIds); },
+          onClick: () => {
+            mutation.mutate(storyIds);
+          },
         },
       });
     },
     onMutate: (storyIds) => {
-      const activeQueries = queryClient
-        .getQueryCache()
-        .getAll()
-        .filter((query) => query.isActive);
+      const activeQueries = queryClient.getQueryCache().getAll();
 
       activeQueries.forEach((query) => {
         queryClient.setQueryData<Story[]>(query.queryKey, () => {

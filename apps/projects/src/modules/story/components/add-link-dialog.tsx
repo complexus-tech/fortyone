@@ -36,7 +36,7 @@ export const AddLinkDialog = ({
     e.preventDefault();
     if (isEditing) {
       await updateLink({
-        linkId: link?.id!,
+        linkId: link!.id,
         payload: {
           title: form.title,
           url: form.url,

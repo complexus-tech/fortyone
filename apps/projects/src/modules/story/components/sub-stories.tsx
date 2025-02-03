@@ -27,9 +27,9 @@ export const SubStories = ({
     (status) => status.category === "completed",
   );
 
-  const completedStories =
-    subStories.filter((story) => story.statusId === completedStatus?.id)
-      .length ?? 0;
+  const completedStories = subStories.filter(
+    (story) => story.statusId === completedStatus?.id,
+  ).length;
 
   return (
     <>
@@ -70,7 +70,9 @@ export const SubStories = ({
           <Button
             color="tertiary"
             leftIcon={<PlusIcon />}
-            onClick={() => { setIsCreateSubStoryOpen(true); }}
+            onClick={() => {
+              setIsCreateSubStoryOpen(true);
+            }}
             size="sm"
             variant="naked"
           >
@@ -86,7 +88,8 @@ export const SubStories = ({
         setIsOpen={setIsCreateSubStoryOpen}
         teamId={teamId}
       />
-      {isSubStoriesOpen && subStories.length > 0 ? <StoriesBoard
+      {isSubStoriesOpen && subStories.length > 0 ? (
+        <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
           layout="list"
           stories={subStories}
@@ -96,7 +99,8 @@ export const SubStories = ({
             showEmptyGroups: false,
             displayColumns: ["ID", "Status", "Priority", "Assignee"],
           }}
-        /> : null}
+        />
+      ) : null}
     </>
   );
 };

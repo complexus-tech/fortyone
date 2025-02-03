@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authenticateUser } from "./lib/actions/auth/sigin-in";

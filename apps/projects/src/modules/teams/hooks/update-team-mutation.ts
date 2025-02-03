@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateTeamAction } from "@/modules/teams/update-team";
-import type { UpdateTeamInput } from "@/modules/teams/update-team";
-import type { Team } from "@/modules/teams/types";
 import { teamKeys } from "@/constants/keys";
+import type { UpdateTeamInput } from "../actions/update-team";
+import { updateTeamAction } from "../actions/update-team";
+import type { Team } from "../types";
 
 export const useUpdateTeamMutation = (id: string) => {
   const queryClient = useQueryClient();

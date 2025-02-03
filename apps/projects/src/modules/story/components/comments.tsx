@@ -58,7 +58,8 @@ const MainComment = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? <Box>
+            member ? (
+              <Box>
                 <Flex gap={2}>
                   <Avatar
                     className="mt-0.5"
@@ -87,7 +88,8 @@ const MainComment = ({
                     </Button>
                   </Box>
                 </Flex>
-              </Box> : null
+              </Box>
+            ) : null
           }
         >
           <Flex className="cursor-pointer" gap={1}>
@@ -116,11 +118,23 @@ const MainComment = ({
           align="center"
           className="pointer-events-none ml-2 gap-2.5 opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
         >
-          <button onClick={() => { setIsEditing(true); }} title="Edit">
+          <button
+            onClick={() => {
+              setIsEditing(true);
+            }}
+            title="Edit"
+            type="button"
+          >
             <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Edit</span>
           </button>
-          <button onClick={() => { setIsOpen(true); }} title="Delete">
+          <button
+            onClick={() => {
+              setIsOpen(true);
+            }}
+            title="Delete"
+            type="button"
+          >
             <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
             <span className="sr-only">Delete</span>
           </button>
@@ -150,22 +164,27 @@ const MainComment = ({
           className="ml-10 mt-3 px-2"
           color="tertiary"
           leftIcon={<ReplyIcon className="h-4" />}
-          onClick={() => { setIsReplying(true); }}
+          onClick={() => {
+            setIsReplying(true);
+          }}
           size="sm"
         >
           Reply
         </Button>
       )}
-      {isReplying ? <Box className="mt-3 pl-[2.4rem] pr-1">
+      {isReplying ? (
+        <Box className="mt-3 pl-[2.4rem] pr-1">
           <CommentInput
             className="mb-2 min-h-[3rem] focus-within:shadow-none"
             onCancel={handleCancel}
             parentId={id}
             storyId={storyId}
           />
-        </Box> : null}
+        </Box>
+      ) : null}
 
-      {isEditing ? <Box className="mt-3 pl-8 pr-1">
+      {isEditing ? (
+        <Box className="mt-3 pl-8 pr-1">
           <CommentInput
             className="mb-2 min-h-[3rem] focus-within:shadow-none"
             commentId={id}
@@ -173,7 +192,8 @@ const MainComment = ({
             onCancel={handleCancel}
             storyId={storyId}
           />
-        </Box> : null}
+        </Box>
+      ) : null}
 
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content>
