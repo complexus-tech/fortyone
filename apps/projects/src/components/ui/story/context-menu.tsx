@@ -168,7 +168,6 @@ export const contextMenu = [
 
 export const StoryContextMenu = ({
   children,
-  story,
 }: {
   children: ReactNode;
   story: Story;

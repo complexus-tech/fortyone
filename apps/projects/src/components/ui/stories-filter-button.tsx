@@ -85,8 +85,7 @@ export const StoriesFilterButton = ({
   setFilters,
   resetFilters,
 }: StoriesFilterButtonProps) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- This comment disables the eslint rule
-  const [date, setDate] = useState<DateRange | undefined>({
+  const [date, _] = useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(),
   });

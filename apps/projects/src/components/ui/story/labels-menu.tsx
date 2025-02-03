@@ -12,7 +12,6 @@ const LabelsContext = createContext<{
   setOpen: (open: boolean) => void;
 }>({
   open: false,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function -- we don't need to set the open state
   setOpen: () => {},
 });
 

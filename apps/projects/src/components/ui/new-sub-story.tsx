@@ -1,5 +1,5 @@
 "use client";
-import type { Dispatch, SetStateAction} from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { Button, Flex, TextEditor, DatePicker, Box, Avatar } from "ui";
 import { useEditor } from "@tiptap/react";
@@ -12,7 +12,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import { CalendarIcon, CloseIcon, PlusIcon, TagsIcon } from "icons";
+import { CalendarIcon, CloseIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
@@ -125,8 +125,6 @@ export const NewSubStory = ({
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
       setStoryForm(initialForm);
-    } catch (error) {
-      console.log(error);
     } finally {
       setLoading(false);
       nProgress.done();
@@ -141,7 +139,8 @@ export const NewSubStory = ({
 
   return (
     <Box>
-      {isOpen ? <Box className="mt-2 rounded-lg border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
+      {isOpen ? (
+        <Box className="mt-2 rounded-lg border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
           <TextEditor
             asTitle
             className="text-xl font-medium"
@@ -209,7 +208,8 @@ export const NewSubStory = ({
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
-                      storyForm.startDate ? <CloseIcon
+                      storyForm.startDate ? (
+                        <CloseIcon
                           aria-label="Remove date"
                           className="h-4 w-auto"
                           onClick={() => {
@@ -219,7 +219,8 @@ export const NewSubStory = ({
                             }));
                           }}
                           role="button"
-                        /> : null
+                        />
+                      ) : null
                     }
                     size="xs"
                     variant="outline"
@@ -254,7 +255,8 @@ export const NewSubStory = ({
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
-                      storyForm.endDate ? <CloseIcon
+                      storyForm.endDate ? (
+                        <CloseIcon
                           aria-label="Remove date"
                           className="h-4 w-auto"
                           onClick={() => {
@@ -264,7 +266,8 @@ export const NewSubStory = ({
                             }));
                           }}
                           role="button"
-                        /> : null
+                        />
+                      ) : null
                     }
                     size="xs"
                     variant="outline"
@@ -348,7 +351,8 @@ export const NewSubStory = ({
               </Button>
             </Flex>
           </Flex>
-        </Box> : null}
+        </Box>
+      ) : null}
     </Box>
   );
 };

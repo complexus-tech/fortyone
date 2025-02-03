@@ -13,6 +13,38 @@ import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
 
+const getId = ({
+  groupBy,
+  status,
+  assignee,
+  priority,
+}: {
+  groupBy: StoriesViewOptions["groupBy"];
+  status?: State;
+  assignee?: Member;
+  priority?: StoryPriority;
+}) => {
+  if (groupBy === "Status") return status?.id;
+  if (groupBy === "Assignee") return assignee?.id;
+  return priority;
+};
+
+const getGroupLabel = ({
+  groupBy,
+  status,
+  assignee,
+  priority,
+}: {
+  groupBy: StoriesViewOptions["groupBy"];
+  status?: State;
+  assignee?: Member;
+  priority?: StoryPriority;
+}) => {
+  if (groupBy === "Status") return status?.name;
+  if (groupBy === "Assignee") return assignee?.username || "Unassigned";
+  return priority;
+};
+
 export const StoriesGroup = ({
   stories,
   status,
@@ -32,11 +64,7 @@ export const StoriesGroup = ({
   const { data: statuses = [] } = useStatuses();
   const { id: defaultStatusId } = statuses.at(0)!;
   const { groupBy, showEmptyGroups } = viewOptions;
-  const id = (groupBy === "Status"
-      ? status?.id
-      : groupBy === "Assignee"
-        ? assignee?.id
-        : priority)!;
+  const id = getId({ groupBy, status, assignee, priority })!;
 
   const collapseKey = pathname + id;
   const defaultClosedStatuses: StateCategory[] = [
@@ -66,8 +94,8 @@ export const StoriesGroup = ({
 
   const mappedStories = stories.map(({ statusId, priority, ...rest }) => ({
     ...rest,
-    priority: priority ?? "No Priority",
-    statusId: statusId ?? defaultStatusId,
+    priority,
+    statusId: statusId || defaultStatusId,
   }));
   const filteredStories = mappedStories.filter((story) => {
     if (groupBy === "Status") return story.statusId === id;
@@ -103,11 +131,7 @@ export const StoriesGroup = ({
             {filteredStories.length === 1 ? "y" : "ies"} with{" "}
             {groupBy.toLowerCase()}{" "}
             <span className="font-semibold">
-              {groupBy === "Status"
-                ? status?.name
-                : groupBy === "Assignee"
-                  ? assignee?.username || "Unassigned"
-                  : priority}
+              {getGroupLabel({ groupBy, status, assignee, priority })}
             </span>
           </Text>
         </RowWrapper>

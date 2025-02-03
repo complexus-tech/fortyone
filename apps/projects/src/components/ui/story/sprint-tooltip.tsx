@@ -5,15 +5,19 @@ import { format, differenceInDays } from "date-fns";
 import type { Sprint } from "@/modules/sprints/types";
 
 export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
-  const isCompleted = new Date(selectedSprint?.endDate!) < new Date();
+  if (!selectedSprint) {
+    return null;
+  }
+
+  const isCompleted = new Date(selectedSprint.endDate) < new Date();
   const inProgress =
-    new Date(selectedSprint?.startDate!) < new Date() &&
-    new Date(selectedSprint?.endDate!) > new Date();
+    new Date(selectedSprint.startDate) < new Date() &&
+    new Date(selectedSprint.endDate) > new Date();
   const daysLeft = differenceInDays(
-    new Date(selectedSprint?.endDate!),
+    new Date(selectedSprint.endDate),
     new Date(),
   );
-  const isPanned = new Date(selectedSprint?.startDate!) > new Date();
+  const isPanned = new Date(selectedSprint.startDate) > new Date();
 
   const getBadgeColor = () => {
     if (isCompleted || isPanned) {
@@ -47,8 +51,8 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
   return (
     <Box>
       <Text className="flex items-center gap-1" fontSize="md">
-        <SprintsIcon className="h-5 w-auto shrink-0" />
-        {selectedSprint?.name}
+        <SprintsIcon className="shrink-0" />
+        {selectedSprint.name}
       </Text>
       <Flex align="center" className="mb-3 mt-4" gap={6} justify="between">
         <Text className="flex items-center gap-1" fontSize="md">
@@ -59,8 +63,8 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
               "text-info dark:text-info": getBadgeColor() === "info",
             })}
           />{" "}
-          {format(new Date(selectedSprint?.startDate!), "MMM dd")} -{" "}
-          {format(new Date(selectedSprint?.endDate!), "MMM dd")}
+          {format(new Date(selectedSprint.startDate), "MMM dd")} -{" "}
+          {format(new Date(selectedSprint.endDate), "MMM dd")}
         </Text>
         <Badge
           className="h-7 text-[0.95rem] font-medium capitalize"
@@ -70,12 +74,14 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
           {getBadgeText()}
         </Badge>
       </Flex>
-      {selectedSprint?.goal ? <>
+      {selectedSprint.goal ? (
+        <>
           <Text fontSize="md">Sprint Goal:</Text>
           <Text className="mt-1 line-clamp-4" color="muted" fontSize="md">
             {selectedSprint.goal}
           </Text>
-        </> : null}
+        </>
+      ) : null}
     </Box>
   );
 };

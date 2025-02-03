@@ -3,11 +3,7 @@ import { Button, Flex, Text, Tooltip, Dialog, Command, Divider, Box } from "ui";
 import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
 import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
-import type { StoryPriority } from "@/modules/stories/types";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
-import { useTeams } from "@/modules/teams/hooks/teams";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useBoard } from "./board-context";
 
 export const StoriesToolbar = () => {
@@ -16,26 +12,16 @@ export const StoriesToolbar = () => {
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
 
-  const { data: teams = [] } = useTeams();
-  const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
-  const { data: objectives = [] } = useObjectives();
 
   const { mutateAsync: bulkDeleteMutate } = useBulkDeleteStoryMutation();
 
   const handleBulkDelete = async () => {
-    bulkDeleteMutate(selectedStories);
+    await bulkDeleteMutate(selectedStories);
     setSelectedStories([]);
     setIsOpen(false);
   };
 
-  const priorities: StoryPriority[] = [
-    "No Priority",
-    "Low",
-    "Medium",
-    "High",
-    "Urgent",
-  ];
   return (
     <>
       <Flex
