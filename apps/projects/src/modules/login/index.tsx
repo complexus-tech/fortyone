@@ -1,5 +1,5 @@
 "use client";
-import type { FormEvent} from "react";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { Box, Flex, Input, Text, Button } from "ui";
 import { toast } from "sonner";
@@ -23,7 +23,6 @@ export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
           description: result.error,
         });
       }
-    } catch (_) {
     } finally {
       setLoading(false);
       nProgress.done();

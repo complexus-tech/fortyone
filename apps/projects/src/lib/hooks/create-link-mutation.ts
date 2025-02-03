@@ -15,7 +15,9 @@ export const useCreateLinkMutation = () => {
         description: "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
+          onClick: () => {
+            mutation.mutate(variables);
+          },
         },
       });
       queryClient.invalidateQueries({
@@ -35,15 +37,15 @@ export const useCreateLinkMutation = () => {
         linkKeys.story(newLink.storyId),
       );
       if (previousLinks) {
-        queryClient.setQueryData<Link[]>(
-          linkKeys.story(newLink.storyId),
-          [...previousLinks, optimisticLink],
-        );
+        queryClient.setQueryData<Link[]>(linkKeys.story(newLink.storyId), [
+          ...previousLinks,
+          optimisticLink,
+        ]);
       }
     },
-    onSettled: (newLink) => {
+    onSuccess: (newLink) => {
       queryClient.invalidateQueries({
-        queryKey: linkKeys.story(newLink?.storyId!),
+        queryKey: linkKeys.story(newLink.storyId),
       });
     },
   });

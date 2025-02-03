@@ -24,7 +24,7 @@ export const useDeleteWorkspaceMutation = (id: string) => {
       return { previousWorkspaces };
     },
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: workspaceKeys.detail(id) });
+      queryClient.removeQueries({ queryKey: workspaceKeys.detail() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });

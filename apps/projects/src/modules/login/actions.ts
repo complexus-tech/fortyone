@@ -2,10 +2,9 @@
 import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 
-export const logIn = async (callbackUrl: string, formData: FormData) => {
+export const logIn = async (callbackUrl: string, _: FormData) => {
   try {
     // sleep for 1 second to simulate a network request
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     await signIn("credentials", {
       email: "jo@mk.com",
       password: "password",

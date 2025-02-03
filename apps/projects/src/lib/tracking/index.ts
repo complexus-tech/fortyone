@@ -1,3 +1,1 @@
-export const trackEvent = async (event: string, data: Record<string, any>) => {
-  console.log("Event tracked:", event, data);
-};
+export const trackEvent = async (_: string, __: Record<string, unknown>) => {};

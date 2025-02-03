@@ -13,7 +13,7 @@ export const updateCommentAction = async (
   payload: UpdateComment,
   storyId: string,
 ) => {
-  const _ = await put<UpdateComment, any>(`comments/${commentId}`, payload);
+  const _ = await put<UpdateComment, null>(`comments/${commentId}`, payload);
   revalidateTag(storyTags.comments(storyId));
   return commentId;
 };
