@@ -37,6 +37,8 @@ export type KeyResult = {
   startValue: number;
   targetValue: number;
   currentValue: number;
+  createdBy: string;
+  lastUpdatedBy: string;
   createdAt: string;
   updatedAt: string;
 };

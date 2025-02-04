@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { objectiveKeys } from "../constants";
 import { updateKeyResult } from "../actions/update-key-result";
 import type { KeyResult, KeyResultUpdate } from "../types";
@@ -12,7 +13,7 @@ type UpdateKeyResultVariables = {
 
 export const useUpdateKeyResultMutation = () => {
   const queryClient = useQueryClient();
-
+  const { data: session } = useSession();
   const mutation = useMutation({
     mutationFn: ({
       keyResultId,
@@ -52,6 +53,7 @@ export const useUpdateKeyResultMutation = () => {
                   ...keyResult,
                   ...data,
                   updatedAt: new Date().toISOString(),
+                  lastUpdatedBy: session?.user?.id || "",
                 }
               : keyResult,
           ),

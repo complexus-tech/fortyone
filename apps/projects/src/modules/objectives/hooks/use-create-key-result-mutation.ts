@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { objectiveKeys } from "../constants";
 import { createKeyResult } from "../actions/create-key-result";
 import type { KeyResult, NewObjectiveKeyResult } from "../types";
 
 export const useCreateKeyResultMutation = () => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   const mutation = useMutation({
     mutationFn: createKeyResult,
@@ -33,6 +35,8 @@ export const useCreateKeyResultMutation = () => {
       const optimisticKeyResult: KeyResult = {
         ...newKeyResult,
         id: "optimistic",
+        createdBy: session?.user?.id || "",
+        lastUpdatedBy: session?.user?.id || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
