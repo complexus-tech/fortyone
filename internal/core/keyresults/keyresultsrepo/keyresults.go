@@ -41,7 +41,7 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-// Create creates a new key result
+// Create inserts a new key result into the database
 func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Create")
 	defer span.End()
@@ -49,10 +49,12 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 	const q = `
 		INSERT INTO key_results (
 			id, objective_id, name, measurement_type,
-			start_value, current_value, target_value, created_at, updated_at
+			start_value, current_value, target_value, 
+			created_at, updated_at, created_by, last_updated_by
 		) VALUES (
 			:id, :objective_id, :name, :measurement_type,
-			:start_value, :current_value, :target_value, :created_at, :updated_at
+			:start_value, :current_value, :target_value, 
+			:created_at, :updated_at, :created_by, :last_updated_by
 		)
 	`
 
@@ -81,7 +83,7 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 	return nil
 }
 
-// Update updates a key result
+// Update modifies data about a key result
 func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Update")
 	defer span.End()
@@ -192,7 +194,18 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 	defer span.End()
 
 	const q = `
-		SELECT kr.*
+		SELECT 
+			kr.id,
+			kr.objective_id,
+			kr.name,
+			kr.measurement_type,
+			kr.start_value,
+			kr.current_value,
+			kr.target_value,
+			kr.created_at,
+			kr.updated_at,
+			kr.created_by,
+			kr.last_updated_by
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.objective_id = :objective_id
@@ -221,14 +234,24 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 		span.RecordError(errors.New("failed to list key results"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
-
 	return toCoreKeyResults(keyResults), nil
 }
 
 // getKeyResultById retrieves a key result by ID and verifies it belongs to the workspace
 func (r *repo) getKeyResultById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbKeyResult, error) {
 	const q = `
-		SELECT kr.*
+		SELECT 
+			kr.id,
+			kr.objective_id,
+			kr.name,
+			kr.measurement_type,
+			kr.start_value,
+			kr.current_value,
+			kr.target_value,
+			kr.created_at,
+			kr.updated_at,
+			kr.created_by,
+			kr.last_updated_by
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.id = :id

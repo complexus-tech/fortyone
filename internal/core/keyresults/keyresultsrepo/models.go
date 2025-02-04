@@ -26,6 +26,8 @@ type dbKeyResult struct {
 	TargetValue     float64   `db:"target_value"`
 	CreatedAt       time.Time `db:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at"`
+	CreatedBy       uuid.UUID `db:"created_by"`
+	LastUpdatedBy   uuid.UUID `db:"last_updated_by"`
 }
 
 // CoreKeyResult represents the core business model for a key result
@@ -39,6 +41,8 @@ type CoreKeyResult struct {
 	TargetValue     float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	CreatedBy       uuid.UUID
+	LastUpdatedBy   uuid.UUID
 }
 
 // toCoreKeyResult converts a dbKeyResult to a CoreKeyResult
@@ -53,6 +57,8 @@ func toCoreKeyResult(kr dbKeyResult) CoreKeyResult {
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
+		CreatedBy:       kr.CreatedBy,
+		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }
 
@@ -77,5 +83,7 @@ func toDBKeyResult(kr CoreKeyResult) dbKeyResult {
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
+		CreatedBy:       kr.CreatedBy,
+		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }

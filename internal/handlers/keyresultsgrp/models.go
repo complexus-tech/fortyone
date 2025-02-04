@@ -22,6 +22,8 @@ type AppKeyResult struct {
 	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+	CreatedBy       uuid.UUID `json:"createdBy"`
+	LastUpdatedBy   uuid.UUID `json:"lastUpdatedBy"`
 }
 
 // AppNewKeyResult represents the data needed to create a new key result
@@ -108,6 +110,8 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
+		CreatedBy:       kr.CreatedBy,
+		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }
 
@@ -121,13 +125,14 @@ func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
 }
 
 // toCoreNewKeyResult converts an AppNewKeyResult to a CoreNewKeyResult
-func toCoreNewKeyResult(akr AppNewKeyResult) keyresults.CoreNewKeyResult {
+func toCoreNewKeyResult(nkr AppNewKeyResult, userID uuid.UUID) keyresults.CoreNewKeyResult {
 	return keyresults.CoreNewKeyResult{
-		ObjectiveID:     akr.ObjectiveID,
-		Name:            akr.Name,
-		MeasurementType: akr.MeasurementType,
-		StartValue:      akr.StartValue,
-		CurrentValue:    akr.CurrentValue,
-		TargetValue:     akr.TargetValue,
+		ObjectiveID:     nkr.ObjectiveID,
+		Name:            nkr.Name,
+		MeasurementType: nkr.MeasurementType,
+		StartValue:      nkr.StartValue,
+		CurrentValue:    nkr.CurrentValue,
+		TargetValue:     nkr.TargetValue,
+		CreatedBy:       userID,
 	}
 }

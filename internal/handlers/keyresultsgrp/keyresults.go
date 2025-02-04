@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -34,6 +35,10 @@ func New(keyResults *keyresults.Service, log *logger.Logger) *Handlers {
 
 // Create adds a new key result to the system
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	var nkr AppNewKeyResult
 	if err := web.Decode(r, &nkr); err != nil {
@@ -45,7 +50,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr))
+	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr, userID))
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -57,6 +62,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 // Update modifies a key result in the system
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	keyResultID := web.Params(r, "id")
 	workspaceID := web.Params(r, "workspaceId")
 
@@ -93,6 +103,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if ukr.TargetValue != nil {
 		updates["target_value"] = ukr.TargetValue
 	}
+	updates["last_updated_by"] = userID
 
 	if err := h.keyResults.Update(ctx, id, wsID, updates); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {

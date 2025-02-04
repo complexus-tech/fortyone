@@ -3,7 +3,7 @@ package keyresults
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -32,34 +32,37 @@ func New(log *logger.Logger, repo keyresultsrepo.Repository) *Service {
 	}
 }
 
-// Create creates a new key result in the system
+// Create inserts a new key result into the system
 func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResult, error) {
-	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Create")
-	defer span.End()
 
-	now := time.Now()
 	kr := keyresultsrepo.CoreKeyResult{
-		ID:              uuid.New(),
 		ObjectiveID:     nkr.ObjectiveID,
 		Name:            nkr.Name,
 		MeasurementType: nkr.MeasurementType,
 		StartValue:      nkr.StartValue,
 		CurrentValue:    nkr.CurrentValue,
 		TargetValue:     nkr.TargetValue,
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		CreatedBy:       nkr.CreatedBy,
+		LastUpdatedBy:   nkr.CreatedBy,
 	}
 
 	if err := s.repo.Create(ctx, &kr); err != nil {
-		return CoreKeyResult{}, err
+		return CoreKeyResult{}, fmt.Errorf("create: %w", err)
 	}
 
-	span.AddEvent("key result created", trace.WithAttributes(
-		attribute.String("key_result.id", kr.ID.String()),
-		attribute.String("key_result.name", kr.Name),
-	))
-
-	return CoreKeyResult(kr), nil
+	return CoreKeyResult{
+		ID:              kr.ID,
+		ObjectiveID:     kr.ObjectiveID,
+		Name:            kr.Name,
+		MeasurementType: kr.MeasurementType,
+		StartValue:      kr.StartValue,
+		CurrentValue:    kr.CurrentValue,
+		TargetValue:     kr.TargetValue,
+		CreatedAt:       kr.CreatedAt,
+		UpdatedAt:       kr.UpdatedAt,
+		CreatedBy:       kr.CreatedBy,
+		LastUpdatedBy:   kr.LastUpdatedBy,
+	}, nil
 }
 
 // Update updates a key result in the system

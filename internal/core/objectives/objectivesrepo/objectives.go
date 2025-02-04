@@ -78,10 +78,10 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 		const krQuery = `
 			INSERT INTO key_results (
 				objective_id, name, measurement_type,
-				start_value, target_value
+				start_value, current_value, target_value, created_by, last_updated_by
 			) VALUES (
 				:objective_id, :name, :measurement_type,
-				:start_value, :target_value
+				:start_value, :current_value, :target_value, :created_by, :last_updated_by
 			) RETURNING *;
 		`
 
@@ -94,7 +94,7 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 		for _, kr := range keyResults {
 			kr.ObjectiveID = createdObj.ID
 			var dbKR dbKeyResult
-			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr)); err != nil {
+			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr, kr.CreatedBy, kr.CreatedBy)); err != nil {
 				return objectives.CoreObjective{}, nil, err
 			}
 			createdKRs = append(createdKRs, toCoreKeyResult(dbKR))

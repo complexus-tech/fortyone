@@ -23,6 +23,7 @@ type dbObjective struct {
 	Health           *objectives.ObjectiveHealth `db:"health"`
 	CreatedAt        time.Time                   `db:"created_at"`
 	UpdatedAt        time.Time                   `db:"updated_at"`
+	CreatedBy        uuid.UUID                   `db:"created_by"`
 	TotalStories     int                         `db:"total_stories"`
 	CancelledStories int                         `db:"cancelled_stories"`
 	CompletedStories int                         `db:"completed_stories"`
@@ -41,6 +42,8 @@ type dbKeyResult struct {
 	TargetValue     float64   `db:"target_value"`
 	CreatedAt       time.Time `db:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at"`
+	CreatedBy       uuid.UUID `db:"created_by"`
+	LastUpdatedBy   uuid.UUID `db:"last_updated_by"`
 }
 
 func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObjective {
@@ -91,7 +94,7 @@ func toCoreObjectives(do []dbObjective) []objectives.CoreObjective {
 	return objectives
 }
 
-func toDBKeyResult(kr keyresults.CoreNewKeyResult) dbKeyResult {
+func toDBKeyResult(kr keyresults.CoreNewKeyResult, createdBy uuid.UUID, lastUpdatedBy uuid.UUID) dbKeyResult {
 	return dbKeyResult{
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
@@ -99,6 +102,8 @@ func toDBKeyResult(kr keyresults.CoreNewKeyResult) dbKeyResult {
 		StartValue:      kr.StartValue,
 		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
+		CreatedBy:       createdBy,
+		LastUpdatedBy:   lastUpdatedBy,
 	}
 }
 

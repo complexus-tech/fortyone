@@ -14,6 +14,7 @@ type CoreNewKeyResult struct {
 	StartValue      float64
 	CurrentValue    float64
 	TargetValue     float64
+	CreatedBy       uuid.UUID
 }
 
 // CoreKeyResult represents a key result in the system
@@ -27,4 +28,6 @@ type CoreKeyResult struct {
 	TargetValue     float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	CreatedBy       uuid.UUID
+	LastUpdatedBy   uuid.UUID
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -197,6 +198,7 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	krs, err := h.keyResults.List(ctx, objID, wsID)
+
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -215,6 +217,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	var newObj AppNewObjective
 	if err := web.Decode(r, &newObj); err != nil {
 		return err
@@ -229,6 +236,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 			StartValue:      kr.StartValue,
 			CurrentValue:    kr.CurrentValue,
 			TargetValue:     kr.TargetValue,
+			CreatedBy:       userID,
 		})
 	}
 

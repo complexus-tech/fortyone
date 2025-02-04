@@ -174,6 +174,8 @@ type AppKeyResult struct {
 	TargetValue     float64   `json:"targetValue"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+	CreatedBy       uuid.UUID `json:"createdBy"`
+	LastUpdatedBy   uuid.UUID `json:"lastUpdatedBy"`
 }
 
 func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
@@ -187,6 +189,8 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		TargetValue:     kr.TargetValue,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
+		CreatedBy:       kr.CreatedBy,
+		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }
 
