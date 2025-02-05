@@ -7,7 +7,7 @@ import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
 type UpdateKeyResultDialogProps = {
-  keyResult: KeyResult;
+  keyResult: Omit<KeyResult, "createdBy" | "lastUpdatedBy">;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 };

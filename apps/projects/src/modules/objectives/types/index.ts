@@ -37,10 +37,10 @@ export type KeyResult = {
   startValue: number;
   targetValue: number;
   currentValue: number;
-  createdBy: string;
-  lastUpdatedBy: string;
   createdAt: string;
   updatedAt: string;
+  createdBy: string;
+  lastUpdatedBy: string;
 };
 
 export type NewKeyResult = {

@@ -13,7 +13,9 @@ import {
 import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui";
+import { useMembers } from "@/lib/hooks/members";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
@@ -66,11 +68,17 @@ const Okr = ({
   targetValue,
   currentValue,
   measurementType,
+  lastUpdatedBy,
   updatedAt,
 }: KeyResult) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const { data: members = [] } = useMembers();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
+
+  const lastUpdatedByMember = members.find(
+    (member) => member.id === lastUpdatedBy,
+  );
 
   const getProgress = () => {
     if (measurementType === "boolean") {
@@ -101,7 +109,13 @@ const Okr = ({
         <Box>
           <Text>{name}</Text>
           <Text className="text-[0.95rem] opacity-80" color="muted">
-            Last updated <TimeAgo timestamp={updatedAt} />
+            Last updated <TimeAgo timestamp={updatedAt} /> by{" "}
+            <Link
+              className="text-dark dark:text-white/85"
+              href={`/profile/${lastUpdatedByMember?.id}`}
+            >
+              {lastUpdatedByMember?.username}
+            </Link>
           </Text>
         </Box>
       </Flex>
