@@ -93,22 +93,16 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 	query := `
 		INSERT INTO workspaces (
 			name,
-			slug,
-			created_at,
-			updated_at
+			slug
 		)
 		VALUES (
 			:name,
-			:slug,
-			NOW(),
-			NOW()
+			:slug
 		)
 		RETURNING
 			workspace_id,
 			name,
-			slug,
-			created_at,
-			updated_at
+			slug
 	`
 
 	params := map[string]interface{}{
