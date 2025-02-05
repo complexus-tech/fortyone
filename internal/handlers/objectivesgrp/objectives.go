@@ -240,7 +240,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		})
 	}
 
-	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj), wsID, keyResults)
+	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj, userID), wsID, keyResults)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil

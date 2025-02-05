@@ -28,6 +28,7 @@ type CoreObjective struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	Status           uuid.UUID
+	CreatedBy        uuid.UUID
 	Priority         *string
 	Health           *ObjectiveHealth
 	TotalStories     int
@@ -48,6 +49,7 @@ type CoreNewObjective struct {
 	IsPrivate   bool
 	Status      uuid.UUID
 	Priority    *string
+	CreatedBy   uuid.UUID
 }
 
 type CoreUpdateObjective struct {

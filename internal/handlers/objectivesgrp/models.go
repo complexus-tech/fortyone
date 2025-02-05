@@ -24,6 +24,7 @@ type AppObjectiveList struct {
 	Status      uuid.UUID      `json:"statusId"`
 	Priority    *string        `json:"priority"`
 	Health      *string        `json:"health"`
+	CreatedBy   uuid.UUID      `json:"createdBy"`
 	Stats       ObjectiveStats `json:"stats"`
 }
 
@@ -64,6 +65,7 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 			UpdatedAt:   objective.UpdatedAt,
 			Status:      objective.Status,
 			Priority:    objective.Priority,
+			CreatedBy:   objective.CreatedBy,
 			Health:      healthStr,
 			Stats: ObjectiveStats{
 				Total:     objective.TotalStories,
@@ -102,7 +104,7 @@ type AppNewKeyResult struct {
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
-func toCoreNewObjective(ano AppNewObjective) objectives.CoreNewObjective {
+func toCoreNewObjective(ano AppNewObjective, createdBy uuid.UUID) objectives.CoreNewObjective {
 	return objectives.CoreNewObjective{
 		Name:        ano.Name,
 		Description: ano.Description,
@@ -113,6 +115,7 @@ func toCoreNewObjective(ano AppNewObjective) objectives.CoreNewObjective {
 		IsPrivate:   ano.IsPrivate,
 		Status:      ano.Status,
 		Priority:    ano.Priority,
+		CreatedBy:   createdBy,
 	}
 }
 
@@ -138,6 +141,7 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 		UpdatedAt:   objective.UpdatedAt,
 		Status:      objective.Status,
 		Priority:    objective.Priority,
+		CreatedBy:   objective.CreatedBy,
 		Health:      healthStr,
 		Stats: ObjectiveStats{
 			Total:     objective.TotalStories,

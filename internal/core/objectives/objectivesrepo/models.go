@@ -58,6 +58,7 @@ func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObje
 		IsPrivate:   co.IsPrivate,
 		Status:      co.Status,
 		Priority:    co.Priority,
+		CreatedBy:   co.CreatedBy,
 	}
 }
 
@@ -74,6 +75,7 @@ func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 		IsPrivate:        dbo.IsPrivate,
 		CreatedAt:        dbo.CreatedAt,
 		UpdatedAt:        dbo.UpdatedAt,
+		CreatedBy:        dbo.CreatedBy,
 		Status:           dbo.Status,
 		Priority:         dbo.Priority,
 		Health:           dbo.Health,

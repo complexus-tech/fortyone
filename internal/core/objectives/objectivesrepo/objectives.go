@@ -53,11 +53,11 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 		INSERT INTO objectives (
 			name, description, lead_user_id, team_id,
 			workspace_id, start_date, end_date, is_private,
-			status_id, priority
+			status_id, priority, created_by
 		) VALUES (
 			:name, :description, :lead_user_id, :team_id,
 			:workspace_id, :start_date, :end_date, :is_private,
-			:status_id, :priority
+			:status_id, :priority, :created_by
 		) RETURNING *;
 	`
 
@@ -144,6 +144,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			o.is_private,
 			o.created_at,
 			o.updated_at,
+			o.created_by,
 			COALESCE(ss.total, 0) as total_stories,
 			COALESCE(ss.cancelled, 0) as cancelled_stories,
 			COALESCE(ss.completed, 0) as completed_stories,
@@ -225,6 +226,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			o.status_id,
 			o.priority,
 			o.health,
+			o.created_by,
 			COALESCE(ss.total, 0) as total_stories,
 			COALESCE(ss.cancelled, 0) as cancelled_stories,
 			COALESCE(ss.completed, 0) as completed_stories,
