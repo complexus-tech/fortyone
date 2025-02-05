@@ -12,6 +12,7 @@ type CoreWorkspace struct {
 	Slug      string
 	Name      string
 	IsActive  bool
+	UserRole  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

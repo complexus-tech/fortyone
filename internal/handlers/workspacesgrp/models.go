@@ -12,6 +12,7 @@ type AppWorkspace struct {
 	Slug      string    `json:"slug"`
 	Name      string    `json:"name"`
 	IsActive  bool      `json:"isActive"`
+	UserRole  string    `json:"userRole"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -22,6 +23,7 @@ func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 		Slug:      workspace.Slug,
 		Name:      workspace.Name,
 		IsActive:  workspace.IsActive,
+		UserRole:  workspace.UserRole,
 		CreatedAt: workspace.CreatedAt,
 		UpdatedAt: workspace.UpdatedAt,
 	}

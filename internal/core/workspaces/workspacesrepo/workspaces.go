@@ -32,7 +32,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.List")
 	defer span.End()
 
-	var workspaces []dbWorkspace
+	var workspaces []dbWorkspaceWithRole
 
 	params := map[string]interface{}{
 		"user_id": userID,
@@ -55,6 +55,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 				) THEN TRUE
 				ELSE FALSE
 			END as is_active,
+			wm.role as user_role,
 			w.created_at,
 			w.updated_at
 		FROM
@@ -82,7 +83,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 		return nil, fmt.Errorf("failed to retrieve workspaces %w", err)
 	}
 
-	return toCoreWorkspaces(workspaces), nil
+	return toCoreWorkspacesWithRole(workspaces), nil
 }
 
 func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (workspaces.CoreWorkspace, error) {
@@ -267,7 +268,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Get")
 	defer span.End()
 
-	var workspace dbWorkspace
+	var workspace dbWorkspaceWithRole
 	query := `
 		SELECT 
 			w.workspace_id,
@@ -285,6 +286,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 				) THEN TRUE
 				ELSE FALSE
 			END as is_active,
+			wm.role as user_role,
 			w.created_at,
 			w.updated_at
 		FROM 
@@ -322,7 +324,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 		return workspaces.CoreWorkspace{}, err
 	}
 
-	return toCoreWorkspace(workspace), nil
+	return toCoreWorkspaceWithRole(workspace), nil
 }
 
 func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error {

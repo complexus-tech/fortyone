@@ -74,6 +74,12 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// Fetch the workspace again to include the role
+	result, err = h.workspaces.Get(ctx, result.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
 	span.AddEvent("workspace created.", trace.WithAttributes(
 		attribute.String("workspace_id", result.ID.String()),
 		attribute.String("user_id", userID.String()),
