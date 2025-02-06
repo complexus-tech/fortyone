@@ -1,10 +1,10 @@
 "use client";
 
-import { Box, Button, Divider, Input, Text } from "ui";
+import { Box, Button, Divider, Text } from "ui";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "../../components";
-import { ProfilePicture } from "./components/profile-picture";
+import { Form } from "./components/form";
 
 export const ProfileSettings = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,40 +18,7 @@ export const ProfileSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-semibold">
         Profile Settings
       </Text>
-
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <SectionHeader
-          action={<ProfilePicture />}
-          description="Update your personal information and profile picture."
-          title="Personal Information"
-        />
-        <Box className="p-6">
-          <Box className="grid grid-cols-2 gap-6">
-            <Input
-              label="Full name"
-              name="fullName"
-              placeholder="Enter your full name"
-            />
-
-            <Input
-              label="Email"
-              name="email"
-              placeholder="Enter your email address"
-              type="email"
-            />
-
-            <Input
-              helpText="This is your unique identifier"
-              label="Username"
-              name="username"
-              placeholder="Enter your username"
-            />
-          </Box>
-          <Divider className="my-3" />
-          <Button>Save changes</Button>
-        </Box>
-      </Box>
-
+      <Form />
       <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           description="Leave your current workspace. This action cannot be undone."
