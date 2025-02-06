@@ -2,12 +2,11 @@
 import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 
-export const logIn = async (callbackUrl: string, _: FormData) => {
+export const logIn = async (callbackUrl: string, formData: FormData) => {
   try {
-    // sleep for 1 second to simulate a network request
     await signIn("credentials", {
-      email: "jo@mk.com",
-      password: "password",
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
       redirect: false,
     });
   } catch (error) {

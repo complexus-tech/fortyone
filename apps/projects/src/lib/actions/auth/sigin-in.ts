@@ -1,35 +1,46 @@
 "use server";
+import ky from "ky";
+import type { ApiResponse } from "@/types";
+
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+
+type LoginResponse = {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+  lastUsedWorkspaceId: string;
+  token: string;
+};
 
 export async function authenticateUser({
-  email: _,
+  email,
+  password,
 }: {
-  email?: string;
-  password?: string;
+  email: string;
+  password: string;
 }) {
-  // const user = await post<{ email: string; password: string }, User>(
-  //   "users/login",
-  //   {
-  //     email,
-  //     password,
-  //   },
-  // );
-
-  await new Promise(() => {});
-
-  return {
-    id: "8a798112-90fe-495e-9f1c-f36655e3d8ab",
-    name: "Joseph Mukorivo",
-    email: "josemukorivo@gmail.com",
-    token:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3MzkxODYxOTUsIm5iZiI6MTczNjU5NDE5NSwiaWF0IjoxNzM2NTk0MTk1fQ.SXbbyE3Q66aHJ9seYQll0bZStkEw-P4r4QbWvxnag7c",
-    workspaces: [
-      {
-        id: "3589aaa4-f1f4-40bb-ae1c-9104dd537d8c",
-        name: "Complexus",
-        isActive: true,
+  const res = await ky
+    .post(`${apiURL}/users/login`, {
+      json: {
+        email,
+        password,
       },
-    ],
-    image:
-      "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
+    })
+    .json<ApiResponse<LoginResponse>>();
+
+  if (res.error) {
+    throw new Error(res.error.message);
+  }
+  const user = res.data!;
+  return {
+    id: user.id,
+    name: user.fullName,
+    email: user.email,
+    token: user.token,
+    workspaces: [],
+    image: user.avatarUrl,
+    lastUsedWorkspaceId: user.lastUsedWorkspaceId,
   };
 }

@@ -1,22 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import ky from "ky";
+import { workspaceTags } from "@/constants/keys";
+import { DURATION_FROM_SECONDS } from "@/constants/time";
+import type { ApiResponse, Workspace } from "@/types";
 import { authenticateUser } from "./lib/actions/auth/sigin-in";
 
-type Workspace = {
-  id: string;
-  name: string;
-  isActive: boolean;
-};
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 declare module "next-auth" {
   interface User {
     token: string;
-    workspaces: {
-      id: string;
-      name: string;
-      isActive: boolean;
-    }[];
+    lastUsedWorkspaceId: string;
+    workspaces: Workspace[];
   }
   interface Session {
     workspaces: Workspace[];
@@ -24,6 +21,19 @@ declare module "next-auth" {
     token: string;
   }
 }
+
+const getWorkspaces = async (token: string) => {
+  const workspaces = await ky
+    .get(`${apiURL}/workspaces`, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: {
+        revalidate: DURATION_FROM_SECONDS.MINUTE * 20,
+        tags: [workspaceTags.lists()],
+      },
+    })
+    .json<ApiResponse<Workspace[]>>();
+  return workspaces.data!;
+};
 
 export const {
   handlers,
@@ -51,13 +61,15 @@ export const {
   ],
 
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
+        const workspaces = await getWorkspaces(user.token);
         return {
           ...token,
           id: user.id,
           accessToken: user.token,
-          workspaces: user.workspaces,
+          lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+          workspaces,
         };
       }
       return token;
@@ -65,7 +77,8 @@ export const {
     session({ session, token }) {
       const workspaces = token.workspaces as Workspace[];
       const activeWorkspace =
-        workspaces.find((w) => w.isActive) || workspaces.at(0);
+        workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
+        workspaces.at(0);
       return {
         ...session,
         token: token.accessToken,
