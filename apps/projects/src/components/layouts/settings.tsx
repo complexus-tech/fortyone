@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "../shared";
 import { NavLink } from "../ui";
 
 export const SettingsLayout = ({ children }: { children: ReactNode }) => {
+  const { userRole } = useUserRole();
   const [prevPage, setPrevPage] = useLocalStorage("pathBeforeSettings", "");
   const router = useRouter();
   const pathname = usePathname();
