@@ -91,3 +91,13 @@ export const teamKeys = {
   details: () => [...teamKeys.all, "detail"] as const,
   detail: (id: string) => [...teamKeys.details(), id] as const,
 };
+
+export const userKeys = {
+  all: ["users"] as const,
+  profile: () => [...userKeys.all, "profile"] as const,
+};
+
+export const userTags = {
+  all: "users" as const,
+  profile: () => `${userTags.all}-profile` as const,
+};
