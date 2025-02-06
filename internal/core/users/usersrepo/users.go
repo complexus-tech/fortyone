@@ -15,6 +15,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Repository errors
+var (
+	ErrNotFound = errors.New("user not found")
+)
+
 type repo struct {
 	db  *sqlx.DB
 	log *logger.Logger
@@ -27,8 +32,9 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) GetByEmail(ctx context.Context, email string) (users.CoreUser, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.Login")
+// GetUser retrieves a user by ID
+func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.GetUser")
 	defer span.End()
 
 	var user dbUser
@@ -47,10 +53,64 @@ func (r *repo) GetByEmail(ctx context.Context, email string) (users.CoreUser, er
 			updated_at
 		FROM
 			users
-		WHERE email = :email;
+		WHERE 
+			user_id = :user_id
+			AND is_active = true
 	`
 
-	var params = map[string]interface{}{
+	params := map[string]interface{}{
+		"user_id": userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &user, params); err != nil {
+		if err == sql.ErrNoRows {
+			return users.CoreUser{}, ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+
+	return toCoreUser(user), nil
+}
+
+// GetUserByEmail retrieves a user by email
+func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.GetUserByEmail")
+	defer span.End()
+
+	var user dbUser
+	q := `
+		SELECT
+			user_id,
+			username,
+			email,
+			password_hash,
+			full_name,
+			avatar_url,
+			is_active,
+			last_login_at,
+			last_used_workspace_id,
+			created_at,
+			updated_at
+		FROM
+			users
+		WHERE 
+			email = :email
+			AND is_active = true
+	`
+
+	params := map[string]interface{}{
 		"email": email,
 	}
 
@@ -63,22 +123,155 @@ func (r *repo) GetByEmail(ctx context.Context, email string) (users.CoreUser, er
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, "Fetching user.")
 	if err := stmt.GetContext(ctx, &user, params); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve user from the database: %s", err)
-		span.RecordError(errors.New("user not found"), trace.WithAttributes(attribute.String("error", errMsg)))
 		if err == sql.ErrNoRows {
-			return users.CoreUser{}, errors.New("email or password is incorrect")
+			return users.CoreUser{}, ErrNotFound
 		}
-		return users.CoreUser{}, fmt.Errorf("failed to retrieve user %w", err)
+		errMsg := fmt.Sprintf("failed to get user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
 	}
 
-	r.log.Info(ctx, "User retrieved successfully.")
-	span.AddEvent("User retrieved.", trace.WithAttributes(
-		attribute.String("user.email", user.Email),
-	))
-
 	return toCoreUser(user), nil
+}
+
+// UpdateUser updates user profile information
+func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.CoreUpdateUser) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUser")
+	defer span.End()
+
+	q := `
+		UPDATE users
+		SET 
+			username = CASE WHEN :username = '' THEN username ELSE :username END,
+			full_name = CASE WHEN :full_name = '' THEN full_name ELSE :full_name END,
+			avatar_url = CASE WHEN :avatar_url = '' THEN avatar_url ELSE :avatar_url END,
+			updated_at = NOW()
+		WHERE 
+			user_id = :user_id
+			AND is_active = true
+		RETURNING user_id
+	`
+
+	params := map[string]interface{}{
+		"user_id":    userID,
+		"username":   updates.Username,
+		"full_name":  updates.FullName,
+		"avatar_url": updates.AvatarURL,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var returnedID uuid.UUID
+	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+		if err == sql.ErrNoRows {
+			return ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to update user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
+
+// DeleteUser marks a user as inactive
+func (r *repo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.DeleteUser")
+	defer span.End()
+
+	q := `
+		UPDATE users
+		SET 
+			is_active = false,
+			updated_at = NOW()
+		WHERE 
+			user_id = :user_id
+			AND is_active = true
+		RETURNING user_id
+	`
+
+	params := map[string]interface{}{
+		"user_id": userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var returnedID uuid.UUID
+	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+		if err == sql.ErrNoRows {
+			return ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to delete user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
+
+// UpdateUserWorkspace updates the user's last used workspace
+func (r *repo) UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUserWorkspace")
+	defer span.End()
+
+	q := `
+		UPDATE users u
+		SET 
+			last_used_workspace_id = :workspace_id,
+			updated_at = NOW()
+		FROM workspace_members wm
+		WHERE 
+			u.user_id = :user_id
+			AND u.is_active = true
+			AND wm.user_id = u.user_id
+			AND wm.workspace_id = :workspace_id
+		RETURNING u.user_id
+	`
+
+	params := map[string]interface{}{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var returnedID uuid.UUID
+	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("user not found or not a member of workspace")
+		}
+		errMsg := fmt.Sprintf("failed to update user workspace: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update user workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
 }
 
 func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
@@ -116,12 +309,12 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUse
 			u.last_login_at,
 			u.created_at,
 			u.updated_at
-		FROM 
+		FROM
 			users u
 		INNER JOIN 
 			workspace_members wm ON u.user_id = wm.user_id
 		WHERE 
-			wm.workspace_id = :workspace_id 
+			wm.workspace_id = :workspace_id
 		AND u.is_active = TRUE
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

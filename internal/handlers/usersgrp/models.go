@@ -30,6 +30,16 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type UpdateProfileRequest struct {
+	Username  string `json:"username"`
+	FullName  string `json:"fullName"`
+	AvatarURL string `json:"avatarUrl"`
+}
+
+type SwitchWorkspaceRequest struct {
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,

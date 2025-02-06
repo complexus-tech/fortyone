@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -37,12 +38,12 @@ func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	email := req.Email
-	password := req.Password
-
-	user, err := h.users.Login(ctx, email, password)
+	user, err := h.users.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		if errors.Is(err, users.ErrInvalidCredentials) {
+			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	expiresAt := time.Now().Add(time.Hour * 24 * 30)
@@ -54,12 +55,109 @@ func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.secretKey))
-	user.Token = &tokenString
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 
+	user.Token = &tokenString
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+// GetProfile returns the current user's profile
+func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+// UpdateProfile updates the current user's profile
+func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req UpdateProfileRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	updates := users.CoreUpdateUser{
+		Username:  req.Username,
+		FullName:  req.FullName,
+		AvatarURL: req.AvatarURL,
+	}
+
+	if err := h.users.UpdateUser(ctx, userID, updates); err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get updated user profile
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+// DeleteProfile soft deletes the current user's account
+func (h *Handlers) DeleteProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.users.DeleteUser(ctx, userID); err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// SwitchWorkspace updates the current user's active workspace
+func (h *Handlers) SwitchWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req SwitchWorkspaceRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.users.UpdateUserWorkspace(ctx, userID, req.WorkspaceID); err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get updated user profile
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
 // List returns a list of users for a workspace.
