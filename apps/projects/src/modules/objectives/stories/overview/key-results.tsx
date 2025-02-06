@@ -12,10 +12,11 @@ import {
 } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
+import { useIsOwner, useUserRole } from "@/hooks";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
@@ -50,8 +51,8 @@ const RenderValue = ({
   if (measurementType === "boolean") {
     return (
       <Badge
-        className="rounded-[0.35rem] px-1"
-        color={value ? "success" : "warning"}
+        className="h-[1.6rem] rounded-[0.35rem] px-1 text-[0.95rem] leading-[1.6rem]"
+        color={value ? "success" : "tertiary"}
       >
         {value ? "Complete" : "Incomplete"}
       </Badge>
@@ -69,8 +70,12 @@ const Okr = ({
   currentValue,
   measurementType,
   lastUpdatedBy,
+  createdBy,
   updatedAt,
 }: KeyResult) => {
+  const { isEntityOwner } = useIsOwner(createdBy);
+  const { userRole } = useUserRole();
+  const canDelete = userRole === "admin" || isEntityOwner;
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { data: members = [] } = useMembers();
@@ -83,9 +88,6 @@ const Okr = ({
   const getProgress = () => {
     if (measurementType === "boolean") {
       return currentValue === 1 ? 100 : 0;
-    }
-    if (measurementType === "percentage") {
-      return currentValue;
     }
     // Calculate progress relative to start value
     const totalChange = targetValue - startValue;
@@ -144,41 +146,45 @@ const Okr = ({
           </Flex>
         </Flex>
 
-        <Box className="h-full py-2 pl-6">
-          <Menu>
-            <Menu.Button>
-              <Button
-                asIcon
-                color="tertiary"
-                leftIcon={<MoreHorizontalIcon />}
-                rounded="full"
-                size="sm"
-              >
-                <span className="sr-only">Edit</span>
-              </Button>
-            </Menu.Button>
-            <Menu.Items>
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    setIsUpdateOpen(true);
-                  }}
+        {userRole !== "guest" ? (
+          <Box className="h-full py-2 pl-6">
+            <Menu>
+              <Menu.Button>
+                <Button
+                  asIcon
+                  color="tertiary"
+                  leftIcon={<MoreHorizontalIcon />}
+                  rounded="full"
+                  size="sm"
                 >
-                  <EditIcon />
-                  Update...
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    setIsDeleteOpen(true);
-                  }}
-                >
-                  <DeleteIcon />
-                  Delete
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Box>
+                  <span className="sr-only">Edit</span>
+                </Button>
+              </Menu.Button>
+              <Menu.Items>
+                <Menu.Group>
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsUpdateOpen(true);
+                    }}
+                  >
+                    <EditIcon />
+                    Update...
+                  </Menu.Item>
+                  {canDelete ? (
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsDeleteOpen(true);
+                      }}
+                    >
+                      <DeleteIcon />
+                      Delete
+                    </Menu.Item>
+                  ) : null}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Box>
+        ) : null}
       </Flex>
       <ConfirmDialog
         confirmText="Yes, Delete"

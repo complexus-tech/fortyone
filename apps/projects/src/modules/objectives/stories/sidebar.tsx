@@ -46,7 +46,7 @@ const Option = ({
   return (
     <Box
       className={cn(
-        "my-4 grid grid-cols-[10rem_auto] items-center gap-3",
+        "my-3.5 grid grid-cols-[10rem_auto] items-center gap-3",
         className,
       )}
     >
@@ -81,7 +81,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
   const totalStories = stories.length;
   const status = statuses.find((s) => s.id === objective?.statusId);
   const leadUser = members.find((m) => m.id === objective?.leadUser);
-
+  const createdBy = members.find((m) => m.id === objective?.createdBy);
   const storiesByStatus = statuses.map((status) => {
     const count = stories.filter((s) => s.statusId === status.id).length;
     const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
@@ -133,6 +133,27 @@ export const Sidebar = ({ className }: { className?: string }) => {
     >
       <Box className="mb-6">
         <Text fontWeight="semibold">Properties</Text>
+        <Option
+          label="Created by"
+          value={
+            <Button
+              className="font-medium"
+              color="tertiary"
+              href={`/profile/${createdBy?.id}`}
+              leftIcon={
+                <Avatar
+                  name={createdBy?.fullName || createdBy?.username}
+                  size="xs"
+                  src={createdBy?.avatarUrl}
+                />
+              }
+              type="button"
+              variant="naked"
+            >
+              {createdBy?.username}
+            </Button>
+          }
+        />
         <Option
           label="Status"
           value={

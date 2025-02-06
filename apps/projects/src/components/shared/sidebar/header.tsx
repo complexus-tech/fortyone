@@ -20,12 +20,12 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { useWorkspace } from "@/lib/hooks/workspace";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
+import { useUserRole } from "@/hooks/role";
 import { logOut } from "./actions";
 
 export const Header = () => {
@@ -38,6 +38,7 @@ export const Header = () => {
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+  const { userRole } = useUserRole();
 
   const workspaces = session?.workspaces || [];
 
@@ -56,9 +57,7 @@ export const Header = () => {
   });
 
   const handleLogout = async () => {
-    await logOut(callbackUrl).catch(() => {
-      toast.error("Failed to log out");
-    });
+    await logOut(callbackUrl);
   };
 
   return (
@@ -95,12 +94,7 @@ export const Header = () => {
               {workspaces.map(({ id, name, isActive }) => (
                 <Menu.Item className="justify-between" key={id}>
                   <span className="flex items-center gap-2">
-                    <Avatar
-                      className="h-6 text-xs"
-                      color="secondary"
-                      name={name}
-                      rounded="md"
-                    />
+                    <Avatar className="h-6 text-xs" name={name} rounded="md" />
                     <span className="inline-block max-w-[20ch] truncate">
                       {name}
                     </span>
@@ -169,27 +163,31 @@ export const Header = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings"
+                  href={
+                    userRole === "admin" ? "/settings" : "/settings/account"
+                  }
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}
                 >
                   <SettingsIcon className="h-[1.15rem]" />
-                  Workspace settings
+                  {userRole === "admin" ? "Workspace settings" : "Settings"}
                 </Link>
               </Menu.Item>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href="/settings/workspace/members"
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <UsersAddIcon className="h-[1.3rem] w-auto" />
-                  Invite members
-                </Link>
-              </Menu.Item>
+              {userRole === "admin" && (
+                <Menu.Item>
+                  <Link
+                    className="flex w-full items-center gap-2"
+                    href="/settings/workspace/members"
+                    onClick={() => {
+                      setPathBeforeSettings(pathname);
+                    }}
+                  >
+                    <UsersAddIcon className="h-[1.3rem] w-auto" />
+                    Invite members
+                  </Link>
+                </Menu.Item>
+              )}
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>

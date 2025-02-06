@@ -5,7 +5,8 @@ import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { useCreateKeyResultMutation } from "../../hooks";
+import { useIsOwner, useUserRole } from "@/hooks";
+import { useCreateKeyResultMutation, useObjective } from "../../hooks";
 import type { NewKeyResult, MeasureType } from "../../types";
 
 export const NewKeyResultButton = ({
@@ -13,6 +14,10 @@ export const NewKeyResultButton = ({
   ...rest
 }: ButtonProps) => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { data: objective } = useObjective(objectiveId);
+  const { isEntityOwner } = useIsOwner(objective?.createdBy);
+  const { userRole } = useUserRole();
+  const canCreate = userRole === "admin" || isEntityOwner;
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
   const measurementTypes: { label: string; value: MeasureType }[] = [
@@ -77,15 +82,17 @@ export const NewKeyResultButton = ({
 
   return (
     <>
-      <Button
-        color={color}
-        onClick={() => {
-          setIsOpen(true);
-        }}
-        {...rest}
-      >
-        Add Key Result
-      </Button>
+      {canCreate ? (
+        <Button
+          color={color}
+          onClick={() => {
+            setIsOpen(true);
+          }}
+          {...rest}
+        >
+          Add Key Result
+        </Button>
+      ) : null}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content className="max-w-2xl">
           <form onSubmit={handleSubmit}>

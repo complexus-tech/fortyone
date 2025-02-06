@@ -11,7 +11,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce } from "@/hooks";
+import { useDebounce, useIsOwner, useUserRole } from "@/hooks";
 import {
   useDeleteObjectiveMutation,
   useObjective,
@@ -30,9 +30,13 @@ export const Overview = () => {
     objectiveId: string;
   }>();
   const { data: objective } = useObjective(objectiveId);
+  const { userRole } = useUserRole();
+  const { isEntityOwner } = useIsOwner(objective?.createdBy);
   const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
+
+  const canUpdate = userRole === "admin" || isEntityOwner;
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -58,7 +62,7 @@ export const Overview = () => {
       Placeholder.configure({ placeholder: "Objective name..." }),
     ],
     content: objective?.name || "",
-    editable: true,
+    editable: canUpdate,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         name: editor.getText(),
@@ -76,7 +80,7 @@ export const Overview = () => {
       Placeholder.configure({ placeholder: "Objective description..." }),
     ],
     content: objective?.description || "",
-    editable: true,
+    editable: canUpdate,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         description: editor.getHTML(),
@@ -102,29 +106,31 @@ export const Overview = () => {
                 className="text-4xl font-medium"
                 editor={nameEditor}
               />
-              <Menu>
-                <Menu.Button>
-                  <Button
-                    className="gap-1 pl-2.5"
-                    color="tertiary"
-                    rightIcon={<ArrowDownIcon className="h-4" />}
-                    size="sm"
-                  >
-                    More
-                  </Button>
-                </Menu.Button>
-                <Menu.Items align="end" className="w-36">
-                  <Menu.Group>
-                    <Menu.Item
-                      onSelect={() => {
-                        setIsOpen(true);
-                      }}
+              {canUpdate ? (
+                <Menu>
+                  <Menu.Button>
+                    <Button
+                      className="gap-1 pl-2.5"
+                      color="tertiary"
+                      rightIcon={<ArrowDownIcon className="h-4" />}
+                      size="sm"
                     >
-                      <DeleteIcon /> Delete...
-                    </Menu.Item>
-                  </Menu.Group>
-                </Menu.Items>
-              </Menu>
+                      More
+                    </Button>
+                  </Menu.Button>
+                  <Menu.Items align="end" className="w-36">
+                    <Menu.Group>
+                      <Menu.Item
+                        onSelect={() => {
+                          setIsOpen(true);
+                        }}
+                      >
+                        <DeleteIcon /> Delete...
+                      </Menu.Item>
+                    </Menu.Group>
+                  </Menu.Items>
+                </Menu>
+              ) : null}
             </Flex>
 
             <TextEditor

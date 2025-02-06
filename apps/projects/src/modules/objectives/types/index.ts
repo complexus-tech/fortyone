@@ -14,6 +14,7 @@ export type Objective = {
   isPrivate: boolean;
   createdAt: string;
   updatedAt: string;
+  createdBy: string;
   statusId: string;
   priority?: StoryPriority;
   health: ObjectiveHealth;
