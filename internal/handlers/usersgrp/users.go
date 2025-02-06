@@ -46,7 +46,7 @@ func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	expiresAt := time.Now().Add(time.Hour * 24 * 30)
+	expiresAt := time.Now().Add(time.Hour * 24 * 7)
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
 		ExpiresAt: jwt.NewNumericDate(expiresAt),

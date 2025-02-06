@@ -21,13 +21,10 @@ func Routes(cfg Config, app *web.App) {
 
 	h := New(usersService, cfg.SecretKey)
 
-	// Public endpoints
 	app.Post("/users/login", h.Login)
-
-	// Protected endpoints
 	app.Get("/workspaces/{workspaceId}/members", h.List, auth)
-	app.Get("/users/me", h.GetProfile, auth)
-	app.Put("/users/me", h.UpdateProfile, auth)
-	app.Delete("/users/me", h.DeleteProfile, auth)
-	app.Post("/users/me/workspace", h.SwitchWorkspace, auth)
+	app.Get("/workspaces/{workspaceId}/profile", h.GetProfile, auth)
+	app.Put("/workspaces/{workspaceId}/profile", h.UpdateProfile, auth)
+	app.Delete("/workspaces/{workspaceId}/profile", h.DeleteProfile, auth)
+	app.Post("/workspaces/{workspaceId}/switch", h.SwitchWorkspace, auth)
 }
