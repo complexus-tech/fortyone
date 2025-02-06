@@ -5,7 +5,7 @@ import ky from "ky";
 import { workspaceTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
 import type { ApiResponse, Workspace, UserRole } from "@/types";
-import { authenticateUser } from "./lib/actions/auth/sigin-in";
+import { authenticateUser } from "./lib/actions/users/sigin-in";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -62,7 +62,7 @@ export const {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         const workspaces = await getWorkspaces(user.token);
         return {
@@ -73,6 +73,11 @@ export const {
           workspaces,
         };
       }
+
+      if (trigger === "update") {
+        token.lastUsedWorkspaceId = session.activeWorkspace.id;
+      }
+
       return token;
     },
     session({ session, token }) {

@@ -2,12 +2,13 @@ import { Box, Input, Button } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
-import { useWorkspace } from "@/lib/hooks/workspace";
+import { useSession } from "next-auth/react";
 import { useUpdateWorkspaceMutation } from "@/lib/hooks/update-workspace-mutation";
 
 export const WorkspaceForm = () => {
-  const { data: workspace } = useWorkspace();
+  const { data: session } = useSession();
   const { mutateAsync: updateWorkspace } = useUpdateWorkspaceMutation();
+  const workspace = session?.activeWorkspace;
   const [host, setHost] = useState("");
   const [form, setForm] = useState({
     name: workspace?.name || "",

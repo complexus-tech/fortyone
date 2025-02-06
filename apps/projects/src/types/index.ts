@@ -7,6 +7,18 @@ export type ApiResponse<T> = {
 
 export type UserRole = "admin" | "member" | "guest";
 
+export type User = {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+  isActive: boolean;
+  lastUsedWorkspaceId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Member = {
   id: string | null;
   username: string;

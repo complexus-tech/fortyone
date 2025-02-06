@@ -71,13 +71,11 @@ export const linkTags = {
 export const workspaceTags = {
   all: "workspaces" as const,
   lists: () => `${workspaceTags.all}-list` as const,
-  detail: () => `${workspaceTags.all}-detail` as const,
 };
 
 export const workspaceKeys = {
   all: ["workspaces"] as const,
   lists: () => [...workspaceKeys.all, "list"] as const,
-  detail: () => [...workspaceKeys.all, "detail"] as const,
 };
 
 export const teamTags = {

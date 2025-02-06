@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
+import { toast } from "sonner";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -21,19 +22,18 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTheme } from "next-themes";
 import { useSession } from "next-auth/react";
+import nProgress from "nprogress";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import { useWorkspace } from "@/lib/hooks/workspace";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
-import { logOut } from "./actions";
+import { changeWorkspace, logOut } from "./actions";
 
 export const Header = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
-  const { data: workspace } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
@@ -41,7 +41,7 @@ export const Header = () => {
   const { userRole } = useUserRole();
 
   const workspaces = session?.workspaces || [];
-
+  const workspace = session?.activeWorkspace;
   const callbackUrl = `${pathname}?${searchParams.toString()}`;
 
   useHotkeys("shift+n", () => {
@@ -58,6 +58,20 @@ export const Header = () => {
 
   const handleLogout = async () => {
     await logOut(callbackUrl);
+  };
+
+  const handleChangeWorkspace = async (workspaceId: string) => {
+    try {
+      nProgress.start();
+      await changeWorkspace(workspaceId);
+      window.location.href = "/my-work";
+    } catch (error) {
+      toast.error("Failed to switch workspace", {
+        description: "Please try again",
+      });
+    } finally {
+      nProgress.done();
+    }
   };
 
   return (
@@ -91,20 +105,23 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="pt-1.5">
-              {workspaces.map(({ id, name, isActive }) => (
-                <Menu.Item className="justify-between" key={id}>
+              {workspaces.map(({ id, name }) => (
+                <Menu.Item
+                  className="justify-between"
+                  key={id}
+                  onSelect={() => handleChangeWorkspace(id)}
+                >
                   <span className="flex items-center gap-2">
                     <Avatar className="h-6 text-xs" name={name} rounded="md" />
                     <span className="inline-block max-w-[20ch] truncate">
                       {name}
                     </span>
                   </span>
-                  {isActive ? (
+                  {id === workspace?.id ? (
                     <CheckIcon className="shrink-0" strokeWidth={2.1} />
                   ) : null}
                 </Menu.Item>
               ))}
-
               <Menu.Item asChild>
                 <Button
                   color="tertiary"

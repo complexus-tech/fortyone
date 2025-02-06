@@ -15,11 +15,9 @@ import {
   teamKeys,
   sprintKeys,
   statusKeys,
-  workspaceKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
-import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { OnlineStatusMonitor } from "../online-monitor";
 
@@ -59,10 +57,6 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: labelKeys.lists(),
       queryFn: () => getLabels(),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: workspaceKeys.detail(),
-      queryFn: () => getWorkspace(),
     }),
   ]);
 
