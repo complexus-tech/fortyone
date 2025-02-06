@@ -1,6 +1,6 @@
 "use server";
 import ky from "ky";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse, UserRole } from "@/types";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -42,5 +42,6 @@ export async function authenticateUser({
     workspaces: [],
     image: user.avatarUrl,
     lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+    userRole: "guest" as UserRole,
   };
 }

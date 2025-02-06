@@ -21,23 +21,25 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { useWorkspace } from "@/lib/hooks/workspace";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut } from "./actions";
 
 export const Header = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { data: workspace } = useWorkspace();
-  const { data: workspaces = [] } = useWorkspaces();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+
+  const workspaces = session?.workspaces || [];
 
   const callbackUrl = `${pathname}?${searchParams.toString()}`;
 

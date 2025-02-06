@@ -4,7 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import ky from "ky";
 import { workspaceTags } from "@/constants/keys";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
-import type { ApiResponse, Workspace } from "@/types";
+import type { ApiResponse, Workspace, UserRole } from "@/types";
 import { authenticateUser } from "./lib/actions/auth/sigin-in";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
@@ -14,6 +14,7 @@ declare module "next-auth" {
     token: string;
     lastUsedWorkspaceId: string;
     workspaces: Workspace[];
+    userRole: UserRole;
   }
   interface Session {
     workspaces: Workspace[];
@@ -90,6 +91,7 @@ export const {
           name: token.name,
           email: token.email,
           image: token.picture,
+          userRole: activeWorkspace?.userRole || "guest",
         },
       };
     },

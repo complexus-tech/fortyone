@@ -5,6 +5,8 @@ export type ApiResponse<T> = {
   };
 };
 
+export type UserRole = "admin" | "member" | "guest";
+
 export type Member = {
   id: string | null;
   username: string;
@@ -58,6 +60,7 @@ export type Workspace = {
   id: string;
   name: string;
   slug: string;
+  userRole: UserRole;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
