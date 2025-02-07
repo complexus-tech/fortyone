@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"math/rand"
+
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -25,6 +27,18 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 		db:  db,
 		log: log,
 	}
+}
+
+var colors = []string{
+	"#F8F9FA", "#FFE066", "#FF6B6B", "#C0392B", "#FFA07A", "#FFB6C1",
+	"#E056FD", "#686DE0", "#E67E22", "#A8E6CF", "#9B59B6", "#8E44AD",
+	"#6BCB77", "#4ECDC4", "#4A90E2", "#95A5A6", "#27AE60", "#2ECC71",
+	"#30336B", "#B4A6AB", "#DFE6E9", "#636E72", "#34495E", "#2C3E50",
+}
+
+// generateRandomColor returns a random color from the Colors slice
+func generateRandomColor() string {
+	return colors[rand.Intn(len(colors))]
 }
 
 // List returns a list of workspaces a user is a member of.
@@ -57,6 +71,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			END as is_active,
 			wm.role as user_role,
 			w.created_at,
+			w.color,
 			w.updated_at
 		FROM
 			workspaces w
@@ -94,21 +109,27 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 	query := `
 		INSERT INTO workspaces (
 			name,
-			slug
+			slug,
+			color
 		)
 		VALUES (
 			:name,
-			:slug
+			:slug,
+			:color
 		)
 		RETURNING
 			workspace_id,
 			name,
-			slug
+			slug,
+			color,
+			created_at,
+			updated_at
 	`
 
 	params := map[string]interface{}{
-		"name": workspace.Name,
-		"slug": workspace.Slug,
+		"name":  workspace.Name,
+		"slug":  workspace.Slug,
+		"color": generateRandomColor(),
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -145,6 +166,7 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 		RETURNING
 			workspace_id,
 			name,
+			color,
 			slug,
 			created_at,
 			updated_at

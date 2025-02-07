@@ -11,6 +11,7 @@ type CoreWorkspace struct {
 	ID        uuid.UUID
 	Slug      string
 	Name      string
+	Color     string
 	IsActive  bool
 	UserRole  string
 	CreatedAt time.Time

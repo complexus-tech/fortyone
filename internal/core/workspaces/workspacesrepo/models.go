@@ -11,6 +11,7 @@ type dbWorkspace struct {
 	ID        uuid.UUID `db:"workspace_id"`
 	Slug      string    `db:"slug"`
 	Name      string    `db:"name"`
+	Color     string    `db:"color"`
 	IsActive  bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -21,6 +22,7 @@ type dbWorkspaceWithRole struct {
 	ID        uuid.UUID `db:"workspace_id"`
 	Slug      string    `db:"slug"`
 	Name      string    `db:"name"`
+	Color     string    `db:"color"`
 	IsActive  bool      `db:"is_active"`
 	UserRole  string    `db:"user_role"`
 	CreatedAt time.Time `db:"created_at"`
@@ -32,6 +34,7 @@ func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 		ID:        p.ID,
 		Slug:      p.Slug,
 		Name:      p.Name,
+		Color:     p.Color,
 		IsActive:  p.IsActive,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
@@ -43,6 +46,7 @@ func toCoreWorkspaceWithRole(p dbWorkspaceWithRole) workspaces.CoreWorkspace {
 		ID:        p.ID,
 		Slug:      p.Slug,
 		Name:      p.Name,
+		Color:     p.Color,
 		IsActive:  p.IsActive,
 		UserRole:  p.UserRole,
 		CreatedAt: p.CreatedAt,
