@@ -201,3 +201,29 @@ func (h *Handlers) ResetPassword(ctx context.Context, w http.ResponseWriter, r *
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
+
+// Register creates a new user account.
+func (h *Handlers) Register(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req RegisterRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	newUser := users.CoreNewUser{
+		Username:  req.Username,
+		Email:     req.Email,
+		Password:  req.Password,
+		FullName:  req.FullName,
+		AvatarURL: req.AvatarURL,
+	}
+
+	user, err := h.users.Register(ctx, newUser)
+	if err != nil {
+		if errors.Is(err, users.ErrEmailTaken) {
+			return web.RespondError(ctx, w, err, http.StatusConflict)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusCreated)
+}

@@ -17,7 +17,7 @@ import (
 
 // Repository errors
 var (
-	ErrNotFound = errors.New("user not found")
+	ErrNotFound = users.ErrNotFound
 )
 
 type repo struct {
@@ -318,17 +318,81 @@ func (r *repo) UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassw
 	return nil
 }
 
+// Create registers a new user
 func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.Create")
 	defer span.End()
 
-	// q := `
-	// 	INSERT INTO users (username, email, password_hash, full_name, avatar_url, is_active, last_login_at, created_at, updated_at)
-	// 	VALUES (:username, :email, :password_hash, :full_name, :avatar_url, :is_active, :last_login_at, :created_at, :updated_at)
-	// `
+	q := `
+		INSERT INTO users (
+			user_id,
+			username,
+			email,
+			password_hash,
+			full_name,
+			avatar_url,
+			is_active,
+			last_login_at,
+			created_at,
+			updated_at
+		)
+		VALUES (
+			:user_id,
+			:username,
+			:email,
+			:password_hash,
+			:full_name,
+			:avatar_url,
+			:is_active,
+			:last_login_at,
+			:created_at,
+			:updated_at
+		)
+		RETURNING
+			user_id,
+			username,
+			email,
+			password_hash,
+			full_name,
+			avatar_url,
+			is_active,
+			last_login_at,
+			last_used_workspace_id,
+			created_at,
+			updated_at
+	`
 
-	return users.CoreUser{}, nil
+	params := map[string]interface{}{
+		"user_id":       user.ID,
+		"username":      user.Username,
+		"email":         user.Email,
+		"password_hash": user.Password,
+		"full_name":     user.FullName,
+		"avatar_url":    user.AvatarURL,
+		"is_active":     user.IsActive,
+		"last_login_at": user.LastLoginAt,
+		"created_at":    user.CreatedAt,
+		"updated_at":    user.UpdatedAt,
+	}
 
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+	defer stmt.Close()
+
+	var dbUser dbUser
+	if err := stmt.GetContext(ctx, &dbUser, params); err != nil {
+		errMsg := fmt.Sprintf("failed to create user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+
+	return toCoreUser(dbUser), nil
 }
 
 func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUser, error) {

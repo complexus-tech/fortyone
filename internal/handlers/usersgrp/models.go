@@ -45,6 +45,14 @@ type ResetPasswordRequest struct {
 	NewPassword     string `json:"newPassword"`
 }
 
+type RegisterRequest struct {
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FullName  string `json:"fullName"`
+	AvatarURL string `json:"avatarUrl"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,

@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -17,6 +18,7 @@ var (
 	ErrNotFound           = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidPassword    = errors.New("invalid password")
+	ErrEmailTaken         = errors.New("email is already taken")
 )
 
 // Repository provides access to the users storage.
@@ -28,6 +30,7 @@ type Repository interface {
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
 	List(ctx context.Context, workspaceID uuid.UUID) ([]CoreUser, error)
 	UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
+	Create(ctx context.Context, user CoreUser) (CoreUser, error)
 }
 
 // Service provides user-related operations.
@@ -206,4 +209,55 @@ func (s *Service) ResetPassword(ctx context.Context, userID uuid.UUID, currentPa
 	))
 
 	return nil
+}
+
+// Register creates a new user account.
+func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.Register")
+	ctx, span := web.AddSpan(ctx, "business.core.users.Register")
+	defer span.End()
+
+	// Check if email is already taken
+	_, err := s.repo.GetUserByEmail(ctx, newUser.Email)
+	if err == nil {
+		span.RecordError(ErrEmailTaken)
+		return CoreUser{}, ErrEmailTaken
+	} else if err != nil && !errors.Is(err, ErrNotFound) {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
+	// Hash the password
+	hashedPassword, err := generateHash(newUser.Password)
+	if err != nil {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
+	now := time.Now()
+	user := CoreUser{
+		ID:          uuid.New(),
+		Username:    newUser.Username,
+		Email:       newUser.Email,
+		Password:    hashedPassword,
+		FullName:    newUser.FullName,
+		AvatarURL:   newUser.AvatarURL,
+		IsActive:    true,
+		LastLoginAt: now,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	createdUser, err := s.repo.Create(ctx, user)
+	if err != nil {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
+	span.AddEvent("user registered.", trace.WithAttributes(
+		attribute.String("user.id", createdUser.ID.String()),
+		attribute.String("user.email", createdUser.Email),
+	))
+
+	return createdUser, nil
 }
