@@ -72,6 +72,7 @@ export type Workspace = {
   id: string;
   name: string;
   slug: string;
+  color: string;
   userRole: UserRole;
   isActive: boolean;
   createdAt: string;

@@ -98,14 +98,21 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="pt-1.5">
-              {workspaces.map(({ id, name }) => (
+              {workspaces.map(({ id, name, color }) => (
                 <Menu.Item
                   className="justify-between"
                   key={id}
                   onSelect={() => handleChangeWorkspace(id)}
                 >
                   <span className="flex items-center gap-2">
-                    <Avatar className="h-6 text-xs" name={name} rounded="md" />
+                    <Avatar
+                      className="h-6 text-xs"
+                      name={name}
+                      rounded="md"
+                      style={{
+                        backgroundColor: color,
+                      }}
+                    />
                     <span className="inline-block max-w-[20ch] truncate">
                       {name}
                     </span>
