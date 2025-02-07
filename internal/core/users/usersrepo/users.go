@@ -274,6 +274,50 @@ func (r *repo) UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid
 	return nil
 }
 
+// UpdatePassword updates a user's password
+func (r *repo) UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdatePassword")
+	defer span.End()
+
+	q := `
+		UPDATE users
+		SET 
+			password_hash = :password_hash,
+			updated_at = NOW()
+		WHERE 
+			user_id = :user_id
+			AND is_active = true
+		RETURNING user_id
+	`
+
+	params := map[string]interface{}{
+		"user_id":       userID,
+		"password_hash": hashedPassword,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var returnedID uuid.UUID
+	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+		if err == sql.ErrNoRows {
+			return ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to update password: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update password"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
+
 func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.Create")
 	defer span.End()

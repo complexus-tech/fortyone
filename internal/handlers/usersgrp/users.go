@@ -176,3 +176,28 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
 	return nil
 }
+
+// ResetPassword updates the current user's password
+func (h *Handlers) ResetPassword(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req ResetPasswordRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.users.ResetPassword(ctx, userID, req.CurrentPassword, req.NewPassword); err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		if errors.Is(err, users.ErrInvalidPassword) {
+			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

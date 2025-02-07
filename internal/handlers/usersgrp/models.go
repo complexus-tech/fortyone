@@ -40,6 +40,11 @@ type SwitchWorkspaceRequest struct {
 	WorkspaceID uuid.UUID `json:"workspaceId"`
 }
 
+type ResetPasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,

@@ -16,6 +16,7 @@ import (
 var (
 	ErrNotFound           = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidPassword    = errors.New("invalid password")
 )
 
 // Repository provides access to the users storage.
@@ -26,6 +27,7 @@ type Repository interface {
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
 	List(ctx context.Context, workspaceID uuid.UUID) ([]CoreUser, error)
+	UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
 }
 
 // Service provides user-related operations.
@@ -165,4 +167,43 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID) ([]CoreUser, 
 		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return users, nil
+}
+
+// ResetPassword updates a user's password after verifying their current password.
+func (s *Service) ResetPassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
+	s.log.Info(ctx, "business.core.users.ResetPassword")
+	ctx, span := web.AddSpan(ctx, "business.core.users.ResetPassword")
+	defer span.End()
+
+	// Get the user to verify current password
+	user, err := s.repo.GetUser(ctx, userID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Verify current password
+	if err := checkHash(currentPassword, user.Password); err != nil {
+		span.RecordError(err)
+		return ErrInvalidPassword
+	}
+
+	// Hash new password
+	hashedPassword, err := generateHash(newPassword)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Update password
+	if err := s.repo.UpdatePassword(ctx, userID, hashedPassword); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("user password reset.", trace.WithAttributes(
+		attribute.String("user.id", userID.String()),
+	))
+
+	return nil
 }
