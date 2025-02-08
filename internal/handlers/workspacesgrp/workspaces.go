@@ -60,8 +60,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	workspace := workspaces.CoreWorkspace{
-		Name: input.Name,
-		Slug: input.Slug,
+		Name:     input.Name,
+		Slug:     input.Slug,
+		TeamSize: input.TeamSize,
 	}
 
 	result, err := h.workspaces.Create(ctx, workspace)

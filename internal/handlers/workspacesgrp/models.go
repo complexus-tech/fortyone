@@ -40,8 +40,9 @@ func toAppWorkspaces(workspaces []workspaces.CoreWorkspace) []AppWorkspace {
 }
 
 type AppNewWorkspace struct {
-	Name string `json:"name" validate:"required"`
-	Slug string `json:"slug" validate:"required,min=3,max=255"`
+	Name     string `json:"name" validate:"required"`
+	Slug     string `json:"slug" validate:"required,min=3,max=255"`
+	TeamSize string `json:"teamSize" validate:"required"`
 }
 
 type AppUpdateWorkspace struct {

@@ -12,6 +12,7 @@ type CoreWorkspace struct {
 	Slug      string
 	Name      string
 	Color     string
+	TeamSize  string
 	IsActive  bool
 	UserRole  string
 	CreatedAt time.Time

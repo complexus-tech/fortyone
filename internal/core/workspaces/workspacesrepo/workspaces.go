@@ -110,12 +110,14 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 		INSERT INTO workspaces (
 			name,
 			slug,
-			color
+			color,
+			team_size
 		)
 		VALUES (
 			:name,
 			:slug,
-			:color
+			:color,
+			:team_size
 		)
 		RETURNING
 			workspace_id,
@@ -127,9 +129,10 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 	`
 
 	params := map[string]interface{}{
-		"name":  workspace.Name,
-		"slug":  workspace.Slug,
-		"color": generateRandomColor(),
+		"name":      workspace.Name,
+		"slug":      workspace.Slug,
+		"team_size": workspace.TeamSize,
+		"color":     generateRandomColor(),
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -309,6 +312,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 				ELSE FALSE
 			END as is_active,
 			wm.role as user_role,
+			w.color,
 			w.created_at,
 			w.updated_at
 		FROM 
