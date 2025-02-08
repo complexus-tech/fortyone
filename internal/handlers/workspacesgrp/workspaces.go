@@ -3,8 +3,10 @@ package workspacesgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -19,14 +21,16 @@ var (
 
 type Handlers struct {
 	workspaces *workspaces.Service
+	teams      *teams.Service
 	secretKey  string
 	// audit  *audit.Service
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, secretKey string) *Handlers {
 	return &Handlers{
 		workspaces: workspaces,
+		teams:      teams,
 		secretKey:  secretKey,
 	}
 }
@@ -72,6 +76,24 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	// Add creator as member
 	if err := h.workspaces.AddMember(ctx, result.ID, userID, "admin"); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Create a default team
+	description := fmt.Sprintf("This is the default team for the workspace %s", result.Name)
+	team, err := h.teams.Create(ctx, teams.CoreTeam{
+		Name:        "Team 1",
+		Color:       result.Color,
+		Description: &description,
+		Code:        "TM",
+		Workspace:   result.ID,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Add creator as member
+	if err := h.teams.AddMember(ctx, team.ID, userID, "admin"); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 

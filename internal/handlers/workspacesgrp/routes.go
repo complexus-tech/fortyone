@@ -1,6 +1,8 @@
 package workspacesgrp
 
 import (
+	"github.com/complexus-tech/projects-api/internal/core/teams"
+	"github.com/complexus-tech/projects-api/internal/core/teams/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
@@ -18,9 +20,10 @@ type Config struct {
 func Routes(cfg Config, app *web.App) {
 
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB))
+	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	h := New(workspacesService, cfg.SecretKey)
+	h := New(workspacesService, teamsService, cfg.SecretKey)
 
 	app.Get("/workspaces/{id}", h.Get, auth)
 	app.Put("/workspaces/{id}", h.Update, auth)
