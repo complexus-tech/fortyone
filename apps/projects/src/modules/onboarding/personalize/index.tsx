@@ -11,7 +11,7 @@ export const PersonalizeWorkspace = () => {
     <Box className="min-h-screen">
       <Flex align="center" className="min-h-screen" justify="center">
         <Box className="w-full max-w-xl px-4">
-          <Text align="center" as="h1" className="mb-2" fontSize="3xl">
+          <Text align="center" as="h1" className="mb-2" fontSize="4xl">
             Looking good! Let&apos;s personalize your workspace.
           </Text>
           <Text align="center" className="mb-8" color="muted">

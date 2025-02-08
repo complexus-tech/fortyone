@@ -18,7 +18,7 @@ export const InviteTeam = () => {
   return (
     <Flex align="center" className="min-h-screen" justify="center">
       <Box className="w-full max-w-xl px-4">
-        <Text align="center" as="h1" className="mb-6" fontSize="3xl">
+        <Text align="center" as="h1" className="mb-6" fontSize="4xl">
           Invite your teammates
         </Text>
         <Text align="center" className="mb-8" color="muted">
