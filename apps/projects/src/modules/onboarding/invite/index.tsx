@@ -11,40 +11,41 @@ type Member = {
 
 export const InviteTeam = () => {
   const [members, setMembers] = useState<Member[]>([]);
-  const [isSkipped, setIsSkipped] = useState(false);
 
-  const isValid = isSkipped || members.some((m) => m.email.trim() !== "");
+  const isValid = members.some((m) => m.email.trim() !== "");
 
   return (
     <Flex align="center" className="min-h-screen" justify="center">
       <Box className="w-full max-w-xl px-4">
         <Text align="center" as="h1" className="mb-6" fontSize="4xl">
-          Invite your teammates
+          Build With Your Team
         </Text>
         <Text align="center" className="mb-8" color="muted">
-          Complexus is meant to be used with your team. Invite some co-workers
-          to test it out with.
+          Great objectives are achieved together. Invite your teammates to
+          collaborate and align on your organization&apos;s goals.
         </Text>
         <InviteForm onFormChange={setMembers} />
-        <button
-          className="mt-4 text-sm text-gray hover:text-gray-250 dark:text-gray-200 dark:hover:text-white"
-          onClick={() => {
-            setIsSkipped(!isSkipped);
-          }}
-          type="button"
-        >
-          {isSkipped ? "Want to invite team members?" : "I'll do it later"}
-        </button>
         <Button
           align="center"
-          className="mt-6"
+          className="mt-4"
           disabled={!isValid}
+          fullWidth
+          rounded="lg"
+          size="lg"
+        >
+          Continue
+        </Button>
+        <Button
+          align="center"
+          className="mt-2"
+          color="tertiary"
           fullWidth
           href="/onboarding/welcome"
           rounded="lg"
           size="lg"
+          variant="naked"
         >
-          {isSkipped ? "Skip for now" : "Continue"}
+          I&apos;ll do this later
         </Button>
       </Box>
     </Flex>

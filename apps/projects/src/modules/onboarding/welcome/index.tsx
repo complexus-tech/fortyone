@@ -15,33 +15,33 @@ export const Welcome = () => {
         <Flex align="center" className="min-h-screen" justify="center">
           <Box className="w-full max-w-xl px-4">
             <Text align="center" as="h1" className="mb-6" fontSize="4xl">
-              You&apos;re good to go
+              Welcome to Complexus!
             </Text>
             <Text align="center" className="max-w-l mx-auto mb-6" color="muted">
-              Go ahead and explore the app. When you&apos;re ready, create your
-              first story by pressing{" "}
+              Your workspace is ready. Create your first story by pressing{" "}
               <Badge
                 className="inline-flex rounded-[0.4rem] font-semibold"
                 color="tertiary"
               >
                 shift+n
-              </Badge>
+              </Badge>{" "}
+              or explore the features below.
             </Text>
             <Box className="grid gap-4">
               <ActionCard
-                description="Make sure to invite your team members."
-                icon={<UserIcon className="h-5 w-5" />}
-                title="Tell your team"
+                description="Collaborate better by inviting your teammates to join your workspace."
+                icon={<UserIcon />}
+                title="Build your team"
               />
               <ActionCard
-                description="Link your pull requests and create issues from Slack."
-                icon={<ChatIcon className="h-5 w-5" />}
-                title="Integrate GitHub & Slack"
+                description="Connect your GitHub repositories and Slack channels for seamless integration."
+                icon={<ChatIcon />}
+                title="Set up integrations"
               />
               <ActionCard
-                description="Learn the keyboard commands by pressing ?"
-                icon={<PreferencesIcon className="h-5 w-5" />}
-                title="Keyboard shortcuts"
+                description="Boost your productivity with keyboard shortcuts (press ? for help)"
+                icon={<PreferencesIcon />}
+                title="Master shortcuts"
               />
             </Box>
             <Button
@@ -53,7 +53,7 @@ export const Welcome = () => {
               rounded="lg"
               size="lg"
             >
-              Start using Complexus
+              Get Started
             </Button>
           </Box>
         </Flex>

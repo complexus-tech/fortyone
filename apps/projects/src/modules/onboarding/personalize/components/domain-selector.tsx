@@ -21,11 +21,16 @@ type DomainSelectorProps = {
 
 export const DomainSelector = ({ value, onChange }: DomainSelectorProps) => {
   return (
-    <Box className="mt-8">
+    <Box className="mt-6">
       <Box className="mt-3 grid grid-cols-2 gap-3">
         {DOMAINS.map((domain) => (
           <label
-            className="flex cursor-pointer items-center rounded-xl border border-gray-100 p-3.5 ring-primary transition duration-200 ease-linear hover:ring-[2px] dark:border-dark-200 dark:ring-offset-dark"
+            className={cn(
+              "flex cursor-pointer items-center rounded-xl border border-gray-100 p-3.5 ring-primary transition duration-200 ease-linear hover:ring-[2px] dark:border-dark-200",
+              {
+                "ring-[2px]": value === domain.id,
+              },
+            )}
             key={domain.id}
           >
             <input
@@ -42,7 +47,7 @@ export const DomainSelector = ({ value, onChange }: DomainSelectorProps) => {
 
             <Box
               className={cn(
-                "ml-3 size-4 rounded-full border-2 border-gray-300 dark:border-dark-100",
+                "ml-3 size-4 rounded-full border-4 border-gray-300/60 dark:border-dark-100",
                 {
                   "border-primary dark:border-primary": value === domain.id,
                 },

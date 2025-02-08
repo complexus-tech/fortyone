@@ -11,11 +11,13 @@ export const PersonalizeWorkspace = () => {
     <Box className="min-h-screen">
       <Flex align="center" className="min-h-screen" justify="center">
         <Box className="w-full max-w-xl px-4">
-          <Text align="center" as="h1" className="mb-2" fontSize="4xl">
-            Looking good! Let&apos;s personalize your workspace.
+          <Text align="center" as="h1" className="mb-6" fontSize="4xl">
+            Tailor Your Workspace
           </Text>
-          <Text align="center" className="mb-8" color="muted">
-            What is your domain expertise? Choose one.
+          <Text align="center" color="muted">
+            Select your primary domain to help us tailor your experience. This
+            will help optimize how you track and achieve your team&apos;s
+            objectives.
           </Text>
 
           <DomainSelector

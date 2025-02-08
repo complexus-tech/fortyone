@@ -18,7 +18,8 @@ export const Navigation = () => {
             leftIcon={<ArrowLeftIcon />}
             variant="naked"
           >
-            Back to <Dot color={activeWorkspace.color} /> {activeWorkspace.name}
+            Back to <Dot color={activeWorkspace.color} />{" "}
+            <span className="font-semibold">{activeWorkspace.name}</span>
           </Button>
         ) : (
           <ComplexusLogo className="h-7" />

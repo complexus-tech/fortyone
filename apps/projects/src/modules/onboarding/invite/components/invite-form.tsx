@@ -17,6 +17,7 @@ type InviteFormProps = {
 export const InviteForm = ({ onFormChange }: InviteFormProps) => {
   const [members, setMembers] = useState<Member[]>([
     { email: "", role: "member" },
+    { email: "", role: "member" },
   ]);
 
   const addMember = () => {
@@ -44,7 +45,8 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           <MemberRow
             email={member.email}
             isRemovable={members.length > 1}
-            key={index}
+            // eslint-disable-next-line react/no-array-index-key -- we need a unique key for each member
+            key={`${member.email}-${index}`}
             onEmailChange={(email) => {
               updateMember(index, "email", email);
             }}
@@ -61,13 +63,13 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
 
       <Button
         align="center"
-        className="mt-4"
+        className="mt-3"
         color="tertiary"
-        fullWidth
         leftIcon={<PlusIcon />}
         onClick={addMember}
+        variant="naked"
       >
-        Add another
+        Add another colleague
       </Button>
     </Box>
   );
