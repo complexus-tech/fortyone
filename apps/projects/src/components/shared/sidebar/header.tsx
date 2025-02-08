@@ -97,7 +97,7 @@ export const Header = () => {
               <Text>Workspaces</Text>
             </Menu.Group>
             <Menu.Separator className="my-0" />
-            <Menu.Group className="pt-1.5">
+            <Menu.Group className="space-y-1 pt-1.5">
               {workspaces.map(({ id, name, color }) => (
                 <Menu.Item
                   className="justify-between"
@@ -125,6 +125,7 @@ export const Header = () => {
               <Menu.Item asChild>
                 <Button
                   color="tertiary"
+                  href="/onboarding/create"
                   leftIcon={<PlusIcon className="h-5 w-auto" />}
                   size="sm"
                   variant="naked"

@@ -7,10 +7,6 @@ import { DomainSelector } from "./components/domain-selector";
 export const PersonalizeWorkspace = () => {
   const [domain, setDomain] = useState("");
 
-  const handleNext = async () => {
-    // TODO: Handle form submission and navigation
-  };
-
   return (
     <Box className="min-h-screen">
       <Flex align="center" className="min-h-screen" justify="center">
@@ -34,7 +30,7 @@ export const PersonalizeWorkspace = () => {
             className="mt-6"
             disabled={!domain}
             fullWidth
-            onClick={handleNext}
+            href="/onboarding/invite"
             rounded="lg"
             size="lg"
           >

@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Text, Button } from "ui";
+import { Box, Button } from "ui";
 import { useState } from "react";
+import { PlusIcon } from "icons";
 import { MemberRow } from "./member-row";
 
 type Member = {
@@ -38,14 +39,6 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
 
   return (
     <Box className="text-black dark:text-white">
-      <Text as="h1" className="mb-2 text-2xl font-semibold">
-        Invite your teammates
-      </Text>
-      <Text className="mb-8 text-gray dark:text-gray-200">
-        Complexus is meant to be used with your team. Invite some co-workers to
-        test it out with.
-      </Text>
-
       <Box className="space-y-4">
         {members.map((member, index) => (
           <MemberRow
@@ -67,10 +60,12 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
       </Box>
 
       <Button
-        className="mt-4 text-gray hover:text-gray-250 dark:text-gray-200 dark:hover:text-white"
+        align="center"
+        className="mt-4"
         color="tertiary"
+        fullWidth
+        leftIcon={<PlusIcon />}
         onClick={addMember}
-        variant="naked"
       >
         Add another
       </Button>

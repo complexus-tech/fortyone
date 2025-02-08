@@ -24,7 +24,7 @@ export const Welcome = () => {
                 className="inline-flex rounded-[0.4rem] font-semibold"
                 color="tertiary"
               >
-                shift+c
+                shift+n
               </Badge>
             </Text>
             <Box className="grid gap-4">
@@ -53,7 +53,7 @@ export const Welcome = () => {
               rounded="lg"
               size="lg"
             >
-              Open Complexus
+              Start using Complexus
             </Button>
           </Box>
         </Flex>

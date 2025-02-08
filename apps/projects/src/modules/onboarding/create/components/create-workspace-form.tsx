@@ -65,7 +65,14 @@ export const CreateWorkspaceForm = () => {
           </Select.Content>
         </Select>
       </Box>
-      <Button align="center" className="mt-4" fullWidth rounded="lg" size="lg">
+      <Button
+        align="center"
+        className="mt-4"
+        fullWidth
+        href="/onboarding/personalize"
+        rounded="lg"
+        size="lg"
+      >
         Create Workspace
       </Button>
     </Box>
