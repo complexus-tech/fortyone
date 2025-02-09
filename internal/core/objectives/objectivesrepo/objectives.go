@@ -38,6 +38,11 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.Create")
 	defer span.End()
 
+	// Validate status belongs to the same team
+	if err := r.validateStatusTeam(ctx, objective.Status, objective.Team); err != nil {
+		return objectives.CoreObjective{}, nil, err
+	}
+
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return objectives.CoreObjective{}, nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -277,6 +282,36 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.Update")
 	defer span.End()
 
+	// If status is being updated, validate it belongs to the same team
+	if statusId, ok := updates["status_id"].(uuid.UUID); ok {
+		// We need to get the objective's team ID first
+		var teamId uuid.UUID
+		q := `SELECT team_id FROM objectives WHERE objective_id = :objective_id AND workspace_id = :workspace_id`
+		params := map[string]interface{}{
+			"objective_id": id,
+			"workspace_id": workspaceId,
+		}
+		stmt, err := r.db.PrepareNamedContext(ctx, q)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to prepare team query statement: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+		defer stmt.Close()
+
+		if err := stmt.GetContext(ctx, &teamId, params); err != nil {
+			errMsg := fmt.Sprintf("failed to get objective team: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+
+		if err := r.validateStatusTeam(ctx, statusId, teamId); err != nil {
+			return err
+		}
+	}
+
 	// Verify the objective exists and belongs to the workspace
 	if _, err := r.Get(ctx, id, workspaceId); err != nil {
 		return err
@@ -365,6 +400,46 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	span.AddEvent("objective deleted", trace.WithAttributes(
 		attribute.String("objective.id", id.String()),
 	))
+
+	return nil
+}
+
+func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.objectives.validateStatusTeam")
+	defer span.End()
+
+	q := `
+		SELECT EXISTS (
+			SELECT 1 FROM objective_statuses 
+			WHERE status_id = :status_id 
+			AND team_id = :team_id
+		)
+	`
+	params := map[string]interface{}{
+		"status_id": statusId,
+		"team_id":   teamId,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare validation statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var exists bool
+	if err := stmt.GetContext(ctx, &exists, params); err != nil {
+		errMsg := fmt.Sprintf("failed to validate status team: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	if !exists {
+		return errors.New("status does not belong to the objective's team")
+	}
 
 	return nil
 }
