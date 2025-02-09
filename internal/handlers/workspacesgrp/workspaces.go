@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
+	"github.com/complexus-tech/projects-api/internal/core/states"
+	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
@@ -20,18 +23,24 @@ var (
 )
 
 type Handlers struct {
-	workspaces *workspaces.Service
-	teams      *teams.Service
-	secretKey  string
+	workspaces      *workspaces.Service
+	teams           *teams.Service
+	stories         *stories.Service
+	statuses        *states.Service
+	objectivestatus *objectivestatus.Service
+	secretKey       string
 	// audit  *audit.Service
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, teams *teams.Service, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, objectivestatus *objectivestatus.Service, secretKey string) *Handlers {
 	return &Handlers{
-		workspaces: workspaces,
-		teams:      teams,
-		secretKey:  secretKey,
+		workspaces:      workspaces,
+		teams:           teams,
+		stories:         stories,
+		statuses:        statuses,
+		objectivestatus: objectivestatus,
+		secretKey:       secretKey,
 	}
 }
 
@@ -96,6 +105,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err := h.teams.AddMember(ctx, team.ID, userID, "admin"); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
+
+	// Create default stories
 
 	// Fetch the workspace again to include the role
 	result, err = h.workspaces.Get(ctx, result.ID, userID)
