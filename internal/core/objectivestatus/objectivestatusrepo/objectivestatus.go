@@ -42,7 +42,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]objectivestat
 			name,
 			category,
 			order_index,
-			team_id,
+			workflow_id,
 			workspace_id,
 			created_at,
 			updated_at
@@ -191,7 +191,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING *
+		RETURNING status_id, name, category, order_index, workflow_id, workspace_id, created_at, updated_at
 	`, setClause)
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

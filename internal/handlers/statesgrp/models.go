@@ -17,7 +17,7 @@ type AppStatesList struct {
 	Workspace  uuid.UUID  `json:"workspaceId"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
-	DeletedAt  *time.Time `json:"deletedAt"`
+	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
 }
 
 type NewState struct {
