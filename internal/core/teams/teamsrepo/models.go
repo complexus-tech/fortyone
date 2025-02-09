@@ -19,24 +19,24 @@ type dbTeam struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 }
 
-func toCoreTeam(p dbTeam) teams.CoreTeam {
+func toCoreTeam(t dbTeam) teams.CoreTeam {
 	return teams.CoreTeam{
-		ID:          p.ID,
-		Name:        p.Name,
-		Description: p.Description,
-		Code:        p.Code,
-		Color:       p.Color,
-		Icon:        p.Icon,
-		Workspace:   p.Workspace,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:          t.ID,
+		Name:        t.Name,
+		Description: t.Description,
+		Code:        t.Code,
+		Color:       t.Color,
+		Icon:        t.Icon,
+		Workspace:   t.Workspace,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
 	}
 }
 
-func toCoreTeams(do []dbTeam) []teams.CoreTeam {
-	teams := make([]teams.CoreTeam, len(do))
-	for i, o := range do {
-		teams[i] = toCoreTeam(o)
+func toCoreTeams(t []dbTeam) []teams.CoreTeam {
+	result := make([]teams.CoreTeam, len(t))
+	for i, team := range t {
+		result[i] = toCoreTeam(team)
 	}
-	return teams
+	return result
 }

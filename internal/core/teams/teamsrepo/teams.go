@@ -79,42 +79,17 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]teams.CoreTea
 }
 
 func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.teams.Create")
+	ctx, span := web.AddSpan(ctx, "teamsrepo.Create")
 	defer span.End()
 
-	var result dbTeam
-	query := `
-		INSERT INTO teams (
-			name,
-			description,
-			code,
-			color,
-			icon,
-			workspace_id,
-			created_at,
-			updated_at
-		)
-		VALUES (
-			:name,
-			:description,
-			:code,
-			:color,
-			:icon,
-			:workspace_id,
-			NOW(),
-			NOW()
-		)
-		RETURNING
-			team_id,
-			name,
-			description,
-			code,
-			color,
-			icon,
-			workspace_id,
-			created_at,
-			updated_at
-	`
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to begin transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to begin transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+	defer tx.Rollback()
 
 	params := map[string]interface{}{
 		"name":         team.Name,
@@ -125,23 +100,99 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		"workspace_id": team.Workspace,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	query := `
+		INSERT INTO teams (name, description, code, color, icon, workspace_id)
+		VALUES (:name, :description, :code, :color, :icon, :workspace_id)
+		RETURNING team_id, name, description, code, color, icon, workspace_id, created_at, updated_at
+	`
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &result, params); err != nil {
-		errMsg := fmt.Sprintf("failed to create team: %s", err)
+	var dbTeam dbTeam
+	if err := stmt.GetContext(ctx, &dbTeam, params); err != nil {
+		errMsg := fmt.Sprintf("failed to execute query: %s", err)
 		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create team"), trace.WithAttributes(attribute.String("error", errMsg)))
+		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
 	}
 
-	return toCoreTeam(result), nil
+	if err := r.createDefaultStatuses(ctx, tx, dbTeam.ID, dbTeam.Workspace); err != nil {
+		errMsg := fmt.Sprintf("failed to create default statuses: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default statuses"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to commit transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+
+	return toCoreTeam(dbTeam), nil
+}
+
+func (r *repo) createDefaultStatuses(ctx context.Context, tx *sqlx.Tx, teamID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "teamsrepo.createDefaultStatuses")
+	defer span.End()
+
+	// Create story statuses
+	storyQuery := `
+		INSERT INTO statuses (name, category, order_index, team_id, workspace_id)
+		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
+	`
+	storyStmt, err := tx.PrepareNamedContext(ctx, storyQuery)
+	if err != nil {
+		return fmt.Errorf("failed to prepare story status statement: %w", err)
+	}
+	defer storyStmt.Close()
+
+	for _, status := range teams.DefaultStoryStatuses {
+		params := map[string]interface{}{
+			"name":         status.Name,
+			"category":     status.Category,
+			"order_index":  status.OrderIndex,
+			"team_id":      teamID,
+			"workspace_id": workspaceID,
+		}
+		if _, err := storyStmt.ExecContext(ctx, params); err != nil {
+			return fmt.Errorf("failed to create story status: %w", err)
+		}
+	}
+
+	// Create objective statuses
+	objectiveQuery := `
+		INSERT INTO objective_statuses (name, category, order_index, team_id, workspace_id)
+		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
+	`
+	objectiveStmt, err := tx.PrepareNamedContext(ctx, objectiveQuery)
+	if err != nil {
+		return fmt.Errorf("failed to prepare objective status statement: %w", err)
+	}
+	defer objectiveStmt.Close()
+
+	for _, status := range teams.DefaultObjectiveStatuses {
+		params := map[string]interface{}{
+			"name":         status.Name,
+			"category":     status.Category,
+			"order_index":  status.OrderIndex,
+			"team_id":      teamID,
+			"workspace_id": workspaceID,
+		}
+		if _, err := objectiveStmt.ExecContext(ctx, params); err != nil {
+			return fmt.Errorf("failed to create objective status: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreTeam) (teams.CoreTeam, error) {
