@@ -6,6 +6,8 @@ import { useState } from "react";
 import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { createStoryAction } from "@/modules/story/actions/create-story";
+import { ONBOARDING_STORIES } from "@/constants/onboarding-stories";
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
@@ -28,6 +30,11 @@ export const CreateWorkspaceForm = () => {
     try {
       setIsLoading(true);
       await createWorkspaceAction(form);
+      await createStoryAction({
+        title: "Welcome to your new workspace",
+        description: "This is your first story",
+        assigneeId: session?.user!.id,
+      });
       if (workspaces.length === 0) {
         localStorage.clear();
         router.push("/onboarding/personalize");
