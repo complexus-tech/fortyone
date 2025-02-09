@@ -116,7 +116,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
-		Team:       ns.Team,
+		Workflow:   ns.Workflow,
 		Workspace:  workspaceId,
 	}
 
@@ -124,17 +124,17 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		"name":         state.Name,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
-		"team_id":      state.Team,
+		"workflow_id":  state.Workflow,
 		"workspace_id": state.Workspace,
 	}
 
 	q2 := `
 		INSERT INTO statuses (
 			name, category, order_index,
-			team_id, workspace_i
+			workflow_id, workspace_id
 		) VALUES (
 			:name, :category, :order_index,
-			:team_id, :workspace_id
+			:workflow_id, :workspace_id
 		)
 		RETURNING *
 	`

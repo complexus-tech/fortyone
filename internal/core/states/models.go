@@ -11,7 +11,7 @@ type CoreState struct {
 	Name       string
 	Category   string
 	OrderIndex int
-	Team       uuid.UUID
+	Workflow   uuid.UUID
 	Workspace  uuid.UUID
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -20,7 +20,7 @@ type CoreState struct {
 type CoreNewState struct {
 	Name     string
 	Category string
-	Team     uuid.UUID
+	Workflow uuid.UUID
 }
 
 type CoreUpdateState struct {

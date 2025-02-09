@@ -12,7 +12,7 @@ type dbObjectiveStatus struct {
 	Name       string     `db:"name"`
 	Category   string     `db:"category"`
 	OrderIndex int        `db:"order_index"`
-	Team       uuid.UUID  `db:"team_id"`
+	Workflow   uuid.UUID  `db:"workflow_id"`
 	Workspace  uuid.UUID  `db:"workspace_id"`
 	CreatedAt  time.Time  `db:"created_at"`
 	UpdatedAt  time.Time  `db:"updated_at"`
@@ -25,7 +25,7 @@ func toCoreObjectiveStatus(s dbObjectiveStatus) objectivestatus.CoreObjectiveSta
 		Name:       s.Name,
 		Category:   s.Category,
 		OrderIndex: s.OrderIndex,
-		Team:       s.Team,
+		Workflow:   s.Workflow,
 		Workspace:  s.Workspace,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,

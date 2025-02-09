@@ -12,7 +12,7 @@ type dbState struct {
 	Name       string     `db:"name"`
 	Category   string     `db:"category"`
 	OrderIndex int        `db:"order_index"`
-	Team       uuid.UUID  `db:"team_id"`
+	Workflow   uuid.UUID  `db:"workflow_id"`
 	Workspace  uuid.UUID  `db:"workspace_id"`
 	CreatedAt  time.Time  `db:"created_at"`
 	UpdatedAt  time.Time  `db:"updated_at"`
@@ -26,7 +26,7 @@ func toCoreState(p dbState) states.CoreState {
 		Name:       p.Name,
 		Category:   p.Category,
 		OrderIndex: p.OrderIndex,
-		Team:       p.Team,
+		Workflow:   p.Workflow,
 		Workspace:  p.Workspace,
 		CreatedAt:  p.CreatedAt,
 		UpdatedAt:  p.UpdatedAt,

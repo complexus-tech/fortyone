@@ -116,26 +116,25 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
-		Team:       ns.Team,
+		Workflow:   ns.Workflow,
 		Workspace:  workspaceId,
 	}
 
 	params = map[string]interface{}{
-		"status_id":    status.ID,
 		"name":         status.Name,
 		"category":     status.Category,
 		"order_index":  status.OrderIndex,
-		"team_id":      status.Team,
+		"workflow_id":  status.Workflow,
 		"workspace_id": status.Workspace,
 	}
 
 	q2 := `
 		INSERT INTO objective_statuses (
-			status_id, name, category, order_index,
-			team_id, workspace_id
+			name, category, order_index,
+			workflow_id, workspace_id
 		) VALUES (
-			:status_id, :name, :category, :order_index,
-			:team_id, :workspace_id
+			:name, :category, :order_index,
+			:workflow_id, :workspace_id
 		)
 		RETURNING *
 	`
