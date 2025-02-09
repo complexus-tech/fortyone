@@ -1,4 +1,4 @@
-package states
+package objectivestatus
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type CoreState struct {
+type CoreObjectiveStatus struct {
 	ID         uuid.UUID
 	Name       string
 	Category   string
@@ -17,13 +17,13 @@ type CoreState struct {
 	UpdatedAt  time.Time
 }
 
-type CoreNewState struct {
+type CoreNewObjectiveStatus struct {
 	Name     string
 	Category string
 	Team     uuid.UUID
 }
 
-type CoreUpdateState struct {
+type CoreUpdateObjectiveStatus struct {
 	Name       *string
 	OrderIndex *int
 }

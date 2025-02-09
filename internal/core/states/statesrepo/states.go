@@ -40,7 +40,6 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreSt
 		SELECT
 			status_id,
 			name,
-			color,
 			category,
 			order_index,
 			team_id,
@@ -116,7 +115,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	state := dbState{
 		ID:         uuid.New(),
 		Name:       ns.Name,
-		Color:      ns.Color,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
 		Team:       ns.Team,
@@ -126,7 +124,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	params = map[string]interface{}{
 		"status_id":    state.ID,
 		"name":         state.Name,
-		"color":        state.Color,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
 		"team_id":      state.Team,
@@ -135,10 +132,10 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 
 	q2 := `
 		INSERT INTO statuses (
-			status_id, name, color, category, order_index,
+			status_id, name, category, order_index,
 			team_id, workspace_id, created_at, updated_at
 		) VALUES (
-			:status_id, :name, :color, :category, :order_index,
+			:status_id, :name, :category, :order_index,
 			:team_id, :workspace_id, NOW(), NOW()
 		)
 		RETURNING *

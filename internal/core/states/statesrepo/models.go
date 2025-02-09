@@ -10,7 +10,6 @@ import (
 type dbState struct {
 	ID         uuid.UUID  `db:"status_id"`
 	Name       string     `db:"name"`
-	Color      string     `db:"color"`
 	Category   string     `db:"category"`
 	OrderIndex int        `db:"order_index"`
 	Team       uuid.UUID  `db:"team_id"`
@@ -25,7 +24,6 @@ func toCoreState(p dbState) states.CoreState {
 	return states.CoreState{
 		ID:         p.ID,
 		Name:       p.Name,
-		Color:      p.Color,
 		Category:   p.Category,
 		OrderIndex: p.OrderIndex,
 		Team:       p.Team,

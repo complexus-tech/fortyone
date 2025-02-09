@@ -11,7 +11,6 @@ import (
 type AppStatesList struct {
 	ID         uuid.UUID  `json:"id"`
 	Name       string     `json:"name"`
-	Color      string     `json:"color"`
 	Category   string     `json:"category" validate:"oneof=backlog unstarted started paused completed cancelled"`
 	OrderIndex int        `json:"orderIndex"`
 	Team       uuid.UUID  `json:"teamId"`
@@ -23,7 +22,6 @@ type AppStatesList struct {
 
 type NewState struct {
 	Name     string    `json:"name" validate:"required"`
-	Color    string    `json:"color" validate:"required"`
 	Category string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
 	Team     uuid.UUID `json:"teamId" validate:"required"`
 }
@@ -37,7 +35,6 @@ func toAppState(s states.CoreState) AppStatesList {
 	return AppStatesList{
 		ID:         s.ID,
 		Name:       s.Name,
-		Color:      s.Color,
 		Category:   s.Category,
 		OrderIndex: s.OrderIndex,
 		Team:       s.Team,
@@ -58,7 +55,6 @@ func toAppStates(ss []states.CoreState) []AppStatesList {
 func toCoreNewState(ns NewState) states.CoreNewState {
 	return states.CoreNewState{
 		Name:     ns.Name,
-		Color:    ns.Color,
 		Category: ns.Category,
 		Team:     ns.Team,
 	}

@@ -2,7 +2,6 @@ package objectivestatus
 
 import (
 	"context"
-	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -11,30 +10,21 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type CoreObjectiveStatus struct {
-	ID         uuid.UUID
-	Name       string
-	Color      string
-	Category   string
-	OrderIndex int
-	Team       uuid.UUID
-	Workspace  uuid.UUID
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-}
-
 // Repository provides access to the objective statuses storage.
 type Repository interface {
+	Create(ctx context.Context, workspaceId uuid.UUID, status CoreNewObjectiveStatus) (CoreObjectiveStatus, error)
+	Update(ctx context.Context, workspaceId, statusId uuid.UUID, status CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error)
+	Delete(ctx context.Context, workspaceId, statusId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreObjectiveStatus, error)
 }
 
-// Service provides objective status-related operations.
+// Service provides objective status operations.
 type Service struct {
 	repo Repository
 	log  *logger.Logger
 }
 
-// New constructs a new objective statuses service instance with the provided repository.
+// New constructs a new objective status service instance.
 func New(log *logger.Logger, repo Repository) *Service {
 	return &Service{
 		repo: repo,
@@ -42,19 +32,73 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
+// Create creates a new objective status.
+func (s *Service) Create(ctx context.Context, workspaceId uuid.UUID, ns CoreNewObjectiveStatus) (CoreObjectiveStatus, error) {
+	s.log.Info(ctx, "business.core.objectivestatus.Create")
+	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Create")
+	defer span.End()
+
+	status, err := s.repo.Create(ctx, workspaceId, ns)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjectiveStatus{}, err
+	}
+
+	span.AddEvent("objective status created.", trace.WithAttributes(
+		attribute.String("status.name", status.Name),
+	))
+	return status, nil
+}
+
+// Update updates an existing objective status.
+func (s *Service) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error) {
+	s.log.Info(ctx, "business.core.objectivestatus.Update")
+	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Update")
+	defer span.End()
+
+	status, err := s.repo.Update(ctx, workspaceId, statusId, us)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjectiveStatus{}, err
+	}
+
+	span.AddEvent("objective status updated.", trace.WithAttributes(
+		attribute.String("status.id", statusId.String()),
+	))
+	return status, nil
+}
+
+// Delete deletes an objective status.
+func (s *Service) Delete(ctx context.Context, workspaceId, statusId uuid.UUID) error {
+	s.log.Info(ctx, "business.core.objectivestatus.Delete")
+	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Delete")
+	defer span.End()
+
+	if err := s.repo.Delete(ctx, workspaceId, statusId); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("objective status deleted.", trace.WithAttributes(
+		attribute.String("status.id", statusId.String()),
+	))
+	return nil
+}
+
 // List returns a list of objective statuses.
 func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreObjectiveStatus, error) {
-	s.log.Info(ctx, "business.core.objectivestatus.list")
+	s.log.Info(ctx, "business.core.objectivestatus.List")
 	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.List")
 	defer span.End()
 
-	states, err := s.repo.List(ctx, workspaceId)
+	statuses, err := s.repo.List(ctx, workspaceId)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
+
 	span.AddEvent("objective statuses retrieved.", trace.WithAttributes(
-		attribute.Int("objective_status.count", len(states)),
+		attribute.Int("statuses.count", len(statuses)),
 	))
-	return states, nil
+	return statuses, nil
 }
