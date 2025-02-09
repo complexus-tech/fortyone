@@ -42,7 +42,6 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]teams.CoreTea
 			description,
 			code,
 			color,
-			icon,
 			workspace_id,
 			created_at,
 			updated_at
@@ -96,14 +95,13 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		"description":  team.Description,
 		"code":         team.Code,
 		"color":        team.Color,
-		"icon":         team.Icon,
 		"workspace_id": team.Workspace,
 	}
 
 	query := `
-		INSERT INTO teams (name, description, code, color, icon, workspace_id)
-		VALUES (:name, :description, :code, :color, :icon, :workspace_id)
-		RETURNING team_id, name, description, code, color, icon, workspace_id, created_at, updated_at
+		INSERT INTO teams (name, description, code, color, workspace_id)
+		VALUES (:name, :description, :code, :color, :workspace_id)
+		RETURNING team_id, name, description, code, color, workspace_id, created_at, updated_at
 	`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -207,7 +205,6 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			description = CASE WHEN :description IS NULL THEN description ELSE :description END,
 			code = CASE WHEN :code = '' THEN code ELSE :code END,
 			color = CASE WHEN :color = '' THEN color ELSE :color END,
-			icon = CASE WHEN :icon = '' THEN icon ELSE :icon END,
 			updated_at = NOW()
 		WHERE 
 			team_id = :team_id
@@ -218,7 +215,6 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			description,
 			code,
 			color,
-			icon,
 			workspace_id,
 			created_at,
 			updated_at
@@ -231,7 +227,6 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 		"description":  updates.Description,
 		"code":         updates.Code,
 		"color":        updates.Color,
-		"icon":         updates.Icon,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

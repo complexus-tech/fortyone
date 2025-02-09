@@ -71,7 +71,6 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Description: input.Description,
 		Code:        input.Code,
 		Color:       input.Color,
-		Icon:        input.Icon,
 		Workspace:   workspaceID,
 	}
 
@@ -119,7 +118,6 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Description: input.Description,
 		Code:        input.Code,
 		Color:       input.Color,
-		Icon:        input.Icon,
 		Workspace:   workspaceID,
 	}
 

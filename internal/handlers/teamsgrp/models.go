@@ -14,7 +14,6 @@ type AppTeamsList struct {
 	Description *string   `json:"description"`
 	Code        string    `json:"code"`
 	Color       string    `json:"color"`
-	Icon        string    `json:"icon"`
 	Workspace   uuid.UUID `json:"workspaceId"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -30,7 +29,6 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 			Description: team.Description,
 			Code:        team.Code,
 			Color:       team.Color,
-			Icon:        team.Icon,
 			Workspace:   team.Workspace,
 			CreatedAt:   team.CreatedAt,
 			UpdatedAt:   team.UpdatedAt,
@@ -44,7 +42,6 @@ type AppNewTeam struct {
 	Description *string `json:"description"`
 	Code        string  `json:"code" validate:"required"`
 	Color       string  `json:"color" validate:"required"`
-	Icon        string  `json:"icon" validate:"required"`
 }
 
 type AppUpdateTeam struct {
@@ -52,10 +49,47 @@ type AppUpdateTeam struct {
 	Description *string `json:"description,omitempty"`
 	Code        string  `json:"code,omitempty"`
 	Color       string  `json:"color,omitempty"`
-	Icon        string  `json:"icon,omitempty"`
 }
 
 type AppNewTeamMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
 	Role   string    `json:"role" validate:"required,oneof=member guest admin"`
+}
+
+type Team struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description"`
+	Code        string    `json:"code"`
+	Color       string    `json:"color"`
+	Workspace   uuid.UUID `json:"workspace_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func toTeam(team teams.CoreTeam) Team {
+	return Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: team.Description,
+		Code:        team.Code,
+		Color:       team.Color,
+		Workspace:   team.Workspace,
+		CreatedAt:   team.CreatedAt,
+		UpdatedAt:   team.UpdatedAt,
+	}
+}
+
+type CreateTeamRequest struct {
+	Name        string  `json:"name" validate:"required"`
+	Description *string `json:"description"`
+	Code        string  `json:"code" validate:"required"`
+	Color       string  `json:"color" validate:"required"`
+}
+
+type UpdateTeamRequest struct {
+	Name        string  `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Code        string  `json:"code,omitempty"`
+	Color       string  `json:"color,omitempty"`
 }

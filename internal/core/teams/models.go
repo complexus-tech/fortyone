@@ -12,7 +12,6 @@ type CoreTeam struct {
 	Description *string
 	Code        string
 	Color       string
-	Icon        string
 	Workspace   uuid.UUID
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
