@@ -100,6 +100,13 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stor
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
 
+	// Validate status belongs to the same team
+	if story.Status != nil {
+		if err := r.validateStatusTeam(ctx, *story.Status, story.Team); err != nil {
+			return stories.CoreSingleStory{}, err
+		}
+	}
+
 	lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
 	if err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
@@ -630,6 +637,36 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Update")
 	defer span.End()
 
+	// If status is being updated, validate it belongs to the same team
+	if statusId, ok := updates["status_id"].(uuid.UUID); ok {
+		// We need to get the story's team ID first
+		var teamId uuid.UUID
+		q := `SELECT team_id FROM stories WHERE id = :story_id AND workspace_id = :workspace_id`
+		params := map[string]interface{}{
+			"story_id":     id,
+			"workspace_id": workspaceId,
+		}
+		stmt, err := r.db.PrepareNamedContext(ctx, q)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to prepare team query statement: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+		defer stmt.Close()
+
+		if err := stmt.GetContext(ctx, &teamId, params); err != nil {
+			errMsg := fmt.Sprintf("failed to get story team: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+
+		if err := r.validateStatusTeam(ctx, statusId, teamId); err != nil {
+			return err
+		}
+	}
+
 	query := "UPDATE stories SET "
 	var setClauses []string
 	params := map[string]any{"id": id, "workspace_id": workspaceId}
@@ -958,4 +995,44 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.C
 	}
 
 	return toCoreComments(comments), nil
+}
+
+func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.validateStatusTeam")
+	defer span.End()
+
+	q := `
+		SELECT EXISTS (
+			SELECT 1 FROM story_statuses 
+			WHERE status_id = :status_id 
+			AND team_id = :team_id
+		)
+	`
+	params := map[string]interface{}{
+		"status_id": statusId,
+		"team_id":   teamId,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare validation statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var exists bool
+	if err := stmt.GetContext(ctx, &exists, params); err != nil {
+		errMsg := fmt.Sprintf("failed to validate status team: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	if !exists {
+		return errors.New("status does not belong to the story's team")
+	}
+
+	return nil
 }
