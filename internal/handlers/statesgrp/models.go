@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// AppStateList represents a state in the application layer.
+// AppStatesList represents a state in the application layer.
 type AppStatesList struct {
 	ID         uuid.UUID  `json:"id"`
 	Name       string     `json:"name"`
@@ -21,21 +21,52 @@ type AppStatesList struct {
 	DeletedAt  *time.Time `json:"deletedAt"`
 }
 
-// toAppStates converts a list of core states to a list of application states.
-func toAppStates(states []states.CoreState) []AppStatesList {
-	appStates := make([]AppStatesList, len(states))
-	for i, state := range states {
-		appStates[i] = AppStatesList{
-			ID:         state.ID,
-			Name:       state.Name,
-			Color:      state.Color,
-			Category:   state.Category,
-			OrderIndex: state.OrderIndex,
-			Team:       state.Team,
-			Workspace:  state.Workspace,
-			CreatedAt:  state.CreatedAt,
-			UpdatedAt:  state.UpdatedAt,
-		}
+type NewState struct {
+	Name     string    `json:"name" validate:"required"`
+	Color    string    `json:"color" validate:"required"`
+	Category string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
+	Team     uuid.UUID `json:"teamId" validate:"required"`
+}
+
+type UpdateState struct {
+	Name       *string `json:"name,omitempty"`
+	OrderIndex *int    `json:"orderIndex,omitempty"`
+}
+
+func toAppState(s states.CoreState) AppStatesList {
+	return AppStatesList{
+		ID:         s.ID,
+		Name:       s.Name,
+		Color:      s.Color,
+		Category:   s.Category,
+		OrderIndex: s.OrderIndex,
+		Team:       s.Team,
+		Workspace:  s.Workspace,
+		CreatedAt:  s.CreatedAt,
+		UpdatedAt:  s.UpdatedAt,
 	}
-	return appStates
+}
+
+func toAppStates(ss []states.CoreState) []AppStatesList {
+	states := make([]AppStatesList, len(ss))
+	for i, s := range ss {
+		states[i] = toAppState(s)
+	}
+	return states
+}
+
+func toCoreNewState(ns NewState) states.CoreNewState {
+	return states.CoreNewState{
+		Name:     ns.Name,
+		Color:    ns.Color,
+		Category: ns.Category,
+		Team:     ns.Team,
+	}
+}
+
+func toCoreUpdateState(us UpdateState) states.CoreUpdateState {
+	return states.CoreUpdateState{
+		Name:       us.Name,
+		OrderIndex: us.OrderIndex,
+	}
 }

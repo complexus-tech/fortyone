@@ -16,12 +16,12 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-
 	statesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
-
 	h := New(statesService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	app.Get("/workspaces/{workspaceId}/states", h.List, auth)
-
+	app.Post("/workspaces/{workspaceId}/states", h.Create, auth)
+	app.Put("/workspaces/{workspaceId}/states/{stateId}", h.Update, auth)
+	app.Delete("/workspaces/{workspaceId}/states/{stateId}", h.Delete, auth)
 }

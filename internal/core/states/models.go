@@ -17,3 +17,15 @@ type CoreState struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+type CoreNewState struct {
+	Name     string
+	Color    string
+	Category string
+	Team     uuid.UUID
+}
+
+type CoreUpdateState struct {
+	Name       *string
+	OrderIndex *int
+}

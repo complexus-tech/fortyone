@@ -10,6 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
+	ErrInvalidStateID     = errors.New("state id is not in its proper form")
+)
+
 type Handlers struct {
 	states *states.Service
 	// audit  *audit.Service
@@ -22,22 +27,86 @@ func New(states *states.Service) *Handlers {
 	}
 }
 
-var (
-	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
-)
-
-// List returns a list of states.
-func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-
+func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
+
+	var req NewState
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	state, err := h.states.Create(ctx, workspaceId, toCoreNewState(req))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppState(state), http.StatusCreated)
+}
+
+func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	stateIdParam := web.Params(r, "stateId")
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	stateId, err := uuid.Parse(stateIdParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidStateID, http.StatusBadRequest)
+	}
+
+	var req UpdateState
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	state, err := h.states.Update(ctx, workspaceId, stateId, toCoreUpdateState(req))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppState(state), http.StatusOK)
+}
+
+func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	stateIdParam := web.Params(r, "stateId")
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	stateId, err := uuid.Parse(stateIdParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidStateID, http.StatusBadRequest)
+	}
+
+	if err := h.states.Delete(ctx, workspaceId, stateId); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// List returns a list of states.
+func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
 	states, err := h.states.List(ctx, workspaceId)
 	if err != nil {
-		return err
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	web.Respond(ctx, w, toAppStates(states), http.StatusOK)
-	return nil
+
+	return web.Respond(ctx, w, toAppStates(states), http.StatusOK)
 }

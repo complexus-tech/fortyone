@@ -12,6 +12,9 @@ import (
 
 // Repository provides access to the states storage.
 type Repository interface {
+	Create(ctx context.Context, workspaceId uuid.UUID, state CoreNewState) (CoreState, error)
+	Update(ctx context.Context, workspaceId, stateId uuid.UUID, state CoreUpdateState) (CoreState, error)
+	Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error)
 }
 
@@ -29,9 +32,62 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
+// Create creates a new state.
+func (s *Service) Create(ctx context.Context, workspaceId uuid.UUID, ns CoreNewState) (CoreState, error) {
+	s.log.Info(ctx, "business.core.states.Create")
+	ctx, span := web.AddSpan(ctx, "business.core.states.Create")
+	defer span.End()
+
+	state, err := s.repo.Create(ctx, workspaceId, ns)
+	if err != nil {
+		span.RecordError(err)
+		return CoreState{}, err
+	}
+
+	span.AddEvent("state created.", trace.WithAttributes(
+		attribute.String("state.name", state.Name),
+	))
+	return state, nil
+}
+
+// Update updates an existing state.
+func (s *Service) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us CoreUpdateState) (CoreState, error) {
+	s.log.Info(ctx, "business.core.states.Update")
+	ctx, span := web.AddSpan(ctx, "business.core.states.Update")
+	defer span.End()
+
+	state, err := s.repo.Update(ctx, workspaceId, stateId, us)
+	if err != nil {
+		span.RecordError(err)
+		return CoreState{}, err
+	}
+
+	span.AddEvent("state updated.", trace.WithAttributes(
+		attribute.String("state.id", stateId.String()),
+	))
+	return state, nil
+}
+
+// Delete deletes a state.
+func (s *Service) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error {
+	s.log.Info(ctx, "business.core.states.Delete")
+	ctx, span := web.AddSpan(ctx, "business.core.states.Delete")
+	defer span.End()
+
+	if err := s.repo.Delete(ctx, workspaceId, stateId); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("state deleted.", trace.WithAttributes(
+		attribute.String("state.id", stateId.String()),
+	))
+	return nil
+}
+
 // List returns a list of states.
 func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error) {
-	s.log.Info(ctx, "business.core.states.list")
+	s.log.Info(ctx, "business.core.states.List")
 	ctx, span := web.AddSpan(ctx, "business.core.states.List")
 	defer span.End()
 
@@ -40,8 +96,9 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState,
 		span.RecordError(err)
 		return nil, err
 	}
+
 	span.AddEvent("states retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(states)),
+		attribute.Int("states.count", len(states)),
 	))
 	return states, nil
 }
