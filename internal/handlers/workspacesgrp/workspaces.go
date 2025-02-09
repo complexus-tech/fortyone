@@ -106,7 +106,19 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	statuses, err := h.statuses.TeamList(ctx, result.ID, team.ID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
 	// Create default stories
+	stories := seedStories(team.ID, userID, statuses)
+	for _, story := range stories {
+		_, err := h.stories.Create(ctx, story, result.ID)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
 
 	// Fetch the workspace again to include the role
 	result, err = h.workspaces.Get(ctx, result.ID, userID)

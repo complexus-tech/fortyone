@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -227,6 +228,9 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		return CoreUser{}, err
 	}
 
+	// Generate username from email
+	username := strings.Split(newUser.Email, "@")[0]
+
 	// Hash the password
 	hashedPassword, err := generateHash(newUser.Password)
 	if err != nil {
@@ -237,7 +241,7 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 	now := time.Now()
 	user := CoreUser{
 		ID:          uuid.New(),
-		Username:    newUser.Username,
+		Username:    username,
 		Email:       newUser.Email,
 		Password:    hashedPassword,
 		FullName:    newUser.FullName,

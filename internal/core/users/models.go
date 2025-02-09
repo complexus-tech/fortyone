@@ -31,7 +31,6 @@ type CoreUpdateUser struct {
 
 // CoreNewUser represents a new user to be created.
 type CoreNewUser struct {
-	Username  string
 	Email     string
 	Password  string
 	FullName  string

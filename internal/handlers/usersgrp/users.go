@@ -210,7 +210,6 @@ func (h *Handlers) Register(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	newUser := users.CoreNewUser{
-		Username:  req.Username,
 		Email:     req.Email,
 		Password:  req.Password,
 		FullName:  req.FullName,

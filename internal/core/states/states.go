@@ -16,6 +16,7 @@ type Repository interface {
 	Update(ctx context.Context, workspaceId, stateId uuid.UUID, state CoreUpdateState) (CoreState, error)
 	Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error)
+	TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error)
 }
 
 // Service provides story-related operations.
@@ -92,6 +93,24 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState,
 	defer span.End()
 
 	states, err := s.repo.List(ctx, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("states retrieved.", trace.WithAttributes(
+		attribute.Int("states.count", len(states)),
+	))
+	return states, nil
+}
+
+// TeamList returns a list of states for a team.
+func (s *Service) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error) {
+	s.log.Info(ctx, "business.core.states.TeamList")
+	ctx, span := web.AddSpan(ctx, "business.core.states.TeamList")
+	defer span.End()
+
+	states, err := s.repo.TeamList(ctx, workspaceId, teamId)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
