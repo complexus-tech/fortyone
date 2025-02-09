@@ -2,7 +2,7 @@
 
 import { auth, signOut, updateSession } from "@/auth";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
-
+import { revalidatePath } from "next/cache";
 export const logOut = async (callbackUrl: string) => {
   await signOut({
     redirectTo: `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
@@ -18,8 +18,8 @@ export const changeWorkspace = async (workspaceId: string) => {
     );
     await updateSession({
       activeWorkspace: newWorkspace,
-      workspaces: [],
     });
+    revalidatePath("/", "layout");
   } catch {
     return {};
   }

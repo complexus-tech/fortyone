@@ -4,7 +4,6 @@ export type Team = {
   description: string;
   code: string;
   color: string;
-  icon: string;
   workspaceId: string;
   createdAt: string;
   updatedAt: string;

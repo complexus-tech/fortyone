@@ -1,23 +1,46 @@
 "use client";
 
 import { Box, Input, Select, Text, Button } from "ui";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
+import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export const CreateWorkspaceForm = () => {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    url: "",
+    slug: "",
     teamSize: "2-10",
   });
+  const workspaces = session?.workspaces || [];
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      await createWorkspaceAction(form);
+      if (workspaces.length === 0) {
+        localStorage.clear();
+        router.push("/onboarding/personalize");
+      } else {
+        window.location.href = "/my-work";
+      }
+    } catch (error) {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <Box className="space-y-5">
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
         className="rounded-lg md:h-[3rem] md:leading-[3rem]"
         label="Workspace Name"
@@ -30,11 +53,11 @@ export const CreateWorkspaceForm = () => {
       <Input
         className="rounded-lg md:h-[3rem] md:leading-[3rem]"
         label="Workspace URL"
-        name="url"
+        name="slug"
         onChange={handleChange}
         placeholder="your-workspace"
         required
-        value={form.url}
+        value={form.slug}
       />
       <Box>
         <Text as="label" className="mb-2 block font-medium">
@@ -69,12 +92,13 @@ export const CreateWorkspaceForm = () => {
         align="center"
         className="mt-4"
         fullWidth
-        href="/onboarding/personalize"
+        loading={isLoading}
+        loadingText="Creating workspace..."
         rounded="lg"
         size="lg"
       >
         Create Workspace
       </Button>
-    </Box>
+    </form>
   );
 };

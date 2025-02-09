@@ -57,6 +57,7 @@ export const Header = () => {
     try {
       nProgress.start();
       await changeWorkspace(workspaceId);
+      localStorage.clear();
       window.location.href = "/my-work";
     } catch (error) {
       toast.error("Failed to switch workspace", {
@@ -80,7 +81,9 @@ export const Header = () => {
                   className="h-6"
                   name={workspace?.name}
                   rounded="md"
-                  src="/complexus.png"
+                  style={{
+                    backgroundColor: workspace?.color,
+                  }}
                 />
               }
               rightIcon={
@@ -129,6 +132,7 @@ export const Header = () => {
                   leftIcon={<PlusIcon className="h-5 w-auto" />}
                   size="sm"
                   variant="naked"
+                  className="md:h-[2.3rem]"
                 >
                   Create workspace
                 </Button>

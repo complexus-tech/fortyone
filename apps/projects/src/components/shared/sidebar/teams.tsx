@@ -17,18 +17,8 @@ export const Teams = () => {
         Your Teams
       </Text>
       <Flex direction="column" gap={1}>
-        {teams.map(({ id, icon, name, color }) => (
-          <Team
-            color={color}
-            icon={
-              <Box className="flex w-6 items-center justify-center rounded-xl text-lg">
-                {icon || "🌟"}
-              </Box>
-            }
-            id={id}
-            key={id}
-            name={name}
-          />
+        {teams.map(({ id, name, color }) => (
+          <Team color={color} id={id} key={id} name={name} />
         ))}
       </Flex>
     </Box>
