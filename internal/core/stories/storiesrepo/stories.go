@@ -1003,7 +1003,7 @@ func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUI
 
 	q := `
 		SELECT EXISTS (
-			SELECT 1 FROM story_statuses 
+			SELECT 1 FROM statuses 
 			WHERE status_id = :status_id 
 			AND team_id = :team_id
 		)
