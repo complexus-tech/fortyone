@@ -50,8 +50,13 @@ const getInitials = (name: string) => {
   }
 
   const names = name.split(" ");
-  let initials = "";
 
+  // If single word with 2 or more characters, return first two characters
+  if (names.length === 1 && names[0].length >= 2) {
+    return names[0].slice(0, 2).toUpperCase();
+  }
+
+  let initials = "";
   initials += names[0][0]; // First initial of the first name
 
   if (names.length > 1) {

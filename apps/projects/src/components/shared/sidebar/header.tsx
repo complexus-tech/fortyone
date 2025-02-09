@@ -78,7 +78,7 @@ export const Header = () => {
               color="tertiary"
               leftIcon={
                 <Avatar
-                  className="h-6"
+                  className="h-[1.6rem] text-sm"
                   name={workspace?.name}
                   rounded="md"
                   style={{
@@ -97,7 +97,9 @@ export const Header = () => {
           </Menu.Button>
           <Menu.Items align="start" className="w-72 pt-0">
             <Menu.Group className="px-4 py-2.5">
-              <Text>Workspaces</Text>
+              <Text color="muted" className="line-clamp-1">
+                {session?.user?.email}
+              </Text>
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="space-y-1 pt-1.5">
@@ -109,7 +111,7 @@ export const Header = () => {
                 >
                   <span className="flex items-center gap-2">
                     <Avatar
-                      className="h-6 text-xs"
+                      className="h-[1.6rem] text-xs font-semibold tracking-wide"
                       name={name}
                       rounded="md"
                       style={{
