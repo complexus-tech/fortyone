@@ -42,7 +42,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreSt
 			name,
 			category,
 			order_index,
-			workflow_id,
+			team_id,
 			workspace_id,
 			created_at,
 			updated_at
@@ -116,7 +116,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
-		Workflow:   ns.Workflow,
+		Team:       ns.Team,
 		Workspace:  workspaceId,
 	}
 
@@ -124,19 +124,19 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		"name":         state.Name,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
-		"workflow_id":  state.Workflow,
+		"team_id":      state.Team,
 		"workspace_id": state.Workspace,
 	}
 
 	q2 := `
 		INSERT INTO statuses (
 			name, category, order_index,
-			workflow_id, workspace_id
+			team_id, workspace_id
 		) VALUES (
 			:name, :category, :order_index,
-			:workflow_id, :workspace_id
+			:team_id, :workspace_id
 		)
-		RETURNING *
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
 	`
 
 	stmt2, err := r.db.PrepareNamedContext(ctx, q2)
@@ -191,7 +191,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, workflow_id, workspace_id, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
 	`, setClause)
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

@@ -17,7 +17,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/usersgrp"
-	"github.com/complexus-tech/projects-api/internal/handlers/workflowsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/workspacesgrp"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -152,10 +151,4 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 	}, app)
 
-	// register the workflows routes
-	workflowsgrp.Routes(workflowsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-	}, app)
 }

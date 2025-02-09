@@ -13,7 +13,7 @@ type AppStatesList struct {
 	Name       string     `json:"name"`
 	Category   string     `json:"category" validate:"oneof=backlog unstarted started paused completed cancelled"`
 	OrderIndex int        `json:"orderIndex"`
-	Workflow   uuid.UUID  `json:"workflowId"`
+	Team       uuid.UUID  `json:"teamId"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
@@ -23,7 +23,7 @@ type AppStatesList struct {
 type NewState struct {
 	Name     string    `json:"name" validate:"required"`
 	Category string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
-	Workflow uuid.UUID `json:"workflowId" validate:"required"`
+	Team     uuid.UUID `json:"teamId" validate:"required"`
 }
 
 type UpdateState struct {
@@ -37,7 +37,7 @@ func toAppState(s states.CoreState) AppStatesList {
 		Name:       s.Name,
 		Category:   s.Category,
 		OrderIndex: s.OrderIndex,
-		Workflow:   s.Workflow,
+		Team:       s.Team,
 		Workspace:  s.Workspace,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
@@ -56,7 +56,7 @@ func toCoreNewState(ns NewState) states.CoreNewState {
 	return states.CoreNewState{
 		Name:     ns.Name,
 		Category: ns.Category,
-		Workflow: ns.Workflow,
+		Team:     ns.Team,
 	}
 }
 
