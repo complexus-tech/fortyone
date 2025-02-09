@@ -9,23 +9,22 @@ export const useUpdateWorkspaceMutation = () => {
 
   return useMutation({
     mutationFn: (input: UpdateWorkspaceInput) => updateWorkspaceAction(input),
-    onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: workspaceKeys.detail() });
-      const previousWorkspace = queryClient.getQueryData<Workspace>(
-        workspaceKeys.detail(),
-      );
+    // onMutate: async (input) => {
+    //   await queryClient.cancelQueries({ queryKey: workspaceKeys.detail() });
+    //   const previousWorkspace = queryClient.getQueryData<Workspace>(
+    //     workspaceKeys.detail(),
+    //   );
 
-      if (previousWorkspace) {
-        queryClient.setQueryData<Workspace>(workspaceKeys.detail(), {
-          ...previousWorkspace,
-          ...input,
-        });
-      }
+    //   if (previousWorkspace) {
+    //     queryClient.setQueryData<Workspace>(workspaceKeys.detail(), {
+    //       ...previousWorkspace,
+    //       ...input,
+    //     });
+    //   }
 
-      return { previousWorkspace };
-    },
+    //   return { previousWorkspace };
+    // },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });

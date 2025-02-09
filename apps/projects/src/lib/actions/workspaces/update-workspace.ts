@@ -15,7 +15,6 @@ export const updateWorkspaceAction = async (
     "",
     input,
   );
-  revalidateTag(workspaceTags.detail());
   revalidateTag(workspaceTags.lists());
   return workspace.data!;
 };

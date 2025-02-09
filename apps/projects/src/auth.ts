@@ -101,6 +101,7 @@ export const {
       };
     },
   },
+  trustHost: true,
   pages: {
     signIn: "/login",
     signOut: "/login",

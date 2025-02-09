@@ -6,6 +6,5 @@ import type { ApiResponse } from "@/types";
 
 export const deleteWorkspaceAction = async (id: string): Promise<void> => {
   await remove<ApiResponse<void>>(`workspaces/${id}`);
-  revalidateTag(workspaceTags.detail());
   revalidateTag(workspaceTags.lists());
 };
