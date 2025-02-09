@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 type NewWorkspace = {
   name: string;
   slug: string;
+  teamSize: string;
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -32,7 +33,9 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
     updateSession({
       activeWorkspace: workspace.data,
     }),
-  ]);
+  ]).catch((error) => {
+    console.error(error);
+  });
   revalidatePath("/", "layout");
 
   return workspace;

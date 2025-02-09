@@ -16,7 +16,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const tabs = ["summary", "assigned", "created", "subscribed"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("summary"),
+    parseAsStringLiteral(tabs).withDefault("assigned"),
   );
 
   const assinedStories = stories.filter(

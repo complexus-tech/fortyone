@@ -27,7 +27,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const tabs = ["overview", "all", "active", "backlog"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("overview"),
+    parseAsStringLiteral(tabs).withDefault("all"),
   );
   type Tab = (typeof tabs)[number];
   // a sprint is active if it has a start date and end date and the current date is between the start and end date

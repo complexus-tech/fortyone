@@ -24,7 +24,7 @@ export const Header = ({
   const tabs = ["summary", "assigned", "created", "subscribed"] as const;
   const [tab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("summary"),
+    parseAsStringLiteral(tabs).withDefault("assigned"),
   );
   return (
     <HeaderContainer className="justify-between">
