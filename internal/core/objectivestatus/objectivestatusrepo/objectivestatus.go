@@ -113,7 +113,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 
 	// Create the new status
 	status := dbObjectiveStatus{
-		ID:         uuid.New(),
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
@@ -133,10 +132,10 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 	q2 := `
 		INSERT INTO objective_statuses (
 			status_id, name, category, order_index,
-			team_id, workspace_id, created_at, updated_at
+			team_id, workspace_id
 		) VALUES (
 			:status_id, :name, :category, :order_index,
-			:team_id, :workspace_id, NOW(), NOW()
+			:team_id, :workspace_id
 		)
 		RETURNING *
 	`

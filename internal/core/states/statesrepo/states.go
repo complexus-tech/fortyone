@@ -113,7 +113,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 
 	// Create the new state
 	state := dbState{
-		ID:         uuid.New(),
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
@@ -122,7 +121,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	}
 
 	params = map[string]interface{}{
-		"status_id":    state.ID,
 		"name":         state.Name,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
@@ -132,11 +130,11 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 
 	q2 := `
 		INSERT INTO statuses (
-			status_id, name, category, order_index,
-			team_id, workspace_id, created_at, updated_at
+			name, category, order_index,
+			team_id, workspace_i
 		) VALUES (
-			:status_id, :name, :category, :order_index,
-			:team_id, :workspace_id, NOW(), NOW()
+			:name, :category, :order_index,
+			:team_id, :workspace_id
 		)
 		RETURNING *
 	`
