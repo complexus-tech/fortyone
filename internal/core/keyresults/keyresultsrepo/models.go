@@ -74,7 +74,6 @@ func toCoreKeyResults(krs []dbKeyResult) []CoreKeyResult {
 // toDBKeyResult converts a CoreKeyResult to a dbKeyResult
 func toDBKeyResult(kr CoreKeyResult) dbKeyResult {
 	return dbKeyResult{
-		ID:              kr.ID,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
