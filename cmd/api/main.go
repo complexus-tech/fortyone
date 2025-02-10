@@ -54,6 +54,9 @@ type Config struct {
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
+	Tracing struct {
+		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
+	}
 }
 
 func main() {
@@ -132,7 +135,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	shutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
-	t := tracing.New(service, version, environ)
+	t := tracing.New(service, version, environ, cfg.Tracing.Host)
 	traceProvider, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)

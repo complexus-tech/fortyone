@@ -18,21 +18,26 @@ type config struct {
 	service string
 	version string
 	environ string
+	host    string
 }
 
 // New returns a new config instance. This is used to initialize the tracing
 // provider.
-func New(service, version, environ string) *config {
+func New(service, version, environ, host string) *config {
 	return &config{
 		service: service,
 		version: version,
 		environ: environ,
+		host:    host,
 	}
 }
 
 // StartTracing starts the tracing provider and returns the tracer provider.
 func (c *config) StartTracing() (*trace.TracerProvider, error) {
-	exporter, err := otlptracehttp.New(context.Background(), otlptracehttp.WithInsecure())
+	exporter, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithInsecure(),
+		otlptracehttp.WithEndpoint(c.host),
+	)
 	if err != nil {
 		return nil, err
 	}
