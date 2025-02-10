@@ -3,9 +3,9 @@
 import { Box, Input, Select, Text, Button } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
-import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();

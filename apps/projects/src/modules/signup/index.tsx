@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Box, Flex, Input, Text, Button } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
+import Link from "next/link";
 import { ComplexusLogo } from "@/components/ui";
 import { signUp } from "@/lib/actions/users/sign-up";
-import Link from "next/link";
 
 export const SignUpPage = () => {
   const [loading, setLoading] = useState(false);
@@ -81,18 +81,18 @@ export const SignUpPage = () => {
           <Input
             className="mb-4 h-12 rounded-lg"
             label="Password"
+            minLength={8}
             name="password"
             required
             type="password"
-            minLength={8}
           />
           <Input
             className="mb-5 h-12 rounded-lg"
             label="Confirm Password"
+            minLength={8}
             name="confirmPassword"
             required
             type="password"
-            minLength={8}
           />
           <Button
             align="center"
@@ -105,11 +105,11 @@ export const SignUpPage = () => {
             Create Account
           </Button>
         </form>
-        <Link href="/login" className="mt-4 block">
+        <Link className="mt-4 block" href="/login">
           <Text
             align="center"
-            color="muted"
             className="underline underline-offset-1 hover:text-primary dark:hover:text-primary"
+            color="muted"
           >
             Already have an account?
           </Text>

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateWorkspaceAction } from "@/lib/actions/workspaces/update-workspace";
 import type { UpdateWorkspaceInput } from "@/lib/actions/workspaces/update-workspace";
-import type { Workspace } from "@/types";
 import { workspaceKeys } from "@/constants/keys";
 
 export const useUpdateWorkspaceMutation = () => {

@@ -1,9 +1,9 @@
 "use server";
 import ky from "ky";
-import { auth, updateSession } from "@/auth";
-import { ApiResponse, Workspace } from "@/types";
-import { switchWorkspace } from "../users/switch-workspace";
 import { revalidatePath } from "next/cache";
+import { auth, updateSession } from "@/auth";
+import type { ApiResponse, Workspace } from "@/types";
+import { switchWorkspace } from "../users/switch-workspace";
 
 type NewWorkspace = {
   name: string;
@@ -29,13 +29,11 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
     .json<ApiResponse<Workspace>>();
 
   await Promise.all([
-    switchWorkspace(workspace?.data!?.id),
+    switchWorkspace(workspace.data!.id),
     updateSession({
       activeWorkspace: workspace.data,
     }),
-  ]).catch((error) => {
-    console.error(error);
-  });
+  ]);
   revalidatePath("/", "layout");
 
   return workspace;

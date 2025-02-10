@@ -97,7 +97,7 @@ export const Header = () => {
           </Menu.Button>
           <Menu.Items align="start" className="w-72 pt-0">
             <Menu.Group className="px-4 py-2.5">
-              <Text color="muted" className="line-clamp-1">
+              <Text className="line-clamp-1" color="muted">
                 {session?.user?.email}
               </Text>
             </Menu.Group>
@@ -129,12 +129,12 @@ export const Header = () => {
               ))}
               <Menu.Item asChild>
                 <Button
+                  className="md:h-[2.3rem]"
                   color="tertiary"
                   href="/onboarding/create"
                   leftIcon={<PlusIcon className="h-5 w-auto" />}
                   size="sm"
                   variant="naked"
-                  className="md:h-[2.3rem]"
                 >
                   Create workspace
                 </Button>

@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { auth, signOut, updateSession } from "@/auth";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
-import { revalidatePath } from "next/cache";
+
 export const logOut = async (callbackUrl: string) => {
   await signOut({
     redirectTo: `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,

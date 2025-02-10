@@ -135,7 +135,7 @@ export const NewSubStory = ({
     if (isOpen) {
       titleEditor?.commands.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, titleEditor]);
 
   return (
     <Box>

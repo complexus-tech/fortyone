@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { objectiveKeys } from "../constants";
 import { createObjective } from "../actions/create-objective";
 import type { Objective } from "../types";
-import { useSession } from "next-auth/react";
+
 export const useCreateObjectiveMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
@@ -42,7 +43,7 @@ export const useCreateObjectiveMutation = () => {
         teamId: newObjective.teamId || "",
         startDate: newObjective.startDate || "",
         endDate: newObjective.endDate || "",
-        createdBy: session?.user!.id!,
+        createdBy: session?.user?.id || "",
         stats: {
           total: 0,
           cancelled: 0,

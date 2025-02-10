@@ -1,11 +1,11 @@
-import { BodyContainer } from "@/components/shared/body";
 import { Box, Button, Flex, Text } from "ui";
 import { ObjectiveIcon, PlusIcon } from "icons";
 import { useState } from "react";
+import { BodyContainer } from "@/components/shared/body";
+import { NewObjectiveDialog } from "@/components/ui";
 import type { Objective } from "../types";
 import { TableHeader } from "./heading";
 import { ObjectiveCard } from "./card";
-import { NewObjectiveDialog } from "@/components/ui";
 
 export const ListObjectives = ({
   objectives,
@@ -34,7 +34,9 @@ export const ListObjectives = ({
               <Button
                 color="tertiary"
                 leftIcon={<PlusIcon className="h-[1.1rem]" />}
-                onClick={() => setIsOpen(true)}
+                onClick={() => {
+                  setIsOpen(true);
+                }}
                 size="md"
               >
                 Create new objective
