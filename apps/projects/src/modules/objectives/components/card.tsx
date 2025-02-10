@@ -20,12 +20,12 @@ import {
   AssigneesMenu,
   PrioritiesMenu,
   PriorityIcon,
-  StoryStatusIcon,
   ObjectiveHealthIcon,
 } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { HealthMenu } from "@/components/ui/health-menu";
+import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useUpdateObjectiveMutation } from "../hooks";
 import type { Objective, ObjectiveUpdate } from "../types";
 
@@ -128,7 +128,7 @@ export const ObjectiveCard = ({
             <ObjectiveStatusesMenu.Trigger>
               <Button
                 color="tertiary"
-                leftIcon={<StoryStatusIcon statusId={statusId} />}
+                leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
                 size="sm"
                 type="button"
                 variant="naked"

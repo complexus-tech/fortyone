@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon } from "icons";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
-import { StoryStatusIcon } from "./story-status-icon";
+import { ObjectiveStatusIcon } from "./objective-status-icon";
 
 const StatusContext = createContext<{
   open: boolean;
@@ -100,7 +100,7 @@ const Items = ({
               value={name}
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
-                <StoryStatusIcon statusId={id} />
+                <ObjectiveStatusIcon statusId={id} />
                 <Text>{name}</Text>
               </Box>
               <Flex align="center" gap={2}>

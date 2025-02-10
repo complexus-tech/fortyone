@@ -32,6 +32,7 @@ import {
   useUpdateObjectiveMutation,
 } from "@/modules/objectives/hooks";
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
+import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { ObjectiveStatusesMenu } from "../../../components/ui/objective-statuses-menu";
 
 const Option = ({
@@ -161,7 +162,9 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <ObjectiveStatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  leftIcon={<StoryStatusIcon statusId={objective?.statusId} />}
+                  leftIcon={
+                    <ObjectiveStatusIcon statusId={objective?.statusId} />
+                  }
                   type="button"
                   variant="naked"
                 >

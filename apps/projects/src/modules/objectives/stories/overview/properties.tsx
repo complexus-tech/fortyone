@@ -3,14 +3,10 @@ import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
-import {
-  AssigneesMenu,
-  PrioritiesMenu,
-  PriorityIcon,
-  StoryStatusIcon,
-} from "@/components/ui";
+import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
+import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
@@ -41,7 +37,7 @@ export const Properties = () => {
         <ObjectiveStatusesMenu.Trigger>
           <Button
             color="tertiary"
-            leftIcon={<StoryStatusIcon statusId={objective?.statusId} />}
+            leftIcon={<ObjectiveStatusIcon statusId={objective?.statusId} />}
             size="sm"
             type="button"
             variant="naked"
