@@ -159,9 +159,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
       <ResizablePanel.Panel
         className="bg-gray-50 dark:bg-[#0f0f0f]"
-        defaultSize={18}
+        defaultSize={15}
         maxSize={20}
-        minSize={16}
+        minSize={12}
       >
         <Box className="flex h-16 items-center px-4">
           <Tooltip
@@ -210,7 +210,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         </BodyContainer>
       </ResizablePanel.Panel>
       <ResizablePanel.Handle />
-      <ResizablePanel.Panel defaultSize={82}>
+      <ResizablePanel.Panel defaultSize={85}>
         <Box className="h-screen overflow-y-auto">
           <Container className="max-w-[54rem] py-12">{children}</Container>
         </Box>
