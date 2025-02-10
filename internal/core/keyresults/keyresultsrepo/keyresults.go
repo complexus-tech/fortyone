@@ -48,11 +48,11 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 
 	const q = `
 		INSERT INTO key_results (
-			id, objective_id, name, measurement_type,
+			objective_id, name, measurement_type,
 			start_value, current_value, target_value, 
 			created_at, updated_at, created_by, last_updated_by
 		) VALUES (
-			:id, :objective_id, :name, :measurement_type,
+			:objective_id, :name, :measurement_type,
 			:start_value, :current_value, :target_value, 
 			:created_at, :updated_at, :created_by, :last_updated_by
 		)
