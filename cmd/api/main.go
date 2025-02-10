@@ -49,10 +49,10 @@ type Config struct {
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Cache struct {
-		Host     string `default:"localhost"`
-		Port     string `default:"6379"`
-		Password string `default:""`
-		Name     int    `default:"0"`
+		Host     string `default:"localhost" env:"APP_REDIS_HOST"`
+		Port     string `default:"6379" env:"APP_REDIS_PORT"`
+		Password string `default:"" env:"APP_REDIS_PASSWORD"`
+		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
 }
 
