@@ -57,9 +57,7 @@ const Items = ({
   const [query, setQuery] = useState("");
 
   const state =
-    statuses
-      .filter((state) => state.teamId === teamId)
-      .find((state) => state.id === statusId) || statuses.at(0);
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { id: defaultStateId } = state!;
   const { setOpen } = useStatusMenu();
   if (!statuses.length) return null;
@@ -86,31 +84,33 @@ const Items = ({
           <Text color="muted">No statuses found.</Text>
         </Command.Empty>
         <Command.Group>
-          {statuses.map(({ id, name }, idx) => (
-            <Command.Item
-              active={id === defaultStateId}
-              className="justify-between"
-              key={id}
-              onSelect={() => {
-                if (id !== defaultStateId) {
-                  setStatusId(id);
-                }
-                setOpen(false);
-              }}
-              value={name}
-            >
-              <Box className="grid grid-cols-[24px_auto] items-center">
-                <StoryStatusIcon statusId={id} />
-                <Text>{name}</Text>
-              </Box>
-              <Flex align="center" gap={2}>
-                {id === defaultStateId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
-                <Text color="muted">{idx}</Text>
-              </Flex>
-            </Command.Item>
-          ))}
+          {statuses
+            .filter((state) => state.teamId === teamId)
+            .map(({ id, name }, idx) => (
+              <Command.Item
+                active={id === defaultStateId}
+                className="justify-between"
+                key={id}
+                onSelect={() => {
+                  if (id !== defaultStateId) {
+                    setStatusId(id);
+                  }
+                  setOpen(false);
+                }}
+                value={name}
+              >
+                <Box className="grid grid-cols-[24px_auto] items-center">
+                  <StoryStatusIcon statusId={id} />
+                  <Text>{name}</Text>
+                </Box>
+                <Flex align="center" gap={2}>
+                  {id === defaultStateId && (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  )}
+                  <Text color="muted">{idx}</Text>
+                </Flex>
+              </Command.Item>
+            ))}
         </Command.Group>
       </Command>
     </Popover.Content>
