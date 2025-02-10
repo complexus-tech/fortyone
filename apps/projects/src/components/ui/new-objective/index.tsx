@@ -270,6 +270,7 @@ export const NewObjectiveDialog = ({
                   }));
                 }}
                 statusId={objectiveForm.statusId}
+                teamId={objectiveForm.teamId}
               />
             </ObjectiveStatusesMenu>
             <PrioritiesMenu>

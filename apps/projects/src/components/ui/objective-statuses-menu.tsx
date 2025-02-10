@@ -47,15 +47,19 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 const Items = ({
   statusId,
   setStatusId,
+  teamId,
 }: {
   statusId?: string;
   setStatusId: (statusId: string) => void;
+  teamId: string;
 }) => {
   const { data: statuses = [] } = useObjectiveStatuses();
   const [query, setQuery] = useState("");
 
   const state =
-    statuses.find((state) => state.id === statusId) || statuses.at(0);
+    statuses
+      .filter((state) => state.teamId === teamId)
+      .find((state) => state.id === statusId) || statuses.at(0);
   const { id: defaultStateId } = state!;
   const { setOpen } = useStatusMenu();
   if (!statuses.length) return null;

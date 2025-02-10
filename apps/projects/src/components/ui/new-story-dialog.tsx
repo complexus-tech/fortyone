@@ -298,6 +298,7 @@ export const NewStoryDialog = ({
                   setStoryForm((prev) => ({ ...prev, statusId }));
                 }}
                 statusId={storyForm.statusId}
+                teamId={storyForm.teamId!}
               />
             </StatusesMenu>
             <PrioritiesMenu>

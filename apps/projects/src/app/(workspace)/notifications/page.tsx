@@ -14,7 +14,7 @@ type Notification = {
   read: boolean;
 };
 
-export default function Page(): JSX.Element {
+export default function Page() {
   const notifications: Notification[] = [
     {
       id: 1,

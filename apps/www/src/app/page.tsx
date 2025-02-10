@@ -1,6 +1,6 @@
 import { Button } from "ui";
 
-export default function Page(): JSX.Element {
+export default function Page() {
   return (
     <main>
       Welcome to docs

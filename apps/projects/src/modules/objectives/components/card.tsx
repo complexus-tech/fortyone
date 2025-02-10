@@ -143,6 +143,7 @@ export const ObjectiveCard = ({
                 handleUpdate({ statusId });
               }}
               statusId={statusId}
+              teamId={teamId}
             />
           </ObjectiveStatusesMenu>
         </Box>

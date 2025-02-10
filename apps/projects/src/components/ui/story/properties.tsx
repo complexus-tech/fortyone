@@ -78,6 +78,7 @@ export const StoryProperties = ({
               handleUpdate({ statusId });
             }}
             statusId={statusId}
+            teamId={teamId}
           />
         </StatusesMenu>
       )}

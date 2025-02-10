@@ -1,7 +1,7 @@
 import { Flex, Box, Text } from "ui";
 import { ComplexusLogo } from "@/components/ui";
 
-export default function Loading(): JSX.Element {
+export default function Loading() {
   return (
     <Flex align="center" className="h-screen dark:bg-black" justify="center">
       <Flex align="center" direction="column" justify="center">

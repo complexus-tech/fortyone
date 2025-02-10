@@ -2,11 +2,12 @@ import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import { NotificationsIcon, ObjectiveIcon, RoadmapIcon, UserIcon } from "icons";
+import type { ReactNode } from "react";
 import { NavLink, PriorityIcon } from "@/components/ui";
 
 type MenuItem = {
   name: string;
-  icon: JSX.Element;
+  icon: ReactNode;
   href: string;
   messages?: number;
 };

@@ -175,6 +175,7 @@ export const NewSubStory = ({
                     setStoryForm((prev) => ({ ...prev, statusId: id }));
                   }}
                   statusId={storyForm.statusId}
+                  teamId={teamId}
                 />
               </StatusesMenu>
               <PrioritiesMenu>

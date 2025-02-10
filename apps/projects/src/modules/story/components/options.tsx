@@ -170,6 +170,7 @@ export const Options = () => {
                   handleUpdate({ statusId });
                 }}
                 statusId={statusId}
+                teamId={teamId}
               />
             </StatusesMenu>
           }
