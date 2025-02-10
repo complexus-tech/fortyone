@@ -51,12 +51,14 @@ const Items = ({
 }) => {
   const { data: statuses = [] } = useStatuses();
   const [query, setQuery] = useState("");
+  const filteredStatuses = statuses.filter((state) => state.teamId === teamId);
 
   const state =
-    statuses.find((state) => state.id === statusId) || statuses.at(0);
+    filteredStatuses.find((state) => state.id === statusId) ||
+    filteredStatuses.at(0);
   const { id: defaultStateId } = state!;
   const { setOpen } = useStatusMenu();
-  if (!statuses.length) return null;
+  if (!filteredStatuses.length) return null;
 
   return (
     <Popover.Content align="center" className="w-64">
@@ -80,33 +82,31 @@ const Items = ({
           <Text color="muted">No statuses found.</Text>
         </Command.Empty>
         <Command.Group>
-          {statuses
-            .filter((state) => state.teamId === teamId)
-            .map(({ id, name }, idx) => (
-              <Command.Item
-                active={id === defaultStateId}
-                className="justify-between"
-                key={id}
-                onSelect={() => {
-                  if (id !== defaultStateId) {
-                    setStatusId(id);
-                  }
-                  setOpen(false);
-                }}
-                value={name}
-              >
-                <Box className="grid grid-cols-[24px_auto] items-center">
-                  <StoryStatusIcon statusId={id} />
-                  <Text>{name}</Text>
-                </Box>
-                <Flex align="center" gap={2}>
-                  {id === defaultStateId && (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  )}
-                  <Text color="muted">{idx}</Text>
-                </Flex>
-              </Command.Item>
-            ))}
+          {filteredStatuses.map(({ id, name }, idx) => (
+            <Command.Item
+              active={id === defaultStateId}
+              className="justify-between"
+              key={id}
+              onSelect={() => {
+                if (id !== defaultStateId) {
+                  setStatusId(id);
+                }
+                setOpen(false);
+              }}
+              value={name}
+            >
+              <Box className="grid grid-cols-[24px_auto] items-center">
+                <StoryStatusIcon statusId={id} />
+                <Text>{name}</Text>
+              </Box>
+              <Flex align="center" gap={2}>
+                {id === defaultStateId && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">{idx}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
         </Command.Group>
       </Command>
     </Popover.Content>
