@@ -26,24 +26,24 @@ export const Theming = () => {
               }}
               value={theme}
             >
-              <Select.Trigger className="h-9 w-max min-w-36 text-base">
+              <Select.Trigger className="h-9 w-max px-2 text-base">
                 <Select.Input />
               </Select.Trigger>
               <Select.Content align="center">
                 <Select.Group>
-                  <Select.Option value="light">
+                  <Select.Option className="text-base" value="light">
                     <Flex align="center" gap={2}>
                       <SunIcon className="h-4" />
                       Day Mode
                     </Flex>
                   </Select.Option>
-                  <Select.Option value="dark">
+                  <Select.Option className="text-base" value="dark">
                     <Flex align="center" gap={2}>
                       <MoonIcon className="h-4" />
                       Night Mode
                     </Flex>
                   </Select.Option>
-                  <Select.Option value="system">
+                  <Select.Option className="text-base" value="system">
                     <Flex align="center" gap={2}>
                       <SystemIcon className="h-4" />
                       Sync with system

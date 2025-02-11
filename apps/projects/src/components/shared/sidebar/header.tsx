@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary -- ok for the theme icons */
 "use client";
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
@@ -14,7 +15,6 @@ import {
   SystemIcon,
   MoonIcon,
   SunIcon,
-  PreferencesIcon,
   ArrowRightIcon,
 } from "icons";
 import Link from "next/link";
@@ -102,7 +102,7 @@ export const Header = () => {
               <span className="max-w-[18ch] truncate">{workspace?.name}</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="start" className="w-72 pt-0">
+          <Menu.Items align="start" className="w-80 pt-0">
             <Menu.Group className="px-4 py-2.5">
               <Text className="line-clamp-1" color="muted">
                 {session?.user?.email}
@@ -153,10 +153,28 @@ export const Header = () => {
                 <Menu.SubTrigger>
                   <span className="flex w-full items-center justify-between gap-1.5">
                     <span className="flex items-center gap-2">
-                      <PreferencesIcon className="h-[1.15rem] w-auto" />
-                      Appearance
+                      {theme === "system" ? (
+                        <SystemIcon className="h-[1.15rem]" />
+                      ) : theme === "light" ? (
+                        <SunIcon className="h-[1.15rem]" />
+                      ) : (
+                        <MoonIcon className="h-[1.15rem]" />
+                      )}
+                      Color theme
                     </span>
-                    <ArrowRightIcon className="h-4" />
+                    <span className="flex items-center gap-1">
+                      <Text
+                        className="text-[0.95rem] first-letter:uppercase"
+                        color="muted"
+                      >
+                        {theme === "system"
+                          ? "Sync with system"
+                          : theme === "light"
+                            ? "Day mode"
+                            : "Night mode"}
+                      </Text>
+                      <ArrowRightIcon className="h-4" />
+                    </span>
                   </span>
                 </Menu.SubTrigger>
                 <Menu.SubItems className="rounded-xl pt-1.5 md:w-48">
