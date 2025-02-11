@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Footer, JsonLd, Navigation } from "@/components/shared";
 import "../styles/global.css";
-import { CursorProvider } from "@/context";
-import { PostHogProvider } from "./posthog";
 import dynamic from "next/dynamic";
-import { inter, satoshi } from "@/styles/fonts";
 import { cn } from "lib";
-import { WebApplication, WithContext } from "schema-dts";
+import type { WebApplication, WithContext } from "schema-dts";
 import { ThemeProvider } from "next-themes";
+import { inter, satoshi } from "@/styles/fonts";
+import { CursorProvider } from "@/context";
+import { Footer, JsonLd, Navigation } from "@/components/shared";
+import { PostHogProvider } from "./posthog";
 
 const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
   ssr: false,
@@ -110,8 +110,8 @@ export default function RootLayout({
 }): JSX.Element {
   return (
     <html
-      lang="en"
       className={cn(satoshi.variable, inter.variable)}
+      lang="en"
       suppressHydrationWarning
     >
       <body className="relative">

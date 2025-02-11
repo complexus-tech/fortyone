@@ -6,6 +6,7 @@ const config: Omit<Config, "content"> = {
     fontFamily: {
       satoshi: ["var(--font-satoshi)"],
       inter: ["var(--font-inter)"],
+      sans: ["var(--font-sans)"],
     },
     colors: {
       transparent: "transparent",

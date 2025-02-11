@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { cn } from "lib";
+import { instrumentSans, satoshi } from "@/styles/fonts";
 import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
 import { PostHogProvider } from "./posthog";
-import dynamic from "next/dynamic";
+// import dynamic from "next/dynamic";
 
-const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
-  ssr: false,
-});
-
-const font = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
-});
+// const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
+//   ssr: false,
+// });
 
 export const metadata: Metadata = {
   title: "Nail every objective on time with complexus.",
@@ -43,7 +38,7 @@ export default function RootLayout({
 }): JSX.Element {
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
-      <body className={font.className}>
+      <body className={cn(satoshi.variable, instrumentSans.variable)}>
         <PostHogProvider>
           <CursorProvider>
             <Navigation />
@@ -51,7 +46,7 @@ export default function RootLayout({
             <CallToAction />
             <Footer />
           </CursorProvider>
-          <PostHogPageView />
+          {/* <PostHogPageView /> */}
         </PostHogProvider>
       </body>
     </html>

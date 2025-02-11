@@ -144,18 +144,18 @@ export const Navigation = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="fixed left-0 top-4 z-10 w-screen">
+    <Box className="fixed left-0 top-6 z-10 w-screen">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.75rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40 md:h-16 md:px-3 md:pl-5">
-            <Logo className="relative top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
-            <Flex align="center" className="hidden md:flex" gap={4}>
+          <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40">
+            <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
+            <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-3xl px-3 py-1.5 transition hover:bg-dark-300/80",
+                        "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
                         {
                           "bg-dark-300/80": pathname.startsWith("/product"),
                         },
@@ -184,7 +184,7 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-300/80",
+                    "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
                     {
                       "bg-dark-300/80": pathname === href,
                     },
@@ -195,7 +195,7 @@ export const Navigation = () => {
                   {title}
                 </NavLink>
               ))}
-              <NavigationMenu align="end" className="mx-2">
+              <NavigationMenu align="end">
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
@@ -218,70 +218,71 @@ export const Navigation = () => {
                 </NavigationMenu.List>
               </NavigationMenu>
             </Flex>
-            <Flex align="center" className="ml-2 gap-4 pr-1 md:pr-0">
-              {/* <Button
-                className="relative text-[0.93rem] md:left-1"
+            <Flex align="center" className="ml-6 gap-2">
+              <Button
+                className="px-4 text-[0.93rem]"
                 color="tertiary"
+                rounded="full"
+              >
+                Sign up
+              </Button>
+              <Button
+                className="px-4 text-[0.93rem] "
                 href="https://forms.gle/NmG4XFS5GhvRjUxu6"
                 rounded="full"
               >
                 Log in
-              </Button> */}
-              <Button
-                className="relative text-[0.93rem] md:left-1"
-                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-                rounded="full"
-              >
-                Join waitlist
               </Button>
 
-              <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
-                <Menu.Button asChild>
-                  <button className="flex md:hidden" type="button">
-                    <MenuButton open={isMenuOpen} />
-                  </button>
-                </Menu.Button>
-                <Menu.Items
-                  align="end"
-                  className="relative left-4 mt-4 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
-                >
-                  <Menu.Group>
-                    {navLinks.map(({ title, href }) => (
-                      <Menu.Item
-                        className="block rounded-lg py-2"
-                        key={title}
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                        }}
-                      >
-                        <NavLink className="flex" href={href}>
-                          {title}
-                        </NavLink>
-                      </Menu.Item>
-                    ))}
-                  </Menu.Group>
-                  <Menu.Separator />
-                  <Menu.Group>
-                    {product.map(({ id, name, href, icon }) => (
-                      <Menu.Item
-                        className="block rounded-lg py-2"
-                        key={id}
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                        }}
-                      >
-                        <NavLink
-                          className="flex items-center gap-2"
-                          href={href}
+              <Box className="flex md:hidden">
+                <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
+                  <Menu.Button asChild>
+                    <button type="button">
+                      <MenuButton open={isMenuOpen} />
+                    </button>
+                  </Menu.Button>
+                  <Menu.Items
+                    align="end"
+                    className="relative left-4 mt-4 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
+                  >
+                    <Menu.Group>
+                      {navLinks.map(({ title, href }) => (
+                        <Menu.Item
+                          className="block rounded-lg py-2"
+                          key={title}
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                          }}
                         >
-                          {icon}
-                          {name}
-                        </NavLink>
-                      </Menu.Item>
-                    ))}
-                  </Menu.Group>
-                </Menu.Items>
-              </Menu>
+                          <NavLink className="flex" href={href}>
+                            {title}
+                          </NavLink>
+                        </Menu.Item>
+                      ))}
+                    </Menu.Group>
+                    <Menu.Separator />
+                    <Menu.Group>
+                      {product.map(({ id, name, href, icon }) => (
+                        <Menu.Item
+                          className="block rounded-lg py-2"
+                          key={id}
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                          }}
+                        >
+                          <NavLink
+                            className="flex items-center gap-2"
+                            href={href}
+                          >
+                            {icon}
+                            {name}
+                          </NavLink>
+                        </Menu.Item>
+                      ))}
+                    </Menu.Group>
+                  </Menu.Items>
+                </Menu>
+              </Box>
             </Flex>
           </Box>
         </Box>
