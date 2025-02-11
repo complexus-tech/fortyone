@@ -87,16 +87,24 @@ export const NewStoryDialog = ({
     "activeTeam",
     teams.at(0)!,
   );
-  const { id: defaultStateId } = (statuses.find(
-    (state) => state.id === statusId,
-  ) || statuses.at(0))!;
+
+  const currentTeamId = teamId || activeTeam.id;
+  const currentTeam =
+    teams.find((team) => team.id === currentTeamId) || activeTeam;
+
+  const teamStatuses = statuses.filter(
+    (status) => status.teamId === currentTeamId,
+  );
+
+  const defaultStatus =
+    teamStatuses.find((status) => status.id === statusId) || teamStatuses.at(0);
 
   const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
-    teamId: teamId || activeTeam.id,
-    statusId: defaultStateId,
+    teamId: currentTeamId,
+    statusId: defaultStatus?.id || teamStatuses.at(0)!.id,
     endDate: null,
     startDate: null,
     assigneeId,
@@ -156,7 +164,7 @@ export const NewStoryDialog = ({
       title: titleEditor.getText(),
       description: editor.getText(),
       descriptionHTML: editor.getHTML(),
-      teamId: activeTeam.id,
+      teamId: currentTeamId,
       priority: storyForm.priority,
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
@@ -194,6 +202,19 @@ export const NewStoryDialog = ({
     }
   }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
 
+  useEffect(() => {
+    const currentStatus = teamStatuses.find(
+      (status) => status.id === storyForm.statusId,
+    );
+    if (!currentStatus) {
+      setStoryForm((prev) => ({
+        ...prev,
+        statusId: teamStatuses.at(0)!.id,
+        teamId: currentTeamId,
+      }));
+    }
+  }, [currentTeamId, storyForm.statusId, teamStatuses]);
+
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
@@ -204,10 +225,10 @@ export const NewStoryDialog = ({
                 <Button
                   className="gap-1.5 font-semibold tracking-wide"
                   color="tertiary"
-                  leftIcon={<TeamColor color={activeTeam.color} />}
+                  leftIcon={<TeamColor color={currentTeam.color} />}
                   size="xs"
                 >
-                  {activeTeam.code}
+                  {currentTeam.code}
                 </Button>
               </Menu.Button>
               <Menu.Items align="start" className="w-52">
@@ -288,8 +309,9 @@ export const NewStoryDialog = ({
                   variant="outline"
                 >
                   {
-                    statuses.find((state) => state.id === storyForm.statusId)
-                      ?.name
+                    teamStatuses.find(
+                      (state) => state.id === storyForm.statusId,
+                    )?.name
                   }
                 </Button>
               </StatusesMenu.Trigger>
@@ -298,7 +320,7 @@ export const NewStoryDialog = ({
                   setStoryForm((prev) => ({ ...prev, statusId }));
                 }}
                 statusId={storyForm.statusId}
-                teamId={storyForm.teamId!}
+                teamId={currentTeamId}
               />
             </StatusesMenu>
             <PrioritiesMenu>

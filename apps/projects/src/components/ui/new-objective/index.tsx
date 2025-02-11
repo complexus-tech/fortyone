@@ -70,16 +70,26 @@ export const NewObjectiveDialog = ({
     "activeTeam",
     teams.at(0)!,
   );
-  const defaultStatusId = statuses.at(0)?.id;
+
+  // Use passed teamId or fall back to activeTeam.id
+  const currentTeamId = initialTeamId || activeTeam.id;
+  const currentTeam =
+    teams.find((team) => team.id === currentTeamId) || activeTeam;
+
+  // Get filtered statuses for the current team
+  const teamStatuses = statuses.filter(
+    (status) => status.teamId === currentTeamId,
+  );
+  const defaultStatus = teamStatuses.at(0);
 
   const initialForm: NewObjective = {
     name: "",
     description: "",
     leadUser: null,
-    teamId: initialTeamId || activeTeam.id,
+    teamId: currentTeamId,
     startDate: null,
     endDate: null,
-    statusId: defaultStatusId!,
+    statusId: defaultStatus!.id,
     priority: "No Priority",
     keyResults: [],
   };
@@ -92,6 +102,20 @@ export const NewObjectiveDialog = ({
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const createMutation = useCreateObjectiveMutation();
+
+  // Update status when team changes if current status doesn't belong to new team
+  useEffect(() => {
+    const currentStatus = teamStatuses.find(
+      (status) => status.id === objectiveForm.statusId,
+    );
+    if (!currentStatus) {
+      setObjectiveForm((prev) => ({
+        ...prev,
+        statusId: teamStatuses.at(0)!.id,
+        teamId: currentTeamId,
+      }));
+    }
+  }, [currentTeamId, objectiveForm.statusId, teamStatuses]);
 
   const titleEditor = useEditor({
     extensions: [
@@ -176,17 +200,17 @@ export const NewObjectiveDialog = ({
                 <Button
                   className="gap-1.5 font-semibold tracking-wide"
                   color="tertiary"
-                  leftIcon={<TeamColor color={activeTeam.color} />}
+                  leftIcon={<TeamColor color={currentTeam.color} />}
                   size="xs"
                 >
-                  {activeTeam.code}
+                  {currentTeam.code}
                 </Button>
               </Menu.Button>
               <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
-                      active={team.id === activeTeam.id}
+                      active={team.id === currentTeam.id}
                       className="justify-between gap-3"
                       key={team.id}
                       onClick={() => {
@@ -201,7 +225,7 @@ export const NewObjectiveDialog = ({
                         <TeamColor className="shrink-0" color={team.color} />
                         <span className="block truncate">{team.name}</span>
                       </span>
-                      {team.id === activeTeam.id && (
+                      {team.id === currentTeam.id && (
                         <CheckIcon className="h-[1.1rem] w-auto" />
                       )}
                     </Menu.Item>
@@ -258,7 +282,7 @@ export const NewObjectiveDialog = ({
                   type="button"
                   variant="outline"
                 >
-                  {statuses.find((s) => s.id === objectiveForm.statusId)
+                  {teamStatuses.find((s) => s.id === objectiveForm.statusId)
                     ?.name ?? "Backlog"}
                 </Button>
               </ObjectiveStatusesMenu.Trigger>
@@ -270,7 +294,7 @@ export const NewObjectiveDialog = ({
                   }));
                 }}
                 statusId={objectiveForm.statusId}
-                teamId={objectiveForm.teamId}
+                teamId={currentTeamId}
               />
             </ObjectiveStatusesMenu>
             <PrioritiesMenu>
