@@ -46,7 +46,7 @@ export const Theming = () => {
                   <Select.Option value="system">
                     <Flex align="center" gap={2}>
                       <SystemIcon className="h-4" />
-                      System preference
+                      Sync with system
                     </Flex>
                   </Select.Option>
                 </Select.Group>

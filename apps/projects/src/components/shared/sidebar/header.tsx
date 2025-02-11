@@ -11,12 +11,18 @@ import {
   SettingsIcon,
   UsersAddIcon,
   SearchIcon,
+  SystemIcon,
+  MoonIcon,
+  SunIcon,
+  PreferencesIcon,
+  ArrowRightIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useSession } from "next-auth/react";
 import nProgress from "nprogress";
+import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
@@ -26,6 +32,7 @@ import { changeWorkspace, logOut } from "./actions";
 export const Header = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
@@ -142,6 +149,48 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
+              <Menu.SubMenu>
+                <Menu.SubTrigger>
+                  <span className="flex w-full items-center justify-between gap-1.5">
+                    <span className="flex items-center gap-2">
+                      <PreferencesIcon className="h-[1.15rem] w-auto" />
+                      Appearance
+                    </span>
+                    <ArrowRightIcon className="h-4" />
+                  </span>
+                </Menu.SubTrigger>
+                <Menu.SubItems className="rounded-xl pt-1.5 md:w-48">
+                  <Menu.Group>
+                    <Menu.Item
+                      active={theme === "light"}
+                      onSelect={() => {
+                        setTheme("light");
+                      }}
+                    >
+                      <SunIcon className="h-[1.15rem]" />
+                      Day mode
+                    </Menu.Item>
+                    <Menu.Item
+                      active={theme === "dark"}
+                      onSelect={() => {
+                        setTheme("dark");
+                      }}
+                    >
+                      <MoonIcon className="h-[1.15rem]" />
+                      Night mode
+                    </Menu.Item>
+                    <Menu.Item
+                      active={theme === "system"}
+                      onSelect={() => {
+                        setTheme("system");
+                      }}
+                    >
+                      <SystemIcon className="h-[1.15rem]" />
+                      Sync with system
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.SubItems>
+              </Menu.SubMenu>
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
