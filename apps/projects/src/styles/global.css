@@ -12,7 +12,7 @@ html {
 }
 
 body {
-  @apply border-t-[0.5px] border-gray-100 dark:border-dark-200;
+  @apply border-t-[0.5px] border-gray-100 dark:border-dark-100;
 }
 
 svg {
