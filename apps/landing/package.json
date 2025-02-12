@@ -14,7 +14,7 @@
     "icons": "workspace:*",
     "lib": "workspace:*",
     "mouse-follower": "^1.1.2",
-    "next": "15.1.7",
+    "next": "15.1.4",
     "posthog-js": "^1.216.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
