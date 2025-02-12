@@ -38,11 +38,5 @@
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
     "typescript": "^5.5.4"
-  },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "19.0.8",
-      "@types/react-dom": "19.0.3"
-    }
   }
 }
