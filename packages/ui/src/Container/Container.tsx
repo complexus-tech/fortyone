@@ -1,4 +1,5 @@
 import { cn } from "lib";
+import { JSX } from "react";
 import {
   CSSProperties,
   FC,
