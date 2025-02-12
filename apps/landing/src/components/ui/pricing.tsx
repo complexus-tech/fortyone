@@ -1,6 +1,6 @@
 "use client";
 import { Flex, Text, Box, Button, Badge } from "ui";
-import { ArrowRightIcon, CheckIcon } from "icons";
+import { CheckIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -33,7 +33,6 @@ const packages = [
     price: 9,
     features: [
       "See product vision with Roadmaps",
-      "Up tp 5 custom workflows",
       "Track OKRs",
       "Roadmaps",
       "Analytics & Reporting",
@@ -76,6 +75,7 @@ const Package = ({
   features,
   recommended,
   billing,
+  cta,
 }: {
   name: string;
   description: string;
@@ -102,49 +102,43 @@ const Package = ({
         setIsActive(false);
       }}
     >
-      <Box
-        className={cn(
-          "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark",
-          {
-            "border-primary shadow-primary/20 dark:border-primary": recommended,
-          },
-        )}
+      <motion.div
+        animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+        initial={{ y: 0, x: 0 }}
+        style={{
+          height: "100%",
+        }}
+        transition={{ type: "spring", stiffness: 100 }}
       >
-        <motion.div
-          animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
-          initial={{ y: 0, x: 0 }}
-          transition={{ type: "spring", stiffness: 100 }}
+        <Box
+          className={cn(
+            "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark",
+            {
+              "border-primary shadow-primary/20 dark:border-primary":
+                recommended,
+            },
+          )}
         >
-          <Text
-            className="mb-2 flex items-center justify-center gap-1.5 text-2xl"
-            fontWeight="medium"
-          >
+          <Text className="mb-2 flex items-center justify-center gap-1.5 text-2xl">
             {name} {recommended ? <Badge>Most Popular</Badge> : null}
           </Text>
-          <Text className="text-center text-lg opacity-80" fontWeight="normal">
-            {description}
-          </Text>
-          <Text
-            align="center"
-            className="mt-4"
-            fontSize="4xl"
-            fontWeight="medium"
-          >
+          <Text className="text-center text-lg opacity-80">{description}</Text>
+          <Text align="center" className="mt-4" fontSize="4xl">
             ${finalPrice}
             <Text as="span" color="muted" fontSize="lg">
               /mo
             </Text>
           </Text>
           <Button
-            className="mt-6 w-full justify-between"
+            align="center"
+            className="mt-6"
             color="primary"
+            fullWidth
             href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-            rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
             rounded="full"
             size="lg"
           >
-            Join the waitlist
-            {/* {cta} */}
+            {cta}
           </Button>
           <Text className="my-6" color="muted">
             {overview}
@@ -154,8 +148,8 @@ const Package = ({
               <Feature feature={feature} key={feature} />
             ))}
           </Flex>
-        </motion.div>
-      </Box>
+        </Box>
+      </motion.div>
     </Box>
   );
 };
@@ -177,7 +171,7 @@ export const Pricing = () => {
       <Container className="md:pt-16">
         <Flex
           align="center"
-          className="mb-8 mt-12 text-center md:mt-20"
+          className="my-12 text-center md:mt-20"
           direction="column"
         >
           <Button
@@ -199,25 +193,24 @@ export const Pricing = () => {
           >
             <Text
               as="h1"
-              className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+              className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
               color="gradient"
-              fontWeight="medium"
             >
-              Experience more, spend less. Switch to complexus.
+              Simple pricing for ambitious teams
             </Text>
           </motion.div>
 
-          <Box className="mt-6">
-            <Box className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1">
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                transition={{
-                  duration: 1,
-                  delay: 0.3,
-                }}
-                viewport={{ once: true, amount: 0.5 }}
-                whileInView={{ y: 0, opacity: 1 }}
-              >
+          <Box className="mt-12">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              transition={{
+                duration: 1,
+                delay: 0.3,
+              }}
+              viewport={{ once: true, amount: 0.5 }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
+              <Box className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1">
                 {["monthly", "annual"].map((option) => (
                   <Button
                     className={cn("px-2.5 capitalize", {
@@ -234,8 +227,9 @@ export const Pricing = () => {
                     {option} Billing
                   </Button>
                 ))}
-              </motion.div>
-            </Box>
+              </Box>
+            </motion.div>
+
             <Box className="mt-3">
               <motion.p
                 initial={{ y: 20, opacity: 0 }}
@@ -270,13 +264,13 @@ export const Pricing = () => {
             />
           ))}
         </Box>
-        <Box className="relative mt-8 md:mt-32">
+        <Box className="relative mt-8 md:mt-20">
           <Box className="mx-auto rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl shadow-warning/10 dark:border-dark-100 dark:bg-dark md:max-w-4xl">
-            <Text className="mb-3 text-2xl" fontWeight="medium">
+            <Text className="mb-3 text-2xl">
               <span className="font-semibold text-primary">Complexus</span>{" "}
               Enteprise
             </Text>
-            <Text className="text-lg opacity-80" fontWeight="normal">
+            <Text className="text-lg opacity-80">
               Crafted for enterprises aiming for seamless expansion. Complexus
               Enterprise provides state-of-the-art security measures, robust
               administrative capabilities, and enhanced features.
@@ -295,15 +289,6 @@ export const Pricing = () => {
             >
               Join the waitlist
             </Button>
-            {/* <Button
-              className="mt-6 justify-between"
-              color="primary"
-              leftIcon={<ChatIcon className="h-5 w-auto" />}
-              rounded="full"
-              size="lg"
-            >
-              Contact sales
-            </Button> */}
           </Box>
 
           <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-warning/10" />
