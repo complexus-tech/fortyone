@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "lib";
 import { Box, Text } from "ui";
 import Link from "next/link";
-import { FacebookIcon, InstagramIcon, LinkedInIcon, TwitterIcon } from "icons";
+import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui";
 
@@ -42,7 +42,7 @@ const Copyright = () => (
         href="https://www.linkedin.com/company/complexus-tech/"
         target="_blank"
       >
-        <LinkedInIcon className="h-5 w-auto" />
+        <LinkedinIcon className="h-5 w-auto" />
       </Link>
       <Link
         className="hover:text-primary"

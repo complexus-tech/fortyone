@@ -45,7 +45,7 @@ export const Navigation = () => {
               >
                 Log in
               </Button>
-              <Button className="relative" size="sm" rounded="full">
+              <Button className="relative" rounded="full" size="sm">
                 Sign up
               </Button>
             </Flex>

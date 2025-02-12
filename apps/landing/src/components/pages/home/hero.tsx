@@ -1,13 +1,12 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
-import { ArrowRightIcon } from "icons";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
 
 export const Hero = () => {
   return (
     <Box>
-      <Container className="pt-12 md:pt-20">
+      <Container className="pt-12 md:pt-16">
         <Flex
           align="center"
           className="mb-8 mt-20 text-center"
@@ -25,11 +24,10 @@ export const Hero = () => {
             <Button
               className="px-3 text-sm md:text-base"
               color="tertiary"
-              rightIcon={<ArrowRightIcon className="h-3 w-auto" />}
               rounded="full"
               size="sm"
             >
-              Announcing Private Beta 1.0
+              Announcing Private Beta
             </Button>
           </motion.span>
 
@@ -44,7 +42,7 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 max-w-5xl pb-2 text-6xl leading-none md:text-[5.5rem]"
+              className="font-satosh mt-6 max-w-4xl pb-2 text-6xl font-semibold antialiased md:text-7xl md:leading-[1.1]"
               color="gradient"
             >
               Nail every objective on time with complexus.
@@ -61,7 +59,7 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-6 max-w-[600px] text-lg opacity-90 md:mt-8 md:text-2xl"
+              className="mt-6 max-w-[600px] text-lg opacity-80 md:text-2xl"
               fontWeight="normal"
             >
               Empower your team to crush every key objective with our seamless
