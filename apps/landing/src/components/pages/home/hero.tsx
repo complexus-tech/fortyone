@@ -44,7 +44,7 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="font-satosh mt-6 max-w-4xl pb-2 text-6xl font-semibold antialiased md:text-7xl md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold antialiased md:max-w-4xl md:text-7xl md:leading-[1.1]"
               color="gradient"
             >
               Transform Goals into Victories, Right on Schedule

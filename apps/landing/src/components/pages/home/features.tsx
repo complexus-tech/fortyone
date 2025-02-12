@@ -32,7 +32,7 @@ const Intro = () => (
       >
         <Text
           as="h3"
-          className="mx-auto max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
+          className="mx-auto pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl"
           color="gradient"
         >
           Ship faster, collaborate better.

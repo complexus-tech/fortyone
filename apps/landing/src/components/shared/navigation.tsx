@@ -63,28 +63,36 @@ export const Navigation = () => {
       name: "Stories",
       href: "/product#stories",
       description: "Manage and Track Tasks",
-      icon: <StoryIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <StoryIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 2,
       name: "Objectives",
       href: "/product#objectives",
       description: "Set and Achieve Goals",
-      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <ObjectiveIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 3,
       name: "OKRs",
       href: "/product#okrs",
       description: "Align and Achieve",
-      icon: <OKRIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <OKRIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 4,
       name: "Sprints",
       href: "/product#sprints",
       description: "Iterate and Deliver",
-      icon: <SprintsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
   ];
 
@@ -112,7 +120,7 @@ export const Navigation = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="fixed left-0 top-6 z-10 w-screen">
+    <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
           <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/80 dark:bg-dark-200/50">
@@ -190,7 +198,7 @@ export const Navigation = () => {
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
               <Button
-                className="px-4 text-[0.93rem]"
+                className="hidden px-4 text-[0.93rem] md:flex"
                 color="tertiary"
                 rounded="full"
               >
@@ -213,18 +221,18 @@ export const Navigation = () => {
                   </Menu.Button>
                   <Menu.Items
                     align="end"
-                    className="relative left-4 mt-4 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
+                    className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
                   >
                     <Menu.Group>
                       {navLinks.map(({ title, href }) => (
                         <Menu.Item
-                          className="block rounded-lg py-2"
+                          className="block rounded-lg py-3"
                           key={title}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
-                          <NavLink className="flex" href={href}>
+                          <NavLink className="flex text-2xl" href={href}>
                             {title}
                           </NavLink>
                         </Menu.Item>
@@ -234,14 +242,14 @@ export const Navigation = () => {
                     <Menu.Group>
                       {product.map(({ id, name, href, icon }) => (
                         <Menu.Item
-                          className="block rounded-lg py-2"
+                          className="block rounded-lg py-3"
                           key={id}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
                           <NavLink
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 text-2xl"
                             href={href}
                           >
                             {icon}
