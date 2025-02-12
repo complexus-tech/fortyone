@@ -1,35 +1,33 @@
-import { Text, Box, Button } from "ui";
-import { Container, Blur } from "@/components/ui";
+import { Text, Button } from "ui";
+import { Container } from "@/components/ui";
 
 export const Hero = () => {
   return (
-    <Box>
-      <Blur className="absolute -top-[65vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 dark:bg-primary/[0.03]" />
-      <Container className="relative max-w-4xl pb-16 pt-36 md:pt-40">
-        <Button
-          className="px-3 text-sm md:text-base"
-          color="tertiary"
-          rounded="full"
-          size="sm"
-        >
-          Contact us
-        </Button>
-        <Text
-          as="h1"
-          className="my-8 pb-2 text-5xl leading-none md:text-7xl"
-          color="gradient"
-          fontWeight="medium"
-        >
-          What assistance do you require?
-        </Text>
-        <Text
-          className="max-w-6xl text-xl leading-snug opacity-80 md:mb-16 md:text-2xl"
-          fontWeight="normal"
-        >
-          Reach out to our sales and support teams for demonstrations,
-          assistance with onboarding, or any questions regarding complexus.
-        </Text>
-      </Container>
-    </Box>
+    <Container className="relative max-w-4xl pb-10 pt-36 md:pt-40">
+      <Button
+        className="mx-auto px-3 text-sm md:text-base"
+        color="tertiary"
+        rounded="full"
+        size="sm"
+      >
+        Get in Touch
+      </Button>
+      <Text
+        align="center"
+        as="h1"
+        className="my-8 pb-2 text-5xl font-semibold leading-none md:text-7xl"
+        color="gradient"
+      >
+        How Can We Help You Today?
+      </Text>
+      <Text
+        align="center"
+        className="text-lg leading-snug opacity-80 md:mb-16 md:text-2xl"
+        fontWeight="normal"
+      >
+        Connect with our team for product demos, implementation support, or any
+        questions about getting started with complexus.
+      </Text>
+    </Container>
   );
 };

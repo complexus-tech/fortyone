@@ -11,16 +11,12 @@ import {
   Text,
 } from "ui";
 import {
-  AnalyticsIcon,
-  ChatIcon,
   DocsIcon,
-  EpicsIcon,
   SprintsIcon,
   ObjectiveIcon,
-  RoadmapIcon,
   StoryIcon,
-  WhiteboardIcon,
   CodeIcon,
+  OKRIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -58,7 +54,6 @@ const MenuItem = ({
 export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
-    // { title: "About", href: "/about" },
     { title: "Contact", href: "/contact" },
   ];
 
@@ -79,10 +74,10 @@ export const Navigation = () => {
     },
     {
       id: 3,
-      name: "Roadmaps",
-      href: "/product#roadmaps",
-      description: "Plan Your Objectives' Journey",
-      icon: <RoadmapIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "OKRs",
+      href: "/product#okrs",
+      description: "Align and Achieve",
+      icon: <OKRIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
     },
     {
       id: 4,
@@ -90,43 +85,6 @@ export const Navigation = () => {
       href: "/product#sprints",
       description: "Iterate and Deliver",
       icon: <SprintsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 5,
-      name: "Epics",
-      href: "/product#epics",
-      description: "Oversee Major Initiatives",
-      icon: <EpicsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 6,
-      name: "Documents",
-      href: "/product#documents",
-      description: "Store and Collaborate",
-      icon: <DocsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 7,
-      name: "Reporting",
-      href: "/product#reports",
-      description: "Gain Insights and Analyze",
-      icon: <AnalyticsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 8,
-      name: "Messaging",
-      href: "/product#messaging",
-      description: "Communicate and Collaborate",
-      icon: <ChatIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 9,
-      name: "Whiteboards",
-      href: "/product#whiteboards",
-      description: "Sketch and Brainstorm ideas",
-      icon: (
-        <WhiteboardIcon className="relative h-4 w-auto shrink-0 md:top-1" />
-      ),
     },
   ];
 
@@ -195,7 +153,7 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
+                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-50",
                     {
                       "bg-dark-300/80": pathname === href,
                     },
