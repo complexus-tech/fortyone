@@ -8,9 +8,9 @@ import "swiper/css";
 import "swiper/css/effect-cards";
 import { Container, Blur } from "@/components/ui";
 import { useCursor } from "@/hooks";
-import storiesImg from "../../../../public/stories.webp";
-import dashboardImg from "../../../../public/dashboard.webp";
-import storyImg from "../../../../public/story.png";
+import listImg from "../../../../public/list.webp";
+import objectiveImg from "../../../../public/objective.webp";
+import kanbanImg from "../../../../public/kanban.webp";
 
 export const HeroCards = () => {
   const cursor = useCursor();
@@ -18,26 +18,26 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "Dashboard",
+      title: "List stories",
       image: {
-        src: dashboardImg,
-        alt: "Dashboard",
+        src: listImg,
+        alt: "List stories",
       },
     },
     {
       id: 2,
-      title: "Stories",
+      title: "Objective",
       image: {
-        src: storiesImg,
-        alt: "Stories",
+        src: objectiveImg,
+        alt: "Objective",
       },
     },
     {
       id: 3,
-      title: "Story",
+      title: "Kanban",
       image: {
-        src: storyImg,
-        alt: "Story",
+        src: kanbanImg,
+        alt: "Kanban",
       },
     },
   ];
@@ -52,10 +52,14 @@ export const HeroCards = () => {
           cursor.removeText();
         }}
       >
-        <Blur className="absolute -top-28 left-1/2 right-1/2 h-[300px] w-[300px] -translate-x-1/2 bg-warning/15 md:h-[700px] md:w-[800px]" />
+        <Blur className="absolute -top-28 left-1/2 right-1/2 z-10 h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[65vw]" />
         <Blur className="absolute -bottom-28 -left-36 hidden h-[500px] w-[500px] bg-warning/10 md:block" />
-        <Blur className="absolute -bottom-6 -right-20 hidden h-[400px] w-[400px] bg-warning/10 md:block" />
+        <Blur className="absolute -bottom-6 -right-20 hidden h-[400px] w-[400px] bg-warning/15 md:block" />
         <Swiper
+          autoplay={{
+            delay: 2000,
+            disableOnInteraction: false,
+          }}
           effect="cards"
           grabCursor
           initialSlide={1}
@@ -63,7 +67,7 @@ export const HeroCards = () => {
         >
           {cards.map((card) => (
             <SwiperSlide
-              className="relative rounded-lg border border-gray/60 bg-dark-100/40 p-0.5 backdrop-blur md:rounded-2xl md:p-2"
+              className="relative rounded-lg border border-gray/60 bg-dark-100/40 p-0.5 backdrop-blur md:rounded-xl md:p-1.5"
               key={card.id}
             >
               <Image

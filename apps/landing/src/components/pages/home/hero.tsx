@@ -1,11 +1,12 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
-import { Container } from "@/components/ui";
+import { Container, Blur } from "@/components/ui";
 
 export const Hero = () => {
   return (
-    <Box>
+    <Box className="relative">
+      <Blur className="absolute -top-96 left-1/2 right-1/2 h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
       <Container className="pt-12 md:pt-16">
         <Flex
           align="center"
@@ -24,10 +25,11 @@ export const Hero = () => {
             <Button
               className="px-3 text-sm md:text-base"
               color="tertiary"
+              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
               rounded="full"
               size="sm"
             >
-              Announcing Private Beta
+              Join Our Exclusive Beta
             </Button>
           </motion.span>
 
@@ -45,7 +47,7 @@ export const Hero = () => {
               className="font-satosh mt-6 max-w-4xl pb-2 text-6xl font-semibold antialiased md:text-7xl md:leading-[1.1]"
               color="gradient"
             >
-              Nail every objective on time with complexus.
+              Transform Goals into Victories, Right on Schedule
             </Text>
           </motion.span>
 
@@ -62,30 +64,25 @@ export const Hero = () => {
               className="mt-6 max-w-[600px] text-lg opacity-80 md:text-2xl"
               fontWeight="normal"
             >
-              Empower your team to crush every key objective with our seamless
-              project management platform.
+              Track, align, and achieve team objectives with powerful insights
+              that keep everyone moving forward.
             </Text>
           </motion.span>
 
           <Flex align="center" className="mt-10" gap={4}>
-            {/* <motion.span
+            <motion.span
               initial={{ y: -10, opacity: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
               transition={{
                 duration: 1,
                 delay: 0.4,
               }}
+              viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button
-                className="border border-primary"
-                rounded="full"
-                size="lg"
-                variant="outline"
-              >
-                Talk to us
+              <Button color="tertiary" rounded="full" size="lg">
+                Talk to sales
               </Button>
-            </motion.span> */}
+            </motion.span>
             <motion.span
               initial={{ y: -5, opacity: 0 }}
               transition={{
@@ -95,16 +92,12 @@ export const Hero = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button
-                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-                rounded="full"
-                size="lg"
-              >
-                Join the waitlist
+              <Button rounded="full" size="lg">
+                Get started
               </Button>
             </motion.span>
           </Flex>
-          <Text className="mt-8" color="muted" fontSize="sm">
+          <Text className="mt-6" color="muted">
             No credit card required.
           </Text>
         </Flex>

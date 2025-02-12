@@ -1,6 +1,15 @@
 "use client";
 
-import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
+import {
+  Blur,
+  Box,
+  Button,
+  Flex,
+  Menu,
+  NavLink,
+  NavigationMenu,
+  Text,
+} from "ui";
 import {
   AnalyticsIcon,
   ChatIcon,
@@ -16,6 +25,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { Logo, Container } from "@/components/ui";
 import { MenuButton } from "./menu-button";
@@ -28,7 +38,7 @@ const MenuItem = ({
 }: {
   name: string;
   description: string;
-  icon: JSX.Element;
+  icon: ReactNode;
   href: string;
 }) => (
   <Link
@@ -147,7 +157,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-6 z-10 w-screen">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-200 dark:bg-black/40">
+          <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/80 dark:bg-dark-200/50">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
@@ -163,7 +173,7 @@ export const Navigation = () => {
                     >
                       Product
                     </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
+                    <NavigationMenu.Content className="relative bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
@@ -177,6 +187,7 @@ export const Navigation = () => {
                           ),
                         )}
                       </Box>
+                      <Blur className="absolute left-0 top-0 h-full w-full bg-warning/5" />
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>
@@ -199,7 +210,7 @@ export const Navigation = () => {
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="bg-warning/[0.02] pb-1">
+                    <NavigationMenu.Content className="relative bg-warning/[0.02] pb-1">
                       <Box className="grid w-max grid-cols-1 gap-2 p-2">
                         {resources.map(
                           ({ id, name, description, icon, href }) => (
@@ -213,6 +224,7 @@ export const Navigation = () => {
                           ),
                         )}
                       </Box>
+                      <Blur className="absolute left-0 top-0 h-full w-full bg-warning/5" />
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>

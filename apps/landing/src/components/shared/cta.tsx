@@ -49,24 +49,25 @@ export const CallToAction = () => {
             </Text>
           </motion.div>
 
-          <motion.div
-            className="mt-8 flex items-center gap-3"
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.6,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
-            <Button
-              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-              rounded="full"
-              size="lg"
+          <Box className="mt-8 flex items-center gap-3">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              transition={{
+                duration: 1,
+                delay: 0.6,
+              }}
+              viewport={{ once: true, amount: 0.5 }}
+              whileInView={{ y: 0, opacity: 1 }}
             >
-              Join the waitlist
-            </Button>
-          </motion.div>
+              <Button
+                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
+                rounded="full"
+                size="lg"
+              >
+                Join the waitlist
+              </Button>
+            </motion.div>
+          </Box>
         </Flex>
         <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
       </Container>

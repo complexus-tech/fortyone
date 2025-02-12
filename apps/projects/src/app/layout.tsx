@@ -5,7 +5,6 @@ import "../styles/global.css";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
-
 // const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
 //   ssr: false,
 // });

@@ -102,57 +102,60 @@ const Package = ({
         setIsActive(false);
       }}
     >
-      <motion.div
-        animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+      <Box
         className={cn(
           "h-full rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl dark:border-dark-100 dark:bg-dark",
           {
             "border-primary shadow-primary/20 dark:border-primary": recommended,
           },
         )}
-        initial={{ y: 0, x: 0 }}
-        transition={{ type: "spring", stiffness: 100 }}
       >
-        <Text
-          className="mb-2 flex items-center justify-center gap-1.5 text-2xl"
-          fontWeight="medium"
+        <motion.div
+          animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+          initial={{ y: 0, x: 0 }}
+          transition={{ type: "spring", stiffness: 100 }}
         >
-          {name} {recommended ? <Badge>Most Popular</Badge> : null}
-        </Text>
-        <Text className="text-center text-lg opacity-80" fontWeight="normal">
-          {description}
-        </Text>
-        <Text
-          align="center"
-          className="mt-4"
-          fontSize="4xl"
-          fontWeight="medium"
-        >
-          ${finalPrice}
-          <Text as="span" color="muted" fontSize="lg">
-            /mo
+          <Text
+            className="mb-2 flex items-center justify-center gap-1.5 text-2xl"
+            fontWeight="medium"
+          >
+            {name} {recommended ? <Badge>Most Popular</Badge> : null}
           </Text>
-        </Text>
-        <Button
-          className="mt-6 w-full justify-between"
-          color="primary"
-          href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-          rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
-          rounded="full"
-          size="lg"
-        >
-          Join the waitlist
-          {/* {cta} */}
-        </Button>
-        <Text className="my-6" color="muted">
-          {overview}
-        </Text>
-        <Flex className="gap-4 md:gap-5" direction="column">
-          {features.map((feature) => (
-            <Feature feature={feature} key={feature} />
-          ))}
-        </Flex>
-      </motion.div>
+          <Text className="text-center text-lg opacity-80" fontWeight="normal">
+            {description}
+          </Text>
+          <Text
+            align="center"
+            className="mt-4"
+            fontSize="4xl"
+            fontWeight="medium"
+          >
+            ${finalPrice}
+            <Text as="span" color="muted" fontSize="lg">
+              /mo
+            </Text>
+          </Text>
+          <Button
+            className="mt-6 w-full justify-between"
+            color="primary"
+            href="https://forms.gle/NmG4XFS5GhvRjUxu6"
+            rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
+            rounded="full"
+            size="lg"
+          >
+            Join the waitlist
+            {/* {cta} */}
+          </Button>
+          <Text className="my-6" color="muted">
+            {overview}
+          </Text>
+          <Flex className="gap-4 md:gap-5" direction="column">
+            {features.map((feature) => (
+              <Feature feature={feature} key={feature} />
+            ))}
+          </Flex>
+        </motion.div>
+      </Box>
     </Box>
   );
 };
@@ -205,48 +208,50 @@ export const Pricing = () => {
           </motion.div>
 
           <Box className="mt-6">
-            <motion.div
-              className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1"
-              initial={{ y: 20, opacity: 0 }}
-              transition={{
-                duration: 1,
-                delay: 0.3,
-              }}
-              viewport={{ once: true, amount: 0.5 }}
-              whileInView={{ y: 0, opacity: 1 }}
-            >
-              {["monthly", "annual"].map((option) => (
-                <Button
-                  className={cn("px-2.5 capitalize", {
-                    "opacity-80": option !== billing,
-                  })}
-                  color={option === billing ? "primary" : "tertiary"}
-                  key={option}
-                  onClick={() => {
-                    setBilling(option as Billing);
-                  }}
-                  size="sm"
-                  variant={option === billing ? "solid" : "naked"}
-                >
-                  {option} Billing
-                </Button>
-              ))}
-            </motion.div>
-            <motion.p
-              className="mt-3"
-              initial={{ y: 20, opacity: 0 }}
-              transition={{
-                duration: 1,
-                delay: 0.6,
-              }}
-              viewport={{ once: true, amount: 0.5 }}
-              whileInView={{ y: 0, opacity: 1 }}
-            >
-              <Text as="span" color="primary" fontWeight="semibold">
-                Save 25%
-              </Text>{" "}
-              with annual billing 🎉
-            </motion.p>
+            <Box className="flex gap-1 rounded-[0.6rem] bg-dark-200 p-1">
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.3,
+                }}
+                viewport={{ once: true, amount: 0.5 }}
+                whileInView={{ y: 0, opacity: 1 }}
+              >
+                {["monthly", "annual"].map((option) => (
+                  <Button
+                    className={cn("px-2.5 capitalize", {
+                      "opacity-80": option !== billing,
+                    })}
+                    color={option === billing ? "primary" : "tertiary"}
+                    key={option}
+                    onClick={() => {
+                      setBilling(option as Billing);
+                    }}
+                    size="sm"
+                    variant={option === billing ? "solid" : "naked"}
+                  >
+                    {option} Billing
+                  </Button>
+                ))}
+              </motion.div>
+            </Box>
+            <Box className="mt-3">
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.6,
+                }}
+                viewport={{ once: true, amount: 0.5 }}
+                whileInView={{ y: 0, opacity: 1 }}
+              >
+                <Text as="span" color="primary" fontWeight="semibold">
+                  Save 25%
+                </Text>{" "}
+                with annual billing 🎉
+              </motion.p>
+            </Box>
           </Box>
         </Flex>
 

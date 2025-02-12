@@ -31,14 +31,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}): JSX.Element {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
-      <body className={cn(satoshi.variable, instrumentSans.variable)}>
+      <body
+        className={cn(satoshi.variable, instrumentSans.variable, "relative")}
+      >
         <PostHogProvider>
           <CursorProvider>
             <Navigation />

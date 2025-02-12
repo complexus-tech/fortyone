@@ -80,16 +80,17 @@ const ItemWrapper = ({
         setIsActive(false);
       }}
     >
-      <motion.div
-        animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
-        className="h-full"
-        initial={{ y: 0, x: 0 }}
-        transition={{ type: "spring", stiffness: 100 }}
-      >
-        <Wrapper className="h-full rounded-3xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
-          <>{children}</>
-        </Wrapper>
-      </motion.div>
+      <Box className="h-full">
+        <motion.div
+          animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+          initial={{ y: 0, x: 0 }}
+          transition={{ type: "spring", stiffness: 100 }}
+        >
+          <Wrapper className="h-full rounded-3xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
+            <>{children}</>
+          </Wrapper>
+        </motion.div>
+      </Box>
     </Box>
   );
 };

@@ -1,25 +1,23 @@
 import {
   Hero,
   HeroCards,
-  SampleClients,
+  // SampleClients,
   Features,
   Integrations,
-  ProductDemo,
+  // ProductDemo,
   // Reviews,
 } from "@/components/pages/home";
-import { Pricing } from "@/components/ui";
 
-export default function Page(): JSX.Element {
+export default function Page() {
   return (
     <>
       <Hero />
       <HeroCards />
-      <SampleClients />
-      <ProductDemo />
+      {/* <SampleClients /> */}
+      {/* <ProductDemo /> */}
       <Features />
       {/* <Reviews /> */}
       <Integrations />
-      <Pricing />
     </>
   );
 }

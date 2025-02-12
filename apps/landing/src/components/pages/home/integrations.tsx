@@ -88,7 +88,6 @@ export const Integrations = () => {
             </Text>
           </motion.div>
           <motion.div
-            className="mt-1"
             initial={{ y: 20, opacity: 0 }}
             transition={{
               duration: 1,
