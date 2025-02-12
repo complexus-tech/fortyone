@@ -61,7 +61,7 @@ export const Integrations = () => {
           >
             <Text
               as="h1"
-              className="h-max max-w-4xl pb-2 text-5xl md:mt-6 md:text-7xl"
+              className="h-max max-w-4xl pb-2 text-5xl font-semibold md:mt-6 md:text-7xl"
               color="gradient"
             >
               Sync up your favorite tools.

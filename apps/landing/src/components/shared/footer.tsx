@@ -83,33 +83,13 @@ export const Footer = () => {
       href: "/product#objectives",
     },
     {
-      href: "/product#roadmaps",
-      title: "Roadmaps",
+      href: "/product#okrs",
+      title: "OKRs",
     },
 
     {
       href: "/product#sprints",
       title: "Sprints",
-    },
-    {
-      href: "/product#epics",
-      title: "Epics",
-    },
-    {
-      href: "/product#documents",
-      title: "Documents",
-    },
-    {
-      href: "/product#reporting",
-      title: "Reporting",
-    },
-    {
-      href: "/product#discussions",
-      title: "Discussions",
-    },
-    {
-      href: "/product#whiteboards",
-      title: "Whiteboards",
     },
   ];
   const company = [

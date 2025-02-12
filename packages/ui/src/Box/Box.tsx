@@ -1,4 +1,10 @@
-import { CSSProperties, HTMLAttributes, ReactNode, createElement } from "react";
+import {
+  CSSProperties,
+  HTMLAttributes,
+  JSX,
+  ReactNode,
+  createElement,
+} from "react";
 
 export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;

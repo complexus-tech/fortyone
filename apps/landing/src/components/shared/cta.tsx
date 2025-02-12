@@ -23,10 +23,10 @@ export const CallToAction = () => {
           >
             <Text
               as="h1"
-              className="mt-6 h-max max-w-5xl pb-2 text-5xl md:text-7xl"
+              className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
               color="gradient"
             >
-              Experience the difference. Try it now!
+              Set Objectives. Drive Outcomes.
             </Text>
           </motion.div>
           <motion.div
@@ -42,10 +42,9 @@ export const CallToAction = () => {
               className="mt-4 max-w-[600px] md:mt-6"
               color="muted"
               fontSize="xl"
-              fontWeight="normal"
             >
-              Streamline your workflows, empower your team, and nail every key
-              objective all in one seamless platform.
+              Bring your objectives, OKRs, and sprints together. The modern way
+              to align teams and deliver meaningful outcomes.
             </Text>
           </motion.div>
 
@@ -69,7 +68,7 @@ export const CallToAction = () => {
             </motion.div>
           </Box>
         </Flex>
-        <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/5" />
+        <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/10" />
       </Container>
     </Box>
   );

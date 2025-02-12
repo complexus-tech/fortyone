@@ -58,7 +58,7 @@ const MenuItem = ({
 export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
-    { title: "About", href: "/about" },
+    // { title: "About", href: "/about" },
     { title: "Contact", href: "/contact" },
   ];
 
@@ -159,7 +159,7 @@ export const Navigation = () => {
         <Box className="rounded-full">
           <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/80 dark:bg-dark-200/50">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
-            <Flex align="center" className="hidden md:flex" gap={2}>
+            <Flex align="center" className="hidden md:flex" gap={3}>
               <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
@@ -230,7 +230,7 @@ export const Navigation = () => {
                 </NavigationMenu.List>
               </NavigationMenu>
             </Flex>
-            <Flex align="center" className="ml-6 gap-2">
+            <Flex align="center" className="ml-6 gap-3">
               <Button
                 className="px-4 text-[0.93rem]"
                 color="tertiary"

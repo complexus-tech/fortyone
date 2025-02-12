@@ -29,18 +29,8 @@ export const Features = () => {
               {icon}
             </Flex>
             <Box className="col-span-3">
-              <Text
-                className="text-xl opacity-80 md:text-3xl"
-                fontWeight="normal"
-              >
-                {title}
-              </Text>
-              <Text
-                className="my-2 md:my-4"
-                color="muted"
-                fontSize="lg"
-                fontWeight="normal"
-              >
+              <Text className="text-xl opacity-80 md:text-3xl">{title}</Text>
+              <Text className="my-2 md:my-4" color="muted" fontSize="lg">
                 {overview}
               </Text>
               <Box className="rounded-xl bg-dark-100 p-1 md:p-1.5">
@@ -57,7 +47,7 @@ export const Features = () => {
                     <Text className="mb-2" fontSize="lg">
                       {subTitle}
                     </Text>
-                    <Text className="mb-5" color="muted" fontWeight="normal">
+                    <Text className="mb-5" color="muted">
                       {subOverview}
                     </Text>
                   </Box>

@@ -1,14 +1,4 @@
-import {
-  AnalyticsIcon,
-  ChatIcon,
-  DocsIcon,
-  EpicsIcon,
-  SprintsIcon,
-  ObjectiveIcon,
-  RoadmapIcon,
-  StoryIcon,
-  WhiteboardIcon,
-} from "icons";
+import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
 import storyCard from "../../../../public/kanban.png";
 
 export const features = [
@@ -84,26 +74,21 @@ export const features = [
   },
   {
     icon: (
-      <RoadmapIcon
+      <OKRIcon
         className="relative -right-1 h-10 w-auto md:h-16"
         strokeWidth={1.3}
       />
     ),
     image: storyCard,
-    name: "Roadmaps",
-    title: "Plan Your Objectives' Journey",
+    name: "OKRs",
+    title: "Align and Drive",
     overview:
-      "Craft and visualize detailed roadmaps to plan and track your objectives' journey from start to finish.",
+      "Align your team and drive towards a common goal with OKRs. Monitor progress and ensure your team stays on the right path.",
     breakdown: [
       {
-        title: "Visual Timeline Planning",
+        title: "Align and Drive",
         overview:
-          "Create visual representations of objectives, sprints and timelines to facilitate effective planning and resource allocation.",
-      },
-      {
-        title: "Milestone Tracking",
-        overview:
-          "Monitor the progress of sprints and overall milestones, ensuring timely delivery and adherence to plans.",
+          "Align your team and drive towards a common goal with OKRs. Monitor progress and ensure your team stays on the right path.",
       },
     ],
   },
@@ -129,131 +114,6 @@ export const features = [
         title: "Sprint Delivery Management",
         overview:
           "Manage the delivery of features and functionalities within each sprint, ensuring efficient workflow and timely completion.",
-      },
-    ],
-  },
-  {
-    icon: (
-      <EpicsIcon
-        className="relative -right-1 h-10 w-auto md:h-16"
-        strokeWidth={1.3}
-      />
-    ),
-    image: storyCard,
-    name: "Epics",
-    title: "Oversee Major Initiatives",
-    overview:
-      "Oversee and track the progress of large-scale features or initiatives, ensuring all critical components stay on track.",
-    breakdown: [
-      {
-        title: "Large-scale Feature Management",
-        overview:
-          "Oversee the development and progress of significant features, ensuring all aspects are covered.",
-      },
-      {
-        title: "Initiative Alignment",
-        overview:
-          "Track the progress and alignment of major initiatives, helping to achieve strategic objectives.",
-      },
-    ],
-  },
-  {
-    icon: (
-      <DocsIcon
-        className="relative -right-1 h-10 w-auto md:h-16"
-        strokeWidth={1.3}
-      />
-    ),
-    image: storyCard,
-    name: "Documents",
-    title: "Store and Collaborate",
-    overview:
-      "Store, organize, and collaborate on project documents seamlessly. Keep all your important files in one place.",
-    breakdown: [
-      {
-        title: "Centralized Document Storage",
-        overview:
-          "Safely store and organize all project-related documents for easy access and retrieval.",
-      },
-      {
-        title: "Real-time Collaboration",
-        overview:
-          "Collaborate in real-time with team members on documents, enhancing productivity and communication.",
-      },
-    ],
-  },
-  {
-    icon: (
-      <AnalyticsIcon
-        className="relative -right-1 h-10 w-auto md:h-16"
-        strokeWidth={1.3}
-      />
-    ),
-    image: storyCard,
-    name: "Reports",
-    title: "Gain Insights and Analyze",
-    overview:
-      "Generate insightful reports to analyze project performance and make data-driven decisions.",
-    breakdown: [
-      {
-        title: "Performance Metrics Analysis",
-        overview:
-          "Analyze project metrics to identify trends, measure performance, and pinpoint areas for improvement.",
-      },
-      {
-        title: "Actionable Insights",
-        overview:
-          "Create actionable insights from project data to inform decision-making and strategic planning.",
-      },
-    ],
-  },
-  {
-    icon: (
-      <ChatIcon
-        className="relative -right-1 h-10 w-auto md:h-16"
-        strokeWidth={1.3}
-      />
-    ),
-    image: storyCard,
-    name: "Messaging",
-    title: "Communicate and Collaborate",
-    overview:
-      "Engage in meaningful discussions through channels and direct messages, keeping everyone informed and aligned.",
-    breakdown: [
-      {
-        title: "Team Communication",
-        overview:
-          "Engage in organized discussions with team members, sharing ideas, feedback, and updates.",
-      },
-      {
-        title: "Alignment and Updates",
-        overview:
-          "Maintain effective communication to ensure all team members are informed and aligned with project goals and changes.",
-      },
-    ],
-  },
-  {
-    icon: (
-      <WhiteboardIcon
-        className="relative -right-1 h-10 w-auto md:h-16"
-        strokeWidth={1.3}
-      />
-    ),
-    image: storyCard,
-    name: "Whiteboards",
-    title: "Brainstorm and Plan Visually",
-    overview:
-      "Brainstorm and plan with ease using interactive whiteboards, turning your ideas into actionable plans.",
-    breakdown: [
-      {
-        title: "Collaborative Ideation",
-        overview:
-          "Brainstorm and visualize ideas with your team on digital whiteboards, enhancing creative thinking and planning.",
-      },
-      {
-        title: "Interactive Planning",
-        overview:
-          "Use interactive whiteboard features to plan and organize project tasks and strategies effectively.",
       },
     ],
   },

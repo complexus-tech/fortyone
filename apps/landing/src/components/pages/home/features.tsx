@@ -32,10 +32,10 @@ const Intro = () => (
       >
         <Text
           as="h3"
-          className="mx-auto max-w-5xl pb-2 text-5xl md:text-7xl"
+          className="mx-auto max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
           color="gradient"
         >
-          Meet your core objectives.
+          Ship faster, collaborate better.
         </Text>
       </motion.div>
       <motion.div
@@ -52,9 +52,9 @@ const Intro = () => (
           fontSize="xl"
           fontWeight="normal"
         >
-          Streamline workflows, elevate collaboration, and nail your objectives
-          with features like OKR tracking, Kanban boards, Roadmaps, sprints, and
-          more.
+          Transform your team&apos;s productivity with powerful project
+          management tools. From sprint planning to analytics, we&apos;ve got
+          everything you need to deliver exceptional results.
         </Text>
       </motion.div>
     </Box>
@@ -101,44 +101,45 @@ export const Features = () => {
       id: 4,
       name: "Kanban Boards",
       description:
-        "Visualize your workflow, track progress, and manage tasks efficiently. Drag and drop tasks to update status.",
+        "Visualize work in progress and optimize your team's flow. Intuitive drag-and-drop interface makes project management effortless.",
       icon: <KanbanIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: kanbanImg,
-        alt: "Kanban Boards",
+        alt: "Kanban Board View",
       },
       className: "md:col-span-2",
     },
     {
       id: 1,
-      name: "Stories",
-      description: "Break down complex projects into manageable tasks.",
+      name: "User Stories",
+      description:
+        "Create, organize, and prioritize work items with clarity and purpose.",
       icon: <StoryIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: storyImg,
-        alt: "Stories",
+        alt: "User Story Management",
       },
-      // className: "md:col-span-2",
     },
     {
       id: 3,
-      name: "Sprints",
-      description: "Set sprints to achieve your goals and track progress.",
+      name: "Sprint Planning",
+      description:
+        "Plan and execute sprints with confidence. Track velocity and deliver predictably.",
       icon: <SprintsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: sprintImg,
-        alt: "Sprints",
+        alt: "Sprint Planning",
       },
     },
     {
       id: 2,
-      name: "Analytics & Reporting",
+      name: "Analytics & Insights",
       description:
-        "Track your progress and make data-driven decisions. Get insights into your team's performance and productivity.",
+        "Make informed decisions with real-time metrics and customizable dashboards. Identify bottlenecks and optimize team performance.",
       icon: <AnalyticsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
       image: {
         src: analyticsImg,
-        alt: "Stories",
+        alt: "Analytics Dashboard",
       },
       className: "md:col-span-2",
     },
