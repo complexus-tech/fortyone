@@ -170,11 +170,11 @@ importers:
         specifier: ^20.12.7
         version: 20.12.7
       '@types/react':
-        specifier: 19.0.8
-        version: 19.0.8
+        specifier: 19.0.1
+        version: 19.0.1
       '@types/react-dom':
-        specifier: 19.0.3
-        version: 19.0.3(@types/react@19.0.8)
+        specifier: 19.0.2
+        version: 19.0.2(@types/react@19.0.1)
       autoprefixer:
         specifier: ^10.4.19
         version: 10.4.19(postcss@8.4.38)
@@ -314,13 +314,13 @@ importers:
         specifier: ^6.12.3
         version: 6.12.3
       react:
-        specifier: ^19.0.0
+        specifier: 19.0.0
         version: 19.0.0
       react-day-picker:
         specifier: ^8.10.1
         version: 8.10.1(date-fns@2.30.0)(react@19.0.0)
       react-dom:
-        specifier: ^19.0.0
+        specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
       react-dropzone:
         specifier: ^14.2.3
@@ -375,10 +375,10 @@ importers:
         specifier: ^0.2.3
         version: 0.2.3
       '@types/react':
-        specifier: ^19.0.1
+        specifier: 19.0.1
         version: 19.0.1
       '@types/react-dom':
-        specifier: ^19.0.2
+        specifier: 19.0.2
         version: 19.0.2(@types/react@19.0.1)
       autoprefixer:
         specifier: ^10.4.19
@@ -9216,7 +9216,7 @@ snapshots:
 
   '@types/react-dom@18.2.15':
     dependencies:
-      '@types/react': 18.2.37
+      '@types/react': 19.0.8
 
   '@types/react-dom@18.3.5(@types/react@19.0.1)':
     dependencies:
