@@ -89,7 +89,9 @@ export const {
       }
 
       if (trigger === "update") {
+        // const workspaces = await getWorkspaces(session.token);
         token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        // token.workspaces = workspaces;
       }
 
       return token;
