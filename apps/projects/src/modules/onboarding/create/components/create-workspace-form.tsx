@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
 
+const domain = process.env.NEXT_PUBLIC_DOMAIN;
+
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
   const { data: session } = useSession();
@@ -27,12 +29,11 @@ export const CreateWorkspaceForm = () => {
     e.preventDefault();
     try {
       setIsLoading(true);
-      await createWorkspaceAction(form);
+      const workspace = await createWorkspaceAction(form);
       if (workspaces.length === 0) {
-        localStorage.clear();
         router.push("/onboarding/personalize");
       } else {
-        window.location.href = "/my-work";
+        window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
       }
     } catch (error) {
       setIsLoading(false);
