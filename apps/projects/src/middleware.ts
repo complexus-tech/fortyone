@@ -16,7 +16,7 @@ export default auth(async (req) => {
   }
 
   // Add workspace access validation
-  if (req.auth?.user && req.nextUrl.pathname !== "/login") {
+  if (req.auth && req.nextUrl.pathname !== "/login") {
     const workspace = req.auth.workspaces.find(
       (w) => w.name.toLowerCase() === subdomain.toLowerCase(),
     );
