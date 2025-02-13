@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth, signOut, updateSession } from "@/auth";
+import { signOut } from "@/auth";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 
 export const logOut = async (callbackUrl: string) => {
@@ -11,13 +11,6 @@ export const logOut = async (callbackUrl: string) => {
 };
 
 export const changeWorkspace = async (workspaceId: string) => {
-  const session = await auth();
-  const newWorkspaceId = await switchWorkspace(workspaceId);
-  const newWorkspace = session?.workspaces.find(
-    (workspace) => workspace.id === newWorkspaceId,
-  );
-  await updateSession({
-    activeWorkspace: newWorkspace,
-  });
+  await switchWorkspace(workspaceId);
   revalidatePath("/", "layout");
 };
