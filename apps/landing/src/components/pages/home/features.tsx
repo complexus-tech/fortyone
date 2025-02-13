@@ -20,7 +20,7 @@ import analyticsImg from "../../../../public/analytics1.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="my-12 text-center md:my-24">
+    <Box as="section" className="my-12 text-center md:my-28">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{

@@ -223,36 +223,42 @@ export const Navigation = () => {
                     align="end"
                     className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
                   >
+                    <Menu.Group className="px-4 py-2.5">
+                      <Text color="muted">Product</Text>
+                    </Menu.Group>
                     <Menu.Group>
                       {navLinks.map(({ title, href }) => (
                         <Menu.Item
-                          className="block rounded-lg py-3"
+                          className="block rounded-xl py-2.5"
                           key={title}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
-                          <NavLink className="flex text-2xl" href={href}>
+                          <NavLink className="flex text-xl" href={href}>
                             {title}
                           </NavLink>
                         </Menu.Item>
                       ))}
                     </Menu.Group>
+
                     <Menu.Separator />
+                    <Menu.Group className="px-4 py-2.5">
+                      <Text color="muted">Features</Text>
+                    </Menu.Group>
                     <Menu.Group>
-                      {product.map(({ id, name, href, icon }) => (
+                      {product.map(({ id, name, href }) => (
                         <Menu.Item
-                          className="block rounded-lg py-3"
+                          className="block rounded-xl py-2.5"
                           key={id}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
                           <NavLink
-                            className="flex items-center gap-2 text-2xl"
+                            className="flex items-center gap-2 text-xl"
                             href={href}
                           >
-                            {icon}
                             {name}
                           </NavLink>
                         </Menu.Item>
