@@ -11,17 +11,13 @@ export const logOut = async (callbackUrl: string) => {
 };
 
 export const changeWorkspace = async (workspaceId: string) => {
-  try {
-    const session = await auth();
-    const newWorkspaceId = await switchWorkspace(workspaceId);
-    const newWorkspace = session?.workspaces.find(
-      (workspace) => workspace.id === newWorkspaceId,
-    );
-    await updateSession({
-      activeWorkspace: newWorkspace,
-    });
-    revalidatePath("/", "layout");
-  } catch {
-    return {};
-  }
+  const session = await auth();
+  const newWorkspaceId = await switchWorkspace(workspaceId);
+  const newWorkspace = session?.workspaces.find(
+    (workspace) => workspace.id === newWorkspaceId,
+  );
+  await updateSession({
+    activeWorkspace: newWorkspace,
+  });
+  revalidatePath("/", "layout");
 };
