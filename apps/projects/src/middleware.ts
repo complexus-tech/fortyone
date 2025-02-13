@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { changeWorkspace } from "@/components/shared/sidebar/actions";
 
-export default auth(async (req) => {
+export default auth((req) => {
   const hostname = req.headers.get("host") || "";
   const subdomain = hostname.split(".")[0];
 
@@ -50,8 +49,9 @@ export default auth(async (req) => {
 
     // If workspace exists but is different from active workspace
     if (workspace.id !== req.auth.activeWorkspace.id) {
-      await changeWorkspace(workspace.id);
-      return NextResponse.next();
+      const response = NextResponse.next();
+      response.headers.set("x-workspace-id", workspace.id);
+      return response;
     }
   }
 
