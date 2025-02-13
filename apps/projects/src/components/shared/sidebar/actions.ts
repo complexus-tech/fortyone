@@ -12,5 +12,6 @@ export const logOut = async (callbackUrl: string) => {
 
 export const changeWorkspace = async (workspaceId: string) => {
   await switchWorkspace(workspaceId);
+
   revalidatePath("/", "layout");
 };

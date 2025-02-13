@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 import { SessionProvider } from "next-auth/react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { ApplicationLayout } from "@/components/layouts";
@@ -9,6 +10,7 @@ import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getMembers } from "@/lib/queries/members/get-members";
+import { changeWorkspace } from "@/components/shared/sidebar/actions";
 import {
   memberKeys,
   labelKeys,
@@ -28,6 +30,19 @@ export default async function RootLayout({
 }) {
   const queryClient = getQueryClient();
   const session = await auth();
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const subdomain = host.split(".")[0];
+
+  if (session?.workspaces) {
+    const workspace = session.workspaces.find(
+      (w) => w.name.toLowerCase() === subdomain.toLowerCase(),
+    );
+
+    if (workspace && workspace.id !== session.activeWorkspace.id) {
+      await changeWorkspace(workspace.id);
+    }
+  }
 
   await Promise.all([
     queryClient.prefetchQuery({
