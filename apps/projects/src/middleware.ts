@@ -28,7 +28,7 @@ export default auth(async (req) => {
       if (req.auth.activeWorkspace) {
         const redirectUrl = new URL(
           req.nextUrl.pathname,
-          `https://${req.auth.activeWorkspace.name}.${process.env.NEXT_PUBLIC_DOMAIN}`,
+          `https://${req.auth.activeWorkspace.slug}.${process.env.NEXT_PUBLIC_DOMAIN}`,
         );
         redirectUrl.search = req.nextUrl.search;
         return NextResponse.redirect(redirectUrl);
@@ -38,7 +38,7 @@ export default auth(async (req) => {
       if (req.auth.workspaces.length > 0) {
         const redirectUrl = new URL(
           req.nextUrl.pathname,
-          `https://${req.auth.workspaces[0].name}.${process.env.NEXT_PUBLIC_DOMAIN}`,
+          `https://${req.auth.workspaces[0].slug}.${process.env.NEXT_PUBLIC_DOMAIN}`,
         );
         redirectUrl.search = req.nextUrl.search;
         return NextResponse.redirect(redirectUrl);
@@ -67,6 +67,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!login|_next/static|images|_next/image|favicon*|signup).*)",
+    "/((?!login|_next/static|images|_next/image|favicon*|signup|ingest).*)",
   ],
 };
