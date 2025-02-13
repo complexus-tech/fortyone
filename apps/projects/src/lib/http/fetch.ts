@@ -1,12 +1,21 @@
+"use server";
 import type { Options } from "ky";
 import ky from "ky";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 const createClient = async () => {
+  const headersList = await headers();
+  const subdomain = headersList.get("host")!.split(".")[0];
+
   const session = await auth();
-  const prefixUrl = `${apiURL}/workspaces/${session?.activeWorkspace.id}/`;
+  const workspace = session?.workspaces.find(
+    (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+  );
+
+  const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
   return ky.create({
     prefixUrl,
   });

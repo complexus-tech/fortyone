@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { ApplicationLayout } from "@/components/layouts";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
@@ -28,6 +30,22 @@ export default async function RootLayout({
 }) {
   const queryClient = getQueryClient();
   const session = await auth();
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const subdomain = host?.split(".")[0];
+  const workspaces = session?.workspaces || [];
+
+  if (workspaces.length === 0) {
+    redirect("/onboarding/create");
+  }
+
+  const workspace = workspaces.find(
+    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
+  );
+
+  if (!workspace) {
+    notFound();
+  }
 
   await Promise.all([
     queryClient.prefetchQuery({
@@ -63,7 +81,10 @@ export default async function RootLayout({
   return (
     <SessionProvider session={session}>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <ApplicationLayout>{children}</ApplicationLayout>
+        <ApplicationLayout>
+          {subdomain}
+          {children}
+        </ApplicationLayout>
       </HydrationBoundary>
       <OnlineStatusMonitor />
     </SessionProvider>
