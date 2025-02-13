@@ -20,6 +20,7 @@ import (
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
+	restrictedSlugs       = []string{"admin", "internal", "qa", "staging", "ops", "team", "complexus", "dev", "test", "prod", "staging", "development", "testing", "production", "staff", "hr", "finance", "legal", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "marketing", "sales", "support", "it", "security", "engineering", "design", "product"}
 )
 
 type Handlers struct {
@@ -65,6 +66,13 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	var input AppNewWorkspace
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Add validation for restricted slugs
+	for _, restrictedSlug := range restrictedSlugs {
+		if input.Slug == restrictedSlug {
+			return web.RespondError(ctx, w, errors.New("this workspace slug is restricted"), http.StatusBadRequest)
+		}
 	}
 
 	userID, err := mid.GetUserID(ctx)
