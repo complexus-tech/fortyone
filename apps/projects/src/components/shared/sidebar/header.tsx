@@ -2,7 +2,6 @@
 "use client";
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
-import { toast } from "sonner";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -28,6 +27,8 @@ import { useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { changeWorkspace, logOut } from "./actions";
+
+const domain = process.env.NEXT_PUBLIC_DOMAIN;
 
 export const Header = () => {
   const pathname = usePathname();
@@ -60,18 +61,13 @@ export const Header = () => {
     await logOut(callbackUrl);
   };
 
-  const handleChangeWorkspace = async (workspaceId: string) => {
+  const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
     try {
       nProgress.start();
       await changeWorkspace(workspaceId);
-      localStorage.clear();
-      window.location.href = "/my-work";
+      window.location.href = `https://${slug}.${domain}/my-work`;
     } catch (error) {
-      toast.error("Failed to switch workspace", {
-        description: "Please try again",
-      });
-    } finally {
-      nProgress.done();
+      window.location.href = `https://${slug}.${domain}/my-work`;
     }
   };
 
@@ -110,11 +106,11 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="space-y-1 pt-1.5">
-              {workspaces.map(({ id, name, color }) => (
+              {workspaces.map(({ id, name, color, slug }) => (
                 <Menu.Item
                   className="justify-between"
                   key={id}
-                  onSelect={() => handleChangeWorkspace(id)}
+                  onSelect={() => handleChangeWorkspace(id, slug)}
                 >
                   <span className="flex items-center gap-2">
                     <Avatar
