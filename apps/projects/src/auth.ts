@@ -8,7 +8,8 @@ import type { ApiResponse, Workspace, UserRole } from "@/types";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
-
+// eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for now
+const useSecureCookies = process.env.NODE_ENV === "production";
 declare module "next-auth" {
   interface User {
     token: string;
@@ -60,6 +61,19 @@ export const {
       },
     }),
   ],
+
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: ".complexus.app",
+        secure: useSecureCookies,
+      },
+    },
+  },
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
