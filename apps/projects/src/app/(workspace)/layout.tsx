@@ -81,10 +81,7 @@ export default async function RootLayout({
   return (
     <SessionProvider session={session}>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <ApplicationLayout>
-          {subdomain}
-          {children}
-        </ApplicationLayout>
+        <ApplicationLayout>{children}</ApplicationLayout>
       </HydrationBoundary>
       <OnlineStatusMonitor />
     </SessionProvider>
