@@ -44,6 +44,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		if err := c.handleEvent(ctx, event); err != nil {
 			c.log.Error(ctx, "failed to handle event", "error", err)
+
 		}
 	}
 
@@ -66,21 +67,114 @@ func (c *Consumer) handleEvent(ctx context.Context, event Event) error {
 }
 
 func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
-	// TODO: Implement story update notification logic
+	var payload StoryUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// Create notification for the assignee if changed
+	if payload.AssigneeID != nil {
+		notification := notifications.CoreNewNotification{
+			RecipientID: *payload.AssigneeID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        string(StoryUpdated),
+			EntityType:  "story",
+			EntityID:    payload.StoryID,
+			ActorID:     event.ActorID,
+			Title:       "You have been assigned to a story",
+			Description: nil, // TODO: Add description based on story title
+		}
+
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("failed to create notification: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error {
-	// TODO: Implement story comment notification logic
+	var payload StoryCommentedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// TODO: Get story details to determine who to notify
+	// For now, we'll just notify the parent comment author if it exists
+	if payload.ParentID != nil {
+		notification := notifications.CoreNewNotification{
+			RecipientID: *payload.ParentID, // This should be the parent comment author's ID
+			WorkspaceID: payload.WorkspaceID,
+			Type:        string(StoryCommented),
+			EntityType:  "comment",
+			EntityID:    payload.CommentID,
+			ActorID:     event.ActorID,
+			Title:       "Someone replied to your comment",
+			Description: nil, // TODO: Add comment preview
+		}
+
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("failed to create notification: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event Event) error {
-	// TODO: Implement objective update notification logic
+	var payload ObjectiveUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// Create notification for the lead if changed
+	if payload.LeadID != nil {
+		notification := notifications.CoreNewNotification{
+			RecipientID: *payload.LeadID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        string(ObjectiveUpdated),
+			EntityType:  "objective",
+			EntityID:    payload.ObjectiveID,
+			ActorID:     event.ActorID,
+			Title:       "You have been assigned as the lead for an objective",
+			Description: nil, // TODO: Add objective title
+		}
+
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("failed to create notification: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event Event) error {
-	// TODO: Implement key result update notification logic
+	var payload KeyResultUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// TODO: Get objective lead to notify them of key result updates
+	// For now, we'll skip notification creation until we can get the objective lead
 	return nil
 }

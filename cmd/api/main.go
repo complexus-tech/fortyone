@@ -120,7 +120,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		db.Close()
 	}()
 
-	// Connect to redis cache
+	// Connect to redis client
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
 		Password: cfg.Cache.Password,
@@ -138,9 +138,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Create publisher
 	publisher := events.NewPublisher(rdb, log)
 
-	// Create notification service
-	notificationRepo := notificationsrepo.New(log, db)
-	notificationService := notifications.New(log, notificationRepo)
+	// Create notifications service
+	notificationsRepo := notificationsrepo.New(log, db)
+	notificationService := notifications.New(log, notificationsRepo)
 
 	// Create consumer
 	consumer := events.NewConsumer(rdb, log, notificationService)

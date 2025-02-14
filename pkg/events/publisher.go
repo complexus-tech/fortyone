@@ -22,6 +22,7 @@ func NewPublisher(redis *redis.Client, log *logger.Logger) *Publisher {
 }
 
 func (p *Publisher) Publish(ctx context.Context, event Event) error {
+	p.log.Info(ctx, "events.publisher.Publish", "event", event.Type)
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %w", err)

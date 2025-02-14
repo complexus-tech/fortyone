@@ -196,10 +196,25 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		return err
 	}
 
+	// Create event payload
+	var assigneeID *uuid.UUID
+	if assigneeIDRaw, ok := updates["assignee_id"]; ok {
+		if id, ok := assigneeIDRaw.(uuid.UUID); ok {
+			assigneeID = &id
+		}
+	}
+
+	payload := events.StoryUpdatedPayload{
+		StoryID:     storyID,
+		WorkspaceID: workspaceID,
+		Updates:     updates,
+		AssigneeID:  assigneeID,
+	}
+
 	// Publish event
 	event := events.Event{
 		Type:      events.StoryUpdated,
-		Payload:   updates,
+		Payload:   payload,
 		Timestamp: time.Now(),
 		ActorID:   actorID,
 	}

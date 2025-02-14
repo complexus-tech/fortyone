@@ -25,7 +25,7 @@ func Logger(log *logger.Logger) web.Middleware {
 
 			err := next(ctx, w, r)
 
-			log.Debug(ctx, "request started", "method", r.Method, "path", path,
+			log.Debug(ctx, "request completed", "method", r.Method, "path", path,
 				"remote", r.RemoteAddr, "statusCode", v.StatusCode, "duration", time.Since(v.Now))
 
 			return err
