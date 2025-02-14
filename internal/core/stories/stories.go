@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -48,15 +49,17 @@ type CoreSingleStoryWithSubs struct {
 
 // Service provides story-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo      Repository
+	log       *logger.Logger
+	publisher *events.Publisher
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository) *Service {
+func New(log *logger.Logger, repo Repository, publisher *events.Publisher) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:      repo,
+		log:       log,
+		publisher: publisher,
 	}
 }
 
@@ -174,46 +177,41 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	return nil
 }
 
-// Update updates the story with the specified ID.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+// Update updates a story.
+func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, updates map[string]any) error {
 	s.log.Info(ctx, "business.core.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
 
-	userID, err := mid.GetUserID(ctx)
+	// Get the actor ID from context
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	ca := []CoreActivity{}
-
-	for field, value := range updates {
-		currentValue := fmt.Sprintf("%v", value)
-
-		na := CoreActivity{
-			StoryID:      id,
-			Type:         "update",
-			Field:        field,
-			CurrentValue: currentValue,
-			UserID:       userID,
-			WorkspaceID:  workspaceId,
-		}
-		// ignore if field contains description
-		if strings.Contains(field, "description") {
-			continue
-		}
-		ca = append(ca, na)
-	}
-	if _, err := s.repo.RecordActivities(ctx, ca); err != nil {
+	// Update the story
+	if err := s.repo.Update(ctx, storyID, workspaceID, updates); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
-		span.RecordError(err)
-		return err
+	// Publish event
+	event := events.Event{
+		Type:      events.StoryUpdated,
+		Payload:   updates,
+		Timestamp: time.Now(),
+		ActorID:   actorID,
 	}
+
+	if err := s.publisher.Publish(ctx, event); err != nil {
+		s.log.Error(ctx, "failed to publish story updated event", "error", err)
+		// Don't return error as this is not critical
+	}
+
+	span.AddEvent("story updated", trace.WithAttributes(
+		attribute.String("story.id", storyID.String()),
+	))
 
 	return nil
 }

@@ -5,9 +5,11 @@ import (
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -19,6 +21,8 @@ type RouteAdder interface {
 // Config defines the configuration for the mux.
 type Config struct {
 	DB        *sqlx.DB
+	Redis     *redis.Client
+	Publisher *events.Publisher
 	Shutdown  chan os.Signal
 	Log       *logger.Logger
 	Tracer    trace.Tracer
@@ -27,7 +31,6 @@ type Config struct {
 
 // New returns a new HTTP handler that defines all the API routes.
 func New(cfg Config, ra RouteAdder) http.Handler {
-
 	app := web.New(cfg.Shutdown, cfg.Tracer, mid.Logger(cfg.Log))
 	app.StrictSlash(false)
 

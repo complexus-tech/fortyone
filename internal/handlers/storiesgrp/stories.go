@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/complexus-tech/projects-api/internal/core/comments"
+	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/handlers/linksgrp"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
@@ -20,15 +22,19 @@ var (
 )
 
 type Handlers struct {
-	stories *stories.Service
-	log     *logger.Logger
+	stories  *stories.Service
+	comments *comments.Service
+	links    *links.Service
+	log      *logger.Logger
 }
 
 // NewStoriesHandlers returns a new storiesHandlers instance.
-func New(stories *stories.Service, log *logger.Logger) *Handlers {
+func New(stories *stories.Service, comments *comments.Service, links *links.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
-		stories: stories,
-		log:     log,
+		stories:  stories,
+		comments: comments,
+		links:    links,
+		log:      log,
 	}
 }
 

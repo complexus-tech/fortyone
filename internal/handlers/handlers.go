@@ -36,7 +36,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register the stories routes
@@ -44,6 +43,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Publisher: cfg.Publisher,
 	}, app)
 
 	// register the objectives routes
@@ -121,6 +121,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Publisher: cfg.Publisher,
 	}, app)
 
 	// register the comments routes

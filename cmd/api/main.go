@@ -11,9 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/notifications"
+	"github.com/complexus-tech/projects-api/internal/core/notifications/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/database"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/josemukorivo/config"
@@ -132,6 +135,23 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
+	// Create publisher
+	publisher := events.NewPublisher(rdb, log)
+
+	// Create notification service
+	notificationRepo := notificationsrepo.New(log, db)
+	notificationService := notifications.New(log, notificationRepo)
+
+	// Create consumer
+	consumer := events.NewConsumer(rdb, log, notificationService)
+
+	// Start consumer in a goroutine
+	go func() {
+		if err := consumer.Start(ctx); err != nil {
+			log.Error(ctx, "failed to start consumer", "error", err)
+		}
+	}()
+
 	shutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
@@ -147,6 +167,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	muxCfg := mux.Config{
 		DB:        db,
+		Redis:     rdb,
+		Publisher: publisher,
 		Shutdown:  shutdown,
 		Log:       log,
 		Tracer:    tracer,
