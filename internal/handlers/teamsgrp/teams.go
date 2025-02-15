@@ -217,7 +217,15 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		attribute.String("role", role),
 	))
 
-	return web.Respond(ctx, w, nil, http.StatusCreated)
+	// TODO: Send notification to user
+
+	team := struct {
+		ID uuid.UUID `json:"teamId"`
+	}{
+		ID: teamID,
+	}
+
+	return web.Respond(ctx, w, team, http.StatusCreated)
 }
 
 func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
