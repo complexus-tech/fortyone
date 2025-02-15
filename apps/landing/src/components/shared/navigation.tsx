@@ -240,8 +240,14 @@ export const Navigation = () => {
               >
                 {session ? (
                   <>
-                    <span className="md:hidden">Open app</span>
-                    <span className="hidden md:block">Open workspace</span>
+                    {getNextUrl().includes("onboarding") ? (
+                      "Create workspace"
+                    ) : (
+                      <>
+                        <span className="md:hidden">Open app</span>
+                        <span className="hidden md:block">Open workspace</span>
+                      </>
+                    )}
                   </>
                 ) : (
                   "Log in"
