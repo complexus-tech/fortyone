@@ -3,7 +3,6 @@ package activitiesgrp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -50,7 +49,6 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	limit := 10
-	fmt.Println(filters)
 	if filters["limit"] != nil {
 
 		limit, err = strconv.Atoi(filters["limit"].(string))

@@ -184,10 +184,13 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	defer span.End()
 
 	// Get the actor ID from context
-	actorID, err := mid.GetUserID(ctx)
+	actorID, _ := mid.GetUserID(ctx)
+
+	story, err := s.repo.Get(ctx, storyID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
-		return err
+		s.log.Error(ctx, "failed to get story", "error", err)
+		return nil
 	}
 
 	// Update the story
@@ -195,6 +198,10 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		span.RecordError(err)
 		return err
 	}
+
+	span.AddEvent("story updated", trace.WithAttributes(
+		attribute.String("story.id", storyID.String()),
+	))
 
 	// Create event payload
 	var assigneeID *uuid.UUID
@@ -204,11 +211,21 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		}
 	}
 
+	// ignore if there in no assignee
+	if story.Assignee == nil && assigneeID == nil {
+		return nil
+	}
+
+	// ignore if assignee is the actor
+	if story.Assignee != nil && assigneeID != nil && *story.Assignee == *assigneeID {
+		return nil
+	}
+
 	payload := events.StoryUpdatedPayload{
 		StoryID:     storyID,
 		WorkspaceID: workspaceID,
 		Updates:     updates,
-		AssigneeID:  assigneeID,
+		AssigneeID:  story.Assignee,
 	}
 
 	// Publish event
@@ -219,14 +236,10 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		ActorID:   actorID,
 	}
 
-	if err := s.publisher.Publish(ctx, event); err != nil {
+	if err := s.publisher.Publish(context.Background(), event); err != nil {
 		s.log.Error(ctx, "failed to publish story updated event", "error", err)
 		// Don't return error as this is not critical
 	}
-
-	span.AddEvent("story updated", trace.WithAttributes(
-		attribute.String("story.id", storyID.String()),
-	))
 
 	return nil
 }

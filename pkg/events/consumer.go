@@ -44,7 +44,6 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		if err := c.handleEvent(ctx, event); err != nil {
 			c.log.Error(ctx, "failed to handle event", "error", err)
-
 		}
 	}
 
@@ -77,12 +76,14 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
+	c.log.Info(ctx, "events.consumer.handleStoryUpdated", "payloadS", payload)
+
 	// Create notification for the assignee if changed
 	if payload.AssigneeID != nil {
 		notification := notifications.CoreNewNotification{
 			RecipientID: *payload.AssigneeID,
 			WorkspaceID: payload.WorkspaceID,
-			Type:        string(StoryUpdated),
+			Type:        "story_update",
 			EntityType:  "story",
 			EntityID:    payload.StoryID,
 			ActorID:     event.ActorID,
@@ -99,6 +100,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
 }
 
 func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error {
+	c.log.Info(ctx, "events.consumer.handleStoryCommented", "event", event.Type)
 	var payload StoryCommentedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -115,7 +117,7 @@ func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error 
 		notification := notifications.CoreNewNotification{
 			RecipientID: *payload.ParentID, // This should be the parent comment author's ID
 			WorkspaceID: payload.WorkspaceID,
-			Type:        string(StoryCommented),
+			Type:        "story_comment",
 			EntityType:  "comment",
 			EntityID:    payload.CommentID,
 			ActorID:     event.ActorID,
@@ -147,7 +149,7 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event Event) erro
 		notification := notifications.CoreNewNotification{
 			RecipientID: *payload.LeadID,
 			WorkspaceID: payload.WorkspaceID,
-			Type:        string(ObjectiveUpdated),
+			Type:        "objective_update",
 			EntityType:  "objective",
 			EntityID:    payload.ObjectiveID,
 			ActorID:     event.ActorID,
