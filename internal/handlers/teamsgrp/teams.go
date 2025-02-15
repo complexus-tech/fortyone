@@ -38,7 +38,11 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
-	teams, err := h.teams.List(ctx, workspaceId)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	teams, err := h.teams.List(ctx, workspaceId, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

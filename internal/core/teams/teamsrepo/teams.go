@@ -27,28 +27,32 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]teams.CoreTeam, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]teams.CoreTeam, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.List")
 	defer span.End()
 
 	params := map[string]interface{}{
 		"workspace_id": workspaceId,
+		"user_id":      userID,
 	}
 	var teams []dbTeam
 	q := `
 		SELECT
-			team_id,
-			name,
-			description,
-			code,
-			color,
-			workspace_id,
-			created_at,
-			updated_at
+			t.team_id,
+			t.name,
+			t.description,
+			t.code,
+			t.color,
+			t.workspace_id,
+			t.created_at,
+			t.updated_at
 		FROM
-			teams
+			teams t
+		INNER JOIN
+			team_members tm ON t.team_id = tm.team_id
 		WHERE
-			workspace_id = :workspace_id
+			tm.user_id = :user_id 
+			AND t.workspace_id = :workspace_id
 		ORDER BY created_at DESC;
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
