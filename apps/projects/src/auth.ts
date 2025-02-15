@@ -1,3 +1,4 @@
+/* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -8,7 +9,9 @@ import type { ApiResponse, Workspace, UserRole } from "@/types";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
-// eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for now
+
+const domain =
+  process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
 const useSecureCookies = process.env.NODE_ENV === "production";
 declare module "next-auth" {
   interface User {
@@ -69,7 +72,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        domain: ".complexus.app",
+        domain,
         secure: useSecureCookies,
       },
     },
@@ -89,10 +92,9 @@ export const {
       }
 
       if (trigger === "update") {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ok for now
-        const workspaces = await getWorkspaces(session.token);
+        // const workspaces = await getWorkspaces(session.token);
         token.lastUsedWorkspaceId = session.activeWorkspace.id;
-        token.workspaces = workspaces;
+        // token.workspaces = workspaces;
       }
 
       return token;

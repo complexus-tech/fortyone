@@ -27,6 +27,7 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
     switchWorkspace(workspace.data!.id),
     updateSession({
       activeWorkspace: workspace.data,
+      token: session?.token,
     }),
   ]);
 
