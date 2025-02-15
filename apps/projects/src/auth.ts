@@ -32,7 +32,7 @@ const getWorkspaces = async (token: string) => {
     .get(`${apiURL}/workspaces`, {
       headers: { Authorization: `Bearer ${token}` },
       next: {
-        revalidate: DURATION_FROM_SECONDS.MINUTE * 20,
+        revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
         tags: [workspaceTags.lists()],
       },
     })
