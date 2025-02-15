@@ -26,7 +26,9 @@ import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { changeWorkspace, logOut } from "./actions";
+import { getCurrentWorkspace } from "./utils";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -40,9 +42,8 @@ export const Header = () => {
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const { userRole } = useUserRole();
-
-  const workspaces = session?.workspaces || [];
-  const workspace = session?.activeWorkspace;
+  const { data: workspaces = [] } = useWorkspaces(session!.token);
+  const workspace = getCurrentWorkspace(workspaces);
   const callbackUrl = `${pathname}?${searchParams.toString()}`;
 
   useHotkeys("shift+n", () => {
@@ -81,6 +82,7 @@ export const Header = () => {
 
   return (
     <>
+      {JSON.stringify(workspace)}
       <Flex align="center" className="h-16" justify="between">
         <Menu>
           <Menu.Button>

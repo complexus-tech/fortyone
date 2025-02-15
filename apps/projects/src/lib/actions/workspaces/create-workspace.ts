@@ -1,7 +1,7 @@
 "use server";
 import ky from "ky";
 import { revalidateTag } from "next/cache";
-import { auth, updateSession } from "@/auth";
+import { auth } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
 import { workspaceTags } from "@/constants/keys";
 import { switchWorkspace } from "../users/switch-workspace";
@@ -26,13 +26,7 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
     .json<ApiResponse<Workspace>>();
   revalidateTag(workspaceTags.lists());
 
-  await Promise.all([
-    switchWorkspace(workspace.data!.id),
-    updateSession({
-      activeWorkspace: workspace.data,
-      token: session?.token,
-    }),
-  ]);
+  await switchWorkspace(workspace.data!.id);
 
   return workspace.data;
 }
