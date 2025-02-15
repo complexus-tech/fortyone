@@ -82,7 +82,6 @@ export const Header = () => {
 
   return (
     <>
-      {JSON.stringify(workspace)}
       <Flex align="center" className="h-16" justify="between">
         <Menu>
           <Menu.Button>
