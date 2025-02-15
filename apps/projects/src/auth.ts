@@ -92,9 +92,10 @@ export const {
       }
 
       if (trigger === "update") {
-        // const workspaces = await getWorkspaces(session.token);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ok for now
+        const workspaces = await getWorkspaces(session.token);
         token.lastUsedWorkspaceId = session.activeWorkspace.id;
-        // token.workspaces = workspaces;
+        token.workspaces = workspaces;
       }
 
       return token;
