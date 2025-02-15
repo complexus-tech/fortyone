@@ -120,9 +120,6 @@ importers:
 
   apps/landing:
     dependencies:
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       framer-motion:
         specifier: ^11.0.28
         version: 11.0.28(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -174,9 +171,6 @@ importers:
       tailwind-config:
         specifier: workspace:*
         version: link:../../packages/tailwind-config
-      tailwind-merge:
-        specifier: ^1.14.0
-        version: 1.14.0
       ui:
         specifier: workspace:*
         version: link:../../packages/ui
