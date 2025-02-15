@@ -238,7 +238,14 @@ export const Navigation = () => {
                 href={getNextUrl()}
                 rounded="full"
               >
-                {session ? "Open app" : "Log in"}
+                {session ? (
+                  <>
+                    <span className="md:hidden">Open app</span>
+                    <span className="hidden md:block">Open workspace</span>
+                  </>
+                ) : (
+                  "Log in"
+                )}
               </Button>
 
               <Box className="flex md:hidden">
