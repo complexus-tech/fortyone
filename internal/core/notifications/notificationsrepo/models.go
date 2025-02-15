@@ -36,7 +36,6 @@ type dbNotification struct {
 	ActorID     uuid.UUID        `db:"actor_id"`
 	Title       string           `db:"title"`
 	Description *string          `db:"description"`
-	IsRead      bool             `db:"is_read"`
 	CreatedAt   time.Time        `db:"created_at"`
 	ReadAt      *time.Time       `db:"read_at"`
 }
@@ -88,7 +87,6 @@ func toCoreNotification(n dbNotification) notifications.CoreNotification {
 		ActorID:     n.ActorID,
 		Title:       n.Title,
 		Description: n.Description,
-		IsRead:      n.IsRead,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
 	}

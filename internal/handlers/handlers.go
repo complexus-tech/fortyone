@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/keyresultsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/labelsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/linksgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/notificationsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivestatusgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/reportsgrp"
@@ -147,6 +148,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the key results routes
 	keyresultsgrp.Routes(keyresultsgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the notifications routes
+	notificationsgrp.Routes(notificationsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,

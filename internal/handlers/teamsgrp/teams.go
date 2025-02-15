@@ -230,7 +230,7 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	teamIDParam := web.Params(r, "teamId")
+	teamIDParam := web.Params(r, "id")
 	teamID, err := uuid.Parse(teamIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)

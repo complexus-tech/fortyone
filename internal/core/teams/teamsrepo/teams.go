@@ -405,7 +405,7 @@ func (r *repo) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, works
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("member not found")
+		return errors.New("user is not a member of this team")
 	}
 
 	return nil

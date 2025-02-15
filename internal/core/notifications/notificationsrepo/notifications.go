@@ -72,11 +72,11 @@ func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, lim
 
 	query := `
 		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, description, is_read, created_at, read_at
+			entity_id, actor_id, title, description, created_at, read_at
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
-		AND is_read = false
+		AND read_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT :limit OFFSET :offset;
 	`
@@ -118,8 +118,7 @@ func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID)
 
 	query := `
 		UPDATE notifications
-		SET is_read = true,
-			read_at = CURRENT_TIMESTAMP
+		SET read_at = CURRENT_TIMESTAMP
 		WHERE notification_id = :notification_id
 		AND recipient_id = :user_id;
 	`
@@ -309,11 +308,10 @@ func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID)
 
 	query := `
 		UPDATE notifications
-		SET is_read = true,
-			read_at = CURRENT_TIMESTAMP
+		SET read_at = CURRENT_TIMESTAMP
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
-		AND is_read = false;
+		AND read_at IS NULL;
 	`
 
 	params := map[string]interface{}{

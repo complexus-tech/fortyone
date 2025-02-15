@@ -16,7 +16,6 @@ type CoreNotification struct {
 	ActorID     uuid.UUID
 	Title       string
 	Description *string
-	IsRead      bool
 	CreatedAt   time.Time
 	ReadAt      *time.Time
 }
