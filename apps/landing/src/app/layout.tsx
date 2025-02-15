@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { cn } from "lib";
+import { SessionProvider } from "next-auth/react";
 import { instrumentSans, satoshi } from "@/styles/fonts";
 import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
@@ -37,15 +38,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={cn(satoshi.variable, instrumentSans.variable, "relative")}
       >
-        <PostHogProvider>
-          <CursorProvider>
-            <Navigation />
-            {children}
-            <CallToAction />
-            <Footer />
-          </CursorProvider>
-          {/* <PostHogPageView /> */}
-        </PostHogProvider>
+        <SessionProvider>
+          <PostHogProvider>
+            <CursorProvider>
+              <Navigation />
+              {children}
+              <CallToAction />
+              <Footer />
+            </CursorProvider>
+            {/* <PostHogPageView /> */}
+          </PostHogProvider>
+        </SessionProvider>
       </body>
     </html>
   );
