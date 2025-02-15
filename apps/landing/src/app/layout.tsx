@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
 import { instrumentSans, satoshi } from "@/styles/fonts";
-import { CallToAction, Footer, Navigation } from "@/components/shared";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
 import { PostHogProvider } from "./posthog";
@@ -40,12 +39,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       >
         <SessionProvider>
           <PostHogProvider>
-            <CursorProvider>
-              <Navigation />
-              {children}
-              <CallToAction />
-              <Footer />
-            </CursorProvider>
+            <CursorProvider>{children}</CursorProvider>
             {/* <PostHogPageView /> */}
           </PostHogProvider>
         </SessionProvider>

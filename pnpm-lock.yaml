@@ -120,6 +120,9 @@ importers:
 
   apps/landing:
     dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       framer-motion:
         specifier: ^11.0.28
         version: 11.0.28(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -144,6 +147,9 @@ importers:
       next-auth:
         specifier: 5.0.0-beta.25
         version: 5.0.0-beta.25(next@15.1.4(@babel/core@7.24.4)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-37ed2a7-20241206)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)
+      nprogress:
+        specifier: ^0.2.0
+        version: 0.2.0
       posthog-js:
         specifier: ^1.216.1
         version: 1.216.1
@@ -159,12 +165,18 @@ importers:
       sharp:
         specifier: ^0.33.3
         version: 0.33.3
+      sonner:
+        specifier: ^1.5.0
+        version: 1.5.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       swiper:
         specifier: ^11.1.1
         version: 11.1.1
       tailwind-config:
         specifier: workspace:*
         version: link:../../packages/tailwind-config
+      tailwind-merge:
+        specifier: ^1.14.0
+        version: 1.14.0
       ui:
         specifier: workspace:*
         version: link:../../packages/ui
@@ -178,6 +190,9 @@ importers:
       '@types/node':
         specifier: ^20.12.7
         version: 20.12.7
+      '@types/nprogress':
+        specifier: ^0.2.3
+        version: 0.2.3
       '@types/react':
         specifier: 19.0.1
         version: 19.0.1
@@ -3221,10 +3236,6 @@ packages:
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
-
-  clsx@2.1.0:
-    resolution: {integrity: sha512-m3iNNWpd9rl3jvvcBnu70ylMdrXt8Vlq4HYadnU5fwcOtvkSQWPmj7amUcDT2qYI7risszBjI5AUIUox9D16pg==}
-    engines: {node: '>=6'}
 
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
@@ -9529,8 +9540,6 @@ snapshots:
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
 
-  clsx@2.1.0: {}
-
   clsx@2.1.1: {}
 
   cmdk@0.2.1(@types/react@19.0.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
@@ -12571,7 +12580,7 @@ snapshots:
 
   recharts@2.12.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
-      clsx: 2.1.0
+      clsx: 2.1.1
       eventemitter3: 4.0.7
       lodash: 4.17.21
       react: 19.0.0

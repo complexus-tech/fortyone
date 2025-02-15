@@ -23,7 +23,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
+import type { Workspace } from "@/types";
 import { MenuButton } from "./menu-button";
 
 const MenuItem = ({
@@ -51,7 +53,10 @@ const MenuItem = ({
   </Link>
 );
 
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
+
 export const Navigation = () => {
+  const { data: session } = useSession();
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
@@ -118,6 +123,25 @@ export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const pathname = usePathname();
+
+  const getNextUrl = () => {
+    if (session) {
+      let workspace: Workspace | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ok
+      if (session.activeWorkspace) {
+        workspace = session.activeWorkspace;
+      } else if (session.workspaces.length > 0) {
+        workspace = session.workspaces[0];
+      } else {
+        return "/onboarding/create";
+      }
+      if (domain.includes("localhost")) {
+        return `http://${workspace.slug}.localhost:3000/my-work`;
+      }
+      return `https://${workspace.slug}.${domain}/my-work`;
+    }
+    return "/login";
+  };
 
   return (
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
@@ -197,19 +221,24 @@ export const Navigation = () => {
               </NavigationMenu>
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
+              {!session && (
+                <Button
+                  className="hidden px-4 text-[0.93rem] md:flex"
+                  color="tertiary"
+                  rounded="full"
+                >
+                  Sign up
+                </Button>
+              )}
+
               <Button
-                className="hidden px-4 text-[0.93rem] md:flex"
-                color="tertiary"
+                className={cn("px-4 text-[0.93rem]", {
+                  "dark:border-white dark:bg-white dark:text-black": session,
+                })}
+                href={getNextUrl()}
                 rounded="full"
               >
-                Sign up
-              </Button>
-              <Button
-                className="px-4 text-[0.93rem] "
-                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-                rounded="full"
-              >
-                Log in
+                {session ? "Open app" : "Log in"}
               </Button>
 
               <Box className="flex md:hidden">
