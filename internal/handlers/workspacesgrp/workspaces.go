@@ -3,7 +3,6 @@ package workspacesgrp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
@@ -97,13 +96,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Create a default team
-	description := fmt.Sprintf("This is the default team for the workspace %s", result.Name)
 	team, err := h.teams.Create(ctx, teams.CoreTeam{
-		Name:        "Team 1",
-		Color:       result.Color,
-		Description: &description,
-		Code:        "TM",
-		Workspace:   result.ID,
+		Name:      "Team 1",
+		Color:     result.Color,
+		Code:      "TM",
+		Workspace: result.ID,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)

@@ -71,11 +71,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	team := teams.CoreTeam{
-		Name:        input.Name,
-		Description: input.Description,
-		Code:        input.Code,
-		Color:       input.Color,
-		Workspace:   workspaceID,
+		Name:      input.Name,
+		Code:      input.Code,
+		Color:     input.Color,
+		Workspace: workspaceID,
 	}
 
 	result, err := h.teams.Create(ctx, team)
@@ -118,11 +117,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	updates := teams.CoreTeam{
-		Name:        input.Name,
-		Description: input.Description,
-		Code:        input.Code,
-		Color:       input.Color,
-		Workspace:   workspaceID,
+		Name:      input.Name,
+		Code:      input.Code,
+		Color:     input.Color,
+		Workspace: workspaceID,
 	}
 
 	result, err := h.teams.Update(ctx, teamID, updates)

@@ -7,14 +7,13 @@ import (
 )
 
 type CoreTeam struct {
-	ID          uuid.UUID
-	Name        string
-	Description *string
-	Code        string
-	Color       string
-	Workspace   uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        uuid.UUID
+	Name      string
+	Code      string
+	Color     string
+	Workspace uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type DefaultStatus struct {
