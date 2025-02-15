@@ -347,6 +347,12 @@ func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role str
 	defer stmt.Close()
 
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("user %s is already a member of team %s", userID, teamID)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(teams.ErrTeamMemberExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return teams.ErrTeamMemberExists
+		}
 		errMsg := fmt.Sprintf("failed to add team member: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to add team member"), trace.WithAttributes(attribute.String("error", errMsg)))

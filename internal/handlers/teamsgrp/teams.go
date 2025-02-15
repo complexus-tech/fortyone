@@ -204,6 +204,9 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	if err := h.teams.AddMember(ctx, teamID, input.UserID, role); err != nil {
+		if err == teams.ErrTeamMemberExists {
+			return web.RespondError(ctx, w, err, http.StatusConflict)
+		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
