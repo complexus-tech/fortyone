@@ -1,10 +1,14 @@
 package teams
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// ErrTeamCodeExists is returned when attempting to create or update a team with a code that already exists
+var ErrTeamCodeExists = errors.New("team code already exists")
 
 type CoreTeam struct {
 	ID        uuid.UUID

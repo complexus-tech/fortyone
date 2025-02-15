@@ -79,6 +79,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	result, err := h.teams.Create(ctx, team)
 	if err != nil {
+		if err == teams.ErrTeamCodeExists {
+			return web.RespondError(ctx, w, err, http.StatusConflict)
+		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -125,6 +128,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	result, err := h.teams.Update(ctx, teamID, updates)
 	if err != nil {
+		if err == teams.ErrTeamCodeExists {
+			return web.RespondError(ctx, w, err, http.StatusConflict)
+		}
 		if err.Error() == "team not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}

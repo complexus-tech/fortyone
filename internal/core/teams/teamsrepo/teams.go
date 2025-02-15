@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -117,6 +119,13 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 
 	var dbTeam dbTeam
 	if err := stmt.GetContext(ctx, &dbTeam, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("team code %s already exists", team.Code)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return teams.CoreTeam{}, teams.ErrTeamCodeExists
+		}
+
 		errMsg := fmt.Sprintf("failed to execute query: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -240,6 +249,12 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 	if err := stmt.GetContext(ctx, &result, params); err != nil {
 		if err == sql.ErrNoRows {
 			return teams.CoreTeam{}, errors.New("team not found")
+		}
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "teams_code_key" {
+			errMsg := fmt.Sprintf("team code %s already exists", updates.Code)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return teams.CoreTeam{}, teams.ErrTeamCodeExists
 		}
 		errMsg := fmt.Sprintf("failed to update team: %s", err)
 		r.log.Error(ctx, errMsg)
