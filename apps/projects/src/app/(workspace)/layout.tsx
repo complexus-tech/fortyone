@@ -19,6 +19,7 @@ import {
   sprintKeys,
   statusKeys,
   workspaceTags,
+  workspaceKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
@@ -93,6 +94,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: labelKeys.lists(),
       queryFn: () => getLabels(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: workspaceKeys.lists(),
+      queryFn: () => getWorkspaces(session?.token),
     }),
   ]);
 
