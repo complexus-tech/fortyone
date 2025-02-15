@@ -1,9 +1,8 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { signIn } from "@/auth";
+import { signIn, auth } from "@/auth";
 
-export const logIn = async (callbackUrl: string, formData: FormData) => {
+export const logIn = async (formData: FormData) => {
   try {
     await signIn("credentials", {
       email: formData.get("email") as string,
@@ -15,6 +14,9 @@ export const logIn = async (callbackUrl: string, formData: FormData) => {
       error: "Invalid email or password",
     };
   }
+};
 
-  redirect(callbackUrl);
+export const getSession = async () => {
+  const session = await auth();
+  return session;
 };

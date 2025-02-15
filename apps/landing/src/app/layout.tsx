@@ -5,7 +5,9 @@ import { SessionProvider } from "next-auth/react";
 import { instrumentSans, satoshi } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
+import { auth } from "@/auth";
 import { PostHogProvider } from "./posthog";
+import { Toaster } from "./toaster";
 // import dynamic from "next/dynamic";
 
 // const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
@@ -31,18 +33,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const session = await auth();
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
       <body
         className={cn(satoshi.variable, instrumentSans.variable, "relative")}
       >
-        <SessionProvider>
+        <SessionProvider session={session}>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
             {/* <PostHogPageView /> */}
           </PostHogProvider>
         </SessionProvider>
+        <Toaster />
       </body>
     </html>
   );
