@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import ky from "ky";
 import { ApplicationLayout } from "@/components/layouts";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
@@ -17,11 +18,28 @@ import {
   teamKeys,
   sprintKeys,
   statusKeys,
+  workspaceTags,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
+import type { ApiResponse, Workspace } from "@/types";
+import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { OnlineStatusMonitor } from "../online-monitor";
+
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const getWorkspaces = async (token?: string) => {
+  const workspaces = await ky
+    .get(`${apiURL}/workspaces`, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: {
+        revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
+        tags: [workspaceTags.lists()],
+      },
+    })
+    .json<ApiResponse<Workspace[]>>();
+  return workspaces.data!;
+};
 
 export default async function RootLayout({
   children,
@@ -33,7 +51,7 @@ export default async function RootLayout({
   const headersList = await headers();
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
-  const workspaces = session?.workspaces || [];
+  const workspaces = await getWorkspaces(session?.token);
 
   if (workspaces.length === 0) {
     redirect("/onboarding/create");

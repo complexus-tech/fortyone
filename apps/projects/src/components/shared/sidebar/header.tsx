@@ -28,7 +28,7 @@ import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { changeWorkspace, logOut } from "./actions";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN;
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const Header = () => {
   const pathname = usePathname();
@@ -65,9 +65,17 @@ export const Header = () => {
     try {
       nProgress.start();
       await changeWorkspace(workspaceId);
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      if (domain.includes("localhost")) {
+        window.location.href = `http://${slug}.${domain}/my-work`;
+      } else {
+        window.location.href = `https://${slug}.${domain}/my-work`;
+      }
     } catch (error) {
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      if (domain.includes("localhost")) {
+        window.location.href = `http://${slug}.${domain}/my-work`;
+      } else {
+        window.location.href = `https://${slug}.${domain}/my-work`;
+      }
     }
   };
 

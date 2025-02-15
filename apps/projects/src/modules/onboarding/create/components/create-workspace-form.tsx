@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { createWorkspaceAction } from "@/lib/actions/workspaces/create-workspace";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN;
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
@@ -32,6 +32,8 @@ export const CreateWorkspaceForm = () => {
       const workspace = await createWorkspaceAction(form);
       if (workspaces.length === 0) {
         router.push("/onboarding/personalize");
+      } else if (domain.includes("localhost")) {
+        window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
       } else {
         window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
       }

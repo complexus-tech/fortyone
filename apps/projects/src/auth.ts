@@ -3,10 +3,10 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import ky from "ky";
-import { workspaceTags } from "@/constants/keys";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
 import type { ApiResponse, Workspace, UserRole } from "@/types";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
+import { DURATION_FROM_SECONDS } from "./constants/time";
+import { workspaceTags } from "./constants/keys";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -72,7 +72,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        domain,
+        domain: useSecureCookies ? domain : undefined,
         secure: useSecureCookies,
       },
     },
