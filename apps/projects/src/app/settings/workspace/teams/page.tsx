@@ -1,5 +1,5 @@
-import { TeamsSettings } from "@/modules/settings/workspace/teams";
+import { TeamsList } from "@/modules/settings/workspace/teams/list";
 
-export default function Page() {
-  return <TeamsSettings />;
+export default function TeamsPage() {
+  return <TeamsList />;
 }

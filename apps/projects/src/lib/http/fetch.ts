@@ -4,6 +4,7 @@ import ky from "ky";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getWorkspaces } from "../queries/workspaces/get-workspaces";
+import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,6 +21,18 @@ const createClient = async () => {
   const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
   return ky.create({
     prefixUrl,
+    hooks: {
+      beforeError: [
+        async (error) => {
+          const { response } = error;
+          if (response.body) {
+            const data = await response.json();
+            throw new ApiError(error.message, response.status, data);
+          }
+          throw error;
+        },
+      ],
+    },
   });
 };
 
