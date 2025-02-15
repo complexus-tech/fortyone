@@ -3,15 +3,17 @@ import type { Options } from "ky";
 import ky from "ky";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
+import { getWorkspaces } from "../queries/workspaces/get-workspaces";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 const createClient = async () => {
   const headersList = await headers();
   const subdomain = headersList.get("host")!.split(".")[0];
-
   const session = await auth();
-  const workspace = session?.workspaces.find(
+
+  const workspaces = await getWorkspaces(session!.token);
+  const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );
 
