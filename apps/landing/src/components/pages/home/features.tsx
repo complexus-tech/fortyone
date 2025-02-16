@@ -31,7 +31,7 @@ const Intro = () => (
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
-          as="h3"
+          as="h2"
           className="mx-auto pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl"
           color="gradient"
         >

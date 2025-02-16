@@ -20,6 +20,7 @@ export const Features = () => {
               justify="between"
             >
               <Text
+                as="h2"
                 className="text-stroke-white text-[2.6rem] md:text-6xl"
                 fontWeight="bold"
               >
@@ -29,7 +30,9 @@ export const Features = () => {
               {icon}
             </Flex>
             <Box className="col-span-3">
-              <Text className="text-xl opacity-80 md:text-3xl">{title}</Text>
+              <Text as="h3" className="text-xl opacity-80 md:text-3xl">
+                {title}
+              </Text>
               <Text className="my-2 md:my-4" color="muted" fontSize="lg">
                 {overview}
               </Text>
@@ -44,7 +47,7 @@ export const Features = () => {
               <Box className="mt-6 px-0.5">
                 {breakdown.map(({ title: subTitle, overview: subOverview }) => (
                   <Box className="" key={subTitle}>
-                    <Text className="mb-2" fontSize="lg">
+                    <Text as="h4" className="mb-2" fontSize="lg">
                       {subTitle}
                     </Text>
                     <Text className="mb-5" color="muted">

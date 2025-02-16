@@ -29,7 +29,12 @@ export const Support = () => {
               <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
                 {icon}
               </Text>
-              <Text fontSize="lg" fontWeight="semibold" transform="uppercase">
+              <Text
+                as="h2"
+                fontSize="lg"
+                fontWeight="semibold"
+                transform="uppercase"
+              >
                 {heading}
               </Text>
               <a

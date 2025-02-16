@@ -36,7 +36,7 @@ export const Reviews = () => {
     <Container className="relative pb-16 pt-4 md:pb-32">
       <Text
         align="center"
-        as="h4"
+        as="h3"
         className="mb-6 tracking-wider"
         color="primary"
         fontSize="sm"
@@ -56,7 +56,7 @@ export const Reviews = () => {
       >
         <Text
           align="center"
-          as="h3"
+          as="h2"
           className="mx-auto mb-6 max-w-5xl pb-2 text-5xl md:text-7xl"
           color="gradient"
           fontWeight="medium"
