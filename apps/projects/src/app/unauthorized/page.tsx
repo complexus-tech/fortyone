@@ -1,35 +1,30 @@
 import { ArrowLeftIcon, StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
-import { NewStoryButton } from "@/components/ui";
 
-export default function NotFound() {
+export default function Unauthorized() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
         <StoryMissingIcon className="h-20 w-auto rotate-12" />
         <Text className="mb-6 mt-10" fontSize="3xl">
-          404: Objective Detour
+          Unauthorized Access
         </Text>
         <Text className="mb-6 max-w-md text-center" color="muted">
-          Oops! It seems the objective path hit a snag. Our team&lsquo;s on it!
-          While we clear the roadblock, why not explore other routes to
-          productivity?
+          You don&apos;t have access to this workspace. This could be because it
+          doesn&apos;t exist or you haven&apos;t been granted permission to view
+          it. Please check the URL or contact your workspace administrator.
         </Text>
         <Flex gap={2}>
           <Button
             className="gap-1 pl-2"
             color="tertiary"
-            href="/my-work"
             leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
           >
-            Goto my work
+            Back to Home
           </Button>
-          <NewStoryButton
-            className="dark:bg-opacity-20 dark:hover:bg-opacity-40"
-            size="md"
-          >
-            Create story
-          </NewStoryButton>
+          <Button color="tertiary" href="https://complexus.app/contact">
+            Contact Support
+          </Button>
         </Flex>
       </Box>
     </Box>

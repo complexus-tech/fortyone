@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import ky from "ky";
 import { ApplicationLayout } from "@/components/layouts";
 import { getStatuses } from "@/lib/queries/states/get-states";
@@ -63,7 +63,7 @@ export default async function RootLayout({
   );
 
   if (!workspace) {
-    notFound();
+    redirect("/unauthorized");
   }
 
   await Promise.all([
