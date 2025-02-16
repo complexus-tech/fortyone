@@ -8,11 +8,7 @@ import { CursorProvider } from "@/context";
 import { auth } from "@/auth";
 import { PostHogProvider } from "./posthog";
 import { Toaster } from "./toaster";
-// import dynamic from "next/dynamic";
-
-// const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
-//   ssr: false,
-// });
+import PostHogPageView from "./posthog-page-view";
 
 export const metadata: Metadata = {
   title: "Nail every objective on time with complexus.",
@@ -47,7 +43,7 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
-            {/* <PostHogPageView /> */}
+            <PostHogPageView />
           </PostHogProvider>
         </SessionProvider>
         <Toaster />
