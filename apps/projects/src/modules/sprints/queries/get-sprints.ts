@@ -11,5 +11,5 @@ export const getSprints = async () => {
       tags: [sprintTags.lists()],
     },
   });
-  return sprints.data;
+  return sprints.data!;
 };

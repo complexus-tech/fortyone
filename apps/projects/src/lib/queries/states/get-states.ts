@@ -13,5 +13,5 @@ export const getStatuses = async () => {
       tags: [statusTags.lists()],
     },
   });
-  return statuses.data;
+  return statuses.data!;
 };

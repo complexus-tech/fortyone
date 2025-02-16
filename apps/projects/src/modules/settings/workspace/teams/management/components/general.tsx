@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Box, Input, Button, Text } from "ui";
-import { toast } from "sonner";
 import type { Team } from "@/modules/teams/types";
 import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 import { useDeleteTeamMutation } from "@/modules/teams/hooks/use-delete-team";
@@ -12,7 +11,6 @@ import { SectionHeader } from "@/modules/settings/components/section-header";
 export const GeneralSettings = ({ team }: { team: Team }) => {
   const [form, setForm] = useState({
     name: team.name,
-    description: team.description,
     code: team.code,
     color: team.color,
   });
@@ -52,15 +50,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               required
               value={form.name}
             />
-            <Input
-              label="Description"
-              name="description"
-              onChange={(e) => {
-                setForm({ ...form, description: e.target.value });
-              }}
-              placeholder="Core engineering team responsible for product development"
-              value={form.description}
-            />
+
             <Input
               label="Team Code"
               name="code"

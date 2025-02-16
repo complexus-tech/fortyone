@@ -11,5 +11,5 @@ export const getMembers = async () => {
       tags: [memberTags.lists()],
     },
   });
-  return members.data;
+  return members.data!;
 };
