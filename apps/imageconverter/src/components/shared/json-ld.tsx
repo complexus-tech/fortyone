@@ -1,8 +1,8 @@
-export const JsonLd = ({ children }: { children: Record<string, any> }) => {
+export const JsonLd = ({ children }: { children: Record<string, unknown> }) => {
   return (
     <script
-      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(children) }}
+      type="application/ld+json"
     />
   );
 };

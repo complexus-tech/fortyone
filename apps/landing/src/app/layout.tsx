@@ -6,26 +6,68 @@ import { instrumentSans, satoshi } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
 import { auth } from "@/auth";
+import { JsonLd } from "@/components/shared";
 import { PostHogProvider } from "./posthog";
 import { Toaster } from "./toaster";
 import PostHogPageView from "./posthog-page-view";
 
 export const metadata: Metadata = {
-  title: "Nail every objective on time with complexus.",
+  metadataBase: new URL("https://complexus.app"),
+  title: "Complexus | Modern OKR & Project Management Platform",
   description:
-    "Empower your team to crush every key objective with our seamless project management platform.",
+    "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+  keywords: [
+    "OKR management",
+    "project management",
+    "team collaboration",
+    "sprint planning",
+    "objective tracking",
+    "task management",
+    "agile project management",
+    "team productivity",
+    "strategic planning",
+    "project tracking",
+    "kanban boards",
+    "team alignment",
+    "goal tracking",
+    "project roadmap",
+    "team objectives",
+  ],
   openGraph: {
-    title: "Nail every objective on time with complexus.",
+    type: "website",
+    locale: "en_US",
+    title: "Complexus | Modern OKR & Project Management Platform",
     description:
-      "Empower your team to crush every key objective with our seamless project management platform.",
+      "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+    siteName: "Complexus",
     url: "https://complexus.app",
   },
   twitter: {
     card: "summary_large_image",
     site: "@complexus_tech",
-    title: "Nail every objective on time with complexus.",
+    creator: "@complexus_tech",
+    title: "Complexus | Modern OKR & Project Management Platform",
     description:
-      "Empower your team to crush every key objective with our seamless project management platform.",
+      "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  alternates: {
+    canonical: "https://complexus.app",
   },
 };
 
@@ -37,6 +79,9 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
+      <head>
+        <JsonLd />
+      </head>
       <body
         className={cn(satoshi.variable, instrumentSans.variable, "relative")}
       >
