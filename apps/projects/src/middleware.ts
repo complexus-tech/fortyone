@@ -10,6 +10,8 @@ export default auth((req) => {
     newUrl.searchParams.set("callbackUrl", callBackUrl);
     return NextResponse.redirect(newUrl);
   }
+
+  return NextResponse.next();
 });
 
 export const config = {
@@ -21,6 +23,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!login|_next/static|images|_next/image|favicon*|signup).*)",
+    "/((?!login|_next/static|images|_next/image|favicon*|signup|ingest).*)",
   ],
 };

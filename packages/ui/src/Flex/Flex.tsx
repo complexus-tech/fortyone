@@ -1,5 +1,6 @@
 import { VariantProps, cva } from "cva";
 import { cn } from "lib";
+import { JSX } from "react";
 import { HTMLAttributes, createElement } from "react";
 
 const flex = cva("flex", {

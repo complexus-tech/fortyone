@@ -13,8 +13,9 @@ import {
 import { cva, VariantProps } from "cva";
 import { SearchIcon } from "icons";
 
-type CommandProps = ComponentProps<typeof CommandPrimitive>;
-export const Command = ({ className, ...props }: CommandProps) => (
+// type CommandProps = ComponentPropsWithoutRef<typeof CommandPrimitive>;
+
+export const Command = ({ className, ...props }: any) => (
   <CommandPrimitive
     className={cn(
       "flex h-full w-full flex-col overflow-hidden rounded-md",

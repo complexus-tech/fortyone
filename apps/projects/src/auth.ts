@@ -1,14 +1,14 @@
+/* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import ky from "ky";
-import { workspaceTags } from "@/constants/keys";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
-import type { ApiResponse, Workspace, UserRole } from "@/types";
+import type { Workspace, UserRole } from "@/types";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
+import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
-
+const domain =
+  process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
+const useSecureCookies = process.env.NODE_ENV === "production";
 declare module "next-auth" {
   interface User {
     token: string;
@@ -22,19 +22,6 @@ declare module "next-auth" {
     token: string;
   }
 }
-
-const getWorkspaces = async (token: string) => {
-  const workspaces = await ky
-    .get(`${apiURL}/workspaces`, {
-      headers: { Authorization: `Bearer ${token}` },
-      next: {
-        revalidate: DURATION_FROM_SECONDS.MINUTE * 20,
-        tags: [workspaceTags.lists()],
-      },
-    })
-    .json<ApiResponse<Workspace[]>>();
-  return workspaces.data!;
-};
 
 export const {
   handlers,
@@ -61,6 +48,19 @@ export const {
     }),
   ],
 
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: useSecureCookies ? domain : undefined,
+        secure: useSecureCookies,
+      },
+    },
+  },
+
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
@@ -75,7 +75,9 @@ export const {
       }
 
       if (trigger === "update") {
+        const workspaces = await getWorkspaces(session?.token as string);
         token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        token.workspaces = workspaces;
       }
 
       return token;

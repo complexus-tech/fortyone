@@ -20,7 +20,7 @@ import analyticsImg from "../../../../public/analytics1.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="my-12 text-center md:my-24">
+    <Box as="section" className="my-12 text-center md:my-28">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -32,7 +32,7 @@ const Intro = () => (
       >
         <Text
           as="h3"
-          className="mx-auto max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
+          className="mx-auto pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl"
           color="gradient"
         >
           Ship faster, collaborate better.

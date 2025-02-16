@@ -16,7 +16,7 @@ export default async function Page(props: {
 
   const session = await auth();
   if (session) {
-    redirect("/");
+    redirect("/my-work");
   }
 
   return <LoginPage callbackUrl={callbackUrl} />;

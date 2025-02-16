@@ -11,23 +11,21 @@ import {
   Text,
 } from "ui";
 import {
-  AnalyticsIcon,
-  ChatIcon,
   DocsIcon,
-  EpicsIcon,
   SprintsIcon,
   ObjectiveIcon,
-  RoadmapIcon,
   StoryIcon,
-  WhiteboardIcon,
   CodeIcon,
+  OKRIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
+import type { Workspace } from "@/types";
 import { MenuButton } from "./menu-button";
 
 const MenuItem = ({
@@ -55,10 +53,12 @@ const MenuItem = ({
   </Link>
 );
 
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
+
 export const Navigation = () => {
+  const { data: session } = useSession();
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
-    // { title: "About", href: "/about" },
     { title: "Contact", href: "/contact" },
   ];
 
@@ -68,64 +68,35 @@ export const Navigation = () => {
       name: "Stories",
       href: "/product#stories",
       description: "Manage and Track Tasks",
-      icon: <StoryIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <StoryIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 2,
       name: "Objectives",
       href: "/product#objectives",
       description: "Set and Achieve Goals",
-      icon: <ObjectiveIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      icon: (
+        <ObjectiveIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 3,
-      name: "Roadmaps",
-      href: "/product#roadmaps",
-      description: "Plan Your Objectives' Journey",
-      icon: <RoadmapIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
+      name: "OKRs",
+      href: "/product#okrs",
+      description: "Align and Achieve",
+      icon: (
+        <OKRIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+      ),
     },
     {
       id: 4,
       name: "Sprints",
       href: "/product#sprints",
       description: "Iterate and Deliver",
-      icon: <SprintsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 5,
-      name: "Epics",
-      href: "/product#epics",
-      description: "Oversee Major Initiatives",
-      icon: <EpicsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 6,
-      name: "Documents",
-      href: "/product#documents",
-      description: "Store and Collaborate",
-      icon: <DocsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 7,
-      name: "Reporting",
-      href: "/product#reports",
-      description: "Gain Insights and Analyze",
-      icon: <AnalyticsIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 8,
-      name: "Messaging",
-      href: "/product#messaging",
-      description: "Communicate and Collaborate",
-      icon: <ChatIcon className="relative h-4 w-auto shrink-0 md:top-1" />,
-    },
-    {
-      id: 9,
-      name: "Whiteboards",
-      href: "/product#whiteboards",
-      description: "Sketch and Brainstorm ideas",
       icon: (
-        <WhiteboardIcon className="relative h-4 w-auto shrink-0 md:top-1" />
+        <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
       ),
     },
   ];
@@ -153,8 +124,27 @@ export const Navigation = () => {
 
   const pathname = usePathname();
 
+  const getNextUrl = () => {
+    if (session) {
+      let workspace: Workspace | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ok
+      if (session.activeWorkspace) {
+        workspace = session.activeWorkspace;
+      } else if (session.workspaces.length > 0) {
+        workspace = session.workspaces[0];
+      } else {
+        return "/onboarding/create";
+      }
+      if (domain.includes("localhost")) {
+        return `http://${workspace.slug}.localhost:3000/my-work`;
+      }
+      return `https://${workspace.slug}.${domain}/my-work`;
+    }
+    return "/login";
+  };
+
   return (
-    <Box className="fixed left-0 top-6 z-10 w-screen">
+    <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
           <Box className="z-10 flex h-[3.7rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/80 dark:bg-dark-200/50">
@@ -195,7 +185,7 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
+                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-50",
                     {
                       "bg-dark-300/80": pathname === href,
                     },
@@ -231,19 +221,37 @@ export const Navigation = () => {
               </NavigationMenu>
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
+              {!session && (
+                <Button
+                  className="hidden px-4 text-[0.93rem] md:flex"
+                  color="tertiary"
+                  rounded="full"
+                >
+                  Sign up
+                </Button>
+              )}
+
               <Button
-                className="px-4 text-[0.93rem]"
-                color="tertiary"
+                className={cn("px-4 text-[0.93rem]", {
+                  "dark:border-white dark:bg-white dark:text-black": session,
+                })}
+                href={getNextUrl()}
                 rounded="full"
               >
-                Sign up
-              </Button>
-              <Button
-                className="px-4 text-[0.93rem] "
-                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-                rounded="full"
-              >
-                Log in
+                {session ? (
+                  <>
+                    {getNextUrl().includes("onboarding") ? (
+                      "Create workspace"
+                    ) : (
+                      <>
+                        <span className="md:hidden">Open app</span>
+                        <span className="hidden md:block">Open workspace</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  "Log in"
+                )}
               </Button>
 
               <Box className="flex md:hidden">
@@ -255,38 +263,44 @@ export const Navigation = () => {
                   </Menu.Button>
                   <Menu.Items
                     align="end"
-                    className="relative left-4 mt-4 w-[calc(100vw-2.5rem)] rounded-3xl py-4"
+                    className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
                   >
+                    <Menu.Group className="px-4 py-2.5">
+                      <Text color="muted">Product</Text>
+                    </Menu.Group>
                     <Menu.Group>
                       {navLinks.map(({ title, href }) => (
                         <Menu.Item
-                          className="block rounded-lg py-2"
+                          className="block rounded-xl py-2.5"
                           key={title}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
-                          <NavLink className="flex" href={href}>
+                          <NavLink className="flex text-xl" href={href}>
                             {title}
                           </NavLink>
                         </Menu.Item>
                       ))}
                     </Menu.Group>
+
                     <Menu.Separator />
+                    <Menu.Group className="px-4 py-2.5">
+                      <Text color="muted">Features</Text>
+                    </Menu.Group>
                     <Menu.Group>
-                      {product.map(({ id, name, href, icon }) => (
+                      {product.map(({ id, name, href }) => (
                         <Menu.Item
-                          className="block rounded-lg py-2"
+                          className="block rounded-xl py-2.5"
                           key={id}
                           onClick={() => {
                             setIsMenuOpen(false);
                           }}
                         >
                           <NavLink
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 text-xl"
                             href={href}
                           >
-                            {icon}
                             {name}
                           </NavLink>
                         </Menu.Item>

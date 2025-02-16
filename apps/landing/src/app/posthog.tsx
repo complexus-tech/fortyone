@@ -14,7 +14,7 @@ if (typeof window !== "undefined") {
 export const PostHogProvider = ({ children }: { children: ReactNode }) => {
   return (
     <PostHogProviderPrimitive client={posthog}>
-      {children}
+      <>{children}</>
     </PostHogProviderPrimitive>
   );
 };

@@ -2,7 +2,6 @@
 "use client";
 import { useState } from "react";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
-import { toast } from "sonner";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -27,7 +26,11 @@ import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { changeWorkspace, logOut } from "./actions";
+import { getCurrentWorkspace } from "./utils";
+
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const Header = () => {
   const pathname = usePathname();
@@ -39,9 +42,8 @@ export const Header = () => {
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const { userRole } = useUserRole();
-
-  const workspaces = session?.workspaces || [];
-  const workspace = session?.activeWorkspace;
+  const { data: workspaces = [] } = useWorkspaces(session!.token);
+  const workspace = getCurrentWorkspace(workspaces);
   const callbackUrl = `${pathname}?${searchParams.toString()}`;
 
   useHotkeys("shift+n", () => {
@@ -60,18 +62,21 @@ export const Header = () => {
     await logOut(callbackUrl);
   };
 
-  const handleChangeWorkspace = async (workspaceId: string) => {
+  const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
     try {
       nProgress.start();
       await changeWorkspace(workspaceId);
-      localStorage.clear();
-      window.location.href = "/my-work";
+      if (domain.includes("localhost")) {
+        window.location.href = `http://${slug}.${domain}/my-work`;
+      } else {
+        window.location.href = `https://${slug}.${domain}/my-work`;
+      }
     } catch (error) {
-      toast.error("Failed to switch workspace", {
-        description: "Please try again",
-      });
-    } finally {
-      nProgress.done();
+      if (domain.includes("localhost")) {
+        window.location.href = `http://${slug}.${domain}/my-work`;
+      } else {
+        window.location.href = `https://${slug}.${domain}/my-work`;
+      }
     }
   };
 
@@ -110,11 +115,11 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-0" />
             <Menu.Group className="space-y-1 pt-1.5">
-              {workspaces.map(({ id, name, color }) => (
+              {workspaces.map(({ id, name, color, slug }) => (
                 <Menu.Item
                   className="justify-between"
                   key={id}
-                  onSelect={() => handleChangeWorkspace(id)}
+                  onSelect={() => handleChangeWorkspace(id, slug)}
                 >
                   <span className="flex items-center gap-2">
                     <Avatar

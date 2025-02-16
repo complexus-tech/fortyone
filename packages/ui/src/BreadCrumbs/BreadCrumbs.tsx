@@ -33,13 +33,15 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
             className
           )}
         >
-          {icon && <span className="group-hover:text-primary">{icon}</span>}
-          <span className="group-hover:text-primary">{name}</span>
-          <ArrowRightIcon
-            className={cn("h-[0.8rem] w-auto opacity-80", {
-              hidden: idx + 1 === breadCrumbs.length,
-            })}
-          />
+          <>
+            {icon && <span className="group-hover:text-primary">{icon}</span>}
+            <span className="group-hover:text-primary">{name}</span>
+            <ArrowRightIcon
+              className={cn("h-[0.8rem] w-auto opacity-80", {
+                hidden: idx + 1 === breadCrumbs.length,
+              })}
+            />
+          </>
         </Link>
       ))}
     </Flex>

@@ -7,6 +7,7 @@ export const CallToAction = () => {
   return (
     <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-[#030303]">
       <Container className="relative max-w-7xl py-16 md:py-32">
+        <Blur className="-translate-y-1/23 absolute left-1/2 right-1/2 top-10 h-[450px] w-[600px] -translate-x-1/2 bg-warning/10" />
         <Flex
           align="center"
           className="md:mt-18 mb-8 text-center"
@@ -68,7 +69,6 @@ export const CallToAction = () => {
             </motion.div>
           </Box>
         </Flex>
-        <Blur className="-translate-y-1/23 absolute -bottom-20 left-1/2 right-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 bg-warning/10" />
       </Container>
     </Box>
   );

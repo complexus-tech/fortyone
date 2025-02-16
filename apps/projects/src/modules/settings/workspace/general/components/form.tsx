@@ -50,7 +50,7 @@ export const WorkspaceForm = () => {
           label="URL (read-only)"
           name="slug"
           readOnly
-          value={`${host}/${workspace?.slug}`}
+          value={host}
         />
       </Box>
       <Button disabled={!hasChanges} type="submit">

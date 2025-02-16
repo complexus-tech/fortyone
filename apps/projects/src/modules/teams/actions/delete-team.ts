@@ -4,7 +4,7 @@ import { remove } from "@/lib/http";
 import { teamTags } from "@/constants/keys";
 import type { ApiResponse } from "@/types";
 
-export const deleteTeamAction = async (id: string): Promise<void> => {
+export const deleteTeamAction = async (id: string) => {
   await remove<ApiResponse<void>>(`teams/${id}`);
   revalidateTag(teamTags.detail(id));
   revalidateTag(teamTags.lists());

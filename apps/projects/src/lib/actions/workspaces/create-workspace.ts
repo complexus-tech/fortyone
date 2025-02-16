@@ -1,8 +1,9 @@
 "use server";
 import ky from "ky";
-import { revalidatePath } from "next/cache";
-import { auth, updateSession } from "@/auth";
+import { revalidateTag } from "next/cache";
+import { auth } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
+import { workspaceTags } from "@/constants/keys";
 import { switchWorkspace } from "../users/switch-workspace";
 
 type NewWorkspace = {
@@ -15,26 +16,17 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
   const session = await auth();
-  if (!session) {
-    return { error: "Unauthorized" };
-  }
-
   const workspace = await ky
     .post(`${apiUrl}/workspaces`, {
       json: newWorkspace,
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: `Bearer ${session?.token}`,
       },
     })
     .json<ApiResponse<Workspace>>();
+  revalidateTag(workspaceTags.lists());
 
-  await Promise.all([
-    switchWorkspace(workspace.data!.id),
-    updateSession({
-      activeWorkspace: workspace.data,
-    }),
-  ]);
-  revalidatePath("/", "layout");
+  await switchWorkspace(workspace.data!.id);
 
-  return workspace;
+  return workspace.data;
 }

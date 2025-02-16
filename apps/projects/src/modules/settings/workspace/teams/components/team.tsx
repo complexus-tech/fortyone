@@ -1,5 +1,10 @@
 import { Box, Flex, Text, Button, Avatar, Badge, Menu } from "ui";
-import { DeleteIcon, EditIcon, LogoutIcon, MoreHorizontalIcon } from "icons";
+import {
+  DeleteIcon,
+  LogoutIcon,
+  MoreHorizontalIcon,
+  SettingsIcon,
+} from "icons";
 import type { Team } from "@/modules/teams/types";
 import { RowWrapper, TeamColor } from "@/components/ui";
 
@@ -46,8 +51,8 @@ export const WorkspaceTeam = ({ name, color }: Team) => {
           <Menu.Items align="end">
             <Menu.Group>
               <Menu.Item>
-                <EditIcon />
-                Edit team
+                <SettingsIcon />
+                Settings
               </Menu.Item>
               <Menu.Item>
                 <LogoutIcon />

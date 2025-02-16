@@ -1,14 +1,38 @@
+"use server";
 import type { Options } from "ky";
 import ky from "ky";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
+import { getWorkspaces } from "../queries/workspaces/get-workspaces";
+import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 const createClient = async () => {
+  const headersList = await headers();
+  const subdomain = headersList.get("host")!.split(".")[0];
   const session = await auth();
-  const prefixUrl = `${apiURL}/workspaces/${session?.activeWorkspace.id}/`;
+
+  const workspaces = await getWorkspaces(session!.token);
+  const workspace = workspaces.find(
+    (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+  );
+
+  const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
   return ky.create({
     prefixUrl,
+    hooks: {
+      beforeError: [
+        async (error) => {
+          const { response } = error;
+          if (response.body) {
+            const data = await response.json();
+            throw new ApiError(error.message, response.status, data);
+          }
+          throw error;
+        },
+      ],
+    },
   });
 };
 
