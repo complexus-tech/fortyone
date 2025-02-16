@@ -58,6 +58,8 @@ const organization: WithContext<Organization> = {
   "@type": "Organization",
   name: "Complexus",
   url: "https://complexus.app",
+  logo: "https://complexus.app/images/logo.png",
+  image: "https://complexus.app/images/logo.png",
   sameAs: ["https://x.com/complexus_app"],
   contactPoint: {
     "@type": "ContactPoint",
@@ -76,6 +78,7 @@ const product: WithContext<Product> = {
   brand: {
     "@type": "Brand",
     name: "Complexus",
+    logo: "https://complexus.app/images/logo.png",
   },
 };
 
