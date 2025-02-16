@@ -105,8 +105,8 @@ export const {
   },
   trustHost: true,
   pages: {
-    signIn: "/login",
-    signOut: "/login",
+    signIn: "https://complexus.app",
+    signOut: "https://complexus.app",
   },
   debug: true,
 });
