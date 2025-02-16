@@ -23,7 +23,7 @@ import { useSession } from "next-auth/react";
 import nProgress from "nprogress";
 import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
-import { useLocalStorage } from "@/hooks";
+import { useAnalytics, useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
@@ -37,6 +37,7 @@ export const Header = () => {
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
+  const { analytics } = useAnalytics();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
@@ -60,6 +61,7 @@ export const Header = () => {
 
   const handleLogout = async () => {
     await logOut(callbackUrl);
+    analytics.logout(true);
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
