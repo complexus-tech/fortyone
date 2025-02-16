@@ -10,6 +10,7 @@ import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import { Logo, Blur } from "@/components/ui";
 import { getSession, logIn } from "./actions";
+import { useAnalytics } from "@/hooks";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -31,6 +32,7 @@ const getRedirectUrl = (session: Session | null) => {
 };
 
 export const LoginPage = () => {
+  const { analytics } = useAnalytics();
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -46,6 +48,10 @@ export const LoginPage = () => {
         });
       } else {
         const session = await getSession();
+        analytics.identify(session?.user?.email!, {
+          email: session?.user?.email!,
+          name: session?.user?.name!,
+        });
         redirect(getRedirectUrl(session));
       }
     } finally {
