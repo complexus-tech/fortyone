@@ -127,7 +127,6 @@ export const Navigation = () => {
   const getNextUrl = () => {
     if (session) {
       let workspace: Workspace | undefined;
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ok
       if (session.activeWorkspace) {
         workspace = session.activeWorkspace;
       } else if (session.workspaces.length > 0) {

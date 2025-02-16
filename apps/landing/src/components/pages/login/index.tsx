@@ -9,8 +9,8 @@ import nProgress from "nprogress";
 import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import { Logo, Blur } from "@/components/ui";
-import { getSession, logIn } from "./actions";
 import { useAnalytics } from "@/hooks";
+import { getSession, logIn } from "./actions";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -48,10 +48,13 @@ export const LoginPage = () => {
         });
       } else {
         const session = await getSession();
-        analytics.identify(session?.user?.email!, {
-          email: session?.user?.email!,
-          name: session?.user?.name!,
-        });
+        if (session) {
+          analytics.identify(session.user!.email!, {
+            email: session.user!.email!,
+            name: session.user!.name!,
+          });
+        }
+
         redirect(getRedirectUrl(session));
       }
     } finally {

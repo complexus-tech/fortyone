@@ -16,7 +16,6 @@ export default async function Page() {
     if (session.workspaces.length === 0) {
       redirect("/onboarding/create");
     }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ok
     const activeWorkspace = session.activeWorkspace || session.workspaces[0];
     redirect(`https://${activeWorkspace.slug}.${domain}`);
   }

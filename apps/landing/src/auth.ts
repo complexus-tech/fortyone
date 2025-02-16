@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 /* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 
 import NextAuth from "next-auth";
