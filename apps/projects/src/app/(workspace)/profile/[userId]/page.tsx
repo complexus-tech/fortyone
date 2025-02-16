@@ -20,5 +20,5 @@ export default async function Page(props: {
     assigneeId: userId,
   });
 
-  return <ListUserStories stories={stories!} />;
+  return <ListUserStories stories={stories} />;
 }
