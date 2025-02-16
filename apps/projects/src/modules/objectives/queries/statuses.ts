@@ -13,5 +13,5 @@ export const getObjectiveStatuses = async () => {
       tags: [objectiveTags.statuses()],
     },
   });
-  return statuses.data;
+  return statuses.data!;
 };

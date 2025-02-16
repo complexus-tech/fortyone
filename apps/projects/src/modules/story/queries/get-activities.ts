@@ -6,5 +6,5 @@ export const getStoryActivities = async (id: string) => {
   const story = await get<ApiResponse<StoryActivity[]>>(
     `stories/${id}/activities`,
   );
-  return story.data;
+  return story.data!;
 };

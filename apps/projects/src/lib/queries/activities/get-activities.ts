@@ -6,5 +6,5 @@ import type { ApiResponse } from "@/types";
 
 export const getActivities = async () => {
   const activities = await get<ApiResponse<StoryActivity[]>>("activities");
-  return activities.data;
+  return activities.data!;
 };

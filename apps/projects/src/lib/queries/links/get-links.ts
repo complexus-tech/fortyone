@@ -11,5 +11,5 @@ export const getLinks = async (storyId: string) => {
       tags: [linkTags.story(storyId)],
     },
   });
-  return links.data;
+  return links.data!;
 };

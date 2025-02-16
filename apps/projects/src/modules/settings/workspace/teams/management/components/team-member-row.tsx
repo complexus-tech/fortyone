@@ -6,7 +6,6 @@ import { MoreHorizontalIcon, DeleteIcon } from "icons";
 import type { Member } from "@/types";
 import type { TeamMember } from "@/modules/teams/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
-import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 
 type TeamMemberRowProps = {
   member: Member;
@@ -20,11 +19,8 @@ export const TeamMemberRow = ({
   member,
   role,
   onRemove,
-  teamId,
-  teamMembers,
 }: TeamMemberRowProps) => {
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
-  const updateTeam = useUpdateTeamMutation(teamId);
 
   return (
     <RowWrapper className="px-6 py-4">
@@ -42,18 +38,7 @@ export const TeamMemberRow = ({
       </Flex>
 
       <Flex align="center" gap={3}>
-        <Select
-          defaultValue={role}
-          onValueChange={(value: string) => {
-            updateTeam.mutate({
-              members: teamMembers.map((m) =>
-                m.userId === member.id
-                  ? { ...m, role: value as "admin" | "member" }
-                  : m,
-              ),
-            });
-          }}
-        >
+        <Select defaultValue={role}>
           <Select.Trigger className="w-32">
             <Select.Input />
           </Select.Trigger>

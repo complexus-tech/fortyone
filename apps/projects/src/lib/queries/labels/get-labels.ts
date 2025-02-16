@@ -21,5 +21,5 @@ export const getLabels = async (
       tags: [params.teamId ? labelTags.team(params.teamId) : labelTags.lists()],
     },
   });
-  return labels.data;
+  return labels.data!;
 };

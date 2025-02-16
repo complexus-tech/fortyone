@@ -14,7 +14,6 @@ export const CreateTeamDialog = ({
 }) => {
   const [form, setForm] = useState<CreateTeamInput>({
     name: "",
-    description: "",
     code: "",
     color: "#2563eb",
   });
@@ -45,15 +44,7 @@ export const CreateTeamDialog = ({
               required
               value={form.name}
             />
-            <Input
-              label="Description"
-              name="description"
-              onChange={(e) => {
-                setForm({ ...form, description: e.target.value });
-              }}
-              placeholder="Core engineering team responsible for product development"
-              value={form.description}
-            />
+
             <Input
               label="Team Code"
               name="code"

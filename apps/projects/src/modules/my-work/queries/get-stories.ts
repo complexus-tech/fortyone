@@ -12,5 +12,5 @@ export const getMyStories = async () => {
       tags: [storyTags.mine()],
     },
   });
-  return stories.data;
+  return stories.data!;
 };
