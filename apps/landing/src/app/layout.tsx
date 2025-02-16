@@ -12,7 +12,6 @@ import { Toaster } from "./toaster";
 import PostHogPageView from "./posthog-page-view";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://complexus.app"),
   title: "Complexus | Modern OKR & Project Management Platform",
   description:
     "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
@@ -44,8 +43,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@complexus_tech",
-    creator: "@complexus_tech",
+    site: "@complexus_app",
+    creator: "@complexus_app",
     title: "Complexus | Modern OKR & Project Management Platform",
     description:
       "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
@@ -60,11 +59,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
   },
   alternates: {
     canonical: "https://complexus.app",
