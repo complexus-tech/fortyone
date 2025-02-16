@@ -38,7 +38,6 @@ export const StoryProperties = ({
   asKanban,
 }: StoryPropertiesProps) => {
   const { isColumnVisible } = useBoard();
-
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
   const { data: objectives = [] } = useObjectives();
@@ -47,6 +46,7 @@ export const StoryProperties = ({
   const selectedObjective = objectives.find(
     (objective) => objective.id === objectiveId,
   );
+
   const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
