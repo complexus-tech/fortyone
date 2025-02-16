@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, StoryMissingIcon } from "icons";
+import { StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 
 export default function Unauthorized() {
@@ -15,11 +15,7 @@ export default function Unauthorized() {
           it. Please check the URL or contact your workspace administrator.
         </Text>
         <Flex gap={2}>
-          <Button
-            className="gap-1 pl-2"
-            color="tertiary"
-            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
-          >
+          <Button className="gap-1 pl-2" color="tertiary">
             Back to Home
           </Button>
           <Button color="tertiary" href="https://complexus.app/contact">
