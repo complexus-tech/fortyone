@@ -1,15 +1,10 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { SignupPage } from "@/modules/signup";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
-export const metadata: Metadata = {
-  title: "Login",
-};
-
-export default async function Page() {
+export default async function Layout({ children }: { children: ReactNode }) {
   const session = await auth();
   if (session) {
     // Determine where to redirect based on workspace status
@@ -22,6 +17,5 @@ export default async function Page() {
     }
     redirect(`https://${activeWorkspace.slug}.${domain}/my-work`);
   }
-
-  return <SignupPage />;
+  return <>{children}</>;
 }

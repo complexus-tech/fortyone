@@ -16,6 +16,7 @@ export type Workspace = {
   id: string;
   name: string;
   slug: string;
+  color: string;
   userRole: UserRole;
   createdAt: string;
   updatedAt: string;

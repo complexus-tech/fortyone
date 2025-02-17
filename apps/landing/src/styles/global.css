@@ -133,6 +133,8 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 
 /* CSS color for nprogress */
 /* Make clicks pass-through */
+/* CSS color for nprogress */
+/* Make clicks pass-through */
 #nprogress {
   pointer-events: none;
 }

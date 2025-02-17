@@ -3,7 +3,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { Workspace, UserRole } from "@/types";
-import { authenticateUser } from "./lib/actions/users/sign-in";
+import { authenticateUser } from "./lib/actions/sign-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
 const domain =

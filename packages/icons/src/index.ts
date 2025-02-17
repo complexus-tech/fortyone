@@ -91,3 +91,4 @@ export * from "./internet";
 export * from "./reply";
 export * from "./okr";
 export * from "./health";
+export * from "./command";

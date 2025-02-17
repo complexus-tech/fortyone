@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary -- ok to nest ternary */
 "use client";
 
 import { Box, Text, BlurImage, Container } from "ui";
@@ -10,15 +11,15 @@ export const ProductImage = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="relative hidden bg-black md:block">
-      <Blur className="absolute -top-96 left-1/2 right-1/2 z-[2] h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
+    <Box className="relative hidden md:block">
+      <Blur className="absolute -top-96 left-1/2 right-1/2 z-[1] h-[300px] w-[300px] -translate-x-1/2 bg-warning/10 md:h-[700px] md:w-[90vw]" />
       <BlurImage
         alt="Login"
         className="h-full w-full object-cover opacity-80"
         quality={100}
         src="/images/login.webp"
       />
-      <Container className="absolute inset-0 z-10 flex flex-col items-center justify-end py-32">
+      <Container className="absolute inset-0 z-10 flex flex-col items-center justify-end py-28">
         <Text align="center" className="mb-8 opacity-80" color="muted">
           Connect with us
         </Text>
@@ -42,9 +43,14 @@ export const ProductImage = () => {
             <FacebookIcon className="dark:hover:text-primary" />
           </Link>
         </Box>
-        <Text className="mt-8 opacity-90" color="muted" fontSize="sm">
-          By {pathname.includes("signup") ? "signing up" : "signing in"}, you
-          agree to our{" "}
+        <Text className="mt-8 text-[0.95rem] opacity-90" color="muted">
+          By{" "}
+          {pathname.includes("signup")
+            ? "signing up"
+            : pathname.includes("login")
+              ? "signing in"
+              : "continuing"}
+          , you agree to our{" "}
           <Link className="text-primary" href="/terms">
             Terms of Service
           </Link>{" "}
