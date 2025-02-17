@@ -13,10 +13,10 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import { cn } from "lib";
 import { Container, Blur } from "@/components/ui";
-import kanbanImg from "../../../../public/kanban.png";
-import storyImg from "../../../../public/story1.png";
-import sprintImg from "../../../../public/sprints.png";
-import analyticsImg from "../../../../public/analytics1.png";
+import kanbanImg from "../../../public/kanban.png";
+import storyImg from "../../../public/story1.png";
+import sprintImg from "../../../public/sprints.png";
+import analyticsImg from "../../../public/analytics1.png";
 
 const Intro = () => (
   <Box className="relative">

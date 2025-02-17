@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { SignupPage } from "@/components/pages/signup";
+import { LoginPage } from "@/modules/login";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -17,11 +17,8 @@ export default async function Page() {
       redirect("/onboarding/create");
     }
     const activeWorkspace = session.activeWorkspace || session.workspaces[0];
-    if (domain.includes("localhost")) {
-      redirect(`http://${activeWorkspace.slug}.localhost:3000/my-work`);
-    }
-    redirect(`https://${activeWorkspace.slug}.${domain}/my-work`);
+    redirect(`https://${activeWorkspace.slug}.${domain}`);
   }
 
-  return <SignupPage />;
+  return <LoginPage />;
 }

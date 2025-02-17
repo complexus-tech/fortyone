@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hero, Features } from "@/components/pages/product";
+import { Hero, Features } from "@/modules/product";
 import { ProductJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {

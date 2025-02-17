@@ -7,7 +7,7 @@ import {
   Story,
   // ProductDemo,
   // Reviews,
-} from "@/components/pages/home";
+} from "@/modules/home";
 
 export default function Page() {
   return (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hero, Support } from "@/components/pages/contact";
+import { Hero, Support } from "@/modules/contact";
 import { ContactJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
