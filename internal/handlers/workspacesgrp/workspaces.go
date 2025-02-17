@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
+	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -27,18 +28,20 @@ type Handlers struct {
 	teams           *teams.Service
 	stories         *stories.Service
 	statuses        *states.Service
+	users           *users.Service
 	objectivestatus *objectivestatus.Service
 	secretKey       string
 	// audit  *audit.Service
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, objectivestatus *objectivestatus.Service, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, secretKey string) *Handlers {
 	return &Handlers{
 		workspaces:      workspaces,
 		teams:           teams,
 		stories:         stories,
 		statuses:        statuses,
+		users:           users,
 		objectivestatus: objectivestatus,
 		secretKey:       secretKey,
 	}
@@ -103,6 +106,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Workspace: result.ID,
 	})
 	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// switch the user's the last workspace to the new workspace
+	if err := h.users.UpdateUserWorkspace(ctx, userID, result.ID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -220,6 +228,19 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 
 	if err := h.workspaces.AddMember(ctx, workspaceID, input.UserID, role); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get user info to check if they have a last used workspace
+	user, err := h.users.GetUser(ctx, input.UserID)
+	if err != nil {
+		// Don't fail the whole request if we can't get user info
+		span.RecordError(err)
+	} else if user.LastUsedWorkspaceID == nil {
+		// If user has no last used workspace, set this one
+		if err := h.users.UpdateUserWorkspace(ctx, input.UserID, workspaceID); err != nil {
+			// Don't fail the whole request if we can't update last used workspace
+			span.RecordError(err)
+		}
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(

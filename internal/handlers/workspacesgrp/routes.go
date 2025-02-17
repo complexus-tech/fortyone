@@ -9,6 +9,8 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/stories/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/teams/teamsrepo"
+	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/internal/core/users/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
@@ -34,10 +36,11 @@ func Routes(cfg Config, app *web.App) {
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher, cfg.EmailService)
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
+	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	h := New(workspacesService, teamsService,
-		storiesService, statusesService, objectivestatusService,
+		storiesService, statusesService, usersService, objectivestatusService,
 		cfg.SecretKey)
 
 	app.Get("/workspaces/{workspaceId}", h.Get, auth)
