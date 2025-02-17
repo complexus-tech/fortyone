@@ -6,8 +6,6 @@ import { useState } from "react";
 import { Box, Input, Text, Button, Flex, BlurImage, Container } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
-import type { Session } from "next-auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
 import { Logo, Blur } from "@/components/ui";
@@ -15,26 +13,7 @@ import { useAnalytics } from "@/hooks";
 import { getSession, logIn } from "./actions";
 import { GoogleIcon } from "./components/google-icon";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
-const getRedirectUrl = (session: Session | null) => {
-  if (!session) {
-    return "/";
-  }
-
-  if (session.workspaces.length === 0) {
-    return "/onboarding/create";
-  }
-  const activeWorkspace = session.activeWorkspace || session.workspaces[0];
-
-  if (domain.includes("localhost")) {
-    return `http://${activeWorkspace.slug}.localhost:3000/my-work`;
-  }
-
-  return `https://${activeWorkspace.slug}.${domain}/my-work`;
-};
-
-export const LoginPage = () => {
+export const SignupPage = () => {
   const { analytics } = useAnalytics();
   const [loading, setLoading] = useState(false);
 
@@ -43,28 +22,30 @@ export const LoginPage = () => {
     const formData = new FormData(event.currentTarget);
     setLoading(true);
     nProgress.start();
-
-    const result = await logIn(formData);
-    if (result?.error) {
-      toast.error("Failed to log in", {
-        description: result.error,
-      });
+    try {
+      const result = await logIn(formData);
+      if (result?.error) {
+        toast.error("Failed to log in", {
+          description: result.error,
+        });
+      } else {
+        const session = await getSession();
+        if (session) {
+          analytics.identify(session.user!.email!, {
+            email: session.user!.email!,
+            name: session.user!.name!,
+          });
+        }
+      }
+    } finally {
       setLoading(false);
       nProgress.done();
-    } else {
-      const session = await getSession();
-      if (session) {
-        analytics.identify(session.user!.email!, {
-          email: session.user!.email!,
-          name: session.user!.name!,
-        });
-      }
-      redirect(getRedirectUrl(session));
     }
   };
 
   return (
     <Box className="relative grid h-screen grid-cols-2">
+      <Blur className="absolute -top-96 left-1/2 right-1/2 z-[2] h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
       <Flex align="center" className="z-[3] bg-[#000000]" justify="center">
         <Box className="max-w-sm">
           <Logo asIcon className="relative -left-2 h-10 text-white" />
@@ -73,12 +54,12 @@ export const LoginPage = () => {
             className="mb-2 mt-6 text-[1.7rem]"
             fontWeight="semibold"
           >
-            Sign in to Complexus
+            Get started with Complexus
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
-            Don&apos;t have an account?{" "}
-            <Link className="text-primary" href="/signup">
-              Create one
+            Already have an account?{" "}
+            <Link className="text-primary" href="/login">
+              Sign in
             </Link>
           </Text>
           <form onSubmit={handleSubmit}>
@@ -132,7 +113,6 @@ export const LoginPage = () => {
         </Box>
       </Flex>
       <Box className="relative bg-black">
-        <Blur className="absolute -top-96 left-1/2 right-1/2 z-[2] h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
         <BlurImage
           alt="Login"
           className="h-full w-full object-cover opacity-80"
@@ -167,7 +147,7 @@ export const LoginPage = () => {
             </Link>
           </Box>
           <Text className="mt-8 opacity-90" color="muted" fontSize="sm">
-            By signing in, you agree to our{" "}
+            By signing up, you agree to our{" "}
             <Link className="text-primary" href="/terms">
               Terms of Service
             </Link>{" "}
