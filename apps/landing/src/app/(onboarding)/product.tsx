@@ -10,7 +10,7 @@ export const ProductImage = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="relative bg-black">
+    <Box className="relative hidden bg-black md:block">
       <Blur className="absolute -top-96 left-1/2 right-1/2 z-[2] h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
       <BlurImage
         alt="Login"
