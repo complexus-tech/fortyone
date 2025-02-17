@@ -1,5 +1,5 @@
 import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
-import storyCard from "../../../../public/kanban.png";
+import storyCard from "../../../public/kanban.png";
 
 export const features = [
   {

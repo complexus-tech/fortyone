@@ -156,7 +156,7 @@ export const Navigation = () => {
                       className={cn(
                         "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
                         {
-                          "bg-dark-300/80": pathname.startsWith("/product"),
+                          "bg-dark-300/80": pathname?.startsWith("/product"),
                         },
                       )}
                     >

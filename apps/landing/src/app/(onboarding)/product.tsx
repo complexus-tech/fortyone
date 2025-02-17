@@ -45,9 +45,9 @@ export const ProductImage = () => {
         </Box>
         <Text className="mt-8 text-[0.95rem] opacity-90" color="muted">
           By{" "}
-          {pathname.includes("signup")
+          {pathname?.includes("signup")
             ? "signing up"
-            : pathname.includes("login")
+            : pathname?.includes("login")
               ? "signing in"
               : "continuing"}
           , you agree to our{" "}
