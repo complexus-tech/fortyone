@@ -30,6 +30,6 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/profile", h.GetProfile, auth)
 	app.Put("/workspaces/{workspaceId}/profile", h.UpdateProfile, auth)
 	app.Delete("/workspaces/{workspaceId}/profile", h.DeleteProfile, auth)
-	app.Post("/workspaces/{workspaceId}/switch", h.SwitchWorkspace, auth)
 	app.Post("/workspaces/{workspaceId}/reset-password", h.ResetPassword, auth)
+	app.Post("/workspaces/switch", h.SwitchWorkspace, auth)
 }
