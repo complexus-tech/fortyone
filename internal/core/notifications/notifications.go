@@ -35,7 +35,7 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
-// Create creates a new notification.
+// Create creates a new notification and sends an email if enabled.
 func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error) {
 	s.log.Info(ctx, "business.core.notifications.Create")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.Create")

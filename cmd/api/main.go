@@ -16,6 +16,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/database"
+	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
@@ -56,6 +57,15 @@ type Config struct {
 		Port     string `default:"6379" env:"APP_REDIS_PORT"`
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
+	}
+	Email struct {
+		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
+		Port        int    `default:"587" env:"APP_EMAIL_PORT"`
+		Username    string `env:"APP_EMAIL_USERNAME"`
+		Password    string `env:"APP_EMAIL_PASSWORD"`
+		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
+		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
+		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 	}
 	Tracing struct {
 		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
@@ -135,6 +145,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
+	// Initialize email service
+	emailService, err := email.NewService(email.Config{
+		Host:        cfg.Email.Host,
+		Port:        cfg.Email.Port,
+		Username:    cfg.Email.Username,
+		Password:    cfg.Email.Password,
+		FromAddress: cfg.Email.FromAddress,
+		FromName:    cfg.Email.FromName,
+		Environment: cfg.Email.Environment,
+	}, log)
+	if err != nil {
+		return fmt.Errorf("error initializing email service: %w", err)
+	}
+
 	// Create publisher
 	publisher := events.NewPublisher(rdb, log)
 
@@ -165,20 +189,24 @@ func run(ctx context.Context, log *logger.Logger) error {
 	defer traceProvider.Shutdown(ctx)
 	tracer := traceProvider.Tracer(service)
 
-	muxCfg := mux.Config{
-		DB:        db,
-		Redis:     rdb,
-		Publisher: publisher,
-		Shutdown:  shutdown,
-		Log:       log,
-		Tracer:    tracer,
-		SecretKey: cfg.Auth.SecretKey,
+	// Initialize mux with email service
+	muxConfig := mux.Config{
+		DB:           db,
+		Redis:        rdb,
+		Publisher:    publisher,
+		Shutdown:     shutdown,
+		Log:          log,
+		Tracer:       tracer,
+		SecretKey:    cfg.Auth.SecretKey,
+		EmailService: emailService,
 	}
-	apiMux := mux.New(muxCfg, handlers.New())
+
+	// Create the mux
+	app := mux.New(muxConfig, handlers.New())
 
 	server := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      apiMux,
+		Handler:      app,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,

@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/stories/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -15,14 +16,15 @@ import (
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Publisher *events.Publisher
+	DB           *sqlx.DB
+	Log          *logger.Logger
+	SecretKey    string
+	Publisher    *events.Publisher
+	EmailService email.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher)
+	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher, cfg.EmailService)
 	commentsService := comments.New(cfg.Log, commentsrepo.New(cfg.Log, cfg.DB))
 	linksService := links.New(cfg.Log, linksrepo.New(cfg.Log, cfg.DB))
 

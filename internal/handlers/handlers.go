@@ -41,10 +41,11 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the stories routes
 	storiesgrp.Routes(storiesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Publisher: cfg.Publisher,
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		Publisher:    cfg.Publisher,
+		EmailService: cfg.EmailService,
 	}, app)
 
 	// register the objectives routes
@@ -119,10 +120,11 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the workspaces routes
 	workspacesgrp.Routes(workspacesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Publisher: cfg.Publisher,
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		Publisher:    cfg.Publisher,
+		EmailService: cfg.EmailService,
 	}, app)
 
 	// register the comments routes

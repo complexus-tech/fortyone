@@ -44,7 +44,7 @@ func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.
 	}
 }
 
-// List returns a list of users for a workspace.
+// List returns a list of workspaces for a user.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -148,7 +148,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "id")
+	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -177,7 +177,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Delete")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "id")
+	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -206,7 +206,7 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "id")
+	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -232,7 +232,7 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIDParam := web.Params(r, "id")
+	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)

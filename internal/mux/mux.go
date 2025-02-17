@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -20,13 +21,14 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB        *sqlx.DB
-	Redis     *redis.Client
-	Publisher *events.Publisher
-	Shutdown  chan os.Signal
-	Log       *logger.Logger
-	Tracer    trace.Tracer
-	SecretKey string
+	DB           *sqlx.DB
+	Redis        *redis.Client
+	Publisher    *events.Publisher
+	Shutdown     chan os.Signal
+	Log          *logger.Logger
+	Tracer       trace.Tracer
+	SecretKey    string
+	EmailService email.Service
 }
 
 // New returns a new HTTP handler that defines all the API routes.
