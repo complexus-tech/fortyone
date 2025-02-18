@@ -1,7 +1,7 @@
 "use server";
 import ky from "ky";
 import { auth } from "@/auth";
-import type { ApiResponse, Workspace, User } from "@/types";
+import type { ApiResponse, Workspace } from "@/types";
 
 type NewWorkspace = {
   name: string;
@@ -10,22 +10,6 @@ type NewWorkspace = {
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-export async function switchWorkspace(workspaceId: string) {
-  const session = await auth();
-  const res = await ky.post(`${apiUrl}/workspaces/switch`, {
-    json: {
-      workspaceId,
-    },
-    headers: {
-      Authorization: `Bearer ${session?.token}`,
-    },
-  });
-
-  const user = await res.json<ApiResponse<User>>();
-
-  return user.data;
-}
 
 export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
   const session = await auth();
@@ -37,8 +21,6 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
       },
     })
     .json<ApiResponse<Workspace>>();
-
-  await switchWorkspace(workspace.data!.id);
 
   return workspace.data;
 }

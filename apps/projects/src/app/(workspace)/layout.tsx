@@ -9,7 +9,7 @@ import { getStatuses } from "@/lib/queries/states/get-states";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
-import { auth } from "@/auth";
+import { auth, updateSession } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getMembers } from "@/lib/queries/members/get-members";
 import {
@@ -24,6 +24,7 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
+import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { OnlineStatusMonitor } from "../online-monitor";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
@@ -55,6 +56,12 @@ export default async function RootLayout({
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
   );
+
+  if (!session?.workspaces.find((w) => w.id === workspace?.id)) {
+    await updateSession({
+      activeWorkspace: workspace,
+    });
+  }
 
   if (!workspace) {
     redirect("/unauthorized");
@@ -96,7 +103,11 @@ export default async function RootLayout({
   ]);
 
   return (
-    <SessionProvider session={session}>
+    <SessionProvider
+      refetchInterval={DURATION_FROM_SECONDS.MINUTE * 5}
+      refetchOnWindowFocus
+      session={session}
+    >
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ApplicationLayout>{children}</ApplicationLayout>
       </HydrationBoundary>
