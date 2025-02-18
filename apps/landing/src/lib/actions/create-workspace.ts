@@ -1,6 +1,6 @@
 "use server";
 import ky from "ky";
-import { auth } from "@/auth";
+import { auth, updateSession } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
 
 type NewWorkspace = {
@@ -21,6 +21,10 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
       },
     })
     .json<ApiResponse<Workspace>>();
+
+  await updateSession({
+    activeWorkspace: workspace.data,
+  });
 
   return workspace.data;
 }
