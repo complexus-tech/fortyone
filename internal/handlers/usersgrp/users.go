@@ -3,6 +3,7 @@ package usersgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -265,6 +266,115 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 			Email:     req.Email,
 			FullName:  req.FullName,
 			AvatarURL: req.AvatarURL,
+		}
+		user, err = h.users.Register(ctx, newUser)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	// Generate JWT token
+	claims := jwt.RegisteredClaims{
+		Subject:   user.ID.String(),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.secretKey))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	user.Token = &tokenString
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+// SendEmailVerification sends a verification email to the user
+func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req EmailVerificationRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Check if too many attempts
+	count, err := h.users.GetValidTokenCount(ctx, req.Email, time.Hour)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	if count >= 3 {
+		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
+	}
+
+	// Invalidate any existing tokens
+	if err := h.users.InvalidateTokens(ctx, req.Email); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Check if user exists to determine token type
+	_, err = h.users.GetUserByEmail(ctx, req.Email)
+	tokenType := users.TokenTypeRegistration
+	if err == nil {
+		tokenType = users.TokenTypeLogin
+	} else if !errors.Is(err, users.ErrNotFound) {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Create new verification token
+	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// TODO: Send email with verification link
+	fmt.Println("token", token.Token)
+	// For now, just return success
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// VerifyEmail verifies an email verification token
+func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req VerifyEmailRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Get and validate token
+	verificationToken, err := h.users.GetVerificationToken(ctx, req.Token)
+	if err != nil {
+		switch {
+		case errors.Is(err, users.ErrTokenExpired):
+			return web.RespondError(ctx, w, err, http.StatusGone)
+		case errors.Is(err, users.ErrTokenUsed):
+			return web.RespondError(ctx, w, err, http.StatusGone)
+		case errors.Is(err, users.ErrInvalidToken):
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		default:
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	// Verify email matches
+	if verificationToken.Email != req.Email {
+		return web.RespondError(ctx, w, errors.New("email mismatch"), http.StatusBadRequest)
+	}
+
+	// Mark token as used
+	if err := h.users.MarkTokenUsed(ctx, verificationToken.ID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Try to find existing user
+	user, err := h.users.GetUserByEmail(ctx, req.Email)
+	if err != nil && !errors.Is(err, users.ErrNotFound) {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	if errors.Is(err, users.ErrNotFound) {
+		// Create new user with verified email
+		newUser := users.CoreNewUser{
+			Email: req.Email,
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {

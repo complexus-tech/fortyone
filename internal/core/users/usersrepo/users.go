@@ -2,9 +2,12 @@ package usersrepo
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -441,4 +444,194 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUse
 	}
 
 	return toCoreUsers(users), nil
+}
+
+// generateToken creates a cryptographically secure token
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+// CreateVerificationToken creates a new verification token in the database
+func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType string) (users.CoreVerificationToken, error) {
+	r.log.Info(ctx, "repository.users.CreateVerificationToken")
+	ctx, span := web.AddSpan(ctx, "repository.users.CreateVerificationToken")
+	defer span.End()
+
+	token, err := generateToken()
+	if err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("generating token: %w", err)
+	}
+
+	var dbToken dbVerificationToken
+	q := `
+		INSERT INTO verification_tokens (
+			id, token, email, expires_at, token_type, created_at, updated_at
+		) VALUES (
+			:id, :token, :email, :expires_at, :token_type, :created_at, :updated_at
+		)
+		RETURNING id, token, email, user_id, expires_at, used_at, token_type, created_at, updated_at
+	`
+
+	now := time.Now()
+	params := map[string]interface{}{
+		"id":         uuid.New(),
+		"token":      token,
+		"email":      email,
+		"expires_at": now.Add(time.Hour),
+		"token_type": tokenType,
+		"created_at": now,
+		"updated_at": now,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &dbToken, params); err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("creating token: %w", err)
+	}
+
+	span.AddEvent("token created")
+	return toCoreVerificationToken(dbToken), nil
+}
+
+// GetVerificationToken retrieves a verification token from the database
+func (r *repo) GetVerificationToken(ctx context.Context, token string) (users.CoreVerificationToken, error) {
+	r.log.Info(ctx, "repository.users.GetVerificationToken")
+	ctx, span := web.AddSpan(ctx, "repository.users.GetVerificationToken")
+	defer span.End()
+
+	var dbToken dbVerificationToken
+	q := `
+		SELECT id, token, email, user_id, expires_at, used_at, token_type, created_at, updated_at
+		FROM verification_tokens
+		WHERE token = :token
+	`
+
+	params := map[string]interface{}{
+		"token": token,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &dbToken, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return users.CoreVerificationToken{}, users.ErrInvalidToken
+		}
+		return users.CoreVerificationToken{}, fmt.Errorf("getting token: %w", err)
+	}
+
+	return toCoreVerificationToken(dbToken), nil
+}
+
+// MarkTokenUsed marks a verification token as used
+func (r *repo) MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
+	r.log.Info(ctx, "repository.users.MarkTokenUsed")
+	ctx, span := web.AddSpan(ctx, "repository.users.MarkTokenUsed")
+	defer span.End()
+
+	q := `
+		UPDATE verification_tokens
+		SET used_at = NOW(), updated_at = NOW()
+		WHERE id = :token_id
+	`
+
+	params := map[string]interface{}{
+		"token_id": tokenID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		return fmt.Errorf("marking token used: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return users.ErrInvalidToken
+	}
+
+	return nil
+}
+
+// InvalidateTokens invalidates all unused tokens for an email
+func (r *repo) InvalidateTokens(ctx context.Context, email string) error {
+	r.log.Info(ctx, "repository.users.InvalidateTokens")
+	ctx, span := web.AddSpan(ctx, "repository.users.InvalidateTokens")
+	defer span.End()
+
+	q := `
+		UPDATE verification_tokens
+		SET used_at = NOW(), updated_at = NOW()
+		WHERE email = :email AND used_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"email": email,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		return fmt.Errorf("invalidating tokens: %w", err)
+	}
+
+	return nil
+}
+
+// GetValidTokenCount gets the count of valid tokens for an email within a duration
+func (r *repo) GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error) {
+	r.log.Info(ctx, "repository.users.GetValidTokenCount")
+	ctx, span := web.AddSpan(ctx, "repository.users.GetValidTokenCount")
+	defer span.End()
+
+	var count int
+	q := `
+		SELECT COUNT(*)
+		FROM verification_tokens
+		WHERE email = :email
+		AND created_at > :min_created_at
+		AND used_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"email":          email,
+		"min_created_at": time.Now().Add(-duration),
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return 0, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &count, params); err != nil {
+		return 0, fmt.Errorf("getting token count: %w", err)
+	}
+
+	return count, nil
 }

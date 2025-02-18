@@ -14,12 +14,35 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// CoreVerificationToken represents a verification token in the application layer
+type CoreVerificationToken struct {
+	ID        uuid.UUID  `json:"id"`
+	Token     string     `json:"token"`
+	Email     string     `json:"email"`
+	UserID    *uuid.UUID `json:"userId"`
+	ExpiresAt time.Time  `json:"expiresAt"`
+	UsedAt    *time.Time `json:"usedAt"`
+	TokenType string     `json:"tokenType"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
+// Token types
+const (
+	TokenTypeLogin        = "login"        // For existing user login
+	TokenTypeRegistration = "registration" // For new user registration
+)
+
 // Service errors
 var (
 	ErrNotFound           = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidPassword    = errors.New("invalid password")
 	ErrEmailTaken         = errors.New("email is already taken")
+	ErrTokenExpired       = errors.New("token has expired")
+	ErrTokenUsed          = errors.New("token has already been used")
+	ErrTooManyAttempts    = errors.New("too many attempts")
+	ErrInvalidToken       = errors.New("invalid token")
 )
 
 // Repository provides access to the users storage.
@@ -32,6 +55,12 @@ type Repository interface {
 	List(ctx context.Context, workspaceID uuid.UUID) ([]CoreUser, error)
 	UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
 	Create(ctx context.Context, user CoreUser) (CoreUser, error)
+	// Verification token methods
+	CreateVerificationToken(ctx context.Context, email, tokenType string) (CoreVerificationToken, error)
+	GetVerificationToken(ctx context.Context, token string) (CoreVerificationToken, error)
+	MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error
+	InvalidateTokens(ctx context.Context, email string) error
+	GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error)
 }
 
 // Service provides user-related operations.
@@ -285,4 +314,105 @@ func (s *Service) GetUserByEmail(ctx context.Context, email string) (CoreUser, e
 	))
 
 	return user, nil
+}
+
+// CreateVerificationToken creates a new verification token
+func (s *Service) CreateVerificationToken(ctx context.Context, email, tokenType string) (CoreVerificationToken, error) {
+	s.log.Info(ctx, "business.core.users.CreateVerificationToken")
+	ctx, span := web.AddSpan(ctx, "business.core.users.CreateVerificationToken")
+	defer span.End()
+
+	token, err := s.repo.CreateVerificationToken(ctx, email, tokenType)
+	if err != nil {
+		span.RecordError(err)
+		return CoreVerificationToken{}, err
+	}
+
+	span.AddEvent("verification token created", trace.WithAttributes(
+		attribute.String("email", email),
+		attribute.String("token_type", tokenType),
+	))
+
+	return token, nil
+}
+
+// GetVerificationToken retrieves and validates a verification token
+func (s *Service) GetVerificationToken(ctx context.Context, token string) (CoreVerificationToken, error) {
+	s.log.Info(ctx, "business.core.users.GetVerificationToken")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetVerificationToken")
+	defer span.End()
+
+	verificationToken, err := s.repo.GetVerificationToken(ctx, token)
+	if err != nil {
+		span.RecordError(err)
+		return CoreVerificationToken{}, err
+	}
+
+	// Check if token is expired
+	if time.Now().After(verificationToken.ExpiresAt) {
+		return CoreVerificationToken{}, ErrTokenExpired
+	}
+
+	// Check if token is already used
+	if verificationToken.UsedAt != nil {
+		return CoreVerificationToken{}, ErrTokenUsed
+	}
+
+	return verificationToken, nil
+}
+
+// MarkTokenUsed marks a verification token as used
+func (s *Service) MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.users.MarkTokenUsed")
+	ctx, span := web.AddSpan(ctx, "business.core.users.MarkTokenUsed")
+	defer span.End()
+
+	if err := s.repo.MarkTokenUsed(ctx, tokenID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("token marked as used", trace.WithAttributes(
+		attribute.String("token_id", tokenID.String()),
+	))
+
+	return nil
+}
+
+// InvalidateTokens invalidates all unused tokens for an email
+func (s *Service) InvalidateTokens(ctx context.Context, email string) error {
+	s.log.Info(ctx, "business.core.users.InvalidateTokens")
+	ctx, span := web.AddSpan(ctx, "business.core.users.InvalidateTokens")
+	defer span.End()
+
+	if err := s.repo.InvalidateTokens(ctx, email); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("tokens invalidated", trace.WithAttributes(
+		attribute.String("email", email),
+	))
+
+	return nil
+}
+
+// GetValidTokenCount gets the count of valid tokens for an email within a duration
+func (s *Service) GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error) {
+	s.log.Info(ctx, "business.core.users.GetValidTokenCount")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetValidTokenCount")
+	defer span.End()
+
+	count, err := s.repo.GetValidTokenCount(ctx, email, duration)
+	if err != nil {
+		span.RecordError(err)
+		return 0, err
+	}
+
+	span.AddEvent("valid token count retrieved", trace.WithAttributes(
+		attribute.String("email", email),
+		attribute.Int("count", count),
+	))
+
+	return count, nil
 }

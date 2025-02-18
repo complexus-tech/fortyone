@@ -21,6 +21,19 @@ type dbUser struct {
 	UpdatedAt           time.Time  `db:"updated_at"`
 }
 
+// dbVerificationToken represents a verification token in the database
+type dbVerificationToken struct {
+	ID        uuid.UUID  `db:"id"`
+	Token     string     `db:"token"`
+	Email     string     `db:"email"`
+	UserID    *uuid.UUID `db:"user_id"`
+	ExpiresAt time.Time  `db:"expires_at"`
+	UsedAt    *time.Time `db:"used_at"`
+	TokenType string     `db:"token_type"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at"`
+}
+
 func toCoreUser(p dbUser) users.CoreUser {
 	return users.CoreUser{
 		ID:                  p.ID,
@@ -43,4 +56,18 @@ func toCoreUsers(du []dbUser) []users.CoreUser {
 		coreUsers[i] = toCoreUser(user)
 	}
 	return coreUsers
+}
+
+func toCoreVerificationToken(dbToken dbVerificationToken) users.CoreVerificationToken {
+	return users.CoreVerificationToken{
+		ID:        dbToken.ID,
+		Token:     dbToken.Token,
+		Email:     dbToken.Email,
+		UserID:    dbToken.UserID,
+		ExpiresAt: dbToken.ExpiresAt,
+		UsedAt:    dbToken.UsedAt,
+		TokenType: dbToken.TokenType,
+		CreatedAt: dbToken.CreatedAt,
+		UpdatedAt: dbToken.UpdatedAt,
+	}
 }

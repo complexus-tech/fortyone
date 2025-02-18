@@ -59,6 +59,17 @@ type GoogleAuthRequest struct {
 	AvatarURL string `json:"avatarUrl"`
 }
 
+// EmailVerificationRequest represents a request to send a verification email
+type EmailVerificationRequest struct {
+	Email string `json:"email"`
+}
+
+// VerifyEmailRequest represents a request to verify an email token
+type VerifyEmailRequest struct {
+	Token string `json:"token"`
+	Email string `json:"email"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,

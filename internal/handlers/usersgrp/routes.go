@@ -27,6 +27,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/users/login", h.Login)
 	app.Post("/users/register", h.Register)
 	app.Post("/users/google/verify", h.GoogleAuth)
+	app.Post("/users/verify/email", h.SendEmailVerification)
+	app.Post("/users/verify/email/confirm", h.VerifyEmail)
 
 	// Protected endpoints
 	app.Get("/workspaces/{workspaceId}/members", h.List, auth)
