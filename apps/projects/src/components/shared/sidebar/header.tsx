@@ -82,6 +82,14 @@ export const Header = () => {
     }
   };
 
+  const handleCreateWorkspace = () => {
+    if (domain.includes("localhost")) {
+      window.location.href = `http://${domain}/onboarding/create`;
+    } else {
+      window.location.href = `https://${domain}/onboarding/create`;
+    }
+  };
+
   return (
     <>
       <Flex align="center" className="h-16" justify="between">
@@ -141,17 +149,9 @@ export const Header = () => {
                   ) : null}
                 </Menu.Item>
               ))}
-              <Menu.Item asChild>
-                <Button
-                  className="md:h-[2.3rem]"
-                  color="tertiary"
-                  href="/onboarding/create"
-                  leftIcon={<PlusIcon className="h-5 w-auto" />}
-                  size="sm"
-                  variant="naked"
-                >
-                  Create workspace
-                </Button>
+              <Menu.Item onSelect={handleCreateWorkspace}>
+                <PlusIcon />
+                Create workspace
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator className="my-2" />
