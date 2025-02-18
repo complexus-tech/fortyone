@@ -326,50 +326,34 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 
 	q := `
 		INSERT INTO users (
-			user_id,
 			username,
 			email,
 			full_name,
 			avatar_url,
-			is_active,
-			last_login_at,
-			created_at,
-			updated_at
+			last_login_at
 		)
 		VALUES (
-			:user_id,
 			:username,
 			:email,
 			:full_name,
 			:avatar_url,
-			:is_active,
-			:last_login_at,
-			:created_at,
-			:updated_at
+			:last_login_at
 		)
 		RETURNING
-			user_id,
 			username,
 			email,
 			full_name,
 			avatar_url,
-			is_active,
 			last_login_at,
-			last_used_workspace_id,
-			created_at,
-			updated_at
+			last_used_workspace_id
 	`
 
 	params := map[string]interface{}{
-		"user_id":       user.ID,
 		"username":      user.Username,
 		"email":         user.Email,
 		"full_name":     user.FullName,
 		"avatar_url":    user.AvatarURL,
-		"is_active":     user.IsActive,
 		"last_login_at": user.LastLoginAt,
-		"created_at":    user.CreatedAt,
-		"updated_at":    user.UpdatedAt,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
