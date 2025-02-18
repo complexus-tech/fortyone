@@ -80,6 +80,33 @@ const product: WithContext<Product> = {
     name: "Complexus",
     logo: "https://complexus.app/images/logo.png",
   },
+  offers: {
+    "@type": "AggregateOffer",
+    priceCurrency: "USD",
+    lowPrice: "0",
+    highPrice: "12",
+    offerCount: "3",
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Hobby",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      {
+        "@type": "Offer",
+        name: "Professional",
+        price: "9",
+        priceCurrency: "USD",
+      },
+      {
+        "@type": "Offer",
+        name: "Business",
+        price: "12",
+        priceCurrency: "USD",
+      },
+    ],
+  },
 };
 
 const faq: WithContext<FAQPage> = {
