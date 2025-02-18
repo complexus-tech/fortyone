@@ -5,33 +5,28 @@ import { useState } from "react";
 import { Box, Input, Text, Button, Flex } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
-import type { Session } from "next-auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect, useRouter } from "next/navigation";
+import type { Session } from "next-auth";
 import { Logo, GoogleIcon } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getSession, logIn, signInWithGoogle } from "./actions";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
-const getRedirectUrl = (session: Session | null) => {
-  if (!session) {
-    return "/";
-  }
-
+const getRedirectUrl = (session: Session) => {
   if (session.workspaces.length === 0) {
     return "/onboarding/create";
   }
   const activeWorkspace = session.activeWorkspace || session.workspaces[0];
-
   if (domain.includes("localhost")) {
     return `http://${activeWorkspace.slug}.localhost:3000/my-work`;
   }
-
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 
 export const LoginPage = () => {
+  const router = useRouter();
   const { analytics } = useAnalytics();
   const [loading, setLoading] = useState(false);
 
@@ -55,13 +50,13 @@ export const LoginPage = () => {
           email: session.user!.email!,
           name: session.user!.name!,
         });
+        if (getRedirectUrl(session).includes("onboarding")) {
+          router.push(getRedirectUrl(session));
+        } else {
+          redirect(getRedirectUrl(session));
+        }
       }
-      redirect(getRedirectUrl(session));
     }
-  };
-
-  const handleGoogleSignIn = async () => {
-    await signInWithGoogle();
   };
 
   return (
@@ -116,7 +111,7 @@ export const LoginPage = () => {
           fullWidth
           leftIcon={<GoogleIcon />}
           onClick={async () => {
-            await handleGoogleSignIn();
+            await signInWithGoogle();
           }}
           type="button"
         >

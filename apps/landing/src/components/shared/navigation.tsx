@@ -224,6 +224,7 @@ export const Navigation = () => {
                 <Button
                   className="hidden px-4 text-[0.93rem] md:flex"
                   color="tertiary"
+                  href="/signup"
                   rounded="full"
                 >
                   Sign up

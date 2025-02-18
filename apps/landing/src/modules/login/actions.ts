@@ -16,8 +16,10 @@ export const logIn = async (formData: FormData) => {
   }
 };
 
-export const signInWithGoogle = async () => {
-  await signIn("google");
+export const signInWithGoogle = async (callbackUrl = "/auth-callback") => {
+  await signIn("google", {
+    redirectTo: callbackUrl,
+  });
 };
 
 export const getSession = async () => {
