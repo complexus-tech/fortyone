@@ -23,7 +23,6 @@ type Handlers struct {
 	users         *users.Service
 	secretKey     string
 	googleService *google.Service
-	// audit  *audit.Service
 }
 
 // New constructs a new users handlers instance.
@@ -33,38 +32,6 @@ func New(users *users.Service, secretKey string, googleService *google.Service) 
 		secretKey:     secretKey,
 		googleService: googleService,
 	}
-}
-
-// Login returns a user and a JWT token.
-func (h *Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	var req LoginRequest
-	if err := web.Decode(r, &req); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-
-	user, err := h.users.Login(ctx, req.Email, req.Password)
-	if err != nil {
-		if errors.Is(err, users.ErrInvalidCredentials) {
-			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	expiresAt := time.Now().Add(time.Hour * 24 * 7)
-	claims := jwt.RegisteredClaims{
-		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(expiresAt),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		NotBefore: jwt.NewNumericDate(time.Now()),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(h.secretKey))
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	user.Token = &tokenString
-	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
 // GetProfile returns the current user's profile
@@ -179,56 +146,6 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
 	return nil
-}
-
-// ResetPassword updates the current user's password
-func (h *Handlers) ResetPassword(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
-	var req ResetPasswordRequest
-	if err := web.Decode(r, &req); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-
-	if err := h.users.ResetPassword(ctx, userID, req.CurrentPassword, req.NewPassword); err != nil {
-		if errors.Is(err, users.ErrNotFound) {
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		}
-		if errors.Is(err, users.ErrInvalidPassword) {
-			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	return web.Respond(ctx, w, nil, http.StatusNoContent)
-}
-
-// Register creates a new user account.
-func (h *Handlers) Register(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	var req RegisterRequest
-	if err := web.Decode(r, &req); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-
-	newUser := users.CoreNewUser{
-		Email:     req.Email,
-		Password:  req.Password,
-		FullName:  req.FullName,
-		AvatarURL: req.AvatarURL,
-	}
-
-	user, err := h.users.Register(ctx, newUser)
-	if err != nil {
-		if errors.Is(err, users.ErrEmailTaken) {
-			return web.RespondError(ctx, w, err, http.StatusConflict)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	return web.Respond(ctx, w, toAppUser(user), http.StatusCreated)
 }
 
 // GoogleAuth handles authentication with Google

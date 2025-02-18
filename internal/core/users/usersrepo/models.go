@@ -11,7 +11,6 @@ type dbUser struct {
 	ID                  uuid.UUID  `db:"user_id"`
 	Username            string     `db:"username"`
 	Email               string     `db:"email"`
-	Password            string     `db:"password_hash"`
 	FullName            string     `db:"full_name"`
 	AvatarURL           string     `db:"avatar_url"`
 	IsActive            bool       `db:"is_active"`
@@ -39,7 +38,6 @@ func toCoreUser(p dbUser) users.CoreUser {
 		ID:                  p.ID,
 		Username:            p.Username,
 		Email:               p.Email,
-		Password:            p.Password,
 		FullName:            p.FullName,
 		AvatarURL:           p.AvatarURL,
 		IsActive:            p.IsActive,

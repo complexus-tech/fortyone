@@ -25,11 +25,6 @@ type AppFilter struct {
 	TeamID *uuid.UUID `json:"teamId"`
 }
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 type UpdateProfileRequest struct {
 	Username  string `json:"username"`
 	FullName  string `json:"fullName"`
@@ -40,14 +35,8 @@ type SwitchWorkspaceRequest struct {
 	WorkspaceID uuid.UUID `json:"workspaceId"`
 }
 
-type ResetPasswordRequest struct {
-	CurrentPassword string `json:"currentPassword"`
-	NewPassword     string `json:"newPassword"`
-}
-
 type RegisterRequest struct {
 	Email     string `json:"email"`
-	Password  string `json:"password"`
 	FullName  string `json:"fullName"`
 	AvatarURL string `json:"avatarUrl"`
 }

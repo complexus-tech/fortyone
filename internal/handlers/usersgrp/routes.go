@@ -24,8 +24,6 @@ func Routes(cfg Config, app *web.App) {
 	h := New(usersService, cfg.SecretKey, cfg.GoogleService)
 
 	// Public endpoints
-	app.Post("/users/login", h.Login)
-	app.Post("/users/register", h.Register)
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)
@@ -35,6 +33,5 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/profile", h.GetProfile, auth)
 	app.Put("/workspaces/{workspaceId}/profile", h.UpdateProfile, auth)
 	app.Delete("/workspaces/{workspaceId}/profile", h.DeleteProfile, auth)
-	app.Post("/workspaces/{workspaceId}/reset-password", h.ResetPassword, auth)
 	app.Post("/workspaces/switch", h.SwitchWorkspace, auth)
 }
