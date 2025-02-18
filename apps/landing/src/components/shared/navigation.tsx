@@ -232,7 +232,7 @@ export const Navigation = () => {
               )}
 
               <Button
-                className={cn("px-4 text-[0.93rem]", {
+                className={cn("px-5 text-[0.93rem]", {
                   "dark:border-white dark:bg-white dark:text-black": session,
                 })}
                 href={getNextUrl()}
