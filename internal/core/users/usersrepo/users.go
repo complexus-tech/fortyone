@@ -462,13 +462,43 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	ctx, span := web.AddSpan(ctx, "repository.users.CreateVerificationToken")
 	defer span.End()
 
+	// Start transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// First invalidate any existing tokens
+	invalidateQ := `
+		UPDATE verification_tokens
+		SET used_at = NOW(), updated_at = NOW()
+		WHERE email = :email AND used_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"email": email,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, invalidateQ)
+	if err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("preparing invalidate statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("invalidating tokens: %w", err)
+	}
+
+	// Generate new token
 	token, err := generateToken()
 	if err != nil {
 		return users.CoreVerificationToken{}, fmt.Errorf("generating token: %w", err)
 	}
 
+	// Create new token
 	var dbToken dbVerificationToken
-	q := `
+	createQ := `
 		INSERT INTO verification_tokens (
 			id, token, email, expires_at, token_type, created_at, updated_at
 		) VALUES (
@@ -478,7 +508,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	`
 
 	now := time.Now()
-	params := map[string]interface{}{
+	createParams := map[string]interface{}{
 		"id":         uuid.New(),
 		"token":      token,
 		"email":      email,
@@ -488,14 +518,19 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 		"updated_at": now,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err = tx.PrepareNamedContext(ctx, createQ)
 	if err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("preparing statement: %w", err)
+		return users.CoreVerificationToken{}, fmt.Errorf("preparing create statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &dbToken, params); err != nil {
+	if err := stmt.GetContext(ctx, &dbToken, createParams); err != nil {
 		return users.CoreVerificationToken{}, fmt.Errorf("creating token: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("committing transaction: %w", err)
 	}
 
 	span.AddEvent("token created")

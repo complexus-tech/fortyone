@@ -307,11 +307,6 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
 	}
 
-	// Invalidate any existing tokens
-	if err := h.users.InvalidateTokens(ctx, req.Email); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
 	// Check if user exists to determine token type
 	_, err = h.users.GetUserByEmail(ctx, req.Email)
 	tokenType := users.TokenTypeRegistration
