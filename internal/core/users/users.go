@@ -265,3 +265,22 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 
 	return createdUser, nil
 }
+
+// GetUserByEmail returns a user by email.
+func (s *Service) GetUserByEmail(ctx context.Context, email string) (CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.GetUserByEmail")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserByEmail")
+	defer span.End()
+
+	user, err := s.repo.GetUserByEmail(ctx, email)
+	if err != nil {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
+	span.AddEvent("user retrieved by email", trace.WithAttributes(
+		attribute.String("user.email", email),
+	))
+
+	return user, nil
+}

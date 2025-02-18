@@ -18,6 +18,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
+	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/josemukorivo/config"
@@ -69,6 +70,9 @@ type Config struct {
 	}
 	Tracing struct {
 		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
+	}
+	Google struct {
+		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
 	}
 }
 
@@ -180,25 +184,39 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Start Tracing
 	t := tracing.New(service, version, environ, cfg.Tracing.Host)
-	traceProvider, err := t.StartTracing()
+	tp, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
 	}
 
 	// Graceful shutdown of tracing if server is stopped
-	defer traceProvider.Shutdown(ctx)
-	tracer := traceProvider.Tracer(service)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tp.Shutdown(shutdownCtx); err != nil {
+			log.Error(ctx, "error shutting down tracer provider", "error", err)
+		}
+	}()
 
-	// Initialize mux with email service
+	tracer := tp.Tracer(service)
+
+	// Initialize Google service
+	googleService, err := google.NewService(cfg.Google.ClientID)
+	if err != nil {
+		return fmt.Errorf("error initializing google service: %w", err)
+	}
+
+	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:           db,
-		Redis:        rdb,
-		Publisher:    publisher,
-		Shutdown:     shutdown,
-		Log:          log,
-		Tracer:       tracer,
-		SecretKey:    cfg.Auth.SecretKey,
-		EmailService: emailService,
+		DB:            db,
+		Redis:         rdb,
+		Publisher:     publisher,
+		Shutdown:      shutdown,
+		Log:           log,
+		Tracer:        tracer,
+		SecretKey:     cfg.Auth.SecretKey,
+		EmailService:  emailService,
+		GoogleService: googleService,
 	}
 
 	// Create the mux

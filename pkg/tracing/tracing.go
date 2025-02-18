@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
@@ -33,7 +33,7 @@ func New(service, version, environ, host string) *config {
 }
 
 // StartTracing starts the tracing provider and returns the tracer provider.
-func (c *config) StartTracing() (*trace.TracerProvider, error) {
+func (c *config) StartTracing() (*sdktrace.TracerProvider, error) {
 	exporter, err := otlptracehttp.New(context.Background(),
 		otlptracehttp.WithInsecure(),
 		otlptracehttp.WithEndpoint(c.host),
@@ -60,9 +60,9 @@ func (c *config) StartTracing() (*trace.TracerProvider, error) {
 		return nil, err
 	}
 
-	provider := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(res),
+	provider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
 	)
 	// Set the TracerProvider globally.
 	otel.SetTracerProvider(provider)

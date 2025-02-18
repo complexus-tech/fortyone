@@ -8,6 +8,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -18,16 +19,18 @@ var (
 )
 
 type Handlers struct {
-	users     *users.Service
-	secretKey string
+	users         *users.Service
+	secretKey     string
+	googleService *google.Service
 	// audit  *audit.Service
 }
 
 // New constructs a new users handlers instance.
-func New(users *users.Service, secretKey string) *Handlers {
+func New(users *users.Service, secretKey string, googleService *google.Service) *Handlers {
 	return &Handlers{
-		users:     users,
-		secretKey: secretKey,
+		users:         users,
+		secretKey:     secretKey,
+		googleService: googleService,
 	}
 }
 
@@ -225,4 +228,66 @@ func (h *Handlers) Register(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	return web.Respond(ctx, w, toAppUser(user), http.StatusCreated)
+}
+
+// GoogleAuth handles authentication with Google
+func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var req GoogleAuthRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Verify Google token
+	payload, err := h.googleService.VerifyToken(ctx, req.Token, req.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, google.ErrInvalidToken), errors.Is(err, google.ErrEmailMismatch):
+			return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		default:
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	// Verify email is verified by Google
+	if verified, ok := payload.Claims["email_verified"].(bool); !ok || !verified {
+		return web.RespondError(ctx, w, errors.New("email not verified"), http.StatusUnauthorized)
+	}
+
+	// Try to find existing user
+	user, err := h.users.GetUserByEmail(ctx, req.Email)
+	if err != nil && !errors.Is(err, users.ErrNotFound) {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	if errors.Is(err, users.ErrNotFound) {
+		// Create new user
+		newUser := users.CoreNewUser{
+			Email:     req.Email,
+			FullName:  req.FullName,
+			AvatarURL: req.AvatarURL,
+		}
+		user, err = h.users.Register(ctx, newUser)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	// Generate JWT token
+	claims := jwt.RegisteredClaims{
+		Subject:   user.ID.String(),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.secretKey))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	user.Token = &tokenString
+	return web.Respond(ctx, w, GoogleAuthResponse{
+		User:  toAppUser(user),
+		Token: tokenString,
+	}, http.StatusOK)
 }

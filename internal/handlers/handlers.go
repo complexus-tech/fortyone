@@ -113,9 +113,10 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the users routes
 	usersgrp.Routes(usersgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
+		DB:            cfg.DB,
+		Log:           cfg.Log,
+		SecretKey:     cfg.SecretKey,
+		GoogleService: cfg.GoogleService,
 	}, app)
 
 	// register the workspaces routes
