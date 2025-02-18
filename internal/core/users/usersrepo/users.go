@@ -462,25 +462,39 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	}
 	defer tx.Rollback()
 
-	// First invalidate any existing tokens
-	invalidateQ := `
-		UPDATE verification_tokens
-		SET used_at = NOW(), updated_at = NOW()
-		WHERE email = :email AND used_at IS NULL
+	// Check existing valid tokens
+	var count int
+	checkQ := `
+		WITH recent_tokens AS (
+			SELECT *
+			FROM verification_tokens
+			WHERE email = :email
+			AND created_at > :min_created_at
+			AND used_at IS NULL
+			ORDER BY created_at DESC
+			LIMIT 3
+		)
+		SELECT COUNT(*)
+		FROM recent_tokens
 	`
 
 	params := map[string]interface{}{
-		"email": email,
+		"email":          email,
+		"min_created_at": time.Now().Add(-time.Hour),
 	}
 
-	stmt, err := tx.PrepareNamedContext(ctx, invalidateQ)
+	stmt, err := tx.PrepareNamedContext(ctx, checkQ)
 	if err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("preparing invalidate statement: %w", err)
+		return users.CoreVerificationToken{}, fmt.Errorf("preparing check statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("invalidating tokens: %w", err)
+	if err := stmt.GetContext(ctx, &count, params); err != nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("checking token count: %w", err)
+	}
+
+	if count >= 3 {
+		return users.CoreVerificationToken{}, users.ErrTooManyAttempts
 	}
 
 	// Generate new token
@@ -639,11 +653,17 @@ func (r *repo) GetValidTokenCount(ctx context.Context, email string, duration ti
 
 	var count int
 	q := `
+		WITH recent_tokens AS (
+			SELECT *
+			FROM verification_tokens
+			WHERE email = :email
+			AND created_at > :min_created_at
+			AND used_at IS NULL
+			ORDER BY created_at DESC
+			LIMIT 3
+		)
 		SELECT COUNT(*)
-		FROM verification_tokens
-		WHERE email = :email
-		AND created_at > :min_created_at
-		AND used_at IS NULL
+		FROM recent_tokens
 	`
 
 	params := map[string]interface{}{
