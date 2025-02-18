@@ -233,19 +233,16 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	// Get user info to check if they have a last used workspace
 	user, err := h.users.GetUser(ctx, input.UserID)
 	if err != nil {
-		// Don't fail the whole request if we can't get user info
 		span.RecordError(err)
 	} else if user.LastUsedWorkspaceID == nil {
-		// If user has no last used workspace, set this one
 		if err := h.users.UpdateUserWorkspace(ctx, input.UserID, workspaceID); err != nil {
-			// Don't fail the whole request if we can't update last used workspace
 			span.RecordError(err)
 		}
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
-		attribute.String("user_id", input.UserID.String()),
+		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("userId", input.UserID.String()),
 		attribute.String("role", role),
 	))
 
