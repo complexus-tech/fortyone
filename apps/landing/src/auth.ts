@@ -2,8 +2,12 @@
 
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import type { Workspace, UserRole } from "@/types";
-import { authenticateUser } from "./lib/actions/sign-in";
+import {
+  authenticateGoogleUser,
+  authenticateUser,
+} from "./lib/actions/sign-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
 const domain =
@@ -31,6 +35,7 @@ export const {
   unstable_update: updateSession,
 } = NextAuth({
   providers: [
+    Google,
     Credentials({
       name: "Credentials",
       credentials: {},
@@ -62,14 +67,39 @@ export const {
   },
 
   callbacks: {
-    jwt({ token, user, trigger, session }) {
-      if (user) {
-        return {
-          ...token,
-          id: user.id,
-          accessToken: user.token,
-          lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-        };
+    async jwt({ token, user, trigger, session, account, profile }) {
+      if (account && user) {
+        if (account.provider === "credentials") {
+          return {
+            ...token,
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            picture: user.image,
+            accessToken: user.token,
+            lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+          };
+        }
+        if (account.provider === "google") {
+          const googleUser = await authenticateGoogleUser({
+            idToken: account.id_token!,
+            email: profile?.email || "",
+            fullName: profile?.name || "",
+            avatarUrl: profile?.picture || "",
+          });
+          if (!googleUser) {
+            throw new Error("Failed to authenticate Google user");
+          }
+          return {
+            ...token,
+            id: googleUser.id,
+            picture: googleUser.image,
+            name: googleUser.name,
+            email: googleUser.email,
+            accessToken: googleUser.token,
+            lastUsedWorkspaceId: googleUser.lastUsedWorkspaceId,
+          };
+        }
       }
       if (trigger === "update") {
         token.lastUsedWorkspaceId = session.activeWorkspace.id;

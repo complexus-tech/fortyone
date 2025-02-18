@@ -16,6 +16,10 @@ export const logIn = async (formData: FormData) => {
   }
 };
 
+export const signInWithGoogle = async () => {
+  await signIn("google");
+};
+
 export const getSession = async () => {
   const session = await auth();
   return session;

@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Logo, GoogleIcon } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
-import { getSession, logIn } from "./actions";
+import { getSession, logIn, signInWithGoogle } from "./actions";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -58,6 +58,10 @@ export const LoginPage = () => {
       }
       redirect(getRedirectUrl(session));
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
   };
 
   return (
@@ -111,6 +115,9 @@ export const LoginPage = () => {
           color="tertiary"
           fullWidth
           leftIcon={<GoogleIcon />}
+          onClick={async () => {
+            await handleGoogleSignIn();
+          }}
           type="button"
         >
           Continue with Google

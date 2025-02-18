@@ -47,3 +47,42 @@ export async function authenticateUser({
     userRole: "guest" as UserRole,
   };
 }
+
+export async function authenticateGoogleUser({
+  idToken,
+  email,
+  fullName,
+  avatarUrl,
+}: {
+  idToken: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+}) {
+  const res = await ky
+    .post(`${apiURL}/users/google/verify`, {
+      json: {
+        token: idToken,
+        email,
+        fullName,
+        avatarUrl,
+      },
+    })
+    .json<ApiResponse<LoginResponse>>();
+
+  if (res.error) {
+    throw new Error(res.error.message);
+  }
+
+  const user = res.data!;
+  return {
+    id: user.id,
+    name: user.fullName,
+    email: user.email,
+    token: user.token,
+    workspaces: [],
+    image: user.avatarUrl,
+    lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+    userRole: "guest" as UserRole,
+  };
+}
