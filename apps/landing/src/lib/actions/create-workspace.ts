@@ -1,4 +1,5 @@
 "use server";
+
 import ky from "ky";
 import { auth, updateSession } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
