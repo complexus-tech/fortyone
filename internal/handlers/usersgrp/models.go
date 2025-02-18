@@ -59,11 +59,6 @@ type GoogleAuthRequest struct {
 	AvatarURL string `json:"avatarUrl"`
 }
 
-type GoogleAuthResponse struct {
-	User  AppUser `json:"user"`
-	Token string  `json:"token"` // Your JWT token
-}
-
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,

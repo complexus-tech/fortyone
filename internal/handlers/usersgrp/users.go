@@ -250,7 +250,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 
 	// Verify email is verified by Google
 	if verified, ok := payload.Claims["email_verified"].(bool); !ok || !verified {
-		return web.RespondError(ctx, w, errors.New("email not verified"), http.StatusUnauthorized)
+		return web.RespondError(ctx, w, errors.New("email not verified by google"), http.StatusUnauthorized)
 	}
 
 	// Try to find existing user
@@ -286,8 +286,5 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	user.Token = &tokenString
-	return web.Respond(ctx, w, GoogleAuthResponse{
-		User:  toAppUser(user),
-		Token: tokenString,
-	}, http.StatusOK)
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
