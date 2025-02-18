@@ -246,7 +246,7 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		attribute.String("role", role),
 	))
 
-	return web.Respond(ctx, w, nil, http.StatusCreated)
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
