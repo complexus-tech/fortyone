@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { LoginPage } from "@/modules/login";
+import { AuthLayout } from "@/modules/auth";
 
 export const metadata: Metadata = {
   title: "Login - Complexus",
 };
 
 export default function Page() {
-  return <LoginPage />;
+  return <AuthLayout page="login" />;
 }

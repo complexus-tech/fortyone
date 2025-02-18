@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { SignupPage } from "@/modules/signup";
+import { AuthLayout } from "@/modules/auth";
 
 export const metadata: Metadata = {
   title: "Signup - Complexus",
 };
 
 export default function Page() {
-  return <SignupPage />;
+  return <AuthLayout page="signup" />;
 }

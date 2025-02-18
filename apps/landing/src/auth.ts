@@ -4,10 +4,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Workspace, UserRole } from "@/types";
-import {
-  authenticateGoogleUser,
-  authenticateUser,
-} from "./lib/actions/sign-in";
+import { authenticateGoogleUser, authenticateUser } from "./lib/actions/auth";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
 const domain =

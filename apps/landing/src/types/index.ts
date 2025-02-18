@@ -25,7 +25,6 @@ export type Workspace = {
 export type ApiResponse<T> = {
   data?: T;
   error?: {
-    code: string;
     message: string;
   };
 };
