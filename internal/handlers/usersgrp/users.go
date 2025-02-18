@@ -10,6 +10,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/google"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -155,6 +156,13 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
+	// Validate and normalize email
+	normalizedEmail, err := validate.Email(req.Email)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	req.Email = normalizedEmail
+
 	// Verify Google token
 	payload, err := h.googleService.VerifyToken(ctx, req.Token, req.Email)
 	if err != nil {
@@ -214,6 +222,13 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
+	// Validate and normalize email
+	normalizedEmail, err := validate.Email(req.Email)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	req.Email = normalizedEmail
+
 	// Check if too many attempts
 	count, err := h.users.GetValidTokenCount(ctx, req.Email, time.Hour)
 	if err != nil {
@@ -251,6 +266,13 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+
+	// Validate and normalize email
+	normalizedEmail, err := validate.Email(req.Email)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	req.Email = normalizedEmail
 
 	// Get and validate token
 	verificationToken, err := h.users.GetVerificationToken(ctx, req.Token)
