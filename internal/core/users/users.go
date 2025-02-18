@@ -223,7 +223,9 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 	if err == nil {
 		span.RecordError(ErrEmailTaken)
 		return CoreUser{}, ErrEmailTaken
-	} else if err != nil && !errors.Is(err, ErrNotFound) {
+	}
+
+	if !errors.Is(err, ErrNotFound) {
 		span.RecordError(err)
 		return CoreUser{}, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
@@ -201,6 +202,27 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	if err := s.repo.Update(ctx, storyID, workspaceID, updates); err != nil {
 		span.RecordError(err)
 		return err
+	}
+	ca := []CoreActivity{}
+
+	for field, value := range updates {
+		currentValue := fmt.Sprintf("%v", value)
+		na := CoreActivity{
+			StoryID:      storyID,
+			Type:         "update",
+			Field:        field,
+			CurrentValue: currentValue,
+			UserID:       actorID,
+			WorkspaceID:  workspaceID,
+		}
+		// ignore if field contains description
+		if strings.Contains(field, "description") {
+			continue
+		}
+		ca = append(ca, na)
+	}
+	if _, err := s.repo.RecordActivities(ctx, ca); err != nil {
+		span.RecordError(err)
 	}
 
 	span.AddEvent("story updated", trace.WithAttributes(
