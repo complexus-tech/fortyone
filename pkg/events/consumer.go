@@ -205,7 +205,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 	// Prepare template data
 	templateData := map[string]interface{}{
 		"VerificationURL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
-		"ExpiresIn":       "1 hour",
+		"ExpiresIn":       "10 minutes",
 		"Subject":         "Login to Complexus",
 	}
 

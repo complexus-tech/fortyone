@@ -503,7 +503,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 		"id":         uuid.New(),
 		"token":      token,
 		"email":      email,
-		"expires_at": now.Add(time.Hour),
+		"expires_at": now.Add(10 * time.Minute),
 		"token_type": tokenType,
 		"created_at": now,
 		"updated_at": now,

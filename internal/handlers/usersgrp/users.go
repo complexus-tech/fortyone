@@ -233,7 +233,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 	req.Email = normalizedEmail
 
 	// Check if too many attempts
-	count, err := h.users.GetValidTokenCount(ctx, req.Email, time.Hour)
+	count, err := h.users.GetValidTokenCount(ctx, req.Email, 10*time.Minute)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
