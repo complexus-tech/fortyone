@@ -116,6 +116,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:           cfg.Log,
 		SecretKey:     cfg.SecretKey,
 		GoogleService: cfg.GoogleService,
+		Publisher:     cfg.Publisher,
 	}, app)
 
 	// register the workspaces routes

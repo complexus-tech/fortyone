@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
+	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/redis/go-redis/v9"
 )
@@ -14,13 +15,17 @@ type Consumer struct {
 	redis         *redis.Client
 	log           *logger.Logger
 	notifications *notifications.Service
+	emailService  email.Service
+	websiteURL    string
 }
 
-func NewConsumer(redis *redis.Client, log *logger.Logger, notifications *notifications.Service) *Consumer {
+func NewConsumer(redis *redis.Client, log *logger.Logger, notifications *notifications.Service, emailService email.Service, websiteURL string) *Consumer {
 	return &Consumer{
 		redis:         redis,
 		log:           log,
 		notifications: notifications,
+		emailService:  emailService,
+		websiteURL:    websiteURL,
 	}
 }
 
@@ -30,6 +35,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 		string(StoryCommented),
 		string(ObjectiveUpdated),
 		string(KeyResultUpdated),
+		string(EmailVerification),
 	)
 	defer pubsub.Close()
 
@@ -60,6 +66,8 @@ func (c *Consumer) handleEvent(ctx context.Context, event Event) error {
 		return c.handleObjectiveUpdated(ctx, event)
 	case KeyResultUpdated:
 		return c.handleKeyResultUpdated(ctx, event)
+	case EmailVerification:
+		return c.handleEmailVerification(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
@@ -178,5 +186,39 @@ func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event Event) erro
 
 	// TODO: Get objective lead to notify them of key result updates
 	// For now, we'll skip notification creation until we can get the objective lead
+	return nil
+}
+
+func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) error {
+	var payload EmailVerificationPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "events.consumer.handleEmailVerification", "email", payload.Email)
+
+	// Prepare template data
+	templateData := map[string]interface{}{
+		"VerificationURL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
+		"ExpiresIn":       "1 hour",
+		"Subject":         "Login to Complexus",
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "auth/verification",
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		return fmt.Errorf("failed to send verification email: %w", err)
+	}
+
 	return nil
 }

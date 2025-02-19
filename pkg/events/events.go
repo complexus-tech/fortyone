@@ -9,10 +9,11 @@ import (
 type EventType string
 
 const (
-	StoryUpdated     EventType = "story.updated"
-	StoryCommented   EventType = "story.commented"
-	ObjectiveUpdated EventType = "objective.updated"
-	KeyResultUpdated EventType = "keyresult.updated"
+	StoryUpdated      EventType = "story.updated"
+	StoryCommented    EventType = "story.commented"
+	ObjectiveUpdated  EventType = "objective.updated"
+	KeyResultUpdated  EventType = "keyresult.updated"
+	EmailVerification EventType = "email.verification"
 )
 
 // Event is the base event structure
@@ -53,4 +54,11 @@ type KeyResultUpdatedPayload struct {
 	ObjectiveID uuid.UUID      `json:"objective_id"`
 	WorkspaceID uuid.UUID      `json:"workspace_id"`
 	Updates     map[string]any `json:"updates"`
+}
+
+// EmailVerificationPayload contains data for email verification events
+type EmailVerificationPayload struct {
+	Email     string `json:"email"`
+	Token     string `json:"token"`
+	TokenType string `json:"token_type"`
 }

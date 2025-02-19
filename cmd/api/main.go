@@ -75,6 +75,9 @@ type Config struct {
 	Google struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
 	}
+	Website struct {
+		URL string `default:"http://localhost:3001" env:"APP_WEBSITE_URL"`
+	}
 }
 
 func main() {
@@ -173,7 +176,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	notificationService := notifications.New(log, notificationsRepo)
 
 	// Create consumer
-	consumer := events.NewConsumer(rdb, log, notificationService)
+	consumer := events.NewConsumer(rdb, log, notificationService, emailService, cfg.Website.URL)
 
 	// Start consumer in a goroutine
 	go func() {

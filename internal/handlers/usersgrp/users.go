@@ -9,6 +9,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -24,14 +25,16 @@ type Handlers struct {
 	users         *users.Service
 	secretKey     string
 	googleService *google.Service
+	publisher     *events.Publisher
 }
 
 // New constructs a new users handlers instance.
-func New(users *users.Service, secretKey string, googleService *google.Service) *Handlers {
+func New(users *users.Service, secretKey string, googleService *google.Service, publisher *events.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
 		secretKey:     secretKey,
 		googleService: googleService,
+		publisher:     publisher,
 	}
 }
 
@@ -254,9 +257,22 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// TODO: Send email with verification link
-	fmt.Println("token", token.Token)
-	// For now, just return success
+	// Publish email verification event
+	event := events.Event{
+		Type: events.EmailVerification,
+		Payload: events.EmailVerificationPayload{
+			Email:     req.Email,
+			Token:     token.Token,
+			TokenType: string(tokenType),
+		},
+		Timestamp: time.Now(),
+		ActorID:   uuid.Nil, // System generated event
+	}
+
+	if err := h.publisher.Publish(ctx, event); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to publish email verification event: %w", err), http.StatusInternalServerError)
+	}
+
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/users/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -15,13 +16,14 @@ type Config struct {
 	Log           *logger.Logger
 	SecretKey     string
 	GoogleService *google.Service
+	Publisher     *events.Publisher
 }
 
 func Routes(cfg Config, app *web.App) {
-	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
+	usersRepo := usersrepo.New(cfg.Log, cfg.DB)
+	usersService := users.New(cfg.Log, usersRepo)
+	h := New(usersService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-
-	h := New(usersService, cfg.SecretKey, cfg.GoogleService)
 
 	// Public endpoints
 	app.Post("/users/google/verify", h.GoogleAuth)
