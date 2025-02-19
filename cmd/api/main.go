@@ -167,6 +167,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("error initializing email service: %w", err)
 	}
+	log.Info(ctx, "email service initialized")
 
 	// Create publisher
 	publisher := events.NewPublisher(rdb, log)
@@ -180,6 +181,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Start consumer in a goroutine
 	go func() {
+		log.Info(ctx, "starting redis pub/sub consumer")
 		if err := consumer.Start(ctx); err != nil {
 			log.Error(ctx, "failed to start consumer", "error", err)
 		}
@@ -210,6 +212,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("error initializing google service: %w", err)
 	}
+	log.Info(ctx, "google auth service initialized")
 
 	// Update mux configuration
 	muxConfig := mux.Config{
