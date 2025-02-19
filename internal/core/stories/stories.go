@@ -10,7 +10,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -54,16 +53,14 @@ type Service struct {
 	repo      Repository
 	log       *logger.Logger
 	publisher *events.Publisher
-	email     email.Service
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, publisher *events.Publisher, emailService email.Service) *Service {
+func New(log *logger.Logger, repo Repository, publisher *events.Publisher) *Service {
 	return &Service{
 		repo:      repo,
 		log:       log,
 		publisher: publisher,
-		email:     emailService,
 	}
 }
 
@@ -131,16 +128,6 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 		return nil, err
 	}
 
-	s.email.SendTemplatedEmail(ctx, email.TemplatedEmail{
-		To:       []string{"joseph@complexus.app"},
-		Template: "auth/verification.html",
-		Data: map[string]interface{}{
-			"Subject":         "Login in to Complexus",
-			"Year":            time.Now().Year(),
-			"VerificationURL": "https://complexus.app",
-			"ExpiresIn":       "1 hour",
-		},
-	})
 	span.AddEvent("stories retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(stories)),
 	))
