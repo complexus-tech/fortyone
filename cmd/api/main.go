@@ -93,7 +93,7 @@ func main() {
 		logLevel = slog.LevelInfo
 	}
 
-	log := logger.NewWithText(os.Stderr, logLevel, service)
+	log := logger.NewWithText(os.Stdout, logLevel, service)
 	ctx := context.Background()
 
 	if err := run(ctx, log); err != nil {
