@@ -131,6 +131,18 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 		return nil, err
 	}
 
+	s.email.SendEmail(ctx, email.Email{
+		To:      []string{"joseph@complexus.app"},
+		Subject: "Test Email",
+		Body:    "This is a test email",
+		IsHTML:  true,
+	})
+	s.email.SendTemplatedEmail(ctx, email.TemplatedEmail{
+		To:       []string{"joseph@complexus.app"},
+		Template: "test",
+		Data:     map[string]any{"name": "Joseph"},
+	})
+
 	span.AddEvent("stories retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(stories)),
 	))
