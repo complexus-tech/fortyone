@@ -217,6 +217,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 	}
 
 	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send verification email", "error", err)
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
