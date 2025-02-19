@@ -67,6 +67,7 @@ type Config struct {
 		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
 		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
+		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
 	Tracing struct {
 		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
@@ -158,6 +159,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		FromAddress: cfg.Email.FromAddress,
 		FromName:    cfg.Email.FromName,
 		Environment: cfg.Email.Environment,
+		BaseDir:     cfg.Email.BaseDir,
 	}, log)
 	if err != nil {
 		return fmt.Errorf("error initializing email service: %w", err)

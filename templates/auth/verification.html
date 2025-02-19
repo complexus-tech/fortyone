@@ -1,0 +1,18 @@
+{{ define "auth/verification.html" }}
+<h1>Verify your email address</h1>
+
+<p>Hi there,</p>
+
+<p>Please click the button below to verify your email address for your Complexus account.</p>
+
+<p style="text-align: center;">
+    <a href="{{ .VerificationURL }}" class="button">Verify Email Address</a>
+</p>
+
+<p>If you're having trouble clicking the button, copy and paste this URL into your browser:</p>
+<p style="word-break: break-all; color: #666;">{{ .VerificationURL }}</p>
+
+<p>This verification link will expire in {{ .ExpiresIn }}.</p>
+
+<p>If you didn't request this verification, you can safely ignore this email.</p>
+{{ end }} 
