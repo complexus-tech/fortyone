@@ -20,12 +20,12 @@ const (
 
 // Service errors
 var (
-	ErrNotFound        = errors.New("user not found")
-	ErrEmailTaken      = errors.New("email is already taken")
-	ErrTokenExpired    = errors.New("token has expired")
-	ErrTokenUsed       = errors.New("token has already been used")
-	ErrTooManyAttempts = errors.New("too many attempts")
-	ErrInvalidToken    = errors.New("invalid token")
+	ErrNotFound        = errors.New("we couldn't find your account")
+	ErrEmailTaken      = errors.New("this email address is already registered")
+	ErrTokenExpired    = errors.New("this sign-in link has expired - please request a new one")
+	ErrTokenUsed       = errors.New("this sign-in link has already been used")
+	ErrTooManyAttempts = errors.New("too many sign-in attempts - please wait a few minutes and try again")
+	ErrInvalidToken    = errors.New("this sign-in link is invalid - please request a new one")
 )
 
 // Repository provides access to the users storage.
