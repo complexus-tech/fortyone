@@ -2,6 +2,7 @@
 
 import ky from "ky";
 import type { ApiResponse, UserRole } from "@/types";
+import { requestError } from "../fetch-error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -15,37 +16,41 @@ type LoginResponse = {
   token: string;
 };
 
-export async function authenticateUser({
+export async function authenticateWithToken({
   email,
-  password,
+  token,
 }: {
   email: string;
-  password: string;
+  token: string;
 }) {
-  const res = await ky
-    .post(`${apiURL}/users/login`, {
-      json: {
-        email,
-        password,
+  try {
+    const res = await ky
+      .post(`${apiURL}/users/verify/email/confirm`, {
+        json: {
+          email,
+          token,
+        },
+      })
+      .json<ApiResponse<LoginResponse>>();
+
+    const user = res.data!;
+    return {
+      data: {
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        token: user.token,
+        workspaces: [],
+        image: user.avatarUrl,
+        lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+        userRole: "guest" as UserRole,
       },
-    })
-    .json<ApiResponse<LoginResponse>>();
-
-  if (res.error) {
-    throw new Error(res.error.message);
+      error: null,
+    };
+  } catch (error) {
+    const data = await requestError(error);
+    return data;
   }
-
-  const user = res.data!;
-  return {
-    id: user.id,
-    name: user.fullName,
-    email: user.email,
-    token: user.token,
-    workspaces: [],
-    image: user.avatarUrl,
-    lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-    userRole: "guest" as UserRole,
-  };
 }
 
 export async function authenticateGoogleUser({

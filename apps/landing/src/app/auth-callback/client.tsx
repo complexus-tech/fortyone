@@ -6,7 +6,7 @@ import { redirect, useRouter } from "next/navigation";
 import type { Session } from "next-auth";
 import nProgress from "nprogress";
 import { useSession } from "next-auth/react";
-import { Logo } from "@/components/ui";
+import { Logo, Blur } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
@@ -44,9 +44,14 @@ export const ClientPage = () => {
   }, [analytics, session, router]);
 
   return (
-    <Flex align="center" className="h-dvh dark:bg-black" justify="center">
+    <Flex
+      align="center"
+      className="relative h-dvh dark:bg-black"
+      justify="center"
+    >
+      <Blur className="absolute left-1/2 right-1/2 z-[10] h-[400px] w-[400px] -translate-x-1/2 bg-warning/[0.07]" />
       <Flex align="center" direction="column" justify="center">
-        <Logo asIcon className="h-20 animate-pulse text-white" />
+        <Logo asIcon className="mb-1 h-20 animate-pulse text-white" />
         <Text color="muted" fontWeight="medium">
           Setting up your workspace...
         </Text>

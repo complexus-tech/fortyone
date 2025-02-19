@@ -1,15 +1,20 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Workspace, UserRole } from "@/types";
-import { authenticateGoogleUser, authenticateUser } from "./lib/actions/auth";
+import {
+  authenticateGoogleUser,
+  authenticateWithToken,
+} from "./lib/actions/auth";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
 const domain =
   process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
 const useSecureCookies = process.env.NODE_ENV === "production";
+
+class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
   interface User {
     token: string;
@@ -37,15 +42,17 @@ export const {
       name: "Credentials",
       credentials: {},
       async authorize(credentials) {
-        const { email, password } = credentials as {
+        const { email, token } = credentials as {
           email: string;
-          password: string;
+          token: string;
         };
-        const user = await authenticateUser({ email, password });
-        if (!user) {
-          throw new Error("Invalid email or password");
+        const res = await authenticateWithToken({ email, token });
+        if (res.error) {
+          const error = new InvalidLoginError();
+          error.message = res.error.message;
+          throw error;
         }
-        return user;
+        return res.data;
       },
     }),
   ],

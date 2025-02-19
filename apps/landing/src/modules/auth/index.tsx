@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Box, Input, Text, Button, Flex } from "ui";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import { Logo, GoogleIcon } from "@/components/ui";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
@@ -13,12 +14,15 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [isSent, setIsSent] = useState(false);
+  const [isTouched, setIsTouched] = useState(false);
+  const searchParams = useSearchParams();
+  const error = searchParams?.get("error");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     const result = await requestMagicEmail(email);
-    if (result?.error) {
+    if (result?.error?.message) {
       toast.error("Failed to send magic link", {
         description: result.error.message,
       });
@@ -76,11 +80,14 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           <form onSubmit={handleSubmit}>
             <Input
               autoFocus
-              className="mb-4 rounded-lg"
+              className="rounded-lg"
+              hasError={Boolean(error) && !email && !isTouched}
+              helpText={error && !isTouched ? error : undefined}
               label="Enter your email"
               name="email"
               onChange={(e) => {
                 setEmail(e.target.value);
+                setIsTouched(true);
               }}
               placeholder="e.g john@company.com"
               required
@@ -89,6 +96,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             />
             <Button
               align="center"
+              className="mt-4"
               fullWidth
               loading={loading}
               loadingText="Logging you in..."
