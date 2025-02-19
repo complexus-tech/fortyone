@@ -1,34 +1,17 @@
-{{ define "auth/verification.html" }}
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <!-- Logo -->
-    <div style="margin-bottom: 24px;">
-        <img src="{{ .LogoURL }}" alt="Logo" style="height: 32px; width: auto;" />
-    </div>
-
-    <h1 style="color: #111; font-size: 24px; font-weight: 600; margin-bottom: 24px;">
-        Your login link for {{ .CompanyName }}
-    </h1>
-
-    <p style="color: #444; font-size: 16px; line-height: 24px; margin-bottom: 24px;">
-        Click the button below to securely log in to your account. This link will expire in {{ .ExpiresIn }}.
-    </p>
-
-    <!-- Primary Button -->
-    <div style="margin: 32px 0;">
-        <a href="{{ .VerificationURL }}" 
-           style="background-color: #EA6060; color: white; padding: 12px 24px; 
-                  text-decoration: none; border-radius: 6px; font-weight: 500; 
-                  display: inline-block;">
-            Login to {{ .CompanyName }}
-        </a>
-    </div>
-
-    <div style="margin-top: 48px; color: #666; font-size: 15px;">
-        <p style="margin-bottom: 24px;">
-            If you didn't request this login link, you can safely ignore this email.
-        </p>
-        <p style="padding-top:20px;border-top:1px solid #dfe1e4;font-size:15px;">&copy; {{ .Year }} &bull; Powered by Complexus &bull;
-            All Rights Reserved.</p>
-    </div>
+{{ define "content" }}
+<div>
+  <h1 class="heading">Your login link for {{ .CompanyName }}</h1>
+  <p class="text">
+    Click the button below to securely log in to your account. This link will
+    expire in {{ .ExpiresIn }}.
+  </p>
+  <div class="button-container">
+    <a href="{{ .VerificationURL }}" class="button" style="color: white">
+      Login to {{ .CompanyName }}
+    </a>
+  </div>
+  <p class="text">
+    If you didn't request this login link, you can safely ignore this email.
+  </p>
 </div>
-{{ end }} 
+{{ end }}

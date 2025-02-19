@@ -150,11 +150,13 @@ func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail Template
 		}
 	}
 
-	// Render the template
+	// Add the content template name to the data
+	data["ContentTemplate"] = templateEmail.Template
+
+	// Render the base template, which will include the content template
 	var buf bytes.Buffer
-	templateName := templateEmail.Template
-	if err := s.templates.ExecuteTemplate(&buf, templateName, data); err != nil {
-		s.log.Error(ctx, "failed to render email template", "error", err, "template", templateName)
+	if err := s.templates.ExecuteTemplate(&buf, "base", data); err != nil {
+		s.log.Error(ctx, "failed to render email template", "error", err, "template", templateEmail.Template)
 		return fmt.Errorf("failed to render email template: %w", err)
 	}
 
