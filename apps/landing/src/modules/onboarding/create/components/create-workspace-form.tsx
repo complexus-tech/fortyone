@@ -55,10 +55,9 @@ export const CreateWorkspaceForm = () => {
       />
       <Input
         className="rounded-lg"
-        label="Workspace URL"
+        label="URL"
         name="slug"
         onChange={handleChange}
-        placeholder="your-workspace"
         required
         value={form.slug}
       />
@@ -66,7 +65,12 @@ export const CreateWorkspaceForm = () => {
         <Text as="label" className="mb-2 block font-medium">
           How many people will use this workspace?
         </Text>
-        <Select value={form.teamSize}>
+        <Select
+          onValueChange={(value) => {
+            setForm({ ...form, teamSize: value });
+          }}
+          value={form.teamSize}
+        >
           <Select.Trigger className="h-[2.7rem] w-full rounded-lg border-gray-100 bg-white/70 text-base dark:border-dark-100 dark:bg-dark/20">
             <Select.Input />
           </Select.Trigger>
