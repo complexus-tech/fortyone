@@ -4,6 +4,7 @@ import { Text, Flex } from "ui";
 import { redirect, useParams } from "next/navigation";
 import { useEffect } from "react";
 import { Logo, Blur } from "@/components/ui";
+import { getRedirectUrl } from "@/utils";
 import { logIn, getSession } from "./actions";
 
 export default function EmailVerificationCallback() {
@@ -19,7 +20,7 @@ export default function EmailVerificationCallback() {
       } else {
         const session = await getSession();
         if (session) {
-          redirect("/login");
+          redirect(getRedirectUrl(session));
         }
       }
     };

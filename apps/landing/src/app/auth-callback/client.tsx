@@ -2,29 +2,15 @@
 
 import { Flex, Text } from "ui";
 import { useEffect } from "react";
-import { redirect, useRouter } from "next/navigation";
-import type { Session } from "next-auth";
+import { redirect } from "next/navigation";
 import nProgress from "nprogress";
 import { useSession } from "next-auth/react";
 import { Logo, Blur } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
-
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
-const getRedirectUrl = (session: Session) => {
-  if (session.workspaces.length === 0) {
-    return "/onboarding/create";
-  }
-  const activeWorkspace = session.activeWorkspace || session.workspaces[0];
-  if (domain.includes("localhost")) {
-    return `http://${activeWorkspace.slug}.localhost:3000/my-work`;
-  }
-  return `https://${activeWorkspace.slug}.${domain}/my-work`;
-};
+import { getRedirectUrl } from "@/utils";
 
 export const ClientPage = () => {
   const { data: session } = useSession();
-  const router = useRouter();
   const { analytics } = useAnalytics();
 
   useEffect(() => {
@@ -35,13 +21,9 @@ export const ClientPage = () => {
         email: session.user!.email!,
         name: session.user!.name!,
       });
-      if (getRedirectUrl(session).includes("onboarding")) {
-        router.push(getRedirectUrl(session));
-      } else {
-        redirect(getRedirectUrl(session));
-      }
+      redirect(getRedirectUrl(session));
     }
-  }, [analytics, session, router]);
+  }, [analytics, session]);
 
   return (
     <Flex
