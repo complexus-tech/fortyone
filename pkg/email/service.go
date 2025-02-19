@@ -132,8 +132,9 @@ func (s *service) SendEmail(ctx context.Context, email Email) error {
 func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail TemplatedEmail) error {
 	// Add default data that all templates need
 	data := map[string]interface{}{
-		"Year":    time.Now().Year(),
-		"LogoURL": "https://complexus.app/images/logo.png",
+		"Year":        time.Now().Year(),
+		"LogoURL":     "https://complexus.app/images/logo.png",
+		"CompanyName": "Complexus",
 	}
 
 	// If templateEmail.Data is provided, merge it with our default data

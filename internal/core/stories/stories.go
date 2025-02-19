@@ -135,8 +135,7 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 		To:       []string{"joseph@complexus.app"},
 		Template: "auth/verification.html",
 		Data: map[string]interface{}{
-			"Subject":         "Verify your email address",
-			"LogoURL":         "https://your-cdn.com/logo.png",
+			"Subject":         "Login in to Complexus",
 			"Year":            time.Now().Year(),
 			"VerificationURL": "https://complexus.app",
 			"ExpiresIn":       "1 hour",
