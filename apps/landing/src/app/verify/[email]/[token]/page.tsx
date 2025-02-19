@@ -38,7 +38,7 @@ export default function EmailVerificationCallback() {
       <Flex align="center" direction="column" justify="center">
         <Logo asIcon className="mb-1 h-20 animate-pulse text-white" />
         <Text color="muted" fontWeight="medium">
-          Verifying signin link...
+          Verifying your secure sign-in link...
         </Text>
       </Flex>
     </Flex>
