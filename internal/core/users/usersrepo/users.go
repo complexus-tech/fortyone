@@ -491,16 +491,15 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	var dbToken dbVerificationToken
 	createQ := `
 		INSERT INTO verification_tokens (
-			id, token, email, expires_at, token_type, created_at, updated_at
+			token, email, expires_at, token_type, created_at, updated_at
 		) VALUES (
-			:id, :token, :email, :expires_at, :token_type, :created_at, :updated_at
+			:token, :email, :expires_at, :token_type, :created_at, :updated_at
 		)
 		RETURNING id, token, email, user_id, expires_at, used_at, token_type, created_at, updated_at
 	`
 
 	now := time.Now()
 	createParams := map[string]interface{}{
-		"id":         uuid.New(),
 		"token":      token,
 		"email":      email,
 		"expires_at": now.Add(10 * time.Minute),
