@@ -70,7 +70,7 @@ type Config struct {
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
 	Tracing struct {
-		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
+		Host string `default:"http://localhost:4318" env:"APP_TRACING_HOST"`
 	}
 	Google struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
@@ -195,6 +195,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
 	}
+	log.Info(ctx, fmt.Sprintf("started open telemetry tracing on %s", cfg.Tracing.Host))
 
 	// Graceful shutdown of tracing if server is stopped
 	defer func() {
