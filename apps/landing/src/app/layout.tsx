@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
 import { instrumentSans, satoshi } from "@/styles/fonts";
@@ -82,9 +82,11 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
-            <PostHogPageView />
           </PostHogProvider>
         </SessionProvider>
+        <Suspense>
+          <PostHogPageView />
+        </Suspense>
         <Toaster />
       </body>
     </html>

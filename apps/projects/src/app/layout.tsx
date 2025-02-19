@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Instrument_Sans as InstrumentSans } from "next/font/google";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import "../styles/global.css";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
-// const PostHogPageView = dynamic(() => import("./posthog-page-view"), {
-//   ssr: false,
-// });
+import PostHogPageView from "./posthog-page-view";
 
 const font = InstrumentSans({
   subsets: ["latin"],
@@ -45,7 +43,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
           <Toaster />
         </Providers>
-        {/* <PostHogPageView /> */}
+        <Suspense>
+          <PostHogPageView />
+        </Suspense>
         <ProgressBar />
       </body>
     </html>
