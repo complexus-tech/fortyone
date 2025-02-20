@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     description:
       "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
     siteName: "Complexus",
-    url: "https://complexus.app",
+    url: "https://www.complexus.app",
   },
   twitter: {
     card: "summary_large_image",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://complexus.app",
+    canonical: "https://www.complexus.app",
   },
 };
 
