@@ -24,7 +24,6 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
 import { OnlineStatusMonitor } from "../online-monitor";
@@ -113,11 +112,7 @@ export default async function RootLayout({
   ]);
 
   return (
-    <SessionProvider
-      refetchInterval={DURATION_FROM_SECONDS.MINUTE * 5}
-      refetchOnWindowFocus
-      session={session}
-    >
+    <SessionProvider session={session}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ApplicationLayout>{children}</ApplicationLayout>
       </HydrationBoundary>
