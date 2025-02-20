@@ -18,6 +18,7 @@ type CoreTeam struct {
 	Name      string
 	Code      string
 	Color     string
+	IsPrivate bool
 	Workspace uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time

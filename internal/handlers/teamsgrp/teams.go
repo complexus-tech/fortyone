@@ -74,6 +74,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Name:      input.Name,
 		Code:      input.Code,
 		Color:     input.Color,
+		IsPrivate: input.IsPrivate,
 		Workspace: workspaceID,
 	}
 
@@ -102,11 +103,6 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Update")
 	defer span.End()
 
-	var input AppUpdateTeam
-	if err := web.Decode(r, &input); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-
 	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
@@ -119,14 +115,23 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
 	}
 
-	updates := teams.CoreTeam{
+	var input AppUpdateTeam
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	team := teams.CoreTeam{
 		Name:      input.Name,
 		Code:      input.Code,
 		Color:     input.Color,
 		Workspace: workspaceID,
 	}
 
-	result, err := h.teams.Update(ctx, teamID, updates)
+	if input.IsPrivate != nil {
+		team.IsPrivate = *input.IsPrivate
+	}
+
+	result, err := h.teams.Update(ctx, teamID, team)
 	if err != nil {
 		if err == teams.ErrTeamCodeExists {
 			return web.RespondError(ctx, w, err, http.StatusConflict)

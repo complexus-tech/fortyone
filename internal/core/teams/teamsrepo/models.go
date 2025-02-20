@@ -12,6 +12,7 @@ type dbTeam struct {
 	Name      string    `db:"name"`
 	Code      string    `db:"code"`
 	Color     string    `db:"color"`
+	IsPrivate bool      `db:"is_private"`
 	Workspace uuid.UUID `db:"workspace_id"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -23,6 +24,7 @@ func toCoreTeam(t dbTeam) teams.CoreTeam {
 		Name:      t.Name,
 		Code:      t.Code,
 		Color:     t.Color,
+		IsPrivate: t.IsPrivate,
 		Workspace: t.Workspace,
 		CreatedAt: t.CreatedAt,
 		UpdatedAt: t.UpdatedAt,

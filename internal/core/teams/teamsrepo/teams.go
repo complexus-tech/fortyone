@@ -44,6 +44,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			t.name,
 			t.code,
 			t.color,
+			t.is_private,
 			t.workspace_id,
 			t.created_at,
 			t.updated_at
@@ -99,13 +100,14 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		"name":         team.Name,
 		"code":         team.Code,
 		"color":        team.Color,
+		"is_private":   team.IsPrivate,
 		"workspace_id": team.Workspace,
 	}
 
 	query := `
-		INSERT INTO teams (name, code, color, workspace_id)
-		VALUES (:name, :code, :color, :workspace_id)
-		RETURNING team_id, name, code, color, workspace_id, created_at, updated_at
+		INSERT INTO teams (name, code, color, is_private, workspace_id)
+		VALUES (:name, :code, :color, :is_private, :workspace_id)
+		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at
 	`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -215,6 +217,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			name = CASE WHEN :name = '' THEN name ELSE :name END,
 			code = CASE WHEN :code = '' THEN code ELSE :code END,
 			color = CASE WHEN :color = '' THEN color ELSE :color END,
+			is_private = :is_private,
 			updated_at = NOW()
 		WHERE 
 			team_id = :team_id
@@ -224,6 +227,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			name,
 			code,
 			color,
+			is_private,
 			workspace_id,
 			created_at,
 			updated_at
@@ -235,6 +239,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 		"name":         updates.Name,
 		"code":         updates.Code,
 		"color":        updates.Color,
+		"is_private":   updates.IsPrivate,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

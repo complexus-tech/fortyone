@@ -13,6 +13,7 @@ type AppTeamsList struct {
 	Name      string    `json:"name"`
 	Code      string    `json:"code"`
 	Color     string    `json:"color"`
+	IsPrivate bool      `json:"isPrivate"`
 	Workspace uuid.UUID `json:"workspaceId"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -27,6 +28,7 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 			Name:      team.Name,
 			Code:      team.Code,
 			Color:     team.Color,
+			IsPrivate: team.IsPrivate,
 			Workspace: team.Workspace,
 			CreatedAt: team.CreatedAt,
 			UpdatedAt: team.UpdatedAt,
@@ -36,15 +38,17 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 }
 
 type AppNewTeam struct {
-	Name  string `json:"name" validate:"required"`
-	Code  string `json:"code" validate:"required"`
-	Color string `json:"color" validate:"required"`
+	Name      string `json:"name" validate:"required"`
+	Code      string `json:"code" validate:"required"`
+	Color     string `json:"color" validate:"required"`
+	IsPrivate bool   `json:"isPrivate"`
 }
 
 type AppUpdateTeam struct {
-	Name  string `json:"name,omitempty"`
-	Code  string `json:"code,omitempty"`
-	Color string `json:"color,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Code      string `json:"code,omitempty"`
+	Color     string `json:"color,omitempty"`
+	IsPrivate *bool  `json:"isPrivate,omitempty"`
 }
 
 type AppNewTeamMember struct {
@@ -57,6 +61,7 @@ type Team struct {
 	Name      string    `json:"name"`
 	Code      string    `json:"code"`
 	Color     string    `json:"color"`
+	IsPrivate bool      `json:"isPrivate"`
 	Workspace uuid.UUID `json:"workspace_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -68,6 +73,7 @@ func toTeam(team teams.CoreTeam) Team {
 		Name:      team.Name,
 		Code:      team.Code,
 		Color:     team.Color,
+		IsPrivate: team.IsPrivate,
 		Workspace: team.Workspace,
 		CreatedAt: team.CreatedAt,
 		UpdatedAt: team.UpdatedAt,
