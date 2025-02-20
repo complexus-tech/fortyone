@@ -13,6 +13,7 @@ import (
 // Repository provides access to the teams storage.
 type Repository interface {
 	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
+	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
@@ -46,6 +47,24 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.U
 	}
 
 	span.AddEvent("teams retrieved.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.Int("teams.count", len(teams)),
+	))
+	return teams, nil
+}
+
+func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error) {
+	s.log.Info(ctx, "business.core.teams.listPublicTeams")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.ListPublicTeams")
+	defer span.End()
+
+	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("public teams retrieved.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.Int("teams.count", len(teams)),
 	))

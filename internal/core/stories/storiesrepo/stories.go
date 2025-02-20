@@ -361,7 +361,6 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 	}
 
 	var stories []dbStory
-	// TODO: Add check for current user in watchers list
 
 	q := `
 		SELECT
@@ -394,7 +393,11 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			) AS labels
 		FROM
 			stories s
-		WHERE s.workspace_id = :workspace_id AND s.deleted_at IS NULL 
+			INNER JOIN team_members tm ON 
+				tm.team_id = s.team_id 
+				AND tm.user_id = :current_user
+		WHERE s.workspace_id = :workspace_id 
+		AND s.deleted_at IS NULL 
 		AND (s.assignee_id = :current_user OR s.reporter_id = :current_user)
 		ORDER BY s.created_at DESC;
 	`

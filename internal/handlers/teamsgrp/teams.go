@@ -50,6 +50,28 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teams, err := h.teams.ListPublicTeams(ctx, workspaceId, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	web.Respond(ctx, w, toAppTeams(teams), http.StatusOK)
+	return nil
+}
+
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Create")
 	defer span.End()

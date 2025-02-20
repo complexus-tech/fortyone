@@ -83,6 +83,66 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	return toCoreTeams(teams), nil
 }
 
+func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]teams.CoreTeam, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.ListPublicTeams")
+	defer span.End()
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceId,
+		"user_id":      userID,
+	}
+
+	var teams []dbTeam
+	q := `
+		SELECT
+			t.team_id,
+			t.name,
+			t.code,
+			t.color,
+			t.is_private,
+			t.workspace_id,
+			t.created_at,
+			t.updated_at
+		FROM
+			teams t
+		WHERE
+			t.workspace_id = :workspace_id
+			AND t.is_private = false
+			AND NOT EXISTS (
+				SELECT 1
+				FROM team_members tm
+				WHERE tm.team_id = t.team_id
+				AND tm.user_id = :user_id
+			)
+		ORDER BY t.created_at DESC;
+	`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "Fetching public teams.")
+	if err := stmt.SelectContext(ctx, &teams, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve public teams from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("teams not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	r.log.Info(ctx, "Public teams retrieved successfully.")
+	span.AddEvent("public teams retrieved.", trace.WithAttributes(
+		attribute.Int("teams.count", len(teams)),
+		attribute.String("query", q),
+	))
+
+	return toCoreTeams(teams), nil
+}
+
 func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam, error) {
 	ctx, span := web.AddSpan(ctx, "teamsrepo.Create")
 	defer span.End()
