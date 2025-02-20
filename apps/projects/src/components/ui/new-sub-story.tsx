@@ -47,16 +47,16 @@ export const NewSubStory = ({
   const session = useSession();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
-  const { id: defaultStateId } = (statuses.find(
-    (state) => state.id === statusId,
-  ) || statuses.at(0))!;
+  const teamStatuses = statuses.filter((status) => status.teamId === teamId);
+  const defaultStatus =
+    teamStatuses.find((status) => status.id === statusId) || teamStatuses.at(0);
 
   const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
     teamId,
-    statusId: defaultStateId,
+    statusId: defaultStatus?.id,
     endDate: null,
     startDate: null,
     assigneeId: null,

@@ -104,7 +104,7 @@ export const NewStoryDialog = ({
     description: "",
     descriptionHTML: "",
     teamId: currentTeamId,
-    statusId: defaultStatus?.id || teamStatuses.at(0)!.id,
+    statusId: defaultStatus?.id,
     endDate: null,
     startDate: null,
     assigneeId,
