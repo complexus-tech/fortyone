@@ -220,21 +220,12 @@ export const Navigation = () => {
               </NavigationMenu>
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
-              {!session && (
-                <Button
-                  className="hidden px-4 text-[0.93rem] md:flex"
-                  color="tertiary"
-                  href="/signup"
-                  rounded="full"
-                >
-                  Sign up
-                </Button>
-              )}
-
               <Button
-                className={cn("px-5 text-[0.93rem]", {
-                  "dark:border-white dark:bg-white dark:text-black": session,
+                className={cn("hidden px-4 text-[0.93rem] md:flex", {
+                  "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white":
+                    session,
                 })}
+                color="tertiary"
                 href={getNextUrl()}
                 rounded="full"
               >
@@ -253,6 +244,15 @@ export const Navigation = () => {
                   "Log in"
                 )}
               </Button>
+              {!session && (
+                <Button
+                  className="px-4 text-[0.93rem]"
+                  href="/signup"
+                  rounded="full"
+                >
+                  Sign up
+                </Button>
+              )}
 
               <Box className="flex md:hidden">
                 <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>

@@ -1,7 +1,8 @@
 "use client";
 import { Box, Button, Flex, Text } from "ui";
 import { motion } from "framer-motion";
-import { Blur, Container } from "@/components/ui";
+import { Blur, Container, GoogleIcon } from "@/components/ui";
+import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const CallToAction = () => {
   return (
@@ -50,8 +51,21 @@ export const CallToAction = () => {
           </motion.div>
 
           <Box className="mt-8 flex items-center gap-3">
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
+            <motion.span
+              initial={{ y: -10, opacity: 0 }}
+              transition={{
+                duration: 1,
+                delay: 0.4,
+              }}
+              viewport={{ once: true, amount: 0.5 }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
+              <Button href="/signup" rounded="full" size="lg">
+                Get Started Free
+              </Button>
+            </motion.span>
+            <motion.span
+              initial={{ y: -5, opacity: 0 }}
               transition={{
                 duration: 1,
                 delay: 0.6,
@@ -60,13 +74,18 @@ export const CallToAction = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                href="https://forms.gle/NmG4XFS5GhvRjUxu6"
+                className="px-4 md:pl-4 md:pr-5"
+                color="tertiary"
+                leftIcon={<GoogleIcon />}
+                onClick={async () => {
+                  await signInWithGoogle();
+                }}
                 rounded="full"
                 size="lg"
               >
-                Join the waitlist
+                Sign up with Google
               </Button>
-            </motion.div>
+            </motion.span>
           </Box>
         </Flex>
       </Container>

@@ -96,14 +96,8 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button
-              color="tertiary"
-              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-              rounded="full"
-              size="lg"
-            >
-              {/* View all integrations */}
-              Join the waitlist
+            <Button color="tertiary" href="/product" rounded="full" size="lg">
+              View all integrations
             </Button>
           </motion.div>
         </Flex>

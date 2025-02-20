@@ -32,7 +32,7 @@ const Copyright = () => (
     <Box className="3xl:gap-16 flex gap-8">
       <Link
         className="hover:text-primary"
-        href="https://twitter.com/complexus_tech"
+        href="https://x.com/complexus_app"
         target="_blank"
       >
         <TwitterIcon className="h-5 w-auto" />

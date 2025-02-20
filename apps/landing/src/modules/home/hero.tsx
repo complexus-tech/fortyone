@@ -1,7 +1,8 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
-import { Container, Blur } from "@/components/ui";
+import { Container, Blur, GoogleIcon } from "@/components/ui";
+import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
   return (
@@ -79,8 +80,8 @@ export const Hero = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button color="tertiary" rounded="full" size="lg">
-                Talk to sales
+              <Button href="/signup" rounded="full" size="lg">
+                Get Started Free
               </Button>
             </motion.span>
             <motion.span
@@ -92,8 +93,17 @@ export const Hero = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button rounded="full" size="lg">
-                Get started
+              <Button
+                className="px-4 md:pl-4 md:pr-5"
+                color="tertiary"
+                leftIcon={<GoogleIcon />}
+                onClick={async () => {
+                  await signInWithGoogle();
+                }}
+                rounded="full"
+                size="lg"
+              >
+                Sign up with Google
               </Button>
             </motion.span>
           </Flex>
