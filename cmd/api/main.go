@@ -70,7 +70,7 @@ type Config struct {
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
 	Tracing struct {
-		Host string `default:"http://localhost:4318" env:"APP_TRACING_HOST"`
+		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
 	}
 	Google struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
