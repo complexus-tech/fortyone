@@ -222,7 +222,7 @@ export const Navigation = () => {
             <Flex align="center" className="ml-6 gap-3">
               <Button
                 className={cn("hidden px-4 text-[0.93rem] md:flex", {
-                  "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white":
+                  "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:focus:bg-white":
                     session,
                 })}
                 color="tertiary"
