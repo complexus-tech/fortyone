@@ -376,18 +376,18 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 	return toCoreUser(dbUser), nil
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUser, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, currentUserID uuid.UUID, teamID *uuid.UUID) ([]users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
 	defer span.End()
 
 	var users []dbUser
-
 	params := map[string]interface{}{
-		"workspace_id": workspaceId,
+		"workspace_id":    workspaceId,
+		"current_user_id": currentUserID,
 	}
 
-	q := `
-		SELECT
+	baseQuery := `
+		SELECT DISTINCT
 			u.user_id,
 			u.username,
 			u.email,
@@ -397,14 +397,34 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]users.CoreUse
 			u.last_login_at,
 			u.created_at,
 			u.updated_at
-		FROM
-			users u
-		INNER JOIN 
-			workspace_members wm ON u.user_id = wm.user_id
-		WHERE 
-			wm.workspace_id = :workspace_id
-		AND u.is_active = TRUE
+		FROM users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 	`
+
+	var q string
+	if teamID != nil {
+		// Query for specific team members
+		params["team_id"] = *teamID
+		q = baseQuery + `
+			INNER JOIN team_members tm ON u.user_id = tm.user_id
+			WHERE wm.workspace_id = :workspace_id
+				AND tm.team_id = :team_id
+				AND u.is_active = TRUE
+			ORDER BY u.created_at DESC
+		`
+	} else {
+		// Query for members from all teams the current user belongs to
+		q = baseQuery + `
+			INNER JOIN team_members tm ON u.user_id = tm.user_id
+			INNER JOIN team_members my_teams 
+				ON tm.team_id = my_teams.team_id 
+				AND my_teams.user_id = :current_user_id
+			WHERE wm.workspace_id = :workspace_id
+				AND u.is_active = TRUE
+			ORDER BY u.created_at DESC
+		`
+	}
+
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)

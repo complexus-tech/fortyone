@@ -144,7 +144,22 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	users, err := h.users.List(ctx, workspaceId)
+	currentUserID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var teamID *uuid.UUID
+	teamIDParam := r.URL.Query().Get("teamId")
+	if teamIDParam != "" {
+		parsedTeamID, err := uuid.Parse(teamIDParam)
+		if err != nil {
+			return web.RespondError(ctx, w, errors.New("invalid team ID format"), http.StatusBadRequest)
+		}
+		teamID = &parsedTeamID
+	}
+
+	users, err := h.users.List(ctx, workspaceId, currentUserID, teamID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
