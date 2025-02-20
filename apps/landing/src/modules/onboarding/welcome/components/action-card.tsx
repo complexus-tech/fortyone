@@ -9,12 +9,12 @@ type ActionCardProps = {
 
 export const ActionCard = ({ icon, title, description }: ActionCardProps) => {
   return (
-    <Wrapper className="py-3">
+    <Wrapper className="py-2.5">
       <Flex gap={3}>
         <Box className="mt-1">{icon}</Box>
         <Box>
-          <Text className="font-semibold">{title}</Text>
-          <Text className="mt-1 text-[0.95rem]" color="muted">
+          <Text>{title}</Text>
+          <Text className="mt-1 text-[0.9rem]" color="muted">
             {description}
           </Text>
         </Box>

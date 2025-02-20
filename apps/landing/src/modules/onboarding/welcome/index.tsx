@@ -24,7 +24,7 @@ export const Welcome = async () => {
   const redirectUrl = await getRedirectUrl(session!);
 
   return (
-    <Box className="max-w-md">
+    <Box className="max-w-sm">
       <Logo asIcon className="relative -left-2 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Welcome to Complexus👋
@@ -67,14 +67,7 @@ export const Welcome = async () => {
           title="Master shortcuts"
         />
       </Box>
-      <Button
-        align="center"
-        className="mt-4"
-        fullWidth
-        href={redirectUrl}
-        rounded="lg"
-        size="lg"
-      >
+      <Button align="center" className="mt-4" fullWidth href={redirectUrl}>
         Get Started
       </Button>
     </Box>
