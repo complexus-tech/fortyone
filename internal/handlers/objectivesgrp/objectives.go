@@ -39,6 +39,11 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return ErrInvalidWorkspaceID
 	}
 
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	var af AppFilters
 	filters, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
@@ -46,7 +51,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	objectives, err := h.objectives.List(ctx, workspaceId, filters)
+	objectives, err := h.objectives.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		return err
 	}

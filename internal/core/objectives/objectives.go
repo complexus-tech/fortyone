@@ -19,7 +19,7 @@ var (
 
 // Repository provides access to the objectives storage.
 type Repository interface {
-	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreObjective, error)
+	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreObjective, error)
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreObjective, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
@@ -60,12 +60,12 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 }
 
 // List returns a list of objectives.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreObjective, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreObjective, error) {
 	s.log.Info(ctx, "business.core.objectives.list")
 	ctx, span := web.AddSpan(ctx, "business.core.objectives.List")
 	defer span.End()
 
-	objectives, err := s.repo.List(ctx, workspaceId, filters)
+	objectives, err := s.repo.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

@@ -113,7 +113,7 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 	return toCoreObjective(createdObj), createdKRs, nil
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]objectives.CoreObjective, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]objectives.CoreObjective, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.List")
 	defer span.End()
 
@@ -158,13 +158,17 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			COALESCE(ss.backlog, 0) as backlog_stories
 		FROM
 			objectives o
+		INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
 		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
 	`
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
+	filters["user_id"] = userID
 
 	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("o.%s = :%s", field, field))
+		if field != "user_id" { // Skip user_id since it's used in the JOIN
+			setClauses = append(setClauses, fmt.Sprintf("o.%s = :%s", field, field))
+		}
 	}
 
 	q += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY o.created_at DESC;"
@@ -189,6 +193,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	r.log.Info(ctx, "objectives retrieved successfully.")
 	span.AddEvent("objectives retrieved.", trace.WithAttributes(
 		attribute.Int("objectives.count", len(objectives)),
+		attribute.String("query", q),
 	))
 
 	return toCoreObjectives(objectives), nil
