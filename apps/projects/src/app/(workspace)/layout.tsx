@@ -25,6 +25,8 @@ import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
 import { DURATION_FROM_SECONDS } from "@/constants/time";
+import { getActivities } from "@/lib/queries/activities/get-activities";
+import { getSummary } from "@/lib/queries/analytics/get-summary";
 import { OnlineStatusMonitor } from "../online-monitor";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
@@ -99,6 +101,14 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
       queryFn: () => getWorkspaces(session?.token),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ["activities"],
+      queryFn: getActivities,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ["summary"],
+      queryFn: getSummary,
     }),
   ]);
 
