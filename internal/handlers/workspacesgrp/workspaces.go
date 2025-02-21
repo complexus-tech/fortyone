@@ -24,26 +24,16 @@ var (
 )
 
 type Handlers struct {
-	workspaces      *workspaces.Service
-	teams           *teams.Service
-	stories         *stories.Service
-	statuses        *states.Service
-	users           *users.Service
-	objectivestatus *objectivestatus.Service
-	secretKey       string
+	workspaces *workspaces.Service
+	secretKey  string
 	// audit  *audit.Service
 }
 
 // New constructs a new workspaces andlers instance.
 func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, secretKey string) *Handlers {
 	return &Handlers{
-		workspaces:      workspaces,
-		teams:           teams,
-		stories:         stories,
-		statuses:        statuses,
-		users:           users,
-		objectivestatus: objectivestatus,
-		secretKey:       secretKey,
+		workspaces: workspaces,
+		secretKey:  secretKey,
 	}
 }
 
@@ -82,69 +72,23 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspace := workspaces.CoreWorkspace{
+	cw := workspaces.CoreWorkspace{
 		Name:     input.Name,
 		Slug:     input.Slug,
 		TeamSize: input.TeamSize,
 	}
 
-	result, err := h.workspaces.Create(ctx, workspace)
+	workspace, err := h.workspaces.Create(ctx, cw, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Add creator as member
-	if err := h.workspaces.AddMember(ctx, result.ID, userID, "admin"); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Create a default team
-	team, err := h.teams.Create(ctx, teams.CoreTeam{
-		Name:      "Team 1",
-		Color:     result.Color,
-		Code:      "TM",
-		Workspace: result.ID,
-	})
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// switch the user's the last workspace to the new workspace
-	if err := h.users.UpdateUserWorkspace(ctx, userID, result.ID); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Add creator as member
-	if err := h.teams.AddMember(ctx, team.ID, userID, "admin"); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	statuses, err := h.statuses.TeamList(ctx, result.ID, team.ID)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Create default stories
-	stories := seedStories(team.ID, userID, statuses)
-	for _, story := range stories {
-		_, err := h.stories.Create(ctx, story, result.ID)
-		if err != nil {
-			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-		}
-	}
-
-	// Fetch the workspace again to include the role
-	result, err = h.workspaces.Get(ctx, result.ID, userID)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
 	span.AddEvent("workspace created.", trace.WithAttributes(
-		attribute.String("workspace_id", result.ID.String()),
-		attribute.String("user_id", userID.String()),
+		attribute.String("workspaceId", workspace.ID.String()),
+		attribute.String("userId", userID.String()),
 	))
-
-	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusCreated)
+	workspace.UserRole = "admin"
+	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusCreated)
 }
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -175,7 +119,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	span.AddEvent("workspace updated.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspaceId", workspaceID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusOK)
@@ -199,7 +143,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	span.AddEvent("workspace deleted.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspaceId", workspaceID.String()),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -228,16 +172,6 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 
 	if err := h.workspaces.AddMember(ctx, workspaceID, input.UserID, role); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Get user info to check if they have a last used workspace
-	user, err := h.users.GetUser(ctx, input.UserID)
-	if err != nil {
-		span.RecordError(err)
-	} else if user.LastUsedWorkspaceID == nil {
-		if err := h.users.UpdateUserWorkspace(ctx, input.UserID, workspaceID); err != nil {
-			span.RecordError(err)
-		}
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(

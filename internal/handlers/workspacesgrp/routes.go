@@ -29,13 +29,14 @@ type Config struct {
 
 func Routes(cfg Config, app *web.App) {
 
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB))
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher)
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService)
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService,
