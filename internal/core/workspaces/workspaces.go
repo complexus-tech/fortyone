@@ -3,6 +3,7 @@ package workspaces
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -15,6 +16,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 )
 
 // Service errors
@@ -90,6 +92,7 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	}
 	defer tx.Rollback()
 
+	// Critical operations in transaction
 	workspace, err := s.repo.Create(ctx, newWorkspace)
 	if err != nil {
 		span.RecordError(err)
@@ -112,38 +115,63 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 		return CoreWorkspace{}, err
 	}
 
-	// Add creator as member of the team
+	// Add creator as member of the default team
 	if err := s.teams.AddMember(ctx, team.ID, userID, "admin"); err != nil {
 		return CoreWorkspace{}, err
-	}
-
-	// switch the user's the last workspace to the new workspace
-	if err := s.users.UpdateUserWorkspace(ctx, userID, workspace.ID); err != nil {
-		s.log.Error(ctx, "failed to update user workspace", err)
-		// no need to rollback this is not a critical operation
-	}
-
-	// get a list of all the statuses for the team
-	statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
-	if err != nil {
-		s.log.Error(ctx, "failed to get statuses for the team", err)
-		// no need to rollback this is not a critical operation
-	}
-
-	// create default stories
-	stories := seedStories(team.ID, userID, statuses)
-	for _, story := range stories {
-		_, err := s.stories.Create(ctx, story, workspace.ID)
-		if err != nil {
-			s.log.Error(ctx, "failed to create story", err)
-			// no need to rollback this is not a critical operation
-		}
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		return CoreWorkspace{}, ErrTx
 	}
+
+	// Create a new context with timeout for non-critical operations
+	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// Create error group for concurrent operations
+	eg, ctx := errgroup.WithContext(ctxTimeout)
+
+	// Non-critical operation 1: Update user's last workspace
+	eg.Go(func() error {
+		if err := s.users.UpdateUserWorkspace(ctx, userID, workspace.ID); err != nil {
+			s.log.Error(ctx, "failed to update user workspace", err)
+		}
+		return nil // Always return nil as this is non-critical
+	})
+
+	// Non-critical operation 2: Get statuses and create stories
+	eg.Go(func() error {
+		// Get statuses
+		statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
+		if err != nil {
+			s.log.Error(ctx, "failed to get statuses for the team", err)
+			return nil // Non-critical, continue
+		}
+
+		// Create stories concurrently
+		storiesGroup, _ := errgroup.WithContext(ctx)
+		newStories := seedStories(team.ID, userID, statuses)
+
+		for _, story := range newStories {
+			func(ns stories.CoreNewStory) {
+				storiesGroup.Go(func() error {
+					_, err := s.stories.Create(ctx, ns, workspace.ID)
+					if err != nil {
+						s.log.Error(ctx, "failed to create story", err)
+					}
+					return nil // Non-critical, continue
+				})
+			}(story)
+		}
+
+		// Wait for all stories to be processed
+		_ = storiesGroup.Wait()
+		return nil
+	})
+
+	// Wait for all non-critical operations to complete, but don't block on errors
+	_ = eg.Wait()
 
 	span.AddEvent("workspace created.", trace.WithAttributes(
 		attribute.String("workspace_id", workspace.ID.String()),
