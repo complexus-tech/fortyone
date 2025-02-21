@@ -149,24 +149,14 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 			return nil // Non-critical, continue
 		}
 
-		// Create stories concurrently
-		storiesGroup, _ := errgroup.WithContext(ctx)
 		newStories := seedStories(team.ID, userID, statuses)
-
+		// these do not need to be concurrent for the sequence id to work
 		for _, story := range newStories {
-			func(ns stories.CoreNewStory) {
-				storiesGroup.Go(func() error {
-					_, err := s.stories.Create(ctx, ns, workspace.ID)
-					if err != nil {
-						s.log.Error(ctx, "failed to create story", err)
-					}
-					return nil // Non-critical, continue
-				})
-			}(story)
+			_, err := s.stories.Create(ctx, story, workspace.ID)
+			if err != nil {
+				s.log.Error(ctx, "failed to create story", err)
+			}
 		}
-
-		// Wait for all stories to be processed
-		_ = storiesGroup.Wait()
 		return nil
 	})
 
