@@ -2,12 +2,19 @@ package workspaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+)
+
+// Service errors
+var (
+	ErrNotFound  = errors.New("workspace not found")
+	ErrSlugTaken = errors.New("workspace with this url already exists")
 )
 
 // Repository provides access to the users storage.

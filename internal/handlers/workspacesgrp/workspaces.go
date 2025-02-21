@@ -90,7 +90,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	result, err := h.workspaces.Create(ctx, workspace)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
 	// Add creator as member

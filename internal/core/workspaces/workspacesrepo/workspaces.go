@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"math/rand"
 
@@ -145,6 +146,9 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 	defer stmt.Close()
 
 	if err := stmt.GetContext(ctx, &result, params); err != nil {
+		if strings.Contains(err.Error(), "unique constraint") {
+			return workspaces.CoreWorkspace{}, workspaces.ErrSlugTaken
+		}
 		errMsg := fmt.Sprintf("failed to create workspace: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -191,7 +195,7 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 
 	if err := stmt.GetContext(ctx, &result, params); err != nil {
 		if err == sql.ErrNoRows {
-			return workspaces.CoreWorkspace{}, errors.New("workspace not found")
+			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
 		}
 		errMsg := fmt.Sprintf("failed to update workspace: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -239,7 +243,7 @@ func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("workspace not found")
+		return workspaces.ErrNotFound
 	}
 
 	return nil
@@ -342,7 +346,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 
 	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
 		if err == sql.ErrNoRows {
-			return workspaces.CoreWorkspace{}, errors.New("workspace not found")
+			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
 		}
 		errMsg := fmt.Sprintf("failed to get workspace: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -392,7 +396,7 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("member not found")
+		return workspaces.ErrNotFound
 	}
 
 	return nil
