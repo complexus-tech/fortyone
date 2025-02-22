@@ -3,6 +3,7 @@
 import ky from "ky";
 import { auth, updateSession } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
+import { requestError } from "../fetch-error";
 
 type NewWorkspace = {
   name: string;
@@ -14,18 +15,22 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
   const session = await auth();
-  const workspace = await ky
-    .post(`${apiUrl}/workspaces`, {
-      json: newWorkspace,
-      headers: {
-        Authorization: `Bearer ${session?.token}`,
-      },
-    })
-    .json<ApiResponse<Workspace>>();
+  try {
+    const workspace = await ky
+      .post(`${apiUrl}/workspaces`, {
+        json: newWorkspace,
+        headers: {
+          Authorization: `Bearer ${session?.token}`,
+        },
+      })
+      .json<ApiResponse<Workspace>>();
+    await updateSession({
+      activeWorkspace: workspace.data,
+    }).catch();
 
-  await updateSession({
-    activeWorkspace: workspace.data,
-  });
-
-  return workspace.data;
+    return workspace;
+  } catch (error) {
+    const data = await requestError(error);
+    return data;
+  }
 }

@@ -5,6 +5,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
@@ -18,7 +19,7 @@ export const CreateWorkspaceForm = () => {
     slug: "",
     teamSize: "2-10",
   });
-  const workspaces = session?.workspaces || [];
+  const prevWorkspaces = session?.workspaces || [];
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,18 +28,24 @@ export const CreateWorkspaceForm = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      setIsLoading(true);
-      const workspace = await createWorkspaceAction(form);
-      if (workspaces.length === 0) {
-        router.push("/onboarding/welcome");
-      } else if (domain.includes("localhost")) {
-        window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
-      } else {
-        window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
-      }
-    } catch (error) {
+
+    setIsLoading(true);
+    const res = await createWorkspaceAction(form);
+    if (res.error?.message) {
       setIsLoading(false);
+      toast.error("Failed to create workspace", {
+        description: res.error.message || "Something went wrong",
+      });
+      return;
+    }
+    const workspace = res.data!;
+
+    if (prevWorkspaces.length === 0) {
+      router.push("/onboarding/welcome");
+    } else if (domain.includes("localhost")) {
+      window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
+    } else {
+      window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
     }
   };
 
