@@ -3,7 +3,6 @@ package workspaces
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -16,7 +15,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
 )
 
 // Service errors
@@ -129,48 +127,31 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 		return CoreWorkspace{}, err
 	}
 
+	// Update user's last used workspace
+	if err := s.users.UpdateUserWorkspace(ctx, userID, workspace.ID); err != nil {
+		s.log.Error(ctx, "failed to update user's last used workspace", err)
+	}
+
+	// Get statuses
+	statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get statuses for the team", err)
+		// Non-critical, continue
+	}
+
+	newStories := seedStories(team.ID, userID, statuses)
+	// these do not need to be concurrent for the sequence id to work
+	for _, story := range newStories {
+		_, err := s.stories.Create(ctx, story, workspace.ID)
+		if err != nil {
+			s.log.Error(ctx, "failed to create story", err)
+		}
+	}
+
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		return CoreWorkspace{}, ErrTx
 	}
-
-	// Create a new context with timeout for non-critical operations
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	// Create error group for concurrent operations
-	eg, ctx := errgroup.WithContext(ctxTimeout)
-
-	// Non-critical operation 1: Update user's last workspace
-	eg.Go(func() error {
-		if err := s.users.UpdateUserWorkspace(ctx, userID, workspace.ID); err != nil {
-			s.log.Error(ctx, "failed to update user workspace", err)
-		}
-		return nil // Always return nil as this is non-critical
-	})
-
-	// Non-critical operation 2: Get statuses and create stories
-	eg.Go(func() error {
-		// Get statuses
-		statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
-		if err != nil {
-			s.log.Error(ctx, "failed to get statuses for the team", err)
-			return nil // Non-critical, continue
-		}
-
-		newStories := seedStories(team.ID, userID, statuses)
-		// these do not need to be concurrent for the sequence id to work
-		for _, story := range newStories {
-			_, err := s.stories.Create(ctx, story, workspace.ID)
-			if err != nil {
-				s.log.Error(ctx, "failed to create story", err)
-			}
-		}
-		return nil
-	})
-
-	// Wait for all non-critical operations to complete, but don't block on errors
-	_ = eg.Wait()
 
 	span.AddEvent("workspace created.", trace.WithAttributes(
 		attribute.String("workspace_id", workspace.ID.String()),
