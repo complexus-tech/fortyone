@@ -2,7 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { revalidateTag } from "next/cache";
 import type { Workspace, UserRole } from "@/types";
+import { workspaceTags } from "@/constants/keys";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
@@ -74,6 +76,7 @@ export const {
 
       if (trigger === "update") {
         token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        revalidateTag(workspaceTags.lists());
       }
 
       return token;
