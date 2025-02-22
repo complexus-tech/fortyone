@@ -3,7 +3,6 @@ package workspacesgrp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
 
@@ -81,7 +80,6 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		TeamSize: input.TeamSize,
 	}
 
-	fmt.Println("userID", userID)
 	workspace, err := h.workspaces.Create(ctx, cw, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)

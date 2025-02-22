@@ -340,6 +340,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			:last_login_at
 		)
 		RETURNING
+			user_id,
 			username,
 			email,
 			full_name,

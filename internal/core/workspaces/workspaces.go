@@ -3,7 +3,6 @@ package workspaces
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -109,7 +108,6 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	}
 
 	// Add creator as member of the workspace
-	fmt.Println("userID before add member", userID)
 	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, userID, "admin"); err != nil {
 		return CoreWorkspace{}, err
 	}
