@@ -29,8 +29,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const accountItems = [
     { title: "Profile", href: "/settings/account" },
     { title: "Preferences", href: "/settings/account/preferences" },
-    // { title: "API", href: "/settings/account/api" },
-    // { title: "Security", href: "/settings/account/security" },
+    { title: "Security", href: "/settings/account/security" },
     { title: "Delete account", href: "/settings/account/delete" },
   ];
 
@@ -39,22 +38,13 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     ...(isAdmin
       ? [{ title: "Members", href: "/settings/workspace/members" }]
       : []),
-    // { title: "Billing", href: "/settings/workspace/billing" },
-    // { title: "Imports / Sync", href: "/settings/workspace/imports" },
-    // { title: "Integrations", href: "/settings/workspace/integrations" },
-    // { title: "Webhooks", href: "/settings/workspace/webhooks" },
-    // { title: "Security", href: "/settings/workspace/security" },
   ];
 
   const featureItems = [
-    // { title: "Automations", href: "/settings/workspace/automations" },
     ...(isAdmin ? [{ title: "Teams", href: "/settings/workspace/teams" }] : []),
     ...(isAdmin || isMember
       ? [{ title: "Labels", href: "/settings/workspace/labels" }]
       : []),
-    // { title: "Sprints", href: "/settings/workspace/sprints" },
-    // { title: "Custom fields", href: "/settings/workspace/custom-fields" },
-    // { title: "Templates", href: "/settings/workspace/templates" },
   ];
 
   const navigation = [
