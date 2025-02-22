@@ -1,19 +1,32 @@
 "use client";
 
-import { Box, Input, Select, Text, Button } from "ui";
+import { Box, Input, Select, Text, Button, Flex } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { CloseIcon } from "icons";
 import { createWorkspaceAction } from "@/lib/actions/create-workspace";
+import { useDebounce } from "@/hooks";
+import { checkWorkspaceAvailability } from "@/lib/actions/check-workspace-availability";
+import type { ApiResponse } from "@/types";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
   const { data: session } = useSession();
+  const checkAvailability = useDebounce<
+    string,
+    ApiResponse<{
+      available: boolean;
+      slug: string;
+    }>
+  >(checkWorkspaceAvailability, 2000);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [hasOrgBlurred, setHasOrgBlurred] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -21,9 +34,41 @@ export const CreateWorkspaceForm = () => {
   });
   const prevWorkspaces = session?.workspaces || [];
 
+  const formatSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-") // Replace non-alphanumeric chars with dash
+      .replace(/-+/g, "-") // Replace multiple dashes with single dash
+      .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const updates = { ...prev, [name]: value };
+
+      // If it's the org name and hasn't been blurred, update slug too
+      if (name === "name" && !hasOrgBlurred) {
+        updates.slug = formatSlug(value);
+      }
+
+      // Check availability when slug changes
+      if (name === "slug" || (name === "name" && !hasOrgBlurred)) {
+        const slugToCheck = updates.slug;
+        if (slugToCheck) {
+          setIsAvailable(true); // Reset availability while checking
+          void checkAvailability(slugToCheck)
+            .then((res) => {
+              setIsAvailable(res.data?.available || false);
+            })
+            .catch(() => {
+              setIsAvailable(false);
+            });
+        }
+      }
+
+      return updates;
+    });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -53,19 +98,54 @@ export const CreateWorkspaceForm = () => {
     <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
         className="rounded-lg"
-        label="Organization"
+        label="Your Workspace"
         name="name"
+        onBlur={() => {
+          setHasOrgBlurred(true);
+        }}
         onChange={handleChange}
-        placeholder="Enter organization name"
+        placeholder="Enter workspace name"
         required
         value={form.name}
       />
       <Input
         className="rounded-lg"
-        label="URL"
+        hasError={!isAvailable}
+        helpText={
+          !isAvailable
+            ? "This URL is already taken. Please try a different one."
+            : "Pick a simple, memorable URL for your workspace"
+        }
+        label="Workspace URL"
+        maxLength={16}
+        minLength={3}
         name="slug"
         onChange={handleChange}
+        pattern="^[a-z][a-z0-9-]*$"
         required
+        rightIcon={
+          form.slug ? (
+            <Flex align="center" gap={2}>
+              <Text
+                className="antialiased"
+                color="muted"
+                fontWeight="semibold"
+              >{`.${domain}`}</Text>
+              {!isAvailable ? (
+                <Flex
+                  align="center"
+                  className="size-5 rounded-full bg-danger"
+                  justify="center"
+                >
+                  <CloseIcon
+                    className="h-3 text-white dark:text-white"
+                    strokeWidth={3}
+                  />
+                </Flex>
+              ) : null}
+            </Flex>
+          ) : null
+        }
         value={form.slug}
       />
       <Box>

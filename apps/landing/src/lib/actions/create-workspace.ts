@@ -25,12 +25,12 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
       })
       .json<ApiResponse<Workspace>>();
     await updateSession({
-      activeWorkspace: workspace.data,
+      activeWorkspace: workspace.data!,
     }).catch();
 
     return workspace;
   } catch (error) {
-    const data = await requestError(error);
+    const data = await requestError<Workspace>(error);
     return data;
   }
 }
