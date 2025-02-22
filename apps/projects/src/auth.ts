@@ -62,31 +62,26 @@ export const {
   },
 
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
-        const workspaces = await getWorkspaces(session?.token as string);
         return {
           ...token,
           id: user.id,
           accessToken: user.token,
           lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-          workspaces,
         };
       }
 
       if (trigger === "update") {
-        if (session?.activeWorkspace) {
-          token.lastUsedWorkspaceId = session.activeWorkspace.id;
-        }
-        if (session?.workspaces) {
-          token.workspaces = session.workspaces;
-        }
+        token.lastUsedWorkspaceId = session.activeWorkspace.id;
       }
 
       return token;
     },
-    session({ session, token }) {
-      const workspaces = token.workspaces as Workspace[];
+    async session({ session, token }) {
+      // eslint-disable-next-line no-console -- ok for now
+      console.log("session", session);
+      const workspaces = await getWorkspaces(token.accessToken as string);
       const activeWorkspace =
         workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
         workspaces.at(0);
