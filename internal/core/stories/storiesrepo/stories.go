@@ -1052,7 +1052,7 @@ func (r *repo) CreateWithTx(ctx context.Context, tx *sqlx.Tx, story *stories.Cor
 		}
 	}
 
-	lastSequence, commit, rollback, err := r.GetNextSequenceIDWithTx(ctx, tx, story.Team, workspaceId)
+	lastSequence, err := r.GetNextSequenceIDWithTx(ctx, tx, story.Team, workspaceId)
 	if err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
 	}
@@ -1060,19 +1060,14 @@ func (r *repo) CreateWithTx(ctx context.Context, tx *sqlx.Tx, story *stories.Cor
 
 	cs, err := r.insertStoryWithTx(ctx, tx, story)
 	if err != nil {
-		rollback()
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to insert story: %w", err)
-	}
-
-	if err := commit(); err != nil {
-		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return toCoreStory(cs), nil
 }
 
 // GetNextSequenceIDWithTx gets the next sequence ID using an existing transaction.
-func (r *repo) GetNextSequenceIDWithTx(ctx context.Context, tx *sqlx.Tx, teamID uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error) {
+func (r *repo) GetNextSequenceIDWithTx(ctx context.Context, tx *sqlx.Tx, teamID uuid.UUID, workspaceId uuid.UUID) (int, error) {
 	var currentSequence int
 
 	query := `
@@ -1088,7 +1083,7 @@ func (r *repo) GetNextSequenceIDWithTx(ctx context.Context, tx *sqlx.Tx, teamID 
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("failed to prepare named statement: %w", err)
+		return 0, fmt.Errorf("failed to prepare named statement: %w", err)
 	}
 	defer stmt.Close()
 
@@ -1102,7 +1097,7 @@ func (r *repo) GetNextSequenceIDWithTx(ctx context.Context, tx *sqlx.Tx, teamID 
 		`
 		stmt, err = tx.PrepareNamedContext(ctx, q)
 		if err != nil {
-			return 0, nil, nil, fmt.Errorf("failed to prepare named statement for insert: %w", err)
+			return 0, fmt.Errorf("failed to prepare named statement for insert: %w", err)
 		}
 		defer stmt.Close()
 
@@ -1110,18 +1105,10 @@ func (r *repo) GetNextSequenceIDWithTx(ctx context.Context, tx *sqlx.Tx, teamID 
 	}
 
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("failed to get/update sequence: %w", err)
+		return 0, fmt.Errorf("failed to get/update sequence: %w", err)
 	}
 
-	commit := func() error {
-		return nil // Transaction will be committed by the caller
-	}
-
-	rollback := func() error {
-		return nil // Transaction will be rolled back by the caller
-	}
-
-	return currentSequence, commit, rollback, nil
+	return currentSequence, nil
 }
 
 // insertStoryWithTx inserts a story using an existing transaction.

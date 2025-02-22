@@ -587,52 +587,50 @@ func (r *repo) createDefaultStatusesWithTx(ctx context.Context, tx *sqlx.Tx, tea
 	ctx, span := web.AddSpan(ctx, "teamsrepo.createDefaultStatusesWithTx")
 	defer span.End()
 
-	// Create story statuses
-	storyQuery := `
+	// Build values for story statuses batch insert
+	storyValues := make([]string, len(teams.DefaultStoryStatuses))
+	storyParams := make(map[string]interface{})
+	for i, status := range teams.DefaultStoryStatuses {
+		paramPrefix := fmt.Sprintf("s%d_", i)
+		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		storyParams[paramPrefix+"name"] = status.Name
+		storyParams[paramPrefix+"category"] = status.Category
+		storyParams[paramPrefix+"order_index"] = status.OrderIndex
+	}
+	storyParams["team_id"] = teamID
+	storyParams["workspace_id"] = workspaceID
+
+	// Batch insert story statuses
+	storyQuery := fmt.Sprintf(`
 		INSERT INTO statuses (name, category, order_index, team_id, workspace_id)
-		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
-	`
-	storyStmt, err := tx.PrepareNamedContext(ctx, storyQuery)
-	if err != nil {
-		return fmt.Errorf("failed to prepare story status statement: %w", err)
-	}
-	defer storyStmt.Close()
+		VALUES %s
+	`, strings.Join(storyValues, ","))
 
-	for _, status := range teams.DefaultStoryStatuses {
-		params := map[string]interface{}{
-			"name":         status.Name,
-			"category":     status.Category,
-			"order_index":  status.OrderIndex,
-			"team_id":      teamID,
-			"workspace_id": workspaceID,
-		}
-		if _, err := storyStmt.ExecContext(ctx, params); err != nil {
-			return fmt.Errorf("failed to create story status: %w", err)
-		}
+	if _, err := tx.NamedExecContext(ctx, storyQuery, storyParams); err != nil {
+		return fmt.Errorf("failed to create story statuses: %w", err)
 	}
 
-	// Create objective statuses
-	objectiveQuery := `
+	// Build values for objective statuses batch insert
+	objectiveValues := make([]string, len(teams.DefaultObjectiveStatuses))
+	objectiveParams := make(map[string]interface{})
+	for i, status := range teams.DefaultObjectiveStatuses {
+		paramPrefix := fmt.Sprintf("o%d_", i)
+		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		objectiveParams[paramPrefix+"name"] = status.Name
+		objectiveParams[paramPrefix+"category"] = status.Category
+		objectiveParams[paramPrefix+"order_index"] = status.OrderIndex
+	}
+	objectiveParams["team_id"] = teamID
+	objectiveParams["workspace_id"] = workspaceID
+
+	// Batch insert objective statuses
+	objectiveQuery := fmt.Sprintf(`
 		INSERT INTO objective_statuses (name, category, order_index, team_id, workspace_id)
-		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
-	`
-	objectiveStmt, err := tx.PrepareNamedContext(ctx, objectiveQuery)
-	if err != nil {
-		return fmt.Errorf("failed to prepare objective status statement: %w", err)
-	}
-	defer objectiveStmt.Close()
+		VALUES %s
+	`, strings.Join(objectiveValues, ","))
 
-	for _, status := range teams.DefaultObjectiveStatuses {
-		params := map[string]interface{}{
-			"name":         status.Name,
-			"category":     status.Category,
-			"order_index":  status.OrderIndex,
-			"team_id":      teamID,
-			"workspace_id": workspaceID,
-		}
-		if _, err := objectiveStmt.ExecContext(ctx, params); err != nil {
-			return fmt.Errorf("failed to create objective status: %w", err)
-		}
+	if _, err := tx.NamedExecContext(ctx, objectiveQuery, objectiveParams); err != nil {
+		return fmt.Errorf("failed to create objective statuses: %w", err)
 	}
 
 	return nil
