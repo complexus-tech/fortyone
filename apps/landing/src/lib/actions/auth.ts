@@ -1,6 +1,7 @@
 "use server";
 
 import ky from "ky";
+import type { User } from "next-auth";
 import type { ApiResponse, UserRole } from "@/types";
 import { requestError } from "../fetch-error";
 
@@ -48,7 +49,7 @@ export async function authenticateWithToken({
       error: null,
     };
   } catch (error) {
-    const data = await requestError(error);
+    const data = await requestError<User>(error);
     return data;
   }
 }
