@@ -257,14 +257,12 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, rol
 		INSERT INTO workspace_members (
 			workspace_id,
 			user_id,
-			role,
-			created_at
+			role
 		)
 		VALUES (
 			:workspace_id,
 			:user_id,
-			:role,
-			NOW()
+			:role
 		)
 	`
 

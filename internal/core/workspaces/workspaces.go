@@ -109,7 +109,7 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	}
 
 	// Add creator as member of the workspace
-	if err := s.AddMember(ctx, workspace.ID, userID, "admin"); err != nil {
+	if err := s.repo.AddMember(ctx, workspace.ID, userID, "admin"); err != nil {
 		return CoreWorkspace{}, err
 	}
 
