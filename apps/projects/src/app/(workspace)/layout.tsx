@@ -70,7 +70,6 @@ export default async function RootLayout({
   if (!session?.workspaces.find((w) => w.id === workspace?.id)) {
     await updateSession({
       activeWorkspace: workspace,
-      workspaces,
     });
   }
 
