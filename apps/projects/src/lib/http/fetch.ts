@@ -3,7 +3,6 @@ import type { Options } from "ky";
 import ky from "ky";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
-// import { getWorkspaces } from "../queries/workspaces/get-workspaces";
 import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;

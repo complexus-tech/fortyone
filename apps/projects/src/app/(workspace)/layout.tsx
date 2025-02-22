@@ -48,15 +48,24 @@ export default async function RootLayout({
   const headersList = await headers();
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
-  const workspaces = await getWorkspaces(session?.token);
+
+  // First try to find workspace in session
+  let workspace = session?.workspaces.find(
+    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
+  );
+
+  // Only fetch workspaces if not found in session
+  let workspaces = session?.workspaces || [];
+  if (!workspace) {
+    workspaces = await getWorkspaces(session?.token);
+    workspace = workspaces.find(
+      (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
+    );
+  }
 
   if (workspaces.length === 0) {
     redirect("/onboarding/create");
   }
-
-  const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
-  );
 
   if (!session?.workspaces.find((w) => w.id === workspace?.id)) {
     await updateSession({
