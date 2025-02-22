@@ -7,7 +7,7 @@ import { authenticateUser } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
 const domain =
-  process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
+  process.env.NODE_ENV === "production" ? ".complexus.app" : "localhost";
 const useSecureCookies = process.env.NODE_ENV === "production";
 declare module "next-auth" {
   interface User {
@@ -79,8 +79,6 @@ export const {
       return token;
     },
     async session({ session, token }) {
-      // eslint-disable-next-line no-console -- ok for now
-      console.log("session", session);
       const workspaces = await getWorkspaces(token.accessToken as string);
       const activeWorkspace =
         workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
