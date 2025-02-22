@@ -2,9 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { revalidateTag } from "next/cache";
 import type { Workspace, UserRole } from "@/types";
-import { workspaceTags } from "@/constants/keys";
 import { authenticateUser } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
@@ -64,25 +62,31 @@ export const {
   },
 
   callbacks: {
-    jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
+        const workspaces = await getWorkspaces(session?.token as string);
         return {
           ...token,
           id: user.id,
           accessToken: user.token,
           lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+          workspaces,
         };
       }
 
       if (trigger === "update") {
-        token.lastUsedWorkspaceId = session.activeWorkspace.id;
-        revalidateTag(workspaceTags.lists());
+        if (session?.activeWorkspace) {
+          token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        }
+        if (session?.workspaces) {
+          token.workspaces = session.workspaces;
+        }
       }
 
       return token;
     },
-    async session({ session, token }) {
-      const workspaces = await getWorkspaces(token.accessToken as string);
+    session({ session, token }) {
+      const workspaces = token.workspaces as Workspace[];
       const activeWorkspace =
         workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
         workspaces.at(0);
