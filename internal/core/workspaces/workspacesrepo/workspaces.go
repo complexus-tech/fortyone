@@ -401,3 +401,39 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 
 	return nil
 }
+
+func (r *repo) CheckSlugAvailability(ctx context.Context, slug string) (bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.CheckSlugAvailability")
+	defer span.End()
+
+	query := `
+		SELECT EXISTS (
+			SELECT 1 
+			FROM workspaces 
+			WHERE slug = :slug
+		)
+	`
+
+	params := map[string]interface{}{
+		"slug": slug,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return false, err
+	}
+	defer stmt.Close()
+
+	var exists bool
+	if err := stmt.GetContext(ctx, &exists, params); err != nil {
+		errMsg := fmt.Sprintf("failed to check slug availability: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to check slug"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return false, err
+	}
+
+	return !exists, nil
+}

@@ -26,6 +26,14 @@ var (
 	ErrTx        = errors.New("failed to create a workspace")
 )
 
+var restrictedSlugs = []string{
+	"admin", "internal", "qa", "staging", "ops", "team", "complexus",
+	"dev", "test", "prod", "staging", "development", "testing",
+	"production", "staff", "hr", "finance", "legal", "marketing",
+	"sales", "support", "it", "security", "engineering", "design",
+	"product", "auth",
+}
+
 // Repository provides access to the users storage.
 type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
@@ -35,6 +43,7 @@ type Repository interface {
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
+	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
 }
 
 // Service provides user-related operations.
@@ -263,4 +272,29 @@ func (s *Service) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUI
 		attribute.String("user_id", userID.String()),
 	))
 	return nil
+}
+
+func (s *Service) CheckSlugAvailability(ctx context.Context, slug string) (bool, error) {
+	s.log.Info(ctx, "business.core.workspaces.checkSlugAvailability")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.CheckSlugAvailability")
+	defer span.End()
+
+	// Check against restricted slugs first
+	for _, restrictedSlug := range restrictedSlugs {
+		if slug == restrictedSlug {
+			return false, nil
+		}
+	}
+
+	available, err := s.repo.CheckSlugAvailability(ctx, slug)
+	if err != nil {
+		span.RecordError(err)
+		return false, err
+	}
+
+	span.AddEvent("slug availability checked.", trace.WithAttributes(
+		attribute.String("slug", slug),
+		attribute.Bool("available", available),
+	))
+	return available, nil
 }

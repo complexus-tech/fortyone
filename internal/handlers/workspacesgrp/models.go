@@ -53,3 +53,8 @@ type AppNewWorkspaceMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
 	Role   string    `json:"role" validate:"required,oneof=member guest admin"`
 }
+
+type AppSlugAvailability struct {
+	Available bool   `json:"available"`
+	Slug      string `json:"slug"`
+}

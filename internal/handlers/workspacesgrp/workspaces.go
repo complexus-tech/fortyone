@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -235,4 +236,41 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.CheckSlugAvailability")
+	defer span.End()
+
+	slug := r.URL.Query().Get("slug")
+	if slug == "" {
+		return web.RespondError(ctx, w, errors.New("slug is required"), http.StatusBadRequest)
+	}
+
+	// Validate slug format
+	if len(slug) < 3 || len(slug) > 255 {
+		return web.RespondError(ctx, w, errors.New("slug must be between 3 and 255 characters"), http.StatusBadRequest)
+	}
+
+	// Only allow lowercase letters, numbers, and hyphens
+	if !regexp.MustCompile(`^[a-z0-9-]+$`).MatchString(slug) {
+		return web.RespondError(ctx, w, errors.New("slug can only contain lowercase letters, numbers, and hyphens"), http.StatusBadRequest)
+	}
+
+	available, err := h.workspaces.CheckSlugAvailability(ctx, slug)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	response := AppSlugAvailability{
+		Available: available,
+		Slug:      slug,
+	}
+
+	span.AddEvent("slug availability checked.", trace.WithAttributes(
+		attribute.String("slug", slug),
+		attribute.Bool("available", available),
+	))
+
+	return web.Respond(ctx, w, response, http.StatusOK)
 }
