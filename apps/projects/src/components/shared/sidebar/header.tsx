@@ -17,7 +17,7 @@ import {
   ArrowRightIcon,
 } from "icons";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useSession } from "next-auth/react";
 import nProgress from "nprogress";
@@ -34,7 +34,6 @@ const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const Header = () => {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const { analytics } = useAnalytics();
@@ -45,7 +44,6 @@ export const Header = () => {
   const { userRole } = useUserRole();
   const { data: workspaces = [] } = useWorkspaces(session!.token);
   const workspace = getCurrentWorkspace(workspaces);
-  const callbackUrl = `${pathname}?${searchParams.toString()}`;
 
   useHotkeys("shift+n", () => {
     setIsOpen(true);
@@ -60,7 +58,7 @@ export const Header = () => {
   });
 
   const handleLogout = async () => {
-    await logOut(callbackUrl);
+    await logOut();
     analytics.logout(true);
   };
 
