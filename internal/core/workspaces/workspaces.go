@@ -35,10 +35,11 @@ var restrictedSlugs = []string{
 // Repository provides access to the users storage.
 type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
-	Create(ctx context.Context, newWorkspace CoreWorkspace) (CoreWorkspace, error)
+	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
 	Delete(ctx context.Context, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
+	AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
@@ -93,26 +94,26 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	defer span.End()
 
 	// Start transaction
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return CoreWorkspace{}, ErrTx
 	}
 	defer tx.Rollback()
 
 	// Critical operations in transaction
-	workspace, err := s.repo.Create(ctx, newWorkspace)
+	workspace, err := s.repo.Create(ctx, tx, newWorkspace)
 	if err != nil {
 		span.RecordError(err)
 		return CoreWorkspace{}, err
 	}
 
 	// Add creator as member of the workspace
-	if err := s.repo.AddMember(ctx, workspace.ID, userID, "admin"); err != nil {
+	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, userID, "admin"); err != nil {
 		return CoreWorkspace{}, err
 	}
 
 	// Create a default team
-	team, err := s.teams.Create(ctx, teams.CoreTeam{
+	team, err := s.teams.CreateTx(ctx, tx, teams.CoreTeam{
 		Name:      "Team 1",
 		Color:     workspace.Color,
 		Code:      "TM",
@@ -123,29 +124,40 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	}
 
 	// Add creator as member of the default team
-	if err := s.teams.AddMember(ctx, team.ID, userID, "admin"); err != nil {
+	if err := s.teams.AddMemberTx(ctx, tx, team.ID, userID, "admin"); err != nil {
 		return CoreWorkspace{}, err
 	}
 
 	// Update user's last used workspace
-	if err := s.users.UpdateUserWorkspace(ctx, userID, workspace.ID); err != nil {
+	if err := s.users.UpdateUserWorkspaceWithTx(ctx, tx, userID, workspace.ID); err != nil {
 		s.log.Error(ctx, "failed to update user's last used workspace", err)
 	}
 
 	// Get statuses
-	statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
+	statuses, err := s.statuses.TeamListWithTx(ctx, tx, workspace.ID, team.ID)
 	if err != nil {
 		s.log.Error(ctx, "failed to get statuses for the team", err)
 		// Non-critical, continue
 	}
 
-	newStories := seedStories(team.ID, userID, statuses)
-	// these do not need to be concurrent for the sequence id to work
-	for _, story := range newStories {
-		_, err := s.stories.Create(ctx, story, workspace.ID)
-		if err != nil {
-			s.log.Error(ctx, "failed to create story", err)
+	description := "This is your first story. Feel free to edit or delete it."
+	story := &stories.CoreSingleStory{
+		Title:       "Welcome to your new workspace! 👋",
+		Description: &description,
+		Team:        team.ID,
+		Status:      nil, // Will be set to first status
+	}
+
+	// Find the "To Do" status
+	for _, status := range statuses {
+		if status.Name == "To Do" {
+			story.Status = &status.ID
+			break
 		}
+	}
+
+	if _, err := s.stories.CreateWithTx(ctx, tx, story, workspace.ID); err != nil {
+		s.log.Error(ctx, "failed to create welcome story", err)
 	}
 
 	// Commit the transaction

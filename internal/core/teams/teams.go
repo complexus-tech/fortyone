@@ -6,6 +6,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -15,9 +16,11 @@ type Repository interface {
 	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
 	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
+	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error
+	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 }
 
@@ -89,6 +92,24 @@ func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {
 	return result, nil
 }
 
+func (s *Service) CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error) {
+	s.log.Info(ctx, "business.core.teams.createTx")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.CreateTx")
+	defer span.End()
+
+	result, err := s.repo.CreateTx(ctx, tx, team)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeam{}, err
+	}
+
+	span.AddEvent("team created.", trace.WithAttributes(
+		attribute.String("team_id", result.ID.String()),
+		attribute.String("workspace_id", result.Workspace.String()),
+	))
+	return result, nil
+}
+
 func (s *Service) Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.update")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.Update")
@@ -134,6 +155,28 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID, role 
 	}
 
 	if err := s.repo.AddMember(ctx, teamID, userID, role); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("team member added.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("role", role),
+	))
+	return nil
+}
+
+func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error {
+	s.log.Info(ctx, "business.core.teams.addMemberTx")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMemberTx")
+	defer span.End()
+
+	if role == "" {
+		role = "member"
+	}
+
+	if err := s.repo.AddMemberTx(ctx, tx, teamID, userID, role); err != nil {
 		span.RecordError(err)
 		return err
 	}

@@ -102,7 +102,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 	return toCoreWorkspacesWithRole(workspaces), nil
 }
 
-func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (workspaces.CoreWorkspace, error) {
+func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.CoreWorkspace) (workspaces.CoreWorkspace, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Create")
 	defer span.End()
 
@@ -136,7 +136,7 @@ func (r *repo) Create(ctx context.Context, workspace workspaces.CoreWorkspace) (
 		"color":     generateRandomColor(),
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -250,7 +250,15 @@ func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 }
 
 func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.AddMember")
+	return r.addMemberImpl(ctx, r.db, workspaceID, userID, role)
+}
+
+func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error {
+	return r.addMemberImpl(ctx, tx, workspaceID, userID, role)
+}
+
+func (r *repo) addMemberImpl(ctx context.Context, executor sqlx.ExtContext, workspaceID, userID uuid.UUID, role string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.addMemberImpl")
 	defer span.End()
 
 	query := `
@@ -272,7 +280,18 @@ func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, rol
 		"role":         role,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	// Use type assertion to get the correct type for PrepareNamedContext
+	var stmt *sqlx.NamedStmt
+	var err error
+	switch e := executor.(type) {
+	case *sqlx.DB:
+		stmt, err = e.PrepareNamedContext(ctx, query)
+	case *sqlx.Tx:
+		stmt, err = e.PrepareNamedContext(ctx, query)
+	default:
+		return fmt.Errorf("unsupported executor type: %T", executor)
+	}
+
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)

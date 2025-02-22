@@ -475,3 +475,165 @@ func (r *repo) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, works
 
 	return nil
 }
+
+// CreateTx creates a new team using an existing transaction.
+func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (teams.CoreTeam, error) {
+	ctx, span := web.AddSpan(ctx, "teamsrepo.CreateTx")
+	defer span.End()
+
+	params := map[string]interface{}{
+		"name":         team.Name,
+		"code":         team.Code,
+		"color":        team.Color,
+		"is_private":   team.IsPrivate,
+		"workspace_id": team.Workspace,
+	}
+
+	query := `
+		INSERT INTO teams (name, code, color, is_private, workspace_id)
+		VALUES (:name, :code, :color, :is_private, :workspace_id)
+		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at
+	`
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+	defer stmt.Close()
+
+	var dbTeam dbTeam
+	if err := stmt.GetContext(ctx, &dbTeam, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("team code %s already exists", team.Code)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return teams.CoreTeam{}, teams.ErrTeamCodeExists
+		}
+
+		errMsg := fmt.Sprintf("failed to execute query: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+
+	if err := r.createDefaultStatusesWithTx(ctx, tx, dbTeam.ID, dbTeam.Workspace); err != nil {
+		errMsg := fmt.Sprintf("failed to create default statuses: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default statuses"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return teams.CoreTeam{}, err
+	}
+
+	return toCoreTeam(dbTeam), nil
+}
+
+// AddMemberTx adds a member to a team using an existing transaction.
+func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.AddMemberTx")
+	defer span.End()
+
+	query := `
+		INSERT INTO team_members (
+			team_id,
+			user_id,
+			role,
+			created_at,
+			updated_at
+		)
+		VALUES (
+			:team_id,
+			:user_id,
+			:role,
+			NOW(),
+			NOW()
+		)
+	`
+
+	params := map[string]interface{}{
+		"team_id": teamID,
+		"user_id": userID,
+		"role":    role,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("user %s is already a member of team %s", userID, teamID)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(teams.ErrTeamMemberExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return teams.ErrTeamMemberExists
+		}
+		errMsg := fmt.Sprintf("failed to add team member: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to add team member"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
+
+// createDefaultStatusesWithTx creates default statuses for a team using an existing transaction.
+func (r *repo) createDefaultStatusesWithTx(ctx context.Context, tx *sqlx.Tx, teamID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "teamsrepo.createDefaultStatusesWithTx")
+	defer span.End()
+
+	// Create story statuses
+	storyQuery := `
+		INSERT INTO statuses (name, category, order_index, team_id, workspace_id)
+		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
+	`
+	storyStmt, err := tx.PrepareNamedContext(ctx, storyQuery)
+	if err != nil {
+		return fmt.Errorf("failed to prepare story status statement: %w", err)
+	}
+	defer storyStmt.Close()
+
+	for _, status := range teams.DefaultStoryStatuses {
+		params := map[string]interface{}{
+			"name":         status.Name,
+			"category":     status.Category,
+			"order_index":  status.OrderIndex,
+			"team_id":      teamID,
+			"workspace_id": workspaceID,
+		}
+		if _, err := storyStmt.ExecContext(ctx, params); err != nil {
+			return fmt.Errorf("failed to create story status: %w", err)
+		}
+	}
+
+	// Create objective statuses
+	objectiveQuery := `
+		INSERT INTO objective_statuses (name, category, order_index, team_id, workspace_id)
+		VALUES (:name, :category, :order_index, :team_id, :workspace_id)
+	`
+	objectiveStmt, err := tx.PrepareNamedContext(ctx, objectiveQuery)
+	if err != nil {
+		return fmt.Errorf("failed to prepare objective status statement: %w", err)
+	}
+	defer objectiveStmt.Close()
+
+	for _, status := range teams.DefaultObjectiveStatuses {
+		params := map[string]interface{}{
+			"name":         status.Name,
+			"category":     status.Category,
+			"order_index":  status.OrderIndex,
+			"team_id":      teamID,
+			"workspace_id": workspaceID,
+		}
+		if _, err := objectiveStmt.ExecContext(ctx, params); err != nil {
+			return fmt.Errorf("failed to create objective status: %w", err)
+		}
+	}
+
+	return nil
+}

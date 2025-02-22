@@ -312,3 +312,56 @@ func (r *repo) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 
 	return nil
 }
+
+// TeamListWithTx retrieves states for a team using an existing transaction.
+func (r *repo) TeamListWithTx(ctx context.Context, tx *sqlx.Tx, workspaceId uuid.UUID, teamId uuid.UUID) ([]states.CoreState, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.states.TeamListWithTx")
+	defer span.End()
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceId,
+		"team_id":      teamId,
+	}
+
+	var statuses []dbState
+	q := `
+		SELECT
+			status_id,
+			name,
+			category,
+			order_index,
+			team_id,
+			workspace_id,
+			created_at,
+			updated_at
+		FROM
+			statuses
+		WHERE workspace_id = :workspace_id
+		AND team_id = :team_id
+		ORDER BY order_index ASC;
+	`
+	stmt, err := tx.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "Fetching statuses.")
+	if err := stmt.SelectContext(ctx, &statuses, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve statuses from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("statuses not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	r.log.Info(ctx, "Statuses retrieved successfully.")
+	span.AddEvent("Statuses retrieved.", trace.WithAttributes(
+		attribute.Int("statuses.count", len(statuses)),
+		attribute.String("query", q),
+	))
+
+	return toCoreStates(statuses), nil
+}

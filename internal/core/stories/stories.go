@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -41,6 +42,7 @@ type Repository interface {
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
+	CreateWithTx(ctx context.Context, tx *sqlx.Tx, story *CoreSingleStory, workspaceId uuid.UUID) (CoreSingleStory, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -362,4 +364,24 @@ func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]comment
 	))
 
 	return comments, nil
+}
+
+// CreateWithTx creates a new story using an existing transaction.
+func (s *Service) CreateWithTx(ctx context.Context, tx *sqlx.Tx, story *CoreSingleStory, workspaceId uuid.UUID) (CoreSingleStory, error) {
+	s.log.Info(ctx, "business.core.stories.CreateWithTx")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateWithTx")
+	defer span.End()
+
+	story.Workspace = workspaceId
+
+	cs, err := s.repo.CreateWithTx(ctx, tx, story, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
+
+	span.AddEvent("story created.", trace.WithAttributes(
+		attribute.String("story.title", cs.Title),
+	))
+	return cs, nil
 }

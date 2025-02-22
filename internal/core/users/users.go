@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -43,6 +44,7 @@ type Repository interface {
 	MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error
 	InvalidateTokens(ctx context.Context, email string) error
 	GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error)
+	UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error
 }
 
 // Service provides user-related operations.
@@ -296,4 +298,23 @@ func (s *Service) GetValidTokenCount(ctx context.Context, email string, duration
 	}
 
 	return count, nil
+}
+
+// UpdateUserWorkspaceWithTx updates the user's last used workspace using an existing transaction.
+func (s *Service) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.users.UpdateUserWorkspaceWithTx")
+	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserWorkspaceWithTx")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	)
+
+	if err := s.repo.UpdateUserWorkspaceWithTx(ctx, tx, userID, workspaceID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	return nil
 }

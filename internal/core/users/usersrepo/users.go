@@ -686,3 +686,50 @@ func (r *repo) GetValidTokenCount(ctx context.Context, email string, duration ti
 
 	return count, nil
 }
+
+// UpdateUserWorkspaceWithTx updates the user's last used workspace using an existing transaction.
+func (r *repo) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUserWorkspaceWithTx")
+	defer span.End()
+
+	q := `
+		UPDATE users u
+		SET 
+			last_used_workspace_id = :workspace_id,
+			updated_at = NOW()
+		FROM workspace_members wm
+		WHERE 
+			u.user_id = :user_id
+			AND u.is_active = true
+			AND wm.user_id = u.user_id
+			AND wm.workspace_id = :workspace_id
+		RETURNING u.user_id
+	`
+
+	params := map[string]interface{}{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	var returnedID uuid.UUID
+	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("user not found or not a member of workspace")
+		}
+		errMsg := fmt.Sprintf("failed to update user workspace: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update user workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
