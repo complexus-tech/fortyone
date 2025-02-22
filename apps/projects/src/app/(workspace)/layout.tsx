@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { SessionProvider } from "next-auth/react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -26,7 +25,6 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
-import { OnlineStatusMonitor } from "../online-monitor";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -121,11 +119,8 @@ export default async function RootLayout({
   ]);
 
   return (
-    <SessionProvider session={session}>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <ApplicationLayout>{children}</ApplicationLayout>
-      </HydrationBoundary>
-      <OnlineStatusMonitor />
-    </SessionProvider>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ApplicationLayout>{children}</ApplicationLayout>
+    </HydrationBoundary>
   );
 }

@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { Instrument_Sans as InstrumentSans } from "next/font/google";
 import { Suspense, type ReactNode } from "react";
 import "../styles/global.css";
+import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
 import PostHogPageView from "./posthog-page-view";
+import { OnlineStatusMonitor } from "./online-monitor";
 
 const font = InstrumentSans({
   subsets: ["latin"],
@@ -35,18 +38,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
-        <Suspense>
-          <PostHogPageView />
-        </Suspense>
-        <ProgressBar />
+        <SessionProvider session={session}>
+          <Providers>
+            {children}
+            <Toaster />
+          </Providers>
+          <Suspense>
+            <PostHogPageView />
+          </Suspense>
+          <ProgressBar />
+        </SessionProvider>
+        <OnlineStatusMonitor />
       </body>
     </html>
   );

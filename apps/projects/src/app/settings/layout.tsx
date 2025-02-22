@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { SessionProvider } from "next-auth/react";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { SettingsLayout } from "@/components/layouts";
-import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { labelKeys, memberKeys, teamKeys, userKeys } from "@/constants/keys";
@@ -19,7 +18,6 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const session = await auth();
   const queryClient = getQueryClient();
 
   await Promise.all([
@@ -42,8 +40,8 @@ export default async function RootLayout({
   ]);
 
   return (
-    <SessionProvider session={session}>
+    <HydrationBoundary state={dehydrate(queryClient)}>
       <SettingsLayout>{children}</SettingsLayout>
-    </SessionProvider>
+    </HydrationBoundary>
   );
 }
