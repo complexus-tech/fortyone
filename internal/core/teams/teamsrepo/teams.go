@@ -47,7 +47,14 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			t.is_private,
 			t.workspace_id,
 			t.created_at,
-			t.updated_at
+			t.updated_at,
+			COALESCE(
+				(
+					SELECT COUNT(*)
+					FROM team_members tm
+					WHERE tm.team_id = t.team_id
+				), 0
+			) as member_count
 		FROM
 			teams t
 		WHERE
@@ -114,7 +121,14 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 			t.is_private,
 			t.workspace_id,
 			t.created_at,
-			t.updated_at
+			t.updated_at,
+			COALESCE(
+				(
+					SELECT COUNT(*)
+					FROM team_members tm
+					WHERE tm.team_id = t.team_id
+				), 0
+			) as member_count
 		FROM
 			teams t
 		WHERE

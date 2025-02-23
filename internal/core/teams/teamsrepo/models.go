@@ -8,26 +8,28 @@ import (
 )
 
 type dbTeam struct {
-	ID        uuid.UUID `db:"team_id"`
-	Name      string    `db:"name"`
-	Code      string    `db:"code"`
-	Color     string    `db:"color"`
-	IsPrivate bool      `db:"is_private"`
-	Workspace uuid.UUID `db:"workspace_id"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	ID          uuid.UUID `db:"team_id"`
+	Name        string    `db:"name"`
+	Code        string    `db:"code"`
+	Color       string    `db:"color"`
+	IsPrivate   bool      `db:"is_private"`
+	Workspace   uuid.UUID `db:"workspace_id"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+	MemberCount int       `db:"member_count"`
 }
 
 func toCoreTeam(t dbTeam) teams.CoreTeam {
 	return teams.CoreTeam{
-		ID:        t.ID,
-		Name:      t.Name,
-		Code:      t.Code,
-		Color:     t.Color,
-		IsPrivate: t.IsPrivate,
-		Workspace: t.Workspace,
-		CreatedAt: t.CreatedAt,
-		UpdatedAt: t.UpdatedAt,
+		ID:          t.ID,
+		Name:        t.Name,
+		Code:        t.Code,
+		Color:       t.Color,
+		IsPrivate:   t.IsPrivate,
+		Workspace:   t.Workspace,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
+		MemberCount: t.MemberCount,
 	}
 }
 
