@@ -144,11 +144,6 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	currentUserID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
 	var teamID *uuid.UUID
 	teamIDParam := r.URL.Query().Get("teamId")
 	if teamIDParam != "" {
@@ -159,7 +154,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		teamID = &parsedTeamID
 	}
 
-	users, err := h.users.List(ctx, workspaceId, currentUserID, teamID)
+	users, err := h.users.List(ctx, workspaceId, teamID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

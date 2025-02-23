@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -36,7 +37,7 @@ type Repository interface {
 	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
-	List(ctx context.Context, workspaceID uuid.UUID, currentUserID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
+	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
 	Create(ctx context.Context, user CoreUser) (CoreUser, error)
 	// Verification token methods
 	CreateVerificationToken(ctx context.Context, email, tokenType string) (CoreVerificationToken, error)
@@ -185,23 +186,13 @@ func (s *Service) UpdateUserWorkspace(ctx context.Context, userID, workspaceID u
 }
 
 // List returns a list of users for a workspace.
-func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, currentUserID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error) {
-	s.log.Info(ctx, "business.core.users.List")
+func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.users.List")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("workspace.id", workspaceID.String()),
-		attribute.String("current_user.id", currentUserID.String()),
-	)
-	if teamID != nil {
-		span.SetAttributes(attribute.String("team.id", teamID.String()))
-	}
-
-	users, err := s.repo.List(ctx, workspaceID, currentUserID, teamID)
+	users, err := s.repo.List(ctx, workspaceID, teamID)
 	if err != nil {
-		span.RecordError(err)
-		return nil, err
+		return nil, fmt.Errorf("getting users list: %w", err)
 	}
 
 	return users, nil
