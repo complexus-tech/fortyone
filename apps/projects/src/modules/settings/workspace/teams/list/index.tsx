@@ -2,14 +2,13 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { Box, Text, Button, Input, ColorPicker } from "ui";
-import { SearchIcon } from "icons";
+import { Box, Text, Button, Input, ColorPicker, Dialog, Flex } from "ui";
+import { PlusIcon, SearchIcon } from "icons";
 import { toast } from "sonner";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import type { CreateTeamInput } from "@/modules/teams/types";
 import { useCreateTeamMutation } from "@/modules/teams/hooks/use-create-team";
-import { RowWrapper } from "@/components/ui";
 import { WorkspaceTeam } from "../components/team";
 
 const initialForm = {
@@ -21,6 +20,7 @@ const initialForm = {
 export const TeamsList = () => {
   const { data: teams = [] } = useTeams();
   const [search, setSearch] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateTeamInput>(initialForm);
   const createTeam = useCreateTeamMutation();
 
@@ -48,63 +48,18 @@ export const TeamsList = () => {
       <Text as="h1" className="mb-6 text-2xl font-semibold">
         Teams
       </Text>
-      <Box className="mb-5 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
-          description="Create a new team to organize your workspace."
-          title="Create new team"
-        />
-        <form onSubmit={handleSubmit}>
-          <RowWrapper className="px-6">
-            <Text color="muted">Team name</Text>
-            <Input
-              className="h-[2.5rem] w-72"
-              name="name"
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-              }}
-              placeholder="eg. Marketing"
-              required
-              value={form.name}
-            />
-          </RowWrapper>
-          <RowWrapper className="px-6">
-            <Text color="muted">Team code</Text>
-            <Input
-              className="h-[2.5rem] w-28"
-              name="code"
-              onChange={(e) => {
-                setForm({ ...form, code: e.target.value });
-              }}
-              placeholder="ENG"
-              required
-              value={form.code}
-            />
-          </RowWrapper>
-          <RowWrapper className="px-6">
-            <Text color="muted">Team color</Text>
-            <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
-              <ColorPicker
-                onChange={(value) => {
-                  setForm({ ...form, color: value });
-                }}
-                value={form.color}
-              />
-            </Box>
-          </RowWrapper>
-
-          <Box className="px-6 py-4">
+          action={
             <Button
-              loading={createTeam.isPending}
-              loadingText="Creating team..."
-              type="submit"
+              leftIcon={<PlusIcon className="text-white dark:text-white" />}
+              onClick={() => {
+                setIsDialogOpen(true);
+              }}
             >
               Create Team
             </Button>
-          </Box>
-        </form>
-      </Box>
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <SectionHeader
+          }
           description="Manage your teams and their members."
           title="Team Management"
         />
@@ -127,6 +82,70 @@ export const TeamsList = () => {
           <WorkspaceTeam {...team} key={team.id} />
         ))}
       </Box>
+
+      <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 text-lg">
+              Create a new team
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <form
+              className="divide-y dark:divide-dark-100"
+              onSubmit={handleSubmit}
+            >
+              <Flex align="center" className="py-3" justify="between">
+                <Text color="muted">Team name</Text>
+                <Input
+                  className="h-[2.5rem] w-80"
+                  name="name"
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                  }}
+                  placeholder="eg. Marketing"
+                  required
+                  value={form.name}
+                />
+              </Flex>
+              <Flex align="center" className="py-3" justify="between">
+                <Text color="muted">Team code</Text>
+                <Input
+                  className="h-[2.5rem] w-28"
+                  name="code"
+                  onChange={(e) => {
+                    setForm({ ...form, code: e.target.value });
+                  }}
+                  placeholder="ENG"
+                  required
+                  value={form.code}
+                />
+              </Flex>
+              <Flex align="center" className="py-3" justify="between">
+                <Text color="muted">Team color</Text>
+                <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
+                  <ColorPicker
+                    onChange={(value) => {
+                      setForm({ ...form, color: value });
+                    }}
+                    value={form.color}
+                  />
+                </Box>
+              </Flex>
+
+              <Box className="pt-4">
+                <Button
+                  loading={createTeam.isPending}
+                  loadingText="Creating team..."
+                  type="submit"
+                >
+                  Create Team
+                </Button>
+              </Box>
+            </form>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
     </Box>
   );
 };
