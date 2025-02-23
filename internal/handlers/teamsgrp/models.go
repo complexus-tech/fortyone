@@ -55,5 +55,4 @@ type AppUpdateTeam struct {
 
 type AppNewTeamMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
-	Role   string    `json:"role" validate:"required,oneof=member guest admin"`
 }

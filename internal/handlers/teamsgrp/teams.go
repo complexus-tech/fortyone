@@ -109,7 +109,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Add creator as member
-	if err := h.teams.AddMember(ctx, result.ID, userID, "admin"); err != nil {
+	if err := h.teams.AddMember(ctx, result.ID, userID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -224,13 +224,7 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
 	}
 
-	// Default to member role if not provided
-	role := input.Role
-	if role == "" {
-		role = "member"
-	}
-
-	if err := h.teams.AddMember(ctx, teamID, input.UserID, role); err != nil {
+	if err := h.teams.AddMember(ctx, teamID, input.UserID); err != nil {
 		if err == teams.ErrTeamMemberExists {
 			return web.RespondError(ctx, w, err, http.StatusConflict)
 		}
@@ -241,7 +235,6 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		attribute.String("team_id", teamID.String()),
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.String("user_id", input.UserID.String()),
-		attribute.String("role", role),
 	))
 
 	// TODO: Send notification to user

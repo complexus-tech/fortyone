@@ -19,8 +19,8 @@ type Repository interface {
 	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
-	AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error
-	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error
+	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
+	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 }
 
@@ -145,16 +145,12 @@ func (s *Service) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid
 	return nil
 }
 
-func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error {
+func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.addMember")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMember")
 	defer span.End()
 
-	if role == "" {
-		role = "member"
-	}
-
-	if err := s.repo.AddMember(ctx, teamID, userID, role); err != nil {
+	if err := s.repo.AddMember(ctx, teamID, userID); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -162,21 +158,16 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID, role 
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
-		attribute.String("role", role),
 	))
 	return nil
 }
 
-func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error {
+func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.addMemberTx")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMemberTx")
 	defer span.End()
 
-	if role == "" {
-		role = "member"
-	}
-
-	if err := s.repo.AddMemberTx(ctx, tx, teamID, userID, role); err != nil {
+	if err := s.repo.AddMemberTx(ctx, tx, teamID, userID); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -184,7 +175,6 @@ func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID u
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
-		attribute.String("role", role),
 	))
 	return nil
 }

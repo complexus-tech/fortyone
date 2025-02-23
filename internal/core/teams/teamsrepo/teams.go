@@ -401,7 +401,7 @@ func (r *repo) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UU
 	return nil
 }
 
-func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role string) error {
+func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.AddMember")
 	defer span.End()
 
@@ -409,14 +409,12 @@ func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role str
 		INSERT INTO team_members (
 			team_id,
 			user_id,
-			role,
 			created_at,
 			updated_at
 		)
 		VALUES (
 			:team_id,
 			:user_id,
-			:role,
 			NOW(),
 			NOW()
 		)
@@ -425,7 +423,6 @@ func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID, role str
 	params := map[string]interface{}{
 		"team_id": teamID,
 		"user_id": userID,
-		"role":    role,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -556,7 +553,7 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 }
 
 // AddMemberTx adds a member to a team using an existing transaction.
-func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID, role string) error {
+func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.AddMemberTx")
 	defer span.End()
 
@@ -564,14 +561,12 @@ func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid
 		INSERT INTO team_members (
 			team_id,
 			user_id,
-			role,
 			created_at,
 			updated_at
 		)
 		VALUES (
 			:team_id,
 			:user_id,
-			:role,
 			NOW(),
 			NOW()
 		)
@@ -580,7 +575,6 @@ func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid
 	params := map[string]interface{}{
 		"team_id": teamID,
 		"user_id": userID,
-		"role":    role,
 	}
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)

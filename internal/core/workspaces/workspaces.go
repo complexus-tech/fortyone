@@ -124,7 +124,7 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	}
 
 	// Add creator as member of the default team
-	if err := s.teams.AddMemberTx(ctx, tx, team.ID, userID, "admin"); err != nil {
+	if err := s.teams.AddMemberTx(ctx, tx, team.ID, userID); err != nil {
 		return CoreWorkspace{}, err
 	}
 
