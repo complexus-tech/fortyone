@@ -43,21 +43,23 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 	var user dbUser
 	q := `
 		SELECT
-			user_id,
-			username,
-			email,
-			full_name,
-			avatar_url,
-			is_active,
-			last_login_at,
-			last_used_workspace_id,
-			created_at,
-			updated_at
+			u.user_id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.last_login_at,
+			u.last_used_workspace_id,
+			u.created_at,
+			u.updated_at,
+			wm.role as workspace_role
 		FROM
-			users
+			users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE 
-			user_id = :user_id
-			AND is_active = true
+			u.user_id = :user_id
+			AND u.is_active = true
 	`
 
 	params := map[string]interface{}{
@@ -94,21 +96,23 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 	var user dbUser
 	q := `
 		SELECT
-			user_id,
-			username,
-			email,
-			full_name,
-			avatar_url,
-			is_active,
-			last_login_at,
-			last_used_workspace_id,
-			created_at,
-			updated_at
+			u.user_id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.last_login_at,
+			u.last_used_workspace_id,
+			u.created_at,
+			u.updated_at,
+			wm.role as workspace_role
 		FROM
-			users
+			users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE 
-			email = :email
-			AND is_active = true
+			u.email = :email
+			AND u.is_active = true
 	`
 
 	params := map[string]interface{}{
@@ -269,50 +273,6 @@ func (r *repo) UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid
 		errMsg := fmt.Sprintf("failed to update user workspace: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update user workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-
-	return nil
-}
-
-// UpdatePassword updates a user's password
-func (r *repo) UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdatePassword")
-	defer span.End()
-
-	q := `
-		UPDATE users
-		SET 
-			password_hash = :password_hash,
-			updated_at = NOW()
-		WHERE 
-			user_id = :user_id
-			AND is_active = true
-		RETURNING user_id
-	`
-
-	params := map[string]interface{}{
-		"user_id":       userID,
-		"password_hash": hashedPassword,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-	defer stmt.Close()
-
-	var returnedID uuid.UUID
-	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
-		if err == sql.ErrNoRows {
-			return ErrNotFound
-		}
-		errMsg := fmt.Sprintf("failed to update password: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to update password"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 
