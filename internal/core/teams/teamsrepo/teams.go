@@ -193,7 +193,7 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 	query := `
 		INSERT INTO teams (name, code, color, is_private, workspace_id)
 		VALUES (:name, :code, :color, :is_private, :workspace_id)
-		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at
+		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -518,7 +518,7 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 	query := `
 		INSERT INTO teams (name, code, color, is_private, workspace_id)
 		VALUES (:name, :code, :color, :is_private, :workspace_id)
-		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at
+		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
