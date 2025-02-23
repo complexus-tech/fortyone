@@ -53,7 +53,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.last_used_workspace_id,
 			u.created_at,
 			u.updated_at,
-			wm.role as workspace_role
+			wm.role as role
 		FROM
 			users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
@@ -106,7 +106,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.last_used_workspace_id,
 			u.created_at,
 			u.updated_at,
-			wm.role as workspace_role
+			wm.role as role
 		FROM
 			users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
@@ -358,7 +358,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, currentUserID uu
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as workspace_role
+			wm.role as role
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 	`
@@ -378,8 +378,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, currentUserID uu
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as workspace_role,
-			tm.role as team_role
+			wm.role as role
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		INNER JOIN team_members tm ON u.user_id = tm.user_id
