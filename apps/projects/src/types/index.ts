@@ -20,9 +20,10 @@ export type User = {
 };
 
 export type Member = {
-  id: string | null;
+  id: string;
   username: string;
   email: string;
+  role: UserRole;
   fullName: string;
   avatarUrl: string;
   isActive: boolean;

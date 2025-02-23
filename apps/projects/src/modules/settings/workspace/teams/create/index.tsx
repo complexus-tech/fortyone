@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { FormEvent, ChangeEvent } from "react";
 import { useState } from "react";
 import { Box, Text, Button, Input, ColorPicker, Flex, Switch } from "ui";
 import { toast } from "sonner";
@@ -8,6 +8,13 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import type { CreateTeamInput } from "@/modules/teams/types";
 import { useCreateTeamMutation } from "@/modules/teams/hooks/use-create-team";
+
+const formatCode = (name: string) => {
+  return name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric chars
+    .slice(0, 3); // Take first 3 characters
+};
 
 const initialForm = {
   name: "",
@@ -19,7 +26,22 @@ const initialForm = {
 export const CreateTeam = () => {
   const { data: teams = [] } = useTeams();
   const [form, setForm] = useState<CreateTeamInput>(initialForm);
+  const [hasCodeBlurred, setHasCodeBlurred] = useState(false);
   const createTeam = useCreateTeamMutation();
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const updates = { ...prev, [name]: value };
+
+      // If it's the team name and code hasn't been blurred, update code too
+      if (name === "name" && !hasCodeBlurred) {
+        updates.code = formatCode(value);
+      }
+
+      return updates;
+    });
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     const teamCodes = teams.map((team) => team.code);
@@ -60,9 +82,10 @@ export const CreateTeam = () => {
               maxLength={24}
               minLength={3}
               name="name"
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
+              onBlur={() => {
+                setHasCodeBlurred(true);
               }}
+              onChange={handleChange}
               placeholder="eg. Growth, Product, Operations"
               required
               value={form.name}
@@ -80,9 +103,7 @@ export const CreateTeam = () => {
               maxLength={3}
               minLength={2}
               name="code"
-              onChange={(e) => {
-                setForm({ ...form, code: e.target.value });
-              }}
+              onChange={handleChange}
               placeholder="ENG"
               required
               value={form.code}

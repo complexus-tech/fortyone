@@ -129,15 +129,13 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               }}
             />
           </Flex>
-          <Box className="px-6 py-4">
-            <Button
-              disabled={!hasChanged}
-              loading={updateTeam.isPending}
-              type="submit"
-            >
-              Save Changes
-            </Button>
-          </Box>
+          {hasChanged ? (
+            <Box className="px-6 py-4">
+              <Button loading={updateTeam.isPending} type="submit">
+                Save Changes
+              </Button>
+            </Box>
+          ) : null}
         </form>
       </Box>
 

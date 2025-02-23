@@ -13,3 +13,13 @@ export const getMembers = async () => {
   });
   return members.data!;
 };
+
+export const getTeamMembers = async (teamId: string) => {
+  const members = await get<ApiResponse<Member[]>>(`members?teamId=${teamId}`, {
+    next: {
+      revalidate: DURATION_FROM_SECONDS.MINUTE * 10,
+      tags: [memberTags.team(teamId)],
+    },
+  });
+  return members.data!;
+};

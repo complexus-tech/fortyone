@@ -11,6 +11,7 @@ export const WorkspaceMember = ({
   fullName,
   username,
   avatarUrl,
+  role,
   email,
 }: Member) => {
   const { data: session } = useSession();
@@ -36,7 +37,7 @@ export const WorkspaceMember = ({
         </Box>
       </Flex>
       <Flex align="center" gap={3}>
-        <Select defaultValue="member" disabled={isCurrentUser}>
+        <Select disabled={isCurrentUser} value={role}>
           <Select.Trigger
             className={cn("w-32", {
               "opacity-50": isCurrentUser,

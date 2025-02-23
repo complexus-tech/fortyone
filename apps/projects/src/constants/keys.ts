@@ -33,6 +33,7 @@ export const memberKeys = {
   lists: () => [...memberKeys.all, "list"] as const,
   details: () => [...memberKeys.all, "detail"] as const,
   detail: (id: string) => [...memberKeys.details(), id] as const,
+  team: (teamId: string) => [...memberKeys.lists(), teamId] as const,
 };
 
 export const memberTags = {
@@ -40,6 +41,7 @@ export const memberTags = {
   lists: () => `${memberTags.all}-list` as const,
   details: () => `${memberTags.all}-detail` as const,
   detail: (id: string) => `${memberTags.details()}-${id}` as const,
+  team: (teamId: string) => `${memberTags.lists()}-${teamId}` as const,
 };
 
 export const labelTags = {

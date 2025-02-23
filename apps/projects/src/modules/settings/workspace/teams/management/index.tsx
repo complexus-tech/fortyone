@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { Box, Text, Tabs } from "ui";
 import { FilterIcon, TeamIcon } from "icons";
 import { useTeam } from "@/modules/teams/hooks/use-team";
-import { StoryStatusIcon } from "@/components/ui";
+import { StoryStatusIcon, TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
 
@@ -16,8 +16,12 @@ export const TeamManagement = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Team Settings
+      <Text
+        as="h1"
+        className="mb-6 flex items-center gap-2 text-2xl font-medium"
+      >
+        <TeamColor color={team.color} />
+        {team.name}
       </Text>
 
       <Tabs defaultValue="general">
@@ -42,7 +46,7 @@ export const TeamManagement = () => {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Box className="mt-6">
+        <Box className="mt-5">
           <Tabs.Panel value="general">
             <GeneralSettings team={team} />
           </Tabs.Panel>
