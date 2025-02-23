@@ -23,7 +23,7 @@ export const CreateWorkspaceForm = () => {
       available: boolean;
       slug: string;
     }>
-  >(checkWorkspaceAvailability, 2000);
+  >(checkWorkspaceAvailability, 1000);
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [hasOrgBlurred, setHasOrgBlurred] = useState(false);
@@ -55,7 +55,7 @@ export const CreateWorkspaceForm = () => {
       // Check availability when slug changes
       if (name === "slug" || (name === "name" && !hasOrgBlurred)) {
         const slugToCheck = updates.slug;
-        if (slugToCheck) {
+        if (slugToCheck.length > 3) {
           setIsAvailable(true); // Reset availability while checking
           void checkAvailability(slugToCheck)
             .then((res) => {
@@ -73,6 +73,35 @@ export const CreateWorkspaceForm = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!form.name || !form.slug) {
+      toast.warning("Validation warning", {
+        description: "Please enter a workspace name and URL",
+      });
+      return;
+    }
+
+    if (form.slug.length > 16) {
+      toast.warning("Validation warning", {
+        description: "Workspace URL must be less than 16 characters",
+      });
+      return;
+    }
+
+    if (form.slug.length < 3) {
+      toast.warning("Validation warning", {
+        description: "Workspace URL must be at least 3 characters",
+      });
+      return;
+    }
+
+    if (form.slug.match(/^[a-z0-9-]+$/)) {
+      toast.warning("Validation warning", {
+        description:
+          "Workspace URL can only contain lowercase letters, numbers, and dashes",
+      });
+      return;
+    }
 
     setIsLoading(true);
     const res = await createWorkspaceAction(form);
