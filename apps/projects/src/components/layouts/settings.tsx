@@ -30,6 +30,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     { title: "Profile", href: "/settings/account" },
     { title: "Preferences", href: "/settings/account/preferences" },
     { title: "Security", href: "/settings/account/security" },
+    { title: "API tokens", href: "/settings/account/api" },
     { title: "Delete account", href: "/settings/account/delete" },
   ];
 

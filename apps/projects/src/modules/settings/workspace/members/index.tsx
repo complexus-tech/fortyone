@@ -10,7 +10,7 @@ export const WorkspaceMembersSettings = () => {
   const { data: members = [] } = useMembers();
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Members
       </Text>
 

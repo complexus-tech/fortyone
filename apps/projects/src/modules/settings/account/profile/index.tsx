@@ -15,7 +15,7 @@ export const ProfileSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Profile Settings
       </Text>
       <Form />

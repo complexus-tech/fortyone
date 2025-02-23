@@ -7,7 +7,7 @@ import { WorkspaceForm } from "./components/form";
 export const WorkspaceGeneralSettings = () => {
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Settings
       </Text>
 

@@ -6,14 +6,18 @@ import { SectionHeader } from "../../components";
 export const ApiSettings = () => {
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         API Settings
       </Text>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
-            <Button className="bg-primary dark:bg-primary" variant="naked">
+            <Button
+              className="bg-primary dark:bg-primary"
+              disabled
+              variant="naked"
+            >
               Create API Key
             </Button>
           }

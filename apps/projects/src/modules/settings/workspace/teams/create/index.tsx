@@ -36,7 +36,7 @@ export const CreateTeam = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Create a new team
       </Text>
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">

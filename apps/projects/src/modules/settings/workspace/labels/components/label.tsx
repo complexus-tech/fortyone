@@ -22,26 +22,36 @@ export const WorkspaceLabel = ({
   createdAt,
   setIsCreateOpen,
 }: Partial<Label> & { setIsCreateOpen?: (value: boolean) => void }) => {
-  const { mutateAsync: createLabel } = useCreateLabelMutation();
-  const { mutateAsync: editLabel } = useEditLabelMutation();
-  const { mutateAsync: deleteLabel } = useDeleteLabelMutation();
+  const { mutate: createLabel } = useCreateLabelMutation();
+  const { mutate: editLabel } = useEditLabelMutation();
+  const { mutate: deleteLabel } = useDeleteLabelMutation();
   const isNew = id === "new";
   const [isEditing, setIsEditing] = useState(isNew);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [form, setForm] = useState({ name: name || "", color: color || "" });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsEditing(false);
     if (isNew) {
-      await createLabel({ ...form }).then(() => {
-        setIsCreateOpen?.(false);
-      });
+      createLabel(
+        { ...form },
+        {
+          onSuccess: () => {
+            setIsCreateOpen?.(false);
+          },
+        },
+      );
     } else {
-      await editLabel({ labelId: id!, updates: form }).then(() => {
-        setIsEditing(false);
-      });
+      editLabel(
+        { labelId: id!, updates: form },
+        {
+          onSuccess: () => {
+            setIsEditing(false);
+          },
+        },
+      );
     }
   };
 
@@ -50,8 +60,8 @@ export const WorkspaceLabel = ({
     setIsCreateOpen?.(false);
   };
 
-  const handleDeleteLabel = async () => {
-    await deleteLabel(id!);
+  const handleDeleteLabel = () => {
+    deleteLabel(id!);
     setIsDeleteOpen(false);
   };
 

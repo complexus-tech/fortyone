@@ -1,28 +1,15 @@
 "use client";
 
-import type { FormEvent } from "react";
 import { useState } from "react";
-import { Box, Text, Button, Input, ColorPicker, Dialog, Flex } from "ui";
-import { SearchIcon } from "icons";
-import { toast } from "sonner";
+import { Box, Text, Input, Flex, Button } from "ui";
+import { PlusIcon, SearchIcon, TeamIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
-import type { CreateTeamInput } from "@/modules/teams/types";
-import { useCreateTeamMutation } from "@/modules/teams/hooks/use-create-team";
 import { WorkspaceTeam } from "../components/team";
-
-const initialForm = {
-  name: "",
-  code: "",
-  color: "#2563eb",
-};
 
 export const TeamsList = () => {
   const { data: teams = [] } = useTeams();
   const [search, setSearch] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [form, setForm] = useState<CreateTeamInput>(initialForm);
-  const createTeam = useCreateTeamMutation();
 
   const filteredTeams = teams.filter(
     (team) =>
@@ -30,36 +17,13 @@ export const TeamsList = () => {
       team.code.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleSubmit = async (e: FormEvent) => {
-    const teamCodes = teams.map((team) => team.code);
-    if (teamCodes.includes(form.code)) {
-      toast.warning("Validation error", {
-        description: "Team code already exists",
-      });
-      return;
-    }
-    e.preventDefault();
-    await createTeam.mutateAsync(form);
-    setIsDialogOpen(false);
-    setForm(initialForm);
-  };
-
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Teams
       </Text>
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
-          action={
-            <Button
-              onClick={() => {
-                setIsDialogOpen(true);
-              }}
-            >
-              Create Team
-            </Button>
-          }
           description="Manage your teams and their members."
           title="Team Management"
         />
@@ -80,93 +44,32 @@ export const TeamsList = () => {
           </Box>
         )}
 
+        {teams.length === 0 && (
+          <Flex
+            align="center"
+            className="px-6 py-10"
+            direction="column"
+            justify="center"
+          >
+            <TeamIcon className="h-12 w-auto" />
+            <Text className="mt-4 text-lg font-semibold">No teams found</Text>
+            <Text className="mb-3" color="muted">
+              Create a team to get started.
+            </Text>
+            <Button
+              color="tertiary"
+              href="/settings/workspace/teams/create"
+              leftIcon={<PlusIcon className="h-[1.1rem]" />}
+            >
+              Create Team
+            </Button>
+          </Flex>
+        )}
+
         {filteredTeams.map((team) => (
           <WorkspaceTeam {...team} key={team.id} />
         ))}
       </Box>
-
-      <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
-        <Dialog.Content className="max-w-3xl">
-          <Dialog.Header>
-            <Dialog.Title className="px-6 pt-1 text-xl">
-              Create a New Team
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Description>
-            Teams help organize your workspace and manage access control. Create
-            a new team to group members, and collaborate on objectives.
-          </Dialog.Description>
-          <Dialog.Body className="mt-3">
-            <form
-              className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
-              onSubmit={handleSubmit}
-            >
-              <Flex align="center" className="py-3" justify="between">
-                <Box>
-                  <Text>Team name</Text>
-                  <Text color="muted" fontSize="sm">
-                    Choose a descriptive name for your team
-                  </Text>
-                </Box>
-                <Input
-                  className="h-[2.5rem] w-80"
-                  name="name"
-                  onChange={(e) => {
-                    setForm({ ...form, name: e.target.value });
-                  }}
-                  placeholder="eg. Growth, Product, Operations"
-                  required
-                  value={form.name}
-                />
-              </Flex>
-              <Flex align="center" className="py-3" justify="between">
-                <Box>
-                  <Text>Team code</Text>
-                  <Text color="muted" fontSize="sm">
-                    Short prefix for team&apos;s story IDs (e.g., ENG-123)
-                  </Text>
-                </Box>
-                <Input
-                  className="h-[2.5rem] w-28"
-                  name="code"
-                  onChange={(e) => {
-                    setForm({ ...form, code: e.target.value });
-                  }}
-                  placeholder="ENG"
-                  required
-                  value={form.code}
-                />
-              </Flex>
-              <Flex align="center" className="py-3" justify="between">
-                <Box>
-                  <Text>Team color</Text>
-                  <Text color="muted" fontSize="sm">
-                    Used to identify the team in the workspace
-                  </Text>
-                </Box>
-                <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
-                  <ColorPicker
-                    onChange={(value) => {
-                      setForm({ ...form, color: value });
-                    }}
-                    value={form.color}
-                  />
-                </Box>
-              </Flex>
-
-              <Box className="pt-4">
-                <Button
-                  loading={createTeam.isPending}
-                  loadingText="Creating team..."
-                  type="submit"
-                >
-                  Create Team
-                </Button>
-              </Box>
-            </form>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog>
     </Box>
   );
 };

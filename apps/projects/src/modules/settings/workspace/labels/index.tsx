@@ -31,7 +31,7 @@ export const WorkspaceLabelsSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-semibold">
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Labels
       </Text>
 
