@@ -18,6 +18,8 @@ type dbUser struct {
 	LastUsedWorkspaceID *uuid.UUID `db:"last_used_workspace_id"`
 	CreatedAt           time.Time  `db:"created_at"`
 	UpdatedAt           time.Time  `db:"updated_at"`
+	WorkspaceRole       string     `db:"workspace_role"`
+	TeamRole            *string    `db:"team_role"`
 }
 
 // dbVerificationToken represents a verification token in the database
@@ -45,6 +47,8 @@ func toCoreUser(p dbUser) users.CoreUser {
 		LastUsedWorkspaceID: p.LastUsedWorkspaceID,
 		CreatedAt:           p.CreatedAt,
 		UpdatedAt:           p.UpdatedAt,
+		WorkspaceRole:       p.WorkspaceRole,
+		TeamRole:            p.TeamRole,
 	}
 }
 

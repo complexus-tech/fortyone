@@ -32,6 +32,8 @@ type CoreUser struct {
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	Token               *string
+	WorkspaceRole       string
+	TeamRole            *string
 }
 
 // CoreUpdateUser represents the fields that can be updated for a user.

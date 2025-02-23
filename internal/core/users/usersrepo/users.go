@@ -397,7 +397,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, currentUserID uu
 			u.is_active,
 			u.last_login_at,
 			u.created_at,
-			u.updated_at
+			u.updated_at,
+			wm.role as workspace_role
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 	`
@@ -406,12 +407,26 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, currentUserID uu
 	if teamID != nil {
 		// Query for specific team members
 		params["team_id"] = *teamID
-		q = baseQuery + `
-			INNER JOIN team_members tm ON u.user_id = tm.user_id
-			WHERE wm.workspace_id = :workspace_id
-				AND tm.team_id = :team_id
-				AND u.is_active = TRUE
-			ORDER BY u.created_at DESC
+		q = `
+		SELECT DISTINCT
+			u.user_id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.last_login_at,
+			u.created_at,
+			u.updated_at,
+			wm.role as workspace_role,
+			tm.role as team_role
+		FROM users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
+		INNER JOIN team_members tm ON u.user_id = tm.user_id
+		WHERE wm.workspace_id = :workspace_id
+			AND tm.team_id = :team_id
+			AND u.is_active = TRUE
+		ORDER BY u.created_at DESC
 		`
 	} else {
 		// Query for members from all teams the current user belongs to

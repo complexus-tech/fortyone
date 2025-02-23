@@ -19,6 +19,8 @@ type AppUser struct {
 	CreatedAt           time.Time  `json:"createdAt"`
 	UpdatedAt           time.Time  `json:"updatedAt"`
 	Token               *string    `json:"token,omitempty"`
+	WorkspaceRole       string     `json:"workspaceRole"`
+	TeamRole            *string    `json:"teamRole,omitempty"`
 }
 
 type AppFilter struct {
@@ -72,6 +74,8 @@ func toAppUser(user users.CoreUser) AppUser {
 		CreatedAt:           user.CreatedAt,
 		UpdatedAt:           user.UpdatedAt,
 		Token:               user.Token,
+		WorkspaceRole:       user.WorkspaceRole,
+		TeamRole:            user.TeamRole,
 	}
 }
 
