@@ -1,20 +1,13 @@
-export type TeamMember = {
-  id: string;
-  userId: string;
-  teamId: string;
-  role: "admin" | "member";
-  joinedAt: string;
-};
-
 export type Team = {
   id: string;
   name: string;
   code: string;
   color: string;
+  isPrivate: boolean;
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
-  members: TeamMember[];
+  memberCount: number;
 };
 
 export type CreateTeamInput = {

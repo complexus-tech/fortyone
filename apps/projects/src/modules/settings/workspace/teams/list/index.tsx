@@ -19,30 +19,40 @@ export const TeamsList = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Teams
-      </Text>
+      <Flex align="center" className="mb-5" justify="between">
+        <Text as="h1" className="text-2xl font-medium">
+          Teams
+        </Text>
+        {teams.length > 1 && (
+          <Input
+            className="w-72 rounded-lg"
+            leftIcon={<SearchIcon className="h-4" />}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            placeholder="Search teams..."
+            type="search"
+            value={search}
+            variant="solid"
+          />
+        )}
+      </Flex>
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
+          action={
+            <Button
+              color="tertiary"
+              href="/settings/workspace/teams/create"
+              leftIcon={
+                <PlusIcon className="h-[1.1rem] text-black dark:text-white" />
+              }
+            >
+              Create Team
+            </Button>
+          }
           description="Manage your teams and their members."
           title="Team Management"
         />
-        {teams.length > 10 && (
-          <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
-            <Box className="relative max-w-md">
-              <SearchIcon className="text-gray-400 absolute left-3 top-1/2 h-4 -translate-y-1/2" />
-              <Input
-                className="pl-9"
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                }}
-                placeholder="Search teams..."
-                type="search"
-                value={search}
-              />
-            </Box>
-          </Box>
-        )}
 
         {teams.length === 0 && (
           <Flex
@@ -65,6 +75,19 @@ export const TeamsList = () => {
             </Button>
           </Flex>
         )}
+
+        <Flex
+          align="center"
+          className="border-b-[0.5px] border-gray-100 px-6 py-5 dark:border-dark-100"
+          justify="between"
+        >
+          <Text>Name</Text>
+          <Flex align="center" gap={3} justify="between">
+            <Text className="w-32">Members</Text>
+            <Text className="w-32">Created</Text>
+            <Box className="w-[2.1rem]" />
+          </Flex>
+        </Flex>
 
         {filteredTeams.map((team) => (
           <WorkspaceTeam {...team} key={team.id} />

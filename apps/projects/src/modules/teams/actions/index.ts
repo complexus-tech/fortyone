@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import { post, put, remove } from "@/lib/http";
+import { post, put } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { teamTags } from "@/constants/keys";
 import { getApiError } from "@/utils";
@@ -13,8 +13,7 @@ export async function createTeam(input: CreateTeamInput) {
     revalidateTag(teamTags.lists());
     return team;
   } catch (error) {
-    const apiError = getApiError(error);
-    throw new Error(apiError.error?.message);
+    return getApiError(error);
   }
 }
 
@@ -31,11 +30,6 @@ export async function updateTeam(
   return team.data!;
 }
 
-export async function deleteTeam(teamId: string): Promise<void> {
-  await remove<ApiResponse<void>>(`teams/${teamId}`);
-  revalidateTag(teamTags.lists());
-}
-
 export async function addTeamMember(
   teamId: string,
   userId: string,
@@ -45,13 +39,5 @@ export async function addTeamMember(
     `teams/${teamId}/members`,
     { userId, role },
   );
-  revalidateTag(teamTags.lists());
-}
-
-export async function removeTeamMember(
-  teamId: string,
-  userId: string,
-): Promise<void> {
-  await remove<ApiResponse<void>>(`teams/${teamId}/members/${userId}`);
   revalidateTag(teamTags.lists());
 }

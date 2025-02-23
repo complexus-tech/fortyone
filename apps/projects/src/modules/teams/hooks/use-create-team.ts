@@ -8,7 +8,7 @@ import { createTeam } from "../actions";
 export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-
+  const toastId = "create-team";
   return useMutation({
     mutationFn: createTeam,
     onMutate: (data) => {
@@ -20,7 +20,7 @@ export const useCreateTeamMutation = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         workspaceId: "1",
-        members: [],
+        memberCount: 1,
       };
 
       queryClient.setQueryData(teamKeys.lists(), (old: Team[]) => [
@@ -28,11 +28,17 @@ export const useCreateTeamMutation = () => {
         newTeam,
       ]);
 
+      toast.loading("Creating team...", {
+        description: "Please wait while we create the team",
+        id: toastId,
+      });
+
       return { previousTeams };
     },
     onSuccess: (data) => {
       toast.success("Success", {
         description: "Team created successfully",
+        id: toastId,
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
       router.push(`/settings/workspace/teams/${data.data?.id}`);
@@ -41,6 +47,7 @@ export const useCreateTeamMutation = () => {
       queryClient.setQueryData(teamKeys.lists(), context?.previousTeams);
       toast.error("Failed to create team", {
         description: error.message || "Team code must be unique",
+        id: toastId,
       });
     },
   });

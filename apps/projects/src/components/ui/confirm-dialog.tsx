@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Dialog, Text } from "ui";
+import { useState } from "react";
+import { Box, Button, Dialog, Input, Text } from "ui";
 
 type ConfirmDialogProps = {
   isOpen: boolean;
@@ -10,8 +11,25 @@ type ConfirmDialogProps = {
   description: string;
   confirmText?: string;
   cancelText?: string;
+  confirmPhrase?: string;
+  isLoading?: boolean;
+  loadingText?: string;
 };
 
+/**
+ * ConfirmDialog
+ *
+ * @param isOpen - Whether the dialog is open
+ * @param onClose - Function to call when the dialog is closed
+ * @param onConfirm - Function to call when the dialog is confirmed
+ * @param title - The title of the dialog
+ * @param description - The description of the dialog
+ * @param confirmText - The text of the confirm button
+ * @param cancelText - The text of the cancel button
+ * @param confirmPhrase - The phrase to confirm the action
+ * @param isLoading - display a loading state on the confirm button
+ * @param loadingText - The text of the loading button
+ */
 export const ConfirmDialog = ({
   isOpen,
   onClose,
@@ -20,7 +38,11 @@ export const ConfirmDialog = ({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
+  confirmPhrase = "",
+  isLoading = false,
+  loadingText = "Confirming...",
 }: ConfirmDialogProps) => {
+  const [phrase, setPhrase] = useState("");
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
       <Dialog.Content>
@@ -29,12 +51,37 @@ export const ConfirmDialog = ({
         </Dialog.Header>
         <Dialog.Body>
           <Text color="muted">{description}</Text>
+          {confirmPhrase ? (
+            <Box className="mt-3">
+              <Text className="mb-2" color="muted">
+                Please enter{" "}
+                <Text as="span">&ldquo;{confirmPhrase}&rdquo;</Text> to confirm
+              </Text>
+              <Input
+                className="rounded-lg"
+                onChange={(e) => {
+                  setPhrase(e.target.value);
+                }}
+                placeholder={confirmPhrase}
+                type="text"
+                value={phrase}
+              />
+            </Box>
+          ) : null}
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
           <Button className="px-4" color="tertiary" onClick={onClose}>
             {cancelText}
           </Button>
-          <Button onClick={onConfirm}>{confirmText}</Button>
+          <Button
+            className="px-4"
+            disabled={phrase !== confirmPhrase}
+            loading={isLoading}
+            loadingText={loadingText}
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </Button>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog>

@@ -4,20 +4,18 @@ import { useState } from "react";
 import { Box, Flex, Text, Button, Avatar, Select, Menu } from "ui";
 import { MoreHorizontalIcon, DeleteIcon } from "icons";
 import type { Member } from "@/types";
-import type { TeamMember } from "@/modules/teams/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 
 type TeamMemberRowProps = {
   member: Member;
-  role: "admin" | "member";
+  userRole: "admin" | "member";
   onRemove: () => void;
   teamId: string;
-  teamMembers: TeamMember[];
 };
 
 export const TeamMemberRow = ({
   member,
-  role,
+  userRole,
   onRemove,
 }: TeamMemberRowProps) => {
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
@@ -38,7 +36,7 @@ export const TeamMemberRow = ({
       </Flex>
 
       <Flex align="center" gap={3}>
-        <Select defaultValue={role}>
+        <Select defaultValue={userRole}>
           <Select.Trigger className="w-32">
             <Select.Input />
           </Select.Trigger>

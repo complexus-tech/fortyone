@@ -26,7 +26,7 @@ const inputVariants = cva(
       },
       variant: {
         default: "", // uses the base styles
-        solid: "bg-gray-200 border-0 dark:bg-dark-300 dark:border-dark-200",
+        solid: "bg-gray-100/60 border-0 dark:bg-dark-300 dark:border-dark-200",
         error:
           "border-danger dark:border-danger focus:ring-danger dark:focus:ring-danger",
       },

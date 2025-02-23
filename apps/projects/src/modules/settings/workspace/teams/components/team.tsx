@@ -1,14 +1,29 @@
 import { Box, Flex, Text, Button, Menu, TimeAgo } from "ui";
-import {
-  DeleteIcon,
-  LogoutIcon,
-  MoreHorizontalIcon,
-  SettingsIcon,
-} from "icons";
+import { DeleteIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import nProgress from "nprogress";
 import type { Team } from "@/modules/teams/types";
-import { RowWrapper, TeamColor } from "@/components/ui";
+import { ConfirmDialog, RowWrapper, TeamColor } from "@/components/ui";
+import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
 
-export const WorkspaceTeam = ({ name, color, code, createdAt }: Team) => {
+export const WorkspaceTeam = ({
+  id,
+  name,
+  color,
+  code,
+  createdAt,
+  memberCount,
+}: Team) => {
+  const router = useRouter();
+  const { mutate: deleteTeam } = useDeleteTeamMutation();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleDeleteTeam = () => {
+    deleteTeam(id);
+    setIsDeleteOpen(false);
+  };
+
   return (
     <RowWrapper className="px-6 last-of-type:border-b-0">
       <Flex align="center" gap={3}>
@@ -22,8 +37,11 @@ export const WorkspaceTeam = ({ name, color, code, createdAt }: Team) => {
           </Text>
         </Box>
       </Flex>
-      <Flex align="center" gap={2}>
-        <Text as="span" className="text-[0.9rem]" color="muted">
+      <Flex align="center" gap={3}>
+        <Text className="w-32" color="muted">
+          {memberCount} Member{memberCount === 1 ? "" : "s"}
+        </Text>
+        <Text as="span" className="w-32" color="muted">
           <TimeAgo timestamp={createdAt} />
         </Text>
         <Menu>
@@ -33,32 +51,48 @@ export const WorkspaceTeam = ({ name, color, code, createdAt }: Team) => {
               asIcon
               color="tertiary"
               rounded="full"
+              size="sm"
               variant="naked"
             >
-              <MoreHorizontalIcon className="h-4" />
+              <MoreHorizontalIcon className="h-5" />
             </Button>
           </Menu.Button>
-          <Menu.Items align="end">
+          <Menu.Items className="w-44">
             <Menu.Group>
-              <Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  nProgress.start();
+                  router.push(`/settings/workspace/teams/${id}`);
+                }}
+              >
                 <SettingsIcon />
-                Settings
-              </Menu.Item>
-              <Menu.Item>
-                <LogoutIcon />
-                Leave team
+                Manage team
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
             <Menu.Group>
-              <Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  setIsDeleteOpen(true);
+                }}
+              >
                 <DeleteIcon />
-                Delete team
+                Delete team...
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
         </Menu>
       </Flex>
+      <ConfirmDialog
+        confirmPhrase="delete team"
+        description="Are you sure you want to delete this team? This action will remove all members and stories from the team and cannot be undone."
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          setIsDeleteOpen(false);
+        }}
+        onConfirm={handleDeleteTeam}
+        title="Delete team"
+      />
     </RowWrapper>
   );
 };

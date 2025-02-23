@@ -1,33 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Input, Button, Text } from "ui";
+import type { FormEvent } from "react";
+import { useMemo, useState } from "react";
+import { Box, Input, Button, Text, Flex, Switch, ColorPicker } from "ui";
+import { useRouter } from "next/navigation";
 import type { Team } from "@/modules/teams/types";
 import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
-import { useDeleteTeamMutation } from "@/modules/teams/hooks/use-delete-team";
 import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
+import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
 
 export const GeneralSettings = ({ team }: { team: Team }) => {
+  const router = useRouter();
   const [form, setForm] = useState({
     name: team.name,
     code: team.code,
     color: team.color,
+    isPrivate: team.isPrivate,
   });
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const { mutate: deleteTeam, isPending } = useDeleteTeamMutation();
 
   const updateTeam = useUpdateTeamMutation(team.id);
-  const deleteTeam = useDeleteTeamMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const hasChanged = useMemo(() => {
+    return (
+      form.name !== team.name ||
+      form.code !== team.code ||
+      form.color !== team.color ||
+      form.isPrivate !== team.isPrivate
+    );
+  }, [form, team]);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await updateTeam.mutateAsync(form);
   };
 
-  const handleDelete = async () => {
-    await deleteTeam.mutateAsync(team.id);
-    // Redirect to teams list
-    window.location.href = "/settings/workspace/teams";
+  const handleDelete = () => {
+    deleteTeam(team.id, {
+      onSuccess: () => {
+        router.push("/settings/workspace/teams");
+      },
+    });
   };
 
   return (
@@ -38,21 +53,41 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
           title="General Information"
         />
 
-        <form className="p-6" onSubmit={handleSubmit}>
-          <Box className="space-y-4">
+        <form
+          className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
+          onSubmit={handleSubmit}
+        >
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text>Team name</Text>
+              <Text color="muted" fontSize="sm">
+                Choose a descriptive name for your team
+              </Text>
+            </Box>
             <Input
-              label="Team Name"
+              className="h-[2.5rem] w-80"
+              maxLength={24}
+              minLength={3}
               name="name"
               onChange={(e) => {
                 setForm({ ...form, name: e.target.value });
               }}
-              placeholder="Engineering Team"
+              placeholder="eg. Growth, Product, Operations"
               required
               value={form.name}
             />
-
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text>Team code</Text>
+              <Text color="muted" fontSize="sm">
+                Short prefix for team&apos;s story IDs (e.g., ENG-123)
+              </Text>
+            </Box>
             <Input
-              label="Team Code"
+              className="h-[2.5rem] w-28"
+              maxLength={3}
+              minLength={2}
               name="code"
               onChange={(e) => {
                 setForm({ ...form, code: e.target.value });
@@ -61,24 +96,48 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               required
               value={form.code}
             />
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
-              <Text className="text-gray-700 mb-2 block text-sm font-medium dark:text-gray-200">
-                Team Color
+              <Text>Team color</Text>
+              <Text color="muted" fontSize="sm">
+                Used to identify the team in the workspace
               </Text>
-              <Input
-                name="color"
-                onChange={(e) => {
-                  setForm({ ...form, color: e.target.value });
+            </Box>
+            <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
+              <ColorPicker
+                onChange={(value) => {
+                  setForm({ ...form, color: value });
                 }}
-                placeholder="#2563eb"
-                type="color"
                 value={form.color}
               />
             </Box>
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text>Private team</Text>
+              <Text className="max-w-xl" color="muted" fontSize="sm">
+                Private teams are only visible to members of the team. Admin and
+                team leads can add members to private teams.
+              </Text>
+            </Box>
+            <Switch
+              checked={form.isPrivate}
+              name="isPrivate"
+              onCheckedChange={(checked) => {
+                setForm({ ...form, isPrivate: checked });
+              }}
+            />
+          </Flex>
+          <Box className="px-6 py-4">
+            <Button
+              disabled={!hasChanged}
+              loading={updateTeam.isPending}
+              type="submit"
+            >
+              Save Changes
+            </Button>
           </Box>
-          <Button className="mt-4" loading={updateTeam.isPending} type="submit">
-            Save Changes
-          </Button>
         </form>
       </Box>
 
@@ -87,17 +146,15 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
           description="Permanently delete your team and all of its data."
           title="Delete Team"
         />
-        <Box className="p-6">
+        <Box className="px-6 py-5">
           <Text color="muted">
-            Once you delete a team, there is no going back. Please be certain.
+            Deleting a team will remove all of its data and cannot be undone.
           </Text>
           <Button
             className="mt-4"
-            color="danger"
             onClick={() => {
               setIsDeleteOpen(true);
             }}
-            variant="outline"
           >
             Delete Team
           </Button>
@@ -105,9 +162,12 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
       </Box>
 
       <ConfirmDialog
+        confirmPhrase="i understand"
         confirmText="Delete team"
         description="Are you sure you want to delete this team? All of the team's data will be permanently removed. This action cannot be undone."
+        isLoading={isPending}
         isOpen={isDeleteOpen}
+        loadingText="Deleting team..."
         onClose={() => {
           setIsDeleteOpen(false);
         }}

@@ -35,7 +35,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   ];
 
   const workspaceItems = [
-    ...(isAdmin || isMember ? [{ title: "General", href: "/settings" }] : []),
+    ...(isAdmin || isMember
+      ? [
+          { title: "General", href: "/settings" },
+          { title: "Labels", href: "/settings/workspace/labels" },
+        ]
+      : []),
     ...(isAdmin
       ? [{ title: "Members", href: "/settings/workspace/members" }]
       : []),
@@ -44,13 +49,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin
       ? [
-          { title: "Manage teams", href: "/settings/workspace/teams" },
+          { title: "Objectives", href: "/settings/workspace/objectives" },
+          { title: "Teams", href: "/settings/workspace/teams" },
           { title: "Create a team", href: "/settings/workspace/teams/create" },
         ]
       : []),
-    ...(isAdmin || isMember
-      ? [{ title: "Labels", href: "/settings/workspace/labels" }]
-      : []),
+    ...(isAdmin || isMember ? [] : []),
   ];
 
   const navigation = [

@@ -48,7 +48,7 @@ export const CreateTeam = () => {
           className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
           onSubmit={handleSubmit}
         >
-          <Flex align="center" className="px-6 py-3" justify="between">
+          <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
               <Text>Team name</Text>
               <Text color="muted" fontSize="sm">
@@ -68,7 +68,7 @@ export const CreateTeam = () => {
               value={form.name}
             />
           </Flex>
-          <Flex align="center" className="px-6 py-3" justify="between">
+          <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
               <Text>Team code</Text>
               <Text color="muted" fontSize="sm">
@@ -88,7 +88,7 @@ export const CreateTeam = () => {
               value={form.code}
             />
           </Flex>
-          <Flex align="center" className="px-6 py-3" justify="between">
+          <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
               <Text>Team color</Text>
               <Text color="muted" fontSize="sm">
@@ -104,7 +104,7 @@ export const CreateTeam = () => {
               />
             </Box>
           </Flex>
-          <Flex align="center" className="px-6 py-3" justify="between">
+          <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
               <Text>Private team</Text>
               <Text className="max-w-xl" color="muted" fontSize="sm">

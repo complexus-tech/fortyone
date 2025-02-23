@@ -1,44 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Text, Button, Avatar, Select, Input, Dialog, Flex } from "ui";
+import { Box, Button, Select, Input, Dialog } from "ui";
 import { SearchIcon, PlusIcon } from "icons";
 import type { Team } from "@/modules/teams/types";
-import { useMembers } from "@/lib/hooks/members";
-import { useTeamMemberMutations } from "@/modules/teams/hooks/use-team-members";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { TeamMemberRow } from "./team-member-row";
 
 export const MembersSettings = ({ team }: { team: Team }) => {
-  const { data: members = [] } = useMembers();
   const [search, setSearch] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "member">(
     "member",
   );
-  const { addMember, removeMember } = useTeamMemberMutations(team.id);
 
-  const handleAddMember = async () => {
+  const handleAddMember = () => {
     if (!selectedMember) return;
-    await addMember.mutateAsync({
-      userId: selectedMember,
-      role: selectedRole,
-    });
+
     setIsAddOpen(false);
     setSelectedMember("");
   };
-
-  const availableMembers = members
-    .filter(
-      (member) =>
-        member.id && !team.members.some((tm) => tm.userId === member.id),
-    )
-    .filter(
-      (member) =>
-        member.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        member.email.toLowerCase().includes(search.toLowerCase()),
-    );
 
   return (
     <Box>
@@ -75,25 +57,22 @@ export const MembersSettings = ({ team }: { team: Team }) => {
         </Box>
 
         <Box className="divide-y divide-gray-100 dark:divide-dark-100">
-          {team.members.map((teamMember) => {
-            const member = members.find((m) => m.id === teamMember.userId);
-            if (!member?.id) return null;
-
-            return (
-              <TeamMemberRow
-                key={teamMember.id}
-                member={member}
-                onRemove={() => {
-                  if (member.id) {
-                    removeMember.mutate(member.id);
-                  }
-                }}
-                role={teamMember.role}
-                teamId={team.id}
-                teamMembers={team.members}
-              />
-            );
-          })}
+          <TeamMemberRow
+            key="1"
+            member={{
+              id: "1",
+              username: "john.doe",
+              fullName: "John Doe",
+              email: "john.doe@example.com",
+              avatarUrl: "",
+              isActive: true,
+              createdAt: "2021-01-01",
+              updatedAt: "2021-01-01",
+            }}
+            onRemove={() => {}}
+            teamId={team.id}
+            userRole="member"
+          />
         </Box>
       </Box>
 
@@ -113,26 +92,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
               <Select.Trigger>
                 <Select.Input placeholder="Select a member" />
               </Select.Trigger>
-              <Select.Content>
-                {availableMembers.map(
-                  (member) =>
-                    member.id && (
-                      <Select.Option key={member.id} value={member.id}>
-                        <Flex align="center" gap={2}>
-                          <Avatar
-                            name={member.fullName}
-                            size="sm"
-                            src={member.avatarUrl}
-                          />
-                          <Box>
-                            <Text>{member.fullName}</Text>
-                            <Text color="muted">{member.email}</Text>
-                          </Box>
-                        </Flex>
-                      </Select.Option>
-                    ),
-                )}
-              </Select.Content>
+              <Select.Content>What</Select.Content>
             </Select>
 
             <Select
@@ -160,11 +120,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
             >
               Cancel
             </Button>
-            <Button
-              disabled={!selectedMember}
-              loading={addMember.isPending}
-              onClick={handleAddMember}
-            >
+            <Button disabled={!selectedMember} onClick={handleAddMember}>
               Add Member
             </Button>
           </Dialog.Footer>

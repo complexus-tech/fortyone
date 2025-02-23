@@ -1,29 +1,43 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { teamKeys } from "@/constants/keys";
-import type { Team } from "@/modules/teams/types";
 import { deleteTeamAction } from "../actions/delete-team";
 
-export const useDeleteTeamMutation = (id: string) => {
+export const useDeleteTeamMutation = () => {
   const queryClient = useQueryClient();
+  const toastId = "delete-team";
 
-  return useMutation({
-    mutationFn: () => deleteTeamAction(id),
+  const mutation = useMutation({
+    mutationFn: (id: string) => deleteTeamAction(id),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: teamKeys.lists() });
-      const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists());
 
-      if (previousTeams) {
-        queryClient.setQueryData<Team[]>(
-          teamKeys.lists(),
-          previousTeams.filter((team) => team.id !== id),
-        );
-      }
-
-      return { previousTeams };
+      toast.loading("Deleting team...", {
+        description: "Please wait while we delete the team",
+        id: toastId,
+      });
+    },
+    onError: (_, variables) => {
+      toast.dismiss(toastId);
+      toast.error("Error", {
+        description: "Failed to delete team",
+        id: toastId,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: teamKeys.detail(id) });
+      toast.success("Success", {
+        description: "Team deleted successfully",
+        id: toastId,
+      });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },
   });
+
+  return mutation;
 };
