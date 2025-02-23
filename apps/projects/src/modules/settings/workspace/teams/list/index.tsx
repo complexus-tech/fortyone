@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Box, Text, Button, Input, ColorPicker, Dialog, Flex } from "ui";
-import { PlusIcon, SearchIcon } from "icons";
+import { SearchIcon } from "icons";
 import { toast } from "sonner";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
@@ -40,6 +40,7 @@ export const TeamsList = () => {
     }
     e.preventDefault();
     await createTeam.mutateAsync(form);
+    setIsDialogOpen(false);
     setForm(initialForm);
   };
 
@@ -52,7 +53,6 @@ export const TeamsList = () => {
         <SectionHeader
           action={
             <Button
-              leftIcon={<PlusIcon className="text-white dark:text-white" />}
               onClick={() => {
                 setIsDialogOpen(true);
               }}
@@ -63,20 +63,22 @@ export const TeamsList = () => {
           description="Manage your teams and their members."
           title="Team Management"
         />
-        <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
-          <Box className="relative max-w-md">
-            <SearchIcon className="text-gray-400 absolute left-3 top-1/2 h-4 -translate-y-1/2" />
-            <Input
-              className="pl-9"
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              placeholder="Search teams..."
-              type="search"
-              value={search}
-            />
+        {teams.length > 10 && (
+          <Box className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
+            <Box className="relative max-w-md">
+              <SearchIcon className="text-gray-400 absolute left-3 top-1/2 h-4 -translate-y-1/2" />
+              <Input
+                className="pl-9"
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
+                placeholder="Search teams..."
+                type="search"
+                value={search}
+              />
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {filteredTeams.map((team) => (
           <WorkspaceTeam {...team} key={team.id} />
@@ -84,32 +86,46 @@ export const TeamsList = () => {
       </Box>
 
       <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
-        <Dialog.Content>
+        <Dialog.Content className="max-w-3xl">
           <Dialog.Header>
-            <Dialog.Title className="px-6 text-lg">
-              Create a new team
+            <Dialog.Title className="px-6 pt-1 text-xl">
+              Create a New Team
             </Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body>
+          <Dialog.Description>
+            Teams help organize your workspace and manage access control. Create
+            a new team to group members, and collaborate on objectives.
+          </Dialog.Description>
+          <Dialog.Body className="mt-3">
             <form
-              className="divide-y dark:divide-dark-100"
+              className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
               onSubmit={handleSubmit}
             >
               <Flex align="center" className="py-3" justify="between">
-                <Text color="muted">Team name</Text>
+                <Box>
+                  <Text>Team name</Text>
+                  <Text color="muted" fontSize="sm">
+                    Choose a descriptive name for your team
+                  </Text>
+                </Box>
                 <Input
                   className="h-[2.5rem] w-80"
                   name="name"
                   onChange={(e) => {
                     setForm({ ...form, name: e.target.value });
                   }}
-                  placeholder="eg. Marketing"
+                  placeholder="eg. Growth, Product, Operations"
                   required
                   value={form.name}
                 />
               </Flex>
               <Flex align="center" className="py-3" justify="between">
-                <Text color="muted">Team code</Text>
+                <Box>
+                  <Text>Team code</Text>
+                  <Text color="muted" fontSize="sm">
+                    Short prefix for team&apos;s story IDs (e.g., ENG-123)
+                  </Text>
+                </Box>
                 <Input
                   className="h-[2.5rem] w-28"
                   name="code"
@@ -122,7 +138,12 @@ export const TeamsList = () => {
                 />
               </Flex>
               <Flex align="center" className="py-3" justify="between">
-                <Text color="muted">Team color</Text>
+                <Box>
+                  <Text>Team color</Text>
+                  <Text color="muted" fontSize="sm">
+                    Used to identify the team in the workspace
+                  </Text>
+                </Box>
                 <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
                   <ColorPicker
                     onChange={(value) => {

@@ -47,7 +47,6 @@ export const useUpdateProfileMutation = () => {
         description: "Your profile has been updated",
       });
     },
-
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.profile() });
     },

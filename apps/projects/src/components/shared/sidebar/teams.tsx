@@ -1,6 +1,6 @@
 "use client";
 import { Box, Flex, Text, Button, Menu } from "ui";
-import { MoreHorizontalIcon, TeamIcon } from "icons";
+import { MoreHorizontalIcon, PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import nProgress from "nprogress";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -44,6 +44,14 @@ export const Teams = () => {
                 }}
               >
                 <TeamIcon /> Manage Teams
+              </Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  nProgress.start();
+                  router.push("/settings/workspace/teams/create");
+                }}
+              >
+                <PlusIcon /> Create a team
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>

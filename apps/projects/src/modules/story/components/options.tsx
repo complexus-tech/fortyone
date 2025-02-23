@@ -98,15 +98,15 @@ export const Options = () => {
   const reporter = members.find((m) => m.id === reporterId);
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels.includes(label.id));
-  const { mutateAsync } = useUpdateStoryMutation();
-  const { mutateAsync: updateLabels } = useUpdateLabelsMutation();
+  const { mutate } = useUpdateStoryMutation();
+  const { mutate: updateLabels } = useUpdateLabelsMutation();
 
-  const handleUpdate = async (data: Partial<DetailedStory>) => {
-    await mutateAsync({ storyId: id, payload: data });
+  const handleUpdate = (data: Partial<DetailedStory>) => {
+    mutate({ storyId: id, payload: data });
   };
 
-  const handleUpdateLabels = async (labels: string[] = []) => {
-    await updateLabels({ storyId: id, labels });
+  const handleUpdateLabels = (labels: string[] = []) => {
+    updateLabels({ storyId: id, labels });
   };
 
   return (

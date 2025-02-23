@@ -10,14 +10,13 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
-import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
 import { useDebounce, useLocalStorage } from "@/hooks";
-import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
 import { useStoryActivities } from "../hooks/story-activities";
@@ -32,6 +31,7 @@ export const MainDetails = () => {
   const { data } = useStoryById(params.storyId);
   const { data: links = [] } = useLinks(params.storyId);
   const { data: activities = [] } = useStoryActivities(params.storyId);
+  const { mutate: updateStory } = useUpdateStoryMutation();
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -64,14 +64,8 @@ export const MainDetails = () => {
     ? [createStoryActivity, ...activities]
     : activities;
 
-  const handleUpdate = async (data: Partial<DetailedStory>) => {
-    try {
-      await updateStoryAction(storyId, data);
-    } catch (error) {
-      toast.error("Error updating story", {
-        description: "Failed to update story, reverted changes.",
-      });
-    }
+  const handleUpdate = (data: Partial<DetailedStory>) => {
+    updateStory({ storyId, payload: data });
   };
 
   const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);

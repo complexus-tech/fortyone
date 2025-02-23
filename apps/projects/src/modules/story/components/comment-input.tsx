@@ -26,8 +26,8 @@ export const CommentInput = ({
   initialComment?: string;
   onCancel?: () => void;
 }) => {
-  const { mutateAsync } = useCommentStoryMutation();
-  const { mutateAsync: updateComment } = useUpdateCommentMutation();
+  const { mutate } = useCommentStoryMutation();
+  const { mutate: updateComment } = useUpdateCommentMutation();
 
   const getPlaceHolder = () => {
     if (commentId) {
@@ -68,7 +68,7 @@ export const CommentInput = ({
     editable: true,
   });
 
-  const handleComment = async () => {
+  const handleComment = () => {
     const comment = editor?.getHTML() ?? "";
     if (editor?.isEmpty) {
       toast.error("Comment is required", {
@@ -79,22 +79,32 @@ export const CommentInput = ({
 
     if (commentId) {
       // update comment
-      await updateComment({
-        commentId,
-        payload: { content: comment },
-        storyId,
-      }).then(() => {
-        editor?.commands.clearContent();
-        onCancel?.();
-      });
+      updateComment(
+        {
+          commentId,
+          payload: { content: comment },
+          storyId,
+        },
+        {
+          onSuccess: () => {
+            editor?.commands.clearContent();
+            onCancel?.();
+          },
+        },
+      );
     } else {
-      await mutateAsync({
-        storyId,
-        payload: { comment, parentId: parentId ?? null },
-      }).then(() => {
-        editor?.commands.clearContent();
-        onCancel?.();
-      });
+      mutate(
+        {
+          storyId,
+          payload: { comment, parentId: parentId ?? null },
+        },
+        {
+          onSuccess: () => {
+            editor?.commands.clearContent();
+            onCancel?.();
+          },
+        },
+      );
     }
   };
 
@@ -109,7 +119,7 @@ export const CommentInput = ({
       justify="between"
     >
       <TextEditor
-        className="prose-base font-normal leading-6 antialiased"
+        className="prose-base leading-6 antialiased"
         editor={editor}
       />
       <Flex gap={2} justify="end">

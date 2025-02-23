@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Divider, Text } from "ui";
+import { Box, Button, Text } from "ui";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "../../components";
@@ -25,15 +25,10 @@ export const ProfileSettings = () => {
           title="Leave Workspace"
         />
         <Box className="p-6">
-          <Box>
-            <Text color="muted">When you leave the workspace:</Text>
-            <ul className="mt-2 list-disc pl-5 text-gray dark:text-gray-300">
-              <li>You will lose access to all workspace data</li>
-              <li>Your account will remain active</li>
-              <li>You can be invited back by workspace admins</li>
-            </ul>
-          </Box>
-          <Divider className="my-4" />
+          <Text className="mb-4" color="muted">
+            You will lose access to all workspace data. Your account will remain
+            active, and you can be invited back by workspace admins at any time.
+          </Text>
           <Button
             className="bg-primary dark:bg-primary"
             onClick={() => {

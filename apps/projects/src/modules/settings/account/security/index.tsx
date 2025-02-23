@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text } from "ui";
+import { Box, Divider, Flex, Text } from "ui";
 import { SectionHeader } from "../../components";
 
 export const SecuritySettings = () => {
@@ -23,6 +23,7 @@ export const SecuritySettings = () => {
               provides built-in security features including multi-factor
               authentication.
             </Text>
+            <Divider />
             <Text color="muted">
               There&apos;s no need for additional security layers - you&apos;re
               already protected by enterprise-grade security measures.

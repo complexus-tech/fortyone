@@ -21,6 +21,7 @@ export type CreateTeamInput = {
   name: string;
   code: string;
   color: string;
+  isPrivate: boolean;
 };
 
 export type UpdateTeamInput = Partial<CreateTeamInput>;

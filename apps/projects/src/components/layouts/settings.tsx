@@ -41,7 +41,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   ];
 
   const featureItems = [
-    ...(isAdmin ? [{ title: "Teams", href: "/settings/workspace/teams" }] : []),
+    ...(isAdmin
+      ? [
+          { title: "Teams", href: "/settings/workspace/teams" },
+          { title: "Create a team", href: "/settings/workspace/teams/create" },
+        ]
+      : []),
     ...(isAdmin || isMember
       ? [{ title: "Labels", href: "/settings/workspace/labels" }]
       : []),

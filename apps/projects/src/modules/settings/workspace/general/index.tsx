@@ -22,23 +22,24 @@ export const WorkspaceGeneralSettings = () => {
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
+          action={
+            <Button
+              className="mt-4 bg-primary text-white dark:bg-primary"
+              variant="naked"
+            >
+              Delete Workspace
+            </Button>
+          }
           description="Permanently delete your workspace."
-          title="Delete your workspace"
+          title="Danger Zone"
         />
 
         <Box className="p-6">
-          <Text className="mb-4" color="muted">
+          <Text color="muted">
             Once you delete your workspace, there is no going back. Please be
             certain. All data will be lost including all teams, stories, and
             more.
           </Text>
-          <Button
-            className="mt-4 bg-primary dark:bg-primary"
-            disabled
-            variant="naked"
-          >
-            Delete Workspace
-          </Button>
         </Box>
       </Box>
     </Box>

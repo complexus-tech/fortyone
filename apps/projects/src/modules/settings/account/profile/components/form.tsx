@@ -1,5 +1,6 @@
+import type { FormEvent } from "react";
 import React, { useEffect, useState } from "react";
-import { Box, Input, Divider, Button } from "ui";
+import { Box, Input, Button } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
@@ -7,7 +8,7 @@ import { ProfilePicture } from "./profile-picture";
 
 export const Form = () => {
   const { data: profile } = useProfile();
-  const { mutateAsync: updateProfile } = useUpdateProfileMutation();
+  const { mutate: updateProfile } = useUpdateProfileMutation();
 
   const [form, setForm] = useState({
     fullName: profile?.fullName || "",
@@ -20,9 +21,9 @@ export const Form = () => {
     );
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateProfile = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updateProfile(form);
+    updateProfile(form);
   };
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export const Form = () => {
         title="Personal Information"
       />
       <form className="p-6" onSubmit={handleUpdateProfile}>
-        <Box className="grid grid-cols-2 gap-6">
+        <Box className="mb-4 grid grid-cols-2 gap-6">
           <Input
             label="Full name"
             name="fullName"
@@ -60,7 +61,6 @@ export const Form = () => {
             value={form.username}
           />
         </Box>
-        <Divider className="my-3" />
         <Button disabled={!hasChanged()} type="submit">
           Save changes
         </Button>

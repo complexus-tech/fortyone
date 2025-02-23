@@ -22,6 +22,8 @@ export const TeamManagement = () => {
         <Tabs.List>
           <Tabs.Tab value="general">General</Tabs.Tab>
           <Tabs.Tab value="members">Members</Tabs.Tab>
+          <Tabs.Tab value="storiesWorkflow">Stories Workflow</Tabs.Tab>
+          <Tabs.Tab value="objectivesWorkflow">Objectives Workflow</Tabs.Tab>
         </Tabs.List>
 
         <Box className="mt-6">
@@ -31,6 +33,8 @@ export const TeamManagement = () => {
           <Tabs.Panel value="members">
             <MembersSettings team={team} />
           </Tabs.Panel>
+          <Tabs.Panel value="storiesWorkflow">Workflow</Tabs.Panel>
+          <Tabs.Panel value="objectivesWorkflow">Workflow</Tabs.Panel>
         </Box>
       </Tabs>
     </Box>

@@ -1,4 +1,4 @@
-import { Box, Flex, Text, Button, Avatar, Badge, Menu } from "ui";
+import { Box, Flex, Text, Button, Menu, TimeAgo } from "ui";
 import {
   DeleteIcon,
   LogoutIcon,
@@ -8,34 +8,24 @@ import {
 import type { Team } from "@/modules/teams/types";
 import { RowWrapper, TeamColor } from "@/components/ui";
 
-export const WorkspaceTeam = ({ name, color }: Team) => {
+export const WorkspaceTeam = ({ name, color, code, createdAt }: Team) => {
   return (
-    <RowWrapper className="px-6">
+    <RowWrapper className="px-6 last-of-type:border-b-0">
       <Flex align="center" gap={3}>
-        <Box className="flex size-8 items-center justify-center rounded-lg dark:bg-dark-100/80">
+        <Box className="flex size-8 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-dark-100/80">
           <TeamColor color={color} />
         </Box>
         <Box>
           <Text className="font-medium">{name}</Text>
-          <Text color="muted">8 members</Text>
+          <Text className="text-[0.95rem]" color="muted">
+            {code}
+          </Text>
         </Box>
       </Flex>
       <Flex align="center" gap={2}>
-        <Flex className="-space-x-2">
-          <Avatar
-            className="ring-1 ring-white dark:ring-dark-100"
-            name="John Doe"
-            size="sm"
-          />
-          <Avatar
-            className="ring-1 ring-white dark:ring-dark-100"
-            name="Jane Smith"
-            size="sm"
-          />
-          <Badge className="ml-2" color="tertiary">
-            +6
-          </Badge>
-        </Flex>
+        <Text as="span" className="text-[0.9rem]" color="muted">
+          <TimeAgo timestamp={createdAt} />
+        </Text>
         <Menu>
           <Menu.Button>
             <Button

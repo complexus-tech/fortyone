@@ -30,10 +30,10 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
     (member) => member.id === story.assigneeId,
   );
 
-  const { mutateAsync } = useUpdateStoryMutation();
+  const { mutate } = useUpdateStoryMutation();
 
-  const handleUpdate = async (data: Partial<DetailedStory>) => {
-    await mutateAsync({
+  const handleUpdate = (data: Partial<DetailedStory>) => {
+    mutate({
       storyId: story.id,
       payload: data,
     });

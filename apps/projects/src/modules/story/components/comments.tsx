@@ -23,7 +23,7 @@ const MainComment = ({
 }) => {
   const { data: members = [] } = useMembers();
   const { data: session } = useSession();
-  const { mutateAsync: deleteComment } = useDeleteCommentMutation();
+  const { mutate: deleteComment } = useDeleteCommentMutation();
   const [isOpen, setIsOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,10 +37,9 @@ const MainComment = ({
     setIsEditing(false);
   };
 
-  const handleDelete = async () => {
-    await deleteComment({ commentId: id, storyId }).then(() => {
-      setIsOpen(false);
-    });
+  const handleDelete = () => {
+    setIsOpen(false);
+    deleteComment({ commentId: id, storyId });
   };
 
   return (

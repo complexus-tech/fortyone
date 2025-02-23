@@ -19,8 +19,8 @@ export const AddLinkDialog = ({
   storyId: string;
   link?: Link;
 }) => {
-  const { mutateAsync: createLink } = useCreateLinkMutation();
-  const { mutateAsync: updateLink } = useUpdateLinkMutation();
+  const { mutate: createLink } = useCreateLinkMutation();
+  const { mutate: updateLink } = useUpdateLinkMutation();
   const [form, setForm] = useState<NewLink>({
     url: link?.url || "",
     title: link?.title || "",
@@ -32,22 +32,30 @@ export const AddLinkDialog = ({
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsOpen(false);
     if (isEditing) {
-      await updateLink({
-        linkId: link!.id,
-        payload: {
-          title: form.title,
-          url: form.url,
+      updateLink(
+        {
+          linkId: link!.id,
+          payload: {
+            title: form.title,
+            url: form.url,
+          },
+          storyId,
         },
-        storyId,
-      }).then(() => {
-        setIsOpen(false);
-      });
+        {
+          onError: () => {
+            setIsOpen(true);
+          },
+        },
+      );
     } else {
-      await createLink(form).then(() => {
-        setIsOpen(false);
+      createLink(form, {
+        onError: () => {
+          setIsOpen(true);
+        },
       });
     }
   };
