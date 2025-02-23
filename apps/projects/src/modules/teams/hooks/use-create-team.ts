@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { teamKeys } from "@/constants/keys";
 import type { Team } from "../types";
 import { createTeam } from "../actions";
 
 export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: createTeam,
@@ -28,11 +30,12 @@ export const useCreateTeamMutation = () => {
 
       return { previousTeams };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Success", {
         description: "Team created successfully",
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      router.push(`/settings/workspace/teams/${data.data?.id}`);
     },
     onError: (error, _, context) => {
       queryClient.setQueryData(teamKeys.lists(), context?.previousTeams);
