@@ -7,11 +7,16 @@ import { createStateAction } from "../../actions/states/create";
 
 export const useCreateStateMutation = () => {
   const queryClient = useQueryClient();
+  const toastId = "create-state";
 
   const mutation = useMutation({
     mutationFn: (newState: NewState) => createStateAction(newState),
 
     onMutate: (newState) => {
+      toast.loading("Please wait...", {
+        id: toastId,
+        description: "Creating state...",
+      });
       const optimisticState: State = {
         ...newState,
         id: "optimistic",
@@ -44,6 +49,7 @@ export const useCreateStateMutation = () => {
       }
       toast.error("Failed to create state", {
         description: "Your changes were not saved",
+        id: toastId,
         action: {
           label: "Retry",
           onClick: () => {
@@ -56,6 +62,10 @@ export const useCreateStateMutation = () => {
       });
     },
     onSuccess: () => {
+      toast.success("State created", {
+        id: toastId,
+        description: "Your state has been created",
+      });
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
       });

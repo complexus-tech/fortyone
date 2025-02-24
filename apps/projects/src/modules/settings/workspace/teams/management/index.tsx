@@ -2,11 +2,12 @@
 
 import { useParams } from "next/navigation";
 import { Box, Text, Tabs } from "ui";
-import { FilterIcon, TeamIcon } from "icons";
+import { FilterIcon, SettingsIcon, TeamIcon } from "icons";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { StoryStatusIcon, TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
+import { WorkflowSettings } from "./components/workflows";
 
 export const TeamManagement = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -42,7 +43,13 @@ export const TeamManagement = () => {
             leftIcon={<StoryStatusIcon className="h-[1.1rem]" />}
             value="workflows"
           >
-            Statuses workflow
+            Workflows
+          </Tabs.Tab>
+          <Tabs.Tab
+            leftIcon={<SettingsIcon className="h-[1.1rem]" />}
+            value="automations"
+          >
+            Automations
           </Tabs.Tab>
         </Tabs.List>
 
@@ -53,7 +60,9 @@ export const TeamManagement = () => {
           <Tabs.Panel value="members">
             <MembersSettings team={team} />
           </Tabs.Panel>
-          <Tabs.Panel value="workflows">Coming soon</Tabs.Panel>
+          <Tabs.Panel value="workflows">
+            <WorkflowSettings />
+          </Tabs.Panel>
         </Box>
       </Tabs>
     </Box>

@@ -1,18 +1,21 @@
 import { cn } from "lib";
 import { useStatuses } from "@/lib/hooks/statuses";
+import type { StateCategory } from "@/types/states";
 
 export const StoryStatusIcon = ({
   statusId,
   className,
+  category: passedCategory,
 }: {
   statusId?: string;
+  category?: StateCategory;
   className?: string;
 }) => {
   const { data: statuses = [] } = useStatuses();
   if (!statuses.length) return null;
   const state =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const { category } = state!;
+  const category = passedCategory || state?.category;
   return (
     <>
       {category === "backlog" && (
