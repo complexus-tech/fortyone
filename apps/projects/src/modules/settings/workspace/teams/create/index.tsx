@@ -44,6 +44,7 @@ export const CreateTeam = () => {
   };
 
   const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     const teamCodes = teams.map((team) => team.code);
     if (teamCodes.includes(form.code)) {
       toast.warning("Validation error", {
@@ -51,7 +52,7 @@ export const CreateTeam = () => {
       });
       return;
     }
-    e.preventDefault();
+
     await createTeam.mutateAsync(form);
     setForm(initialForm);
   };
