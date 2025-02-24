@@ -29,13 +29,14 @@ export const ListBoard = ({
     "No Priority",
   ];
 
-  const unassignedMember: Member = {
-    id: null,
+  const unassignedMember: unknown = {
+    id: "unassigned",
     username: "Unassigned",
-    email: "",
+    email: "unassigned@example.com",
     fullName: "",
     avatarUrl: "",
     isActive: true,
+    role: "member",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -67,9 +68,9 @@ export const ListBoard = ({
       {groupBy === "Assignee" &&
         [...members, unassignedMember].map((member) => (
           <StoriesGroup
-            assignee={member}
+            assignee={member as Member}
             className="-top-[0.5px]"
-            key={member.id}
+            key={(member as Member).email}
             stories={stories}
             viewOptions={viewOptions}
           />
