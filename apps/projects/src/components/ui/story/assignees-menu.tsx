@@ -44,9 +44,13 @@ const Items = ({
   align,
   assigneeId,
   onAssigneeSelected,
+  disallowEmptySelection = false,
+  excludeUsers = [],
 }: {
   placeholder?: string;
   align?: "start" | "end" | "center";
+  disallowEmptySelection?: boolean;
+  excludeUsers?: string[];
   assigneeId?: string | null;
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
@@ -62,61 +66,68 @@ const Items = ({
           <Text color="muted">No user found.</Text>
         </Command.Empty>
         <Command.Group>
-          <Command.Item
-            active={!assigneeId}
-            className="justify-between opacity-70"
-            onSelect={() => {
-              if (assigneeId) {
-                onAssigneeSelected(null);
-              }
-              setOpen(false);
-            }}
-          >
-            <Flex align="center" gap={2}>
-              <Avatar
-                className="text-dark/80 dark:text-gray-200"
-                color="primary"
-                size="sm"
-              />
-              <Text className="max-w-[10rem] truncate">No assignee</Text>
-            </Flex>
-            <Flex align="center" gap={1}>
-              {!assigneeId && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">0</Text>
-            </Flex>
-          </Command.Item>
-          {members.length > 0 && <Divider className="my-2" />}
-          {members.map(({ id, fullName, avatarUrl }, idx) => (
-            <Command.Item
-              active={id === assigneeId}
-              className="justify-between"
-              key={id}
-              onSelect={() => {
-                if (id !== assigneeId) {
-                  onAssigneeSelected(id);
-                }
-                setOpen(false);
-              }}
-            >
-              <Flex align="center" gap={2}>
-                <Avatar
-                  color="primary"
-                  name={fullName}
-                  size="sm"
-                  src={avatarUrl}
-                />
-                <Text className="max-w-[10rem] truncate">{fullName}</Text>
-              </Flex>
-              <Flex align="center" gap={1}>
-                {id === assigneeId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
-                <Text color="muted">{idx + 1}</Text>
-              </Flex>
-            </Command.Item>
-          ))}
+          {!disallowEmptySelection ? (
+            <>
+              <Command.Item
+                active={!assigneeId}
+                className="justify-between opacity-70"
+                onSelect={() => {
+                  if (assigneeId) {
+                    onAssigneeSelected(null);
+                  }
+                  setOpen(false);
+                }}
+              >
+                <Flex align="center" gap={2}>
+                  <Avatar
+                    className="text-dark/80 dark:text-gray-200"
+                    color="primary"
+                    size="sm"
+                  />
+                  <Text className="max-w-[10rem] truncate">No assignee</Text>
+                </Flex>
+                <Flex align="center" gap={1}>
+                  {!assigneeId && (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  )}
+                  <Text color="muted">0</Text>
+                </Flex>
+              </Command.Item>
+              {members.length > 0 && <Divider className="my-2" />}
+            </>
+          ) : null}
+
+          {members
+            .filter(({ id }) => !excludeUsers.includes(id))
+            .map(({ id, fullName, avatarUrl }, idx) => (
+              <Command.Item
+                active={id === assigneeId}
+                className="justify-between"
+                key={id}
+                onSelect={() => {
+                  if (id !== assigneeId) {
+                    onAssigneeSelected(id);
+                  }
+                  setOpen(false);
+                }}
+              >
+                <Flex align="center" gap={2}>
+                  <Avatar
+                    color="primary"
+                    name={fullName}
+                    size="sm"
+                    src={avatarUrl}
+                  />
+                  <Text className="max-w-[10rem] truncate">{fullName}</Text>
+                </Flex>
+                <Flex align="center" gap={1}>
+                  {id === assigneeId && (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  )}
+                  <Text color="muted">{idx + 1}</Text>
+                </Flex>
+              </Command.Item>
+            ))}
         </Command.Group>
       </Command>
     </Popover.Content>
