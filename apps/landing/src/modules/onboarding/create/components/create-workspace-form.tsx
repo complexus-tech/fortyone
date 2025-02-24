@@ -49,12 +49,12 @@ export const CreateWorkspaceForm = () => {
 
       // If it's the org name and hasn't been blurred, update slug too
       if (name === "name" && !hasOrgBlurred) {
-        updates.slug = formatSlug(value);
+        updates.slug = formatSlug(value).toLowerCase();
       }
 
       // Check availability when slug changes
       if (name === "slug" || (name === "name" && !hasOrgBlurred)) {
-        const slugToCheck = updates.slug;
+        const slugToCheck = updates.slug.toLowerCase();
         if (slugToCheck.length > 3) {
           setIsAvailable(true); // Reset availability while checking
           void checkAvailability(slugToCheck)
@@ -91,14 +91,6 @@ export const CreateWorkspaceForm = () => {
     if (form.slug.length < 3) {
       toast.warning("Validation warning", {
         description: "Workspace URL must be at least 3 characters",
-      });
-      return;
-    }
-
-    if (form.slug.match(/^[a-z0-9-]+$/)) {
-      toast.warning("Validation warning", {
-        description:
-          "Workspace URL can only contain lowercase letters, numbers, and dashes",
       });
       return;
     }
