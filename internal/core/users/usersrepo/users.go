@@ -368,7 +368,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 		WHERE wm.workspace_id = :workspace_id
 			AND tm.team_id = :team_id
 			AND u.is_active = TRUE
-		ORDER BY u.created_at DESC
+		ORDER BY u.full_name
 		`
 	} else {
 		// Query for all workspace members
@@ -388,7 +388,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE wm.workspace_id = :workspace_id
 			AND u.is_active = TRUE
-		ORDER BY u.created_at DESC
+		ORDER BY u.full_name
 		`
 	}
 
