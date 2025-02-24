@@ -23,6 +23,7 @@ export const Toaster = (_: ToasterProps) => {
           toast:
             "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-gray-100/60 dark:border-dark-50",
           closeButton: "bg-white/90 dark:bg-dark-100/90 dark:border-dark-50",
+          description: "text-gray dark:text-gray-300",
         },
       }}
     />

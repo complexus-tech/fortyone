@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Text, Button, Flex, Tooltip } from "ui";
 import { PlusIcon } from "icons";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useDeleteStateMutation } from "@/lib/hooks/states/delete-mutation";
@@ -36,7 +37,10 @@ export const WorkflowSettings = () => {
   const handleDeleteState = (state: State) => {
     const categoryStates = states.filter((s) => s.category === state.category);
     if (categoryStates.length <= 1) {
-      // Don't allow deleting the last state in a category
+      toast.warning("Status cannot be removed", {
+        description:
+          "Create another status in this category before deleting this one. You can also update the status instead.",
+      });
       return;
     }
     setStateToDelete(state);
