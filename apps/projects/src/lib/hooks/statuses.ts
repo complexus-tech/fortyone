@@ -8,3 +8,12 @@ export const useStatuses = () => {
     queryFn: getStatuses,
   });
 };
+
+export const useTeamStatuses = (teamId: string) => {
+  const { data: statuses = [] } = useStatuses();
+  return useQuery({
+    queryKey: statusKeys.team(teamId),
+    queryFn: () => statuses.filter((status) => status.teamId === teamId),
+    enabled: Boolean(teamId),
+  });
+};

@@ -3,6 +3,7 @@ export const statusKeys = {
   lists: () => [...statusKeys.all, "list"] as const,
   details: () => [...statusKeys.all, "detail"] as const,
   detail: (id: string) => [...statusKeys.details(), id] as const,
+  team: (teamId: string) => [...statusKeys.lists(), teamId] as const,
 };
 
 export const statusTags = {
@@ -10,6 +11,7 @@ export const statusTags = {
   lists: () => `${statusTags.all}-list` as const,
   details: () => `${statusTags.all}-detail` as const,
   detail: (id: string) => `${statusTags.details()}-${id}` as const,
+  team: (teamId: string) => `${statusTags.lists()}-${teamId}` as const,
 };
 
 export const sprintTags = {
