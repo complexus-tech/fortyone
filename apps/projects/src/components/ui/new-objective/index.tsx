@@ -75,12 +75,7 @@ export const NewObjectiveDialog = ({
   const currentTeamId = initialTeamId || activeTeam.id;
   const currentTeam =
     teams.find((team) => team.id === currentTeamId) || activeTeam;
-
-  // Get filtered statuses for the current team
-  const teamStatuses = statuses.filter(
-    (status) => status.teamId === currentTeamId,
-  );
-  const defaultStatus = teamStatuses.at(0);
+  const defaultStatus = statuses.at(0);
 
   const initialForm: NewObjective = {
     name: "",
@@ -102,20 +97,6 @@ export const NewObjectiveDialog = ({
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const createMutation = useCreateObjectiveMutation();
-
-  // Update status when team changes if current status doesn't belong to new team
-  useEffect(() => {
-    const currentStatus = teamStatuses.find(
-      (status) => status.id === objectiveForm.statusId,
-    );
-    if (!currentStatus) {
-      setObjectiveForm((prev) => ({
-        ...prev,
-        statusId: teamStatuses.at(0)!.id,
-        teamId: currentTeamId,
-      }));
-    }
-  }, [currentTeamId, objectiveForm.statusId, teamStatuses]);
 
   const titleEditor = useEditor({
     extensions: [
@@ -282,8 +263,7 @@ export const NewObjectiveDialog = ({
                   type="button"
                   variant="outline"
                 >
-                  {teamStatuses.find((s) => s.id === objectiveForm.statusId)
-                    ?.name ?? "Backlog"}
+                  {statuses.find((s) => s.id === objectiveForm.statusId)?.name}
                 </Button>
               </ObjectiveStatusesMenu.Trigger>
               <ObjectiveStatusesMenu.Items

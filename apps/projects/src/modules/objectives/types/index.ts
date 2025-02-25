@@ -1,4 +1,5 @@
 import type { StoryPriority } from "@/modules/stories/types";
+import type { StateCategory } from "@/types/states";
 
 export type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
 
@@ -73,4 +74,15 @@ export type NewObjective = {
 
 export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">> & {
   health?: ObjectiveHealth;
+};
+
+export type ObjectiveStatus = {
+  id: string;
+  name: string;
+  color: string;
+  category: StateCategory;
+  orderIndex: number;
+  workspaceId: string;
+  createdAt: string;
+  updatedAt: string;
 };
