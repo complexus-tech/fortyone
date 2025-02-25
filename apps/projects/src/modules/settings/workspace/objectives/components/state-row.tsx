@@ -13,18 +13,18 @@ import {
 } from "icons";
 import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
 import { StoryStatusIcon } from "@/components/ui";
-import type { State } from "@/types/states";
+import type { ObjectiveStatus } from "@/modules/objectives/types";
 
 type StateRowProps = {
-  state: State;
-  onDelete: (state: State) => void;
+  status: ObjectiveStatus;
+  onDelete: (status: ObjectiveStatus) => void;
   isNew?: boolean;
   onCreateCancel?: () => void;
-  onCreate?: (state: State) => void;
+  onCreate?: (status: ObjectiveStatus) => void;
 };
 
 export const StateRow = ({
-  state,
+  status,
   onDelete,
   isNew,
   onCreateCancel,
@@ -32,21 +32,21 @@ export const StateRow = ({
 }: StateRowProps) => {
   const updateMutation = useUpdateObjectiveStatusMutation();
   const [isEditing, setIsEditing] = useState(isNew);
-  const [form, setForm] = useState({ name: state.name, color: state.color });
+  const [form, setForm] = useState({ name: status.name, color: status.color });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isNew) {
       onCreate?.({
-        ...state,
+        ...status,
         name: form.name,
         color: form.color,
       });
       return;
     }
     updateMutation.mutate({
-      statusId: state.id,
+      statusId: status.id,
       payload: form,
     });
     setIsEditing(false);
@@ -57,7 +57,7 @@ export const StateRow = ({
     if (isNew) {
       onCreateCancel?.();
     } else {
-      setForm({ name: state.name, color: state.color });
+      setForm({ name: status.name, color: status.color });
     }
   };
 
@@ -75,7 +75,7 @@ export const StateRow = ({
       <Flex align="center" gap={2}>
         <DragIcon strokeWidth={4} />
         <Box className="rounded-[0.4rem] bg-gray-100 p-2 dark:bg-dark-50">
-          <StoryStatusIcon category={state.category} />
+          <StoryStatusIcon category={status.category} />
         </Box>
         <Box>
           <input
@@ -126,7 +126,7 @@ export const StateRow = ({
                 </Menu.Item>
                 <Menu.Item
                   onSelect={() => {
-                    onDelete(state);
+                    onDelete(status);
                   }}
                 >
                   <DeleteIcon className="h-[1.15rem]" />

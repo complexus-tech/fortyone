@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { ConfirmDialog } from "@/components/ui";
-import type { State, StateCategory } from "@/types/states";
+import type { StateCategory } from "@/types/states";
 import {
   useCreateObjectiveStatusMutation,
   useDeleteObjectiveStatusMutation,
 } from "@/modules/objectives/hooks/statuses";
+import type { ObjectiveStatus } from "@/modules/objectives/types";
 import { StateRow } from "./components/state-row";
 
 const categories: { label: string; value: StateCategory }[] = [
@@ -23,40 +24,44 @@ const categories: { label: string; value: StateCategory }[] = [
 ];
 
 export const WorkflowSettings = () => {
-  const { data: states = [] } = useObjectiveStatuses();
+  const { data: statuses = [] } = useObjectiveStatuses();
   const deleteMutation = useDeleteObjectiveStatusMutation();
   const createMutation = useCreateObjectiveStatusMutation();
   const [selectedCategory, setSelectedCategory] =
     useState<StateCategory | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [stateToDelete, setStateToDelete] = useState<State | null>(null);
+  const [statusToDelete, setStatusToDelete] = useState<ObjectiveStatus | null>(
+    null,
+  );
 
-  const handleDeleteState = (state: State) => {
-    const categoryStates = states.filter((s) => s.category === state.category);
-    if (categoryStates.length <= 1) {
+  const handleDeleteState = (status: ObjectiveStatus) => {
+    const categoryStatuses = statuses.filter(
+      (s) => s.category === status.category,
+    );
+    if (categoryStatuses.length <= 1) {
       toast.warning("Status cannot be removed", {
         description:
           "Create another status in this category before deleting this one. You can also update the status instead.",
       });
       return;
     }
-    setStateToDelete(state);
+    setStatusToDelete(status);
   };
 
   const confirmDelete = () => {
-    if (stateToDelete) {
-      deleteMutation.mutate(stateToDelete.id);
-      setStateToDelete(null);
+    if (statusToDelete) {
+      deleteMutation.mutate(statusToDelete.id);
+      setStatusToDelete(null);
     }
   };
 
-  const handleCreateState = (state: State) => {
+  const handleCreateState = (status: ObjectiveStatus) => {
     if (selectedCategory) {
       createMutation.mutate(
         {
-          name: state.name,
+          name: status.name,
           category: selectedCategory,
-          color: state.color,
+          color: status.color,
         },
         {
           onSuccess: () => {
@@ -79,7 +84,7 @@ export const WorkflowSettings = () => {
         />
         <Flex direction="column" gap={4}>
           {categories.map(({ label, value }) => {
-            const categoryStates = states.filter(
+            const categoryStates = statuses.filter(
               (state) => state.category === value,
             );
             const isCreatingInCategory =
@@ -106,11 +111,11 @@ export const WorkflowSettings = () => {
                 </Flex>
 
                 <Flex direction="column" gap={3}>
-                  {categoryStates.map((state) => (
+                  {categoryStates.map((status) => (
                     <StateRow
-                      key={state.id}
+                      key={status.id}
                       onDelete={handleDeleteState}
-                      state={state}
+                      status={status}
                     />
                   ))}
                   {isCreatingInCategory ? (
@@ -122,13 +127,12 @@ export const WorkflowSettings = () => {
                         setSelectedCategory(null);
                       }}
                       onDelete={() => {}}
-                      state={{
+                      status={{
                         id: "new",
                         name: "",
                         color: "#6366F1",
                         category: value,
                         orderIndex: 50,
-                        teamId: "workspace",
                         workspaceId: "workspace",
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
@@ -143,9 +147,9 @@ export const WorkflowSettings = () => {
         <ConfirmDialog
           confirmText="Delete status"
           description="Are you sure you want to delete this status? Any objectives in this status will need to be moved to another status."
-          isOpen={Boolean(stateToDelete)}
+          isOpen={Boolean(statusToDelete)}
           onClose={() => {
-            setStateToDelete(null);
+            setStatusToDelete(null);
           }}
           onConfirm={confirmDelete}
           title="Delete status"

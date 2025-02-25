@@ -47,22 +47,18 @@ const Trigger = ({ children }: { children: ReactNode }) => (
 const Items = ({
   statusId,
   setStatusId,
-  teamId,
 }: {
   statusId?: string;
   setStatusId: (statusId: string) => void;
-  teamId: string;
 }) => {
   const { data: statuses = [] } = useObjectiveStatuses();
   const [query, setQuery] = useState("");
-  const filteredStatuses = statuses.filter((state) => state.teamId === teamId);
 
   const state =
-    filteredStatuses.find((state) => state.id === statusId) ||
-    filteredStatuses.at(0);
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { id: defaultStateId } = state!;
   const { setOpen } = useStatusMenu();
-  if (!filteredStatuses.length) return null;
+  if (!statuses.length) return null;
 
   return (
     <Popover.Content align="center" className="w-64">
@@ -86,7 +82,7 @@ const Items = ({
           <Text color="muted">No statuses found.</Text>
         </Command.Empty>
         <Command.Group>
-          {filteredStatuses.map(({ id, name }, idx) => (
+          {statuses.map(({ id, name }, idx) => (
             <Command.Item
               active={id === defaultStateId}
               className="justify-between"

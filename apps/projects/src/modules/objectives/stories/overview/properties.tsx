@@ -50,7 +50,6 @@ export const Properties = () => {
             handleUpdate({ statusId });
           }}
           statusId={objective?.statusId}
-          teamId={objective!.teamId}
         />
       </ObjectiveStatusesMenu>
       <PrioritiesMenu>

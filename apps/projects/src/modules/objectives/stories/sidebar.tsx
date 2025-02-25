@@ -176,7 +176,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
                   handleUpdate({ statusId });
                 }}
                 statusId={objective?.statusId}
-                teamId={objective!.teamId}
               />
             </ObjectiveStatusesMenu>
           }
