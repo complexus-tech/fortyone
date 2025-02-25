@@ -19,7 +19,7 @@ export const Navigation = () => {
       name: "Inbox",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
       href: "/notifications",
-      messages: 3,
+      // messages: 3,
     },
     {
       name: "My Work",
