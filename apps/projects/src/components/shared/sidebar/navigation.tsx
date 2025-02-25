@@ -26,6 +26,7 @@ export const Navigation = () => {
       icon: <UserIcon strokeWidth={2} />,
       href: "/my-work",
     },
+
     {
       name: "Analytics",
       icon: (

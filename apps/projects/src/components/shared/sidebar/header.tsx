@@ -147,7 +147,7 @@ export const Header = () => {
                   ) : null}
                 </Menu.Item>
               ))}
-              <Menu.Item onSelect={handleCreateWorkspace}>
+              <Menu.Item className="pl-3" onSelect={handleCreateWorkspace}>
                 <PlusIcon />
                 Create workspace
               </Menu.Item>
@@ -238,7 +238,7 @@ export const Header = () => {
                     }}
                   >
                     <UsersAddIcon className="h-[1.3rem] w-auto" />
-                    Invite members
+                    Invite & manage members
                   </Link>
                 </Menu.Item>
               )}
