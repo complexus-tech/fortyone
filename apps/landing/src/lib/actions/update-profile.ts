@@ -6,8 +6,8 @@ import { auth } from "@/auth";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export type UpdateProfile = {
-  fullName: string;
-  username: string;
+  fullName?: string;
+  username?: string;
 };
 
 export async function updateProfile(updates: UpdateProfile) {
