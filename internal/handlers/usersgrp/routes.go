@@ -32,8 +32,8 @@ func Routes(cfg Config, app *web.App) {
 
 	// Protected endpoints
 	app.Get("/workspaces/{workspaceId}/members", h.List, auth)
-	app.Get("/workspaces/{workspaceId}/profile", h.GetProfile, auth)
-	app.Put("/workspaces/{workspaceId}/profile", h.UpdateProfile, auth)
-	app.Delete("/workspaces/{workspaceId}/profile", h.DeleteProfile, auth)
+	app.Get("/users/profile", h.GetProfile, auth)
+	app.Put("/users/profile", h.UpdateProfile, auth)
+	app.Delete("/users/profile", h.DeleteProfile, auth)
 	app.Post("/workspaces/switch", h.SwitchWorkspace, auth)
 }
