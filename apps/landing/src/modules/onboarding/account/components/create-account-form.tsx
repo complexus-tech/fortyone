@@ -4,11 +4,15 @@ import { Input, Button } from "ui";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { updateProfile } from "@/lib/actions/update-profile";
 
 export const CreateAccountForm = () => {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(session?.user?.name || "");
+  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,12 +22,14 @@ export const CreateAccountForm = () => {
       });
       return;
     }
-
-    setIsLoading(true);
-
-    const _ = await updateProfile({ fullName });
-
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const _ = await updateProfile({ fullName });
+    } catch (error) {
+      setIsLoading(false);
+    } finally {
+      router.push("/onboarding/welcome");
+    }
   };
 
   return (

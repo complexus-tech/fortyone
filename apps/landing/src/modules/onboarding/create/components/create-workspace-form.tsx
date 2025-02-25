@@ -107,7 +107,7 @@ export const CreateWorkspaceForm = () => {
     const workspace = res.data!;
 
     if (prevWorkspaces.length === 0) {
-      router.push("/onboarding/welcome");
+      router.push("/onboarding/account");
     } else if (domain.includes("localhost")) {
       window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
     } else {
