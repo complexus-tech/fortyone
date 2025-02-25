@@ -52,7 +52,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           { title: "Teams", href: "/settings/workspace/teams" },
           { title: "Create a team", href: "/settings/workspace/teams/create" },
           {
-            title: "Objectives workflow",
+            title: "Objectives",
             href: "/settings/workspace/objectives",
           },
         ]

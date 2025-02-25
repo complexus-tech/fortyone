@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "lib";
 
 type SectionHeaderProps = {
-  title: string;
+  title?: string;
   description: string;
   action?: ReactNode;
   className?: string;
@@ -24,9 +24,11 @@ export const SectionHeader = ({
     >
       <Flex align="center" justify="between">
         <Box>
-          <Text as="h3" className="font-medium">
-            {title}
-          </Text>
+          {title ? (
+            <Text as="h3" className="font-medium">
+              {title}
+            </Text>
+          ) : null}
           <Text className="mt-1" color="muted">
             {description}
           </Text>

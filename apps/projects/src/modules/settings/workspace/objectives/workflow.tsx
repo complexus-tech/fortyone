@@ -70,13 +70,12 @@ export const WorkflowSettings = () => {
   return (
     <Box>
       <Text as="h1" className="mb-6 text-2xl font-medium">
-        Objectives Workflow
+        Objectives
       </Text>
       <Box className="mb-6 rounded-lg border border-gray-100 bg-white pb-6 dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           className="mb-4"
           description="Configure custom workflow states to track the progress of objectives across your workspace. Each category represents a different phase in your workflow process."
-          title="Objective Workflows"
         />
         <Flex direction="column" gap={4}>
           {categories.map(({ label, value }) => {
