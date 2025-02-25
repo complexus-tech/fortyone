@@ -17,6 +17,13 @@ var (
 	ErrMaxUsesReached     = errors.New("invitation link has reached maximum uses")
 )
 
+// InvitationRequest represents a request to create an invitation
+type InvitationRequest struct {
+	Email   string
+	Role    string
+	TeamIDs []uuid.UUID
+}
+
 // CoreWorkspaceInvitation represents a workspace invitation in the application layer
 type CoreWorkspaceInvitation struct {
 	ID          uuid.UUID
@@ -25,6 +32,7 @@ type CoreWorkspaceInvitation struct {
 	Email       string
 	Role        string
 	Token       string
+	TeamIDs     []uuid.UUID
 	ExpiresAt   time.Time
 	UsedAt      *time.Time
 	CreatedAt   time.Time
@@ -38,6 +46,7 @@ type CoreWorkspaceInvitationLink struct {
 	CreatorID   uuid.UUID
 	Token       string
 	Role        string
+	TeamIDs     []uuid.UUID
 	MaxUses     *int
 	UsedCount   int
 	ExpiresAt   *time.Time

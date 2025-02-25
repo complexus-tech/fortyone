@@ -3,6 +3,7 @@ package invitations
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"time"
 
@@ -28,6 +29,9 @@ type Repository interface {
 	ListInvitationLinks(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitationLink, error)
 	RevokeInvitationLink(ctx context.Context, linkID uuid.UUID) error
 	IncrementLinkUsage(ctx context.Context, linkID uuid.UUID) error
+
+	// Transaction support
+	BeginTx(ctx context.Context) (*sql.Tx, error)
 }
 
 // Service provides invitation operations
@@ -55,7 +59,7 @@ func generateToken() (string, error) {
 }
 
 // CreateInvitation creates a new workspace invitation
-func (s *Service) CreateInvitation(ctx context.Context, workspaceID, inviterID uuid.UUID, email, role string) (CoreWorkspaceInvitation, error) {
+func (s *Service) CreateInvitation(ctx context.Context, workspaceID, inviterID uuid.UUID, email, role string, teamIDs []uuid.UUID) (CoreWorkspaceInvitation, error) {
 	s.log.Info(ctx, "business.core.invitations.CreateInvitation")
 	ctx, span := web.AddSpan(ctx, "business.core.invitations.CreateInvitation")
 	defer span.End()
@@ -71,6 +75,7 @@ func (s *Service) CreateInvitation(ctx context.Context, workspaceID, inviterID u
 		Email:       email,
 		Role:        role,
 		Token:       token,
+		TeamIDs:     teamIDs,
 		ExpiresAt:   time.Now().Add(24 * time.Hour), // 24 hour expiry
 	}
 
@@ -148,7 +153,7 @@ func (s *Service) RevokeInvitation(ctx context.Context, invitationID uuid.UUID) 
 }
 
 // CreateInvitationLink creates a new workspace invitation link
-func (s *Service) CreateInvitationLink(ctx context.Context, workspaceID, creatorID uuid.UUID, role string, maxUses *int, expiresAt *time.Time) (CoreWorkspaceInvitationLink, error) {
+func (s *Service) CreateInvitationLink(ctx context.Context, workspaceID, creatorID uuid.UUID, role string, teamIDs []uuid.UUID, maxUses *int, expiresAt *time.Time) (CoreWorkspaceInvitationLink, error) {
 	s.log.Info(ctx, "business.core.invitations.CreateInvitationLink")
 	ctx, span := web.AddSpan(ctx, "business.core.invitations.CreateInvitationLink")
 	defer span.End()
@@ -163,6 +168,7 @@ func (s *Service) CreateInvitationLink(ctx context.Context, workspaceID, creator
 		CreatorID:   creatorID,
 		Token:       token,
 		Role:        role,
+		TeamIDs:     teamIDs,
 		MaxUses:     maxUses,
 		ExpiresAt:   expiresAt,
 		IsActive:    true,
@@ -261,4 +267,40 @@ func (s *Service) UseInvitationLink(ctx context.Context, linkID uuid.UUID) error
 	))
 
 	return nil
+}
+
+// CreateBulkInvitations creates multiple workspace invitations
+func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, inviterID uuid.UUID, requests []InvitationRequest) ([]CoreWorkspaceInvitation, error) {
+	s.log.Info(ctx, "business.core.invitations.CreateBulkInvitations")
+	ctx, span := web.AddSpan(ctx, "business.core.invitations.CreateBulkInvitations")
+	defer span.End()
+
+	invitations := make([]CoreWorkspaceInvitation, 0, len(requests))
+
+	for _, req := range requests {
+		token, err := generateToken()
+		if err != nil {
+			return nil, err
+		}
+
+		invitation := CoreWorkspaceInvitation{
+			WorkspaceID: workspaceID,
+			InviterID:   inviterID,
+			Email:       req.Email,
+			Role:        req.Role,
+			Token:       token,
+			TeamIDs:     req.TeamIDs,
+			ExpiresAt:   time.Now().Add(24 * time.Hour),
+		}
+
+		result, err := s.repo.CreateInvitation(ctx, invitation)
+		if err != nil {
+			span.RecordError(err)
+			return nil, err
+		}
+
+		invitations = append(invitations, result)
+	}
+
+	return invitations, nil
 }

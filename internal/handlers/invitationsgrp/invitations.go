@@ -48,7 +48,7 @@ func (h *Handlers) CreateInvitation(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	invitation, err := h.invitations.CreateInvitation(ctx, workspaceID, userID, req.Email, req.Role)
+	invitation, err := h.invitations.CreateInvitation(ctx, workspaceID, userID, req.Email, req.Role, req.TeamIDs)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -120,7 +120,7 @@ func (h *Handlers) CreateInvitationLink(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	link, err := h.invitations.CreateInvitationLink(ctx, workspaceID, userID, req.Role, req.MaxUses, req.ExpiresAt)
+	link, err := h.invitations.CreateInvitationLink(ctx, workspaceID, userID, req.Role, req.TeamIDs, req.MaxUses, req.ExpiresAt)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -246,4 +246,47 @@ func (h *Handlers) UseInvitationLink(ctx context.Context, w http.ResponseWriter,
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// CreateBulkInvitations creates multiple workspace invitations
+func (h *Handlers) CreateBulkInvitations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.invitations.CreateBulkInvitations")
+	defer span.End()
+
+	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req AppNewInvitationBulk
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Convert request to core type
+	requests := make([]invitations.InvitationRequest, len(req.Invitations))
+	for i, inv := range req.Invitations {
+		requests[i] = invitations.InvitationRequest{
+			Email:   inv.Email,
+			Role:    inv.Role,
+			TeamIDs: inv.TeamIDs,
+		}
+	}
+
+	results, err := h.invitations.CreateBulkInvitations(ctx, workspaceID, userID, requests)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("bulk invitations created", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.Int("invitation_count", len(results)),
+	))
+
+	return web.Respond(ctx, w, toAppInvitations(results), http.StatusCreated)
 }

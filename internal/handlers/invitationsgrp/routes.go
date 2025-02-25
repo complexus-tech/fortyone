@@ -22,6 +22,7 @@ func Routes(cfg Config, app *web.App) {
 
 	// Email invitations
 	app.Post("/workspaces/{workspaceId}/invitations", h.CreateInvitation, auth)
+	app.Post("/workspaces/{workspaceId}/invitations/bulk", h.CreateBulkInvitations, auth)
 	app.Get("/workspaces/{workspaceId}/invitations", h.ListInvitations, auth)
 	app.Delete("/workspaces/{workspaceId}/invitations/{id}", h.RevokeInvitation, auth)
 	app.Get("/invitations/{token}", h.GetInvitation)

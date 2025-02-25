@@ -8,42 +8,50 @@ import (
 )
 
 // Request Models
+type AppNewInvitationBulk struct {
+	Invitations []AppNewInvitation `json:"invitations" validate:"required,dive"`
+}
+
 type AppNewInvitation struct {
-	Email string `json:"email" validate:"required,email"`
-	Role  string `json:"role" validate:"required"`
+	Email   string      `json:"email" validate:"required,email"`
+	Role    string      `json:"role" validate:"required"`
+	TeamIDs []uuid.UUID `json:"teamIds,omitempty"`
 }
 
 type AppNewInvitationLink struct {
-	Role      string     `json:"role" validate:"required"`
-	MaxUses   *int       `json:"maxUses"`
-	ExpiresAt *time.Time `json:"expiresAt"`
+	Role      string      `json:"role" validate:"required"`
+	TeamIDs   []uuid.UUID `json:"teamIds,omitempty"`
+	MaxUses   *int        `json:"maxUses"`
+	ExpiresAt *time.Time  `json:"expiresAt"`
 }
 
 // Response Models
 type AppInvitation struct {
-	ID          uuid.UUID  `json:"id"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	InviterID   uuid.UUID  `json:"inviterId"`
-	Email       string     `json:"email"`
-	Role        string     `json:"role"`
-	ExpiresAt   time.Time  `json:"expiresAt"`
-	UsedAt      *time.Time `json:"usedAt,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspaceId"`
+	InviterID   uuid.UUID   `json:"inviterId"`
+	Email       string      `json:"email"`
+	Role        string      `json:"role"`
+	TeamIDs     []uuid.UUID `json:"teamIds,omitempty"`
+	ExpiresAt   time.Time   `json:"expiresAt"`
+	UsedAt      *time.Time  `json:"usedAt,omitempty"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
 }
 
 type AppInvitationLink struct {
-	ID          uuid.UUID  `json:"id"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	CreatorID   uuid.UUID  `json:"creatorId"`
-	Token       string     `json:"token"`
-	Role        string     `json:"role"`
-	MaxUses     *int       `json:"maxUses"`
-	UsedCount   int        `json:"usedCount"`
-	ExpiresAt   *time.Time `json:"expiresAt"`
-	IsActive    bool       `json:"isActive"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID          uuid.UUID   `json:"id"`
+	WorkspaceID uuid.UUID   `json:"workspaceId"`
+	CreatorID   uuid.UUID   `json:"creatorId"`
+	Token       string      `json:"token"`
+	Role        string      `json:"role"`
+	TeamIDs     []uuid.UUID `json:"teamIds,omitempty"`
+	MaxUses     *int        `json:"maxUses"`
+	UsedCount   int         `json:"usedCount"`
+	ExpiresAt   *time.Time  `json:"expiresAt"`
+	IsActive    bool        `json:"isActive"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
 }
 
 // Conversion functions

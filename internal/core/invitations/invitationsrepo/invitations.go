@@ -546,3 +546,8 @@ func (r *repo) IncrementLinkUsage(ctx context.Context, linkID uuid.UUID) error {
 
 	return nil
 }
+
+// Add BeginTx method
+func (r *repo) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	return r.db.BeginTx(ctx, nil)
+}

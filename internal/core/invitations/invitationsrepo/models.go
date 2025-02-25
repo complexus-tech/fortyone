@@ -8,30 +8,32 @@ import (
 )
 
 type dbWorkspaceInvitation struct {
-	ID          uuid.UUID  `db:"invitation_id"`
-	WorkspaceID uuid.UUID  `db:"workspace_id"`
-	InviterID   uuid.UUID  `db:"inviter_id"`
-	Email       string     `db:"email"`
-	Role        string     `db:"role"`
-	Token       string     `db:"token"`
-	ExpiresAt   time.Time  `db:"expires_at"`
-	UsedAt      *time.Time `db:"used_at"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
+	ID          uuid.UUID   `db:"invitation_id"`
+	WorkspaceID uuid.UUID   `db:"workspace_id"`
+	InviterID   uuid.UUID   `db:"inviter_id"`
+	Email       string      `db:"email"`
+	Role        string      `db:"role"`
+	Token       string      `db:"token"`
+	TeamIDs     []uuid.UUID `db:"team_ids"`
+	ExpiresAt   time.Time   `db:"expires_at"`
+	UsedAt      *time.Time  `db:"used_at"`
+	CreatedAt   time.Time   `db:"created_at"`
+	UpdatedAt   time.Time   `db:"updated_at"`
 }
 
 type dbWorkspaceInvitationLink struct {
-	ID          uuid.UUID  `db:"invitation_link_id"`
-	WorkspaceID uuid.UUID  `db:"workspace_id"`
-	CreatorID   uuid.UUID  `db:"creator_id"`
-	Token       string     `db:"token"`
-	Role        string     `db:"role"`
-	MaxUses     *int       `db:"max_uses"`
-	UsedCount   int        `db:"used_count"`
-	ExpiresAt   *time.Time `db:"expires_at"`
-	IsActive    bool       `db:"is_active"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
+	ID          uuid.UUID   `db:"invitation_link_id"`
+	WorkspaceID uuid.UUID   `db:"workspace_id"`
+	CreatorID   uuid.UUID   `db:"creator_id"`
+	Token       string      `db:"token"`
+	Role        string      `db:"role"`
+	TeamIDs     []uuid.UUID `db:"team_ids"`
+	MaxUses     *int        `db:"max_uses"`
+	UsedCount   int         `db:"used_count"`
+	ExpiresAt   *time.Time  `db:"expires_at"`
+	IsActive    bool        `db:"is_active"`
+	CreatedAt   time.Time   `db:"created_at"`
+	UpdatedAt   time.Time   `db:"updated_at"`
 }
 
 // Conversion functions
