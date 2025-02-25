@@ -6,6 +6,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/healthgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/invitationsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/keyresultsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/labelsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/linksgrp"
@@ -157,6 +158,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the notifications routes
 	notificationsgrp.Routes(notificationsgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the invitations routes
+	invitationsgrp.Routes(invitationsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
