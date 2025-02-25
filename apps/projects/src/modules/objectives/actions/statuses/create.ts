@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import type { StateCategory, State } from "@/types/states";
+import type { StateCategory } from "@/types/states";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { objectiveTags } from "../../constants";
+import type { ObjectiveStatus } from "../../types";
 
 export type NewObjectiveStatus = {
   name: string;
@@ -15,7 +16,7 @@ export type NewObjectiveStatus = {
 export const createObjectiveStatusAction = async (
   newStatus: NewObjectiveStatus,
 ) => {
-  const response = await post<NewObjectiveStatus, ApiResponse<State>>(
+  const response = await post<NewObjectiveStatus, ApiResponse<ObjectiveStatus>>(
     "objective-statuses",
     newStatus,
   );

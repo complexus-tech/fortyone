@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { State } from "@/types/states";
+import type { ObjectiveStatus } from "../../types";
 import { objectiveKeys } from "../../constants";
 import { deleteObjectiveStatusAction } from "../../actions/statuses/delete";
 
@@ -10,11 +10,11 @@ export const useDeleteObjectiveStatusMutation = () => {
   const mutation = useMutation({
     mutationFn: (statusId: string) => deleteObjectiveStatusAction(statusId),
     onMutate: (statusId) => {
-      const previousStatuses = queryClient.getQueryData<State[]>(
+      const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
         objectiveKeys.statuses(),
       );
       if (previousStatuses) {
-        queryClient.setQueryData<State[]>(
+        queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           previousStatuses.filter((status) => status.id !== statusId),
         );
@@ -23,7 +23,7 @@ export const useDeleteObjectiveStatusMutation = () => {
     },
     onError: (_, variables, context) => {
       if (context?.previousStatuses) {
-        queryClient.setQueryData<State[]>(
+        queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           context.previousStatuses,
         );

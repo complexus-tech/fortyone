@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { State } from "@/types/states";
+import type { ObjectiveStatus } from "../../types";
 import { objectiveKeys } from "../../constants";
 import type { NewObjectiveStatus } from "../../actions/statuses/create";
 import { createObjectiveStatusAction } from "../../actions/statuses/create";
@@ -18,7 +18,7 @@ export const useCreateObjectiveStatusMutation = () => {
         id: toastId,
         description: "Creating status...",
       });
-      const optimisticStatus: State = {
+      const optimisticStatus: ObjectiveStatus = {
         ...newStatus,
         id: "optimistic",
         createdAt: new Date().toISOString(),
@@ -26,14 +26,13 @@ export const useCreateObjectiveStatusMutation = () => {
         color: newStatus.color || "#000000",
         orderIndex: 50,
         workspaceId: "optimistic",
-        teamId: "workspace",
       };
 
-      const previousStatuses = queryClient.getQueryData<State[]>(
+      const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
         objectiveKeys.statuses(),
       );
       if (previousStatuses) {
-        queryClient.setQueryData<State[]>(objectiveKeys.statuses(), [
+        queryClient.setQueryData<ObjectiveStatus[]>(objectiveKeys.statuses(), [
           ...previousStatuses,
           optimisticStatus,
         ]);
@@ -44,7 +43,7 @@ export const useCreateObjectiveStatusMutation = () => {
 
     onError: (_, variables, context) => {
       if (context?.previousStatuses) {
-        queryClient.setQueryData<State[]>(
+        queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           context.previousStatuses,
         );

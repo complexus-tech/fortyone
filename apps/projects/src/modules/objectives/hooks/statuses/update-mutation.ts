@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { State } from "@/types/states";
 import { objectiveKeys } from "../../constants";
 import type { UpdateObjectiveStatus } from "../../actions/statuses/update";
 import { updateObjectiveStatusAction } from "../../actions/statuses/update";
+import type { ObjectiveStatus } from "../../types";
 
 export const useUpdateObjectiveStatusMutation = () => {
   const queryClient = useQueryClient();
@@ -18,7 +18,7 @@ export const useUpdateObjectiveStatusMutation = () => {
     }) => updateObjectiveStatusAction(statusId, payload),
 
     onMutate: (newStatus) => {
-      const previousStatuses = queryClient.getQueryData<State[]>(
+      const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
         objectiveKeys.statuses(),
       );
       if (previousStatuses) {
@@ -27,7 +27,7 @@ export const useUpdateObjectiveStatusMutation = () => {
             ? { ...status, ...newStatus.payload }
             : status,
         );
-        queryClient.setQueryData<State[]>(
+        queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           updatedStatuses,
         );
@@ -37,7 +37,7 @@ export const useUpdateObjectiveStatusMutation = () => {
     },
     onError: (_, variables, context) => {
       if (context?.previousStatuses) {
-        queryClient.setQueryData<State[]>(
+        queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           context.previousStatuses,
         );

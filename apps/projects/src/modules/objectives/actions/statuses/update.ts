@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import type { StateCategory, State } from "@/types/states";
+import type { StateCategory } from "@/types/states";
 import { patch } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { objectiveTags } from "../../constants";
+import type { ObjectiveStatus } from "../../types";
 
 export type UpdateObjectiveStatus = {
   name?: string;
@@ -16,10 +17,10 @@ export const updateObjectiveStatusAction = async (
   statusId: string,
   payload: UpdateObjectiveStatus,
 ) => {
-  const response = await patch<UpdateObjectiveStatus, ApiResponse<State>>(
-    `objective-statuses/${statusId}`,
-    payload,
-  );
+  const response = await patch<
+    UpdateObjectiveStatus,
+    ApiResponse<ObjectiveStatus>
+  >(`objective-statuses/${statusId}`, payload);
 
   revalidateTag(objectiveTags.statuses());
 
