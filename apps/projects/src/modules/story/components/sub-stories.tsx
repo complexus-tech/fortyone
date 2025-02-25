@@ -5,7 +5,7 @@ import { cn } from "lib";
 import { NewSubStory } from "@/components/ui/new-sub-story";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
-import { useStatuses } from "@/lib/hooks/statuses";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 
 export const SubStories = ({
   subStories,
@@ -21,7 +21,7 @@ export const SubStories = ({
   isSubStoriesOpen: boolean;
 }) => {
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
-  const { data: statuses = [] } = useStatuses();
+  const { data: statuses = [] } = useTeamStatuses(teamId);
 
   const completedStatus = statuses.find(
     (status) => status.category === "completed",

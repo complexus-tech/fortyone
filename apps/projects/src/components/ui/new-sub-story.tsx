@@ -21,7 +21,7 @@ import { useSession } from "next-auth/react";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
-import { useStatuses } from "@/lib/hooks/statuses";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon } from "./priority-icon";
@@ -45,11 +45,10 @@ export const NewSubStory = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const session = useSession();
-  const { data: statuses = [] } = useStatuses();
+  const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useMembers();
-  const teamStatuses = statuses.filter((status) => status.teamId === teamId);
   const defaultStatus =
-    teamStatuses.find((status) => status.id === statusId) || teamStatuses.at(0);
+    statuses.find((status) => status.id === statusId) || statuses.at(0);
 
   const initialForm: NewStory = {
     title: "",
