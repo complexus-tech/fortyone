@@ -2,6 +2,8 @@ package objectivestatus
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -16,7 +18,17 @@ type Repository interface {
 	Update(ctx context.Context, workspaceId, statusId uuid.UUID, status CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error)
 	Delete(ctx context.Context, workspaceId, statusId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreObjectiveStatus, error)
+	Get(ctx context.Context, workspaceId, statusId uuid.UUID) (CoreObjectiveStatus, error)
+	CountObjectivesWithStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) (int, error)
+	CountStatusesInCategory(ctx context.Context, workspaceID uuid.UUID, category string) (int, error)
 }
+
+// Service errors
+var (
+	ErrNotFound            = errors.New("objective status not found")
+	ErrStatusHasObjectives = errors.New("cannot delete status with attached objectives")
+	ErrLastInCategory      = errors.New("cannot delete the last status in a category")
+)
 
 // Service provides objective status operations.
 type Service struct {
@@ -74,6 +86,34 @@ func (s *Service) Delete(ctx context.Context, workspaceId, statusId uuid.UUID) e
 	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Delete")
 	defer span.End()
 
+	// 1. Get status details first to get category
+	status, err := s.repo.Get(ctx, workspaceId, statusId)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
+	// 2. Check for objectives using this status
+	objectivesCount, err := s.repo.CountObjectivesWithStatus(ctx, statusId, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to check objectives: %w", err)
+	}
+	if objectivesCount > 0 {
+		return ErrStatusHasObjectives
+	}
+
+	// 3. Check if it's the last in category for this workspace
+	categoryCount, err := s.repo.CountStatusesInCategory(ctx, workspaceId, status.Category)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to check category count: %w", err)
+	}
+	if categoryCount <= 1 {
+		return ErrLastInCategory
+	}
+
+	// 4. Proceed with deletion
 	if err := s.repo.Delete(ctx, workspaceId, statusId); err != nil {
 		span.RecordError(err)
 		return err

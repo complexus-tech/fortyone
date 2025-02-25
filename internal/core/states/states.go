@@ -2,6 +2,8 @@ package states
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -17,7 +19,17 @@ type Repository interface {
 	Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error)
 	TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error)
+	Get(ctx context.Context, workspaceId, stateId uuid.UUID) (CoreState, error)
+	CountStoriesWithStatus(ctx context.Context, statusID uuid.UUID) (int, error)
+	CountStatusesInCategory(ctx context.Context, teamID uuid.UUID, category string) (int, error)
 }
+
+// Service errors
+var (
+	ErrNotFound         = errors.New("status not found")
+	ErrStatusHasStories = errors.New("cannot delete status with attached stories")
+	ErrLastInCategory   = errors.New("cannot delete the last status in a category")
+)
 
 // Service provides story-related operations.
 type Service struct {
@@ -75,13 +87,41 @@ func (s *Service) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) er
 	ctx, span := web.AddSpan(ctx, "business.core.states.Delete")
 	defer span.End()
 
+	// 1. Get status details first to get team and category
+	status, err := s.repo.Get(ctx, workspaceId, stateId)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
+	// 2. Check for stories using this status
+	storiesCount, err := s.repo.CountStoriesWithStatus(ctx, stateId)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to check stories: %w", err)
+	}
+	if storiesCount > 0 {
+		return ErrStatusHasStories
+	}
+
+	// 3. Check if it's the last in category for this team
+	categoryCount, err := s.repo.CountStatusesInCategory(ctx, status.Team, status.Category)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to check category count: %w", err)
+	}
+	if categoryCount <= 1 {
+		return ErrLastInCategory
+	}
+
+	// 4. Proceed with deletion
 	if err := s.repo.Delete(ctx, workspaceId, stateId); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	span.AddEvent("state deleted.", trace.WithAttributes(
-		attribute.String("state.id", stateId.String()),
+	span.AddEvent("status deleted.", trace.WithAttributes(
+		attribute.String("status.id", stateId.String()),
 	))
 	return nil
 }
