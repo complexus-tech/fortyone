@@ -1,0 +1,142 @@
+"use client";
+
+import { useEffect, useRef, type FormEvent } from "react";
+import { useState } from "react";
+import { Box, Button, Flex, Menu } from "ui";
+import {
+  CheckIcon,
+  CloseIcon,
+  DeleteIcon,
+  DragIcon,
+  EditIcon,
+  MoreHorizontalIcon,
+} from "icons";
+import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
+import { StoryStatusIcon } from "@/components/ui";
+import type { State } from "@/types/states";
+
+type StateRowProps = {
+  state: State;
+  onDelete: (state: State) => void;
+  isNew?: boolean;
+  onCreateCancel?: () => void;
+  onCreate?: (state: State) => void;
+};
+
+export const StateRow = ({
+  state,
+  onDelete,
+  isNew,
+  onCreateCancel,
+  onCreate,
+}: StateRowProps) => {
+  const updateMutation = useUpdateStateMutation();
+  const [isEditing, setIsEditing] = useState(isNew);
+  const [form, setForm] = useState({ name: state.name, color: state.color });
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isNew) {
+      onCreate?.({
+        ...state,
+        name: form.name,
+        color: form.color,
+      });
+      return;
+    }
+    updateMutation.mutate({
+      stateId: state.id,
+      payload: form,
+    });
+    setIsEditing(false);
+  };
+
+  const handleCancelEditing = () => {
+    setIsEditing(false);
+    if (isNew) {
+      onCreateCancel?.();
+    } else {
+      setForm({ name: state.name, color: state.color });
+    }
+  };
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  return (
+    <form
+      className="flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70"
+      onSubmit={handleSubmit}
+    >
+      <Flex align="center" gap={2}>
+        <DragIcon strokeWidth={4} />
+        <Box className="rounded-[0.4rem] bg-gray-100 p-2 dark:bg-dark-50">
+          <StoryStatusIcon category={state.category} />
+        </Box>
+        <Box>
+          <input
+            className="bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
+            onChange={(e) => {
+              setForm({ ...form, name: e.target.value });
+            }}
+            placeholder="State name..."
+            readOnly={!isEditing}
+            ref={inputRef}
+            value={form.name}
+          />
+        </Box>
+      </Flex>
+      <Flex align="center" gap={2}>
+        {isEditing ? (
+          <>
+            <Button
+              color="tertiary"
+              onClick={handleCancelEditing}
+              rounded="full"
+              size="sm"
+              type="button"
+              variant="naked"
+            >
+              <CloseIcon />
+            </Button>
+            <Button color="tertiary" rounded="full" size="sm" variant="naked">
+              <CheckIcon />
+            </Button>
+          </>
+        ) : (
+          <Menu>
+            <Menu.Button>
+              <Button color="tertiary" rounded="full" size="sm" variant="naked">
+                <MoreHorizontalIcon />
+              </Button>
+            </Menu.Button>
+            <Menu.Items className="w-36">
+              <Menu.Group>
+                <Menu.Item
+                  onSelect={() => {
+                    setIsEditing(true);
+                  }}
+                >
+                  <EditIcon className="h-[1.15rem]" />
+                  Edit
+                </Menu.Item>
+                <Menu.Item
+                  onSelect={() => {
+                    onDelete(state);
+                  }}
+                >
+                  <DeleteIcon className="h-[1.15rem]" />
+                  Delete...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        )}
+      </Flex>
+    </form>
+  );
+};

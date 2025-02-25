@@ -43,7 +43,7 @@ export const TeamManagement = () => {
             leftIcon={<StoryStatusIcon className="h-[1.1rem]" />}
             value="workflows"
           >
-            Workflows
+            Workflow
           </Tabs.Tab>
           <Tabs.Tab
             leftIcon={<SettingsIcon className="h-[1.1rem]" />}

@@ -13,7 +13,7 @@ export const Toaster = (_: ToasterProps) => {
   return (
     <Sonner
       closeButton
-      duration={10000}
+      duration={8000}
       icons={toasterIcons}
       position="bottom-right"
       theme={theme as ToasterProps["theme"]}

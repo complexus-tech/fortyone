@@ -75,7 +75,7 @@ export const WorkflowSettings = () => {
       <SectionHeader
         className="mb-4"
         description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."
-        title="Workflows"
+        title="Team Workflow"
       />
       <Flex direction="column" gap={4}>
         {categories.map(({ label, value }) => {
