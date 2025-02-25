@@ -1,5 +1,5 @@
-import { cn } from 'lib';
-import { FC, TextareaHTMLAttributes } from 'react';
+import { cn } from "lib";
+import { FC, TextareaHTMLAttributes } from "react";
 
 interface Props extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -10,15 +10,15 @@ export const TextArea: FC<Props> = (props) => {
   return (
     <label>
       {label && (
-        <span className='mb-3 block dark:text-white font-medium'>
+        <span className="mb-3 block dark:text-white font-medium">
           {label}
-          {required && <span className='text-danger'>*</span>}
+          {required && <span className="text-danger">*</span>}
         </span>
       )}
       <textarea
         required={required}
         className={cn(
-          'w-full rounded-xl border-[1.5px] bg-transparent dark:text-white dark:ring-offset-blue-dark dark:border-gray-300 dark:focus:border-gray-300 border-gray-100 py-4 px-5 placeholder:text-gray-200 focus:border-gray-100 focus:outline-0 focus:ring focus:ring-primary focus:ring-offset-2 2xl:py-4',
+          "w-full rounded-[0.45rem] border bg-white/70 dark:bg-dark/20 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 leading-[2.8rem] focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 dark:focus:ring-dark-50 focus:ring-offset-1 read-only:focus:ring-0 placeholder:text-gray/80 dark:placeholder:text-gray-300",
           className
         )}
         {...rest}

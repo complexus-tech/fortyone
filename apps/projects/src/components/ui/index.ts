@@ -25,6 +25,7 @@ export * from "./label";
 export * from "./dot";
 export * from "./confirm-dialog";
 export * from "./objective-health-icon";
+export * from "./invite-members";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";
