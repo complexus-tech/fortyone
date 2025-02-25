@@ -38,10 +38,3 @@ var DefaultStoryStatuses = []DefaultStatus{
 	{Name: "Blocked", Category: "paused", OrderIndex: 3},
 	{Name: "Done", Category: "completed", OrderIndex: 4},
 }
-
-var DefaultObjectiveStatuses = []DefaultStatus{
-	{Name: "To Do", Category: "unstarted", OrderIndex: 0},
-	{Name: "In Progress", Category: "started", OrderIndex: 1},
-	{Name: "Blocked", Category: "paused", OrderIndex: 2},
-	{Name: "Done", Category: "completed", OrderIndex: 3},
-}

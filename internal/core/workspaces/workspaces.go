@@ -150,7 +150,7 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 
 	// Find the "To Do" status
 	for _, status := range statuses {
-		if status.Name == "To Do" {
+		if status.Category == "unstarted" {
 			story.Status = &status.ID
 			break
 		}

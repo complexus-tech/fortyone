@@ -129,7 +129,7 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 			updated_at
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":      workspace.Name,
 		"slug":      workspace.Slug,
 		"team_size": workspace.TeamSize,
@@ -152,6 +152,11 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 		errMsg := fmt.Sprintf("failed to create workspace: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+
+	// Create default objective statuses for the workspace
+	if err := r.createDefaultObjectiveStatuses(ctx, tx, result.ID); err != nil {
 		return workspaces.CoreWorkspace{}, err
 	}
 
@@ -244,6 +249,40 @@ func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 
 	if rowsAffected == 0 {
 		return workspaces.ErrNotFound
+	}
+
+	return nil
+}
+
+// createDefaultObjectiveStatuses creates the default objective statuses for a workspace
+func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.createDefaultObjectiveStatuses")
+	defer span.End()
+
+	// Build values for objective statuses batch insert
+	objectiveValues := make([]string, len(workspaces.DefaultObjectiveStatuses))
+	objectiveParams := make(map[string]interface{})
+
+	for i, status := range workspaces.DefaultObjectiveStatuses {
+		paramPrefix := fmt.Sprintf("o%d_", i)
+		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		objectiveParams[paramPrefix+"name"] = status.Name
+		objectiveParams[paramPrefix+"category"] = status.Category
+		objectiveParams[paramPrefix+"order_index"] = status.OrderIndex
+	}
+	objectiveParams["workspace_id"] = workspaceID
+
+	// Batch insert objective statuses
+	objectiveQuery := fmt.Sprintf(`
+		INSERT INTO objective_statuses (name, category, order_index, workspace_id)
+		VALUES %s
+	`, strings.Join(objectiveValues, ","))
+
+	if _, err := tx.NamedExecContext(ctx, objectiveQuery, objectiveParams); err != nil {
+		errMsg := fmt.Sprintf("failed to create objective statuses: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create objective statuses"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
 	}
 
 	return nil
