@@ -11,8 +11,8 @@ export const Teams = () => {
   const { data: teams = [] } = useTeams();
 
   return (
-    <Box className="mt-5">
-      <Flex align="center" className="group mb-2.5" justify="between">
+    <Box className="group mt-5">
+      <Flex align="center" className="mb-2.5" justify="between">
         <Text
           className="flex items-center gap-1 pl-2.5 font-medium opacity-70"
           color="muted"
