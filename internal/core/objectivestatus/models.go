@@ -11,7 +11,6 @@ type CoreObjectiveStatus struct {
 	Name       string
 	Category   string
 	OrderIndex int
-	Team       uuid.UUID
 	Workspace  uuid.UUID
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -20,7 +19,6 @@ type CoreObjectiveStatus struct {
 type CoreNewObjectiveStatus struct {
 	Name     string
 	Category string
-	Team     uuid.UUID
 }
 
 type CoreUpdateObjectiveStatus struct {

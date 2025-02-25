@@ -11,9 +11,8 @@ import (
 type AppObjectiveStatusList struct {
 	ID         uuid.UUID  `json:"id"`
 	Name       string     `json:"name"`
-	Category   string     `json:"category" validate:"oneof=backlog unstarted started paused completed cancelled"`
+	Category   string     `json:"category"`
 	OrderIndex int        `json:"orderIndex"`
-	Team       uuid.UUID  `json:"teamId"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
@@ -21,9 +20,8 @@ type AppObjectiveStatusList struct {
 }
 
 type NewObjectiveStatus struct {
-	Name     string    `json:"name" validate:"required"`
-	Category string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
-	Team     uuid.UUID `json:"teamId" validate:"required"`
+	Name     string `json:"name" validate:"required"`
+	Category string `json:"category" validate:"required,oneof=unstarted started paused completed cancelled"`
 }
 
 type UpdateObjectiveStatus struct {
@@ -37,7 +35,6 @@ func toAppObjectiveStatus(s objectivestatus.CoreObjectiveStatus) AppObjectiveSta
 		Name:       s.Name,
 		Category:   s.Category,
 		OrderIndex: s.OrderIndex,
-		Team:       s.Team,
 		Workspace:  s.Workspace,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
@@ -56,7 +53,6 @@ func toCoreNewObjectiveStatus(ns NewObjectiveStatus) objectivestatus.CoreNewObje
 	return objectivestatus.CoreNewObjectiveStatus{
 		Name:     ns.Name,
 		Category: ns.Category,
-		Team:     ns.Team,
 	}
 }
 

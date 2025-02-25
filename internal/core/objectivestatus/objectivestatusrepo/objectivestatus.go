@@ -42,7 +42,6 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]objectivestat
 			name,
 			category,
 			order_index,
-			team_id,
 			workspace_id,
 			created_at,
 			updated_at
@@ -116,7 +115,6 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		Name:       ns.Name,
 		Category:   ns.Category,
 		OrderIndex: maxOrder + 1,
-		Team:       ns.Team,
 		Workspace:  workspaceId,
 	}
 
@@ -124,20 +122,19 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		"name":         status.Name,
 		"category":     status.Category,
 		"order_index":  status.OrderIndex,
-		"team_id":      status.Team,
 		"workspace_id": status.Workspace,
 	}
 
 	q2 := `
 		INSERT INTO objective_statuses (
 			name, category, order_index,
-			team_id, workspace_id
+			workspace_id
 		) VALUES (
 			:name, :category, :order_index,
-			:team_id, :workspace_id
+			:workspace_id
 		)
 		RETURNING 
-			status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
+			status_id, name, category, order_index, workspace_id, created_at, updated_at
 	`
 
 	stmt2, err := r.db.PrepareNamedContext(ctx, q2)
@@ -192,7 +189,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
+		RETURNING status_id, name, category, order_index, workspace_id, created_at, updated_at
 	`, setClause)
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
