@@ -59,12 +59,20 @@ export const useUpdateObjectiveMutation = () => {
           ),
         );
       }
-      return { prevObjective };
+      return { prevObjective, prevTeamObjectives };
     },
-    onError: (error, variables) => {
+    onError: (error, variables, context) => {
+      if (context) {
+        queryClient.setQueryData(
+          objectiveKeys.objective(variables.objectiveId),
+          context.prevObjective,
+        );
+        queryClient.setQueryData(
+          objectiveKeys.list(),
+          context.prevTeamObjectives,
+        );
+      }
       toast.error("Failed to update objective", {
-        description:
-          error.message || "An error occurred while updating the objective",
         action: {
           label: "Retry",
           onClick: () => {
