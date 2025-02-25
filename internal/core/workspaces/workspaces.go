@@ -133,36 +133,24 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 		s.log.Error(ctx, "failed to update user's last used workspace", err)
 	}
 
-	// Get statuses
-	statuses, err := s.statuses.TeamListWithTx(ctx, tx, workspace.ID, team.ID)
-	if err != nil {
-		s.log.Error(ctx, "failed to get statuses for the team", err)
-		// Non-critical, continue
-	}
-
-	description := "This is your first story. Feel free to edit or delete it."
-	story := &stories.CoreSingleStory{
-		Title:       "Welcome to your new workspace! 👋",
-		Description: &description,
-		Team:        team.ID,
-		Status:      nil, // Will be set to first status
-	}
-
-	// Find the "To Do" status
-	for _, status := range statuses {
-		if status.Category == "unstarted" {
-			story.Status = &status.ID
-			break
-		}
-	}
-
-	if _, err := s.stories.CreateWithTx(ctx, tx, story, workspace.ID); err != nil {
-		s.log.Error(ctx, "failed to create welcome story", err)
-	}
-
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		return CoreWorkspace{}, ErrTx
+	}
+
+	// Create seed stories after the transaction is committed
+	statuses, err := s.statuses.TeamList(ctx, workspace.ID, team.ID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get statuses for the team", err)
+		// Non-critical, continue
+	} else {
+		seedStoryData := seedStories(team.ID, userID, statuses)
+		for _, newStory := range seedStoryData {
+			if _, err := s.stories.Create(ctx, newStory, workspace.ID); err != nil {
+				s.log.Error(ctx, "failed to create seed story", err)
+				// Non-critical, continue
+			}
+		}
 	}
 
 	span.AddEvent("workspace created.", trace.WithAttributes(

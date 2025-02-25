@@ -6,7 +6,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -18,7 +17,6 @@ type Repository interface {
 	Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error)
 	TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error)
-	TeamListWithTx(ctx context.Context, tx *sqlx.Tx, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error)
 }
 
 // Service provides story-related operations.
@@ -113,24 +111,6 @@ func (s *Service) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uu
 	defer span.End()
 
 	states, err := s.repo.TeamList(ctx, workspaceId, teamId)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-
-	span.AddEvent("states retrieved.", trace.WithAttributes(
-		attribute.Int("states.count", len(states)),
-	))
-	return states, nil
-}
-
-// TeamListWithTx returns a list of states for a team using an existing transaction.
-func (s *Service) TeamListWithTx(ctx context.Context, tx *sqlx.Tx, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error) {
-	s.log.Info(ctx, "business.core.states.TeamListWithTx")
-	ctx, span := web.AddSpan(ctx, "business.core.states.TeamListWithTx")
-	defer span.End()
-
-	states, err := s.repo.TeamListWithTx(ctx, tx, workspaceId, teamId)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
