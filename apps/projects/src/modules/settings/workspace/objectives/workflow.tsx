@@ -6,14 +6,15 @@ import { PlusIcon } from "icons";
 import { toast } from "sonner";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { SectionHeader } from "@/modules/settings/components/section-header";
-import { useDeleteStateMutation } from "@/lib/hooks/states/delete-mutation";
-import { useCreateStateMutation } from "@/lib/hooks/states/create-mutation";
 import { ConfirmDialog } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
+import {
+  useCreateObjectiveStatusMutation,
+  useDeleteObjectiveStatusMutation,
+} from "@/modules/objectives/hooks/statuses";
 import { StateRow } from "./components/state-row";
 
 const categories: { label: string; value: StateCategory }[] = [
-  { label: "Backlog", value: "backlog" },
   { label: "Unstarted", value: "unstarted" },
   { label: "Started", value: "started" },
   { label: "Paused", value: "paused" },
@@ -23,8 +24,8 @@ const categories: { label: string; value: StateCategory }[] = [
 
 export const WorkflowSettings = () => {
   const { data: states = [] } = useObjectiveStatuses();
-  const deleteMutation = useDeleteStateMutation();
-  const createMutation = useCreateStateMutation();
+  const deleteMutation = useDeleteObjectiveStatusMutation();
+  const createMutation = useCreateObjectiveStatusMutation();
   const [selectedCategory, setSelectedCategory] =
     useState<StateCategory | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -55,7 +56,7 @@ export const WorkflowSettings = () => {
         {
           name: state.name,
           category: selectedCategory,
-          teamId: "workspace",
+          color: state.color,
         },
         {
           onSuccess: () => {
@@ -100,7 +101,7 @@ export const WorkflowSettings = () => {
                       size="sm"
                       variant="naked"
                     >
-                      <span className="sr-only">Add State</span>
+                      <span className="sr-only">Add Status</span>
                     </Button>
                   </Tooltip>
                 </Flex>
@@ -141,14 +142,14 @@ export const WorkflowSettings = () => {
           })}
         </Flex>
         <ConfirmDialog
-          confirmText="Delete state"
-          description="Are you sure you want to delete this state? Any objectives in this state will need to be moved to another state."
+          confirmText="Delete status"
+          description="Are you sure you want to delete this status? Any objectives in this status will need to be moved to another status."
           isOpen={Boolean(stateToDelete)}
           onClose={() => {
             setStateToDelete(null);
           }}
           onConfirm={confirmDelete}
-          title="Delete state"
+          title="Delete status"
         />
       </Box>
     </Box>

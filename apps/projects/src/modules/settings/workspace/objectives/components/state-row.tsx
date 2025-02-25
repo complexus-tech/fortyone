@@ -11,7 +11,7 @@ import {
   EditIcon,
   MoreHorizontalIcon,
 } from "icons";
-import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
+import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
 import { StoryStatusIcon } from "@/components/ui";
 import type { State } from "@/types/states";
 
@@ -30,7 +30,7 @@ export const StateRow = ({
   onCreateCancel,
   onCreate,
 }: StateRowProps) => {
-  const updateMutation = useUpdateStateMutation();
+  const updateMutation = useUpdateObjectiveStatusMutation();
   const [isEditing, setIsEditing] = useState(isNew);
   const [form, setForm] = useState({ name: state.name, color: state.color });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +46,7 @@ export const StateRow = ({
       return;
     }
     updateMutation.mutate({
-      stateId: state.id,
+      statusId: state.id,
       payload: form,
     });
     setIsEditing(false);
@@ -83,7 +83,7 @@ export const StateRow = ({
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}
-            placeholder="State name..."
+            placeholder="Status name..."
             readOnly={!isEditing}
             ref={inputRef}
             value={form.name}
