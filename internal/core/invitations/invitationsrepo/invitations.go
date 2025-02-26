@@ -31,6 +31,34 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 
 // CreateBulkInvitations creates multiple workspace invitations in a transaction
 func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invites []invitations.CoreWorkspaceInvitation) ([]invitations.CoreWorkspaceInvitation, error) {
+	// Revoke any existing pending invitations
+	revokeQuery := `
+		UPDATE workspace_invitations
+		SET 
+			used_at = NOW(),
+			updated_at = NOW()
+		WHERE workspace_id = :workspace_id 
+		AND email = :email 
+		AND used_at IS NULL 
+		AND expires_at > NOW()`
+
+	revokeStmt, err := r.db.PrepareNamedContext(ctx, revokeQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare revoke statement: %w", err)
+	}
+	defer revokeStmt.Close()
+
+	for _, inv := range invites {
+		params := map[string]interface{}{
+			"workspace_id": inv.WorkspaceID,
+			"email":        inv.Email,
+		}
+
+		if _, err := revokeStmt.ExecContext(ctx, params); err != nil {
+			return nil, fmt.Errorf("failed to revoke existing invitations: %w", err)
+		}
+	}
+
 	// Prepare the statement for inserting invitations
 	invQuery := `INSERT INTO workspace_invitations (workspace_id, inviter_id, email, role, token, expires_at) 
 		VALUES ($1, $2, $3, $4, $5, $6) 
@@ -112,21 +140,16 @@ func (r *repo) GetInvitation(ctx context.Context, token string) (invitations.Cor
 			i.used_at,
 			i.created_at,
 			i.updated_at,
-			ARRAY_AGG(t.team_id) FILTER (WHERE t.team_id IS NOT NULL) as team_ids
+			COALESCE(
+				(
+					SELECT json_agg(t.team_id)
+					FROM workspace_invitation_teams t
+					WHERE t.invitation_id = i.invitation_id
+				),
+				'[]'
+			) as team_ids
 		FROM workspace_invitations i
-		LEFT JOIN workspace_invitation_teams t ON i.invitation_id = t.invitation_id
 		WHERE i.token = :token
-		GROUP BY 
-			i.invitation_id,
-			i.workspace_id,
-			i.inviter_id,
-			i.email,
-			i.role,
-			i.token,
-			i.expires_at,
-			i.used_at,
-			i.created_at,
-			i.updated_at
 	`
 
 	params := map[string]interface{}{
@@ -173,24 +196,19 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 			i.used_at,
 			i.created_at,
 			i.updated_at,
-			ARRAY_AGG(t.team_id) FILTER (WHERE t.team_id IS NOT NULL) as team_ids
+			COALESCE(
+				(
+					SELECT json_agg(t.team_id)
+					FROM workspace_invitation_teams t
+					WHERE t.invitation_id = i.invitation_id
+				),
+				'[]'
+			) as team_ids
 		FROM workspace_invitations i
-		LEFT JOIN workspace_invitation_teams t ON i.invitation_id = t.invitation_id
 		WHERE 
 			i.workspace_id = :workspace_id
 			AND i.used_at IS NULL
 			AND i.expires_at > NOW()
-		GROUP BY 
-			i.invitation_id,
-			i.workspace_id,
-			i.inviter_id,
-			i.email,
-			i.role,
-			i.token,
-			i.expires_at,
-			i.used_at,
-			i.created_at,
-			i.updated_at
 		ORDER BY i.created_at DESC
 	`
 

@@ -1,6 +1,7 @@
 package invitationsrepo
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/invitations"
@@ -8,21 +9,26 @@ import (
 )
 
 type dbWorkspaceInvitation struct {
-	ID          uuid.UUID   `db:"invitation_id"`
-	WorkspaceID uuid.UUID   `db:"workspace_id"`
-	InviterID   uuid.UUID   `db:"inviter_id"`
-	Email       string      `db:"email"`
-	Role        string      `db:"role"`
-	Token       string      `db:"token"`
-	TeamIDs     []uuid.UUID `db:"team_ids"`
-	ExpiresAt   time.Time   `db:"expires_at"`
-	UsedAt      *time.Time  `db:"used_at"`
-	CreatedAt   time.Time   `db:"created_at"`
-	UpdatedAt   time.Time   `db:"updated_at"`
+	ID          uuid.UUID       `db:"invitation_id"`
+	WorkspaceID uuid.UUID       `db:"workspace_id"`
+	InviterID   uuid.UUID       `db:"inviter_id"`
+	Email       string          `db:"email"`
+	Role        string          `db:"role"`
+	Token       string          `db:"token"`
+	TeamIDs     json.RawMessage `db:"team_ids"`
+	ExpiresAt   time.Time       `db:"expires_at"`
+	UsedAt      *time.Time      `db:"used_at"`
+	CreatedAt   time.Time       `db:"created_at"`
+	UpdatedAt   time.Time       `db:"updated_at"`
 }
 
 // Conversion functions
 func toCoreInvitation(i dbWorkspaceInvitation) invitations.CoreWorkspaceInvitation {
+	var teamIDs []uuid.UUID
+	if i.TeamIDs != nil {
+		_ = json.Unmarshal(i.TeamIDs, &teamIDs)
+	}
+
 	return invitations.CoreWorkspaceInvitation{
 		ID:          i.ID,
 		WorkspaceID: i.WorkspaceID,
@@ -30,6 +36,7 @@ func toCoreInvitation(i dbWorkspaceInvitation) invitations.CoreWorkspaceInvitati
 		Email:       i.Email,
 		Role:        i.Role,
 		Token:       i.Token,
+		TeamIDs:     teamIDs,
 		ExpiresAt:   i.ExpiresAt,
 		UsedAt:      i.UsedAt,
 		CreatedAt:   i.CreatedAt,
