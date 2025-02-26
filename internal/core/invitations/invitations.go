@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -27,15 +30,19 @@ type Repository interface {
 
 // Service provides invitation operations
 type Service struct {
-	repo   Repository
-	logger *logger.Logger
+	repo      Repository
+	logger    *logger.Logger
+	publisher *events.Publisher
+	users     *users.Service
 }
 
 // New constructs a new invitations service instance
-func New(repo Repository, logger *logger.Logger) *Service {
+func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service) *Service {
 	return &Service{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		logger:    logger,
+		publisher: publisher,
+		users:     users,
 	}
 }
 
@@ -55,6 +62,13 @@ func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, invite
 		"workspace_id", workspaceID.String(),
 		"inviter_id", inviterID.String(),
 		"invitation_count", len(requests))
+
+	// Get inviter details
+	inviter, err := s.users.GetUser(ctx, inviterID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get inviter details", "err", err)
+		return nil, fmt.Errorf("failed to get inviter details: %w", err)
+	}
 
 	// Start a transaction
 	tx, err := s.repo.BeginTx(ctx)
@@ -91,6 +105,30 @@ func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, invite
 	if err != nil {
 		s.logger.Error(ctx, "failed to create bulk invitations", "err", err)
 		return nil, err
+	}
+
+	// Publish invitation email events
+	for _, invitation := range results {
+		event := events.Event{
+			Type: events.InvitationEmail,
+			Payload: events.InvitationEmailPayload{
+				InviterName: inviter.FullName,
+				Email:       invitation.Email,
+				Token:       invitation.Token,
+				Role:        invitation.Role,
+				ExpiresAt:   invitation.ExpiresAt,
+				WorkspaceID: invitation.WorkspaceID,
+			},
+			Timestamp: time.Now(),
+			ActorID:   inviterID,
+		}
+
+		if err := s.publisher.Publish(ctx, event); err != nil {
+			s.logger.Error(ctx, "failed to publish invitation email event",
+				"error", err,
+				"email", invitation.Email)
+			return nil, fmt.Errorf("failed to publish invitation email event: %w", err)
+		}
 	}
 
 	// Commit transaction

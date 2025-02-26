@@ -14,6 +14,7 @@ const (
 	ObjectiveUpdated  EventType = "objective.updated"
 	KeyResultUpdated  EventType = "keyresult.updated"
 	EmailVerification EventType = "email.verification"
+	InvitationEmail   EventType = "invitation.email"
 )
 
 // Event is the base event structure
@@ -61,4 +62,14 @@ type EmailVerificationPayload struct {
 	Email     string `json:"email"`
 	Token     string `json:"token"`
 	TokenType string `json:"token_type"`
+}
+
+// InvitationEmailPayload contains data for invitation email events
+type InvitationEmailPayload struct {
+	InviterName string    `json:"inviter_name"`
+	Email       string    `json:"email"`
+	Token       string    `json:"token"`
+	Role        string    `json:"role"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
 }

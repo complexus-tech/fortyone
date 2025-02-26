@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/pkg/email"
@@ -36,6 +37,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 		string(ObjectiveUpdated),
 		string(KeyResultUpdated),
 		string(EmailVerification),
+		string(InvitationEmail),
 	)
 	defer pubsub.Close()
 
@@ -68,6 +70,8 @@ func (c *Consumer) handleEvent(ctx context.Context, event Event) error {
 		return c.handleKeyResultUpdated(ctx, event)
 	case EmailVerification:
 		return c.handleEmailVerification(ctx, event)
+	case InvitationEmail:
+		return c.handleInvitationEmail(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
@@ -219,6 +223,48 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
 		c.log.Error(ctx, "failed to send verification email", "error", err)
 		return fmt.Errorf("failed to send verification email: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error {
+	var payload InvitationEmailPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "events.consumer.handleInvitationEmail",
+		"email", payload.Email,
+		"workspace_id", payload.WorkspaceID)
+
+	// Calculate expiration duration
+	expiresIn := time.Until(payload.ExpiresAt).Round(time.Hour)
+
+	// Prepare template data
+	templateData := map[string]any{
+		"InviterName":     payload.InviterName,
+		"CompanyName":     "Complexus",
+		"ExpiresIn":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
+		"Subject":         fmt.Sprintf("%s has invited you to join %s", payload.InviterName, "Complexus"),
+		"VerificationURL": fmt.Sprintf("%s/invitations/%s", c.websiteURL, payload.Token),
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "invites/invitation",
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send invitation email", "error", err)
+		return fmt.Errorf("failed to send invitation email: %w", err)
 	}
 
 	return nil
