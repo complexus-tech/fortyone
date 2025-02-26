@@ -9,12 +9,12 @@ import (
 
 // Service errors
 var (
-	ErrInvitationNotFound = errors.New("invitation not found")
-	ErrInvitationExpired  = errors.New("invitation has expired")
-	ErrInvitationUsed     = errors.New("invitation has already been used")
-	ErrInvitationRevoked  = errors.New("invitation has been revoked")
-	ErrInvalidToken       = errors.New("invalid invitation token")
-	ErrMaxUsesReached     = errors.New("invitation link has reached maximum uses")
+	ErrInvitationNotFound  = errors.New("invitation not found")
+	ErrInvitationExpired   = errors.New("invitation expired")
+	ErrInvitationUsed      = errors.New("invitation already used")
+	ErrInvitationRevoked   = errors.New("invitation has been revoked")
+	ErrInvalidToken        = errors.New("invalid invitation token")
+	ErrDuplicateInvitation = errors.New("duplicate invitation")
 )
 
 // InvitationRequest represents a request to create an invitation
@@ -35,22 +35,6 @@ type CoreWorkspaceInvitation struct {
 	TeamIDs     []uuid.UUID
 	ExpiresAt   time.Time
 	UsedAt      *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-// CoreWorkspaceInvitationLink represents a workspace invitation link in the application layer
-type CoreWorkspaceInvitationLink struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	CreatorID   uuid.UUID
-	Token       string
-	Role        string
-	TeamIDs     []uuid.UUID
-	MaxUses     *int
-	UsedCount   int
-	ExpiresAt   *time.Time
-	IsActive    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

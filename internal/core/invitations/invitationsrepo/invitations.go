@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/invitations"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -27,68 +29,69 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-// CreateInvitation creates a new workspace invitation
-func (r *repo) CreateInvitation(ctx context.Context, invitation invitations.CoreWorkspaceInvitation) (invitations.CoreWorkspaceInvitation, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.CreateInvitation")
-	defer span.End()
+// CreateBulkInvitations creates multiple workspace invitations in a transaction
+func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invites []invitations.CoreWorkspaceInvitation) ([]invitations.CoreWorkspaceInvitation, error) {
+	// Prepare the statement for inserting invitations
+	invQuery := `INSERT INTO workspace_invitations (workspace_id, inviter_id, email, role, token, expires_at) 
+		VALUES ($1, $2, $3, $4, $5, $6) 
+		RETURNING invitation_id, created_at, updated_at`
 
-	var result dbWorkspaceInvitation
-	query := `
-		INSERT INTO workspace_invitations (
-			workspace_id,
-			inviter_id,
-			email,
-			role,
-			token,
-			expires_at
-		)
-		VALUES (
-			:workspace_id,
-			:inviter_id,
-			:email,
-			:role,
-			:token,
-			:expires_at
-		)
-		RETURNING
-			invitation_id,
-			workspace_id,
-			inviter_id,
-			email,
-			role,
-			token,
-			expires_at,
-			used_at,
-			created_at,
-			updated_at
-	`
-
-	params := map[string]interface{}{
-		"workspace_id": invitation.WorkspaceID,
-		"inviter_id":   invitation.InviterID,
-		"email":        invitation.Email,
-		"role":         invitation.Role,
-		"token":        invitation.Token,
-		"expires_at":   invitation.ExpiresAt,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	invStmt, err := tx.PrepareContext(ctx, invQuery)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitation{}, err
+		return nil, fmt.Errorf("failed to prepare invitation statement: %w", err)
 	}
-	defer stmt.Close()
+	defer invStmt.Close()
 
-	if err := stmt.GetContext(ctx, &result, params); err != nil {
-		errMsg := fmt.Sprintf("failed to create invitation: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create invitation"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitation{}, err
+	// Prepare the statement for inserting team assignments
+	teamQuery := `INSERT INTO workspace_invitation_teams (invitation_id, team_id) VALUES ($1, $2)`
+
+	teamStmt, err := tx.PrepareContext(ctx, teamQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare team statement: %w", err)
+	}
+	defer teamStmt.Close()
+
+	results := make([]invitations.CoreWorkspaceInvitation, 0, len(invites))
+	for _, inv := range invites {
+		// Insert the invitation
+		var result struct {
+			ID        uuid.UUID `db:"invitation_id"`
+			CreatedAt time.Time `db:"created_at"`
+			UpdatedAt time.Time `db:"updated_at"`
+		}
+
+		err := tx.QueryRowContext(ctx, invQuery,
+			inv.WorkspaceID,
+			inv.InviterID,
+			inv.Email,
+			inv.Role,
+			inv.Token,
+			inv.ExpiresAt,
+		).Scan(&result.ID, &result.CreatedAt, &result.UpdatedAt)
+
+		if err != nil {
+			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+				return nil, invitations.ErrDuplicateInvitation
+			}
+			return nil, fmt.Errorf("failed to insert invitation: %w", err)
+		}
+
+		// Insert team assignments
+		for _, teamID := range inv.TeamIDs {
+			_, err = teamStmt.ExecContext(ctx, result.ID, teamID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to insert team assignment: %w", err)
+			}
+		}
+
+		// Update the invitation with the returned values
+		inv.ID = result.ID
+		inv.CreatedAt = result.CreatedAt
+		inv.UpdatedAt = result.UpdatedAt
+		results = append(results, inv)
 	}
 
-	return toCoreInvitation(result), nil
+	return results, nil
 }
 
 // GetInvitation retrieves a workspace invitation by token
@@ -99,18 +102,31 @@ func (r *repo) GetInvitation(ctx context.Context, token string) (invitations.Cor
 	var result dbWorkspaceInvitation
 	query := `
 		SELECT
-			invitation_id,
-			workspace_id,
-			inviter_id,
-			email,
-			role,
-			token,
-			expires_at,
-			used_at,
-			created_at,
-			updated_at
-		FROM workspace_invitations
-		WHERE token = :token
+			i.invitation_id,
+			i.workspace_id,
+			i.inviter_id,
+			i.email,
+			i.role,
+			i.token,
+			i.expires_at,
+			i.used_at,
+			i.created_at,
+			i.updated_at,
+			ARRAY_AGG(t.team_id) FILTER (WHERE t.team_id IS NOT NULL) as team_ids
+		FROM workspace_invitations i
+		LEFT JOIN workspace_invitation_teams t ON i.invitation_id = t.invitation_id
+		WHERE i.token = :token
+		GROUP BY 
+			i.invitation_id,
+			i.workspace_id,
+			i.inviter_id,
+			i.email,
+			i.role,
+			i.token,
+			i.expires_at,
+			i.used_at,
+			i.created_at,
+			i.updated_at
 	`
 
 	params := map[string]interface{}{
@@ -147,22 +163,35 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 	var results []dbWorkspaceInvitation
 	query := `
 		SELECT
-			invitation_id,
-			workspace_id,
-			inviter_id,
-			email,
-			role,
-			token,
-			expires_at,
-			used_at,
-			created_at,
-			updated_at
-		FROM workspace_invitations
+			i.invitation_id,
+			i.workspace_id,
+			i.inviter_id,
+			i.email,
+			i.role,
+			i.token,
+			i.expires_at,
+			i.used_at,
+			i.created_at,
+			i.updated_at,
+			ARRAY_AGG(t.team_id) FILTER (WHERE t.team_id IS NOT NULL) as team_ids
+		FROM workspace_invitations i
+		LEFT JOIN workspace_invitation_teams t ON i.invitation_id = t.invitation_id
 		WHERE 
-			workspace_id = :workspace_id
-			AND used_at IS NULL
-			AND expires_at > NOW()
-		ORDER BY created_at DESC
+			i.workspace_id = :workspace_id
+			AND i.used_at IS NULL
+			AND i.expires_at > NOW()
+		GROUP BY 
+			i.invitation_id,
+			i.workspace_id,
+			i.inviter_id,
+			i.email,
+			i.role,
+			i.token,
+			i.expires_at,
+			i.used_at,
+			i.created_at,
+			i.updated_at
+		ORDER BY i.created_at DESC
 	`
 
 	params := map[string]interface{}{
@@ -267,271 +296,6 @@ func (r *repo) MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) e
 		errMsg := fmt.Sprintf("failed to mark invitation used: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to mark invitation used"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return invitations.ErrInvitationNotFound
-	}
-
-	return nil
-}
-
-// CreateInvitationLink creates a new workspace invitation link
-func (r *repo) CreateInvitationLink(ctx context.Context, link invitations.CoreWorkspaceInvitationLink) (invitations.CoreWorkspaceInvitationLink, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.CreateInvitationLink")
-	defer span.End()
-
-	var result dbWorkspaceInvitationLink
-	query := `
-		INSERT INTO workspace_invitation_links (
-			workspace_id,
-			creator_id,
-			token,
-			role,
-			max_uses,
-			expires_at,
-			is_active
-		)
-		VALUES (
-			:workspace_id,
-			:creator_id,
-			:token,
-			:role,
-			:max_uses,
-			:expires_at,
-			:is_active
-		)
-		RETURNING
-			invitation_link_id,
-			workspace_id,
-			creator_id,
-			token,
-			role,
-			max_uses,
-			used_count,
-			expires_at,
-			is_active,
-			created_at,
-			updated_at
-	`
-
-	params := map[string]interface{}{
-		"workspace_id": link.WorkspaceID,
-		"creator_id":   link.CreatorID,
-		"token":        link.Token,
-		"role":         link.Role,
-		"max_uses":     link.MaxUses,
-		"expires_at":   link.ExpiresAt,
-		"is_active":    link.IsActive,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitationLink{}, err
-	}
-	defer stmt.Close()
-
-	if err := stmt.GetContext(ctx, &result, params); err != nil {
-		errMsg := fmt.Sprintf("failed to create invitation link: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create invitation link"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitationLink{}, err
-	}
-
-	return toCoreInvitationLink(result), nil
-}
-
-// GetInvitationLink retrieves a workspace invitation link by token
-func (r *repo) GetInvitationLink(ctx context.Context, token string) (invitations.CoreWorkspaceInvitationLink, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.GetInvitationLink")
-	defer span.End()
-
-	var result dbWorkspaceInvitationLink
-	query := `
-		SELECT
-			invitation_link_id,
-			workspace_id,
-			creator_id,
-			token,
-			role,
-			max_uses,
-			used_count,
-			expires_at,
-			is_active,
-			created_at,
-			updated_at
-		FROM workspace_invitation_links
-		WHERE token = :token
-	`
-
-	params := map[string]interface{}{
-		"token": token,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitationLink{}, err
-	}
-	defer stmt.Close()
-
-	if err := stmt.GetContext(ctx, &result, params); err != nil {
-		if err == sql.ErrNoRows {
-			return invitations.CoreWorkspaceInvitationLink{}, invitations.ErrInvitationNotFound
-		}
-		errMsg := fmt.Sprintf("failed to get invitation link: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to get invitation link"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitationLink{}, err
-	}
-
-	return toCoreInvitationLink(result), nil
-}
-
-// ListInvitationLinks returns all active invitation links for a workspace
-func (r *repo) ListInvitationLinks(ctx context.Context, workspaceID uuid.UUID) ([]invitations.CoreWorkspaceInvitationLink, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.ListInvitationLinks")
-	defer span.End()
-
-	var results []dbWorkspaceInvitationLink
-	query := `
-		SELECT
-			invitation_link_id,
-			workspace_id,
-			creator_id,
-			token,
-			role,
-			max_uses,
-			used_count,
-			expires_at,
-			is_active,
-			created_at,
-			updated_at
-		FROM workspace_invitation_links
-		WHERE 
-			workspace_id = :workspace_id
-			AND is_active = true
-			AND (expires_at IS NULL OR expires_at > NOW())
-			AND (max_uses IS NULL OR used_count < max_uses)
-		ORDER BY created_at DESC
-	`
-
-	params := map[string]interface{}{
-		"workspace_id": workspaceID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-	defer stmt.Close()
-
-	if err := stmt.SelectContext(ctx, &results, params); err != nil {
-		errMsg := fmt.Sprintf("failed to list invitation links: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to list invitation links"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-
-	return toCoreInvitationLinks(results), nil
-}
-
-// RevokeInvitationLink marks an invitation link as inactive
-func (r *repo) RevokeInvitationLink(ctx context.Context, linkID uuid.UUID) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.RevokeInvitationLink")
-	defer span.End()
-
-	query := `
-		UPDATE workspace_invitation_links
-		SET 
-			is_active = false,
-			updated_at = NOW()
-		WHERE invitation_link_id = :link_id
-		AND is_active = true
-	`
-
-	params := map[string]interface{}{
-		"link_id": linkID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, params)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to revoke invitation link: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to revoke invitation link"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return invitations.ErrInvitationNotFound
-	}
-
-	return nil
-}
-
-// IncrementLinkUsage increments the used_count for an invitation link
-func (r *repo) IncrementLinkUsage(ctx context.Context, linkID uuid.UUID) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.IncrementLinkUsage")
-	defer span.End()
-
-	query := `
-		UPDATE workspace_invitation_links
-		SET 
-			used_count = used_count + 1,
-			updated_at = NOW()
-		WHERE 
-			invitation_link_id = :link_id
-			AND is_active = true
-			AND (expires_at IS NULL OR expires_at > NOW())
-			AND (max_uses IS NULL OR used_count < max_uses)
-	`
-
-	params := map[string]interface{}{
-		"link_id": linkID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, params)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to increment link usage: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to increment link usage"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 

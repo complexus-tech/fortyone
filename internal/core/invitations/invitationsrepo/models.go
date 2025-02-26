@@ -21,21 +21,6 @@ type dbWorkspaceInvitation struct {
 	UpdatedAt   time.Time   `db:"updated_at"`
 }
 
-type dbWorkspaceInvitationLink struct {
-	ID          uuid.UUID   `db:"invitation_link_id"`
-	WorkspaceID uuid.UUID   `db:"workspace_id"`
-	CreatorID   uuid.UUID   `db:"creator_id"`
-	Token       string      `db:"token"`
-	Role        string      `db:"role"`
-	TeamIDs     []uuid.UUID `db:"team_ids"`
-	MaxUses     *int        `db:"max_uses"`
-	UsedCount   int         `db:"used_count"`
-	ExpiresAt   *time.Time  `db:"expires_at"`
-	IsActive    bool        `db:"is_active"`
-	CreatedAt   time.Time   `db:"created_at"`
-	UpdatedAt   time.Time   `db:"updated_at"`
-}
-
 // Conversion functions
 func toCoreInvitation(i dbWorkspaceInvitation) invitations.CoreWorkspaceInvitation {
 	return invitations.CoreWorkspaceInvitation{
@@ -56,30 +41,6 @@ func toCoreInvitations(invites []dbWorkspaceInvitation) []invitations.CoreWorksp
 	result := make([]invitations.CoreWorkspaceInvitation, len(invites))
 	for i, invite := range invites {
 		result[i] = toCoreInvitation(invite)
-	}
-	return result
-}
-
-func toCoreInvitationLink(l dbWorkspaceInvitationLink) invitations.CoreWorkspaceInvitationLink {
-	return invitations.CoreWorkspaceInvitationLink{
-		ID:          l.ID,
-		WorkspaceID: l.WorkspaceID,
-		CreatorID:   l.CreatorID,
-		Token:       l.Token,
-		Role:        l.Role,
-		MaxUses:     l.MaxUses,
-		UsedCount:   l.UsedCount,
-		ExpiresAt:   l.ExpiresAt,
-		IsActive:    l.IsActive,
-		CreatedAt:   l.CreatedAt,
-		UpdatedAt:   l.UpdatedAt,
-	}
-}
-
-func toCoreInvitationLinks(links []dbWorkspaceInvitationLink) []invitations.CoreWorkspaceInvitationLink {
-	result := make([]invitations.CoreWorkspaceInvitationLink, len(links))
-	for i, link := range links {
-		result[i] = toCoreInvitationLink(link)
 	}
 	return result
 }
