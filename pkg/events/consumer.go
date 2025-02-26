@@ -249,9 +249,9 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error
 	// Prepare template data
 	templateData := map[string]any{
 		"InviterName":     payload.InviterName,
-		"CompanyName":     "Complexus",
+		"WorkspaceName":   payload.WorkspaceName,
 		"ExpiresIn":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
-		"Subject":         fmt.Sprintf("%s has invited you to join %s", payload.InviterName, "Complexus"),
+		"Subject":         fmt.Sprintf("%s has invited you to join %s on Complexus", payload.InviterName, payload.WorkspaceName),
 		"VerificationURL": fmt.Sprintf("%s/invitations/%s", c.websiteURL, payload.Token),
 	}
 

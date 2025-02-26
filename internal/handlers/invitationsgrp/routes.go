@@ -5,6 +5,8 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/invitations/invitationsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/users/usersrepo"
+	"github.com/complexus-tech/projects-api/internal/core/workspaces"
+	"github.com/complexus-tech/projects-api/internal/core/workspaces/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -22,7 +24,8 @@ type Config struct {
 func Routes(cfg Config, app *web.App) {
 	repo := invitationsrepo.New(cfg.Log, cfg.DB)
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
-	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil)
+	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService, workspacesService)
 	h := New(invitationsService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 

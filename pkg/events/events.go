@@ -66,10 +66,11 @@ type EmailVerificationPayload struct {
 
 // InvitationEmailPayload contains data for invitation email events
 type InvitationEmailPayload struct {
-	InviterName string    `json:"inviter_name"`
-	Email       string    `json:"email"`
-	Token       string    `json:"token"`
-	Role        string    `json:"role"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	WorkspaceID uuid.UUID `json:"workspace_id"`
+	InviterName   string    `json:"inviter_name"`
+	Email         string    `json:"email"`
+	Token         string    `json:"token"`
+	Role          string    `json:"role"`
+	ExpiresAt     time.Time `json:"expires_at"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
 }

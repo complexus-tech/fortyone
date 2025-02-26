@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -30,19 +31,21 @@ type Repository interface {
 
 // Service provides invitation operations
 type Service struct {
-	repo      Repository
-	logger    *logger.Logger
-	publisher *events.Publisher
-	users     *users.Service
+	repo       Repository
+	logger     *logger.Logger
+	publisher  *events.Publisher
+	users      *users.Service
+	workspaces *workspaces.Service
 }
 
 // New constructs a new invitations service instance
-func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service) *Service {
+func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service, workspaces *workspaces.Service) *Service {
 	return &Service{
-		repo:      repo,
-		logger:    logger,
-		publisher: publisher,
-		users:     users,
+		repo:       repo,
+		logger:     logger,
+		publisher:  publisher,
+		users:      users,
+		workspaces: workspaces,
 	}
 }
 
@@ -68,6 +71,13 @@ func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, invite
 	if err != nil {
 		s.logger.Error(ctx, "failed to get inviter details", "err", err)
 		return nil, fmt.Errorf("failed to get inviter details: %w", err)
+	}
+
+	// Get workspace details
+	workspace, err := s.workspaces.Get(ctx, workspaceID, inviterID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get workspace details", "err", err)
+		return nil, fmt.Errorf("failed to get workspace details: %w", err)
 	}
 
 	// Start a transaction
@@ -112,12 +122,13 @@ func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, invite
 		event := events.Event{
 			Type: events.InvitationEmail,
 			Payload: events.InvitationEmailPayload{
-				InviterName: inviter.FullName,
-				Email:       invitation.Email,
-				Token:       invitation.Token,
-				Role:        invitation.Role,
-				ExpiresAt:   invitation.ExpiresAt,
-				WorkspaceID: invitation.WorkspaceID,
+				InviterName:   inviter.FullName,
+				Email:         invitation.Email,
+				Token:         invitation.Token,
+				Role:          invitation.Role,
+				ExpiresAt:     invitation.ExpiresAt,
+				WorkspaceID:   invitation.WorkspaceID,
+				WorkspaceName: workspace.Name,
 			},
 			Timestamp: time.Now(),
 			ActorID:   inviterID,
