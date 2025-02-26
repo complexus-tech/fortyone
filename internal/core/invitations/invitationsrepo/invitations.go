@@ -49,7 +49,7 @@ func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invites []
 	defer revokeStmt.Close()
 
 	for _, inv := range invites {
-		params := map[string]interface{}{
+		params := map[string]any{
 			"workspace_id": inv.WorkspaceID,
 			"email":        inv.Email,
 		}

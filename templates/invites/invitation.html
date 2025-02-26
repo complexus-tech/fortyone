@@ -1,0 +1,20 @@
+{{ define "content" }}
+<div>
+  <h1 class="heading">
+    {{ .InviterName }} has invited you to collaborate on {{ .CompanyName }}'s
+    objectives
+  </h1>
+  <p class="text">
+    Join your team to align on goals, track OKRs, and drive measurable outcomes
+    together. This invitation will expire in {{ .ExpiresIn }}.
+  </p>
+  <div class="button-container">
+    <a href="{{ .VerificationURL }}" class="button" style="color: white">
+      Join {{ .CompanyName }}
+    </a>
+  </div>
+  <p class="text">
+    If you didn't expect this invitation, you can safely ignore this email.
+  </p>
+</div>
+{{ end }}
