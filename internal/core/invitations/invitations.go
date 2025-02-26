@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -27,6 +28,7 @@ type Repository interface {
 	ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitation, error)
 	RevokeInvitation(ctx context.Context, invitationID uuid.UUID) error
 	MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) error
+	ListInvitationsByEmail(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error)
 }
 
 // Service provides invitation operations
@@ -36,16 +38,18 @@ type Service struct {
 	publisher  *events.Publisher
 	users      *users.Service
 	workspaces *workspaces.Service
+	teams      *teams.Service
 }
 
 // New constructs a new invitations service instance
-func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service, workspaces *workspaces.Service) *Service {
+func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service, workspaces *workspaces.Service, teams *teams.Service) *Service {
 	return &Service{
 		repo:       repo,
 		logger:     logger,
 		publisher:  publisher,
 		users:      users,
 		workspaces: workspaces,
+		teams:      teams,
 	}
 }
 
@@ -207,5 +211,82 @@ func (s *Service) RevokeInvitation(ctx context.Context, invitationID uuid.UUID) 
 		attribute.String("invitation_id", invitationID.String()),
 	))
 
+	return nil
+}
+
+// ListUserInvitations returns all pending invitations for a user's email
+func (s *Service) ListUserInvitations(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error) {
+	s.logger.Info(ctx, "listing user invitations", "email", email)
+
+	invitations, err := s.repo.ListInvitationsByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list user invitations", "err", err)
+		return nil, fmt.Errorf("failed to list user invitations: %w", err)
+	}
+
+	return invitations, nil
+}
+
+// AcceptInvitation accepts an invitation and adds the user to the workspace and teams
+func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uuid.UUID) error {
+	s.logger.Info(ctx, "accepting invitation", "token", token, "user_id", userID)
+
+	// Get user details to verify email
+	user, err := s.users.GetUser(ctx, userID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get user details", "err", err)
+		return fmt.Errorf("failed to get user details: %w", err)
+	}
+
+	// Get and validate invitation
+	invitation, err := s.GetInvitation(ctx, token)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get invitation", "err", err)
+		return err
+	}
+
+	// Verify user email matches invitation email
+	if user.Email != invitation.Email {
+		s.logger.Error(ctx, "user email does not match invitation email",
+			"user_email", user.Email,
+			"invitation_email", invitation.Email)
+		return ErrInvalidInvitee
+	}
+
+	// Start transaction
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		s.logger.Error(ctx, "failed to begin transaction", "err", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	// Add member to workspace with specified role
+	if err := s.workspaces.AddMember(ctx, invitation.WorkspaceID, userID, invitation.Role); err != nil {
+		s.logger.Error(ctx, "failed to add member to workspace", "err", err)
+		return fmt.Errorf("failed to add member to workspace: %w", err)
+	}
+
+	// Add member to teams
+	for _, teamID := range invitation.TeamIDs {
+		if err := s.teams.AddMember(ctx, teamID, userID); err != nil {
+			s.logger.Error(ctx, "failed to add member to team", "err", err)
+			return fmt.Errorf("failed to add member to team: %w", err)
+		}
+	}
+
+	// Mark invitation as used
+	if err := s.repo.MarkInvitationUsed(ctx, invitation.ID); err != nil {
+		s.logger.Error(ctx, "failed to mark invitation as used", "err", err)
+		return fmt.Errorf("failed to mark invitation as used: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		s.logger.Error(ctx, "failed to commit transaction", "err", err)
+		return err
+	}
+
+	s.logger.Info(ctx, "invitation accepted successfully")
 	return nil
 }

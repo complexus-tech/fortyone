@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/invitations"
+	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -20,11 +21,13 @@ var (
 
 type Handlers struct {
 	invitations *invitations.Service
+	users       *users.Service
 }
 
-func New(invitations *invitations.Service) *Handlers {
+func New(invitations *invitations.Service, users *users.Service) *Handlers {
 	return &Handlers{
 		invitations: invitations,
+		users:       users,
 	}
 }
 
@@ -135,4 +138,61 @@ func (h *Handlers) GetInvitation(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	return web.Respond(ctx, w, toAppInvitation(invitation), http.StatusOK)
+}
+
+// ListUserInvitations returns all pending invitations for the authenticated user
+func (h *Handlers) ListUserInvitations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.invitations.ListUserInvitations")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Get user details to get email
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	invitations, err := h.invitations.ListUserInvitations(ctx, user.Email)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppInvitations(invitations), http.StatusOK)
+}
+
+// AcceptInvitation accepts a workspace invitation
+func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.invitations.AcceptInvitation")
+	defer span.End()
+
+	token := web.Params(r, "token")
+	if token == "" {
+		return web.RespondError(ctx, w, errors.New("token is required"), http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.invitations.AcceptInvitation(ctx, token, userID); err != nil {
+		switch err {
+		case invitations.ErrInvitationNotFound:
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		case invitations.ErrInvitationExpired:
+			return web.RespondError(ctx, w, err, http.StatusGone)
+		case invitations.ErrInvitationUsed:
+			return web.RespondError(ctx, w, err, http.StatusGone)
+		case invitations.ErrInvalidInvitee:
+			return web.RespondError(ctx, w, err, http.StatusForbidden)
+		default:
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }

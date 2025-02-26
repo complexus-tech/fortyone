@@ -333,3 +333,60 @@ func (r *repo) MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) e
 func (r *repo) BeginTx(ctx context.Context) (*sql.Tx, error) {
 	return r.db.BeginTx(ctx, nil)
 }
+
+// ListInvitationsByEmail returns all pending invitations for a user's email
+func (r *repo) ListInvitationsByEmail(ctx context.Context, email string) ([]invitations.CoreWorkspaceInvitation, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.invitations.ListInvitationsByEmail")
+	defer span.End()
+
+	var results []dbWorkspaceInvitation
+	query := `
+		SELECT
+			i.invitation_id,
+			i.workspace_id,
+			i.inviter_id,
+			i.email,
+			i.role,
+			i.token,
+			i.expires_at,
+			i.used_at,
+			i.created_at,
+			i.updated_at,
+			COALESCE(
+				(
+					SELECT json_agg(t.team_id)
+					FROM workspace_invitation_teams t
+					WHERE t.invitation_id = i.invitation_id
+				),
+				'[]'
+			) as team_ids
+		FROM workspace_invitations i
+		WHERE 
+			i.email = :email
+			AND i.used_at IS NULL
+			AND i.expires_at > NOW()
+		ORDER BY i.created_at DESC
+	`
+
+	params := map[string]interface{}{
+		"email": email,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &results, params); err != nil {
+		errMsg := fmt.Sprintf("failed to list invitations: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to list invitations"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	return toCoreInvitations(results), nil
+}

@@ -15,6 +15,7 @@ var (
 	ErrInvitationRevoked   = errors.New("invitation has been revoked")
 	ErrInvalidToken        = errors.New("invalid invitation token")
 	ErrDuplicateInvitation = errors.New("duplicate invitation")
+	ErrInvalidInvitee      = errors.New("user email does not match invitation email")
 )
 
 // InvitationRequest represents a request to create an invitation
