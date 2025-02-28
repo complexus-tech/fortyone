@@ -9,13 +9,14 @@ import (
 
 // Service errors
 var (
-	ErrInvitationNotFound  = errors.New("invitation not found")
-	ErrInvitationExpired   = errors.New("invitation expired")
-	ErrInvitationUsed      = errors.New("invitation already used")
-	ErrInvitationRevoked   = errors.New("invitation has been revoked")
-	ErrInvalidToken        = errors.New("invalid invitation token")
-	ErrDuplicateInvitation = errors.New("duplicate invitation")
-	ErrInvalidInvitee      = errors.New("user email does not match invitation email")
+	ErrInvitationNotFound     = errors.New("invitation not found")
+	ErrInvitationExpired      = errors.New("invitation expired")
+	ErrInvitationUsed         = errors.New("invitation already used")
+	ErrInvitationRevoked      = errors.New("invitation has been revoked")
+	ErrInvalidToken           = errors.New("invalid invitation token")
+	ErrDuplicateInvitation    = errors.New("duplicate invitation")
+	ErrInvalidInvitee         = errors.New("user email does not match invitation email")
+	ErrAlreadyWorkspaceMember = errors.New("you are already a member of this workspace")
 )
 
 // InvitationRequest represents a request to create an invitation

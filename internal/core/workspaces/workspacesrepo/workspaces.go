@@ -340,6 +340,12 @@ func (r *repo) addMemberImpl(ctx context.Context, executor sqlx.ExtContext, work
 	defer stmt.Close()
 
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("user %s is already a member of workspace %s", userID, workspaceID)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(workspaces.ErrAlreadyWorkspaceMember, trace.WithAttributes(attribute.String("error", errMsg)))
+			return workspaces.ErrAlreadyWorkspaceMember
+		}
 		errMsg := fmt.Sprintf("failed to add workspace member: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to add workspace member"), trace.WithAttributes(attribute.String("error", errMsg)))

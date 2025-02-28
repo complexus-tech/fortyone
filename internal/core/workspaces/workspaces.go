@@ -19,9 +19,10 @@ import (
 
 // Service errors
 var (
-	ErrNotFound  = errors.New("workspace not found")
-	ErrSlugTaken = errors.New("workspace with this url already exists")
-	ErrTx        = errors.New("failed to create a workspace")
+	ErrNotFound               = errors.New("workspace not found")
+	ErrSlugTaken              = errors.New("workspace with this url already exists")
+	ErrTx                     = errors.New("failed to create a workspace")
+	ErrAlreadyWorkspaceMember = errors.New("user is already a member of this workspace")
 )
 
 var restrictedSlugs = []string{

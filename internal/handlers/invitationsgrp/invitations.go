@@ -189,6 +189,8 @@ func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, 
 			return web.RespondError(ctx, w, err, http.StatusGone)
 		case invitations.ErrInvalidInvitee:
 			return web.RespondError(ctx, w, err, http.StatusForbidden)
+		case invitations.ErrAlreadyWorkspaceMember:
+			return web.RespondError(ctx, w, err, http.StatusConflict)
 		default:
 			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		}

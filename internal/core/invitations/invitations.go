@@ -264,6 +264,13 @@ func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uui
 	// Add member to workspace with specified role
 	if err := s.workspaces.AddMember(ctx, invitation.WorkspaceID, userID, invitation.Role); err != nil {
 		s.logger.Error(ctx, "failed to add member to workspace", "err", err)
+		if err == workspaces.ErrAlreadyWorkspaceMember {
+			// Mark invitation as used if the user is already a member
+			if markErr := s.repo.MarkInvitationUsed(ctx, invitation.ID); markErr != nil {
+				s.logger.Error(ctx, "failed to mark invitation as used", "err", markErr)
+			}
+			return ErrAlreadyWorkspaceMember
+		}
 		return fmt.Errorf("failed to add member to workspace: %w", err)
 	}
 
