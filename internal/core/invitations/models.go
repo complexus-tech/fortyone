@@ -27,15 +27,18 @@ type InvitationRequest struct {
 
 // CoreWorkspaceInvitation represents a workspace invitation in the application layer
 type CoreWorkspaceInvitation struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	InviterID   uuid.UUID
-	Email       string
-	Role        string
-	Token       string
-	TeamIDs     []uuid.UUID
-	ExpiresAt   time.Time
-	UsedAt      *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID             uuid.UUID
+	WorkspaceID    uuid.UUID
+	InviterID      uuid.UUID
+	Email          string
+	Role           string
+	Token          string
+	TeamIDs        []uuid.UUID
+	ExpiresAt      time.Time
+	UsedAt         *time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	WorkspaceName  string // Workspace details
+	WorkspaceSlug  string
+	WorkspaceColor string
 }

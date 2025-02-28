@@ -140,6 +140,9 @@ func (r *repo) GetInvitation(ctx context.Context, token string) (invitations.Cor
 			i.used_at,
 			i.created_at,
 			i.updated_at,
+			w.name AS workspace_name,
+			w.slug AS workspace_slug,
+			w.color AS workspace_color,
 			COALESCE(
 				(
 					SELECT json_agg(t.team_id)
@@ -149,6 +152,7 @@ func (r *repo) GetInvitation(ctx context.Context, token string) (invitations.Cor
 				'[]'
 			) as team_ids
 		FROM workspace_invitations i
+		JOIN workspaces w ON i.workspace_id = w.workspace_id
 		WHERE i.token = :token
 	`
 
@@ -196,6 +200,9 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 			i.used_at,
 			i.created_at,
 			i.updated_at,
+			w.name AS workspace_name,
+			w.slug AS workspace_slug,
+			w.color AS workspace_color,
 			COALESCE(
 				(
 					SELECT json_agg(t.team_id)
@@ -205,6 +212,7 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 				'[]'
 			) as team_ids
 		FROM workspace_invitations i
+		JOIN workspaces w ON i.workspace_id = w.workspace_id
 		WHERE 
 			i.workspace_id = :workspace_id
 			AND i.used_at IS NULL
@@ -352,6 +360,9 @@ func (r *repo) ListInvitationsByEmail(ctx context.Context, email string) ([]invi
 			i.used_at,
 			i.created_at,
 			i.updated_at,
+			w.name AS workspace_name,
+			w.slug AS workspace_slug,
+			w.color AS workspace_color,
 			COALESCE(
 				(
 					SELECT json_agg(t.team_id)
@@ -361,6 +372,7 @@ func (r *repo) ListInvitationsByEmail(ctx context.Context, email string) ([]invi
 				'[]'
 			) as team_ids
 		FROM workspace_invitations i
+		JOIN workspaces w ON i.workspace_id = w.workspace_id
 		WHERE 
 			i.email = :email
 			AND i.used_at IS NULL
