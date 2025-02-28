@@ -1,31 +1,58 @@
 "use client";
 
 import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
-import type { FormEvent } from "react";
+import { toast } from "sonner";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import type { Invitation } from "@/lib/actions/verify-invitation";
+import { acceptInvitation } from "@/lib/actions/accept-invitation";
 
-export const CreateAccountForm = () => {
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // if new user, redirect to /onboarding/account
-    // if existing user, redirect to workspace
+export const CreateAccountForm = ({
+  invitation,
+}: {
+  invitation: Invitation;
+}) => {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleJoin = async () => {
+    setIsLoading(true);
+    const res = await acceptInvitation(token || "");
+    if (res.error?.message) {
+      toast.error("Failed to join workspace", {
+        description: res.error.message,
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <Box className="space-y-5">
       <Wrapper className="py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" gap={2}>
-            <Avatar name="John Doe" rounded="md" />
+            <Avatar
+              name={invitation.workspaceName}
+              rounded="md"
+              style={{ backgroundColor: invitation.workspaceColor }}
+            />
             <Box>
-              <Text>John Doe</Text>
+              <Text>{invitation.workspaceName}</Text>
               <Text color="muted" fontSize="sm">
-                3 members
+                {invitation.workspaceSlug}.complexus.app
               </Text>
             </Box>
           </Flex>
 
-          <Button color="tertiary" size="sm">
-            Join
+          <Button
+            color="tertiary"
+            loading={isLoading}
+            loadingText="Joining..."
+            onClick={handleJoin}
+            size="sm"
+          >
+            Join now
           </Button>
         </Flex>
       </Wrapper>
@@ -38,13 +65,14 @@ export const CreateAccountForm = () => {
       </Flex>
       <Button
         align="center"
-        className="mt-4"
+        className="opacity-80"
         color="tertiary"
         fullWidth
         href="/onboarding/create"
+        variant="naked"
       >
         Create your own workspace
       </Button>
-    </form>
+    </Box>
   );
 };

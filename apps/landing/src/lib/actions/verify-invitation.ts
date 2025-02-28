@@ -17,6 +17,9 @@ export type Invitation = {
   usedAt?: string;
   createdAt: string;
   updatedAt: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  workspaceColor: string;
 };
 
 export async function verifyInvitation(token: string) {
@@ -26,6 +29,12 @@ export async function verifyInvitation(token: string) {
 
     return data;
   } catch (error) {
-    return requestError<Invitation>(error);
+    const res = await requestError<Invitation>(error);
+    return {
+      data: null,
+      error: {
+        message: res.error?.message || "Failed to verify invitation",
+      },
+    };
   }
 }
