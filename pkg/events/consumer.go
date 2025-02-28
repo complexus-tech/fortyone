@@ -207,7 +207,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 	c.log.Info(ctx, "events.consumer.handleEmailVerification", "email", payload.Email)
 
 	// Prepare template data
-	templateData := map[string]interface{}{
+	templateData := map[string]any{
 		"VerificationURL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
 		"ExpiresIn":       "10 minutes",
 		"Subject":         "Login to Complexus",
@@ -252,7 +252,7 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error
 		"WorkspaceName":   payload.WorkspaceName,
 		"ExpiresIn":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
 		"Subject":         fmt.Sprintf("%s has invited you to join %s on Complexus", payload.InviterName, payload.WorkspaceName),
-		"VerificationURL": fmt.Sprintf("%s/invitations/%s", c.websiteURL, payload.Token),
+		"VerificationURL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
 	}
 
 	// Send templated email
