@@ -26,6 +26,7 @@ type AppInvitation struct {
 	Email          string      `json:"email"`
 	Role           string      `json:"role"`
 	TeamIDs        []uuid.UUID `json:"teamIds,omitempty"`
+	Token          string      `json:"token,omitempty"`
 	ExpiresAt      time.Time   `json:"expiresAt"`
 	UsedAt         *time.Time  `json:"usedAt,omitempty"`
 	CreatedAt      time.Time   `json:"createdAt"`
@@ -44,6 +45,7 @@ func toAppInvitation(i invitations.CoreWorkspaceInvitation) AppInvitation {
 		Email:          i.Email,
 		Role:           i.Role,
 		TeamIDs:        i.TeamIDs,
+		Token:          i.Token,
 		ExpiresAt:      i.ExpiresAt,
 		UsedAt:         i.UsedAt,
 		CreatedAt:      i.CreatedAt,
