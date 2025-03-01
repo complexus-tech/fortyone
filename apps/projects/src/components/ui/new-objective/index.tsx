@@ -71,11 +71,22 @@ export const NewObjectiveDialog = ({
     teams.at(0)!,
   );
 
-  // Use passed teamId or fall back to activeTeam.id
-  const currentTeamId = initialTeamId || activeTeam.id;
+  // Add validation to ensure activeTeam exists in teams list
+  const validActiveTeam =
+    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
+
+  // Update the current team logic
+  const currentTeamId = initialTeamId || validActiveTeam.id;
   const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || activeTeam;
+    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
   const defaultStatus = statuses.at(0);
+
+  // Add effect to update activeTeam if it's not valid
+  useEffect(() => {
+    if (!teams.find((team) => team.id === activeTeam.id)) {
+      setActiveTeam(teams.at(0)!);
+    }
+  }, [teams, activeTeam, setActiveTeam]);
 
   const initialForm: NewObjective = {
     name: "",

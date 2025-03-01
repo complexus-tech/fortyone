@@ -88,9 +88,12 @@ export const NewStoryDialog = ({
     teams.at(0)!,
   );
 
-  const currentTeamId = teamId || activeTeam.id;
+  const validActiveTeam =
+    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
+
+  const currentTeamId = teamId || validActiveTeam.id;
   const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || activeTeam;
+    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
@@ -214,6 +217,12 @@ export const NewStoryDialog = ({
       }));
     }
   }, [currentTeamId, storyForm.statusId, teamStatuses]);
+
+  useEffect(() => {
+    if (!teams.find((team) => team.id === activeTeam.id)) {
+      setActiveTeam(teams[0]);
+    }
+  }, [teams, activeTeam, setActiveTeam]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
