@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { teamKeys } from "@/constants/keys";
+import { statusKeys, teamKeys } from "@/constants/keys";
 import type { Team } from "../types";
 import { createTeam } from "../actions";
 
@@ -41,6 +41,7 @@ export const useCreateTeamMutation = () => {
         id: toastId,
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
       router.push(`/settings/workspace/teams/${data.data?.id}`);
     },
     onError: (error, _, context) => {
