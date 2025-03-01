@@ -62,7 +62,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			AND u.is_active = true
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id": userID,
 	}
 
@@ -115,7 +115,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			AND u.is_active = true
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"email": email,
 	}
 
@@ -159,7 +159,7 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		RETURNING user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":    userID,
 		"username":   updates.Username,
 		"full_name":  updates.FullName,
@@ -205,7 +205,7 @@ func (r *repo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 		RETURNING user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id": userID,
 	}
 
@@ -309,7 +309,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			last_used_workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"username":      user.Username,
 		"email":         user.Email,
 		"full_name":     user.FullName,
@@ -342,7 +342,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	defer span.End()
 
 	var users []dbUser
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
 
@@ -449,7 +449,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 		FROM recent_tokens
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"email":          email,
 		"min_created_at": time.Now().Add(-time.Hour),
 	}
@@ -486,7 +486,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	`
 
 	now := time.Now()
-	createParams := map[string]interface{}{
+	createParams := map[string]any{
 		"token":      token,
 		"email":      email,
 		"expires_at": now.Add(10 * time.Minute),
@@ -527,7 +527,7 @@ func (r *repo) GetVerificationToken(ctx context.Context, token string) (users.Co
 		WHERE token = :token
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"token": token,
 	}
 
@@ -559,7 +559,7 @@ func (r *repo) MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
 		WHERE id = :token_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"token_id": tokenID,
 	}
 
@@ -598,7 +598,7 @@ func (r *repo) InvalidateTokens(ctx context.Context, email string) error {
 		WHERE email = :email AND used_at IS NULL
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"email": email,
 	}
 
@@ -636,7 +636,7 @@ func (r *repo) GetValidTokenCount(ctx context.Context, email string, duration ti
 		FROM recent_tokens
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"email":          email,
 		"min_created_at": time.Now().Add(-duration),
 	}
@@ -673,7 +673,7 @@ func (r *repo) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userI
 		RETURNING u.user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 	}
