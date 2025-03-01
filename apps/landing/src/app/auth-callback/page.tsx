@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { ClientPage } from "./client";
 
 export default async function AuthCallback() {
@@ -7,5 +8,6 @@ export default async function AuthCallback() {
   if (!session) {
     redirect("/login");
   }
-  return <ClientPage />;
+  const invitations = await getMyInvitations();
+  return <ClientPage invitations={invitations.data || []} />;
 }

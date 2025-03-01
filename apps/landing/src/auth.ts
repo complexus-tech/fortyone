@@ -8,7 +8,7 @@ import {
   authenticateGoogleUser,
   authenticateWithToken,
 } from "./lib/actions/auth";
-import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
+import { getWorkspaces } from "./lib/queries/get-workspaces";
 
 const domain =
   process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";

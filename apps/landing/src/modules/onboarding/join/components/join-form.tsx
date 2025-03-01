@@ -3,18 +3,19 @@
 import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import type { Invitation } from "@/lib/actions/verify-invitation";
+import { redirect, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import type { Invitation } from "@/types";
 import { acceptInvitation } from "@/lib/actions/accept-invitation";
+import { buildWorkspaceUrl } from "@/utils";
 
-export const CreateAccountForm = ({
-  invitation,
-}: {
-  invitation: Invitation;
-}) => {
+export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
+  const { workspaceName, workspaceSlug, workspaceColor } = invitation;
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const token = searchParams.get("token");
   const [isLoading, setIsLoading] = useState(false);
+  const prevWorkspaces = session?.workspaces || [];
 
   const handleJoin = async () => {
     setIsLoading(true);
@@ -24,6 +25,10 @@ export const CreateAccountForm = ({
         description: res.error.message,
       });
       setIsLoading(false);
+    } else if (prevWorkspaces.length === 0) {
+      redirect("/onboarding/account");
+    } else {
+      redirect(buildWorkspaceUrl(workspaceSlug));
     }
   };
 
@@ -33,14 +38,14 @@ export const CreateAccountForm = ({
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" gap={2}>
             <Avatar
-              name={invitation.workspaceName}
+              name={workspaceName}
               rounded="md"
-              style={{ backgroundColor: invitation.workspaceColor }}
+              style={{ backgroundColor: workspaceColor }}
             />
             <Box>
-              <Text>{invitation.workspaceName}</Text>
+              <Text>{workspaceName}</Text>
               <Text color="muted" fontSize="sm">
-                {invitation.workspaceSlug}.complexus.app
+                {workspaceSlug}.complexus.app
               </Text>
             </Box>
           </Flex>
@@ -52,7 +57,7 @@ export const CreateAccountForm = ({
             onClick={handleJoin}
             size="sm"
           >
-            Join now
+            Accept invitation
           </Button>
         </Flex>
       </Wrapper>

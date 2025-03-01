@@ -5,6 +5,7 @@ import { redirect, useParams } from "next/navigation";
 import { useEffect } from "react";
 import { Logo, Blur } from "@/components/ui";
 import { getRedirectUrl } from "@/utils";
+import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { logIn, getSession } from "./actions";
 
 export const EmailVerificationCallback = () => {
@@ -20,7 +21,8 @@ export const EmailVerificationCallback = () => {
       } else {
         const session = await getSession();
         if (session) {
-          redirect(getRedirectUrl(session));
+          const invitations = await getMyInvitations();
+          redirect(getRedirectUrl(session, invitations.data || []));
         }
       }
     };

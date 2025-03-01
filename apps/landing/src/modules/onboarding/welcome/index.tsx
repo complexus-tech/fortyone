@@ -2,7 +2,7 @@ import { Badge, Box, Button, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
 import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { auth } from "@/auth";
 import { ActionCard } from "./components/action-card";
 

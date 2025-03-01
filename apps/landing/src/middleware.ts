@@ -15,7 +15,10 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/onboarding/:path*",
+    "/onboarding/account",
+    "/onboarding/create",
+    "/onboarding/invite",
+    "/onboarding/welcome",
     "/((?!|login|[^/]+|[^/]+/[^/]+|_next/static|images|_next/image|favicon*).*)",
   ],
 };

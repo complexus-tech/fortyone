@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { CloseIcon } from "icons";
 import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 import { useDebounce } from "@/hooks";
-import { checkWorkspaceAvailability } from "@/lib/actions/check-workspace-availability";
+import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
 import type { ApiResponse } from "@/types";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;

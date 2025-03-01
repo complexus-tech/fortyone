@@ -8,8 +8,9 @@ import { useSession } from "next-auth/react";
 import { Logo, Blur } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
+import type { Invitation } from "@/types";
 
-export const ClientPage = () => {
+export const ClientPage = ({ invitations }: { invitations: Invitation[] }) => {
   const { data: session } = useSession();
   const { analytics } = useAnalytics();
 
@@ -21,9 +22,9 @@ export const ClientPage = () => {
         email: session.user!.email!,
         name: session.user!.name!,
       });
-      redirect(getRedirectUrl(session));
+      redirect(getRedirectUrl(session, invitations));
     }
-  }, [analytics, session]);
+  }, [analytics, session, invitations]);
 
   return (
     <Flex

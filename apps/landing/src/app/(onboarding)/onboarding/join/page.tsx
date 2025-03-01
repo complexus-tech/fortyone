@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Box, Button, Text } from "ui";
 import { JoinWorkspace } from "@/modules/onboarding/join";
-import { verifyInvitation } from "@/lib/actions/verify-invitation";
+import { verifyInvitation } from "@/lib/queries/verify-invitation";
 import { Logo } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -21,15 +21,21 @@ export default async function JoinWorkspacePage({
     return (
       <Box className="w-full max-w-md">
         <Logo asIcon className="relative -left-2 h-10 text-white" />
-        <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
-          Invalid invitation
+        <Text
+          as="h1"
+          className="mb-2 mt-6 text-[1.7rem] first-letter:uppercase"
+          fontWeight="semibold"
+        >
           {res.error.message}
         </Text>
         <Text className="mb-6" color="muted">
-          The invitation is invalid or has expired. Please contact your team to
-          get a new invitation.
+          {res.error.message.includes("expired")
+            ? "The invitation has expired. Please contact your team to get a new invitation. New invitations are valid for 24 hours."
+            : "If you believe this is an error, please contact your team to get a new invitation."}
         </Text>
-        <Button href="/">Go to home</Button>
+        <Button align="center" className="md:py-3" fullWidth href="/login">
+          Go back
+        </Button>
       </Box>
     );
   }
