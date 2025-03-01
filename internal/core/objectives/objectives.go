@@ -14,7 +14,8 @@ import (
 
 // Service errors
 var (
-	ErrNotFound = errors.New("objective not found")
+	ErrNotFound   = errors.New("objective not found")
+	ErrNameExists = errors.New("an objective with this name already exists")
 )
 
 // Repository provides access to the objectives storage.

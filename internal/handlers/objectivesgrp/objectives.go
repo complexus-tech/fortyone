@@ -147,6 +147,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
 		}
+		if errors.Is(err, objectives.ErrNameExists) {
+			web.RespondError(ctx, w, err, http.StatusConflict)
+			return nil
+		}
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
@@ -247,6 +251,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj, userID), wsID, keyResults)
 	if err != nil {
+		if errors.Is(err, objectives.ErrNameExists) {
+			web.RespondError(ctx, w, err, http.StatusConflict)
+			return nil
+		}
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}

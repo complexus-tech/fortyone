@@ -70,6 +70,12 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 	defer stmt.Close()
 
 	if err := stmt.GetContext(ctx, &createdObj, toDBObjective(objective, workspaceID)); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("objective name %s already exists", objective.Name)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(objectives.ErrNameExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return objectives.CoreObjective{}, nil, objectives.ErrNameExists
+		}
 		return objectives.CoreObjective{}, nil, err
 	}
 
@@ -307,6 +313,18 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 
 	r.log.Info(ctx, fmt.Sprintf("Updating objective #%s", id), "id", id)
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			// Get the name from updates if it exists
+			nameValue, hasName := updates["name"]
+			name := ""
+			if hasName {
+				name, _ = nameValue.(string)
+			}
+			errMsg := fmt.Sprintf("objective name %s already exists", name)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(objectives.ErrNameExists, trace.WithAttributes(attribute.String("error", errMsg)))
+			return objectives.ErrNameExists
+		}
 		errMsg := fmt.Sprintf("failed to update objective: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update objective"), trace.WithAttributes(attribute.String("error", errMsg)))
