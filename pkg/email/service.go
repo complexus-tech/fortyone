@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -53,10 +54,11 @@ type TemplatedEmail struct {
 }
 
 type service struct {
-	dialer    *gomail.Dialer
-	config    Config
-	log       *logger.Logger
-	templates *template.Template
+	dialer       *gomail.Dialer
+	config       Config
+	log          *logger.Logger
+	templates    map[string]*template.Template
+	baseTemplate *template.Template
 }
 
 func NewService(cfg Config, log *logger.Logger) (Service, error) {
@@ -68,25 +70,67 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 		return nil, fmt.Errorf("email template base directory is required")
 	}
 
-	// Create a new template with functions
-	templates := template.New("").Funcs(template.FuncMap{
+	// Load the base template first
+	baseTemplatePath := filepath.Join(cfg.BaseDir, "templates/layouts/base.html")
+	baseTemplate, err := template.New("").Funcs(template.FuncMap{
 		"formatDate": func(t time.Time) string {
 			return t.Format("January 2, 2006")
 		},
-	})
+	}).ParseFiles(baseTemplatePath)
 
-	// Load all templates
-	templatePattern := filepath.Join(cfg.BaseDir, "templates/**/*.html")
-	templates, err := templates.ParseGlob(templatePattern)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse email templates: %w", err)
+		return nil, fmt.Errorf("failed to parse base template: %w", err)
+	}
+
+	// Store template clones for each specific template
+	templates := make(map[string]*template.Template)
+
+	// Get all content templates
+	contentTemplatePattern := filepath.Join(cfg.BaseDir, "templates/*/*.html")
+	contentTemplatePaths, err := filepath.Glob(contentTemplatePattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find content templates: %w", err)
+	}
+
+	// Create separate template instances for each content template
+	for _, templatePath := range contentTemplatePaths {
+		// Skip the base template
+		if templatePath == baseTemplatePath || filepath.Dir(templatePath) == filepath.Join(cfg.BaseDir, "templates/layouts") {
+			continue
+		}
+
+		// Get the template name (relative path from templates dir)
+		relPath, err := filepath.Rel(filepath.Join(cfg.BaseDir, "templates"), templatePath)
+		if err != nil {
+			log.Error(context.Background(), "failed to get relative path", "path", templatePath, "error", err)
+			continue
+		}
+
+		// Use directory/filename without extension as the template name
+		templateName := strings.TrimSuffix(relPath, filepath.Ext(relPath))
+
+		// Clone the base template
+		tmpl, err := baseTemplate.Clone()
+		if err != nil {
+			return nil, fmt.Errorf("failed to clone base template: %w", err)
+		}
+
+		// Parse the content template
+		_, err = tmpl.ParseFiles(templatePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		}
+
+		// Store the template
+		templates[templateName] = tmpl
 	}
 
 	s := &service{
-		dialer:    dialer,
-		config:    cfg,
-		log:       log,
-		templates: templates,
+		dialer:       dialer,
+		config:       cfg,
+		log:          log,
+		templates:    templates,
+		baseTemplate: baseTemplate,
 	}
 
 	return s, nil
@@ -150,12 +194,16 @@ func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail Template
 		}
 	}
 
-	// Add the content template name to the data
-	data["ContentTemplate"] = templateEmail.Template
+	// Get the template for this email type
+	tmpl, ok := s.templates[templateEmail.Template]
+	if !ok {
+		s.log.Error(ctx, "template not found", "template", templateEmail.Template)
+		return fmt.Errorf("template not found: %s", templateEmail.Template)
+	}
 
-	// Render the base template, which will include the content template
+	// Render the template
 	var buf bytes.Buffer
-	if err := s.templates.ExecuteTemplate(&buf, "base", data); err != nil {
+	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
 		s.log.Error(ctx, "failed to render email template", "error", err, "template", templateEmail.Template)
 		return fmt.Errorf("failed to render email template: %w", err)
 	}
