@@ -120,5 +120,7 @@ func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
 		TargetValue:     dbkr.TargetValue,
 		CreatedAt:       dbkr.CreatedAt,
 		UpdatedAt:       dbkr.UpdatedAt,
+		CreatedBy:       dbkr.CreatedBy,
+		LastUpdatedBy:   dbkr.LastUpdatedBy,
 	}
 }
