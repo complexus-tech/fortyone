@@ -11,7 +11,7 @@ import (
 var (
 	ErrInvitationNotFound     = errors.New("invitation not found")
 	ErrInvitationExpired      = errors.New("invitation expired")
-	ErrInvitationUsed         = errors.New("invitation already used")
+	ErrInvitationUsed         = errors.New("invitation already accepted")
 	ErrInvitationRevoked      = errors.New("invitation has been revoked")
 	ErrInvalidToken           = errors.New("invalid invitation token")
 	ErrDuplicateInvitation    = errors.New("duplicate invitation")
