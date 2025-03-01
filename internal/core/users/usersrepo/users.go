@@ -52,11 +52,9 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
-			u.updated_at,
-			wm.role as role
+			u.updated_at
 		FROM
 			users u
-		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE 
 			u.user_id = :user_id
 			AND u.is_active = true
@@ -105,11 +103,9 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
-			u.updated_at,
-			wm.role as role
+			u.updated_at
 		FROM
 			users u
-		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE 
 			u.email = :email
 			AND u.is_active = true
