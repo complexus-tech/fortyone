@@ -9,7 +9,8 @@ export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const toastId = "create-team";
-  return useMutation({
+
+  const mutation = useMutation({
     mutationFn: createTeam,
     onMutate: (data) => {
       const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists());
@@ -44,12 +45,20 @@ export const useCreateTeamMutation = () => {
       queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
       router.push(`/settings/workspace/teams/${data.data?.id}`);
     },
-    onError: (error, _, context) => {
+    onError: (error, variables, context) => {
       queryClient.setQueryData(teamKeys.lists(), context?.previousTeams);
       toast.error("Failed to create team", {
         description: error.message || "Team code must be unique",
         id: toastId,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
       });
     },
   });
+
+  return mutation;
 };

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { teamKeys } from "@/constants/keys";
 import type { UpdateTeamInput } from "../actions/update-team";
 import { updateTeamAction } from "../actions/update-team";
@@ -7,7 +8,7 @@ import type { Team } from "../types";
 export const useUpdateTeamMutation = (id: string) => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (input: UpdateTeamInput) => updateTeamAction(id, input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: teamKeys.detail(id) });
@@ -22,9 +23,23 @@ export const useUpdateTeamMutation = (id: string) => {
 
       return { previousTeam };
     },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(teamKeys.detail(id), context?.previousTeam);
+      toast.error("Error", {
+        description: error.message || "Failed to update team",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },
   });
+
+  return mutation;
 };

@@ -33,9 +33,9 @@ export const useUpdateTeamMutation = (teamId: string) => {
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       toast.error("Error", {
-        description: "Failed to update team",
+        description: error.message || "Failed to update team",
         id: toastId,
         action: {
           label: "Retry",

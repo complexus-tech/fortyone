@@ -17,10 +17,10 @@ export const useDeleteTeamMutation = () => {
         id: toastId,
       });
     },
-    onError: (_, variables) => {
+    onError: (error, variables) => {
       toast.dismiss(toastId);
       toast.error("Error", {
-        description: "Failed to delete team",
+        description: error.message || "Failed to delete team",
         id: toastId,
         action: {
           label: "Retry",
