@@ -1,19 +1,25 @@
 "use server";
-import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 
-export const logIn = async (callbackUrl: string, formData: FormData) => {
+export const logIn = async (email: string, token: string) => {
   try {
     await signIn("credentials", {
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
+      email,
+      token,
       redirect: false,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return { error: error.message || "Invalid link" };
+        default:
+          return { error: error.message };
+      }
+    }
     return {
-      error: "Invalid email or password",
+      error: "Invalid link",
     };
   }
-
-  redirect(callbackUrl);
 };

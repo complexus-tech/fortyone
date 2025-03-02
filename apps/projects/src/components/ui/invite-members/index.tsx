@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Dialog, Select, TextArea, Text, Checkbox } from "ui";
+import { Button, Dialog, Select, TextArea, Text, Checkbox, Box } from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -29,19 +29,10 @@ export const InviteMembersDialog = ({
   const { data: teams = [] } = useTeams();
   const [formState, setFormState] = useState<InviteFormState>({
     emails: "",
-    role: "member", // Default to member role
+    role: "member",
     teamIds: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Reset form when dialog opens
-  if (!isOpen) {
-    setFormState({
-      emails: "",
-      role: "member",
-      teamIds: [],
-    });
-  }
 
   const handleEmailsChange = (value: string) => {
     setFormState((prev) => ({ ...prev, emails: value }));
@@ -68,59 +59,64 @@ export const InviteMembersDialog = ({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    const toastId = "invite-members";
 
-    try {
-      // Parse emails
-      const emailList = formState.emails
-        .split(/[,\n]/)
-        .map((email) => email.trim())
-        .filter((email) => email !== "");
+    const emailList = formState.emails
+      .split(/[,\n]/)
+      .map((email) => email.trim())
+      .filter((email) => email !== "");
 
-      // Validate inputs
-      if (emailList.length === 0) {
-        toast.error("Please enter at least one email address");
-        return;
-      }
-
-      const invalidEmails = validateEmails(emailList);
-      if (invalidEmails.length > 0) {
-        toast.error(`Invalid email format: ${invalidEmails.join(", ")}`);
-        return;
-      }
-
-      if (!formState.role) {
-        toast.error("Please select a role");
-        return;
-      }
-
-      // Create invitation objects
-      const invites: NewInvitation[] = emailList.map((email) => ({
-        email,
-        role: formState.role,
-        teamIds: formState.teamIds.length > 0 ? formState.teamIds : undefined,
-      }));
-
-      // Call the server action
-      const response = await inviteMembers(invites);
-
-      if (response.error) {
-        toast.error(response.error.message || "Failed to send invites");
-        return;
-      }
-
-      // Show success toast
-      toast.success("Invitations sent successfully");
-
-      // Close dialog
-      setIsOpen(false);
-    } catch (err) {
-      // Handle unexpected errors
-      toast.error(
-        err instanceof Error ? err.message : "An unknown error occurred",
-      );
-    } finally {
+    if (emailList.length === 0) {
+      toast.warning("Validation error", {
+        description: "Please enter at least one email address",
+      });
       setIsSubmitting(false);
+      return;
     }
+
+    const invalidEmails = validateEmails(emailList);
+    if (invalidEmails.length > 0) {
+      toast.warning("Validation error", {
+        description: `Invalid email format: ${invalidEmails.join(", ")}`,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formState.role) {
+      toast.warning("Validation error", {
+        description: "Please select a role",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    toast.loading("Sending invites", {
+      id: toastId,
+      description: "Please wait...",
+    });
+
+    // Create invitation objects
+    const invites: NewInvitation[] = emailList.map((email) => ({
+      email,
+      role: formState.role,
+      teamIds: formState.teamIds.length > 0 ? formState.teamIds : undefined,
+    }));
+    const res = await inviteMembers(invites);
+    if (res.error?.message) {
+      toast.error("Failed to send invites", {
+        description: res.error.message,
+        id: toastId,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    toast.info("Success", {
+      description: "Invitations sent to members emails",
+      id: toastId,
+    });
+    setIsOpen(false);
+    setIsSubmitting(false);
   };
 
   return (
@@ -131,11 +127,12 @@ export const InviteMembersDialog = ({
             Invite members to your workspace
           </Dialog.Title>
         </Dialog.Header>
-
         <Dialog.Body className="py-6">
+          <Text className="mb-2" color="muted">
+            Email addresses
+          </Text>
           <TextArea
             className="border-[0.5px] dark:bg-transparent"
-            label="Email addresses"
             onChange={(e) => {
               handleEmailsChange(e.target.value);
             }}
@@ -143,7 +140,9 @@ export const InviteMembersDialog = ({
             rows={3}
             value={formState.emails}
           />
-          <Text className="mb-2 mt-6">Role</Text>
+          <Text className="mb-2 mt-6" color="muted">
+            Role
+          </Text>
           <Select onValueChange={handleRoleChange} value={formState.role}>
             <Select.Trigger className="h-[2.8rem] border-[0.5px] px-4 text-base dark:bg-transparent">
               <Select.Input placeholder="Select role" />
@@ -160,10 +159,10 @@ export const InviteMembersDialog = ({
               ))}
             </Select.Content>
           </Select>
-
-          <Text className="mb-2 mt-6">Teams (Optional)</Text>
-
-          <div className="max-h-48 overflow-y-auto rounded border-[0.5px] p-3 dark:bg-transparent">
+          <Text className="mb-2 mt-6" color="muted">
+            Teams (Optional)
+          </Text>
+          <Box className="max-h-48 overflow-y-auto rounded border-[0.5px] p-3 dark:bg-transparent">
             {teams.length === 0 ? (
               <Text className="py-2 text-center" color="muted">
                 No teams available
@@ -193,7 +192,7 @@ export const InviteMembersDialog = ({
                 ))}
               </div>
             )}
-          </div>
+          </Box>
         </Dialog.Body>
         <Dialog.Footer className="justify-end">
           <Button

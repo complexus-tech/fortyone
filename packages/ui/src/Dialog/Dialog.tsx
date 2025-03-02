@@ -26,7 +26,7 @@ const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 flex items-start justify-center bg-black/50 dark:bg-black/80",
+      "fixed inset-0 z-50 flex items-start justify-center bg-black/30 dark:bg-black/80",
       className
     )}
     {...props}

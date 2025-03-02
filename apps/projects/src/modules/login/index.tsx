@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Box, Flex, Input, Text, Button } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
+import { redirect } from "next/navigation";
 import { ComplexusLogo } from "@/components/ui";
 import { logIn } from "./actions";
 
-export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
-  const logInAction = logIn.bind(null, callbackUrl);
+export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -16,17 +16,23 @@ export const LoginPage = ({ callbackUrl }: { callbackUrl: string }) => {
     const formData = new FormData(event.currentTarget);
     setLoading(true);
     nProgress.start();
-    try {
-      const result = await logInAction(formData);
-      if (result.error) {
-        toast.error("Failed to log in", {
-          description: result.error,
-        });
-      }
-    } finally {
+
+    const res = await logIn(
+      formData.get("email") as string,
+      formData.get("password") as string,
+    );
+
+    if (res?.error) {
+      toast.error("Failed to log in", {
+        description: res.error,
+      });
       setLoading(false);
       nProgress.done();
+      return;
     }
+    setLoading(false);
+    nProgress.done();
+    redirect("/my-work");
   };
 
   return (

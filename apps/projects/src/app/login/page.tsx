@@ -8,13 +8,7 @@ export const metadata: Metadata = {
   title: "Login",
 };
 
-export default async function Page(props: {
-  searchParams: Promise<{ callbackUrl: string }>;
-}) {
-  const searchParams = await props.searchParams;
-
-  const { callbackUrl = "/" } = searchParams;
-
+export default async function Page() {
   const session = await auth();
   const headersList = await headers();
   const host = headersList.get("host");
@@ -28,5 +22,5 @@ export default async function Page(props: {
     redirect("/my-work");
   }
 
-  return <LoginPage callbackUrl={callbackUrl} />;
+  return <LoginPage />;
 }
