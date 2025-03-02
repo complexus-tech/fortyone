@@ -13,7 +13,7 @@ export const useCreateStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: createStoryAction,
-    onError: (_, story) => {
+    onError: (error, story) => {
       const previousStories = queryClient.getQueryData<Story[]>(
         storyKeys.lists(),
       );
@@ -24,10 +24,13 @@ export const useCreateStoryMutation = () => {
         );
       }
       toast.error(`Failed to create story: ${story.title}`, {
-        description: "An error occurred while creating the story",
+        description:
+          error.message || "An error occurred while creating the story",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(story); },
+          onClick: () => {
+            mutation.mutate(story);
+          },
         },
       });
     },

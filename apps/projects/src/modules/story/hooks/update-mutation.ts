@@ -16,9 +16,9 @@ export const useUpdateStoryMutation = () => {
       storyId: string;
       payload: Partial<DetailedStory>;
     }) => updateStoryAction(storyId, payload),
-    onError: (_, variables) => {
+    onError: (error, variables) => {
       toast.error("Failed to update story", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

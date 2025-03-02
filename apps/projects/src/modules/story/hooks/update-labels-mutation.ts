@@ -12,9 +12,9 @@ export const useUpdateLabelsMutation = () => {
   const mutation = useMutation({
     mutationFn: ({ storyId, labels }: { storyId: string; labels: string[] }) =>
       updateLabelsAction(storyId, labels),
-    onError: (_, variables) => {
+    onError: (error, variables) => {
       toast.error("Failed to update labels", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

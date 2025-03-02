@@ -9,12 +9,15 @@ export const useRestoreStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: restoreStoryAction,
-    onError: (_, storyId) => {
+    onError: (error, storyId) => {
       toast.error("Failed to restore story", {
-        description: "An error occurred while restoring the story",
+        description:
+          error.message || "An error occurred while restoring the story",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(storyId); },
+          onClick: () => {
+            mutation.mutate(storyId);
+          },
         },
       });
     },

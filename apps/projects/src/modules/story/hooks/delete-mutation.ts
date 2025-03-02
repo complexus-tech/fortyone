@@ -12,12 +12,15 @@ export const useDeleteStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: deleteStoryAction,
-    onError: (_, storyId) => {
+    onError: (error, storyId) => {
       toast.error("Failed to delete story", {
-        description: "An error occurred while deleting the story",
+        description:
+          error.message || "An error occurred while deleting the story",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(storyId); },
+          onClick: () => {
+            mutation.mutate(storyId);
+          },
         },
       });
     },

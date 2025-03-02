@@ -3,6 +3,7 @@
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { StoryActivity } from "@/modules/stories/types";
+import { getApiError } from "@/utils";
 
 type Payload = {
   comment: string;
@@ -10,9 +11,14 @@ type Payload = {
 };
 
 export const commentStoryAction = async (storyId: string, payload: Payload) => {
-  const activity = await post<Payload, ApiResponse<StoryActivity>>(
-    `stories/${storyId}/comments`,
-    payload,
-  );
-  return activity.data!;
+  try {
+    const activity = await post<Payload, ApiResponse<StoryActivity>>(
+      `stories/${storyId}/comments`,
+      payload,
+    );
+    return activity.data!;
+  } catch (error) {
+    const res = getApiError(error);
+    throw new Error(res.error?.message || "Failed to comment on story");
+  }
 };

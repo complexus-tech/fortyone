@@ -22,12 +22,14 @@ export const useCommentStoryMutation = () => {
         comment: payload.comment,
         parentId: payload.parentId,
       }),
-    onError: (_, variables) => {
+    onError: (error, variables) => {
       toast.error("Failed to comment story", {
-        description: "Your comment was not saved",
+        description: error.message || "Your comment was not saved",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
+          onClick: () => {
+            mutation.mutate(variables);
+          },
         },
       });
     },
