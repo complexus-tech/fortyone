@@ -3,8 +3,11 @@ import { DeleteIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { cn } from "lib";
-import type { Member } from "@/types";
+import type { Member, UserRole } from "@/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
+import { useUpdateRoleMutation } from "@/lib/hooks/update-role";
+import { useRemoveMemberMutation } from "@/lib/hooks/remove-member-mutation";
+import { useMembers } from "@/lib/hooks/members";
 
 export const WorkspaceMember = ({
   id,
@@ -14,12 +17,21 @@ export const WorkspaceMember = ({
   role,
   email,
 }: Member) => {
+  const { data: members = [] } = useMembers();
   const { data: session } = useSession();
+  const { mutate: updateRole } = useUpdateRoleMutation();
+  const { mutate: removeMember } = useRemoveMemberMutation();
   const [isOpen, setIsOpen] = useState(false);
   const isCurrentUser = session?.user?.id === id;
 
-  const handleRemoveUser = async () => {
-    // TODO: remove user
+  const otherAdminsCount = members.filter(
+    (member) => member.role === "admin" && member.id !== session?.user?.id,
+  ).length;
+
+  const canLeaveWorkspace = otherAdminsCount > 0;
+
+  const handleRemoveUser = () => {
+    removeMember(id);
   };
 
   return (
@@ -37,7 +49,13 @@ export const WorkspaceMember = ({
         </Box>
       </Flex>
       <Flex align="center" gap={3}>
-        <Select disabled={isCurrentUser} value={role}>
+        <Select
+          disabled={isCurrentUser}
+          onValueChange={(value) => {
+            updateRole({ userId: id, role: value as UserRole });
+          }}
+          value={role}
+        >
           <Select.Trigger
             className={cn("w-32", {
               "opacity-50": isCurrentUser,
@@ -66,14 +84,30 @@ export const WorkspaceMember = ({
           </Menu.Button>
           <Menu.Items align="end">
             <Menu.Group>
-              <Menu.Item
-                onSelect={() => {
-                  setIsOpen(true);
-                }}
-              >
-                <DeleteIcon className="h-[1.15rem]" />
-                {isCurrentUser ? "Leave workspace..." : "Remove user..."}
-              </Menu.Item>
+              {isCurrentUser ? (
+                <Menu.Item
+                  disabled={!canLeaveWorkspace}
+                  onSelect={() => {
+                    if (canLeaveWorkspace) {
+                      setIsOpen(true);
+                    }
+                  }}
+                >
+                  <DeleteIcon className="h-[1.15rem]" />
+                  {canLeaveWorkspace
+                    ? "Leave workspace..."
+                    : "Cannot leave (no other admin)"}
+                </Menu.Item>
+              ) : (
+                <Menu.Item
+                  onSelect={() => {
+                    setIsOpen(true);
+                  }}
+                >
+                  <DeleteIcon className="h-[1.15rem]" />
+                  Remove user...
+                </Menu.Item>
+              )}
             </Menu.Group>
           </Menu.Items>
         </Menu>
