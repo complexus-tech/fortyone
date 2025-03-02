@@ -1,11 +1,13 @@
 "use client";
 
-import { Button, Dialog, Select, TextArea, Text, Checkbox, Box } from "ui";
+import { Button, Dialog, Select, TextArea, Text, Flex } from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
+import { cn } from "lib";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { inviteMembers } from "@/modules/invitations/actions/invite";
 import type { NewInvitation } from "@/modules/invitations/types";
+import { useMembers } from "@/lib/hooks/members";
 
 type InviteFormState = {
   emails: string;
@@ -27,6 +29,7 @@ export const InviteMembersDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const { data: teams = [] } = useTeams();
+  const { data: members = [] } = useMembers();
   const [formState, setFormState] = useState<InviteFormState>({
     emails: "",
     role: "member",
@@ -76,15 +79,39 @@ export const InviteMembersDialog = ({
 
     const invalidEmails = validateEmails(emailList);
     if (invalidEmails.length > 0) {
-      toast.warning("Validation error", {
+      toast.warning("Invalid emails", {
         description: `Invalid email format: ${invalidEmails.join(", ")}`,
       });
       setIsSubmitting(false);
       return;
     }
 
+    // Filter out existing members
+    const existingEmails = members.map((member) => member.email.toLowerCase());
+    const newEmails = emailList.filter(
+      (email) => !existingEmails.includes(email.toLowerCase()),
+    );
+    const existingCount = emailList.length - newEmails.length;
+
+    // If all emails belong to existing members
+    if (newEmails.length === 0) {
+      toast.warning(
+        emailList.length === 1
+          ? "Member already exists"
+          : "Members already exist",
+        {
+          description:
+            emailList.length === 1
+              ? "The entered email address already belongs to the workspace"
+              : "All entered email addresses already belong to the workspace",
+        },
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!formState.role) {
-      toast.warning("Validation error", {
+      toast.warning("Role is required", {
         description: "Please select a role",
       });
       setIsSubmitting(false);
@@ -96,12 +123,13 @@ export const InviteMembersDialog = ({
       description: "Please wait...",
     });
 
-    // Create invitation objects
-    const invites: NewInvitation[] = emailList.map((email) => ({
+    // Create invitation objects only for new emails
+    const invites: NewInvitation[] = newEmails.map((email) => ({
       email,
       role: formState.role,
       teamIds: formState.teamIds.length > 0 ? formState.teamIds : undefined,
     }));
+
     const res = await inviteMembers(invites);
     if (res.error?.message) {
       toast.error("Failed to send invites", {
@@ -111,10 +139,18 @@ export const InviteMembersDialog = ({
       setIsSubmitting(false);
       return;
     }
-    toast.info("Success", {
-      description: "Invitations sent to members emails",
-      id: toastId,
-    });
+    if (existingCount > 0) {
+      toast.info(`${existingCount} emails skipped`, {
+        description: `Invitations sent to ${newEmails.length} email(s), ${existingCount} email(s) skipped (already members).`,
+        id: toastId,
+      });
+    } else {
+      toast.info("Success", {
+        description: "Invitations sent to member emails",
+        id: toastId,
+      });
+    }
+
     setIsOpen(false);
     setIsSubmitting(false);
   };
@@ -132,7 +168,7 @@ export const InviteMembersDialog = ({
             Email addresses
           </Text>
           <TextArea
-            className="border-[0.5px] dark:bg-transparent"
+            className="border dark:bg-transparent"
             onChange={(e) => {
               handleEmailsChange(e.target.value);
             }}
@@ -144,7 +180,7 @@ export const InviteMembersDialog = ({
             Role
           </Text>
           <Select onValueChange={handleRoleChange} value={formState.role}>
-            <Select.Trigger className="h-[2.8rem] border-[0.5px] px-4 text-base dark:bg-transparent">
+            <Select.Trigger className="h-[2.8rem] border bg-transparent px-4 text-base dark:bg-transparent">
               <Select.Input placeholder="Select role" />
             </Select.Trigger>
             <Select.Content>
@@ -159,40 +195,46 @@ export const InviteMembersDialog = ({
               ))}
             </Select.Content>
           </Select>
-          <Text className="mb-2 mt-6" color="muted">
-            Teams (Optional)
-          </Text>
-          <Box className="max-h-48 overflow-y-auto rounded border-[0.5px] p-3 dark:bg-transparent">
-            {teams.length === 0 ? (
-              <Text className="py-2 text-center" color="muted">
-                No teams available
+          {teams.length > 0 && (
+            <>
+              <Text className="mb-2 mt-6" color="muted">
+                Teams (Optional) - members will be added to the selected teams
               </Text>
-            ) : (
-              <div className="space-y-2">
+              <Flex gap={2} wrap>
                 {teams.map((team) => (
-                  <div className="flex items-center space-x-2" key={team.id}>
-                    <Checkbox
-                      checked={formState.teamIds.includes(team.id)}
-                      id={`team-${team.id}`}
-                      onCheckedChange={() => {
-                        handleTeamToggle(team.id);
-                      }}
-                    />
-                    <label
-                      className="flex cursor-pointer items-center gap-2 text-sm"
-                      htmlFor={`team-${team.id}`}
-                    >
+                  <Button
+                    className={cn("dark:bg-transparent", {
+                      "ring-2": formState.teamIds.includes(team.id),
+                    })}
+                    color="tertiary"
+                    key={team.id}
+                    leftIcon={
                       <span
-                        className="h-2 w-2 rounded-full"
+                        className="size-2 rounded-full"
                         style={{ backgroundColor: team.color }}
                       />
+                    }
+                    onClick={() => {
+                      handleTeamToggle(team.id);
+                    }}
+                    size="sm"
+                    title={team.name}
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[12ch] truncate">
                       {team.name}
-                    </label>
-                  </div>
+                    </span>
+                  </Button>
                 ))}
-              </div>
-            )}
-          </Box>
+              </Flex>
+              {formState.teamIds.length > 0 && (
+                <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
+                  {formState.teamIds.length} team
+                  {formState.teamIds.length > 1 ? "s" : ""} selected
+                </Text>
+              )}
+            </>
+          )}
         </Dialog.Body>
         <Dialog.Footer className="justify-end">
           <Button
