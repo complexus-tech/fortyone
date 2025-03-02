@@ -54,14 +54,6 @@ func toCoreWorkspaceWithRole(p dbWorkspaceWithRole) workspaces.CoreWorkspace {
 	}
 }
 
-func toCoreWorkspaces(du []dbWorkspace) []workspaces.CoreWorkspace {
-	coreWorkspaces := make([]workspaces.CoreWorkspace, len(du))
-	for i, workspace := range du {
-		coreWorkspaces[i] = toCoreWorkspace(workspace)
-	}
-	return coreWorkspaces
-}
-
 func toCoreWorkspacesWithRole(du []dbWorkspaceWithRole) []workspaces.CoreWorkspace {
 	coreWorkspaces := make([]workspaces.CoreWorkspace, len(du))
 	for i, workspace := range du {
