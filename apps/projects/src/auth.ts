@@ -63,8 +63,8 @@ export const {
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      const workspaces = await getWorkspaces(user.token);
       if (user) {
+        const workspaces = await getWorkspaces(user.token);
         return {
           ...token,
           id: user.id,
