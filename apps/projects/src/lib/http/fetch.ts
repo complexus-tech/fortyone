@@ -2,9 +2,7 @@
 import type { Options } from "ky";
 import ky from "ky";
 import { headers } from "next/headers";
-import { auth, updateSession } from "@/auth";
-import type { Workspace } from "@/types";
-import { getWorkspaces } from "../queries/workspaces/get-workspaces";
+import { auth } from "@/auth";
 import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
@@ -13,19 +11,19 @@ const createClient = async () => {
   const headersList = await headers();
   const subdomain = headersList.get("host")!.split(".")[0];
   const session = await auth();
-  let workspace: Workspace | undefined;
+  // let workspace: Workspace | undefined;
 
   const workspaces = session?.workspaces || [];
-  workspace = workspaces.find(
+  const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );
-  if (!workspace) {
-    const newWorkspaces = await getWorkspaces(session!.token);
-    workspace = newWorkspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-    );
-    await updateSession({ activeWorkspace: workspace });
-  }
+  // if (!workspace) {
+  //   const newWorkspaces = await getWorkspaces(session!.token);
+  //   workspace = newWorkspaces.find(
+  //     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+  //   );
+  //   await updateSession({ activeWorkspace: workspace });
+  // }
 
   const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
   return ky.create({
