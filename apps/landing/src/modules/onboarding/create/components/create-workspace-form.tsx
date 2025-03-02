@@ -11,6 +11,7 @@ import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 import { useDebounce } from "@/hooks";
 import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
 import type { ApiResponse } from "@/types";
+import { updateSessionAction } from "./update-session";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -106,12 +107,16 @@ export const CreateWorkspaceForm = () => {
     }
     const workspace = res.data!;
 
-    if (prevWorkspaces.length === 0) {
-      router.push("/onboarding/account");
-    } else if (domain.includes("localhost")) {
-      window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
-    } else {
-      window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
+    try {
+      await updateSessionAction(workspace);
+    } finally {
+      if (prevWorkspaces.length === 0) {
+        router.push("/onboarding/account");
+      } else if (domain.includes("localhost")) {
+        window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
+      } else {
+        window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
+      }
     }
   };
 
