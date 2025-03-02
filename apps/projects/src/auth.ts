@@ -62,31 +62,24 @@ export const {
   },
 
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
-        const workspaces = await getWorkspaces(user.token);
         return {
           ...token,
           id: user.id,
           accessToken: user.token,
           lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-          workspaces,
         };
       }
 
       if (trigger === "update") {
-        if (session.workspaces) {
-          token.workspaces = session.workspaces;
-        }
-        if (session.activeWorkspace) {
-          token.lastUsedWorkspaceId = session.activeWorkspace.id;
-        }
+        token.lastUsedWorkspaceId = session.activeWorkspace.id;
       }
 
       return token;
     },
-    session({ session, token }) {
-      const workspaces = (token.workspaces || []) as Workspace[];
+    async session({ session, token }) {
+      const workspaces = await getWorkspaces(token.accessToken as string);
       const activeWorkspace =
         workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
         workspaces.at(0);
