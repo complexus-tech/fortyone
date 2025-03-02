@@ -11,7 +11,7 @@ export default async function RootLayout({
   const userRole = session?.user?.userRole;
 
   if (userRole !== "admin") {
-    redirect("/settings");
+    redirect("/settings/account");
   }
 
   return <>{children}</>;
