@@ -1,3 +1,5 @@
+"use client";
+
 import { Button, Dialog, Select, TextArea, Text, Checkbox } from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
