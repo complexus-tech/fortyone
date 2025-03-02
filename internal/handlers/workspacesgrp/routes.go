@@ -46,6 +46,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceId}", h.Update, auth)
 	app.Delete("/workspaces/{workspaceId}", h.Delete, auth)
 	app.Post("/workspaces/{workspaceId}/members", h.AddMember, auth)
+	app.Put("/workspaces/{workspaceId}/members/{userId}/role", h.UpdateMemberRole, auth)
 	app.Delete("/workspaces/{workspaceId}/members/{userId}", h.RemoveMember, auth)
 	app.Post("/workspaces", h.Create, auth)
 	app.Get("/workspaces", h.List, auth)

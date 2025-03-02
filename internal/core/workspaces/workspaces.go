@@ -44,6 +44,7 @@ type Repository interface {
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
+	UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 }
 
 // Service provides user-related operations.
@@ -279,4 +280,26 @@ func (s *Service) CheckSlugAvailability(ctx context.Context, slug string) (bool,
 		attribute.Bool("available", available),
 	))
 	return available, nil
+}
+
+func (s *Service) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
+	s.log.Info(ctx, "business.core.workspaces.updateMemberRole")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.UpdateMemberRole")
+	defer span.End()
+
+	if role == "" {
+		role = "member"
+	}
+
+	if err := s.repo.UpdateMemberRole(ctx, workspaceID, userID, role); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace member role updated.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("role", role),
+	))
+	return nil
 }

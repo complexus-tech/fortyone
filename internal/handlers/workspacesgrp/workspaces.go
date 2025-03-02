@@ -239,6 +239,43 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateMemberRole")
+	defer span.End()
+
+	var input AppUpdateWorkspaceMemberRole
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	userIDParam := web.Params(r, "userId")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
+	}
+
+	if err := h.workspaces.UpdateMemberRole(ctx, workspaceID, userID, input.Role); err != nil {
+		if err == workspaces.ErrNotFound {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace member role updated.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("role", input.Role),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
 func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.CheckSlugAvailability")
 	defer span.End()

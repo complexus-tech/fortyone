@@ -499,3 +499,48 @@ func (r *repo) CheckSlugAvailability(ctx context.Context, slug string) (bool, er
 
 	return !exists, nil
 }
+
+func (r *repo) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.UpdateMemberRole")
+	defer span.End()
+
+	query := `
+		UPDATE workspace_members
+		SET role = :role
+		WHERE workspace_id = :workspace_id AND user_id = :user_id
+	`
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceID,
+		"user_id":      userID,
+		"role":         role,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to update member role: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update member role"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return workspaces.ErrNotFound
+	}
+
+	return nil
+}
