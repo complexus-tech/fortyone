@@ -49,7 +49,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 		WHERE workspace_id = :workspace_id AND team_id = :team_id
 		RETURNING current_sequence
 	`
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": workspaceId,
 	}
@@ -191,7 +191,7 @@ func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.Co
 		WHERE story_id = :story_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"story_id": storyID,
 	}
 
@@ -235,7 +235,7 @@ func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.
 			AND workspace_id = :workspace_id
 		)
 	`
-	params := map[string]interface{}{
+	params := map[string]any{
 		"story_id":     id,
 		"workspace_id": workspaceId,
 	}
@@ -248,7 +248,7 @@ func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.
 	if len(labels) > 0 {
 		// Prepare values for bulk insert
 		values := make([]string, len(labels))
-		args := make([]interface{}, 0, len(labels)*2)
+		args := make([]any, 0, len(labels)*2)
 		for i, labelID := range labels {
 			values[i] = fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
 			args = append(args, id, labelID)
@@ -355,7 +355,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 
 	currentUser, _ := mid.GetUserID(ctx)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"current_user": currentUser,
 	}
@@ -489,7 +489,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					AND s.workspace_id =:workspace_id;
     `
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id":           id,
 		"workspace_id": workspaceId,
 	}
@@ -519,7 +519,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Delete")
 	defer span.End()
-	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
+	params := map[string]any{"id": id, "workspace_id": workspaceId}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, `
 		UPDATE stories 
@@ -552,7 +552,7 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkDelete")
 	defer span.End()
 
-	params := map[string]interface{}{"ids": ids, "workspace_id": workspaceId}
+	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
 
 	query := `
         UPDATE stories 
@@ -585,7 +585,7 @@ func (r *repo) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID)
 			WHERE id = :id
 			AND workspace_id = :workspace_id;
 	`
-	params := map[string]interface{}{"id": id, "workspace_id": workspaceId}
+	params := map[string]any{"id": id, "workspace_id": workspaceId}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -612,7 +612,7 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uui
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkRestore")
 	defer span.End()
 
-	params := map[string]interface{}{"ids": ids, "workspace_id": workspaceId}
+	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
 
 	query := `
 				UPDATE stories
@@ -645,7 +645,7 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 		// We need to get the story's team ID first
 		var teamId uuid.UUID
 		q := `SELECT team_id FROM stories WHERE id = :story_id AND workspace_id = :workspace_id`
-		params := map[string]interface{}{
+		params := map[string]any{
 			"story_id":     id,
 			"workspace_id": workspaceId,
 		}
@@ -781,7 +781,7 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 					AND deleted_at IS NULL
         ORDER BY sequence_id ASC;
     `
-	params := map[string]interface{}{
+	params := map[string]any{
 		"parent_id":    parentId,
 		"workspace_id": workspaceId,
 	}
@@ -889,7 +889,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.CoreActivity, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetActivities")
 	defer span.End()
-	params := map[string]interface{}{"story_id": storyID}
+	params := map[string]any{"story_id": storyID}
 
 	q := `
 		SELECT 
@@ -982,7 +982,7 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.C
 		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL ORDER BY sc.created_at ASC
 	`
 
-	params := map[string]interface{}{"story_id": storyID}
+	params := map[string]any{"story_id": storyID}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -1011,7 +1011,7 @@ func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUI
 			AND team_id = :team_id
 		)
 	`
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id": statusId,
 		"team_id":   teamId,
 	}
