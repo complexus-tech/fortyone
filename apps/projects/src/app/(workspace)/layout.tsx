@@ -8,7 +8,7 @@ import { getStatuses } from "@/lib/queries/states/get-states";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
-import { auth, updateSession } from "@/auth";
+import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getMembers } from "@/lib/queries/members/get-members";
 import {
@@ -63,12 +63,6 @@ export default async function RootLayout({
 
   if (workspaces.length === 0) {
     redirect("/onboarding/create");
-  }
-
-  if (!session?.workspaces.find((w) => w.id === workspace?.id)) {
-    await updateSession({
-      activeWorkspace: workspace,
-    });
   }
 
   if (!workspace) {
