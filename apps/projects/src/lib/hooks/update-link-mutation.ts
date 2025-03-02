@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { linkKeys } from "@/constants/keys";
 import type { Link } from "@/types";
-import type { UpdateLink} from "../actions/links/update-link";
+import type { UpdateLink } from "../actions/links/update-link";
 import { updateLinkAction } from "../actions/links/update-link";
 
 export const useUpdateLinkMutation = () => {
@@ -18,18 +18,7 @@ export const useUpdateLinkMutation = () => {
       payload: UpdateLink;
       storyId: string;
     }) => updateLinkAction(linkId, payload, storyId),
-    onError: (_, variables) => {
-      toast.error("Failed to update link", {
-        description: "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
-        },
-      });
-      queryClient.invalidateQueries({
-        queryKey: linkKeys.story(variables.storyId),
-      });
-    },
+
     onMutate: (newLink) => {
       const previousLinks = queryClient.getQueryData<Link[]>(
         linkKeys.story(newLink.storyId),
@@ -43,6 +32,25 @@ export const useUpdateLinkMutation = () => {
           updatedLinks,
         );
       }
+      return { previousLinks };
+    },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(
+        linkKeys.story(variables.storyId),
+        context?.previousLinks,
+      );
+      toast.error("Failed to update link", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onSettled: (_, __, { storyId }) => {
       queryClient.invalidateQueries({

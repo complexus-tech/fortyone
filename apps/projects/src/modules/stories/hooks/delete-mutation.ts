@@ -12,21 +12,8 @@ export const useBulkDeleteStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
-    onError: (err, storyIds) => {
-      toast.error("Failed to delete stories", {
-        description:
-          err.message || "An error occurred while deleting the story",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(storyIds);
-          },
-        },
-      });
-    },
     onMutate: (storyIds) => {
       const activeQueries = queryClient.getQueryCache().getAll();
-
       activeQueries.forEach((query) => {
         queryClient.setQueryData<Story[]>(query.queryKey, () => {
           return (query.state.data as Story[]).filter(
@@ -36,6 +23,24 @@ export const useBulkDeleteStoryMutation = () => {
       });
 
       return storyIds;
+    },
+    onError: (error, storyIds) => {
+      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
+
+      toast.error("Failed to delete stories", {
+        description:
+          error.message || "An error occurred while deleting the story",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(storyIds);
+          },
+        },
+      });
     },
     onSuccess: (_, storyIds) => {
       toast.success("Success", {
@@ -54,6 +59,9 @@ export const useBulkDeleteStoryMutation = () => {
       });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
     },
   });
 

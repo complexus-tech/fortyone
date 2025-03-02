@@ -16,17 +16,7 @@ export const useUpdateStoryMutation = () => {
       storyId: string;
       payload: Partial<DetailedStory>;
     }) => updateStoryAction(storyId, payload),
-    onError: (error, variables) => {
-      toast.error("Failed to update story", {
-        description: error.message || "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: ({ storyId, payload }) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
@@ -51,6 +41,25 @@ export const useUpdateStoryMutation = () => {
             ),
           );
         }
+      });
+
+      return { previousStory };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousStory) {
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(variables.storyId),
+          context.previousStory,
+        );
+      }
+      toast.error("Failed to update story", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
       });
     },
     onSettled: (storyId) => {

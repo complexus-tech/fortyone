@@ -4,6 +4,7 @@ import { revalidateTag } from "next/cache";
 import type { StateCategory } from "@/types/states";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
+import { getApiError } from "@/utils";
 import { objectiveTags } from "../../constants";
 import type { ObjectiveStatus } from "../../types";
 
@@ -16,16 +17,15 @@ export type NewObjectiveStatus = {
 export const createObjectiveStatusAction = async (
   newStatus: NewObjectiveStatus,
 ) => {
-  const response = await post<NewObjectiveStatus, ApiResponse<ObjectiveStatus>>(
-    "objective-statuses",
-    newStatus,
-  );
-
-  revalidateTag(objectiveTags.statuses());
-
-  if (!response.data) {
-    throw new Error("Failed to create objective status");
+  try {
+    const response = await post<
+      NewObjectiveStatus,
+      ApiResponse<ObjectiveStatus>
+    >("objective-statuses", newStatus);
+    revalidateTag(objectiveTags.statuses());
+    return response.data;
+  } catch (error) {
+    const res = getApiError(error);
+    throw new Error(res.error?.message || "Failed to create objective status");
   }
-
-  return response.data;
 };

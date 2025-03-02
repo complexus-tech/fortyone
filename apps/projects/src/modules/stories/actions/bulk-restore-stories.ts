@@ -4,20 +4,29 @@ import { revalidateTag } from "next/cache";
 import { post } from "@/lib/http";
 import { storyTags } from "@/modules/stories/constants";
 import type { ApiResponse } from "@/types";
+import { getApiError } from "@/utils";
 
 type Payload = {
   storyIds: string[];
 };
 
 export const bulkRestoreAction = async (storyIds: string[]) => {
-  const stories = await post<Payload, ApiResponse<Payload>>("stories/restore", {
-    storyIds,
-  });
-  storyIds.forEach((storyId) => {
-    revalidateTag(storyTags.detail(storyId));
-  });
-  revalidateTag(storyTags.teams());
-  revalidateTag(storyTags.mine());
+  try {
+    const stories = await post<Payload, ApiResponse<Payload>>(
+      "stories/restore",
+      {
+        storyIds,
+      },
+    );
+    storyIds.forEach((storyId) => {
+      revalidateTag(storyTags.detail(storyId));
+    });
+    revalidateTag(storyTags.teams());
+    revalidateTag(storyTags.mine());
 
-  return stories.data;
+    return stories.data;
+  } catch (error) {
+    const res = getApiError(error);
+    throw new Error(res.error?.message || "Failed to restore stories");
+  }
 };

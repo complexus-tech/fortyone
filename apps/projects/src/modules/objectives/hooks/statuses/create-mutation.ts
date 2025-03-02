@@ -41,7 +41,7 @@ export const useCreateObjectiveStatusMutation = () => {
       return { previousStatuses };
     },
 
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousStatuses) {
         queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
@@ -49,7 +49,7 @@ export const useCreateObjectiveStatusMutation = () => {
         );
       }
       toast.error("Failed to create status", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         id: toastId,
         action: {
           label: "Retry",

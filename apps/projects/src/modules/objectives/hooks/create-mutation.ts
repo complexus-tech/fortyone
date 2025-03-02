@@ -11,18 +11,7 @@ export const useCreateObjectiveMutation = () => {
 
   const mutation = useMutation({
     mutationFn: createObjective,
-    onError: (error, variables) => {
-      toast.error("Failed to create objective", {
-        description:
-          error.message || "An error occurred while creating the objective",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: (newObjective) => {
       const previousObjectives = queryClient.getQueryData<Objective[]>(
         objectiveKeys.list(),
@@ -61,6 +50,24 @@ export const useCreateObjectiveMutation = () => {
         ]);
       }
       return { previousObjectives };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousObjectives) {
+        queryClient.setQueryData<Objective[]>(
+          objectiveKeys.list(),
+          context.previousObjectives,
+        );
+      }
+      toast.error("Failed to create objective", {
+        description:
+          error.message || "An error occurred while creating the objective",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
     onSuccess: () => {
       toast.success("Success", {

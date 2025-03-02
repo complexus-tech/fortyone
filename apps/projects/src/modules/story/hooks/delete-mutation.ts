@@ -12,18 +12,7 @@ export const useDeleteStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: deleteStoryAction,
-    onError: (error, storyId) => {
-      toast.error("Failed to delete story", {
-        description:
-          error.message || "An error occurred while deleting the story",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(storyId);
-          },
-        },
-      });
-    },
+
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
@@ -34,6 +23,26 @@ export const useDeleteStoryMutation = () => {
           deletedAt: new Date().toISOString(),
         });
       }
+
+      return { previousStory };
+    },
+    onError: (error, storyId, context) => {
+      if (context?.previousStory) {
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(storyId),
+          context.previousStory,
+        );
+      }
+      toast.error("Failed to delete story", {
+        description:
+          error.message || "An error occurred while deleting the story",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(storyId);
+          },
+        },
+      });
     },
     onSuccess: (storyId) => {
       toast.success("Success", {

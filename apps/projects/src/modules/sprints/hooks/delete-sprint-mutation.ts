@@ -24,10 +24,12 @@ export const useDeleteSprintMutation = () => {
 
       return { previousSprints };
     },
-    onError: (_, sprintId) => {
-      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
+    onError: (error, sprintId, context) => {
+      if (context?.previousSprints) {
+        queryClient.setQueryData(sprintKeys.lists(), context.previousSprints);
+      }
       toast.error("Failed to delete sprint", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

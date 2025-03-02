@@ -15,18 +15,7 @@ export const useDeleteCommentMutation = () => {
       commentId: string;
       storyId: string;
     }) => deleteCommentAction(commentId, storyId),
-    onError: (_, variables) => {
-      toast.error("Failed to delete comment", {
-        description: "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
-        },
-      });
-      queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(variables.storyId),
-      });
-    },
+
     onMutate: ({ commentId, storyId }) => {
       const previousComments = queryClient.getQueryData<Comment[]>(
         storyKeys.comments(storyId),
@@ -37,6 +26,25 @@ export const useDeleteCommentMutation = () => {
           previousComments.filter((comment) => comment.id !== commentId),
         );
       }
+      return { previousComments };
+    },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(
+        storyKeys.comments(variables.storyId),
+        context?.previousComments,
+      );
+      toast.error("Failed to delete comment", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.comments(variables.storyId),
+      });
     },
     onSettled: (_, __, { storyId }) => {
       queryClient.invalidateQueries({

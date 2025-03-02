@@ -27,12 +27,12 @@ export const useUpdateProfileMutation = () => {
       return { previousProfile };
     },
 
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousProfile) {
         queryClient.setQueryData(userKeys.profile(), context.previousProfile);
       }
       toast.error("Failed to update profile", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

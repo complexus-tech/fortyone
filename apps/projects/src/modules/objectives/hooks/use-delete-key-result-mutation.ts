@@ -15,18 +15,7 @@ export const useDeleteKeyResultMutation = () => {
   const mutation = useMutation({
     mutationFn: ({ keyResultId, objectiveId }: DeleteKeyResultVariables) =>
       deleteKeyResult(keyResultId, objectiveId),
-    onError: (error, variables) => {
-      toast.error("Failed to delete key result", {
-        description:
-          error.message || "An error occurred while deleting the key result",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: async ({ keyResultId, objectiveId }) => {
       await queryClient.cancelQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),
@@ -46,7 +35,24 @@ export const useDeleteKeyResultMutation = () => {
 
       return { previousKeyResults };
     },
-
+    onError: (error, variables, context) => {
+      if (context?.previousKeyResults) {
+        queryClient.setQueryData<KeyResult[]>(
+          objectiveKeys.keyResults(variables.objectiveId),
+          context.previousKeyResults,
+        );
+      }
+      toast.error("Failed to delete key result", {
+        description:
+          error.message || "An error occurred while deleting the key result",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+    },
     onSettled: (_, __, { objectiveId }) => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),

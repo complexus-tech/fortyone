@@ -40,7 +40,7 @@ export const useCreateStateMutation = () => {
       return { previousStates };
     },
 
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
           statusKeys.lists(),
@@ -48,7 +48,7 @@ export const useCreateStateMutation = () => {
         );
       }
       toast.error("Failed to create state", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         id: toastId,
         action: {
           label: "Retry",

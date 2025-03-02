@@ -9,18 +9,7 @@ export const useRestoreStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: restoreStoryAction,
-    onError: (error, storyId) => {
-      toast.error("Failed to restore story", {
-        description:
-          error.message || "An error occurred while restoring the story",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(storyId);
-          },
-        },
-      });
-    },
+
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
@@ -31,6 +20,26 @@ export const useRestoreStoryMutation = () => {
           deletedAt: null,
         });
       }
+
+      return { previousStory };
+    },
+    onError: (error, storyId, context) => {
+      if (context?.previousStory) {
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(storyId),
+          context.previousStory,
+        );
+      }
+      toast.error("Failed to restore story", {
+        description:
+          error.message || "An error occurred while restoring the story",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(storyId);
+          },
+        },
+      });
     },
     onSuccess: () => {
       toast.success("Success", {

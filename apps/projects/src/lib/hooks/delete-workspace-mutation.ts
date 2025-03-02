@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { deleteWorkspaceAction } from "@/lib/actions/workspaces/delete-workspace";
 import { workspaceKeys } from "@/constants/keys";
 import type { Workspace } from "@/types";
@@ -6,7 +7,7 @@ import type { Workspace } from "@/types";
 export const useDeleteWorkspaceMutation = (id: string) => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: () => deleteWorkspaceAction(id),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
@@ -23,8 +24,25 @@ export const useDeleteWorkspaceMutation = (id: string) => {
 
       return { previousWorkspaces };
     },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(
+        workspaceKeys.lists(),
+        context?.previousWorkspaces,
+      );
+      toast.error("Failed to delete workspace", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
+
+  return mutation;
 };

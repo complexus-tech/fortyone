@@ -21,18 +21,7 @@ export const useUpdateKeyResultMutation = () => {
       data,
     }: UpdateKeyResultVariables) =>
       updateKeyResult(keyResultId, objectiveId, data),
-    onError: (error, variables) => {
-      toast.error("Failed to update key result", {
-        description:
-          error.message || "An error occurred while updating the key result",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: async ({ keyResultId, objectiveId, data }) => {
       await queryClient.cancelQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),
@@ -60,6 +49,24 @@ export const useUpdateKeyResultMutation = () => {
       );
 
       return { previousKeyResults };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousKeyResults) {
+        queryClient.setQueryData<KeyResult[]>(
+          objectiveKeys.keyResults(variables.objectiveId),
+          context.previousKeyResults,
+        );
+      }
+      toast.error("Failed to update key result", {
+        description:
+          error.message || "An error occurred while updating the key result",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
     onSettled: (_, __, { objectiveId }) => {
       queryClient.invalidateQueries({

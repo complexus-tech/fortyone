@@ -73,6 +73,7 @@ export const useUpdateObjectiveMutation = () => {
         );
       }
       toast.error("Failed to update objective", {
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

@@ -10,20 +10,7 @@ export const useCreateLinkMutation = () => {
 
   const mutation = useMutation({
     mutationFn: (newLink: NewLink) => createLinkAction(newLink),
-    onError: (_, variables) => {
-      toast.error("Failed to create link", {
-        description: "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-      queryClient.invalidateQueries({
-        queryKey: linkKeys.story(variables.storyId),
-      });
-    },
+
     onMutate: (newLink) => {
       const optimisticLink: Link = {
         ...newLink,
@@ -42,6 +29,25 @@ export const useCreateLinkMutation = () => {
           optimisticLink,
         ]);
       }
+      return { previousLinks };
+    },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(
+        linkKeys.story(variables.storyId),
+        context?.previousLinks,
+      );
+      toast.error("Failed to create link", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onSuccess: (newLink) => {
       queryClient.invalidateQueries({

@@ -42,9 +42,12 @@ export const useUpdateSprintMutation = () => {
 
       return { previousSprints };
     },
-    onError: (_, variables) => {
+    onError: (error, variables, context) => {
+      if (context?.previousSprints) {
+        queryClient.setQueryData(sprintKeys.lists(), context.previousSprints);
+      }
       toast.error("Failed to update sprint", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

@@ -12,17 +12,7 @@ export const useUpdateLabelsMutation = () => {
   const mutation = useMutation({
     mutationFn: ({ storyId, labels }: { storyId: string; labels: string[] }) =>
       updateLabelsAction(storyId, labels),
-    onError: (error, variables) => {
-      toast.error("Failed to update labels", {
-        description: error.message || "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: ({ storyId, labels }) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
@@ -47,6 +37,25 @@ export const useUpdateLabelsMutation = () => {
             ),
           );
         }
+      });
+
+      return { previousStory };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousStory) {
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(variables.storyId),
+          context.previousStory,
+        );
+      }
+      toast.error("Failed to update labels", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
       });
     },
     onSettled: (storyId) => {

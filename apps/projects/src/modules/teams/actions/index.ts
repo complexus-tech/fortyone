@@ -14,7 +14,8 @@ export async function createTeam(input: CreateTeamInput) {
     revalidateTag(statusTags.lists());
     return team;
   } catch (error) {
-    return getApiError(error);
+    const res = getApiError(error);
+    throw new Error(res.error?.message || "Failed to create team");
   }
 }
 
@@ -22,23 +23,15 @@ export async function updateTeam(
   teamId: string,
   input: UpdateTeamInput,
 ): Promise<Team> {
-  const team = await put<UpdateTeamInput, ApiResponse<Team>>(
-    `teams/${teamId}`,
-    input,
-  );
-  revalidateTag(teamTags.detail(teamId));
-  revalidateTag(teamTags.lists());
-  return team.data!;
-}
-
-export async function addTeamMember(
-  teamId: string,
-  userId: string,
-  role: "admin" | "member",
-): Promise<void> {
-  await post<{ userId: string; role: string }, ApiResponse<void>>(
-    `teams/${teamId}/members`,
-    { userId, role },
-  );
-  revalidateTag(teamTags.lists());
+  try {
+    const team = await put<UpdateTeamInput, ApiResponse<Team>>(
+      `teams/${teamId}`,
+      input,
+    );
+    revalidateTag(teamTags.detail(teamId));
+    return team.data!;
+  } catch (error) {
+    const res = getApiError(error);
+    throw new Error(res.error?.message || "Failed to update team");
+  }
 }

@@ -59,7 +59,7 @@ export const useCreateSprintMutation = () => {
 
       return { previousTeamSprints, previousSprints };
     },
-    onError: (_, newSprint, context) => {
+    onError: (error, newSprint, context) => {
       if (context?.previousTeamSprints) {
         queryClient.setQueryData(
           sprintKeys.team(newSprint.teamId),
@@ -71,7 +71,7 @@ export const useCreateSprintMutation = () => {
       }
 
       toast.error("Failed to create sprint", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

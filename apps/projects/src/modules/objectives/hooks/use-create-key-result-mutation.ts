@@ -11,18 +11,7 @@ export const useCreateKeyResultMutation = () => {
 
   const mutation = useMutation({
     mutationFn: createKeyResult,
-    onError: (error, variables) => {
-      toast.error("Failed to create key result", {
-        description:
-          error.message || "An error occurred while creating the key result",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
-          },
-        },
-      });
-    },
+
     onMutate: async (newKeyResult: NewObjectiveKeyResult) => {
       await queryClient.cancelQueries({
         queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
@@ -50,6 +39,24 @@ export const useCreateKeyResultMutation = () => {
       });
 
       return { previousKeyResults };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousKeyResults) {
+        queryClient.setQueryData<KeyResult[]>(
+          objectiveKeys.keyResults(variables.objectiveId),
+          context.previousKeyResults,
+        );
+      }
+      toast.error("Failed to create key result", {
+        description:
+          error.message || "An error occurred while creating the key result",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
     onSettled: (_, __, newKeyResult) => {
       queryClient.invalidateQueries({

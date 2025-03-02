@@ -32,7 +32,7 @@ export const useUpdateStateMutation = () => {
 
       return { previousStates };
     },
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
           statusKeys.lists(),
@@ -40,7 +40,7 @@ export const useUpdateStateMutation = () => {
         );
       }
       toast.error("Failed to update link", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

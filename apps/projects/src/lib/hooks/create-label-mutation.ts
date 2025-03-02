@@ -10,12 +10,14 @@ export const useCreateLabelMutation = () => {
 
   const mutation = useMutation({
     mutationFn: (newLabel: NewLabel) => createLabelAction(newLabel),
-    onError: (_, variables) => {
+    onError: (error, variables) => {
       toast.error("Failed to create label", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
+          onClick: () => {
+            mutation.mutate(variables);
+          },
         },
       });
       queryClient.invalidateQueries({

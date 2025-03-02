@@ -21,7 +21,7 @@ export const useDeleteObjectiveStatusMutation = () => {
       }
       return { previousStatuses };
     },
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousStatuses) {
         queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
@@ -29,7 +29,7 @@ export const useDeleteObjectiveStatusMutation = () => {
         );
       }
       toast.error("Failed to delete status", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

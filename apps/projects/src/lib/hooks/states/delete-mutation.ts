@@ -21,7 +21,7 @@ export const useDeleteStateMutation = () => {
       }
       return { previousStates };
     },
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
           statusKeys.lists(),
@@ -29,7 +29,7 @@ export const useDeleteStateMutation = () => {
         );
       }
       toast.error("Failed to delete state", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

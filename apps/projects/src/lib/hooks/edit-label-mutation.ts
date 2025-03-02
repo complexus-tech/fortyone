@@ -34,12 +34,12 @@ export const useEditLabelMutation = () => {
 
       return { previousLabels };
     },
-    onError: (_, variables, context) => {
+    onError: (error, variables, context) => {
       if (context?.previousLabels) {
         queryClient.setQueryData(labelKeys.lists(), context.previousLabels);
       }
       toast.error("Failed to update label", {
-        description: "Your changes were not saved",
+        description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
           onClick: () => {

@@ -10,18 +10,7 @@ export const useDeleteLinkMutation = () => {
   const mutation = useMutation({
     mutationFn: ({ linkId, storyId }: { linkId: string; storyId: string }) =>
       deleteLinkAction(linkId, storyId),
-    onError: (_, variables) => {
-      toast.error("Failed to delete link", {
-        description: "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => { mutation.mutate(variables); },
-        },
-      });
-      queryClient.invalidateQueries({
-        queryKey: linkKeys.story(variables.storyId),
-      });
-    },
+
     onMutate: ({ linkId, storyId }) => {
       const previousLinks = queryClient.getQueryData<Link[]>(
         linkKeys.story(storyId),
@@ -32,6 +21,25 @@ export const useDeleteLinkMutation = () => {
           previousLinks.filter((link) => link.id !== linkId),
         );
       }
+      return { previousLinks };
+    },
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(
+        linkKeys.story(variables.storyId),
+        context?.previousLinks,
+      );
+      toast.error("Failed to delete link", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.story(variables.storyId),
+      });
     },
     onSettled: (_, __, { storyId }) => {
       queryClient.invalidateQueries({
