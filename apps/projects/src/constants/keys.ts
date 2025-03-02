@@ -105,3 +105,7 @@ export const userTags = {
   all: "users" as const,
   profile: () => `${userTags.all}-profile` as const,
 };
+
+export const invitationKeys = {
+  pending: ["pending-invitations"] as const,
+};
