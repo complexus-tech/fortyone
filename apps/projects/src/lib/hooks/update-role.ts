@@ -15,15 +15,17 @@ export const useUpdateRoleMutation = () => {
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.lists(),
       );
-      const previousMember = previousMembers?.find(
-        (member) => member.id === userId,
-      );
-      if (previousMember) {
-        const member: Member = { ...previousMember, role };
-        queryClient.setQueryData(memberKeys.lists(), [
-          ...(previousMembers || []),
-          member,
-        ]);
+
+      if (previousMembers) {
+        queryClient.setQueryData(
+          memberKeys.lists(),
+          previousMembers.map((member) => {
+            if (member.id === userId) {
+              return { ...member, role };
+            }
+            return member;
+          }),
+        );
       }
       return { previousMembers };
     },
