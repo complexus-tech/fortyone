@@ -11,19 +11,11 @@ const createClient = async () => {
   const headersList = await headers();
   const subdomain = headersList.get("host")!.split(".")[0];
   const session = await auth();
-  // let workspace: Workspace | undefined;
 
   const workspaces = session?.workspaces || [];
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );
-  // if (!workspace) {
-  //   const newWorkspaces = await getWorkspaces(session!.token);
-  //   workspace = newWorkspaces.find(
-  //     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-  //   );
-  //   await updateSession({ activeWorkspace: workspace });
-  // }
 
   const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
   return ky.create({
