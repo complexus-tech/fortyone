@@ -25,7 +25,6 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
-import { updateSessionAction } from "./update-session";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -68,10 +67,6 @@ export default async function RootLayout({
 
   if (!workspace) {
     redirect("/unauthorized");
-  }
-
-  if (!session?.workspaces.find((w) => w.id === workspace.id)) {
-    await updateSessionAction(workspace);
   }
 
   await Promise.all([
