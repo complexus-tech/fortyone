@@ -8,7 +8,7 @@ import { getStatuses } from "@/lib/queries/states/get-states";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
-import { auth, updateSession } from "@/auth";
+import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { getMembers } from "@/lib/queries/members/get-members";
 import {
@@ -25,6 +25,7 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
+import { updateSessionAction } from "./update-session";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -65,14 +66,12 @@ export default async function RootLayout({
     redirect("/onboarding/create");
   }
 
-  if (!session?.workspaces.find((w) => w.id === workspace?.id)) {
-    await updateSession({
-      activeWorkspace: workspace,
-    });
-  }
-
   if (!workspace) {
     redirect("/unauthorized");
+  }
+
+  if (!session?.workspaces.find((w) => w.id === workspace.id)) {
+    await updateSessionAction(workspace);
   }
 
   await Promise.all([
