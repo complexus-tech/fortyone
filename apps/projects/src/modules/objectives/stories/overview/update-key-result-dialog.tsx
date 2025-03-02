@@ -126,7 +126,7 @@ export const UpdateKeyResultDialog = ({
               ) : (
                 <>
                   <Input
-                    className="h-[2.7rem]"
+                    className="h-[2.7rem] opacity-50"
                     label="Starting Value"
                     onChange={(e) => {
                       setForm({
@@ -154,7 +154,7 @@ export const UpdateKeyResultDialog = ({
                     value={form.currentValue}
                   />
                   <Input
-                    className="h-[2.7rem]"
+                    className="h-[2.7rem] opacity-50"
                     label="Target Value"
                     onChange={(e) => {
                       setForm({

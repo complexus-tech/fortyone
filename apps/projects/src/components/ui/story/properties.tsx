@@ -17,6 +17,7 @@ import type { StateCategory } from "@/types/states";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useUserRole } from "@/hooks";
 
 type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
@@ -46,7 +47,8 @@ export const StoryProperties = ({
   const selectedObjective = objectives.find(
     (objective) => objective.id === objectiveId,
   );
-
+  const { userRole } = useUserRole();
+  const isGuest = userRole === "guest";
   const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
@@ -60,6 +62,7 @@ export const StoryProperties = ({
               <Button
                 className="gap-1 pr-2"
                 color="tertiary"
+                disabled={isGuest}
                 size="xs"
                 type="button"
                 variant="outline"
@@ -89,6 +92,7 @@ export const StoryProperties = ({
               <Button
                 className="gap-1 pr-2"
                 color="tertiary"
+                disabled={isGuest}
                 size="xs"
                 type="button"
                 variant="outline"
@@ -139,6 +143,7 @@ export const StoryProperties = ({
                     "px-2": !asKanban,
                   })}
                   color="tertiary"
+                  disabled={isGuest}
                   rounded={asKanban ? "md" : "xl"}
                   size="xs"
                   type="button"
@@ -171,6 +176,7 @@ export const StoryProperties = ({
                 <Button
                   className="gap-1 pr-2"
                   color="tertiary"
+                  disabled={isGuest}
                   rounded={asKanban ? "md" : "xl"}
                   size="xs"
                   type="button"
@@ -233,6 +239,7 @@ export const StoryProperties = ({
                     "px-2": !asKanban,
                   })}
                   color="tertiary"
+                  disabled={isGuest}
                   rounded={asKanban ? "md" : "xl"}
                   size="xs"
                   type="button"

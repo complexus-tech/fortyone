@@ -11,7 +11,8 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce, useIsOwner, useUserRole } from "@/hooks";
+import { useDebounce } from "@/hooks";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import {
   useDeleteObjectiveMutation,
   useObjective,
@@ -30,13 +31,10 @@ export const Overview = () => {
     objectiveId: string;
   }>();
   const { data: objective } = useObjective(objectiveId);
-  const { userRole } = useUserRole();
-  const { isEntityOwner } = useIsOwner(objective?.createdBy);
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
-
-  const canUpdate = userRole === "admin" || isEntityOwner;
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -62,7 +60,7 @@ export const Overview = () => {
       Placeholder.configure({ placeholder: "Objective name..." }),
     ],
     content: objective?.name || "",
-    editable: canUpdate,
+    editable: isAdminOrOwner,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         name: editor.getText(),
@@ -80,7 +78,7 @@ export const Overview = () => {
       Placeholder.configure({ placeholder: "Objective description..." }),
     ],
     content: objective?.description || "",
-    editable: canUpdate,
+    editable: isAdminOrOwner,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         description: editor.getHTML(),
@@ -106,7 +104,7 @@ export const Overview = () => {
                 className="text-4xl font-medium"
                 editor={nameEditor}
               />
-              {canUpdate ? (
+              {isAdminOrOwner ? (
                 <Menu>
                   <Menu.Button>
                     <Button

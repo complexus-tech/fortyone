@@ -5,6 +5,7 @@ import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
+import { useUserRole } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
@@ -25,7 +26,7 @@ export const StoriesKanbanHeader = ({
   const { viewOptions } = useBoard();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
-
+  const { userRole } = useUserRole();
   const filteredStories =
     groupBy === "Status"
       ? stories.filter((story) => story.statusId === status?.id)
@@ -69,8 +70,11 @@ export const StoriesKanbanHeader = ({
           </Button>
           <Button
             color="tertiary"
+            disabled={userRole === "guest"}
             onClick={() => {
-              setIsOpen(true);
+              if (userRole !== "guest") {
+                setIsOpen(true);
+              }
             }}
             size="sm"
             variant="naked"

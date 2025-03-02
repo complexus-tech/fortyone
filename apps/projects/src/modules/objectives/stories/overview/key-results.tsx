@@ -16,7 +16,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
-import { useIsOwner, useUserRole } from "@/hooks";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
@@ -73,9 +73,7 @@ const Okr = ({
   createdBy,
   updatedAt,
 }: KeyResult) => {
-  const { isEntityOwner } = useIsOwner(createdBy);
-  const { userRole } = useUserRole();
-  const canDelete = userRole === "admin" || isEntityOwner;
+  const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { data: members = [] } = useMembers();
@@ -146,7 +144,7 @@ const Okr = ({
           </Flex>
         </Flex>
 
-        {userRole !== "guest" ? (
+        {isAdminOrOwner ? (
           <Box className="h-full py-2 pl-6">
             <Menu>
               <Menu.Button>
@@ -170,16 +168,14 @@ const Okr = ({
                     <EditIcon />
                     Update...
                   </Menu.Item>
-                  {canDelete ? (
-                    <Menu.Item
-                      onSelect={() => {
-                        setIsDeleteOpen(true);
-                      }}
-                    >
-                      <DeleteIcon />
-                      Delete
-                    </Menu.Item>
-                  ) : null}
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsDeleteOpen(true);
+                    }}
+                  >
+                    <DeleteIcon />
+                    Delete
+                  </Menu.Item>
                 </Menu.Group>
               </Menu.Items>
             </Menu>

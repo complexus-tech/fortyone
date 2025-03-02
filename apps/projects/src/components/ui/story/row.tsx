@@ -9,6 +9,7 @@ import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
+import { useUserRole } from "@/hooks";
 import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
 import { AssigneesMenu } from "./assignees-menu";
@@ -19,6 +20,7 @@ import { StoryProperties } from "./properties";
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
+  const { userRole } = useUserRole();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
   });
@@ -53,6 +55,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             <Checkbox
               checked={selectedStories.includes(story.id)}
               className="absolute -left-[1.6rem] rounded-[0.35rem]"
+              disabled={userRole === "guest"}
               onCheckedChange={(checked) => {
                 setSelectedStories(
                   checked
@@ -123,7 +126,11 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 >
                   <span>
                     <AssigneesMenu.Trigger>
-                      <button className="flex" type="button">
+                      <button
+                        className="flex"
+                        disabled={userRole === "guest"}
+                        type="button"
+                      >
                         <Avatar
                           color="tertiary"
                           name={selectedAssignee?.fullName}

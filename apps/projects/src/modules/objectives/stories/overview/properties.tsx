@@ -3,21 +3,26 @@ import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
 
 export const Properties = () => {
+  const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
   const updateMutation = useUpdateObjectiveMutation();
   const leadUser = members.find((m) => m.id === objective?.leadUser);
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -37,6 +42,7 @@ export const Properties = () => {
         <ObjectiveStatusesMenu.Trigger>
           <Button
             color="tertiary"
+            disabled={!canUpdate}
             leftIcon={<ObjectiveStatusIcon statusId={objective?.statusId} />}
             size="sm"
             type="button"
@@ -56,6 +62,7 @@ export const Properties = () => {
         <PrioritiesMenu.Trigger>
           <Button
             color="tertiary"
+            disabled={!canUpdate}
             leftIcon={<PriorityIcon priority={objective?.priority} />}
             size="sm"
             type="button"
@@ -78,6 +85,7 @@ export const Properties = () => {
               "text-gray-200 dark:text-gray-300": !objective?.leadUser,
             })}
             color="tertiary"
+            disabled={!canUpdate}
             leftIcon={
               <Avatar
                 className={cn({
@@ -112,6 +120,7 @@ export const Properties = () => {
         <DatePicker.Trigger>
           <Button
             color="tertiary"
+            disabled={!canUpdate}
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem] w-auto", {
@@ -147,6 +156,7 @@ export const Properties = () => {
               "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
             })}
             color="tertiary"
+            disabled={!canUpdate}
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem]", {

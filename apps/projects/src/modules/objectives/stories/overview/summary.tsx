@@ -3,6 +3,8 @@ import { Box, Text, Wrapper, ProgressBar, Flex, DatePicker } from "ui";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
 import { differenceInDays, format } from "date-fns";
+import { useSession } from "next-auth/react";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
 import { useUpdateObjectiveMutation } from "../../hooks";
@@ -22,10 +24,13 @@ const getProgress = (keyResult: KeyResult) => {
 };
 
 export const Summary = () => {
+  const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const updateObjective = useUpdateObjectiveMutation();
   const { data: objective } = useObjective(objectiveId);
   const { data: keyResults = [] } = useKeyResults(objectiveId);
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const progress =
     Math.round(
@@ -129,16 +134,23 @@ export const Summary = () => {
             <CalendarIcon className="relative -left-1 h-10 opacity-30" />
             <Box>
               <Text color="muted">No target date</Text>
-
               <DatePicker>
                 <DatePicker.Trigger>
-                  <button className="text-primary" type="button">
+                  <button
+                    className={cn("text-primary", {
+                      "cursor-not-allowed opacity-50": !canUpdate,
+                    })}
+                    disabled={!canUpdate}
+                    type="button"
+                  >
                     Set target date
                   </button>
                 </DatePicker.Trigger>
                 <DatePicker.Calendar
                   onDayClick={(day) => {
-                    handleSetTargetDate(day.toISOString());
+                    if (canUpdate) {
+                      handleSetTargetDate(day.toISOString());
+                    }
                   }}
                   selected={
                     objective?.startDate

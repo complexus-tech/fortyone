@@ -8,6 +8,7 @@ import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-bu
 import type { State } from "@/types/states";
 import { useBoard } from "@/components/ui/board-context";
 import type { Member } from "@/types";
+import { useUserRole } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
@@ -35,6 +36,7 @@ export const StoriesHeader = ({
   const count = stories.length;
   const [isOpen, setIsOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
+  const { userRole } = useUserRole();
 
   const groupedStories = stories.map((s) => s.id);
 
@@ -54,6 +56,7 @@ export const StoriesHeader = ({
           <Checkbox
             checked={groupedStories.every((s) => selectedStories.includes(s))}
             className="absolute -left-[1.6rem] rounded-[0.35rem]"
+            disabled={userRole === "guest"}
             onCheckedChange={(checked) => {
               if (checked) {
                 setSelectedStories(
@@ -132,11 +135,14 @@ export const StoriesHeader = ({
           <Tooltip side="top" title="New Story">
             <Button
               color="tertiary"
+              disabled={userRole === "guest"}
               leftIcon={
                 <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
               }
               onClick={() => {
-                setIsOpen(true);
+                if (userRole !== "guest") {
+                  setIsOpen(true);
+                }
               }}
               size="sm"
               variant="outline"

@@ -3,6 +3,7 @@ import { TagsIcon } from "icons";
 import { cn } from "lib";
 import { useLabels } from "@/lib/hooks/labels";
 import { useUpdateLabelsMutation } from "@/modules/story/hooks/update-labels-mutation";
+import { useUserRole } from "@/hooks";
 import { StoryLabel } from "../label";
 import { LabelsMenu } from "./labels-menu";
 
@@ -22,7 +23,7 @@ export const Labels = ({
   const labels = allLabels.filter((label) => storyLabels.includes(label.id));
   const firstTwoLabels = labels.slice(0, 2);
   const remainingLabels = labels.slice(2);
-
+  const { userRole } = useUserRole();
   const handleUpdateLabels = async (labels: string[] = []) => {
     await mutateAsync({ storyId, labels });
   };
@@ -38,7 +39,11 @@ export const Labels = ({
       {firstTwoLabels.map((label) => (
         <LabelsMenu key={label.id}>
           <LabelsMenu.Trigger>
-            <span>
+            <span
+              className={cn({
+                "pointer-events-none cursor-not-allowed": userRole === "guest",
+              })}
+            >
               <StoryLabel {...label} isRectangular={isRectangular} />
             </span>
           </LabelsMenu.Trigger>
@@ -72,6 +77,8 @@ export const Labels = ({
                     "h-[1.85rem] cursor-pointer text-[0.95rem] font-normal",
                     {
                       "px-1.5": isRectangular,
+                      "pointer-events-none cursor-not-allowed":
+                        userRole === "guest",
                     },
                   )}
                   color="tertiary"

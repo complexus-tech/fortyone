@@ -9,6 +9,7 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useMembers } from "@/lib/hooks/members";
+import { useUserRole } from "@/hooks";
 import { useBoard } from "../board-context";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
@@ -23,6 +24,7 @@ export const StoryCard = ({
 }) => {
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
+  const { userRole } = useUserRole();
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
 
@@ -136,6 +138,7 @@ export const StoryCard = ({
                       asIcon
                       className="gap-1 px-1"
                       color="tertiary"
+                      disabled={userRole === "guest"}
                       size="xs"
                       type="button"
                       variant="outline"
