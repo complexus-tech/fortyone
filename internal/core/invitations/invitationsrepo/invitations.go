@@ -195,7 +195,6 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 			i.inviter_id,
 			i.email,
 			i.role,
-			i.token,
 			i.expires_at,
 			i.used_at,
 			i.created_at,
