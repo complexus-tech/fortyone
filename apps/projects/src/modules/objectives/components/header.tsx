@@ -4,9 +4,11 @@ import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
+import { useUserRole } from "@/hooks";
 
 export const ObjectivesHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { userRole } = useUserRole();
 
   return (
     <HeaderContainer className="justify-between">
@@ -23,9 +25,12 @@ export const ObjectivesHeader = () => {
       <Flex align="center" gap={2}>
         <Button
           color="tertiary"
+          disabled={userRole === "guest"}
           leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={() => {
-            setIsOpen(true);
+            if (userRole !== "guest") {
+              setIsOpen(true);
+            }
           }}
           size="sm"
         >

@@ -10,7 +10,11 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 
-export const OptionsHeader = () => {
+export const OptionsHeader = ({
+  isAdminOrOwner,
+}: {
+  isAdminOrOwner: boolean;
+}) => {
   const params = useParams<{ storyId: string }>();
   const { data } = useStoryById(params.storyId);
   const { id, teamId, sequenceId, deletedAt } = data!;
@@ -21,7 +25,6 @@ export const OptionsHeader = () => {
   const isDeleted = Boolean(deletedAt);
   const { mutateAsync: deleteAsync } = useDeleteStoryMutation();
   const { mutateAsync } = useRestoreStoryMutation();
-
   const handleDelete = async () => {
     try {
       await deleteAsync(id);
@@ -71,31 +74,35 @@ export const OptionsHeader = () => {
               <span className="sr-only">Copy story id</span>
             </Button>
           </Tooltip>
-          {isDeleted ? (
-            <Tooltip title="Restore Story">
-              <Button
-                color="tertiary"
-                leftIcon={<UndoIcon />}
-                onClick={restoreStory}
-                variant="naked"
-              >
-                <span className="sr-only">Restore story</span>
-              </Button>
-            </Tooltip>
-          ) : (
-            <Tooltip title="Delete Story">
-              <Button
-                color="tertiary"
-                leftIcon={<DeleteIcon />}
-                onClick={() => {
-                  setIsOpen(true);
-                }}
-                variant="naked"
-              >
-                <span className="sr-only">Delete story</span>
-              </Button>
-            </Tooltip>
-          )}
+          {isAdminOrOwner ? (
+            <>
+              {isDeleted ? (
+                <Tooltip title="Restore Story">
+                  <Button
+                    color="tertiary"
+                    leftIcon={<UndoIcon />}
+                    onClick={restoreStory}
+                    variant="naked"
+                  >
+                    <span className="sr-only">Restore story</span>
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Tooltip title="Delete Story">
+                  <Button
+                    color="tertiary"
+                    leftIcon={<DeleteIcon />}
+                    onClick={() => {
+                      setIsOpen(true);
+                    }}
+                    variant="naked"
+                  >
+                    <span className="sr-only">Delete story</span>
+                  </Button>
+                </Tooltip>
+              )}
+            </>
+          ) : null}
         </Flex>
       </Container>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>

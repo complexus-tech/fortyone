@@ -17,6 +17,7 @@ import type { Link as LinkType } from "@/types";
 import { useCopyToClipboard } from "@/hooks/clipboard";
 import { useLinkMetadata } from "@/lib/hooks/link-metadata";
 import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
+import { useUserRole } from "@/hooks";
 import { AddLinkDialog } from "./add-link-dialog";
 
 const StoryLink = ({ link }: { link: LinkType }) => {
@@ -28,7 +29,12 @@ const StoryLink = ({ link }: { link: LinkType }) => {
   return (
     <>
       <RowWrapper className="gap-8 px-1 py-2" key={link.id}>
-        <a className="flex-1 gap-2" href={link.url} rel="noopener" target="_blank">
+        <a
+          className="flex-1 gap-2"
+          href={link.url}
+          rel="noopener"
+          target="_blank"
+        >
           <Flex align="center" gap={2}>
             {metadata?.image ? (
               <img
@@ -46,13 +52,15 @@ const StoryLink = ({ link }: { link: LinkType }) => {
             >
               {link.title || metadata?.title}
             </Text>
-            {metadata?.description ? <Text
+            {metadata?.description ? (
+              <Text
                 className="line-clamp-1 opacity-80"
                 color="muted"
                 title={metadata.description}
               >
                 {metadata.description.replace("No description", "")}
-              </Text> : null}
+              </Text>
+            ) : null}
           </Flex>
         </a>
         <Flex align="center" className="shrink-0" gap={3}>
@@ -92,7 +100,9 @@ const StoryLink = ({ link }: { link: LinkType }) => {
               <Menu.Group>
                 <Menu.Item
                   className="tracking-wide"
-                  onSelect={() => { setIsOpen(true); }}
+                  onSelect={() => {
+                    setIsOpen(true);
+                  }}
                 >
                   <EditIcon />
                   Edit link
@@ -143,6 +153,7 @@ export const Links = ({
   links: LinkType[];
 }) => {
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
+  const { userRole } = useUserRole();
 
   return (
     <Box className="mt-4">
@@ -173,25 +184,31 @@ export const Links = ({
             Links
           </Button>
 
-          <Tooltip title="Add Link">
-            <Button
-              color="tertiary"
-              leftIcon={<PlusIcon />}
-              onClick={() => { setIsAddLinkDialogOpen(true); }}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Add Link</span>
-            </Button>
-          </Tooltip>
+          {userRole !== "guest" && (
+            <Tooltip title="Add Link">
+              <Button
+                color="tertiary"
+                leftIcon={<PlusIcon />}
+                onClick={() => {
+                  setIsAddLinkDialogOpen(true);
+                }}
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">Add Link</span>
+              </Button>
+            </Tooltip>
+          )}
         </Flex>
       )}
 
-      {isLinksOpen && links.length > 0 ? <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
+      {isLinksOpen && links.length > 0 ? (
+        <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}
-        </Box> : null}
+        </Box>
+      ) : null}
 
       <AddLinkDialog
         isOpen={isAddLinkDialogOpen}

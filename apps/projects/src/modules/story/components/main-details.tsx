@@ -12,7 +12,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
-import { useDebounce, useLocalStorage } from "@/hooks";
+import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
@@ -32,6 +32,7 @@ export const MainDetails = () => {
   const { data: links = [] } = useLinks(params.storyId);
   const { data: activities = [] } = useStoryActivities(params.storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
+  const { userRole } = useUserRole();
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -84,7 +85,7 @@ export const MainDetails = () => {
       Placeholder.configure({ placeholder: "Story description" }),
     ],
     content: descriptionHTML || description,
-    editable: !isDeleted,
+    editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         descriptionHTML: editor.getHTML(),
@@ -101,7 +102,7 @@ export const MainDetails = () => {
       Placeholder.configure({ placeholder: "Enter title..." }),
     ],
     content: title,
-    editable: !isDeleted,
+    editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         title: editor.getText(),

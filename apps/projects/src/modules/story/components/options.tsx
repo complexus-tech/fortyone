@@ -35,6 +35,8 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useUserRole } from "@/hooks";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -100,6 +102,9 @@ export const Options = () => {
   const labels = allLabels.filter((label) => storyLabels.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
   const { mutate: updateLabels } = useUpdateLabelsMutation();
+  const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
+  const { userRole } = useUserRole();
+  const isGuest = userRole === "guest";
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
     mutate({ storyId: id, payload: data });
@@ -111,7 +116,7 @@ export const Options = () => {
 
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader />
+      <OptionsHeader isAdminOrOwner={isAdminOrOwner} />
       <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           <Text fontWeight="semibold">Properties</Text>
@@ -157,7 +162,7 @@ export const Options = () => {
               <StatusesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={<StoryStatusIcon statusId={statusId} />}
                   type="button"
                   variant="naked"
@@ -182,7 +187,7 @@ export const Options = () => {
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={<PriorityIcon priority={priority} />}
                   type="button"
                   variant="naked"
@@ -208,7 +213,7 @@ export const Options = () => {
                     "text-gray-200 dark:text-gray-300": !assigneeId,
                   })}
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={
                     <Avatar
                       className={cn({
@@ -245,7 +250,7 @@ export const Options = () => {
               <DatePicker.Trigger>
                 <Button
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem] w-auto", {
@@ -308,7 +313,7 @@ export const Options = () => {
                         "text-gray/80 dark:text-gray-300/80": !endDate,
                       })}
                       color="tertiary"
-                      disabled={isDeleted}
+                      disabled={isDeleted || isGuest}
                       leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
                       variant="naked"
                     >
@@ -339,7 +344,7 @@ export const Options = () => {
               <ObjectivesMenu.Trigger>
                 <Button
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={
                     objectiveId ? (
                       <ObjectiveIcon className="h-[1.15rem] w-auto" />
@@ -373,7 +378,7 @@ export const Options = () => {
               <SprintsMenu.Trigger>
                 <Button
                   color="tertiary"
-                  disabled={isDeleted}
+                  disabled={isDeleted || isGuest}
                   leftIcon={
                     sprintId ? (
                       <SprintsIcon className="h-5 w-auto" />
@@ -411,7 +416,12 @@ export const Options = () => {
                   {labels.slice(0, labels.length - 1).map((label) => (
                     <LabelsMenu key={label.id}>
                       <LabelsMenu.Trigger>
-                        <span>
+                        <span
+                          className={cn({
+                            "pointer-events-none cursor-not-allowed":
+                              isDeleted || isGuest,
+                          })}
+                        >
                           <StoryLabel {...label} />
                         </span>
                       </LabelsMenu.Trigger>
@@ -427,7 +437,12 @@ export const Options = () => {
                   <Flex align="center" gap={1}>
                     <LabelsMenu>
                       <LabelsMenu.Trigger>
-                        <span>
+                        <span
+                          className={cn({
+                            "pointer-events-none cursor-not-allowed":
+                              isDeleted || isGuest,
+                          })}
+                        >
                           <StoryLabel {...labels.at(-1)!} />
                         </span>
                       </LabelsMenu.Trigger>
@@ -445,6 +460,7 @@ export const Options = () => {
                           asIcon
                           className="m-0"
                           color="tertiary"
+                          disabled={isDeleted || isGuest}
                           leftIcon={<PlusIcon />}
                           rounded="full"
                           size="sm"
@@ -470,6 +486,7 @@ export const Options = () => {
                   <LabelsMenu.Trigger>
                     <Button
                       color="tertiary"
+                      disabled={isDeleted || isGuest}
                       leftIcon={<PlusIcon />}
                       type="button"
                       variant="naked"

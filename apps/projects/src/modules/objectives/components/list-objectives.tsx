@@ -3,6 +3,7 @@ import { ObjectiveIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { BodyContainer } from "@/components/shared/body";
 import { NewObjectiveDialog } from "@/components/ui";
+import { useUserRole } from "@/hooks";
 import type { Objective } from "../types";
 import { TableHeader } from "./heading";
 import { ObjectiveCard } from "./card";
@@ -15,6 +16,7 @@ export const ListObjectives = ({
   isInTeam?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { userRole } = useUserRole();
 
   return (
     <BodyContainer className="h-[calc(100vh-3.7rem)]">
@@ -33,9 +35,12 @@ export const ListObjectives = ({
             <Flex gap={2}>
               <Button
                 color="tertiary"
+                disabled={userRole === "guest"}
                 leftIcon={<PlusIcon className="h-[1.1rem]" />}
                 onClick={() => {
-                  setIsOpen(true);
+                  if (userRole !== "guest") {
+                    setIsOpen(true);
+                  }
                 }}
                 size="md"
               >

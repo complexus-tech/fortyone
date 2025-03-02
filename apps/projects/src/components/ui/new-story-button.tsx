@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button } from "ui";
 import { PlusIcon } from "icons";
+import { useUserRole } from "@/hooks";
 import { NewStoryDialog } from "./new-story-dialog";
 
 export const NewStoryButton = ({
@@ -19,12 +20,17 @@ export const NewStoryButton = ({
   objectiveId?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { userRole } = useUserRole();
+
   return (
     <>
       <Button
+        disabled={rest.disabled || userRole === "guest"}
         leftIcon={leftIcon}
         onClick={() => {
-          setIsOpen(true);
+          if (userRole !== "guest") {
+            setIsOpen(true);
+          }
         }}
         size={size}
         {...rest}

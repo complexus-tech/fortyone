@@ -6,12 +6,14 @@ import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog, TeamColor } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useUserRole } from "@/hooks";
 
 export const TeamObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const [isOpen, setIsOpen] = useState(false);
+  const { userRole } = useUserRole();
 
   return (
     <HeaderContainer className="justify-between">
@@ -32,9 +34,12 @@ export const TeamObjectivesHeader = () => {
       <Flex align="center" gap={2}>
         <Button
           color="tertiary"
+          disabled={userRole === "guest"}
           leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={() => {
-            setIsOpen(true);
+            if (userRole !== "guest") {
+              setIsOpen(true);
+            }
           }}
           size="sm"
         >

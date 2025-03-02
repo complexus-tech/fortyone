@@ -11,3 +11,17 @@ export const useIsOwner = (entityOwnerId?: string) => {
     isEntityOwner: session?.user?.id === entityOwnerId,
   };
 };
+
+export const useIsAdminOrOwner = (entityOwnerId?: string) => {
+  const { data: session } = useSession();
+  if (!entityOwnerId) {
+    return {
+      isAdminOrOwner: session?.user?.userRole === "admin",
+    };
+  }
+  return {
+    isAdminOrOwner:
+      session?.user?.userRole === "admin" ||
+      session?.user?.id === entityOwnerId,
+  };
+};

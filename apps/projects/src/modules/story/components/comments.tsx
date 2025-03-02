@@ -27,6 +27,7 @@ const MainComment = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const isOwner = userId === session?.user?.id;
 
   const member = members.find(
     (member) => member.id === (userId || session?.user?.id),
@@ -117,26 +118,30 @@ const MainComment = ({
           align="center"
           className="pointer-events-none ml-2 gap-2.5 opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
         >
-          <button
-            onClick={() => {
-              setIsEditing(true);
-            }}
-            title="Edit"
-            type="button"
-          >
-            <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
-            <span className="sr-only">Edit</span>
-          </button>
-          <button
-            onClick={() => {
-              setIsOpen(true);
-            }}
-            title="Delete"
-            type="button"
-          >
-            <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
-            <span className="sr-only">Delete</span>
-          </button>
+          {isOwner ? (
+            <button
+              onClick={() => {
+                setIsEditing(true);
+              }}
+              title="Edit"
+              type="button"
+            >
+              <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
+              <span className="sr-only">Edit</span>
+            </button>
+          ) : null}
+          {isOwner ? (
+            <button
+              onClick={() => {
+                setIsOpen(true);
+              }}
+              title="Delete"
+              type="button"
+            >
+              <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
+              <span className="sr-only">Delete</span>
+            </button>
+          ) : null}
         </Flex>
       </Flex>
       {!isEditing && (

@@ -32,6 +32,24 @@ import { getCurrentWorkspace } from "./utils";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
+const clearAllStorage = () => {
+  localStorage.clear();
+  sessionStorage.clear();
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+  });
+
+  if ("caches" in window) {
+    caches.keys().then((names) => {
+      names.forEach((name) => {
+        caches.delete(name);
+      });
+    });
+  }
+};
+
 export const Header = () => {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -46,20 +64,31 @@ export const Header = () => {
   const workspace = getCurrentWorkspace(workspaces);
 
   useHotkeys("shift+n", () => {
-    setIsOpen(true);
+    if (userRole !== "guest") {
+      setIsOpen(true);
+    }
   });
 
   useHotkeys("shift+o", () => {
-    setIsObjectivesOpen(true);
+    if (userRole !== "guest") {
+      setIsObjectivesOpen(true);
+    }
   });
 
   useHotkeys("shift+s", () => {
-    setIsSprintsOpen(true);
+    if (userRole !== "guest") {
+      setIsSprintsOpen(true);
+    }
   });
 
   const handleLogout = async () => {
-    await logOut();
-    analytics.logout(true);
+    try {
+      await logOut();
+      analytics.logout(true);
+    } finally {
+      clearAllStorage();
+      window.location.href = "https://www.complexus.app";
+    }
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
@@ -245,8 +274,8 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
-              <Menu.Item onSelect={handleLogout}>
-                <LogoutIcon className="h-5 w-auto text-danger" />
+              <Menu.Item className="text-danger" onSelect={handleLogout}>
+                <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
                 Log out
               </Menu.Item>
             </Menu.Group>
@@ -257,10 +286,13 @@ export const Header = () => {
         <Button
           className="rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
+          disabled={userRole === "guest"}
           fullWidth
           leftIcon={<NewStoryIcon />}
           onClick={() => {
-            setIsOpen(!isOpen);
+            if (userRole !== "guest") {
+              setIsOpen(!isOpen);
+            }
           }}
           variant="outline"
         >
