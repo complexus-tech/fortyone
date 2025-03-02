@@ -8,6 +8,7 @@ import { InviteMembersDialog } from "@/components/ui";
 import { usePendingInvitations } from "@/modules/invitations/hooks/pending-invitations";
 import { SectionHeader } from "../../components";
 import { WorkspaceMember } from "./components/member";
+import { WorkspaceInvitee } from "./components/invitee";
 
 const MembersTab = ({
   setIsInviteMembersDialogOpen,
@@ -76,7 +77,7 @@ const PendingInvitationsTab = ({
         direction="column"
       >
         {pendingInvitations.map((invitation) => (
-          <div key={invitation.id}>{invitation.email}</div>
+          <WorkspaceInvitee key={invitation.id} {...invitation} />
         ))}
       </Flex>
     </Box>
