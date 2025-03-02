@@ -46,6 +46,43 @@ const MembersTab = ({
   );
 };
 
+const PendingInvitationsTab = ({
+  setIsInviteMembersDialogOpen,
+}: {
+  setIsInviteMembersDialogOpen: (open: boolean) => void;
+}) => {
+  const { data: pendingInvitations = [] } = usePendingInvitations();
+  return (
+    <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <SectionHeader
+        action={
+          <Button
+            color="tertiary"
+            leftIcon={<TeamIcon />}
+            onClick={() => {
+              setIsInviteMembersDialogOpen(true);
+            }}
+            variant="outline"
+          >
+            Invite More
+          </Button>
+        }
+        description="Pending invitations to join your workspace."
+        title="Pending invitations"
+      />
+
+      <Flex
+        className="divide-y divide-gray-100 dark:divide-dark-100"
+        direction="column"
+      >
+        {pendingInvitations.map((invitation) => (
+          <div key={invitation.id}>{invitation.email}</div>
+        ))}
+      </Flex>
+    </Box>
+  );
+};
+
 export const WorkspaceMembersSettings = () => {
   const { data: pendingInvitations = [] } = usePendingInvitations();
   const [isInviteMembersDialogOpen, setIsInviteMembersDialogOpen] =
@@ -70,7 +107,11 @@ export const WorkspaceMembersSettings = () => {
               setIsInviteMembersDialogOpen={setIsInviteMembersDialogOpen}
             />
           </Tabs.Panel>
-          <Tabs.Panel value="pending">Pending invitations</Tabs.Panel>
+          <Tabs.Panel value="pending">
+            <PendingInvitationsTab
+              setIsInviteMembersDialogOpen={setIsInviteMembersDialogOpen}
+            />
+          </Tabs.Panel>
         </Tabs>
       ) : (
         <MembersTab
