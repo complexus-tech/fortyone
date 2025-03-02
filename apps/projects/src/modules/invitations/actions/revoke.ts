@@ -9,6 +9,6 @@ export const revokeInvitation = async (invitationId: string) => {
     return response;
   } catch (error) {
     const res = getApiError(error);
-    return res;
+    throw new Error(res.error?.message || "Failed to revoke invitation");
   }
 };

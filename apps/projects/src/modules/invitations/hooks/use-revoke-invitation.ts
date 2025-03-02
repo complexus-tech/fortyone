@@ -1,0 +1,64 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { invitationKeys } from "@/constants/keys";
+import { revokeInvitation } from "../actions/revoke";
+import type { Invitation } from "../types";
+
+export const useRevokeInvitationMutation = () => {
+  const queryClient = useQueryClient();
+  const toastId = "revoke-invitation";
+
+  const mutation = useMutation({
+    mutationFn: (invitationId: string) => revokeInvitation(invitationId),
+    onMutate: async (invitationId) => {
+      await queryClient.cancelQueries({
+        queryKey: invitationKeys.pending,
+      });
+
+      const previousInvitations = queryClient.getQueryData<Invitation[]>(
+        invitationKeys.pending,
+      );
+
+      // Optimistically remove the invitation from the cache
+      queryClient.setQueryData(
+        invitationKeys.pending,
+        (old: Invitation[] = []) =>
+          old.filter((invitation) => invitation.id !== invitationId),
+      );
+
+      toast.loading("Revoking invitation...", {
+        description: "Please wait...",
+        id: toastId,
+      });
+
+      return { previousInvitations };
+    },
+    onError: (error, variables, context) => {
+      // Restore the previous data
+      queryClient.setQueryData(
+        invitationKeys.pending,
+        context?.previousInvitations,
+      );
+
+      toast.error("Failed to revoke", {
+        id: toastId,
+        description: error.message || "Failed to revoke invitation",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Revoked", {
+        description: "Invitation revoked successfully",
+        id: toastId,
+      });
+      queryClient.invalidateQueries({ queryKey: invitationKeys.pending });
+    },
+  });
+
+  return mutation;
+};

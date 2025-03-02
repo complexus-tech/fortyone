@@ -5,8 +5,10 @@ import { formatDistanceToNow } from "date-fns";
 import type { Invitation } from "@/modules/invitations/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
+import { useRevokeInvitationMutation } from "@/modules/invitations/hooks/use-revoke-invitation";
 
 export const WorkspaceInvitee = ({
+  id,
   email,
   role,
   inviterId,
@@ -14,14 +16,15 @@ export const WorkspaceInvitee = ({
 }: Invitation) => {
   const [isOpen, setIsOpen] = useState(false);
   const { data: members = [] } = useMembers();
+  const revokeMutation = useRevokeInvitationMutation();
 
   const inviter = members.find((member) => member.id === inviterId);
   const timeLeft = formatDistanceToNow(new Date(expiresAt), {
     addSuffix: true,
   });
 
-  const handleRevokeInvitation = () => {
-    // TODO: implement revoke invitation
+  const handleRevokeInvitation = async () => {
+    await revokeMutation.mutateAsync(id);
     setIsOpen(false);
   };
 
