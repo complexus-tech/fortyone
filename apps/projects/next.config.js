@@ -5,6 +5,10 @@ module.exports = {
   experimental: {
     reactCompiler: true,
   },
+  compiler: {
+    // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for now
+    removeConsole: process.env.NODE_ENV === "production",
+  },
   images: {
     remotePatterns: [
       {
