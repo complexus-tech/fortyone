@@ -108,8 +108,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
               </svg>
             ),
             items: workspaceItems,
+            isHidden: !isAdmin,
           },
           {
+            isHidden: !isAdmin,
             category: "Workspace features",
             icon: (
               <svg
@@ -161,7 +163,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   return (
     <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
       <ResizablePanel.Panel
-        className="bg-gray-50 dark:bg-[#0f0f0f]"
+        className="bg-gray-50/60 dark:bg-black"
         defaultSize={15}
         maxSize={20}
         minSize={12}
@@ -189,26 +191,28 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         </Box>
         <BodyContainer className="px-4">
           <Flex className="mt-6" direction="column" gap={4}>
-            {navigation.map(({ category, items, icon }) => (
-              <Box className="mb-3" key={category}>
-                <Flex align="center" className="mb-2" gap={4}>
-                  {icon}
-                  <Text color="muted">{category}</Text>
-                </Flex>
-                <Flex className="ml-8" direction="column" gap={1}>
-                  {items.map(({ href, title }) => (
-                    <NavLink
-                      active={pathname === href}
-                      className="py-1.5"
-                      href={href}
-                      key={href}
-                    >
-                      {title}
-                    </NavLink>
-                  ))}
-                </Flex>
-              </Box>
-            ))}
+            {navigation
+              .filter(({ isHidden }) => !isHidden)
+              .map(({ category, items, icon }) => (
+                <Box className="mb-3" key={category}>
+                  <Flex align="center" className="mb-2" gap={4}>
+                    {icon}
+                    <Text color="muted">{category}</Text>
+                  </Flex>
+                  <Flex className="ml-8" direction="column" gap={1}>
+                    {items.map(({ href, title }) => (
+                      <NavLink
+                        active={pathname === href}
+                        className="py-1.5"
+                        href={href}
+                        key={href}
+                      >
+                        {title}
+                      </NavLink>
+                    ))}
+                  </Flex>
+                </Box>
+              ))}
           </Flex>
         </BodyContainer>
       </ResizablePanel.Panel>
