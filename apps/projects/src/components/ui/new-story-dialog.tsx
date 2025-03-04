@@ -38,6 +38,7 @@ import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
@@ -77,6 +78,7 @@ export const NewStoryDialog = ({
   assigneeId?: string | null;
 }) => {
   const session = useSession();
+  const router = useRouter();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -230,12 +232,18 @@ export const NewStoryDialog = ({
 
   useEffect(() => {
     if (isOpen && teams.length === 0) {
-      toast.warning("Join a team", {
-        description: "You need to be part of a team to create a story",
+      toast.warning("Join or create a team", {
+        description: "You need to be part of a team to create an objective",
+        action: {
+          label: "Create team",
+          onClick: () => {
+            router.push("/settings/workspace/teams/create");
+          },
+        },
       });
       setIsOpen(false);
     }
-  }, [isOpen, teams, setIsOpen]);
+  }, [isOpen, teams, setIsOpen, router]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>

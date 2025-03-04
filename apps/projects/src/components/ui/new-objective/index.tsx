@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import nProgress from "nprogress";
 import { format } from "date-fns";
 import { cn } from "lib";
+import { useRouter } from "next/navigation";
 import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -62,6 +63,7 @@ export const NewObjectiveDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   teamId?: string;
 }) => {
+  const router = useRouter();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
@@ -180,12 +182,18 @@ export const NewObjectiveDialog = ({
 
   useEffect(() => {
     if (isOpen && teams.length === 0) {
-      toast.warning("Join a team", {
+      toast.warning("Join or create a team", {
         description: "You need to be part of a team to create an objective",
+        action: {
+          label: "Create team",
+          onClick: () => {
+            router.push("/settings/workspace/teams/create");
+          },
+        },
       });
       setIsOpen(false);
     }
-  }, [isOpen, teams, setIsOpen]);
+  }, [isOpen, teams, setIsOpen, router]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
