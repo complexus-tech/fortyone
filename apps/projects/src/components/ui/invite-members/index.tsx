@@ -118,6 +118,14 @@ export const InviteMembersDialog = ({
       return;
     }
 
+    if (formState.teamIds.length === 0) {
+      toast.warning("At least one team is required", {
+        description:
+          "Members should be added to a team to be able to work together",
+      });
+      setIsSubmitting(false);
+      return;
+    }
     toast.loading("Sending invites", {
       id: toastId,
       description: "Please wait...",
@@ -195,45 +203,41 @@ export const InviteMembersDialog = ({
               ))}
             </Select.Content>
           </Select>
-          {teams.length > 0 && (
-            <>
-              <Text className="mb-2 mt-6" color="muted">
-                Teams (Optional) - members will be added to the selected teams
-              </Text>
-              <Flex gap={2} wrap>
-                {teams.map((team) => (
-                  <Button
-                    className={cn("dark:bg-transparent", {
-                      "ring-2": formState.teamIds.includes(team.id),
-                    })}
-                    color="tertiary"
-                    key={team.id}
-                    leftIcon={
-                      <span
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: team.color }}
-                      />
-                    }
-                    onClick={() => {
-                      handleTeamToggle(team.id);
-                    }}
-                    size="sm"
-                    title={team.name}
-                    variant="outline"
-                  >
-                    <span className="inline-block max-w-[12ch] truncate">
-                      {team.name}
-                    </span>
-                  </Button>
-                ))}
-              </Flex>
-              {formState.teamIds.length > 0 && (
-                <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
-                  {formState.teamIds.length} team
-                  {formState.teamIds.length > 1 ? "s" : ""} selected
-                </Text>
-              )}
-            </>
+          <Text className="mb-2 mt-6" color="muted">
+            Teams - members will be added to the selected teams
+          </Text>
+          <Flex gap={2} wrap>
+            {teams.map((team) => (
+              <Button
+                className={cn("dark:bg-transparent", {
+                  "ring-2": formState.teamIds.includes(team.id),
+                })}
+                color="tertiary"
+                key={team.id}
+                leftIcon={
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: team.color }}
+                  />
+                }
+                onClick={() => {
+                  handleTeamToggle(team.id);
+                }}
+                size="sm"
+                title={team.name}
+                variant="outline"
+              >
+                <span className="inline-block max-w-[12ch] truncate">
+                  {team.name}
+                </span>
+              </Button>
+            ))}
+          </Flex>
+          {formState.teamIds.length > 0 && (
+            <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
+              {formState.teamIds.length} team
+              {formState.teamIds.length > 1 ? "s" : ""} selected
+            </Text>
           )}
         </Dialog.Body>
         <Dialog.Footer className="justify-end">
