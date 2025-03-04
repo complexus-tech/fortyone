@@ -8,3 +8,8 @@ export const useObjectives = () => {
     queryFn: getObjectives,
   });
 };
+
+export const useTeamObjectives = (teamId: string) => {
+  const { data: objectives = [] } = useObjectives();
+  return objectives.filter((objective) => objective.teamId === teamId);
+};

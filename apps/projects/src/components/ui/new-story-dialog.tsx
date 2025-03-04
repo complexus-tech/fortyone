@@ -85,43 +85,11 @@ export const NewStoryDialog = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
-    teams.at(0)!,
+    teams[0],
   );
-
-  const validActiveTeam =
-    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
-
-  const currentTeamId = teamId || validActiveTeam.id;
-  const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
-
-  const teamStatuses = statuses.filter(
-    (status) => status.teamId === currentTeamId,
-  );
-
-  const defaultStatus =
-    teamStatuses.find((status) => status.id === statusId) || teamStatuses.at(0);
-
-  const initialForm: NewStory = {
-    title: "",
-    description: "",
-    descriptionHTML: "",
-    teamId: currentTeamId,
-    statusId: defaultStatus?.id,
-    endDate: null,
-    startDate: null,
-    assigneeId,
-    priority,
-    objectiveId: objectiveId || null,
-    sprintId: sprintId || null,
-  };
-  const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const mutation = useCreateStoryMutation();
-  const objective = objectives.find((o) => o.id === storyForm.objectiveId);
-  const sprint = sprints.find((s) => s.id === storyForm.sprintId);
-  const member = members.find((m) => m.id === storyForm.assigneeId);
 
   const titleEditor = useEditor({
     extensions: [
@@ -150,6 +118,100 @@ export const NewStoryDialog = ({
     content: "",
     editable: true,
   });
+
+  const validActiveTeam =
+    teams.find((team) => team.id === activeTeam.id) || teams[0];
+
+  const currentTeamId = teamId || validActiveTeam.id;
+  const currentTeam =
+    teams.find((team) => team.id === currentTeamId) || teams[0];
+
+  const teamStatuses = statuses.filter(
+    (status) => status.teamId === currentTeamId,
+  );
+
+  const defaultStatus =
+    teamStatuses.find((status) => status.id === statusId) || teamStatuses[0];
+
+  const initialForm: NewStory = {
+    title: "",
+    description: "",
+    descriptionHTML: "",
+    teamId: currentTeamId,
+    statusId: defaultStatus.id,
+    endDate: null,
+    startDate: null,
+    assigneeId,
+    priority,
+    objectiveId: objectiveId || null,
+    sprintId: sprintId || null,
+  };
+
+  const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
+  const member = members.find((m) => m.id === storyForm.assigneeId);
+  const objective = objectives.find((o) => o.id === storyForm.objectiveId);
+  const sprint = sprints.find((s) => s.id === storyForm.sprintId);
+
+  useEffect(() => {
+    if (isOpen) {
+      titleEditor?.commands.focus();
+    }
+    if (teamId) {
+      const team = teams.find((team) => team.id === teamId);
+      if (team) {
+        setActiveTeam(team);
+      }
+    }
+  }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
+
+  useEffect(() => {
+    const currentStatus = teamStatuses.find(
+      (status) => status.id === storyForm.statusId,
+    );
+    if (!currentStatus) {
+      setStoryForm((prev) => ({
+        ...prev,
+        statusId: teamStatuses[0]?.id,
+        teamId: currentTeamId,
+      }));
+    }
+  }, [currentTeamId, storyForm.statusId, teamStatuses]);
+
+  useEffect(() => {
+    if (!teams.find((team) => team.id === activeTeam.id)) {
+      setActiveTeam(teams[0]);
+    }
+  }, [teams, activeTeam, setActiveTeam]);
+
+  // Return early if no teams exist
+  if (teams.length === 0) {
+    return (
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+        <Dialog.Content hideClose size="sm">
+          <Dialog.Header className="px-6 pt-6">
+            <Dialog.Title>Create Story</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+            <Text color="muted">No teams found</Text>
+            <Text className="max-w-sm" color="muted">
+              You need to create a team before you can create stories. Please
+              create a team first.
+            </Text>
+          </Dialog.Body>
+          <Dialog.Footer className="flex items-center justify-end gap-2">
+            <Button
+              onClick={() => {
+                setIsOpen(false);
+              }}
+              size="md"
+            >
+              Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+    );
+  }
 
   const handleCreateStory = async () => {
     if (!titleEditor || !editor) return;
@@ -192,37 +254,6 @@ export const NewStoryDialog = ({
       nProgress.done();
     }
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      titleEditor?.commands.focus();
-    }
-    if (teamId) {
-      const team = teams.find((team) => team.id === teamId);
-      if (team) {
-        setActiveTeam(team);
-      }
-    }
-  }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
-
-  useEffect(() => {
-    const currentStatus = teamStatuses.find(
-      (status) => status.id === storyForm.statusId,
-    );
-    if (!currentStatus) {
-      setStoryForm((prev) => ({
-        ...prev,
-        statusId: teamStatuses.at(0)!.id,
-        teamId: currentTeamId,
-      }));
-    }
-  }, [currentTeamId, storyForm.statusId, teamStatuses]);
-
-  useEffect(() => {
-    if (!teams.find((team) => team.id === activeTeam.id)) {
-      setActiveTeam(teams[0]);
-    }
-  }, [teams, activeTeam, setActiveTeam]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -303,35 +334,37 @@ export const NewStoryDialog = ({
             editor={editor}
           />
           <Flex align="center" className="mt-4 gap-1.5" wrap>
-            <StatusesMenu>
-              <StatusesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  leftIcon={
-                    <StoryStatusIcon
-                      className="h-4"
-                      statusId={storyForm.statusId}
-                    />
-                  }
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {
-                    teamStatuses.find(
-                      (state) => state.id === storyForm.statusId,
-                    )?.name
-                  }
-                </Button>
-              </StatusesMenu.Trigger>
-              <StatusesMenu.Items
-                setStatusId={(statusId) => {
-                  setStoryForm((prev) => ({ ...prev, statusId }));
-                }}
-                statusId={storyForm.statusId}
-                teamId={currentTeamId}
-              />
-            </StatusesMenu>
+            {teamStatuses.length > 0 && (
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    leftIcon={
+                      <StoryStatusIcon
+                        className="h-4"
+                        statusId={storyForm.statusId}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {
+                      teamStatuses.find(
+                        (state) => state.id === storyForm.statusId,
+                      )?.name
+                    }
+                  </Button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items
+                  setStatusId={(statusId) => {
+                    setStoryForm((prev) => ({ ...prev, statusId }));
+                  }}
+                  statusId={storyForm.statusId}
+                  teamId={currentTeamId}
+                />
+              </StatusesMenu>
+            )}
             <PrioritiesMenu>
               <PrioritiesMenu.Trigger>
                 <Button
