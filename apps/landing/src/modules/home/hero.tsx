@@ -26,7 +26,7 @@ export const Hero = () => {
             <Button
               className="px-3 text-sm md:text-base"
               color="tertiary"
-              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
+              href="/signup"
               rounded="full"
               size="sm"
             >
