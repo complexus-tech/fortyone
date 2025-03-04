@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
-    "@sentry/nextjs": "^9",
     "@tanstack/react-query": "^5.51.21",
     "@tiptap/extension-document": "^2.11.5",
     "@tiptap/extension-heading": "^2.11.5",

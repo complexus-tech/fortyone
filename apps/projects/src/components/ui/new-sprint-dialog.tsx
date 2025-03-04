@@ -45,15 +45,16 @@ export const NewSprintDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+  const firstTeam = teams.length > 0 ? teams[0] : null;
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
     "activeTeam",
-    teams.at(0)!,
+    firstTeam,
   );
 
   const initialForm: NewSprint = {
     name: "",
     goal: "",
-    teamId: initialTeamId || activeTeam.id,
+    teamId: initialTeamId || activeTeam?.id || "",
     objectiveId: null,
     startDate: "",
     endDate: "",
@@ -110,7 +111,7 @@ export const NewSprintDialog = ({
     const dateValidation = validateSprintDates(
       sprintForm.startDate,
       sprintForm.endDate,
-      teamSprints
+      teamSprints,
     );
 
     if (!dateValidation.isValid) {
@@ -157,17 +158,17 @@ export const NewSprintDialog = ({
                 <Button
                   className="gap-1.5 font-semibold tracking-wide"
                   color="tertiary"
-                  leftIcon={<TeamColor color={activeTeam.color} />}
+                  leftIcon={<TeamColor color={activeTeam?.color} />}
                   size="xs"
                 >
-                  {activeTeam.code}
+                  {activeTeam?.code}
                 </Button>
               </Menu.Button>
               <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
-                      active={team.id === activeTeam.id}
+                      active={team.id === activeTeam?.id}
                       className="justify-between gap-3"
                       key={team.id}
                       onClick={() => {
@@ -182,7 +183,7 @@ export const NewSprintDialog = ({
                         <TeamColor className="shrink-0" color={team.color} />
                         <span className="block truncate">{team.name}</span>
                       </span>
-                      {team.id === activeTeam.id && (
+                      {team.id === activeTeam?.id && (
                         <CheckIcon className="h-[1.1rem] w-auto" />
                       )}
                     </Menu.Item>

@@ -8,6 +8,7 @@ import type { ApiResponse } from "@/types";
 import { sprintTags } from "@/constants/keys";
 
 export const getTeamSprints = async (teamId: string) => {
+  if (!teamId) return [];
   const query = stringify(
     { teamId },
     {

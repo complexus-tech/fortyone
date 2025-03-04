@@ -83,24 +83,28 @@ export const NewStoryDialog = ({
   const { data: objectives = [] } = useObjectives();
   const { data: sprints = [] } = useSprints();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+  const firstTeam = teams.length > 0 ? teams[0] : null;
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
     "activeTeam",
-    teams.at(0)!,
+    firstTeam,
   );
 
   const validActiveTeam =
-    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
+    teams.find((team) => team.id === activeTeam?.id) || firstTeam;
 
-  const currentTeamId = teamId || validActiveTeam.id;
+  const currentTeamId = teamId || validActiveTeam?.id;
   const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
+    teams.find((team) => team.id === currentTeamId) || firstTeam;
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
   );
 
   const defaultStatus =
-    teamStatuses.find((status) => status.id === statusId) || teamStatuses.at(0);
+    teamStatuses.find((status) => status.id === statusId) ||
+    teamStatuses.length > 0
+      ? teamStatuses[0]
+      : null;
 
   const initialForm: NewStory = {
     title: "",
@@ -209,20 +213,29 @@ export const NewStoryDialog = ({
     const currentStatus = teamStatuses.find(
       (status) => status.id === storyForm.statusId,
     );
-    if (!currentStatus) {
+    if (!currentStatus && teamStatuses.length > 0) {
       setStoryForm((prev) => ({
         ...prev,
-        statusId: teamStatuses.at(0)!.id,
+        statusId: teamStatuses[0].id,
         teamId: currentTeamId,
       }));
     }
   }, [currentTeamId, storyForm.statusId, teamStatuses]);
 
   useEffect(() => {
-    if (!teams.find((team) => team.id === activeTeam.id)) {
-      setActiveTeam(teams[0]);
+    if (!teams.find((team) => team.id === activeTeam?.id)) {
+      setActiveTeam(firstTeam);
     }
-  }, [teams, activeTeam, setActiveTeam]);
+  }, [teams, activeTeam, setActiveTeam, firstTeam]);
+
+  useEffect(() => {
+    if (isOpen && teams.length === 0) {
+      toast.warning("No teams found", {
+        description: "Please create a team to create a story",
+      });
+      setIsOpen(false);
+    }
+  }, [isOpen, teams, setIsOpen]);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -234,17 +247,17 @@ export const NewStoryDialog = ({
                 <Button
                   className="gap-1.5 font-semibold tracking-wide"
                   color="tertiary"
-                  leftIcon={<TeamColor color={currentTeam.color} />}
+                  leftIcon={<TeamColor color={currentTeam?.color} />}
                   size="xs"
                 >
-                  {currentTeam.code}
+                  {currentTeam?.code}
                 </Button>
               </Menu.Button>
               <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
-                      active={team.id === activeTeam.id}
+                      active={team.id === activeTeam?.id}
                       className="justify-between gap-3"
                       key={team.id}
                       onClick={() => {
@@ -255,7 +268,7 @@ export const NewStoryDialog = ({
                         <TeamColor className="shrink-0" color={team.color} />
                         <span className="block truncate">{team.name}</span>
                       </span>
-                      {team.id === activeTeam.id && (
+                      {team.id === activeTeam?.id && (
                         <CheckIcon className="h-[1.1rem] w-auto" />
                       )}
                     </Menu.Item>
@@ -329,7 +342,7 @@ export const NewStoryDialog = ({
                   setStoryForm((prev) => ({ ...prev, statusId }));
                 }}
                 statusId={storyForm.statusId}
-                teamId={currentTeamId}
+                teamId={currentTeamId ?? ""}
               />
             </StatusesMenu>
             <PrioritiesMenu>

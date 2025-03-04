@@ -66,33 +66,34 @@ export const NewObjectiveDialog = ({
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
+  const firstTeam = teams.length > 0 ? teams[0] : null;
+  const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
     "activeTeam",
-    teams.at(0)!,
+    firstTeam,
   );
 
   // Add validation to ensure activeTeam exists in teams list
   const validActiveTeam =
-    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
+    teams.find((team) => team.id === activeTeam?.id) || firstTeam;
 
   // Update the current team logic
-  const currentTeamId = initialTeamId || validActiveTeam.id;
+  const currentTeamId = initialTeamId || validActiveTeam?.id;
   const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
+    teams.find((team) => team.id === currentTeamId) || firstTeam;
   const defaultStatus = statuses.at(0);
 
   // Add effect to update activeTeam if it's not valid
   useEffect(() => {
-    if (!teams.find((team) => team.id === activeTeam.id)) {
-      setActiveTeam(teams.at(0)!);
+    if (!teams.find((team) => team.id === activeTeam?.id)) {
+      setActiveTeam(firstTeam);
     }
-  }, [teams, activeTeam, setActiveTeam]);
+  }, [teams, activeTeam, setActiveTeam, firstTeam]);
 
   const initialForm: NewObjective = {
     name: "",
     description: "",
     leadUser: null,
-    teamId: currentTeamId,
+    teamId: currentTeamId || "",
     startDate: null,
     endDate: null,
     statusId: defaultStatus!.id,
@@ -192,17 +193,17 @@ export const NewObjectiveDialog = ({
                 <Button
                   className="gap-1.5 font-semibold tracking-wide"
                   color="tertiary"
-                  leftIcon={<TeamColor color={currentTeam.color} />}
+                  leftIcon={<TeamColor color={currentTeam?.color} />}
                   size="xs"
                 >
-                  {currentTeam.code}
+                  {currentTeam?.code}
                 </Button>
               </Menu.Button>
               <Menu.Items align="start" className="w-52">
                 <Menu.Group>
                   {teams.map((team) => (
                     <Menu.Item
-                      active={team.id === currentTeam.id}
+                      active={team.id === currentTeam?.id}
                       className="justify-between gap-3"
                       key={team.id}
                       onClick={() => {
@@ -217,7 +218,7 @@ export const NewObjectiveDialog = ({
                         <TeamColor className="shrink-0" color={team.color} />
                         <span className="block truncate">{team.name}</span>
                       </span>
-                      {team.id === currentTeam.id && (
+                      {team.id === currentTeam?.id && (
                         <CheckIcon className="h-[1.1rem] w-auto" />
                       )}
                     </Menu.Item>
