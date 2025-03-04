@@ -230,8 +230,8 @@ export const NewStoryDialog = ({
 
   useEffect(() => {
     if (isOpen && teams.length === 0) {
-      toast.warning("No teams found", {
-        description: "Please create a team to create a story",
+      toast.warning("Join a team", {
+        description: "You need to be part of a team to create a story",
       });
       setIsOpen(false);
     }

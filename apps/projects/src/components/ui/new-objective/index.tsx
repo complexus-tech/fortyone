@@ -178,6 +178,15 @@ export const NewObjectiveDialog = ({
 
   const lead = members.find((member) => member.id === objectiveForm.leadUser);
 
+  useEffect(() => {
+    if (isOpen && teams.length === 0) {
+      toast.warning("Join a team", {
+        description: "You need to be part of a team to create an objective",
+      });
+      setIsOpen(false);
+    }
+  }, [isOpen, teams, setIsOpen]);
+
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
