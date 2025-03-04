@@ -68,8 +68,39 @@ export const NewObjectiveDialog = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTeam, setActiveTeam] = useLocalStorage<Team>(
     "activeTeam",
-    teams[0],
+    teams.at(0)!,
   );
+
+  // Add validation to ensure activeTeam exists in teams list
+  const validActiveTeam =
+    teams.find((team) => team.id === activeTeam.id) || teams.at(0)!;
+
+  // Update the current team logic
+  const currentTeamId = initialTeamId || validActiveTeam.id;
+  const currentTeam =
+    teams.find((team) => team.id === currentTeamId) || teams.at(0)!;
+  const defaultStatus = statuses.at(0);
+
+  // Add effect to update activeTeam if it's not valid
+  useEffect(() => {
+    if (!teams.find((team) => team.id === activeTeam.id)) {
+      setActiveTeam(teams.at(0)!);
+    }
+  }, [teams, activeTeam, setActiveTeam]);
+
+  const initialForm: NewObjective = {
+    name: "",
+    description: "",
+    leadUser: null,
+    teamId: currentTeamId,
+    startDate: null,
+    endDate: null,
+    statusId: defaultStatus!.id,
+    priority: "No Priority",
+    keyResults: [],
+  };
+
+  const [objectiveForm, setObjectiveForm] = useState<NewObjective>(initialForm);
   const [loading, setLoading] = useState(false);
   const [keyResultMode, setKeyResultMode] = useState<KeyResultFormMode>(null);
   const [editingKeyResult, setEditingKeyResult] = useState<NewKeyResult | null>(
@@ -102,77 +133,6 @@ export const NewObjectiveDialog = ({
     editable: true,
   });
 
-  const validActiveTeam =
-    teams.find((team) => team.id === activeTeam.id) || teams[0];
-
-  const currentTeamId = initialTeamId || validActiveTeam.id;
-  const currentTeam =
-    teams.find((team) => team.id === currentTeamId) || teams[0];
-  const defaultStatus = statuses[0];
-
-  const initialForm: NewObjective = {
-    name: "",
-    description: "",
-    leadUser: null,
-    teamId: currentTeamId,
-    startDate: null,
-    endDate: null,
-    statusId: defaultStatus.id,
-    priority: "No Priority",
-    keyResults: [],
-  };
-
-  const [objectiveForm, setObjectiveForm] = useState<NewObjective>(initialForm);
-  const lead = members.find((member) => member.id === objectiveForm.leadUser);
-
-  useEffect(() => {
-    if (isOpen) {
-      titleEditor?.commands.focus();
-    }
-    if (initialTeamId) {
-      const team = teams.find((team) => team.id === initialTeamId);
-      if (team) {
-        setActiveTeam(team);
-      }
-    }
-  }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
-
-  useEffect(() => {
-    if (!teams.find((team) => team.id === activeTeam.id)) {
-      setActiveTeam(teams[0]);
-    }
-  }, [teams, activeTeam, setActiveTeam]);
-
-  // Return early if no teams exist
-  if (teams.length === 0) {
-    return (
-      <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content hideClose size="sm">
-          <Dialog.Header className="px-6 pt-6">
-            <Dialog.Title>Create Objective</Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-            <Text color="muted">No teams found</Text>
-            <Text className="max-w-sm" color="muted">
-              You need to create a team before you can create objectives. Please
-              create a team first.
-            </Text>
-          </Dialog.Body>
-          <Dialog.Footer className="flex items-center justify-end gap-2">
-            <Button
-              onClick={() => {
-                setIsOpen(false);
-              }}
-              size="md"
-            >
-              Close
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
-    );
-  }
-
   const handleCreateObjective = async () => {
     if (!titleEditor || !editor) return;
     if (!titleEditor.getText()) {
@@ -202,6 +162,20 @@ export const NewObjectiveDialog = ({
       nProgress.done();
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      titleEditor?.commands.focus();
+    }
+    if (initialTeamId) {
+      const team = teams.find((team) => team.id === initialTeamId);
+      if (team) {
+        setActiveTeam(team);
+      }
+    }
+  }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
+
+  const lead = members.find((member) => member.id === objectiveForm.leadUser);
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
