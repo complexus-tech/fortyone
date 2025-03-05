@@ -3,6 +3,7 @@ import { Instrument_Sans as InstrumentSans } from "next/font/google";
 import { Suspense, type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { auth } from "@/auth";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
@@ -58,6 +59,7 @@ export default async function RootLayout({
           <ProgressBar />
         </SessionProvider>
         <OnlineStatusMonitor />
+        <SpeedInsights />
       </body>
     </html>
   );
