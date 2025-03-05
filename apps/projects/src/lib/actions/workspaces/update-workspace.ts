@@ -1,7 +1,6 @@
 "use server";
-import { revalidateTag } from "next/cache";
+
 import { put } from "@/lib/http";
-import { workspaceTags } from "@/constants/keys";
 import type { ApiResponse, Workspace } from "@/types";
 import { getApiError } from "@/utils";
 
@@ -17,7 +16,6 @@ export const updateWorkspaceAction = async (
       "",
       input,
     );
-    revalidateTag(workspaceTags.lists());
     return workspace.data!;
   } catch (error) {
     const res = getApiError(error);

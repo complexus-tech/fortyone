@@ -1,9 +1,7 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { put } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
-import { labelTags } from "@/constants/keys";
 import { getApiError } from "@/utils";
 
 export type UpdateLabel = {
@@ -20,7 +18,6 @@ export const editLabelAction = async (
       `labels/${labelId}`,
       updates,
     );
-    revalidateTag(labelTags.lists());
     return label.data!;
   } catch (error) {
     const res = getApiError(error);

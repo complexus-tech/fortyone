@@ -12,12 +12,11 @@ export const useUpdateCommentMutation = () => {
     mutationFn: ({
       commentId,
       payload,
-      storyId,
     }: {
       commentId: string;
       payload: UpdateComment;
       storyId: string;
-    }) => updateCommentAction(commentId, payload, storyId),
+    }) => updateCommentAction(commentId, payload),
 
     onMutate: (newComment) => {
       const previousComments = queryClient.getQueryData<Comment[]>(

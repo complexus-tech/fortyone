@@ -13,7 +13,7 @@ export const getLinkMetadata = async (url: string) => {
   const metadata = await ky
     .get(`https://api.dub.co/metatags?url=${url}`, {
       next: {
-        revalidate: DURATION_FROM_SECONDS.DAY * 3,
+        revalidate: DURATION_FROM_SECONDS.DAY * 10,
         tags: [linkTags.metadata(url)],
       },
     })

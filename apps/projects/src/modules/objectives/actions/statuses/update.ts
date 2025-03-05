@@ -1,11 +1,9 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import type { StateCategory } from "@/types/states";
 import { patch } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
-import { objectiveTags } from "../../constants";
 import type { ObjectiveStatus } from "../../types";
 
 export type UpdateObjectiveStatus = {
@@ -23,7 +21,6 @@ export const updateObjectiveStatusAction = async (
       UpdateObjectiveStatus,
       ApiResponse<ObjectiveStatus>
     >(`objective-statuses/${statusId}`, payload);
-    revalidateTag(objectiveTags.statuses());
     return response.data;
   } catch (error) {
     const res = getApiError(error);

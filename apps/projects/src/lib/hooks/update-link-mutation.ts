@@ -12,12 +12,11 @@ export const useUpdateLinkMutation = () => {
     mutationFn: ({
       linkId,
       payload,
-      storyId,
     }: {
       linkId: string;
       payload: UpdateLink;
       storyId: string;
-    }) => updateLinkAction(linkId, payload, storyId),
+    }) => updateLinkAction(linkId, payload),
 
     onMutate: (newLink) => {
       const previousLinks = queryClient.getQueryData<Link[]>(

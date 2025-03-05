@@ -1,7 +1,6 @@
 "use server";
-import { revalidateTag } from "next/cache";
+
 import { put } from "@/lib/http";
-import { teamTags } from "@/constants/keys";
 import type { ApiResponse } from "@/types";
 import type { Team } from "@/modules/teams/types";
 import { getApiError } from "@/utils";
@@ -20,8 +19,6 @@ export const updateTeamAction = async (
       `teams/${id}`,
       input,
     );
-    revalidateTag(teamTags.detail(id));
-    revalidateTag(teamTags.lists());
     return team.data!;
   } catch (error) {
     const res = getApiError(error);

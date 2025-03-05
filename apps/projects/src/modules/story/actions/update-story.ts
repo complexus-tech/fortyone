@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { put } from "@/lib/http";
-import { storyTags } from "@/modules/stories/constants";
 import { getApiError } from "@/utils";
 import type { DetailedStory } from "../types";
 
@@ -11,12 +9,7 @@ export const updateStoryAction = async (
   payload: Partial<DetailedStory>,
 ) => {
   try {
-    const _ = await put(`stories/${storyId}`, payload);
-    revalidateTag(storyTags.detail(storyId));
-    revalidateTag(storyTags.mine());
-    revalidateTag(storyTags.teams());
-    revalidateTag(storyTags.objectives());
-    revalidateTag(storyTags.sprints());
+    await put(`stories/${storyId}`, payload);
 
     return storyId;
   } catch (error) {

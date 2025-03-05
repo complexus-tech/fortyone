@@ -8,8 +8,8 @@ export const useDeleteLinkMutation = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({ linkId, storyId }: { linkId: string; storyId: string }) =>
-      deleteLinkAction(linkId, storyId),
+    mutationFn: ({ linkId }: { linkId: string; storyId: string }) =>
+      deleteLinkAction(linkId),
 
     onMutate: ({ linkId, storyId }) => {
       const previousLinks = queryClient.getQueryData<Link[]>(

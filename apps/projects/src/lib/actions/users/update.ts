@@ -1,8 +1,7 @@
 "use server";
-import { revalidateTag } from "next/cache";
+
 import ky from "ky";
 import type { ApiResponse, User } from "@/types";
-import { userTags } from "@/constants/keys";
 import { auth } from "@/auth";
 import { getApiError } from "@/utils";
 
@@ -22,7 +21,6 @@ export async function updateProfile(updates: UpdateProfile) {
         Authorization: `Bearer ${session?.token}`,
       },
     });
-    revalidateTag(userTags.profile());
     return res.json<ApiResponse<User>>();
   } catch (error) {
     const res = getApiError(error);

@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { post } from "@/lib/http";
-import { storyTags } from "@/modules/stories/constants";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
@@ -18,11 +16,6 @@ export const bulkRestoreAction = async (storyIds: string[]) => {
         storyIds,
       },
     );
-    storyIds.forEach((storyId) => {
-      revalidateTag(storyTags.detail(storyId));
-    });
-    revalidateTag(storyTags.teams());
-    revalidateTag(storyTags.mine());
 
     return stories.data;
   } catch (error) {

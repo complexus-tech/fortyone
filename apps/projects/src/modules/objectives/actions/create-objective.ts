@@ -1,11 +1,9 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { NewObjective, Objective } from "../types";
-import { objectiveTags } from "../constants";
 
 export const createObjective = async (params: NewObjective) => {
   try {
@@ -13,7 +11,6 @@ export const createObjective = async (params: NewObjective) => {
       "objectives",
       params,
     );
-    revalidateTag(objectiveTags.list());
     return res.data;
   } catch (error) {
     const res = getApiError(error);

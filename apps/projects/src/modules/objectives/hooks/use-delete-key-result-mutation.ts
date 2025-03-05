@@ -13,8 +13,8 @@ export const useDeleteKeyResultMutation = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({ keyResultId, objectiveId }: DeleteKeyResultVariables) =>
-      deleteKeyResult(keyResultId, objectiveId),
+    mutationFn: ({ keyResultId }: DeleteKeyResultVariables) =>
+      deleteKeyResult(keyResultId),
 
     onMutate: async ({ keyResultId, objectiveId }) => {
       await queryClient.cancelQueries({

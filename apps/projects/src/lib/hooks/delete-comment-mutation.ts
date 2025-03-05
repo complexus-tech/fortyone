@@ -8,13 +8,8 @@ export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({
-      commentId,
-      storyId,
-    }: {
-      commentId: string;
-      storyId: string;
-    }) => deleteCommentAction(commentId, storyId),
+    mutationFn: ({ commentId }: { commentId: string; storyId: string }) =>
+      deleteCommentAction(commentId),
 
     onMutate: ({ commentId, storyId }) => {
       const previousComments = queryClient.getQueryData<Comment[]>(
