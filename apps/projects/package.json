@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
-    "@tanstack/react-query": "^5.51.21",
+    "@tanstack/react-query": "^5.67.1",
     "@tiptap/extension-document": "^2.11.5",
     "@tiptap/extension-heading": "^2.11.5",
     "@tiptap/extension-link": "^2.11.5",
@@ -64,8 +64,8 @@
   "devDependencies": {
     "@next/eslint-plugin-next": "15.1.0",
     "@tailwindcss/typography": "^0.5.12",
-    "@tanstack/eslint-plugin-query": "^5.51.15",
-    "@tanstack/react-query-devtools": "^5.51.21",
+    "@tanstack/eslint-plugin-query": "^5.66.1",
+    "@tanstack/react-query-devtools": "^5.67.1",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.12",
