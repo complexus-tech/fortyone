@@ -16,7 +16,7 @@ export const Teams = () => {
     <Box className="group mt-5">
       <Flex align="center" className="mb-2.5" justify="between">
         <Text
-          className="flex items-center gap-1 pl-2.5 font-medium opacity-70"
+          className="flex items-center gap-1 pl-2.5 font-medium opacity-90"
           color="muted"
         >
           <TeamIcon className="h-[1.2rem]" />
