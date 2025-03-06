@@ -88,6 +88,7 @@ export default async function RootLayout({
           <PostHogPageView />
         </Suspense>
         <Toaster />
+        <div className="pointer-events-none fixed inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
       </body>
     </html>
   );
