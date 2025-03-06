@@ -10,7 +10,7 @@ export default async function RootLayout({
   const session = await auth();
   const userRole = session?.user?.userRole;
 
-  if (userRole !== "admin") {
+  if (userRole === "guest") {
     redirect("/settings/account");
   }
 

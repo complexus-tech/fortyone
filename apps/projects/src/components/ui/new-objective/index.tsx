@@ -185,9 +185,9 @@ export const NewObjectiveDialog = ({
       toast.warning("Join or create a team", {
         description: "You need to be part of a team to create an objective",
         action: {
-          label: "Create team",
+          label: "Join a team",
           onClick: () => {
-            router.push("/settings/workspace/teams/create");
+            router.push("/settings/workspace/teams");
           },
         },
       });

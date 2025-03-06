@@ -233,11 +233,11 @@ export const NewStoryDialog = ({
   useEffect(() => {
     if (isOpen && teams.length === 0) {
       toast.warning("Join or create a team", {
-        description: "You need to be part of a team to create an objective",
+        description: "You need to be part of a team to create a story",
         action: {
-          label: "Create team",
+          label: "Join a team",
           onClick: () => {
-            router.push("/settings/workspace/teams/create");
+            router.push("/settings/workspace/teams");
           },
         },
       });

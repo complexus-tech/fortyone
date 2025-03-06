@@ -131,7 +131,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   ];
 
   const featureItems = [
-    ...(isAdmin
+    ...(isAdmin || isMember
       ? [
           { title: "Teams", href: "/settings/workspace/teams" },
           { title: "Create a team", href: "/settings/workspace/teams/create" },
@@ -141,7 +141,6 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           },
         ]
       : []),
-    ...(isAdmin || isMember ? [] : []),
   ];
 
   const navigation = [
@@ -156,10 +155,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             category: "Workspace settings",
             icon: <WorkspaceIcon />,
             items: workspaceItems,
-            isHidden: !isAdmin,
           },
           {
-            isHidden: !isAdmin,
             category: "Workspace features",
             icon: <WorkflowIcon />,
             items: featureItems,
@@ -199,28 +196,26 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         </Box>
         <BodyContainer className="px-4">
           <Flex className="mt-6" direction="column" gap={4}>
-            {navigation
-              .filter(({ isHidden }) => !isHidden)
-              .map(({ category, items, icon }) => (
-                <Box className="mb-3" key={category}>
-                  <Flex align="center" className="mb-2" gap={4}>
-                    {icon}
-                    <Text color="muted">{category}</Text>
-                  </Flex>
-                  <Flex className="ml-8" direction="column" gap={1}>
-                    {items.map(({ href, title }) => (
-                      <NavLink
-                        active={pathname === href}
-                        className="py-1.5"
-                        href={href}
-                        key={href}
-                      >
-                        {title}
-                      </NavLink>
-                    ))}
-                  </Flex>
-                </Box>
-              ))}
+            {navigation.map(({ category, items, icon }) => (
+              <Box className="mb-3" key={category}>
+                <Flex align="center" className="mb-2" gap={4}>
+                  {icon}
+                  <Text color="muted">{category}</Text>
+                </Flex>
+                <Flex className="ml-8" direction="column" gap={1}>
+                  {items.map(({ href, title }) => (
+                    <NavLink
+                      active={pathname === href}
+                      className="py-1.5"
+                      href={href}
+                      key={href}
+                    >
+                      {title}
+                    </NavLink>
+                  ))}
+                </Flex>
+              </Box>
+            ))}
           </Flex>
         </BodyContainer>
       </ResizablePanel.Panel>
