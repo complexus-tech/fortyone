@@ -4,14 +4,14 @@ import { MoreHorizontalIcon, PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import nProgress from "nprogress";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { usePublicTeams } from "@/modules/teams/hooks/teams";
+// import { usePublicTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
 import { Team } from "./team";
 
 export const Teams = () => {
   const router = useRouter();
   const { data: teams = [] } = useTeams();
-  const { data: publicTeams = [] } = usePublicTeams();
+  // const { data: publicTeams = [] } = usePublicTeams();
   const { userRole } = useUserRole();
 
   return (
