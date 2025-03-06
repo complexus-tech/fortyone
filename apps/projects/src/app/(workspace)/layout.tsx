@@ -25,6 +25,7 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
+import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -81,6 +82,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
       queryFn: getTeams,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: teamKeys.public(),
+      queryFn: getPublicTeams,
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.lists(),

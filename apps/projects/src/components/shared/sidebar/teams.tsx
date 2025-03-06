@@ -4,12 +4,14 @@ import { MoreHorizontalIcon, PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import nProgress from "nprogress";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { usePublicTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
 import { Team } from "./team";
 
 export const Teams = () => {
   const router = useRouter();
   const { data: teams = [] } = useTeams();
+  const { data: publicTeams = [] } = usePublicTeams();
   const { userRole } = useUserRole();
 
   return (
@@ -22,7 +24,7 @@ export const Teams = () => {
           <TeamIcon className="h-[1.2rem]" />
           Your Teams
         </Text>
-        {userRole === "admin" && (
+        {userRole !== "guest" && (
           <Menu>
             <Menu.Button>
               <Button
@@ -34,7 +36,7 @@ export const Teams = () => {
                 size="sm"
                 variant="naked"
               >
-                <span className="sr-only">Add Team</span>
+                <span className="sr-only">Manage Teams</span>
               </Button>
             </Menu.Button>
             <Menu.Items>
