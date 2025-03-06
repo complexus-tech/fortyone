@@ -56,7 +56,7 @@ const StoryRow = ({
         </Flex>
 
         <Flex align="center" gap={3}>
-          <Text className="flex items-center gap-1">
+          <Text className="flex shrink-0 items-center gap-1">
             <StoryStatusIcon className="relative -top-px" statusId={statusId} />
             {getStoryStatus()}
           </Text>
@@ -78,7 +78,7 @@ const StoryRow = ({
               }
             >
               <Text
-                className={cn("flex items-center gap-1", {
+                className={cn("flex shrink-0 items-center gap-1", {
                   "text-primary dark:text-primary":
                     new Date(endDate) < new Date(),
                   "text-warning dark:text-warning":
