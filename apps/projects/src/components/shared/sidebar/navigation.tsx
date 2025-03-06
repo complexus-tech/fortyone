@@ -1,9 +1,9 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import { NotificationsIcon, ObjectiveIcon, RoadmapIcon, UserIcon } from "icons";
+import { NotificationsIcon, ObjectiveIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
-import { NavLink, PriorityIcon } from "@/components/ui";
+import { NavLink } from "@/components/ui";
 
 type MenuItem = {
   name: string;
@@ -27,21 +27,21 @@ export const Navigation = () => {
       href: "/my-work",
     },
 
-    {
-      name: "Analytics",
-      icon: (
-        <PriorityIcon
-          className="h-5 w-auto text-gray dark:text-gray-300"
-          priority="High"
-        />
-      ),
-      href: "/analytics",
-    },
-    {
-      name: "Roadmap",
-      icon: <RoadmapIcon strokeWidth={2} />,
-      href: "/roadmaps",
-    },
+    // {
+    //   name: "Analytics",
+    //   icon: (
+    //     <PriorityIcon
+    //       className="h-5 w-auto text-gray dark:text-gray-300"
+    //       priority="High"
+    //     />
+    //   ),
+    //   href: "/analytics",
+    // },
+    // {
+    //   name: "Roadmap",
+    //   icon: <RoadmapIcon strokeWidth={2} />,
+    //   href: "/roadmaps",
+    // },
     {
       name: "Objectives",
       icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
