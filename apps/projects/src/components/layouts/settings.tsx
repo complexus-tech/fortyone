@@ -116,14 +116,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   ];
 
   const workspaceItems = [
-    ...(isAdmin || isMember
-      ? [
-          { title: "General", href: "/settings" },
-          { title: "Labels", href: "/settings/workspace/labels" },
-        ]
-      : []),
     ...(isAdmin
       ? [
+          { title: "General", href: "/settings" },
           { title: "Members", href: "/settings/workspace/members" },
           { title: "API tokens", href: "/settings/workspace/api" },
         ]
@@ -133,12 +128,13 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin || isMember
       ? [
-          { title: "Teams", href: "/settings/workspace/teams" },
-          { title: "Create a team", href: "/settings/workspace/teams/create" },
           {
             title: "Objectives",
             href: "/settings/workspace/objectives",
           },
+          { title: "Labels", href: "/settings/workspace/labels" },
+          { title: "Teams", href: "/settings/workspace/teams" },
+          { title: "Create a team", href: "/settings/workspace/teams/create" },
         ]
       : []),
   ];
@@ -149,13 +145,17 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       icon: <UserIcon className="h-[1.15rem] w-auto" />,
       items: accountItems,
     },
-    ...(isAdmin || isMember
+    ...(isAdmin
       ? [
           {
             category: "Workspace settings",
             icon: <WorkspaceIcon />,
             items: workspaceItems,
           },
+        ]
+      : []),
+    ...(isAdmin || isMember
+      ? [
           {
             category: "Workspace features",
             icon: <WorkflowIcon />,
