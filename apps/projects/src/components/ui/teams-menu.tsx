@@ -1,13 +1,12 @@
 "use client";
 
-import { Command, Flex, Popover, Text, Divider, Button } from "ui";
+import { Command, Flex, Popover, Text, Divider, Button, Box } from "ui";
 import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import { TeamIcon, PlusIcon } from "icons";
 import { useRouter } from "next/navigation";
 import nProgress from "nprogress";
 import { useTeams, usePublicTeams } from "@/modules/teams/hooks/teams";
-import { Dot } from "./dot";
 
 type TeamContextType = {
   open: boolean;
@@ -64,7 +63,10 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
               value={team.name}
             >
               <Flex align="center" gap={2}>
-                <Dot className="size-2.5" color={team.color} />
+                <Box
+                  className="size-3 rounded"
+                  style={{ backgroundColor: team.color }}
+                />
                 {team.name}
               </Flex>
               <Button
@@ -84,7 +86,10 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
               value={team.name}
             >
               <Flex align="center" gap={2}>
-                <Dot className="size-2.5" color={team.color} />
+                <Box
+                  className="size-3 rounded"
+                  style={{ backgroundColor: team.color }}
+                />
                 {team.name}
               </Flex>
               <Button
@@ -92,7 +97,7 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
                 color="tertiary"
                 size="xs"
               >
-                Join
+                Join team
               </Button>
             </Command.Item>
           ))}
