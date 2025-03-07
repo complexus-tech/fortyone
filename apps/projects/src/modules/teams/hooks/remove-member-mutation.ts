@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { memberKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
+import { storyKeys } from "@/modules/stories/constants";
 import { removeTeamMemberAction } from "../actions/remove-team-member";
 import { useAddMemberMutation } from "./add-member-mutation";
 
@@ -82,6 +83,7 @@ export const useRemoveMemberMutation = () => {
       if (memberId === session?.user?.id) {
         queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
         queryClient.invalidateQueries({ queryKey: teamKeys.public() });
+        queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
       }
     },
   });
