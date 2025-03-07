@@ -141,14 +141,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const navigation = [
     {
-      category: "Your account",
-      icon: <UserIcon className="h-[1.15rem] w-auto" />,
+      category: "Account",
+      icon: <UserIcon className="h-[1.15rem]" />,
       items: accountItems,
     },
     ...(isAdmin
       ? [
           {
-            category: "Workspace settings",
+            category: "Settings",
             icon: <WorkspaceIcon />,
             items: workspaceItems,
           },
@@ -157,7 +157,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     ...(isAdmin || isMember
       ? [
           {
-            category: "Workspace features",
+            category: "Features",
             icon: <WorkflowIcon />,
             items: featureItems,
           },
