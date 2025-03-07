@@ -26,13 +26,6 @@ export const useUpdateTeamMutation = (teamId: string) => {
 
       return { previousTeam };
     },
-    onSuccess: () => {
-      toast.success("Success", {
-        description: "Team updated successfully",
-        id: toastId,
-      });
-      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-    },
     onError: (error, variables, context) => {
       toast.error("Error", {
         description: error.message || "Failed to update team",
@@ -46,6 +39,13 @@ export const useUpdateTeamMutation = (teamId: string) => {
         },
       });
       queryClient.setQueryData(teamKeys.detail(teamId), context?.previousTeam);
+    },
+    onSuccess: () => {
+      toast.success("Success", {
+        description: "Team updated successfully",
+        id: toastId,
+      });
+      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },
   });
 

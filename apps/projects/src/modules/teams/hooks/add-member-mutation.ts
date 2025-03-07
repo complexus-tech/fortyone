@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { memberKeys } from "@/constants/keys";
+import { useSession } from "next-auth/react";
+import { memberKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { useMembers } from "@/lib/hooks/members";
 import { addTeamMemberAction } from "../actions/add-team-member";
@@ -8,11 +9,21 @@ import { addTeamMemberAction } from "../actions/add-team-member";
 export const useAddMemberMutation = () => {
   const queryClient = useQueryClient();
   const { data: members = [] } = useMembers();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ?? "";
+  const toastId = "add-member-mutation";
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
       addTeamMemberAction(teamId, memberId),
     onMutate: async ({ teamId, memberId }) => {
+      toast.loading(
+        memberId === currentUserId ? "Joining team..." : "Adding member...",
+        {
+          id: toastId,
+          description: "Please wait...",
+        },
+      );
       await queryClient.cancelQueries({ queryKey: memberKeys.team(teamId) });
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.team(teamId),
@@ -24,6 +35,7 @@ export const useAddMemberMutation = () => {
         );
         queryClient.setQueryData(memberKeys.team(teamId), newMembers);
       }
+
       return { previousMembers };
     },
     onError: (error, variables, context) => {
@@ -31,18 +43,41 @@ export const useAddMemberMutation = () => {
         memberKeys.team(variables.teamId),
         context?.previousMembers,
       );
-      toast.error("Error", {
-        description: error.message || "Failed to add member",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
+      toast.error(
+        variables.memberId === currentUserId
+          ? "Failed to join team"
+          : "Failed to add member",
+        {
+          description:
+            error.message ||
+            (variables.memberId === currentUserId
+              ? "Failed to join team"
+              : "Failed to add member"),
+          action: {
+            label: "Retry",
+            onClick: () => {
+              mutation.mutate(variables);
+            },
           },
         },
-      });
+      );
     },
-    onSuccess: (_, { teamId }) => {
+    onSuccess: (_, { teamId, memberId }) => {
+      toast.success(
+        memberId === currentUserId ? "Joined team" : "Added member",
+        {
+          id: toastId,
+          description:
+            memberId === currentUserId
+              ? "Congratulations! You are now a member of the team."
+              : "Member added",
+        },
+      );
       queryClient.invalidateQueries({ queryKey: memberKeys.team(teamId) });
+      if (memberId === session?.user?.id) {
+        queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: teamKeys.public() });
+      }
     },
   });
 

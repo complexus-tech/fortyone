@@ -41,7 +41,13 @@ export const TeamsMenu = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
+const Items = ({
+  hideManageTeams,
+  setTeam,
+}: {
+  hideManageTeams?: boolean;
+  setTeam: (teamId: string, action: "join" | "leave") => void;
+}) => {
   const router = useRouter();
   const { data: teams = [] } = useTeams();
   const { data: publicTeams = [] } = usePublicTeams();
@@ -60,6 +66,10 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
             <Command.Item
               className="justify-between py-1 pr-1"
               key={team.id}
+              onSelect={() => {
+                setTeam(team.id, "leave");
+                setOpen(false);
+              }}
               value={team.name}
             >
               <Flex align="center" gap={2}>
@@ -78,11 +88,19 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
               </Button>
             </Command.Item>
           ))}
-          <Divider className="my-1.5" />
+
+          {publicTeams.length > 0 && teams.length > 0 && (
+            <Divider className="my-1.5" />
+          )}
+
           {publicTeams.map((team) => (
             <Command.Item
               className="justify-between py-1 pr-1"
               key={team.id}
+              onSelect={() => {
+                setTeam(team.id, "join");
+                setOpen(false);
+              }}
               value={team.name}
             >
               <Flex align="center" gap={2}>
@@ -114,7 +132,7 @@ const Items = ({ hideManageTeams }: { hideManageTeams?: boolean }) => {
                 }}
               >
                 <Flex align="center" gap={2}>
-                  <TeamIcon className="h-4 w-4" />
+                  <TeamIcon className="h-4" />
                   <Text>Manage Teams</Text>
                 </Flex>
               </Command.Item>

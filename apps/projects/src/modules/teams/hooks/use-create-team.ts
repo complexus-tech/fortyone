@@ -36,15 +36,7 @@ export const useCreateTeamMutation = () => {
 
       return { previousTeams };
     },
-    onSuccess: (data) => {
-      toast.success("Success", {
-        description: "Team created successfully",
-        id: toastId,
-      });
-      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
-      router.push(`/settings/workspace/teams/${data.data?.id}`);
-    },
+
     onError: (error, variables, context) => {
       queryClient.setQueryData(teamKeys.lists(), context?.previousTeams);
       toast.error("Failed to create team", {
@@ -57,6 +49,15 @@ export const useCreateTeamMutation = () => {
           },
         },
       });
+    },
+    onSuccess: (data) => {
+      toast.success("Success", {
+        description: "Team created successfully",
+        id: toastId,
+      });
+      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
+      router.push(`/settings/workspace/teams/${data.data?.id}`);
     },
   });
 
