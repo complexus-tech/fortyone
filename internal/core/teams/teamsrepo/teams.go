@@ -33,7 +33,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.List")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"user_id":      userID,
 	}
@@ -59,20 +59,11 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			teams t
 		WHERE
 			t.workspace_id = :workspace_id
-			AND (
-				EXISTS (
-					SELECT 1 
-					FROM workspace_members wm 
-					WHERE wm.workspace_id = t.workspace_id 
-					AND wm.user_id = :user_id 
-					AND wm.role = 'admin'
-				)
-				OR EXISTS (
-					SELECT 1 
-					FROM team_members tm 
-					WHERE tm.team_id = t.team_id 
-					AND tm.user_id = :user_id
-				)
+			AND EXISTS (
+				SELECT 1 
+				FROM team_members tm 
+				WHERE tm.team_id = t.team_id 
+				AND tm.user_id = :user_id
 			)
 		ORDER BY t.created_at DESC;
 	`
