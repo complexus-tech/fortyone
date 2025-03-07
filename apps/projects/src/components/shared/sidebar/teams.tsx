@@ -1,21 +1,17 @@
 "use client";
-import { Box, Flex, Text, Button, Menu } from "ui";
-import { MoreHorizontalIcon, PlusIcon, TeamIcon } from "icons";
-import { useRouter } from "next/navigation";
-import nProgress from "nprogress";
+import { Box, Flex, Text, Button } from "ui";
+import { MoreHorizontalIcon, TeamIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
-// import { usePublicTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
+import { TeamsMenu } from "@/components/ui/teams-menu";
 import { Team } from "./team";
 
 export const Teams = () => {
-  const router = useRouter();
   const { data: teams = [] } = useTeams();
-  // const { data: publicTeams = [] } = usePublicTeams();
   const { userRole } = useUserRole();
 
   return (
-    <Box className="group mt-5">
+    <Box className="mt-5">
       <Flex align="center" className="mb-2.5" justify="between">
         <Text
           className="flex items-center gap-1 pl-2.5 font-medium"
@@ -25,11 +21,10 @@ export const Teams = () => {
           Your Teams
         </Text>
         {userRole !== "guest" && (
-          <Menu>
-            <Menu.Button>
+          <TeamsMenu>
+            <TeamsMenu.Trigger>
               <Button
                 asIcon
-                className="pointer-events-none opacity-0 transition duration-200 ease-linear group-hover:pointer-events-auto group-hover:opacity-100"
                 color="tertiary"
                 leftIcon={<MoreHorizontalIcon />}
                 rounded="full"
@@ -38,28 +33,9 @@ export const Teams = () => {
               >
                 <span className="sr-only">Manage Teams</span>
               </Button>
-            </Menu.Button>
-            <Menu.Items>
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    nProgress.start();
-                    router.push("/settings/workspace/teams");
-                  }}
-                >
-                  <TeamIcon /> Manage Teams
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    nProgress.start();
-                    router.push("/settings/workspace/teams/create");
-                  }}
-                >
-                  <PlusIcon /> Create a team
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
+            </TeamsMenu.Trigger>
+            <TeamsMenu.Items />
+          </TeamsMenu>
         )}
       </Flex>
       <Flex direction="column" gap={1}>
