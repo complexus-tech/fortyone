@@ -8,8 +8,8 @@ import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useMembers } from "@/lib/hooks/members";
 import { useUserRole } from "@/hooks";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
 import { AssigneesMenu } from "./assignees-menu";
@@ -19,7 +19,7 @@ import { StoryProperties } from "./properties";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
   const { data: teams = [] } = useTeams();
-  const { data: members = [] } = useMembers();
+  const { data: members = [] } = useTeamMembers(story.teamId);
   const { userRole } = useUserRole();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
@@ -146,6 +146,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                   onAssigneeSelected={(assigneeId) => {
                     handleUpdate({ assigneeId });
                   }}
+                  teamId={story.teamId}
                 />
               </AssigneesMenu>
             )}

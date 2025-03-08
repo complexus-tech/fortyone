@@ -256,18 +256,6 @@ export const Header = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings/invitations"
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <EmailIcon strokeWidth={2.5} />
-                  My invitations
-                </Link>
-              </Menu.Item>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
                   href="/settings/account"
                   onClick={() => {
                     setPathBeforeSettings(pathname);
@@ -337,6 +325,18 @@ export const Header = () => {
                   </Menu.Group>
                 </Menu.SubItems>
               </Menu.SubMenu>
+              <Menu.Item>
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings/invitations"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <EmailIcon strokeWidth={2.5} />
+                  My invitations
+                </Link>
+              </Menu.Item>
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>

@@ -3,6 +3,7 @@ import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useMembers } from "@/lib/hooks/members";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -46,16 +47,21 @@ const Items = ({
   onAssigneeSelected,
   disallowEmptySelection = false,
   excludeUsers = [],
+  teamId,
 }: {
   placeholder?: string;
   align?: "start" | "end" | "center";
   disallowEmptySelection?: boolean;
   excludeUsers?: string[];
   assigneeId?: string | null;
+  teamId?: string;
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
   const { setOpen } = useAssigneesMenu();
-  const { data: members = [] } = useMembers();
+  const { data: allMembers = [] } = useMembers();
+  const { data: teamMembers = [] } = useTeamMembers(teamId);
+
+  const members = teamId ? teamMembers : allMembers;
 
   return (
     <Popover.Content align={align} className="w-72">

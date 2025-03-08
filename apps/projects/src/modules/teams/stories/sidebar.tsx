@@ -19,20 +19,20 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
-import { useMembers } from "@/lib/hooks/members";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useLabels } from "@/lib/hooks/labels";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useTeams } from "../hooks/teams";
 
 export const Sidebar = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: stories = [] } = useTeamStories(teamId);
   const { data: teams = [] } = useTeams();
-  const { data: members = [] } = useMembers();
-  const { data: statuses = [] } = useStatuses();
-  const { data: sprints = [] } = useSprints();
+  const { data: members = [] } = useTeamMembers(teamId);
+  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const { data: sprints = [] } = useTeamSprints(teamId);
   const { data: labels = [] } = useLabels();
 
   const team = teams.find((t) => t.id === teamId)!;

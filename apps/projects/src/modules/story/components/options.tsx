@@ -239,6 +239,7 @@ export const Options = () => {
                 onAssigneeSelected={(assigneeId) => {
                   handleUpdate({ assigneeId });
                 }}
+                teamId={teamId}
               />
             </AssigneesMenu>
           }

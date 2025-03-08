@@ -159,6 +159,7 @@ export const StoryCard = ({
                 onAssigneeSelected={(assigneeId) => {
                   handleUpdate({ assigneeId });
                 }}
+                teamId={story.teamId}
               />
             </AssigneesMenu>
           )}
