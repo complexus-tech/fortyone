@@ -8,9 +8,9 @@ import "swiper/css";
 import "swiper/css/effect-cards";
 import { Container, Blur } from "@/components/ui";
 import { useCursor } from "@/hooks";
-import listImg from "../../../public/list.webp";
-import objectiveImg from "../../../public/objective.webp";
-import kanbanImg from "../../../public/kanban.webp";
+import listImg from "../../../public/images/product/list.webp";
+import objectiveImg from "../../../public/images/product/objective.webp";
+import kanbanImg from "../../../public/images/product/kanban.webp";
 
 export const HeroCards = () => {
   const cursor = useCursor();
