@@ -73,7 +73,7 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
       </Flex>
       <Flex
         className={cn(
-          "ml-5 h-0 overflow-hidden border-l border-gray-200 pl-2 transition-all duration-300 dark:border-dark-50",
+          "ml-5 h-0 overflow-hidden border-l border-gray-200/60 pl-2 transition-all duration-300 dark:border-dark-50",
           {
             "mt-2 h-max": isOpen,
           },

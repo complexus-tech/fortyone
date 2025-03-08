@@ -6,7 +6,7 @@ import { Teams } from "./teams";
 
 export const Sidebar = () => {
   return (
-    <Box className="flex h-screen flex-col justify-between bg-gray-50/60 px-4 pb-4 dark:bg-black">
+    <Box className="flex h-screen flex-col justify-between bg-gray-50/40 px-4 pb-4 dark:bg-black">
       <Box>
         <Header />
         <Navigation />
