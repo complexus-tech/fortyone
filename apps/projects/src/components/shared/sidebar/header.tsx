@@ -173,15 +173,15 @@ export const Header = () => {
                   ) : null}
                 </Menu.Item>
               ))}
+            </Menu.Group>
+            <Menu.Separator className="my-2" />
+            <Menu.Group>
               <Menu.Item className="pl-3" onSelect={handleCreateWorkspace}>
                 <PlusIcon />
                 Create workspace
               </Menu.Item>
-            </Menu.Group>
-            <Menu.Group>
               {userRole === "admin" && (
                 <>
-                  <Menu.Separator className="my-2" />
                   <Menu.Item>
                     <Link
                       className="flex w-full items-center gap-2"
