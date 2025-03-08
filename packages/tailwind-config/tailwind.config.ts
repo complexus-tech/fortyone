@@ -13,7 +13,7 @@ const config: Omit<Config, "content"> = {
       current: "currentColor",
       primary: "#EA6060",
       secondary: "#002F61",
-      black: "#040404",
+      black: "#010102",
       white: "#ffffff",
       success: "#22c55e",
       warning: "#eab308",
@@ -30,7 +30,7 @@ const config: Omit<Config, "content"> = {
         300: "#A19B94",
       },
       dark: {
-        DEFAULT: "#010102",
+        DEFAULT: "#0a0a0a",
         300: "#08090a",
         200: "#0f1011",
         100: "#141516",
