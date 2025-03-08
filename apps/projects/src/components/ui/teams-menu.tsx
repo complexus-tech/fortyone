@@ -56,7 +56,7 @@ const Items = ({
   return (
     <Popover.Content align="start" className="w-72" sideOffset={5}>
       <Command>
-        <Command.Input autoFocus placeholder="Search teams..." />
+        <Command.Input autoFocus placeholder="Join or manage teams..." />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
           <Text color="muted">No teams found.</Text>
@@ -65,6 +65,7 @@ const Items = ({
           {teams.map((team) => (
             <Command.Item
               className="justify-between py-1 pr-1"
+              disabled={teams.length === 1}
               key={team.id}
               onSelect={() => {
                 setTeam(team.id, "leave");
@@ -82,6 +83,7 @@ const Items = ({
               <Button
                 className="px-2 dark:border-dark-50/80"
                 color="tertiary"
+                disabled={teams.length === 1}
                 size="xs"
               >
                 Leave

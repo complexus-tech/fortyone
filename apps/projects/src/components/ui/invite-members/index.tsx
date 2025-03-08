@@ -4,10 +4,12 @@ import { Button, Dialog, Select, TextArea, Text, Flex } from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { inviteMembers } from "@/modules/invitations/actions/invite";
 import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
+import { invitationKeys } from "@/constants/keys";
 
 type InviteFormState = {
   emails: string;
@@ -28,6 +30,7 @@ export const InviteMembersDialog = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
+  const queryClient = useQueryClient();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const [formState, setFormState] = useState<InviteFormState>({
@@ -153,6 +156,9 @@ export const InviteMembersDialog = ({
         id: toastId,
       });
     } else {
+      queryClient.invalidateQueries({
+        queryKey: invitationKeys.pending,
+      });
       toast.info("Success", {
         description: "Invitations sent to member emails",
         id: toastId,
