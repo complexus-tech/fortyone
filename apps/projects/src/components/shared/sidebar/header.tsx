@@ -147,7 +147,7 @@ export const Header = () => {
               <span className="max-w-[18ch] truncate">{workspace?.name}</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="start" className="pt-0">
+          <Menu.Items align="start" className="min-w-56 pt-0">
             <Menu.Group className="space-y-1 pt-1.5">
               {workspaces.map(({ id, name, color, slug }) => (
                 <Menu.Item
