@@ -9,7 +9,7 @@ export const Skeleton = ({
   return (
     <Box
       className={cn(
-        "animate-pulse rounded-lg bg-gray-100 dark:bg-dark-300",
+        "animate-pulse rounded-lg bg-gray-100 dark:bg-dark-200",
         className
       )}
       {...rest}
