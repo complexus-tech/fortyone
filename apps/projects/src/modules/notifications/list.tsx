@@ -1,5 +1,4 @@
 import { Box, Flex, Text } from "ui";
-import { BellIcon } from "icons";
 import { NotificationCard } from "@/modules/notifications/card";
 import { NotificationMessage } from "@/modules/notifications/message";
 import { NotificationsHeader } from "./header";
@@ -19,11 +18,7 @@ export const ListNotifications = ({
           ))}
           {notifications.length === 0 && (
             <Flex align="center" className="h-full px-6" justify="center">
-              <Flex align="center" direction="column">
-                <BellIcon
-                  className="mb-5 h-16 w-auto rotate-12 opacity-50"
-                  strokeWidth={1.5}
-                />
+              <Box>
                 <Text className="mb-3" fontSize="xl">
                   No notifications
                 </Text>
@@ -31,7 +26,7 @@ export const ListNotifications = ({
                   You will receive notifications when you are assigned or
                   mentioned in a story.
                 </Text>
-              </Flex>
+              </Box>
             </Flex>
           )}
         </Box>
