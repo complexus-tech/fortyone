@@ -1,11 +1,13 @@
 import type { Icon } from "./types";
-
+import { cn } from "lib";
 export const BellIcon = (props: Icon) => {
+  const { strokeWidth = 2, className, ...rest } = props;
   return (
     <svg
-      {...props}
-      fill="currentColor"
-      fillOpacity={0.1}
+      {...rest}
+      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      strokeWidth={strokeWidth}
+      fill="none"
       height="24"
       viewBox="0 0 24 24"
       width="24"
@@ -16,19 +18,16 @@ export const BellIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
       <path
         d="M10.5 3.125C10.5 3.95343 11.1716 5 12 5C12.8284 5 13.5 3.95343 13.5 3.125C13.5 2.29657 12.8284 2 12 2C11.1716 2 10.5 2.29657 10.5 3.125Z"
         stroke="currentColor"
-        strokeWidth="2"
       />
       <path
         d="M15 19C15 20.6569 13.6569 22 12 22C10.3431 22 9 20.6569 9 19"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
       />
     </svg>
   );

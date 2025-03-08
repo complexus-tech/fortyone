@@ -15,6 +15,7 @@ import {
   MoonIcon,
   SunIcon,
   ArrowRightIcon,
+  EmailIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +28,7 @@ import { useAnalytics, useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
+import { useProfile } from "@/lib/hooks/profile";
 import { changeWorkspace, logOut } from "./actions";
 import { getCurrentWorkspace } from "./utils";
 
@@ -54,6 +56,7 @@ export const Header = () => {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
+  const { data: profile } = useProfile();
   const { analytics } = useAnalytics();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
@@ -181,11 +184,102 @@ export const Header = () => {
                 Create workspace
               </Menu.Item>
             </Menu.Group>
+            <Menu.Group>
+              {userRole === "admin" && (
+                <>
+                  <Menu.Separator className="my-2" />
+                  <Menu.Item>
+                    <Link
+                      className="flex w-full items-center gap-2"
+                      href="/settings"
+                      onClick={() => {
+                        setPathBeforeSettings(pathname);
+                      }}
+                    >
+                      <SettingsIcon className="h-[1.15rem]" />
+                      Workspace settings
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Item>
+                    <Link
+                      className="flex w-full items-center gap-2"
+                      href="/settings/workspace/members"
+                      onClick={() => {
+                        setPathBeforeSettings(pathname);
+                      }}
+                    >
+                      <UsersAddIcon className="h-[1.3rem] w-auto" />
+                      Invite & manage members
+                    </Link>
+                  </Menu.Item>
+                </>
+              )}
+            </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
+              <Menu.Item className="text-danger" onSelect={handleLogout}>
+                <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
+                Log out
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+        <Menu>
+          <Menu.Button>
+            <Button
+              asIcon
+              color="tertiary"
+              leftIcon={
+                <Avatar
+                  className="h-[1.6rem] text-sm"
+                  name={profile?.fullName || profile?.username}
+                  src={profile?.avatarUrl}
+                  style={{
+                    backgroundColor: workspace?.color,
+                  }}
+                />
+              }
+              size="sm"
+              variant="naked"
+            >
+              <span className="sr-only">Profile</span>
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="start" className="ml-4 pt-0">
+            <Menu.Group className="px-4 py-2.5">
+              <Text className="line-clamp-1" color="muted">
+                {session?.user?.email}
+              </Text>
+            </Menu.Group>
+            <Menu.Separator className="mb-2" />
+            <Menu.Group>
+              <Menu.Item>
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings/invitations"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <EmailIcon className="h-[1.15rem]" />
+                  My invitations
+                </Link>
+              </Menu.Item>
+              <Menu.Item>
+                <Link
+                  className="flex w-full items-center gap-2"
+                  href="/settings/account"
+                  onClick={() => {
+                    setPathBeforeSettings(pathname);
+                  }}
+                >
+                  <SettingsIcon className="h-[1.15rem]" />
+                  Account settings
+                </Link>
+              </Menu.Item>
               <Menu.SubMenu>
                 <Menu.SubTrigger>
-                  <span className="flex w-full items-center justify-between gap-1.5">
+                  <span className="flex w-full items-center justify-between gap-4">
                     <span className="flex items-center gap-2">
                       {theme === "system" ? (
                         <SystemIcon className="h-[1.15rem]" />
@@ -243,34 +337,6 @@ export const Header = () => {
                   </Menu.Group>
                 </Menu.SubItems>
               </Menu.SubMenu>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href={
-                    userRole === "admin" ? "/settings" : "/settings/account"
-                  }
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <SettingsIcon className="h-[1.15rem]" />
-                  {userRole === "admin" ? "Workspace settings" : "Settings"}
-                </Link>
-              </Menu.Item>
-              {userRole === "admin" && (
-                <Menu.Item>
-                  <Link
-                    className="flex w-full items-center gap-2"
-                    href="/settings/workspace/members"
-                    onClick={() => {
-                      setPathBeforeSettings(pathname);
-                    }}
-                  >
-                    <UsersAddIcon className="h-[1.3rem] w-auto" />
-                    Invite & manage members
-                  </Link>
-                </Menu.Item>
-              )}
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>

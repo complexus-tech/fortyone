@@ -46,7 +46,7 @@ const CommandInput = forwardRef<
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-200/80 backdrop-blur z-50 border border-gray-50 dark:border-dark-50/60 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
+  "bg-white/80 dark:bg-dark-200/90 backdrop-blur z-50 border border-gray-50 dark:border-dark-50/60 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
   {
     variants: {
       rounded: {
@@ -125,7 +125,7 @@ const CommandItem = forwardRef<
     className={cn(
       "flex aria-selected:bg-gray-100/50 aria-selected:dark:bg-dark-50/35 gap-2 items-center select-none focus:dark:bg-dark-100/70 hover:dark:bg-dark-50 hover:bg-gray-100/70 focus:bg-gray-50 rounded-[0.4rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
-        "bg-gray-100/70 dark:bg-dark-50/60": active,
+        "bg-gray-100/70 dark:bg-dark-50": active,
       },
       className
     )}
