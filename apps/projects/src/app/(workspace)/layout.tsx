@@ -18,6 +18,7 @@ import {
   sprintKeys,
   statusKeys,
   workspaceKeys,
+  userKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
@@ -26,6 +27,7 @@ import type { ApiResponse, Workspace } from "@/types";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { getSummary } from "@/lib/queries/analytics/get-summary";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
+import { getProfile } from "@/lib/queries/users/profile";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -114,6 +116,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: ["summary"],
       queryFn: getSummary,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: userKeys.profile(),
+      queryFn: () => getProfile(),
     }),
   ]);
 
