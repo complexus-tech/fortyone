@@ -1,13 +1,12 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
-import { Container, Blur, GoogleIcon } from "@/components/ui";
+import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
   return (
     <Box className="relative">
-      <Blur className="absolute -top-96 left-1/2 right-1/2 h-[300px] w-[300px] -translate-x-1/2 bg-warning/5 md:h-[700px] md:w-[90vw]" />
       <Container className="pt-12 md:pt-16">
         <Flex
           align="center"

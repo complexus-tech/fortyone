@@ -12,7 +12,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { cn } from "lib";
-import { Container, Blur } from "@/components/ui";
+import { Container } from "@/components/ui";
 import kanbanImg from "../../../public/kanban.png";
 import storyImg from "../../../public/story1.png";
 import sprintImg from "../../../public/sprints.png";
@@ -58,7 +58,6 @@ const Intro = () => (
         </Text>
       </motion.div>
     </Box>
-    <Blur className="absolute left-1/2 right-1/2 top-0 z-[4] h-[230vh] w-[70vw] -translate-x-1/2 bg-warning/[0.07] md:h-[70vw]" />
   </Box>
 );
 

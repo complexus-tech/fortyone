@@ -1,14 +1,13 @@
 "use client";
 import { Box, Button, Flex, Text } from "ui";
 import { motion } from "framer-motion";
-import { Blur, Container, GoogleIcon } from "@/components/ui";
+import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const CallToAction = () => {
   return (
-    <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-[#030303]">
+    <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-dark/80">
       <Container className="relative max-w-7xl py-16 md:py-32">
-        <Blur className="-translate-y-1/23 absolute left-1/2 right-1/2 top-10 h-[450px] w-[600px] -translate-x-1/2 bg-warning/10" />
         <Flex
           align="center"
           className="md:mt-18 mb-8 text-center"

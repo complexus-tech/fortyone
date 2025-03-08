@@ -2,7 +2,6 @@
 import { Box, Text } from "ui";
 import { cn } from "lib";
 import { Container } from "@/components/ui";
-import { Blur } from "@/components/ui/blur";
 
 export const Story = () => {
   const features: { heading: string; description: string }[] = [
@@ -76,7 +75,6 @@ export const Story = () => {
             </Box>
           ))}
         </Box>
-        <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 bg-warning/10" />
       </Box>
     </Container>
   );
