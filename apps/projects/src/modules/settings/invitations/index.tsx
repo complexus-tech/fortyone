@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Text } from "ui";
+import { Box, Button, Text } from "ui";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { SectionHeader } from "../components";
 import { InvitationRow } from "./components/invite";
@@ -15,6 +15,11 @@ export const InvitationsPage = () => {
       </Text>
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
+          action={
+            invitations.length > 1 && (
+              <Button color="tertiary">Accept All</Button>
+            )
+          }
           description="View and manage your pending workspace invitations."
           title="Pending Invitations"
         />

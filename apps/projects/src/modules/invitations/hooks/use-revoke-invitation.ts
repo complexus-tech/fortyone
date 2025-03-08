@@ -14,9 +14,15 @@ export const useRevokeInvitationMutation = () => {
       await queryClient.cancelQueries({
         queryKey: invitationKeys.pending,
       });
+      await queryClient.cancelQueries({
+        queryKey: invitationKeys.mine,
+      });
 
       const previousInvitations = queryClient.getQueryData<Invitation[]>(
         invitationKeys.pending,
+      );
+      const previousMineInvitations = queryClient.getQueryData<Invitation[]>(
+        invitationKeys.mine,
       );
 
       // Optimistically remove the invitation from the cache
@@ -25,19 +31,26 @@ export const useRevokeInvitationMutation = () => {
         (old: Invitation[] = []) =>
           old.filter((invitation) => invitation.id !== invitationId),
       );
+      queryClient.setQueryData(invitationKeys.mine, (old: Invitation[] = []) =>
+        old.filter((invitation) => invitation.id !== invitationId),
+      );
 
       toast.loading("Revoking invitation...", {
         description: "Please wait...",
         id: toastId,
       });
 
-      return { previousInvitations };
+      return { previousInvitations, previousMineInvitations };
     },
     onError: (error, variables, context) => {
       // Restore the previous data
       queryClient.setQueryData(
         invitationKeys.pending,
         context?.previousInvitations,
+      );
+      queryClient.setQueryData(
+        invitationKeys.mine,
+        context?.previousMineInvitations,
       );
 
       toast.error("Failed to revoke", {
@@ -57,6 +70,7 @@ export const useRevokeInvitationMutation = () => {
         id: toastId,
       });
       queryClient.invalidateQueries({ queryKey: invitationKeys.pending });
+      queryClient.invalidateQueries({ queryKey: invitationKeys.mine });
     },
   });
 
