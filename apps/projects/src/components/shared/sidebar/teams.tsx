@@ -1,6 +1,6 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
-import { MoreHorizontalIcon, TeamIcon } from "icons";
+import { MoreHorizontalIcon } from "icons";
 import { useSession } from "next-auth/react";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
@@ -26,11 +26,7 @@ export const Teams = () => {
   return (
     <Box className="mt-5">
       <Flex align="center" className="mb-2.5" justify="between">
-        <Text
-          className="flex items-center gap-1 pl-2.5 font-medium"
-          color="muted"
-        >
-          <TeamIcon className="h-[1.2rem]" />
+        <Text className="pl-2.5 font-medium" color="muted">
           Your Teams
         </Text>
         {userRole !== "guest" && (
