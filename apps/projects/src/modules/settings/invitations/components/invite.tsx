@@ -1,71 +1,25 @@
 "use client";
 import { Box, Text, Flex, Button, Avatar } from "ui";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { redirect } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import type { Invitation } from "@/modules/invitations/types";
-import { acceptInvitation } from "@/modules/invitations/actions/accept-invitation";
-import { invitationKeys, workspaceKeys } from "@/constants/keys";
 import { useRevokeInvitationMutation } from "@/modules/invitations/hooks/use-revoke-invitation";
+import { useAcceptInvitationMutation } from "@/modules/invitations/hooks/use-accept-invitation";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
-const getRedirectUrl = (slug: string) => {
-  if (domain.includes("localhost")) {
-    return `http://${slug}.${domain}/my-work`;
-  }
-  return `https://${slug}.${domain}/my-work`;
-};
-
 export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
-  const queryClient = useQueryClient();
   const { mutate: declineInvitation } = useRevokeInvitationMutation();
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: acceptInvitation } = useAcceptInvitationMutation();
+
   const [isOpen, setIsOpen] = useState(false);
   const timeLeft = formatDistanceToNow(new Date(invitation.expiresAt), {
     addSuffix: true,
   });
 
-  const handleAccept = async () => {
-    const toastId = "accept-invitation";
-    setIsLoading(true);
-    toast.loading("Accepting...", {
-      id: toastId,
-      description: "Please wait...",
-    });
-    const res = await acceptInvitation(invitation.token!);
-    if (res.error?.message) {
-      toast.error("Failed to accept invitation", {
-        id: toastId,
-        description:
-          res.error.message || "There was an error accepting the invitation",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: invitationKeys.mine,
-      }),
-      queryClient.invalidateQueries({
-        queryKey: workspaceKeys.lists(),
-      }),
-    ]);
-    setIsLoading(false);
-    toast.success("Invitation accepted", {
-      id: toastId,
-      description: "You can now access the workspace",
-      action: {
-        label: "Open",
-        onClick: () => {
-          redirect(getRedirectUrl(invitation.workspaceSlug));
-        },
-      },
-    });
+  const handleAccept = () => {
+    acceptInvitation(invitation.token!);
   };
 
   const handleDecline = () => {
@@ -101,8 +55,6 @@ export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
       <Flex gap={2}>
         <Button
           color="primary"
-          loading={isLoading}
-          loadingText="Accepting..."
           onClick={handleAccept}
           size="sm"
           variant="naked"
