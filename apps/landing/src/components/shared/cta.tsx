@@ -1,10 +1,12 @@
 "use client";
 import { Box, Button, Flex, Text } from "ui";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const CallToAction = () => {
+  const { data: session } = useSession();
   return (
     <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-dark/80">
       <Container className="relative max-w-7xl py-16 md:py-32">
@@ -82,7 +84,7 @@ export const CallToAction = () => {
                 rounded="full"
                 size="lg"
               >
-                Sign up with Google
+                {session ? "Continue with Google" : "Sign up with Google"}
               </Button>
             </motion.span>
           </Box>

@@ -15,6 +15,7 @@ import { getMembers } from "@/lib/queries/members/get-members";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
+import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -47,6 +48,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: invitationKeys.pending,
       queryFn: () => getPendingInvitations(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: invitationKeys.mine,
+      queryFn: () => getMyInvitations(),
     }),
   ]);
 

@@ -1,10 +1,12 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
+  const { data: session } = useSession();
   return (
     <Box className="relative">
       <Container className="pt-12 md:pt-16">
@@ -102,7 +104,7 @@ export const Hero = () => {
                 rounded="full"
                 size="lg"
               >
-                Sign up with Google
+                {session ? "Continue with Google" : "Sign up with Google"}
               </Button>
             </motion.span>
           </Flex>
