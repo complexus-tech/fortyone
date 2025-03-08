@@ -6,6 +6,7 @@ import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import nProgress from "nprogress";
 import { useLocalStorage, useUserRole } from "@/hooks";
+import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { BodyContainer } from "../shared";
 import { NavLink } from "../ui";
 
@@ -94,6 +95,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const [prevPage, setPrevPage] = useLocalStorage("pathBeforeSettings", "");
   const router = useRouter();
   const pathname = usePathname();
+  const { data: myInvitations = [] } = useMyInvitations();
 
   const goBack = () => {
     nProgress.start();
@@ -113,6 +115,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     { title: "Preferences", href: "/settings/account/preferences" },
     { title: "Security", href: "/settings/account/security" },
     { title: "Delete account", href: "/settings/account/delete" },
+    ...(myInvitations.length > 0
+      ? [{ title: "Invitations", href: "/settings/invitations" }]
+      : []),
   ];
 
   const workspaceItems = [

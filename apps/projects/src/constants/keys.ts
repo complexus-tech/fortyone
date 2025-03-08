@@ -59,4 +59,5 @@ export const userKeys = {
 
 export const invitationKeys = {
   pending: ["pending-invitations"] as const,
+  mine: ["my-invitations"] as const,
 };

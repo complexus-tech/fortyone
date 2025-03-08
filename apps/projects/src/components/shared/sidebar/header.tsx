@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for the theme icons */
 "use client";
 import { useState } from "react";
-import { Avatar, Button, Flex, Menu, Text } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Menu, Text } from "ui";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -29,6 +29,7 @@ import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { useProfile } from "@/lib/hooks/profile";
+import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { changeWorkspace, logOut } from "./actions";
 import { getCurrentWorkspace } from "./utils";
 
@@ -64,6 +65,7 @@ export const Header = () => {
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const { userRole } = useUserRole();
   const { data: workspaces = [] } = useWorkspaces(session!.token);
+  const { data: myInvitations = [] } = useMyInvitations();
   const workspace = getCurrentWorkspace(workspaces);
 
   useHotkeys("shift+n", () => {
@@ -147,13 +149,7 @@ export const Header = () => {
               <span className="max-w-[18ch] truncate">{workspace?.name}</span>
             </Button>
           </Menu.Button>
-          <Menu.Items align="start" className="w-80 pt-0">
-            <Menu.Group className="px-4 py-2.5">
-              <Text className="line-clamp-1" color="muted">
-                {session?.user?.email}
-              </Text>
-            </Menu.Group>
-            <Menu.Separator className="my-0" />
+          <Menu.Items align="start" className="pt-0">
             <Menu.Group className="space-y-1 pt-1.5">
               {workspaces.map(({ id, name, color, slug }) => (
                 <Menu.Item
@@ -226,24 +222,29 @@ export const Header = () => {
         </Menu>
         <Menu>
           <Menu.Button>
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={
-                <Avatar
-                  className="h-[1.6rem] text-sm"
-                  name={profile?.fullName || profile?.username}
-                  src={profile?.avatarUrl}
-                  style={{
-                    backgroundColor: workspace?.color,
-                  }}
-                />
-              }
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Profile</span>
-            </Button>
+            <Box className="relative">
+              <Button
+                asIcon
+                color="tertiary"
+                leftIcon={
+                  <Avatar
+                    className="relative h-[1.6rem] text-sm"
+                    name={profile?.fullName || profile?.username}
+                    src={profile?.avatarUrl}
+                    style={{
+                      backgroundColor: workspace?.color,
+                    }}
+                  />
+                }
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">Profile</span>
+              </Button>
+              {myInvitations.length > 0 && (
+                <Box className="absolute right-1 top-0.5 z-[2] size-2 animate-pulse rounded-full bg-primary" />
+              )}
+            </Box>
           </Menu.Button>
           <Menu.Items align="start" className="ml-4 pt-0">
             <Menu.Group className="px-4 pb-2 pt-2.5">
@@ -325,18 +326,28 @@ export const Header = () => {
                   </Menu.Group>
                 </Menu.SubItems>
               </Menu.SubMenu>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href="/settings/invitations"
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <EmailIcon strokeWidth={2.5} />
-                  My invitations
-                </Link>
-              </Menu.Item>
+              {myInvitations.length > 0 && (
+                <Menu.Item>
+                  <Link
+                    className="flex w-full items-center justify-between gap-2"
+                    href="/settings/invitations"
+                    onClick={() => {
+                      setPathBeforeSettings(pathname);
+                    }}
+                  >
+                    <Flex gap={2}>
+                      <EmailIcon
+                        className="relative top-px"
+                        strokeWidth={2.5}
+                      />
+                      My invitations
+                    </Flex>
+                    <Badge rounded="full" size="sm">
+                      {myInvitations.length}
+                    </Badge>
+                  </Link>
+                </Menu.Item>
+              )}
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
