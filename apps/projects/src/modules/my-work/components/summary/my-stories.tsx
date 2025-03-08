@@ -49,16 +49,16 @@ const StoryRow = ({
               {getTeamLabel()}-{sequenceId}
             </Text>
             <PriorityIcon className="relative -top-px" priority={priority} />
-            <Text className="max-w-[22rem] truncate hover:opacity-90">
-              {title}
-            </Text>
+            <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
           </Flex>
         </Flex>
 
-        <Flex align="center" gap={3}>
+        <Flex align="center" className="shrink-0" gap={3}>
           <Text className="flex shrink-0 items-center gap-1">
             <StoryStatusIcon className="relative -top-px" statusId={statusId} />
-            {getStoryStatus()}
+            <span className="inline-block max-w-[16ch] truncate">
+              {getStoryStatus()}
+            </span>
           </Text>
           {endDate ? (
             <Tooltip

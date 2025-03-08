@@ -246,7 +246,7 @@ export const Header = () => {
             </Button>
           </Menu.Button>
           <Menu.Items align="start" className="ml-4 pt-0">
-            <Menu.Group className="px-4 py-2.5">
+            <Menu.Group className="px-4 pb-2 pt-2.5">
               <Text className="line-clamp-1" color="muted">
                 {session?.user?.email}
               </Text>
@@ -261,7 +261,7 @@ export const Header = () => {
                     setPathBeforeSettings(pathname);
                   }}
                 >
-                  <EmailIcon className="h-[1.15rem]" />
+                  <EmailIcon strokeWidth={2.5} />
                   My invitations
                 </Link>
               </Menu.Item>
@@ -273,7 +273,7 @@ export const Header = () => {
                     setPathBeforeSettings(pathname);
                   }}
                 >
-                  <SettingsIcon className="h-[1.15rem]" />
+                  <SettingsIcon />
                   Account settings
                 </Link>
               </Menu.Item>
