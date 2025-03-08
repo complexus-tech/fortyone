@@ -36,8 +36,6 @@ import { getCurrentWorkspace } from "./utils";
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 const clearAllStorage = () => {
-  localStorage.clear();
-  sessionStorage.clear();
   document.cookie.split(";").forEach((c) => {
     document.cookie = c
       .replace(/^ +/, "")
