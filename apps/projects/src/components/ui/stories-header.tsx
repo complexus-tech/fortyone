@@ -54,7 +54,10 @@ export const StoriesHeader = ({
       <Flex align="center" justify="between">
         <Flex align="center" className="relative gap-1.5">
           <Checkbox
-            checked={groupedStories.every((s) => selectedStories.includes(s))}
+            checked={
+              groupedStories.every((s) => selectedStories.includes(s)) &&
+              groupedStories.length > 0
+            }
             className="absolute -left-[1.6rem] rounded-[0.35rem]"
             disabled={userRole === "guest"}
             onCheckedChange={(checked) => {
