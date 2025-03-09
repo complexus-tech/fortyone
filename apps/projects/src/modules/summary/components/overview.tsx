@@ -1,5 +1,6 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
+import { useSession } from "next-auth/react";
 import { useSummary } from "@/lib/hooks/summary";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
@@ -31,6 +32,7 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 );
 
 export const Overview = () => {
+  const { data: session } = useSession();
   const { data: summary } = useSummary();
   const overview = [
     {
@@ -54,12 +56,22 @@ export const Overview = () => {
       title: "Assigned to you",
     },
   ];
+
+  const timeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 18) return "afternoon";
+    return "evening";
+  };
   return (
     <Box>
-      <Text fontSize="lg">
+      <Text as="h2" className="mb-2" fontSize="3xl" fontWeight="medium">
+        Good {timeOfDay()}, {session?.user?.name}.
+      </Text>
+      <Text color="muted" fontSize="lg">
         Here&rsquo;s what&rsquo;s happening with your stories.
       </Text>
-      <Box className="mb-4 mt-2 grid grid-cols-5 gap-4">
+      <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
         {overview.map((item) => (
           <Card key={item.title} {...item} />
         ))}

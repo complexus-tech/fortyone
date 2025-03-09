@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Button, Tabs } from "ui";
-import { ClockIcon, TeamIcon } from "icons";
+import { ClockIcon, InviteMembersIcon, TeamIcon } from "icons";
 import { useState } from "react";
 import { useMembers } from "@/lib/hooks/members";
 import { InviteMembersDialog } from "@/components/ui";
@@ -22,7 +22,7 @@ const MembersTab = ({
         action={
           <Button
             color="tertiary"
-            leftIcon={<TeamIcon />}
+            leftIcon={<InviteMembersIcon />}
             onClick={() => {
               setIsInviteMembersDialogOpen(true);
             }}
@@ -59,7 +59,7 @@ const PendingInvitationsTab = ({
         action={
           <Button
             color="tertiary"
-            leftIcon={<TeamIcon />}
+            leftIcon={<InviteMembersIcon />}
             onClick={() => {
               setIsInviteMembersDialogOpen(true);
             }}

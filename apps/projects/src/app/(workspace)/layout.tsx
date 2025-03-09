@@ -25,8 +25,6 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { ApiResponse, Workspace } from "@/types";
-import { getActivities } from "@/lib/queries/activities/get-activities";
-import { getSummary } from "@/lib/queries/analytics/get-summary";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
@@ -110,14 +108,6 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
       queryFn: () => getWorkspaces(session?.token),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ["activities"],
-      queryFn: getActivities,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ["summary"],
-      queryFn: getSummary,
     }),
     queryClient.prefetchQuery({
       queryKey: userKeys.profile(),

@@ -15,7 +15,7 @@ import {
   MoonIcon,
   SunIcon,
   ArrowRightIcon,
-  EmailIcon,
+  InvitesIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -334,7 +334,7 @@ export const Header = () => {
                     }}
                   >
                     <Flex gap={2}>
-                      <EmailIcon
+                      <InvitesIcon
                         className="relative top-px"
                         strokeWidth={2.5}
                       />

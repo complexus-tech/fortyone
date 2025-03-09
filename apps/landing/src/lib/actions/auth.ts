@@ -38,7 +38,7 @@ export async function authenticateWithToken({
     return {
       data: {
         id: user.id,
-        name: user.fullName,
+        name: user.fullName || user.username,
         email: user.email,
         token: user.token,
         workspaces: [],
@@ -83,7 +83,7 @@ export async function authenticateGoogleUser({
   const user = res.data!;
   return {
     id: user.id,
-    name: user.fullName,
+    name: user.fullName || user.username,
     email: user.email,
     token: user.token,
     workspaces: [],

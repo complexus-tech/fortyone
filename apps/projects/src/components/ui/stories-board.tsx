@@ -12,7 +12,7 @@ import {
 import { Box, Flex, Text } from "ui";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { StoryMissingIcon } from "icons";
+import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
@@ -248,6 +248,7 @@ export const StoriesBoard = ({
                 <Flex gap={2}>
                   <NewStoryButton
                     color="tertiary"
+                    leftIcon={<PlusIcon />}
                     objectiveId={objectiveId}
                     size="md"
                     sprintId={sprintId}

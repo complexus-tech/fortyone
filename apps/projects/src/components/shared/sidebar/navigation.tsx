@@ -1,7 +1,12 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import { NotificationsIcon, ObjectiveIcon, UserIcon } from "icons";
+import {
+  DashboardIcon,
+  NotificationsIcon,
+  ObjectiveIcon,
+  UserIcon,
+} from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 
@@ -21,12 +26,17 @@ export const Navigation = () => {
       href: "/notifications",
       // messages: 3,
     },
+
     {
       name: "My Work",
-      icon: <UserIcon strokeWidth={2} />,
+      icon: <UserIcon />,
       href: "/my-work",
     },
-
+    {
+      name: "Summary",
+      icon: <DashboardIcon />,
+      href: "/summary",
+    },
     // {
     //   name: "Analytics",
     //   icon: (

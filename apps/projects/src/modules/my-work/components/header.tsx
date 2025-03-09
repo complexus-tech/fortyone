@@ -21,10 +21,10 @@ export const Header = ({
 }) => {
   const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
-  const tabs = ["summary", "assigned", "created", "subscribed"] as const;
+  const tabs = ["assigned", "created", "subscribed"] as const;
   const [tab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("summary"),
+    parseAsStringLiteral(tabs).withDefault("assigned"),
   );
   return (
     <HeaderContainer className="justify-between">
@@ -42,20 +42,14 @@ export const Header = ({
             },
           ]}
         />
-        {tab !== "summary" && (
-          <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-            {data?.length} stories
-          </Badge>
-        )}
+
+        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
+          {data?.length} stories
+        </Badge>
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher
-          disabled={tab === "summary"}
-          layout={layout}
-          setLayout={setLayout}
-        />
+        <LayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesViewOptionsButton
-          disabled={tab === "summary"}
           groupByOptions={["Status", "Priority", "Assignee", "None"]}
           layout={layout}
           setViewOptions={setViewOptions}
