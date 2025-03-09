@@ -1,4 +1,5 @@
 import { useSession } from "next-auth/react";
+import { useUserRole } from "./role";
 
 export const useIsOwner = (entityOwnerId?: string) => {
   const { data: session } = useSession();
@@ -14,14 +15,13 @@ export const useIsOwner = (entityOwnerId?: string) => {
 
 export const useIsAdminOrOwner = (entityOwnerId?: string) => {
   const { data: session } = useSession();
+  const { userRole } = useUserRole();
   if (!entityOwnerId) {
     return {
-      isAdminOrOwner: session?.user?.userRole === "admin",
+      isAdminOrOwner: userRole === "admin",
     };
   }
   return {
-    isAdminOrOwner:
-      session?.user?.userRole === "admin" ||
-      session?.user?.id === entityOwnerId,
+    isAdminOrOwner: userRole === "admin" || session?.user?.id === entityOwnerId,
   };
 };

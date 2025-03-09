@@ -27,11 +27,10 @@ import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useAnalytics, useLocalStorage } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
+import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { useProfile } from "@/lib/hooks/profile";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { changeWorkspace, logOut } from "./actions";
-import { getCurrentWorkspace } from "./utils";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -62,9 +61,9 @@ export const Header = () => {
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const { userRole } = useUserRole();
-  const { data: workspaces = [] } = useWorkspaces(session!.token);
+  const { data: workspaces = [] } = useWorkspaces();
   const { data: myInvitations = [] } = useMyInvitations();
-  const workspace = getCurrentWorkspace(workspaces);
+  const { workspace } = useCurrentWorkspace();
 
   useHotkeys("shift+n", () => {
     if (userRole !== "guest") {

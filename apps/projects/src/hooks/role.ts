@@ -1,8 +1,8 @@
-import { useSession } from "next-auth/react";
+import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const useUserRole = () => {
-  const { data: session } = useSession();
+  const { workspace } = useCurrentWorkspace();
   return {
-    userRole: session?.user?.userRole,
+    userRole: workspace?.userRole,
   };
 };
