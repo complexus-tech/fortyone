@@ -23,14 +23,12 @@ export const OptionsHeader = ({
   const [_, copyText] = useCopyToClipboard();
   const { code } = teams.find((team) => team.id === teamId)!;
   const isDeleted = Boolean(deletedAt);
-  const { mutateAsync: deleteAsync } = useDeleteStoryMutation();
+  const { mutate: deleteStory } = useDeleteStoryMutation();
   const { mutateAsync } = useRestoreStoryMutation();
-  const handleDelete = async () => {
-    try {
-      await deleteAsync(id);
-    } finally {
-      setIsOpen(false);
-    }
+
+  const handleDelete = () => {
+    deleteStory(id);
+    setIsOpen(false);
   };
 
   const restoreStory = async () => {

@@ -41,13 +41,8 @@ export const useRestoreStoryMutation = () => {
         },
       });
     },
-    onSuccess: () => {
-      toast.success("Success", {
-        description: "Story restored successfully",
-      });
-    },
-    onSettled: (storyId) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId!) });
+    onSuccess: (storyId) => {
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
     },
