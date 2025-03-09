@@ -19,10 +19,10 @@ export const ListNotifications = ({
           {notifications.length === 0 && (
             <Flex align="center" className="h-full px-6" justify="center">
               <Box>
-                <Text className="mb-3" fontSize="xl">
+                <Text align="center" className="mb-3" fontSize="xl">
                   No notifications
                 </Text>
-                <Text align="center" color="muted">
+                <Text color="muted">
                   You will receive notifications when you are assigned or
                   mentioned in a story.
                 </Text>
