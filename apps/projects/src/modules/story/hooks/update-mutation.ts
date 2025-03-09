@@ -34,6 +34,7 @@ export const useUpdateStoryMutation = () => {
 
       activeQueries.forEach((query) => {
         if (
+          query.isActive() &&
           query.queryKey.includes("stories") &&
           query.queryKey.includes("list")
         ) {
