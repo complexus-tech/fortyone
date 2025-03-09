@@ -38,6 +38,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 		string(KeyResultUpdated),
 		string(EmailVerification),
 		string(InvitationEmail),
+		string(InvitationAccepted),
 	)
 	defer pubsub.Close()
 
@@ -72,6 +73,8 @@ func (c *Consumer) handleEvent(ctx context.Context, event Event) error {
 		return c.handleEmailVerification(ctx, event)
 	case InvitationEmail:
 		return c.handleInvitationEmail(ctx, event)
+	case InvitationAccepted:
+		return c.handleInvitationAccepted(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
@@ -265,6 +268,47 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error
 	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
 		c.log.Error(ctx, "failed to send invitation email", "error", err)
 		return fmt.Errorf("failed to send invitation email: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Consumer) handleInvitationAccepted(ctx context.Context, event Event) error {
+	var payload InvitationAcceptedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "events.consumer.handleInvitationAccepted",
+		"inviter_email", payload.InviterEmail,
+		"invitee_email", payload.InviteeEmail,
+		"workspace_id", payload.WorkspaceID)
+
+	// Prepare template data
+	templateData := map[string]any{
+		"InviterName":   payload.InviterName,
+		"InviteeName":   payload.InviteeName,
+		"WorkspaceName": payload.WorkspaceName,
+		"Role":          payload.Role,
+		"Subject":       fmt.Sprintf("%s has accepted your invitation to %s", payload.InviteeName, payload.WorkspaceName),
+		"LoginURL":      fmt.Sprintf("%s/login", c.websiteURL),
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.InviterEmail},
+		Template: "invites/acceptance",
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send invitation accepted email", "error", err)
+		return fmt.Errorf("failed to send invitation accepted email: %w", err)
 	}
 
 	return nil

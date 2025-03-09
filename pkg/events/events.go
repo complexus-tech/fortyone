@@ -9,12 +9,13 @@ import (
 type EventType string
 
 const (
-	StoryUpdated      EventType = "story.updated"
-	StoryCommented    EventType = "story.commented"
-	ObjectiveUpdated  EventType = "objective.updated"
-	KeyResultUpdated  EventType = "keyresult.updated"
-	EmailVerification EventType = "email.verification"
-	InvitationEmail   EventType = "invitation.email"
+	StoryUpdated       EventType = "story.updated"
+	StoryCommented     EventType = "story.commented"
+	ObjectiveUpdated   EventType = "objective.updated"
+	KeyResultUpdated   EventType = "keyresult.updated"
+	EmailVerification  EventType = "email.verification"
+	InvitationEmail    EventType = "invitation.email"
+	InvitationAccepted EventType = "invitation.accepted"
 )
 
 // Event is the base event structure
@@ -73,4 +74,16 @@ type InvitationEmailPayload struct {
 	ExpiresAt     time.Time `json:"expires_at"`
 	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	WorkspaceName string    `json:"workspace_name"`
+}
+
+// InvitationAcceptedPayload contains data for invitation acceptance notification events
+type InvitationAcceptedPayload struct {
+	InviterEmail  string    `json:"inviter_email"`
+	InviterName   string    `json:"inviter_name"`
+	InviteeName   string    `json:"invitee_name"`
+	InviteeEmail  string    `json:"invitee_email"`
+	Role          string    `json:"role"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	WorkspaceSlug string    `json:"workspace_slug"`
 }

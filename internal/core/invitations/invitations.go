@@ -294,6 +294,53 @@ func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uui
 		return err
 	}
 
+	// Get inviter details
+	inviter, err := s.users.GetUser(ctx, invitation.InviterID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get inviter details", "err", err)
+		// Don't return error here, as the invitation was successfully accepted
+	} else {
+		// Get workspace details
+		workspace, err := s.workspaces.Get(ctx, invitation.WorkspaceID, invitation.InviterID)
+		if err != nil {
+			s.logger.Error(ctx, "failed to get workspace details", "err", err)
+			// Don't return error here, as the invitation was successfully accepted
+		} else {
+			// Use username as fallback if full name is empty
+			inviterName := inviter.FullName
+			if inviterName == "" {
+				inviterName = inviter.Username
+			}
+
+			inviteeName := user.FullName
+			if inviteeName == "" {
+				inviteeName = user.Username
+			}
+
+			// Publish invitation accepted event
+			event := events.Event{
+				Type: events.InvitationAccepted,
+				Payload: events.InvitationAcceptedPayload{
+					InviterEmail:  inviter.Email,
+					InviterName:   inviterName,
+					InviteeName:   inviteeName,
+					InviteeEmail:  user.Email,
+					Role:          invitation.Role,
+					WorkspaceID:   invitation.WorkspaceID,
+					WorkspaceName: workspace.Name,
+					WorkspaceSlug: workspace.Slug,
+				},
+				Timestamp: time.Now(),
+				ActorID:   userID,
+			}
+
+			if err := s.publisher.Publish(ctx, event); err != nil {
+				s.logger.Error(ctx, "failed to publish invitation accepted event", "err", err)
+				// Don't return error here, as the invitation was successfully accepted
+			}
+		}
+	}
+
 	s.logger.Info(ctx, "invitation accepted successfully")
 	return nil
 }
