@@ -144,7 +144,6 @@ export const StoryCard = ({
                       variant="outline"
                     >
                       <Avatar
-                        color="tertiary"
                         name={selectedAssignee?.fullName}
                         rounded="md"
                         size="xs"

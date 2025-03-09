@@ -132,7 +132,6 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         type="button"
                       >
                         <Avatar
-                          color="tertiary"
                           name={selectedAssignee?.fullName}
                           size="sm"
                           src={selectedAssignee?.avatarUrl}
