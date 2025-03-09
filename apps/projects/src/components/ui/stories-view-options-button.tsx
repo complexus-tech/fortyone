@@ -78,9 +78,6 @@ export const StoriesViewOptionsButton = ({
     "Labels",
   ];
 
-  const hasFilters =
-    JSON.stringify(viewOptions) !== JSON.stringify(initialViewOptions);
-
   useEffect(() => {
     if (
       layout === "kanban" &&
@@ -112,9 +109,6 @@ export const StoriesViewOptionsButton = ({
           variant="outline"
         >
           Customise
-          {hasFilters ? (
-            <span className="absolute -right-0.5 -top-0.5 inline-block size-2 rounded-full bg-primary" />
-          ) : null}
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">
