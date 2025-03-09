@@ -13,13 +13,6 @@ export const useBulkDeleteStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
     onMutate: (storyIds) => {
-      // Get the relevant query keys
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
-
       // Update each query type individually with proper type checking
       queryClient.setQueriesData<Story[]>(
         { queryKey: storyKeys.lists() },
@@ -64,12 +57,6 @@ export const useBulkDeleteStoryMutation = () => {
       return storyIds;
     },
     onError: (error, storyIds) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
-
       toast.error("Failed to delete stories", {
         description:
           error.message || "An error occurred while deleting the story",
