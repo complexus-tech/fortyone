@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { createObjective } from "../actions/create-objective";
 import type { Objective } from "../types";
@@ -8,6 +9,7 @@ import type { Objective } from "../types";
 export const useCreateObjectiveMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: createObjective,
@@ -69,7 +71,12 @@ export const useCreateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (objective) => {
+      analytics.track("created_objective", {
+        name: objective?.name,
+        startDate: objective?.startDate,
+        priority: objective?.priority,
+      });
       toast.success("Success", {
         description: "Objective created successfully",
       });
