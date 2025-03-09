@@ -22,7 +22,7 @@ export const ListNotifications = ({
                 <Text align="center" className="mb-3" fontSize="xl">
                   No notifications
                 </Text>
-                <Text color="muted">
+                <Text align="center" color="muted">
                   You will receive notifications when you are assigned or
                   mentioned in a story.
                 </Text>
