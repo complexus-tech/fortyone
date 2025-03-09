@@ -72,7 +72,7 @@ export const useCreateObjectiveMutation = () => {
       });
     },
     onSuccess: (objective) => {
-      analytics.track("created_objective", {
+      analytics.track("objective_created", {
         name: objective?.name,
         startDate: objective?.startDate,
         priority: objective?.priority,

@@ -1,10 +1,13 @@
-const sprints = ["created_sprint", "updated_sprint", "deleted_sprint"] as const;
-const stories = ["created_story", "updated_story", "deleted_story"] as const;
+const sprints = ["sprint_created", "sprint_updated", "sprint_deleted"] as const;
+const stories = ["story_created", "story_updated", "story_deleted"] as const;
 const objectives = [
-  "created_objective",
-  "updated_objective",
-  "deleted_objective",
+  "objective_created",
+  "objective_updated",
+  "objective_deleted",
+  "objective_archived",
+  "objective_restored",
 ] as const;
+const okrs = ["okr_created", "okr_updated", "okr_deleted"] as const;
 const search = [
   "search_performed",
   "search_abandoned",
@@ -17,6 +20,7 @@ const trackingEvents = [
   ...sprints,
   ...stories,
   ...objectives,
+  ...okrs,
   ...search,
 ] as const;
 
