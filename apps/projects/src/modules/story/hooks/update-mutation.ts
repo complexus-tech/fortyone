@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Story } from "@/modules/stories/types";
 import type { DetailedStory } from "../types";
@@ -7,6 +8,7 @@ import { updateStoryAction } from "../actions/update-story";
 
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -62,12 +64,16 @@ export const useUpdateStoryMutation = () => {
         },
       });
     },
-    onSettled: (storyId) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId!) });
+    onSuccess: (_, { storyId, payload }) => {
+      // Track story update
+      analytics.track("story_updated", {
+        storyId,
+        ...payload,
+      });
+
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
     },
   });
 

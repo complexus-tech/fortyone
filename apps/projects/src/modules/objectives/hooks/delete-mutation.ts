@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { deleteObjective } from "../actions/delete-objective";
 
@@ -8,6 +9,7 @@ export const useDeleteObjectiveMutation = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: deleteObjective,
@@ -24,6 +26,11 @@ export const useDeleteObjectiveMutation = () => {
       });
     },
     onSuccess: (_, objectiveId) => {
+      // Track the objective deletion event
+      analytics.track("objective_deleted", {
+        objectiveId,
+      });
+
       toast.success("Success", {
         description: "Objective deleted successfully",
       });

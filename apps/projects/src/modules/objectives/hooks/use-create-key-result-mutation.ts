@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { createKeyResult } from "../actions/create-key-result";
 import type { KeyResult, NewObjectiveKeyResult } from "../types";
@@ -8,6 +9,7 @@ import type { KeyResult, NewObjectiveKeyResult } from "../types";
 export const useCreateKeyResultMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: createKeyResult,
@@ -58,7 +60,14 @@ export const useCreateKeyResultMutation = () => {
         },
       });
     },
-    onSettled: (_, __, newKeyResult) => {
+    onSettled: (_, error, newKeyResult) => {
+      // Track key result creation
+      if (!error) {
+        analytics.track("key_result_created", {
+          ...newKeyResult,
+        });
+      }
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
       });

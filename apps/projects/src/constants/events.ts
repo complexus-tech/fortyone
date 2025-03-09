@@ -7,7 +7,9 @@ const objectives = [
   "objective_archived",
   "objective_restored",
 ] as const;
-const okrs = ["okr_created", "okr_updated", "okr_deleted"] as const;
+
+const teams = ["team_created", "team_updated", "team_deleted"] as const;
+const keyResults = ["key_result_created", "key_result_updated"] as const;
 const search = [
   "search_performed",
   "search_abandoned",
@@ -20,7 +22,8 @@ const trackingEvents = [
   ...sprints,
   ...stories,
   ...objectives,
-  ...okrs,
+  ...teams,
+  ...keyResults,
   ...search,
 ] as const;
 

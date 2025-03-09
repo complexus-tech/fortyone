@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { updateObjective } from "../actions/update-objective";
 import type { Objective, ObjectiveUpdate } from "../types";
@@ -11,6 +12,7 @@ export type UpdateObjectiveVariables = {
 
 export const useUpdateObjectiveMutation = () => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({ objectiveId, data }: UpdateObjectiveVariables) =>
@@ -82,7 +84,12 @@ export const useUpdateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (_, { objectiveId }) => {
+    onSuccess: (_, { objectiveId, data }) => {
+      analytics.track("objective_updated", {
+        objectiveId,
+        ...data,
+      });
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.objective(objectiveId),
       });

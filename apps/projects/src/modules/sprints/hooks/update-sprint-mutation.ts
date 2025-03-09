@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { Sprint, UpdateSprint } from "../types";
 import { updateSprintAction } from "../actions/update-sprint";
 
 export const useUpdateSprintMutation = () => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -56,7 +58,13 @@ export const useUpdateSprintMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { sprintId, updates }) => {
+      // Track sprint update
+      analytics.track("sprint_updated", {
+        sprintId,
+        ...updates,
+      });
+
       toast.success("Success", {
         description: "Sprint updated successfully",
       });

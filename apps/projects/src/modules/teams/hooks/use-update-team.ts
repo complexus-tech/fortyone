@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import type { Team, UpdateTeamInput } from "../types";
 import { updateTeam } from "../actions";
 
 export const useUpdateTeamMutation = (teamId: string) => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
   const toastId = "update-team";
 
   const mutation = useMutation({
@@ -40,7 +42,13 @@ export const useUpdateTeamMutation = (teamId: string) => {
       });
       queryClient.setQueryData(teamKeys.detail(teamId), context?.previousTeam);
     },
-    onSuccess: () => {
+    onSuccess: (_, input) => {
+      // Track team update
+      analytics.track("team_updated", {
+        teamId,
+        ...input,
+      });
+
       toast.success("Success", {
         description: "Team updated successfully",
         id: toastId,

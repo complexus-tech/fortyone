@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { NewSprint, Sprint } from "../types";
 import { createSprintAction } from "../actions/create-sprint";
 
 export const useCreateSprintMutation = () => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: (newSprint: NewSprint) => createSprintAction(newSprint),
@@ -80,7 +82,19 @@ export const useCreateSprintMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (sprint) => {
+      // Track sprint creation
+      analytics.track("sprint_created", {
+        sprintId: sprint.id,
+        name: sprint.name,
+        teamId: sprint.teamId,
+        hasObjective: Boolean(sprint.objectiveId),
+        duration: {
+          startDate: sprint.startDate,
+          endDate: sprint.endDate,
+        },
+      });
+
       toast.success("Success", {
         description: "Sprint created successfully",
       });

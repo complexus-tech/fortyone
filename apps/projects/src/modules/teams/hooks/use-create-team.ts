@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks";
 import { statusKeys, teamKeys } from "@/constants/keys";
 import type { Team } from "../types";
 import { createTeam } from "../actions";
@@ -8,6 +9,7 @@ import { createTeam } from "../actions";
 export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { analytics } = useAnalytics();
   const toastId = "create-team";
 
   const mutation = useMutation({
@@ -51,6 +53,16 @@ export const useCreateTeamMutation = () => {
       });
     },
     onSuccess: (data) => {
+      // Track team creation
+      if (data.data) {
+        analytics.track("team_created", {
+          teamId: data.data.id,
+          name: data.data.name,
+          code: data.data.code,
+          isPrivate: data.data.isPrivate,
+        });
+      }
+
       toast.success("Success", {
         description: "Team created successfully",
         id: toastId,

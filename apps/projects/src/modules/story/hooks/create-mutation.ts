@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks";
 import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
 import { storyKeys } from "@/modules/stories/constants";
@@ -10,6 +11,7 @@ import { createStoryAction } from "../actions/create-story";
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: createStoryAction,
@@ -35,6 +37,15 @@ export const useCreateStoryMutation = () => {
       });
     },
     onSuccess: (story) => {
+      // Track story creation
+      analytics.track("story_created", {
+        storyId: story.id,
+        title: story.title,
+        teamId: story.teamId,
+        hasObjective: Boolean(story.objectiveId),
+        hasSprint: Boolean(story.sprintId),
+      });
+
       const previousStories = queryClient.getQueryData<Story[]>(
         storyKeys.lists(),
       );

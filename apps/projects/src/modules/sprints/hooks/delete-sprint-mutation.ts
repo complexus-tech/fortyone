@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { Sprint } from "../types";
 import { deleteSprintAction } from "../actions/delete-sprint";
 
 export const useDeleteSprintMutation = () => {
   const queryClient = useQueryClient();
+  const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: deleteSprintAction,
@@ -38,7 +40,12 @@ export const useDeleteSprintMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, sprintId) => {
+      // Track sprint deletion
+      analytics.track("sprint_deleted", {
+        sprintId,
+      });
+
       toast.success("Success", {
         description: "Sprint deleted successfully",
       });
