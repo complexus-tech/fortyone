@@ -45,6 +45,9 @@ export const useDeleteStoryMutation = () => {
       });
     },
     onSuccess: (storyId) => {
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
+      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
       toast.success("Success", {
         description: "Story deleted successfully",
         cancel: {
@@ -54,11 +57,6 @@ export const useDeleteStoryMutation = () => {
           },
         },
       });
-    },
-    onSettled: (storyId) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId!) });
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
     },
   });
 

@@ -13,14 +13,53 @@ export const useBulkDeleteStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
     onMutate: (storyIds) => {
-      const activeQueries = queryClient.getQueryCache().getAll();
-      activeQueries.forEach((query) => {
-        queryClient.setQueryData<Story[]>(query.queryKey, () => {
-          return (query.state.data as Story[]).filter(
-            (story) => !storyIds.includes(story.id),
-          );
-        });
-      });
+      // Get the relevant query keys
+      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
+      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
+
+      // Update each query type individually with proper type checking
+      queryClient.setQueriesData<Story[]>(
+        { queryKey: storyKeys.lists() },
+        (oldData) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.filter((story) => !storyIds.includes(story.id));
+        },
+      );
+
+      queryClient.setQueriesData<Story[]>(
+        { queryKey: storyKeys.teams() },
+        (oldData) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.filter((story) => !storyIds.includes(story.id));
+        },
+      );
+
+      queryClient.setQueriesData<Story[]>(
+        { queryKey: storyKeys.mine() },
+        (oldData) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.filter((story) => !storyIds.includes(story.id));
+        },
+      );
+
+      queryClient.setQueriesData<Story[]>(
+        { queryKey: storyKeys.sprints() },
+        (oldData) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.filter((story) => !storyIds.includes(story.id));
+        },
+      );
+
+      queryClient.setQueriesData<Story[]>(
+        { queryKey: storyKeys.objectives() },
+        (oldData) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.filter((story) => !storyIds.includes(story.id));
+        },
+      );
 
       return storyIds;
     },
