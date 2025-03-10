@@ -1,3 +1,4 @@
+"use client";
 import { ArrowLeftIcon } from "icons";
 import { Box, Button, Text } from "ui";
 import { ComplexusLogo } from "@/components/ui";
@@ -18,9 +19,7 @@ export default function NotFound() {
           color="tertiary"
           leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
           onClick={() => {
-            if (typeof window !== "undefined") {
-              window.location.reload();
-            }
+            window.location.reload();
           }}
         >
           Reload page
