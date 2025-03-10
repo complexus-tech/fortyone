@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
 import type { Story } from "../types";
@@ -13,50 +14,39 @@ export const useBulkDeleteStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
     onMutate: (storyIds) => {
-      // Update each query type individually with proper type checking
-      queryClient.setQueriesData<Story[]>(
-        { queryKey: storyKeys.lists() },
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData)) return oldData;
-          return oldData.filter((story) => !storyIds.includes(story.id));
-        },
-      );
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
 
-      queryClient.setQueriesData<Story[]>(
-        { queryKey: storyKeys.teams() },
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData)) return oldData;
-          return oldData.filter((story) => !storyIds.includes(story.id));
-        },
-      );
-
-      queryClient.setQueriesData<Story[]>(
-        { queryKey: storyKeys.mine() },
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData)) return oldData;
-          return oldData.filter((story) => !storyIds.includes(story.id));
-        },
-      );
-
-      queryClient.setQueriesData<Story[]>(
-        { queryKey: storyKeys.sprints() },
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData)) return oldData;
-          return oldData.filter((story) => !storyIds.includes(story.id));
-        },
-      );
-
-      queryClient.setQueriesData<Story[]>(
-        { queryKey: storyKeys.objectives() },
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData)) return oldData;
-          return oldData.filter((story) => !storyIds.includes(story.id));
-        },
-      );
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.setQueriesData(
+            { queryKey: query.queryKey },
+            (data: Story[]) => {
+              return data.filter((story) => !storyIds.includes(story.id));
+            },
+          );
+        }
+      });
 
       return storyIds;
     },
     onError: (error, storyIds) => {
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
+      });
       toast.error("Failed to delete stories", {
         description:
           error.message || "An error occurred while deleting the story",
@@ -69,6 +59,30 @@ export const useBulkDeleteStoryMutation = () => {
       });
     },
     onSuccess: (_, storyIds) => {
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      storyIds.forEach((storyId) => {
+        queryClient.setQueriesData(
+          { queryKey: storyKeys.detail(storyId) },
+          (oldData: DetailedStory) => {
+            return {
+              ...oldData,
+              deletedAt: new Date().toISOString(),
+            };
+          },
+        );
+      });
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
+      });
       toast.success("Success", {
         description: `${storyIds.length} Stories deleted successfully`,
         cancel: {
@@ -78,16 +92,6 @@ export const useBulkDeleteStoryMutation = () => {
           },
         },
       });
-    },
-    onSettled: (_, __, storyIds) => {
-      storyIds.forEach((storyId) => {
-        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      });
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.sprints() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.objectives() });
     },
   });
 

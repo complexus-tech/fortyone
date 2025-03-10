@@ -4,6 +4,7 @@ import nProgress from "nprogress";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import { slugify } from "@/utils";
+import type { Story } from "@/modules/stories/types";
 import { createStoryAction } from "../actions/create-story";
 
 export const useCreateStoryMutation = () => {
@@ -14,7 +15,56 @@ export const useCreateStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: createStoryAction,
 
+    onMutate: (story) => {
+      // Invalidate all queries that contain "stories" in their query key
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.setQueriesData(
+            { queryKey: query.queryKey },
+            (data: Story[]) => {
+              return [
+                ...data,
+                {
+                  ...story,
+                  id: "123",
+                  sequenceId: data.length + 1,
+                  updatedAt: new Date().toISOString(),
+                  createdAt: new Date().toISOString(),
+                  labels: [],
+                },
+              ];
+            },
+          );
+        }
+      });
+    },
     onError: (error, story) => {
+      // remove all stories with id 123
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.setQueriesData(
+            { queryKey: query.queryKey },
+            (data: Story[]) => {
+              return data.filter((story) => story.id !== "123");
+            },
+          );
+        }
+      });
+
       toast.error(`Failed to create story: ${story.title}`, {
         description:
           error.message || "An error occurred while creating the story",
@@ -42,7 +92,10 @@ export const useCreateStoryMutation = () => {
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
-        if (queryKey.toLowerCase().includes("stories")) {
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }
       });
