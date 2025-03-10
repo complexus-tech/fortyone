@@ -14,11 +14,25 @@ export const useBulkRestoreStoryMutation = () => {
           error.message || "An error occurred while restoring stories",
         action: {
           label: "Retry",
-          onClick: () => { mutation.mutate(storyIds); },
+          onClick: () => {
+            mutation.mutate(storyIds);
+          },
         },
       });
     },
     onSuccess: (_, storyIds) => {
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail")
+        ) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
+      });
       toast.success("Success", {
         description: `${storyIds.length} stories restored`,
       });
@@ -27,8 +41,6 @@ export const useBulkRestoreStoryMutation = () => {
       storyIds.forEach((storyId) => {
         queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       });
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
     },
   });
 
