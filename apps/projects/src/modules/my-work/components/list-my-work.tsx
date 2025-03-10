@@ -35,6 +35,14 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
+        <Tabs.Panel value="all">
+          <StoriesBoard
+            className="h-[calc(100vh-7.7rem)]"
+            layout={layout}
+            stories={stories}
+            viewOptions={viewOptions}
+          />
+        </Tabs.Panel>
         <Tabs.Panel value="assigned">
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
@@ -48,14 +56,6 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
             className="h-[calc(100vh-7.7rem)]"
             layout={layout}
             stories={createdStories}
-            viewOptions={viewOptions}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="subscribed">
-          <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
-            layout={layout}
-            stories={stories}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
