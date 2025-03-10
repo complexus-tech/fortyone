@@ -12,10 +12,10 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const { data } = useSession();
   const user = data?.user;
   const { data: stories = [] } = useMyStories();
-  const tabs = ["assigned", "created", "subscribed"] as const;
+  const tabs = ["all", "assigned", "created"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("assigned"),
+    parseAsStringLiteral(tabs).withDefault("all"),
   );
 
   const assinedStories = stories.filter(
@@ -30,9 +30,9 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
         <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
           <Tabs.List>
+            <Tabs.Tab value="all">All stories</Tabs.Tab>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
-            <Tabs.Tab value="subscribed">Subscribed</Tabs.Tab>
           </Tabs.List>
         </Box>
         <Tabs.Panel value="assigned">

@@ -21,10 +21,10 @@ export const Header = ({
 }) => {
   const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
-  const tabs = ["assigned", "created", "subscribed"] as const;
+  const tabs = ["all", "assigned", "created"] as const;
   const [tab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("assigned"),
+    parseAsStringLiteral(tabs).withDefault("all"),
   );
   return (
     <HeaderContainer className="justify-between">
@@ -36,7 +36,7 @@ export const Header = ({
               icon: <UserIcon />,
             },
             {
-              name: tab,
+              name: tab === "all" ? "All stories" : tab,
               icon: <StoryIcon strokeWidth={2} />,
               className: "capitalize",
             },
