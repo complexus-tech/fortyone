@@ -13,7 +13,7 @@ export const Sidebar = () => {
         <Teams />
       </Box>
 
-      <Box className="rounded-xl bg-white p-4 shadow dark:bg-dark-300">
+      <Box className="rounded-xl bg-white p-4 shadow dark:bg-dark-200">
         <Text fontWeight="medium">System Under Development</Text>
         <Text className="mt-2.5" color="muted">
           This is a preview version. Some features may be limited or
