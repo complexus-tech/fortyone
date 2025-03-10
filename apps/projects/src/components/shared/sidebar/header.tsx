@@ -167,7 +167,7 @@ export const Header = () => {
                       {name}
                     </span>
                     <Badge
-                      className="bg-white px-1 text-[80%] font-medium uppercase"
+                      className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
                       color="tertiary"
                     >
                       {userRole}

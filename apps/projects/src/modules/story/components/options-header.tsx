@@ -72,35 +72,52 @@ export const OptionsHeader = ({
               <span className="sr-only">Copy story id</span>
             </Button>
           </Tooltip>
-          {isAdminOrOwner ? (
-            <>
-              {isDeleted ? (
-                <Tooltip title="Restore Story">
-                  <Button
-                    color="tertiary"
-                    leftIcon={<UndoIcon />}
-                    onClick={restoreStory}
-                    variant="naked"
-                  >
-                    <span className="sr-only">Restore story</span>
-                  </Button>
-                </Tooltip>
-              ) : (
-                <Tooltip title="Delete Story">
-                  <Button
-                    color="tertiary"
-                    leftIcon={<DeleteIcon />}
-                    onClick={() => {
-                      setIsOpen(true);
-                    }}
-                    variant="naked"
-                  >
-                    <span className="sr-only">Delete story</span>
-                  </Button>
-                </Tooltip>
-              )}
-            </>
-          ) : null}
+
+          {isDeleted ? (
+            <Tooltip
+              title={
+                isAdminOrOwner
+                  ? "Restore Story"
+                  : "You are not allowed to restore this story"
+              }
+            >
+              <Button
+                color="tertiary"
+                disabled={!isAdminOrOwner}
+                leftIcon={<UndoIcon />}
+                onClick={() => {
+                  if (isAdminOrOwner) {
+                    restoreStory();
+                  }
+                }}
+                variant="naked"
+              >
+                <span className="sr-only">Restore story</span>
+              </Button>
+            </Tooltip>
+          ) : (
+            <Tooltip
+              title={
+                isAdminOrOwner
+                  ? "Delete Story"
+                  : "You are not allowed to delete this story"
+              }
+            >
+              <Button
+                color="tertiary"
+                disabled={!isAdminOrOwner}
+                leftIcon={<DeleteIcon />}
+                onClick={() => {
+                  if (isAdminOrOwner) {
+                    setIsOpen(true);
+                  }
+                }}
+                variant="naked"
+              >
+                <span className="sr-only">Delete story</span>
+              </Button>
+            </Tooltip>
+          )}
         </Flex>
       </Container>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>

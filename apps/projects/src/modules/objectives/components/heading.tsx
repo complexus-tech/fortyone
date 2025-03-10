@@ -28,14 +28,14 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
             Progress
           </Text>
           <Text
-            className="w-[90px] shrink-0 pl-2"
+            className="w-[120px] shrink-0 pl-2"
             color="muted"
             fontWeight="medium"
           >
             Status
           </Text>
           <Text
-            className="w-[85px] shrink-0 pl-2.5"
+            className="w-[100px] shrink-0 pl-2.5"
             color="muted"
             fontWeight="medium"
           >
@@ -51,7 +51,7 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
           </Text>
 
           <Text
-            className="w-[100px] shrink-0 pl-2.5"
+            className="w-[120px] shrink-0 pl-2.5"
             color="muted"
             fontWeight="medium"
           >

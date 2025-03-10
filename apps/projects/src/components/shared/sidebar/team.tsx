@@ -27,15 +27,14 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
       href: `/teams/${id}/stories`,
     },
     {
-      name: "Sprints",
-      icon: <SprintsIcon />,
-      href: `/teams/${id}/sprints`,
-    },
-
-    {
       name: "Objectives",
       icon: <ObjectiveIcon className="h-[1.1rem]" strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
+    },
+    {
+      name: "Sprints",
+      icon: <SprintsIcon />,
+      href: `/teams/${id}/sprints`,
     },
   ];
 

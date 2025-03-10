@@ -12,8 +12,8 @@ import Link from "next/link";
 import { ObjectiveIcon, CalendarIcon } from "icons";
 import { format } from "date-fns";
 import { cn } from "lib";
+import { useSession } from "next-auth/react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
   TeamColor,
@@ -22,10 +22,12 @@ import {
   PriorityIcon,
   ObjectiveHealthIcon,
 } from "@/components/ui";
-import { useStatuses } from "@/lib/hooks/statuses";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { HealthMenu } from "@/components/ui/health-menu";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useUpdateObjectiveMutation } from "../hooks";
 import type { Objective, ObjectiveUpdate } from "../types";
 
@@ -40,11 +42,15 @@ export const ObjectiveCard = ({
   statusId,
   health,
   priority,
+  createdBy,
 }: Objective & { isInTeam?: boolean }) => {
-  const { data: members = [] } = useMembers();
+  const { data: session } = useSession();
+  const { data: members = [] } = useTeamMembers(teamId);
   const { data: teams = [] } = useTeams();
-  const { data: statuses = [] } = useStatuses();
+  const { data: statuses = [] } = useObjectiveStatuses();
   const updateMutation = useUpdateObjectiveMutation();
+  const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
+  const canUpdate = isAdminOrOwner || session?.user?.id === leadUser;
 
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
@@ -93,6 +99,7 @@ export const ObjectiveCard = ({
                   "text-gray-200 dark:text-gray-300": !leadUser,
                 })}
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={
                   <Avatar
                     className={cn({
@@ -115,6 +122,7 @@ export const ObjectiveCard = ({
               onAssigneeSelected={(leadUser) => {
                 handleUpdate({ leadUser });
               }}
+              teamId={teamId}
             />
           </AssigneesMenu>
         </Box>
@@ -123,11 +131,12 @@ export const ObjectiveCard = ({
           <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
           {progress}%
         </Box>
-        <Box className="w-[85px] shrink-0">
+        <Box className="w-[120px] shrink-0">
           <ObjectiveStatusesMenu>
             <ObjectiveStatusesMenu.Trigger>
               <Button
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
                 size="sm"
                 type="button"
@@ -146,11 +155,12 @@ export const ObjectiveCard = ({
             />
           </ObjectiveStatusesMenu>
         </Box>
-        <Box className="w-[90px] shrink-0">
+        <Box className="w-[100px] shrink-0">
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>
               <Button
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={<PriorityIcon priority={priority} />}
                 size="sm"
                 type="button"
@@ -176,6 +186,7 @@ export const ObjectiveCard = ({
                   "text-gray/80 dark:text-gray-300/80": !endDate,
                 })}
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={
                   <CalendarIcon
                     className={cn("h-[1.15rem]", {
@@ -202,11 +213,12 @@ export const ObjectiveCard = ({
           </DatePicker>
         </Box>
 
-        <Box className="w-[100px] shrink-0">
+        <Box className="w-[120px] shrink-0">
           <HealthMenu>
             <HealthMenu.Trigger>
               <Button
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={<ObjectiveHealthIcon health={health} />}
                 size="sm"
                 type="button"

@@ -71,7 +71,11 @@ export const StoryProperties = ({
                 {status?.name}
               </Button>
             ) : (
-              <button className="flex items-center gap-1" type="button">
+              <button
+                className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isGuest}
+                type="button"
+              >
                 <StoryStatusIcon statusId={statusId} /> {status?.name}
               </button>
             )}
@@ -102,7 +106,8 @@ export const StoryProperties = ({
               </Button>
             ) : (
               <button
-                className="flex select-none items-center gap-1"
+                className="flex select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isGuest}
                 type="button"
               >
                 <PriorityIcon priority={priority} />

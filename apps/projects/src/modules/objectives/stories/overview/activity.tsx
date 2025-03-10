@@ -1,17 +1,22 @@
 import { ArrowDownIcon, ClockIcon, ObjectiveIcon } from "icons";
 import { Button, Flex, Text, Tabs } from "ui";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import { HealthMenu } from "@/components/ui/health-menu";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import type { ObjectiveHealth } from "../../types";
 import { Summary } from "./summary";
 import { Updates } from "./updates";
 
 export const Activity = () => {
+  const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const updateMutation = useUpdateObjectiveMutation();
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const handleUpdate = (health: ObjectiveHealth) => {
     updateMutation.mutate({ objectiveId, data: { health } });
@@ -44,6 +49,7 @@ export const Activity = () => {
               <Button
                 className="gap-1"
                 color="tertiary"
+                disabled={!canUpdate}
                 leftIcon={<ObjectiveHealthIcon health={objective?.health} />}
                 rightIcon={<ArrowDownIcon className="h-3.5" />}
                 size="sm"

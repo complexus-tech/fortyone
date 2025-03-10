@@ -137,9 +137,7 @@ export const Summary = () => {
               <DatePicker>
                 <DatePicker.Trigger>
                   <button
-                    className={cn("text-primary", {
-                      "cursor-not-allowed opacity-50": !canUpdate,
-                    })}
+                    className="text-primary disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={!canUpdate}
                     type="button"
                   >
