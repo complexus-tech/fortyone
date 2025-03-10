@@ -148,9 +148,9 @@ export const Header = () => {
           </Menu.Button>
           <Menu.Items align="start" className="min-w-64 pt-0">
             <Menu.Group className="space-y-1 pt-1.5">
-              {workspaces.map(({ id, name, color, slug }) => (
+              {workspaces.map(({ id, name, color, slug, userRole }) => (
                 <Menu.Item
-                  className="justify-between"
+                  className="justify-between gap-6"
                   key={id}
                   onSelect={() => handleChangeWorkspace(id, slug)}
                 >
@@ -166,6 +166,12 @@ export const Header = () => {
                     <span className="inline-block max-w-[20ch] truncate">
                       {name}
                     </span>
+                    <Badge
+                      className="bg-white px-1 text-[80%] font-medium uppercase"
+                      color="tertiary"
+                    >
+                      {userRole}
+                    </Badge>
                   </span>
                   {id === workspace?.id ? (
                     <CheckIcon className="shrink-0" strokeWidth={2.1} />

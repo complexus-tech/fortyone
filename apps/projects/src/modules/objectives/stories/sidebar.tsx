@@ -15,6 +15,7 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import { CalendarIcon, TagsIcon } from "icons";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 import {
   RowWrapper,
   StoryStatusIcon,
@@ -23,8 +24,6 @@ import {
   AssigneesMenu,
 } from "@/components/ui";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
-import { useMembers } from "@/lib/hooks/members";
-import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import type { StoryPriority } from "@/modules/stories/types";
 import {
@@ -33,6 +32,9 @@ import {
 } from "@/modules/objectives/hooks";
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { ObjectiveStatusesMenu } from "../../../components/ui/objective-statuses-menu";
 
 const Option = ({
@@ -64,11 +66,12 @@ const Option = ({
 };
 
 export const Sidebar = ({ className }: { className?: string }) => {
+  const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { data: stories = [] } = useObjectiveStories(objectiveId);
-  const { data: members = [] } = useMembers();
-  const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useTeamMembers(objective?.teamId);
+  const { data: statuses = [] } = useObjectiveStatuses();
   const { data: labels = [] } = useLabels();
   const updateMutation = useUpdateObjectiveMutation();
 
@@ -83,6 +86,8 @@ export const Sidebar = ({ className }: { className?: string }) => {
   const status = statuses.find((s) => s.id === objective?.statusId);
   const leadUser = members.find((m) => m.id === objective?.leadUser);
   const createdBy = members.find((m) => m.id === objective?.createdBy);
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
   const storiesByStatus = statuses.map((status) => {
     const count = stories.filter((s) => s.statusId === status.id).length;
     const percentage = totalStories > 0 ? (count / totalStories) * 100 : 0;
@@ -162,6 +167,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <ObjectiveStatusesMenu.Trigger>
                 <Button
                   color="tertiary"
+                  disabled={!canUpdate}
                   leftIcon={
                     <ObjectiveStatusIcon statusId={objective?.statusId} />
                   }
@@ -187,6 +193,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <PrioritiesMenu.Trigger>
                 <Button
                   color="tertiary"
+                  disabled={!canUpdate}
                   leftIcon={<PriorityIcon priority={objective?.priority} />}
                   type="button"
                   variant="naked"
@@ -213,6 +220,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
                     "text-gray-200 dark:text-gray-300": !objective?.leadUser,
                   })}
                   color="tertiary"
+                  disabled={!canUpdate}
                   leftIcon={
                     <Avatar
                       className={cn({
@@ -252,6 +260,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <DatePicker.Trigger>
                 <Button
                   color="tertiary"
+                  disabled={!canUpdate}
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem] w-auto", {
@@ -294,6 +303,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
                     "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
                   })}
                   color="tertiary"
+                  disabled={!canUpdate}
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem]", {

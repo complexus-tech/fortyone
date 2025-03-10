@@ -5,10 +5,10 @@ import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useMembers } from "@/lib/hooks/members";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
@@ -17,8 +17,8 @@ export const Properties = () => {
   const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
-  const { data: statuses = [] } = useStatuses();
-  const { data: members = [] } = useMembers();
+  const { data: statuses = [] } = useObjectiveStatuses();
+  const { data: members = [] } = useTeamMembers(objective?.teamId);
   const updateMutation = useUpdateObjectiveMutation();
   const leadUser = members.find((m) => m.id === objective?.leadUser);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -114,6 +114,7 @@ export const Properties = () => {
           onAssigneeSelected={(leadUser) => {
             handleUpdate({ leadUser: leadUser ?? undefined });
           }}
+          teamId={objective?.teamId}
         />
       </AssigneesMenu>
       <DatePicker>
