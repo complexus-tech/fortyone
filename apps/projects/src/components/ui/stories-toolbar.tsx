@@ -14,11 +14,10 @@ export const StoriesToolbar = () => {
 
   const { data: sprints = [] } = useSprints();
 
-  const { mutateAsync: bulkDeleteMutate, isPending } =
-    useBulkDeleteStoryMutation();
+  const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
 
-  const handleBulkDelete = async () => {
-    await bulkDeleteMutate(selectedStories);
+  const handleBulkDelete = () => {
+    bulkDeleteMutate(selectedStories);
     setSelectedStories([]);
     setIsOpen(false);
   };

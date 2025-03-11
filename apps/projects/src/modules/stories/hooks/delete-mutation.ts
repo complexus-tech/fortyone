@@ -10,7 +10,6 @@ import { useBulkRestoreStoryMutation } from "./restore-mutation";
 export const useBulkDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
   const { storyId } = useParams<{ storyId?: string }>();
-  const toastId = "bulk-delete-stories";
 
   const { mutateAsync } = useBulkRestoreStoryMutation();
 
@@ -22,22 +21,30 @@ export const useBulkDeleteStoryMutation = () => {
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
-          queryClient.setQueriesData(
-            { queryKey: query.queryKey },
-            (data: Story[]) => {
-              return data.filter((story) => !storyIds.includes(story.id));
-            },
-          );
+        if (queryKey.toLowerCase().includes("stories") && query.isActive()) {
+          if (queryKey.toLowerCase().includes("detail")) {
+            queryClient.setQueriesData(
+              { queryKey: query.queryKey },
+              (data: DetailedStory | undefined) => {
+                if (data?.subStories) {
+                  return {
+                    ...data,
+                    subStories: data.subStories.filter(
+                      (story) => !storyIds.includes(story.id),
+                    ),
+                  };
+                }
+              },
+            );
+          } else {
+            queryClient.setQueriesData(
+              { queryKey: query.queryKey },
+              (data: Story[] = []) => {
+                return data.filter((story) => !storyIds.includes(story.id));
+              },
+            );
+          }
         }
-      });
-
-      toast.loading("Deleting stories...", {
-        id: toastId,
-        description: "Please wait...",
       });
 
       return storyIds;
@@ -48,15 +55,11 @@ export const useBulkDeleteStoryMutation = () => {
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
+        if (queryKey.toLowerCase().includes("stories") && query.isActive()) {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }
       });
       toast.error("Failed to delete stories", {
-        id: toastId,
         description:
           error.message || "An error occurred while deleting the story",
         action: {
@@ -71,18 +74,6 @@ export const useBulkDeleteStoryMutation = () => {
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
 
-      storyIds.forEach((storyId) => {
-        queryClient.setQueriesData(
-          { queryKey: storyKeys.detail(storyId) },
-          (oldData: DetailedStory) => {
-            return {
-              ...oldData,
-              deletedAt: new Date().toISOString(),
-            };
-          },
-        );
-      });
-
       if (storyId) {
         queryClient.invalidateQueries({
           queryKey: storyKeys.detail(storyId),
@@ -91,16 +82,14 @@ export const useBulkDeleteStoryMutation = () => {
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
+        if (queryKey.toLowerCase().includes("stories") && query.isActive()) {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }
       });
-      toast.success("Success", {
-        id: toastId,
-        description: `${storyIds.length} Stories deleted`,
+      toast.info("You want to undo this action?", {
+        description: `${storyIds.length} stor${
+          storyIds.length === 1 ? "y" : "ies"
+        } deleted`,
         cancel: {
           label: "Undo",
           onClick: () => {
