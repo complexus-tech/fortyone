@@ -2,6 +2,7 @@
 import { CheckIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
+import { useSession } from "next-auth/react";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 
@@ -57,11 +58,13 @@ const Items = ({
   teamId?: string;
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
+  const { data: session } = useSession();
   const { setOpen } = useAssigneesMenu();
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
 
   const members = teamId ? teamMembers : allMembers;
+  const self = members.find(({ id }) => id === session?.user?.id);
 
   return (
     <Popover.Content align={align} className="w-72">
@@ -90,7 +93,7 @@ const Items = ({
                     color="primary"
                     size="sm"
                   />
-                  <Text className="max-w-[10rem] truncate">No assignee</Text>
+                  <Text className="max-w-[10rem] truncate">Unassigned</Text>
                 </Flex>
                 <Flex align="center" gap={1}>
                   {!assigneeId && (
@@ -102,9 +105,43 @@ const Items = ({
               {members.length > 0 && <Divider className="my-2" />}
             </>
           ) : null}
+          <Command.Item
+            active={self?.id === assigneeId}
+            className="justify-between"
+            onSelect={() => {
+              if (self?.id !== assigneeId) {
+                onAssigneeSelected(self?.id ?? null);
+              }
+              setOpen(false);
+            }}
+          >
+            <Flex align="center" gap={2}>
+              <Avatar
+                color="primary"
+                name={self?.fullName}
+                size="sm"
+                src={self?.avatarUrl}
+              />
+              <Text className="max-w-[12rem] truncate">
+                {self?.fullName}{" "}
+                <Text as="span" color="muted">
+                  (You)
+                </Text>
+              </Text>
+            </Flex>
+            <Flex align="center" gap={1}>
+              {self?.id === assigneeId && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
+              <Text color="muted">{1}</Text>
+            </Flex>
+          </Command.Item>
 
           {members
-            .filter(({ id }) => !excludeUsers.includes(id))
+            .filter(
+              ({ id }) =>
+                !excludeUsers.includes(id) && id !== session?.user?.id,
+            )
             .map(({ id, fullName, avatarUrl }, idx) => (
               <Command.Item
                 active={id === assigneeId}
@@ -124,13 +161,13 @@ const Items = ({
                     size="sm"
                     src={avatarUrl}
                   />
-                  <Text className="max-w-[10rem] truncate">{fullName}</Text>
+                  <Text className="max-w-[12rem] truncate">{fullName}</Text>
                 </Flex>
                 <Flex align="center" gap={1}>
                   {id === assigneeId && (
                     <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                   )}
-                  <Text color="muted">{idx + 1}</Text>
+                  <Text color="muted">{idx + 2}</Text>
                 </Flex>
               </Command.Item>
             ))}
