@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useAnalytics } from "@/hooks";
-import { objectiveKeys } from "../constants";
 import { createObjective } from "../actions/create-objective";
 import type { Objective } from "../types";
 
@@ -15,10 +14,6 @@ export const useCreateObjectiveMutation = () => {
     mutationFn: createObjective,
 
     onMutate: (newObjective) => {
-      const previousObjectives = queryClient.getQueryData<Objective[]>(
-        objectiveKeys.list(),
-      );
-
       const optimisticObjective: Objective = {
         ...newObjective,
         id: "optimistic",
@@ -44,22 +39,46 @@ export const useCreateObjectiveMutation = () => {
           backlog: 0,
         },
       };
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
 
-      if (previousObjectives) {
-        queryClient.setQueryData<Objective[]>(objectiveKeys.list(), [
-          ...previousObjectives,
-          optimisticObjective,
-        ]);
-      }
-      return { previousObjectives };
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("objectives") &&
+          query.isActive() &&
+          queryKey.toLowerCase().includes("list")
+        ) {
+          queryClient.cancelQueries({ queryKey: query.queryKey });
+          queryClient.setQueryData<Objective[]>(
+            query.queryKey,
+            (prev: Objective[] = []) => {
+              return [...prev, optimisticObjective];
+            },
+          );
+        }
+      });
     },
-    onError: (error, variables, context) => {
-      if (context?.previousObjectives) {
-        queryClient.setQueryData<Objective[]>(
-          objectiveKeys.list(),
-          context.previousObjectives,
-        );
-      }
+    onError: (error, variables) => {
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("objectives") &&
+          query.isActive() &&
+          queryKey.toLowerCase().includes("list")
+        ) {
+          queryClient.setQueryData<Objective[]>(
+            query.queryKey,
+            (prev: Objective[] = []) => {
+              return prev.filter((objective) => objective.id !== "optimistic");
+            },
+          );
+        }
+      });
+
       toast.error("Failed to create objective", {
         description:
           error.message || "An error occurred while creating the objective",
@@ -77,12 +96,19 @@ export const useCreateObjectiveMutation = () => {
         startDate: objective?.startDate,
         priority: objective?.priority,
       });
-      toast.success("Success", {
-        description: "Objective created successfully",
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("objectives") &&
+          query.isActive() &&
+          queryKey.toLowerCase().includes("list")
+        ) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
     },
   });
 

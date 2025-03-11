@@ -30,7 +30,6 @@ import {
   PlusIcon,
 } from "icons";
 import { toast } from "sonner";
-import nProgress from "nprogress";
 import { format } from "date-fns";
 import { cn } from "lib";
 import { useRouter } from "next/navigation";
@@ -104,7 +103,6 @@ export const NewObjectiveDialog = ({
   };
 
   const [objectiveForm, setObjectiveForm] = useState<NewObjective>(initialForm);
-  const [loading, setLoading] = useState(false);
   const [keyResultMode, setKeyResultMode] = useState<KeyResultFormMode>(null);
   const [editingKeyResult, setEditingKeyResult] = useState<NewKeyResult | null>(
     null,
@@ -136,7 +134,7 @@ export const NewObjectiveDialog = ({
     editable: true,
   });
 
-  const handleCreateObjective = async () => {
+  const handleCreateObjective = () => {
     if (!titleEditor || !editor) return;
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
@@ -146,24 +144,16 @@ export const NewObjectiveDialog = ({
       return;
     }
 
-    setLoading(true);
-    nProgress.start();
-
-    try {
-      await createMutation.mutateAsync({
-        ...objectiveForm,
-        name: titleEditor.getText(),
-        description: editor.getText(),
-      });
-      setIsOpen(false);
-      setIsExpanded(false);
-      titleEditor.commands.setContent("");
-      editor.commands.setContent("");
-      setObjectiveForm(initialForm);
-    } finally {
-      setLoading(false);
-      nProgress.done();
-    }
+    createMutation.mutate({
+      ...objectiveForm,
+      name: titleEditor.getText(),
+      description: editor.getText(),
+    });
+    setIsOpen(false);
+    setIsExpanded(false);
+    titleEditor.commands.setContent("");
+    editor.commands.setContent("");
+    setObjectiveForm(initialForm);
   };
 
   useEffect(() => {
@@ -543,7 +533,7 @@ export const NewObjectiveDialog = ({
           <Button
             disabled={editingKeyResult !== null}
             leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
-            loading={loading}
+            loading={createMutation.isPending}
             loadingText="Creating objective..."
             onClick={handleCreateObjective}
             size="md"

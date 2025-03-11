@@ -66,7 +66,11 @@ export const ObjectiveCard = ({
 
   return (
     <RowWrapper className="px-5 py-3 md:px-12">
-      <Box className="flex w-[300px] shrink-0 items-center gap-2">
+      <Box
+        className={cn("flex w-[300px] shrink-0 items-center gap-2", {
+          "pointer-events-none opacity-40": id === "optimistic",
+        })}
+      >
         <Link
           className="flex w-full items-center gap-2 hover:opacity-90"
           href={`/teams/${teamId}/objectives/${id}`}

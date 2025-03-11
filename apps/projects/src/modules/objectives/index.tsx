@@ -1,11 +1,13 @@
 "use client";
 
-import type { Objective } from "@/modules/objectives/types";
+import { useParams } from "next/navigation";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
 import { TeamObjectivesHeader } from "./components/team-header";
+import { useObjectives, useTeamObjectives } from "./hooks/use-objectives";
 
-export const ObjectivesList = ({ objectives }: { objectives: Objective[] }) => {
+export const ObjectivesList = () => {
+  const { data: objectives = [] } = useObjectives();
   return (
     <>
       <ObjectivesHeader />
@@ -14,11 +16,9 @@ export const ObjectivesList = ({ objectives }: { objectives: Objective[] }) => {
   );
 };
 
-export const TeamObjectivesList = ({
-  objectives,
-}: {
-  objectives: Objective[];
-}) => {
+export const TeamObjectivesList = () => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { data: objectives = [] } = useTeamObjectives(teamId);
   return (
     <>
       <TeamObjectivesHeader />
