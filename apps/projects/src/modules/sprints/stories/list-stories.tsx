@@ -10,7 +10,7 @@ import { Sidebar } from "./sidebar";
 export const ListSprintStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:sprints:layout",
-    "list",
+    "kanban",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
     "objective:sprints:isExpanded",

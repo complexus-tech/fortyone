@@ -8,7 +8,7 @@ import { Header } from "./header";
 export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:objectives:stories:layout",
-    "list",
+    "kanban",
   );
 
   return (

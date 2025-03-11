@@ -8,7 +8,7 @@ import { MyWorkProvider } from "./components/provider";
 export const ListMyStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
-    "list",
+    "kanban",
   );
 
   return (

@@ -10,7 +10,7 @@ import { AllStories } from "./all-stories";
 export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:stories:layout",
-    "list",
+    "kanban",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "teams:stories:expanded",
