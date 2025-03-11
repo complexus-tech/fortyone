@@ -125,7 +125,7 @@ export const Sidebar = () => {
           <StoryIcon className="h-5 w-auto" strokeWidth={2} />
           <span className="first-letter:uppercase">Team stories</span>
         </Text>
-        <Text className="flex items-center gap-1.5">
+        <Box className="flex items-center gap-1.5">
           <TeamColor color={team.color} />
           <span
             className="inline-block max-w-[16ch] truncate"
@@ -133,7 +133,7 @@ export const Sidebar = () => {
           >
             {team.name}
           </span>
-        </Text>
+        </Box>
       </Flex>
 
       <Divider className="mb-4" />

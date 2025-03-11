@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
@@ -8,6 +9,8 @@ import { useBulkRestoreStoryMutation } from "./restore-mutation";
 
 export const useBulkDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { storyId } = useParams<{ storyId?: string }>();
+  const toastId = "bulk-delete-stories";
 
   const { mutateAsync } = useBulkRestoreStoryMutation();
 
@@ -32,6 +35,11 @@ export const useBulkDeleteStoryMutation = () => {
         }
       });
 
+      toast.loading("Deleting stories...", {
+        id: toastId,
+        description: "Please wait...",
+      });
+
       return storyIds;
     },
     onError: (error, storyIds) => {
@@ -48,6 +56,7 @@ export const useBulkDeleteStoryMutation = () => {
         }
       });
       toast.error("Failed to delete stories", {
+        id: toastId,
         description:
           error.message || "An error occurred while deleting the story",
         action: {
@@ -74,6 +83,12 @@ export const useBulkDeleteStoryMutation = () => {
         );
       });
 
+      if (storyId) {
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.detail(storyId),
+        });
+      }
+
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
         if (
@@ -84,7 +99,8 @@ export const useBulkDeleteStoryMutation = () => {
         }
       });
       toast.success("Success", {
-        description: `${storyIds.length} Stories deleted successfully`,
+        id: toastId,
+        description: `${storyIds.length} Stories deleted`,
         cancel: {
           label: "Undo",
           onClick: () => {

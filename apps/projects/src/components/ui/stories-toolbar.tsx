@@ -14,10 +14,11 @@ export const StoriesToolbar = () => {
 
   const { data: sprints = [] } = useSprints();
 
-  const { mutate: bulkDeleteMutate } = useBulkDeleteStoryMutation();
+  const { mutateAsync: bulkDeleteMutate, isPending } =
+    useBulkDeleteStoryMutation();
 
-  const handleBulkDelete = () => {
-    bulkDeleteMutate(selectedStories);
+  const handleBulkDelete = async () => {
+    await bulkDeleteMutate(selectedStories);
     setSelectedStories([]);
     setIsOpen(false);
   };
@@ -101,6 +102,7 @@ export const StoriesToolbar = () => {
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
                 color="tertiary"
+                disabled={isPending}
                 onClick={() => {
                   setIsOpen(false);
                 }}
@@ -111,6 +113,8 @@ export const StoriesToolbar = () => {
                 leftIcon={
                   <DeleteIcon className="text-white dark:text-gray-200" />
                 }
+                loading={isPending}
+                loadingText="Deleting stories..."
                 onClick={handleBulkDelete}
               >
                 Delete

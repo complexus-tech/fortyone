@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
+import { storyKeys } from "@/modules/stories/constants";
 import { createStoryAction } from "../actions/create-story";
 
 export const useCreateStoryMutation = () => {
@@ -16,7 +17,6 @@ export const useCreateStoryMutation = () => {
     mutationFn: createStoryAction,
 
     onMutate: (story) => {
-      // Invalidate all queries that contain "stories" in their query key
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
 
@@ -99,6 +99,12 @@ export const useCreateStoryMutation = () => {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }
       });
+
+      if (story.parentId) {
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.detail(story.parentId),
+        });
+      }
 
       toast.success("Success", {
         description: "Story created successfully",

@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import { storyKeys } from "../constants";
 import { bulkRestoreAction } from "../actions/bulk-restore-stories";
 
 export const useBulkRestoreStoryMutation = () => {
+  const { storyId } = useParams<{ storyId?: string }>();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -23,6 +25,12 @@ export const useBulkRestoreStoryMutation = () => {
     onSuccess: (_, storyIds) => {
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
+
+      if (storyId) {
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.detail(storyId),
+        });
+      }
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);

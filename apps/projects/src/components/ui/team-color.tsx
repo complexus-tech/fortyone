@@ -1,5 +1,4 @@
 import { cn } from "lib";
-import React from "react";
 
 export const TeamColor = ({
   color = "red",

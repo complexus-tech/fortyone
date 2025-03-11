@@ -77,18 +77,13 @@ export const StoryCard = ({
               {story.title}
             </Text>
             {isColumnVisible("ID") && (
-              <Link
-                className="shrink-0"
-                href={`/story/${story.id}/${slugify(story.title)}`}
+              <Text
+                className="shrink-0 text-[0.95rem] uppercase leading-[1.6rem]"
+                color="muted"
+                fontWeight="medium"
               >
-                <Text
-                  className="text-[0.95rem] uppercase leading-[1.6rem]"
-                  color="muted"
-                  fontWeight="medium"
-                >
-                  {teamCode}-{story.sequenceId}
-                </Text>
-              </Link>
+                {teamCode}-{story.sequenceId}
+              </Text>
             )}
           </Link>
         </div>

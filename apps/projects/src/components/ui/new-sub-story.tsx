@@ -14,7 +14,6 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
 import { CalendarIcon, CloseIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
-import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
@@ -23,7 +22,7 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { useMembers } from "@/lib/hooks/members";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -46,7 +45,7 @@ export const NewSubStory = ({
 }) => {
   const session = useSession();
   const { data: statuses = [] } = useTeamStatuses(teamId);
-  const { data: members = [] } = useMembers();
+  const { data: members = [] } = useTeamMembers(teamId);
   const defaultStatus =
     statuses.find((status) => status.id === statusId) || statuses.at(0);
 
@@ -103,7 +102,6 @@ export const NewSubStory = ({
       return;
     }
     setLoading(true);
-    nProgress.start();
 
     const newStory: NewStory = {
       title: titleEditor.getText(),
@@ -126,7 +124,6 @@ export const NewSubStory = ({
       setStoryForm(initialForm);
     } finally {
       setLoading(false);
-      nProgress.done();
     }
   };
 

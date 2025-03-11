@@ -34,7 +34,6 @@ import {
   SprintsIcon,
 } from "icons";
 import { toast } from "sonner";
-import nProgress from "nprogress";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
@@ -167,7 +166,6 @@ export const NewStoryDialog = ({
       return;
     }
     setLoading(true);
-    nProgress.start();
 
     const newStory: NewStory = {
       title: titleEditor.getText(),
@@ -195,7 +193,6 @@ export const NewStoryDialog = ({
       setStoryForm(initialForm);
     } finally {
       setLoading(false);
-      nProgress.done();
     }
   };
 
