@@ -1,8 +1,8 @@
 "use client";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, ObjectiveIcon } from "icons";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { CheckIcon, ObjectiveIcon, LoadingIcon } from "icons";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -44,15 +44,16 @@ const Items = ({
   align = "center",
   objectiveId,
   setObjectiveId,
+  teamId,
 }: {
   objectiveId?: string;
   setObjectiveId: (objectiveId: string | null) => void;
   align?: "center" | "start" | "end" | undefined;
+  teamId?: string;
 }) => {
-  const { data: objectives = [] } = useObjectives();
+  const { data: objectives = [], isPending } = useTeamObjectives(teamId ?? "");
   const [query, setQuery] = useState("");
   const { setOpen } = useObjectivesMenu();
-  if (!objectives.length) return null;
 
   return (
     <Popover.Content align={align}>
@@ -76,28 +77,38 @@ const Items = ({
           <Text color="muted">No objective found.</Text>
         </Command.Empty>
         <Command.Group>
-          <Command.Item
-            active={!objectiveId}
-            className="justify-between gap-4 opacity-70"
-            onSelect={() => {
-              if (objectiveId) {
-                setObjectiveId(null);
-              }
-              setOpen(false);
-            }}
-          >
-            <Box className="grid grid-cols-[24px_auto] items-center">
-              <ObjectiveIcon className="h-[1.1rem]" />
-              <Text>No objective</Text>
-            </Box>
-            <Flex align="center" gap={1}>
-              {!objectiveId && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">0</Text>
-            </Flex>
-          </Command.Item>
+          {!isPending && (
+            <Command.Item
+              active={!objectiveId}
+              className="justify-between gap-4 opacity-70"
+              onSelect={() => {
+                if (objectiveId) {
+                  setObjectiveId(null);
+                }
+                setOpen(false);
+              }}
+            >
+              <Box className="grid grid-cols-[24px_auto] items-center">
+                <ObjectiveIcon className="h-[1.1rem]" />
+                <Text>No objective</Text>
+              </Box>
+              <Flex align="center" gap={1}>
+                {!objectiveId && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">0</Text>
+              </Flex>
+            </Command.Item>
+          )}
           {objectives.length > 0 && <Divider className="my-2" />}
+          {isPending ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Fetching objectives…
+              </Text>
+            </Command.Loading>
+          ) : null}
           {objectives.map(({ id, name }, idx) => (
             <Command.Item
               active={id === objectiveId}

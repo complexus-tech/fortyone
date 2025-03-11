@@ -167,6 +167,7 @@ export const StoryProperties = ({
             setObjectiveId={(objectiveId) => {
               handleUpdate({ objectiveId });
             }}
+            teamId={teamId}
           />
         </ObjectivesMenu>
       ) : null}
@@ -200,6 +201,7 @@ export const StoryProperties = ({
               handleUpdate({ sprintId });
             }}
             sprintId={sprintId ?? undefined}
+            teamId={teamId}
           />
         </SprintsMenu>
       ) : null}

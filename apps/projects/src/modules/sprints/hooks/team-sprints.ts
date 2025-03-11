@@ -6,5 +6,6 @@ export const useTeamSprints = (teamId: string) => {
   return useQuery({
     queryKey: sprintKeys.team(teamId),
     queryFn: () => getTeamSprints(teamId),
+    enabled: Boolean(teamId),
   });
 };

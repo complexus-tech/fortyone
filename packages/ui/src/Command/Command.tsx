@@ -154,3 +154,4 @@ Command.Group = CommandGroup;
 Command.Item = CommandItem;
 Command.Shortcut = CommandShortcut;
 Command.Separator = CommandSeparator;
+Command.Loading = CommandPrimitive.Loading;

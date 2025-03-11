@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import { useLocalStorage } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { NewSprint } from "@/modules/sprints/types";
 import { useCreateSprintMutation } from "@/modules/sprints/hooks/create-sprint-mutation";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
@@ -43,7 +43,7 @@ export const NewSprintDialog = ({
   teamId?: string;
 }) => {
   const { data: teams = [] } = useTeams();
-  const { data: objectives = [] } = useObjectives();
+
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
@@ -61,6 +61,7 @@ export const NewSprintDialog = ({
   };
   const [sprintForm, setSprintForm] = useState<NewSprint>(initialForm);
   const { data: teamSprints = [] } = useTeamSprints(sprintForm.teamId);
+  const { data: objectives = [] } = useTeamObjectives(sprintForm.teamId);
 
   const titleEditor = useEditor({
     extensions: [
@@ -331,6 +332,7 @@ export const NewSprintDialog = ({
                 setObjectiveId={(objectiveId) => {
                   setSprintForm({ ...sprintForm, objectiveId });
                 }}
+                teamId={sprintForm.teamId}
               />
             </ObjectivesMenu>
           </Flex>

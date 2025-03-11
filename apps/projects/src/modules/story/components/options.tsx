@@ -368,6 +368,7 @@ export const Options = () => {
                 setObjectiveId={(objectiveId) => {
                   handleUpdate({ objectiveId });
                 }}
+                teamId={teamId}
               />
             </ObjectivesMenu>
           }
@@ -401,6 +402,7 @@ export const Options = () => {
                   handleUpdate({ sprintId });
                 }}
                 sprintId={sprintId ?? undefined}
+                teamId={teamId}
               />
             </SprintsMenu>
           }

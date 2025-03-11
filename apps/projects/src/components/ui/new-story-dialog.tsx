@@ -47,8 +47,8 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -81,8 +81,6 @@ export const NewStoryDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
-  const { data: objectives = [] } = useObjectives();
-  const { data: sprints = [] } = useSprints();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
@@ -96,6 +94,8 @@ export const NewStoryDialog = ({
   const currentTeamId = teamId || validActiveTeam?.id;
   const currentTeam =
     teams.find((team) => team.id === currentTeamId) || firstTeam;
+  const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
+  const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
@@ -482,48 +482,54 @@ export const NewStoryDialog = ({
                 }}
               />
             </AssigneesMenu>
-            <ObjectivesMenu>
-              <ObjectivesMenu.Trigger>
-                <Button
-                  className="gap-1 px-2 text-sm"
-                  color="tertiary"
-                  leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
-                  size="sm"
-                  variant="outline"
-                >
-                  <span className="inline-block max-w-[12ch] truncate">
-                    {objective?.name || "Objective"}
-                  </span>
-                </Button>
-              </ObjectivesMenu.Trigger>
-              <ObjectivesMenu.Items
-                objectiveId={storyForm.objectiveId ?? undefined}
-                setObjectiveId={(objectiveId) => {
-                  setStoryForm({ ...storyForm, objectiveId });
-                }}
-              />
-            </ObjectivesMenu>
-            <SprintsMenu>
-              <SprintsMenu.Trigger>
-                <Button
-                  className="gap-1 px-2 text-sm"
-                  color="tertiary"
-                  leftIcon={<SprintsIcon className="h-4 w-auto" />}
-                  size="sm"
-                  variant="outline"
-                >
-                  <span className="inline-block max-w-[12ch] truncate">
-                    {sprint?.name || "Sprint"}
-                  </span>
-                </Button>
-              </SprintsMenu.Trigger>
-              <SprintsMenu.Items
-                setSprintId={(sprintId) => {
-                  setStoryForm({ ...storyForm, sprintId });
-                }}
-                sprintId={storyForm.sprintId ?? undefined}
-              />
-            </SprintsMenu>
+            {objectives.length > 0 && (
+              <ObjectivesMenu>
+                <ObjectivesMenu.Trigger>
+                  <Button
+                    className="gap-1 px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[12ch] truncate">
+                      {objective?.name || "Objective"}
+                    </span>
+                  </Button>
+                </ObjectivesMenu.Trigger>
+                <ObjectivesMenu.Items
+                  objectiveId={storyForm.objectiveId ?? undefined}
+                  setObjectiveId={(objectiveId) => {
+                    setStoryForm({ ...storyForm, objectiveId });
+                  }}
+                  teamId={currentTeamId}
+                />
+              </ObjectivesMenu>
+            )}
+            {sprints.length > 0 && (
+              <SprintsMenu>
+                <SprintsMenu.Trigger>
+                  <Button
+                    className="gap-1 px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={<SprintsIcon className="h-4 w-auto" />}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[12ch] truncate">
+                      {sprint?.name || "Sprint"}
+                    </span>
+                  </Button>
+                </SprintsMenu.Trigger>
+                <SprintsMenu.Items
+                  setSprintId={(sprintId) => {
+                    setStoryForm({ ...storyForm, sprintId });
+                  }}
+                  sprintId={storyForm.sprintId ?? undefined}
+                  teamId={currentTeamId}
+                />
+              </SprintsMenu>
+            )}
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-between gap-2">

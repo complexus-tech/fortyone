@@ -1,9 +1,9 @@
 "use client";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, SprintsIcon } from "icons";
+import { CheckIcon, LoadingIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -44,15 +44,18 @@ const Items = ({
   align = "center",
   sprintId,
   setSprintId,
+  teamId,
 }: {
   sprintId?: string;
   setSprintId: (sprintId: string | null) => void;
   align?: "center" | "start" | "end" | undefined;
+  teamId?: string;
+  objectiveId?: string;
 }) => {
-  const { data: sprints = [] } = useSprints();
+  const { data: sprints = [], isPending: isTeamSprintsPending } =
+    useTeamSprints(teamId ?? "");
   const [query, setQuery] = useState("");
   const { setOpen } = useSprintsMenu();
-  if (!sprints.length) return null;
 
   return (
     <Popover.Content align={align}>
@@ -76,28 +79,38 @@ const Items = ({
           <Text color="muted">No sprint found.</Text>
         </Command.Empty>
         <Command.Group>
-          <Command.Item
-            active={!sprintId}
-            className="justify-between gap-4 opacity-70"
-            onSelect={() => {
-              if (sprintId) {
-                setSprintId(null);
-              }
-              setOpen(false);
-            }}
-          >
-            <Box className="grid grid-cols-[24px_auto] items-center">
-              <SprintsIcon />
-              <Text>No sprint</Text>
-            </Box>
-            <Flex align="center" gap={1}>
-              {!sprintId && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">0</Text>
-            </Flex>
-          </Command.Item>
+          {!isTeamSprintsPending ? (
+            <Command.Item
+              active={!sprintId}
+              className="justify-between gap-4 opacity-70"
+              onSelect={() => {
+                if (sprintId) {
+                  setSprintId(null);
+                }
+                setOpen(false);
+              }}
+            >
+              <Box className="grid grid-cols-[24px_auto] items-center">
+                <SprintsIcon />
+                <Text>No sprint</Text>
+              </Box>
+              <Flex align="center" gap={1}>
+                {!sprintId && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">0</Text>
+              </Flex>
+            </Command.Item>
+          ) : null}
           {sprints.length > 0 && <Divider className="my-2" />}
+          {isTeamSprintsPending ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Fetching sprints…
+              </Text>
+            </Command.Loading>
+          ) : null}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
             <Command.Item
               active={id === sprintId}

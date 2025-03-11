@@ -10,9 +10,10 @@ export const useObjectives = () => {
   });
 };
 
-export const useTeamObjectives = (teamId: string) => {
+export const useTeamObjectives = (teamId?: string) => {
   return useQuery({
     queryKey: objectiveKeys.team(teamId),
     queryFn: () => getTeamObjectives(teamId),
+    enabled: Boolean(teamId),
   });
 };
