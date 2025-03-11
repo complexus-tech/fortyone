@@ -7,6 +7,7 @@ import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { createStoryAction } from "../actions/create-story";
+import type { DetailedStory } from "../types";
 
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -22,26 +23,50 @@ export const useCreateStoryMutation = () => {
 
       queries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
-          queryClient.setQueriesData(
-            { queryKey: query.queryKey },
-            (data: Story[]) => {
-              return [
-                ...data,
-                {
-                  ...story,
-                  id: "123",
-                  sequenceId: data.length + 1,
-                  updatedAt: new Date().toISOString(),
-                  createdAt: new Date().toISOString(),
-                  labels: [],
+        if (queryKey.toLowerCase().includes("stories") && query.isActive()) {
+          if (queryKey.toLowerCase().includes("detail")) {
+            // add a sub story if the story has a parent id
+            if (story.parentId) {
+              queryClient.setQueriesData(
+                { queryKey: query.queryKey },
+                (data: DetailedStory | undefined) => {
+                  if (data?.id === story.parentId && data?.subStories) {
+                    return {
+                      ...data,
+                      subStories: [
+                        ...data.subStories,
+                        {
+                          ...story,
+                          id: "123",
+                          sequenceId: data.subStories.length + 1,
+                          updatedAt: new Date().toISOString(),
+                          createdAt: new Date().toISOString(),
+                          labels: [],
+                        },
+                      ],
+                    };
+                  }
                 },
-              ];
-            },
-          );
+              );
+            }
+          } else {
+            queryClient.setQueriesData(
+              { queryKey: query.queryKey },
+              (data: Story[]) => {
+                return [
+                  ...data,
+                  {
+                    ...story,
+                    id: "123",
+                    sequenceId: data.length + 1,
+                    updatedAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString(),
+                    labels: [],
+                  },
+                ];
+              },
+            );
+          }
         }
       });
     },
@@ -94,7 +119,8 @@ export const useCreateStoryMutation = () => {
         const queryKey = JSON.stringify(query.queryKey);
         if (
           queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
+          !queryKey.toLowerCase().includes("detail") &&
+          query.isActive()
         ) {
           queryClient.invalidateQueries({ queryKey: query.queryKey });
         }

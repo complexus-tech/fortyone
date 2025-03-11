@@ -20,6 +20,7 @@ export const useUpdateStoryMutation = () => {
     }) => updateStoryAction(storyId, payload),
 
     onMutate: ({ storyId, payload }) => {
+      queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
       );
@@ -28,25 +29,39 @@ export const useUpdateStoryMutation = () => {
           ...previousStory,
           ...payload,
         });
+        return { previousStory };
       }
 
       const activeQueries = queryClient.getQueryCache().getAll();
 
       activeQueries.forEach((query) => {
-        if (
-          query.isActive() &&
-          query.queryKey.includes("stories") &&
-          query.queryKey.includes("list")
-        ) {
-          queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-            stories?.map((story) =>
-              story.id === storyId ? { ...story, ...payload } : story,
-            ),
-          );
+        const queryKey = JSON.stringify(query.queryKey);
+        if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
+          queryClient.cancelQueries({ queryKey: query.queryKey });
+          if (queryKey.toLowerCase().includes("detail")) {
+            // try to update sub stories if they exist
+            const parentStory = queryClient.getQueryData<DetailedStory>(
+              query.queryKey,
+            );
+            if (parentStory?.subStories) {
+              queryClient.setQueryData<DetailedStory>(query.queryKey, {
+                ...parentStory,
+                subStories: parentStory.subStories.map((subStory) =>
+                  subStory.id === storyId
+                    ? { ...subStory, ...payload }
+                    : subStory,
+                ),
+              });
+            }
+          } else {
+            queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
+              stories?.map((story) =>
+                story.id === storyId ? { ...story, ...payload } : story,
+              ),
+            );
+          }
         }
       });
-
-      return { previousStory };
     },
     onError: (error, variables, context) => {
       if (context?.previousStory) {
@@ -66,15 +81,17 @@ export const useUpdateStoryMutation = () => {
       });
     },
     onSuccess: (_, { storyId, payload }) => {
-      // Track story update
       analytics.track("story_updated", {
         storyId,
         ...payload,
       });
-
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
+      const activeQueries = queryClient.getQueryCache().getAll();
+      activeQueries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
+      });
     },
   });
 

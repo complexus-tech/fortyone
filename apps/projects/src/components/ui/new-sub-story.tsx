@@ -61,7 +61,6 @@ export const NewSubStory = ({
     priority,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
-  const [loading, setLoading] = useState(false);
   const mutation = useCreateStoryMutation();
 
   const titleEditor = useEditor({
@@ -92,7 +91,7 @@ export const NewSubStory = ({
     editable: true,
   });
 
-  const handleCreateStory = async () => {
+  const handleCreateStory = () => {
     if (!titleEditor || !editor) return;
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
@@ -101,7 +100,6 @@ export const NewSubStory = ({
       });
       return;
     }
-    setLoading(true);
 
     const newStory: NewStory = {
       title: titleEditor.getText(),
@@ -117,14 +115,10 @@ export const NewSubStory = ({
       assigneeId: storyForm.assigneeId,
     };
 
-    try {
-      await mutation.mutateAsync(newStory);
-      titleEditor.commands.setContent("");
-      editor.commands.setContent("");
-      setStoryForm(initialForm);
-    } finally {
-      setLoading(false);
-    }
+    mutation.mutate(newStory);
+    titleEditor.commands.setContent("");
+    editor.commands.setContent("");
+    setStoryForm(initialForm);
   };
 
   useEffect(() => {
@@ -339,8 +333,6 @@ export const NewSubStory = ({
               <Button
                 color="tertiary"
                 leftIcon={<PlusIcon className="h-4 w-auto" />}
-                loading={loading}
-                loadingText="Creating story..."
                 onClick={handleCreateStory}
                 size="xs"
               >

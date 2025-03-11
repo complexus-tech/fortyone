@@ -48,6 +48,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
           className={cn("gap-4", {
             "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
               isDragging,
+            "pointer-events-none opacity-40": story.id === "123",
           })}
         >
           <Flex align="center" className="relative shrink select-none" gap={2}>
