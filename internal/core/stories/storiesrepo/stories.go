@@ -318,7 +318,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 
 	filters["workspace_id"] = workspaceId
 
-	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id;"
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id AND parent_id IS NULL;"
 
 	var stories []dbStory
 
@@ -397,7 +397,8 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 				tm.team_id = s.team_id 
 				AND tm.user_id = :current_user
 		WHERE s.workspace_id = :workspace_id 
-		AND s.deleted_at IS NULL 
+		AND s.deleted_at IS NULL
+		AND s.parent_id IS NULL
 		AND (s.assignee_id = :current_user OR s.reporter_id = :current_user)
 		ORDER BY s.created_at DESC;
 	`
