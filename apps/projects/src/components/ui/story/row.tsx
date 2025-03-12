@@ -133,7 +133,10 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                         type="button"
                       >
                         <Avatar
-                          name={selectedAssignee?.fullName}
+                          name={
+                            selectedAssignee?.fullName ||
+                            selectedAssignee?.username
+                          }
                           size="sm"
                           src={selectedAssignee?.avatarUrl}
                         />

@@ -99,7 +99,10 @@ export const StoryCard = ({
                       <Flex gap={2}>
                         <Avatar
                           className="mt-0.5"
-                          name={selectedAssignee.fullName}
+                          name={
+                            selectedAssignee.fullName ||
+                            selectedAssignee.username
+                          }
                           src={selectedAssignee.avatarUrl}
                         />
                         <Box>
@@ -140,7 +143,10 @@ export const StoryCard = ({
                       variant="outline"
                     >
                       <Avatar
-                        name={selectedAssignee?.fullName}
+                        name={
+                          selectedAssignee?.fullName ||
+                          selectedAssignee?.username
+                        }
                         rounded="md"
                         size="xs"
                         src={selectedAssignee?.avatarUrl}

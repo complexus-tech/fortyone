@@ -123,7 +123,7 @@ const Items = ({
                 src={self?.avatarUrl}
               />
               <Text className="max-w-[12rem] truncate">
-                {self?.fullName}{" "}
+                {self?.fullName || self?.username}{" "}
                 <Text as="span" color="muted">
                   (You)
                 </Text>
@@ -142,7 +142,7 @@ const Items = ({
               ({ id }) =>
                 !excludeUsers.includes(id) && id !== session?.user?.id,
             )
-            .map(({ id, fullName, avatarUrl }, idx) => (
+            .map(({ id, fullName, username, avatarUrl }, idx) => (
               <Command.Item
                 active={id === assigneeId}
                 className="justify-between"
@@ -157,11 +157,13 @@ const Items = ({
                 <Flex align="center" gap={2}>
                   <Avatar
                     color="primary"
-                    name={fullName}
+                    name={fullName || username}
                     size="sm"
                     src={avatarUrl}
                   />
-                  <Text className="max-w-[12rem] truncate">{fullName}</Text>
+                  <Text className="max-w-[12rem] truncate">
+                    {fullName || username}
+                  </Text>
                 </Flex>
                 <Flex align="center" gap={1}>
                   {id === assigneeId && (
