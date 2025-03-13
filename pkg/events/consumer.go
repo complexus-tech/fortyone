@@ -310,3 +310,28 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event Event) er
 
 	return nil
 }
+
+func (c *Consumer) generateStoryUpdateTitle(updates map[string]any) string {
+	// Check for assignee_id first (highest priority)
+	if _, exists := updates["assignee_id"]; exists {
+		return "Jack assigned a story to you"
+	}
+
+	// Check for status_id (second priority)
+	if _, exists := updates["status_id"]; exists {
+		return "A story's status was updated"
+	}
+
+	// Check for priority (third priority)
+	if _, exists := updates["priority"]; exists {
+		return "A story's priority was changed"
+	}
+
+	// Check for due_date (lowest priority)
+	if _, exists := updates["due_date"]; exists {
+		return "A story's due date was modified"
+	}
+
+	// Default case if none of the above
+	return "A story was updated"
+}
