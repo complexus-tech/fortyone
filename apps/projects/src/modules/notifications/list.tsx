@@ -31,7 +31,7 @@ export const ListNotifications = () => {
           )}
         </Box>
       </Box>
-      <NotificationMessage />
+      <NotificationMessage count={notifications.length} />
     </Box>
   );
 };

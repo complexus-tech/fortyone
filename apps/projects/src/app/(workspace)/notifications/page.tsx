@@ -5,6 +5,7 @@ import { ListNotifications } from "@/modules/notifications/list";
 import { getQueryClient } from "@/app/get-query-client";
 import { notificationKeys } from "@/constants/keys";
 import { getNotifications } from "@/modules/notifications/queries/get-notifications";
+import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 
 export const metadata: Metadata = {
   title: "Notifications",
@@ -13,10 +14,16 @@ export const metadata: Metadata = {
 export default async function Page() {
   const queryClient = getQueryClient();
 
-  await queryClient.prefetchQuery({
-    queryKey: notificationKeys.all,
-    queryFn: getNotifications,
-  });
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: notificationKeys.all,
+      queryFn: getNotifications,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: notificationKeys.unread(),
+      queryFn: getUnreadNotifications,
+    }),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

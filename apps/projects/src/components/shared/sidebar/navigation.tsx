@@ -79,7 +79,7 @@ export const Navigation = () => {
               {name}
             </span>
             {messages ? (
-              <Badge color="primary" rounded="full" size="sm">
+              <Badge color="tertiary" rounded="full" size="sm">
                 {messages}
               </Badge>
             ) : null}
