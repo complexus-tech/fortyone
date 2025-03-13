@@ -13,12 +13,16 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
@@ -181,8 +185,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	notificationService := notifications.New(log, notificationsrepo.New(log, db))
 	storiesService := stories.New(log, storiesrepo.New(log, db), publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
+	usersService := users.New(log, usersrepo.New(log, db))
+	statusesService := states.New(log, statesrepo.New(log, db))
 	// Create consumer
-	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService)
+	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService, usersService, statusesService)
 
 	// Start consumer in a goroutine
 	go func() {

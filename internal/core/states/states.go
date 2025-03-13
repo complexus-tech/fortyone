@@ -161,3 +161,22 @@ func (s *Service) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uu
 	))
 	return states, nil
 }
+
+// Get returns a state by ID.
+func (s *Service) Get(ctx context.Context, workspaceId uuid.UUID, stateId uuid.UUID) (CoreState, error) {
+	s.log.Info(ctx, "business.core.states.Get")
+	ctx, span := web.AddSpan(ctx, "business.core.states.Get")
+	defer span.End()
+
+	state, err := s.repo.Get(ctx, workspaceId, stateId)
+	if err != nil {
+		span.RecordError(err)
+		return CoreState{}, err
+	}
+
+	span.AddEvent("state retrieved.", trace.WithAttributes(
+		attribute.String("state.id", stateId.String()),
+		attribute.String("state.name", state.Name),
+	))
+	return state, nil
+}

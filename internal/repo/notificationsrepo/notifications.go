@@ -39,7 +39,7 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 			:recipient_id, :workspace_id, :type, :entity_type,
 			:entity_id, :actor_id, :title
 		) RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, is_read, created_at, read_at;
+			entity_id, actor_id, title, created_at, read_at;
 	`
 
 	var notification dbNotification

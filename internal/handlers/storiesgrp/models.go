@@ -203,8 +203,8 @@ type AppUpdateStory struct {
 	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
 	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
 	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
-	StartDate       time.Time  `json:"startDate" db:"start_date"`
-	EndDate         time.Time  `json:"endDate" db:"end_date"`
+	StartDate       *time.Time `json:"startDate" db:"start_date"`
+	EndDate         *time.Time `json:"endDate" db:"end_date"`
 }
 
 type AppNewComment struct {
