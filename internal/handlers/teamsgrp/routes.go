@@ -2,7 +2,7 @@ package teamsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
-	"github.com/complexus-tech/projects-api/internal/core/teams/teamsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

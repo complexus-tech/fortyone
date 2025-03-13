@@ -2,7 +2,7 @@ package notificationsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
-	"github.com/complexus-tech/projects-api/internal/core/notifications/notificationsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

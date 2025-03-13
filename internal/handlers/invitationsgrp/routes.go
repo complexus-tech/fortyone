@@ -2,13 +2,13 @@ package invitationsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/invitations"
-	"github.com/complexus-tech/projects-api/internal/core/invitations/invitationsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/invitationsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
-	"github.com/complexus-tech/projects-api/internal/core/teams/teamsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/core/users/usersrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
-	"github.com/complexus-tech/projects-api/internal/core/workspaces/workspacesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"

@@ -2,7 +2,7 @@ package objectivestatusgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
-	"github.com/complexus-tech/projects-api/internal/core/objectivestatus/objectivestatusrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

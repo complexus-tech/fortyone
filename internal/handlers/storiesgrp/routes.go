@@ -2,10 +2,10 @@ package storiesgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/comments"
-	"github.com/complexus-tech/projects-api/internal/core/comments/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/links"
-	"github.com/complexus-tech/projects-api/internal/core/links/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/repo/commentsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"

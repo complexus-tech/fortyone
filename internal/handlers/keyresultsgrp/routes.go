@@ -2,7 +2,7 @@ package keyresultsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
-	"github.com/complexus-tech/projects-api/internal/core/keyresults/keyresultsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

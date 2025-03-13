@@ -2,7 +2,7 @@ package linksgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/links"
-	"github.com/complexus-tech/projects-api/internal/core/links/linksrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

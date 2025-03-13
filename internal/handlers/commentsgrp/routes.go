@@ -2,7 +2,7 @@ package commentsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/comments"
-	"github.com/complexus-tech/projects-api/internal/core/comments/commentsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

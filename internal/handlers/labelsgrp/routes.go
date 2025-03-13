@@ -2,7 +2,7 @@ package labelsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/labels"
-	"github.com/complexus-tech/projects-api/internal/core/labels/labelsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/labelsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

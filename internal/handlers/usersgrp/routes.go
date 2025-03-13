@@ -2,7 +2,7 @@ package usersgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/core/users/usersrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"

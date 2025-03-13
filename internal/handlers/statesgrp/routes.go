@@ -2,7 +2,7 @@ package statesgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/states"
-	"github.com/complexus-tech/projects-api/internal/core/states/statesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

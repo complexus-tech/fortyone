@@ -2,7 +2,7 @@ package activitiesgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/activities"
-	"github.com/complexus-tech/projects-api/internal/core/activities/activitiesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/activitiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

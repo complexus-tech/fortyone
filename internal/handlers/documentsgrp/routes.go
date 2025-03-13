@@ -2,7 +2,7 @@ package documentsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/documents"
-	"github.com/complexus-tech/projects-api/internal/core/documents/documentsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/documentsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"

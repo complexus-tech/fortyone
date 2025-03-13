@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
-	"github.com/complexus-tech/projects-api/internal/core/notifications/notificationsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/pkg/database"

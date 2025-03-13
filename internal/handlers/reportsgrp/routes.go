@@ -2,7 +2,7 @@ package reportsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/reports"
-	"github.com/complexus-tech/projects-api/internal/core/reports/reportsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/reportsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/complexus-tech/projects-api/internal/core/keyresults/keyresultsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"

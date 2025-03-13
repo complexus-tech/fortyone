@@ -2,7 +2,7 @@ package epicsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/epics"
-	"github.com/complexus-tech/projects-api/internal/core/epics/epicsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/epicsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"

@@ -2,7 +2,7 @@ package sprintsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
-	"github.com/complexus-tech/projects-api/internal/core/sprints/sprintsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/sprintsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"

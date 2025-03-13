@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
-	"github.com/complexus-tech/projects-api/internal/core/comments/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/repo/commentsrepo"
 	"github.com/google/uuid"
 )
 
