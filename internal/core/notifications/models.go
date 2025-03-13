@@ -15,7 +15,6 @@ type CoreNotification struct {
 	EntityID    uuid.UUID
 	ActorID     uuid.UUID
 	Title       string
-	Description *string
 	CreatedAt   time.Time
 	ReadAt      *time.Time
 }
@@ -39,5 +38,4 @@ type CoreNewNotification struct {
 	EntityID    uuid.UUID
 	ActorID     uuid.UUID
 	Title       string
-	Description *string
 }

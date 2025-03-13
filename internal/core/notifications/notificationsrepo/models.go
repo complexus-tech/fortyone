@@ -35,7 +35,6 @@ type dbNotification struct {
 	EntityID    uuid.UUID        `db:"entity_id"`
 	ActorID     uuid.UUID        `db:"actor_id"`
 	Title       string           `db:"title"`
-	Description *string          `db:"description"`
 	CreatedAt   time.Time        `db:"created_at"`
 	ReadAt      *time.Time       `db:"read_at"`
 }
@@ -59,7 +58,6 @@ type dbNewNotification struct {
 	EntityID    uuid.UUID        `db:"entity_id"`
 	ActorID     uuid.UUID        `db:"actor_id"`
 	Title       string           `db:"title"`
-	Description *string          `db:"description"`
 }
 
 // Conversion functions
@@ -72,7 +70,6 @@ func toDBNewNotification(n notifications.CoreNewNotification) dbNewNotification 
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
 	}
 }
 
@@ -86,7 +83,6 @@ func toCoreNotification(n dbNotification) notifications.CoreNotification {
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
 	}

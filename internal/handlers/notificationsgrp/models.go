@@ -47,7 +47,6 @@ func toAppNotification(n notifications.CoreNotification) AppNotification {
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
 	}

@@ -103,7 +103,6 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
 			EntityID:    payload.StoryID,
 			ActorID:     event.ActorID,
 			Title:       "You have been assigned to a story",
-			Description: nil, // TODO: Add description based on story title
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -137,7 +136,6 @@ func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error 
 			EntityID:    payload.CommentID,
 			ActorID:     event.ActorID,
 			Title:       "Someone replied to your comment",
-			Description: nil, // TODO: Add comment preview
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -169,7 +167,6 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event Event) erro
 			EntityID:    payload.ObjectiveID,
 			ActorID:     event.ActorID,
 			Title:       "You have been assigned as the lead for an objective",
-			Description: nil, // TODO: Add objective title
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
