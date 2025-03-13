@@ -29,9 +29,9 @@ func New(notifications *notifications.Service) *Handlers {
 	}
 }
 
-// GetUnread returns a list of unread notifications.
-func (h *Handlers) GetUnread(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.notifications.GetUnread")
+// List returns a list of notifications.
+func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.List")
 	defer span.End()
 
 	userID, err := mid.GetUserID(ctx)
@@ -61,7 +61,7 @@ func (h *Handlers) GetUnread(ctx context.Context, w http.ResponseWriter, r *http
 		}
 	}
 
-	notifications, err := h.notifications.GetUnread(ctx, userID, workspaceID, limit, offset)
+	notifications, err := h.notifications.List(ctx, userID, workspaceID, limit, offset)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -71,6 +71,34 @@ func (h *Handlers) GetUnread(ctx context.Context, w http.ResponseWriter, r *http
 	))
 
 	return web.Respond(ctx, w, toAppNotifications(notifications), http.StatusOK)
+}
+
+// GetUnreadCount returns the number of unread notifications for a user in a workspace.
+func (h *Handlers) GetUnreadCount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.GetUnreadCount")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	count, err := h.notifications.GetUnreadCount(ctx, userID, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("unread count retrieved", trace.WithAttributes(
+		attribute.Int("unread_count", count),
+	))
+
+	return web.Respond(ctx, w, count, http.StatusOK)
 }
 
 // MarkAsRead marks a notification as read.

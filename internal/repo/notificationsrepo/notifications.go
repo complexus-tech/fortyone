@@ -66,8 +66,8 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 	return toCoreNotification(notification), nil
 }
 
-func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]notifications.CoreNotification, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.notifications.GetUnread")
+func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]notifications.CoreNotification, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.List")
 	defer span.End()
 
 	query := `
@@ -76,7 +76,6 @@ func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, lim
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
-		AND read_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT :limit OFFSET :offset;
 	`
@@ -110,6 +109,45 @@ func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, lim
 	))
 
 	return toCoreNotifications(dbNotifications), nil
+}
+
+func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.GetUnreadCount")
+	defer span.End()
+
+	query := `
+		SELECT COUNT(*) FROM notifications
+		WHERE recipient_id = :user_id
+		AND workspace_id = :workspace_id
+		AND read_at IS NULL;
+	`
+
+	params := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+
+	var count int
+	if err := stmt.GetContext(ctx, &count, params); err != nil {
+		errMsg := fmt.Sprintf("failed to get unread count: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get unread count"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+
+	span.AddEvent("unread count retrieved", trace.WithAttributes(
+		attribute.Int("unread_count", count),
+	))
+
+	return count, nil
 }
 
 func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error {

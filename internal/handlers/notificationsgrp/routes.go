@@ -22,9 +22,10 @@ func Routes(cfg Config, app *web.App) {
 	h := New(notificationsService)
 
 	// Notifications
-	app.Get("/workspaces/{workspaceId}/notifications", h.GetUnread, auth)
+	app.Get("/workspaces/{workspaceId}/notifications", h.List, auth)
 	app.Put("/workspaces/{workspaceId}/notifications/{id}/read", h.MarkAsRead, auth)
 	app.Put("/workspaces/{workspaceId}/notifications/read-all", h.MarkAllAsRead, auth)
+	app.Get("/workspaces/{workspaceId}/notifications/unread-count", h.GetUnreadCount, auth)
 
 	// Notification Preferences
 	app.Get("/workspaces/{workspaceId}/notification-preferences", h.GetPreferences, auth)

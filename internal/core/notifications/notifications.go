@@ -13,7 +13,8 @@ import (
 // Repository provides access to the notifications storage.
 type Repository interface {
 	Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error)
-	GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error)
+	List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error)
+	GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID) error
 	GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreNotificationPreference, error)
@@ -54,13 +55,13 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	return notification, nil
 }
 
-// GetUnread returns a list of unread notifications.
-func (s *Service) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error) {
-	s.log.Info(ctx, "business.core.notifications.GetUnread")
-	ctx, span := web.AddSpan(ctx, "business.core.notifications.GetUnread")
+// List returns a list of notifications.
+func (s *Service) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error) {
+	s.log.Info(ctx, "business.core.notifications.List")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.List")
 	defer span.End()
 
-	notifications, err := s.repo.GetUnread(ctx, userID, workspaceID, limit, offset)
+	notifications, err := s.repo.List(ctx, userID, workspaceID, limit, offset)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -71,6 +72,25 @@ func (s *Service) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, 
 	))
 
 	return notifications, nil
+}
+
+// GetUnreadCount returns the number of unread notifications for a user in a workspace.
+func (s *Service) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error) {
+	s.log.Info(ctx, "business.core.notifications.GetUnreadCount")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.GetUnreadCount")
+	defer span.End()
+
+	count, err := s.repo.GetUnreadCount(ctx, userID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return 0, err
+	}
+
+	span.AddEvent("unread count retrieved", trace.WithAttributes(
+		attribute.Int("unread_count", count),
+	))
+
+	return count, nil
 }
 
 // MarkAsRead marks a notification as read.
