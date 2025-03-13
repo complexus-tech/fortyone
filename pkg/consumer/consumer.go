@@ -1,4 +1,4 @@
-package events
+package consumer
 
 import (
 	"context"
@@ -7,7 +7,10 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
+	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/pkg/email"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -18,36 +21,40 @@ type Consumer struct {
 	log           *logger.Logger
 	notifications *notifications.Service
 	emailService  email.Service
+	stories       *stories.Service
+	objectives    *objectives.Service
 	websiteURL    string
 }
 
-func NewConsumer(redis *redis.Client, log *logger.Logger, notifications *notifications.Service, emailService email.Service, websiteURL string, db *sqlx.DB) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notifications *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service) *Consumer {
 
 	return &Consumer{
 		redis:         redis,
 		log:           log,
 		notifications: notifications,
 		emailService:  emailService,
+		stories:       stories,
+		objectives:    objectives,
 		websiteURL:    websiteURL,
 	}
 }
 
 func (c *Consumer) Start(ctx context.Context) error {
 	pubsub := c.redis.Subscribe(ctx,
-		string(StoryUpdated),
-		string(StoryCommented),
-		string(ObjectiveUpdated),
-		string(KeyResultUpdated),
-		string(EmailVerification),
-		string(InvitationEmail),
-		string(InvitationAccepted),
+		string(events.StoryUpdated),
+		string(events.StoryCommented),
+		string(events.ObjectiveUpdated),
+		string(events.KeyResultUpdated),
+		string(events.EmailVerification),
+		string(events.InvitationEmail),
+		string(events.InvitationAccepted),
 	)
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()
 
 	for msg := range ch {
-		var event Event
+		var event events.Event
 		if err := json.Unmarshal([]byte(msg.Payload), &event); err != nil {
 			c.log.Error(ctx, "failed to unmarshal event", "error", err)
 			continue
@@ -61,29 +68,29 @@ func (c *Consumer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (c *Consumer) handleEvent(ctx context.Context, event Event) error {
+func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 	switch event.Type {
-	case StoryUpdated:
+	case events.StoryUpdated:
 		return c.handleStoryUpdated(ctx, event)
-	case StoryCommented:
+	case events.StoryCommented:
 		return c.handleStoryCommented(ctx, event)
-	case ObjectiveUpdated:
+	case events.ObjectiveUpdated:
 		return c.handleObjectiveUpdated(ctx, event)
-	case KeyResultUpdated:
+	case events.KeyResultUpdated:
 		return c.handleKeyResultUpdated(ctx, event)
-	case EmailVerification:
+	case events.EmailVerification:
 		return c.handleEmailVerification(ctx, event)
-	case InvitationEmail:
+	case events.InvitationEmail:
 		return c.handleInvitationEmail(ctx, event)
-	case InvitationAccepted:
+	case events.InvitationAccepted:
 		return c.handleInvitationAccepted(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
 }
 
-func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
-	var payload StoryUpdatedPayload
+func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) error {
+	var payload events.StoryUpdatedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -92,8 +99,6 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
-
-	c.log.Info(ctx, "events.consumer.handleStoryUpdated", "payloadS", payload)
 
 	// Create notification for the assignee if changed
 	if payload.AssigneeID != nil {
@@ -115,9 +120,9 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event Event) error {
 	return nil
 }
 
-func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error {
-	c.log.Info(ctx, "events.consumer.handleStoryCommented", "event", event.Type)
-	var payload StoryCommentedPayload
+func (c *Consumer) handleStoryCommented(ctx context.Context, event events.Event) error {
+	c.log.Info(ctx, "consumer.handleStoryCommented", "event", event.Type)
+	var payload events.StoryCommentedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -148,8 +153,8 @@ func (c *Consumer) handleStoryCommented(ctx context.Context, event Event) error 
 	return nil
 }
 
-func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event Event) error {
-	var payload ObjectiveUpdatedPayload
+func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Event) error {
+	var payload events.ObjectiveUpdatedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -179,8 +184,8 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event Event) erro
 	return nil
 }
 
-func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event Event) error {
-	var payload KeyResultUpdatedPayload
+func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event events.Event) error {
+	var payload events.KeyResultUpdatedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -195,8 +200,8 @@ func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event Event) erro
 	return nil
 }
 
-func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) error {
-	var payload EmailVerificationPayload
+func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Event) error {
+	var payload events.EmailVerificationPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -206,7 +211,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	c.log.Info(ctx, "events.consumer.handleEmailVerification", "email", payload.Email)
+	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email)
 
 	// Prepare template data
 	templateData := map[string]any{
@@ -230,8 +235,8 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event Event) err
 	return nil
 }
 
-func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error {
-	var payload InvitationEmailPayload
+func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event) error {
+	var payload events.InvitationEmailPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -241,7 +246,7 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	c.log.Info(ctx, "events.consumer.handleInvitationEmail",
+	c.log.Info(ctx, "consumer.handleInvitationEmail",
 		"email", payload.Email,
 		"workspace_id", payload.WorkspaceID)
 
@@ -272,8 +277,8 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event Event) error
 	return nil
 }
 
-func (c *Consumer) handleInvitationAccepted(ctx context.Context, event Event) error {
-	var payload InvitationAcceptedPayload
+func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Event) error {
+	var payload events.InvitationAcceptedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
@@ -283,7 +288,7 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event Event) er
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	c.log.Info(ctx, "events.consumer.handleInvitationAccepted",
+	c.log.Info(ctx, "consumer.handleInvitationAccepted",
 		"inviter_email", payload.InviterEmail,
 		"invitee_email", payload.InviteeEmail,
 		"workspace_id", payload.WorkspaceID)

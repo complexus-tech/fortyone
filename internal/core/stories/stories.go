@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -52,11 +53,11 @@ type CoreSingleStoryWithSubs struct {
 type Service struct {
 	repo      Repository
 	log       *logger.Logger
-	publisher *events.Publisher
+	publisher *publisher.Publisher
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, publisher *events.Publisher) *Service {
+func New(log *logger.Logger, repo Repository, publisher *publisher.Publisher) *Service {
 	return &Service{
 		repo:      repo,
 		log:       log,

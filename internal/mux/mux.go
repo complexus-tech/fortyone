@@ -6,9 +6,9 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/email"
-	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -24,7 +24,7 @@ type RouteAdder interface {
 type Config struct {
 	DB            *sqlx.DB
 	Redis         *redis.Client
-	Publisher     *events.Publisher
+	Publisher     *publisher.Publisher
 	Shutdown      chan os.Signal
 	Log           *logger.Logger
 	Tracer        trace.Tracer

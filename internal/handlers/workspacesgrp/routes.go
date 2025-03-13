@@ -2,20 +2,20 @@ package workspacesgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
-	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
 	"github.com/complexus-tech/projects-api/internal/core/states"
-	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
-	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
-	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 )
@@ -24,7 +24,7 @@ type Config struct {
 	DB        *sqlx.DB
 	Log       *logger.Logger
 	SecretKey string
-	Publisher *events.Publisher
+	Publisher *publisher.Publisher
 }
 
 func Routes(cfg Config, app *web.App) {

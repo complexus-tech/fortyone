@@ -11,6 +11,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/golang-jwt/jwt/v5"
@@ -25,11 +26,11 @@ type Handlers struct {
 	users         *users.Service
 	secretKey     string
 	googleService *google.Service
-	publisher     *events.Publisher
+	publisher     *publisher.Publisher
 }
 
 // New constructs a new users handlers instance.
-func New(users *users.Service, secretKey string, googleService *google.Service, publisher *events.Publisher) *Handlers {
+func New(users *users.Service, secretKey string, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
 		secretKey:     secretKey,

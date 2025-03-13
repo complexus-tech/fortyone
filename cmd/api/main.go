@@ -12,14 +12,19 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
+	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
+	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
-	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
@@ -170,14 +175,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 	log.Info(ctx, "email service initialized")
 
 	// Create publisher
-	publisher := events.NewPublisher(rdb, log)
+	publisher := publisher.New(rdb, log)
 
-	// Create notifications service
-	notificationsRepo := notificationsrepo.New(log, db)
-	notificationService := notifications.New(log, notificationsRepo)
-
+	// Create services
+	notificationService := notifications.New(log, notificationsrepo.New(log, db))
+	storiesService := stories.New(log, storiesrepo.New(log, db), publisher)
+	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
 	// Create consumer
-	consumer := events.NewConsumer(rdb, log, notificationService, emailService, cfg.Website.URL, db)
+	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService)
 
 	// Start consumer in a goroutine
 	go func() {

@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -35,14 +36,14 @@ type Repository interface {
 type Service struct {
 	repo       Repository
 	logger     *logger.Logger
-	publisher  *events.Publisher
+	publisher  *publisher.Publisher
 	users      *users.Service
 	workspaces *workspaces.Service
 	teams      *teams.Service
 }
 
 // New constructs a new invitations service instance
-func New(repo Repository, logger *logger.Logger, publisher *events.Publisher, users *users.Service, workspaces *workspaces.Service, teams *teams.Service) *Service {
+func New(repo Repository, logger *logger.Logger, publisher *publisher.Publisher, users *users.Service, workspaces *workspaces.Service, teams *teams.Service) *Service {
 	return &Service{
 		repo:       repo,
 		logger:     logger,
