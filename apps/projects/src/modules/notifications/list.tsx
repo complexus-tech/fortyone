@@ -10,7 +10,7 @@ export const ListNotifications = ({
 }) => {
   return (
     <Box className="grid h-full grid-cols-[350px_auto]">
-      <Box className="h-full overflow-y-auto border-r border-gray-100/70 pb-6 dark:border-dark-200">
+      <Box className="h-full overflow-y-auto border-r border-gray-100/70 pb-6 dark:border-dark-50">
         <NotificationsHeader />
         <Box className="h-[calc(100vh-4rem)] overflow-y-auto">
           {notifications.map(({ id, read }) => (
