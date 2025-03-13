@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
-	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
+	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -177,7 +177,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	notificationService := notifications.New(log, notificationsRepo)
 
 	// Create consumer
-	consumer := events.NewConsumer(rdb, log, notificationService, emailService, cfg.Website.URL)
+	consumer := events.NewConsumer(rdb, log, notificationService, emailService, cfg.Website.URL, db)
 
 	// Start consumer in a goroutine
 	go func() {

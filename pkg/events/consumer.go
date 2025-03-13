@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,7 +21,8 @@ type Consumer struct {
 	websiteURL    string
 }
 
-func NewConsumer(redis *redis.Client, log *logger.Logger, notifications *notifications.Service, emailService email.Service, websiteURL string) *Consumer {
+func NewConsumer(redis *redis.Client, log *logger.Logger, notifications *notifications.Service, emailService email.Service, websiteURL string, db *sqlx.DB) *Consumer {
+
 	return &Consumer{
 		redis:         redis,
 		log:           log,
