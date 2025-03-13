@@ -100,8 +100,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	// Create notification for the assignee if changed
-	if payload.AssigneeID != nil {
+	// new assignee
+	if payload.AssigneeID == nil {
 		notification := notifications.CoreNewNotification{
 			RecipientID: *payload.AssigneeID,
 			WorkspaceID: payload.WorkspaceID,
@@ -115,6 +115,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			return fmt.Errorf("failed to create notification: %w", err)
 		}
+	} else {
+		//
 	}
 
 	return nil

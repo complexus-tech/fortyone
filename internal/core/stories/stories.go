@@ -241,7 +241,7 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	}
 
 	// ignore if assignee is the actor
-	if story.Assignee != nil && assigneeID != nil && *story.Assignee == *assigneeID {
+	if story.Assignee != nil && assigneeID != nil && story.Assignee == assigneeID {
 		return nil
 	}
 
