@@ -6,7 +6,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/core/links/linksrepo"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
-	"github.com/complexus-tech/projects-api/internal/core/stories/storiesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
