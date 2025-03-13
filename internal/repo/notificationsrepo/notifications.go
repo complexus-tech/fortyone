@@ -81,7 +81,7 @@ func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, lim
 		LIMIT :limit OFFSET :offset;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 		"limit":        limit,
