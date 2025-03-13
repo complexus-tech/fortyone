@@ -63,3 +63,8 @@ export const invitationKeys = {
   pending: ["pending-invitations"] as const,
   mine: ["my-invitations"] as const,
 };
+
+export const notificationKeys = {
+  all: ["notifications"] as const,
+  unread: () => [...notificationKeys.all, "unread"] as const,
+};

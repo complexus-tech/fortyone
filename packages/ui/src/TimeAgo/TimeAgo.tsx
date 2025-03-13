@@ -70,11 +70,11 @@ export const TimeAgo = ({
   return (
     <span className={className}>
       {isToday(new Date(timestamp)) || forceOriginal ? (
-        <ReactTimeAgo date={new Date(timestamp)} />
-      ) : (
         <time title={new Date(timestamp).toLocaleString()}>
           {formatContentTime(timestamp)}
         </time>
+      ) : (
+        <ReactTimeAgo date={new Date(timestamp)} />
       )}
     </span>
   );

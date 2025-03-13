@@ -9,6 +9,7 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
+import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 
 type MenuItem = {
   name: string;
@@ -19,12 +20,13 @@ type MenuItem = {
 
 export const Navigation = () => {
   const pathname = usePathname();
+  const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const links: MenuItem[] = [
     {
       name: "Inbox",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
       href: "/notifications",
-      // messages: 3,
+      messages: unreadNotifications,
     },
 
     {
