@@ -14,10 +14,10 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useUserRole } from "@/hooks";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 
 type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
@@ -39,9 +39,9 @@ export const StoryProperties = ({
   asKanban,
 }: StoryPropertiesProps) => {
   const { isColumnVisible } = useBoard();
-  const { data: statuses = [] } = useStatuses();
-  const { data: sprints = [] } = useSprints();
-  const { data: objectives = [] } = useObjectives();
+  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const { data: sprints = [] } = useTeamSprints(teamId);
+  const { data: objectives = [] } = useTeamObjectives(teamId);
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const selectedObjective = objectives.find(
