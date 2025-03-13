@@ -34,12 +34,12 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 	query := `
 		INSERT INTO notifications (
 			recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title
+			entity_id, actor_id, title, description
 		) VALUES (
 			:recipient_id, :workspace_id, :type, :entity_type,
-			:entity_id, :actor_id, :title
+			:entity_id, :actor_id, :title, :description	
 		) RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, created_at, read_at;
+			entity_id, actor_id, title, description, created_at, read_at;
 	`
 
 	var notification dbNotification
@@ -72,7 +72,7 @@ func (r *repo) GetUnread(ctx context.Context, userID, workspaceID uuid.UUID, lim
 
 	query := `
 		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, created_at, read_at
+			entity_id, actor_id, title, description, created_at, read_at
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id

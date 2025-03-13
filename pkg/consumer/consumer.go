@@ -101,7 +101,6 @@ func (c *Consumer) getStatusName(ctx context.Context, workspaceID uuid.UUID, sta
 	if c.statuses == nil {
 		return "new status"
 	}
-
 	// Now we can use the direct Get method on the states service
 	state, err := c.statuses.Get(ctx, workspaceID, statusID)
 	if err != nil {
@@ -112,7 +111,7 @@ func (c *Consumer) getStatusName(ctx context.Context, workspaceID uuid.UUID, sta
 	return state.Name
 }
 
-func (c *Consumer) generateStoryUpdateTitle(actorUsername string, updates map[string]any, recipientID uuid.UUID, originalAssigneeID *uuid.UUID, newAssigneeID *uuid.UUID, workspaceID uuid.UUID) string {
+func (c *Consumer) generateStoryUpdateDescription(actorUsername string, updates map[string]any, recipientID uuid.UUID, originalAssigneeID *uuid.UUID, newAssigneeID *uuid.UUID, workspaceID uuid.UUID) string {
 	// For assignee changes - handle different messages for original and new assignee
 	if newAssigneeValue, exists := updates["assignee_id"]; exists {
 		newAssigneeUUID, ok := newAssigneeValue.(uuid.UUID)
@@ -220,6 +219,16 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
+	var title string
+
+	story, err := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
+	if err != nil {
+		c.log.Error(ctx, "failed to get story", "error", err)
+		title = "Story updated"
+	} else {
+		title = story.Title
+	}
+
 	// Get actor's username
 	var actorUsername string
 	actorUser, err := c.users.GetUser(ctx, event.ActorID)
@@ -247,7 +256,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			if newAssigneeID != nil && *payload.AssigneeID == *newAssigneeID {
 				c.log.Info(ctx, "same assignee, not creating notification")
 			} else {
-				originalAssigneeTitle := c.generateStoryUpdateTitle(
+				originalAssigneeDescription := c.generateStoryUpdateDescription(
 					actorUsername,
 					payload.Updates,
 					*payload.AssigneeID,
@@ -263,7 +272,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 					EntityType:  "story",
 					EntityID:    payload.StoryID,
 					ActorID:     event.ActorID,
-					Title:       originalAssigneeTitle,
+					Description: originalAssigneeDescription,
+					Title:       title,
 				}
 
 				if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -278,7 +288,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			if payload.AssigneeID != nil && *payload.AssigneeID == *newAssigneeID {
 				c.log.Info(ctx, "same assignee, not creating notification")
 			} else {
-				newAssigneeTitle := c.generateStoryUpdateTitle(
+				newAssigneeDescription := c.generateStoryUpdateDescription(
 					actorUsername,
 					payload.Updates,
 					*newAssigneeID,
@@ -294,7 +304,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 					EntityType:  "story",
 					EntityID:    payload.StoryID,
 					ActorID:     event.ActorID,
-					Title:       newAssigneeTitle,
+					Description: newAssigneeDescription,
+					Title:       title,
 				}
 
 				if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -306,7 +317,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		// Handle other updates (status, priority, due date)
 		// Only create notification if there's an assignee to notify
 		if payload.AssigneeID != nil {
-			title := c.generateStoryUpdateTitle(
+			description := c.generateStoryUpdateDescription(
 				actorUsername,
 				payload.Updates,
 				*payload.AssigneeID,
@@ -322,6 +333,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 				EntityType:  "story",
 				EntityID:    payload.StoryID,
 				ActorID:     event.ActorID,
+				Description: description,
 				Title:       title,
 			}
 

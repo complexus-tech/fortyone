@@ -16,7 +16,7 @@ type AppNotification struct {
 	EntityID    uuid.UUID  `json:"entityId"`
 	ActorID     uuid.UUID  `json:"actorId"`
 	Title       string     `json:"title"`
-	Description *string    `json:"description"`
+	Description string     `json:"description"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	ReadAt      *time.Time `json:"readAt"`
 }
@@ -47,6 +47,7 @@ func toAppNotification(n notifications.CoreNotification) AppNotification {
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
+		Description: n.Description,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
 	}
