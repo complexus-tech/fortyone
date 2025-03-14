@@ -9,8 +9,20 @@ import {
   NotificationsUnreadIcon,
   SettingsIcon,
 } from "icons";
+import Link from "next/link";
+import { useNotifications } from "./hooks/notifications";
+import { useUnreadNotifications } from "./hooks/unread";
+import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
 
 export const NotificationsHeader = () => {
+  const { data: notifications = [] } = useNotifications();
+  const { data: unreadNotifications = 0 } = useUnreadNotifications();
+  const { mutate: markAllAsRead } = useReadAllNotificationsMutation();
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
   return (
     <Flex
       align="center"
@@ -42,11 +54,11 @@ export const NotificationsHeader = () => {
             <Menu.Separator />
             <Menu.Group>
               <Menu.Item>
-                <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
+                <NotificationsIcon />
                 All notifications
               </Menu.Item>
               <Menu.Item>
-                <NotificationsUnreadIcon className="h-5 w-auto" />
+                <NotificationsUnreadIcon />
                 Unread notifications
               </Menu.Item>
             </Menu.Group>
@@ -70,28 +82,37 @@ export const NotificationsHeader = () => {
             </Menu.Group>
             <Menu.Separator className="mb-1.5" />
             <Menu.Group>
+              {unreadNotifications > 0 && (
+                <Menu.Item onSelect={handleMarkAllAsRead}>
+                  <NotificationsCheckIcon className="h-5 w-auto" />
+                  Mark all as read
+                </Menu.Item>
+              )}
               <Menu.Item>
-                <NotificationsCheckIcon className="h-5 w-auto" />
-                Mark all as read
-              </Menu.Item>
-              <Menu.Item>
-                <SettingsIcon className="h-5 w-auto" />
-                Notification settings
-              </Menu.Item>
-              <Menu.Separator />
-              <Menu.Item>
-                <DeleteIcon className="h-5 w-auto" />
-                Delete all notifications
-              </Menu.Item>
-              <Menu.Item>
-                <NotificationsCheckIcon className="h-5 w-auto" />
-                Delete read notifications
-              </Menu.Item>
-              <Menu.Item>
-                <NotificationsUnreadIcon className="h-5 w-auto" />
-                Delete unread notifications
+                <Link
+                  className="flex items-center gap-2"
+                  href="/settings/account/preferences"
+                >
+                  <SettingsIcon className="h-5 w-auto" />
+                  Notification settings
+                </Link>
               </Menu.Item>
             </Menu.Group>
+            {notifications.length > 0 && (
+              <Menu.Group>
+                <Menu.Separator />
+                <Menu.Item>
+                  <DeleteIcon className="h-5 w-auto" />
+                  Delete all notifications
+                </Menu.Item>
+                {notifications.length > unreadNotifications && (
+                  <Menu.Item>
+                    <NotificationsCheckIcon className="h-5 w-auto" />
+                    Delete read notifications
+                  </Menu.Item>
+                )}
+              </Menu.Group>
+            )}
           </Menu.Items>
         </Menu>
       </Flex>

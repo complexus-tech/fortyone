@@ -1,11 +1,19 @@
 "use client";
-import { Avatar, Flex, Text, TimeAgo, Tooltip } from "ui";
-import { ObjectiveIcon, StoryIcon } from "icons";
+import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
+import {
+  DeleteIcon,
+  NotificationsCheckIcon,
+  NotificationsUnreadIcon,
+  ObjectiveIcon,
+  StoryIcon,
+} from "icons";
 import { Dot, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import type { AppNotification } from "./types";
+import { useReadNotificationMutation } from "./hooks/read-mutation";
 
 export const NotificationCard = ({
+  id,
   title,
   description,
   entityType,
@@ -16,38 +24,70 @@ export const NotificationCard = ({
   const { data: members = [] } = useMembers();
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
+  const { mutate: readNotification } = useReadNotificationMutation();
+
+  const handleReadNotification = () => {
+    readNotification(id);
+  };
 
   return (
-    <RowWrapper className="block cursor-pointer px-4">
-      <Flex align="center" className="mb-2" gap={2} justify="between">
-        <Text className="line-clamp-1 flex-1 opacity-90">
-          {isUnread ? (
-            <Dot className="relative -top-px mr-1 inline size-2.5 shrink-0 items-start text-primary" />
-          ) : null}
-          {title}
-        </Text>
-        <Text className="shrink-0" color="muted">
-          <TimeAgo timestamp={createdAt} />
-        </Text>
-      </Flex>
+    <ContextMenu>
+      <ContextMenu.Trigger>
+        <Box>
+          <RowWrapper className="block cursor-pointer px-4">
+            <Flex align="center" className="mb-2" gap={2} justify="between">
+              <Text className="line-clamp-1 flex-1 font-medium">
+                {isUnread ? (
+                  <Dot className="relative -top-px mr-1 inline size-2.5 shrink-0 items-start text-primary" />
+                ) : null}
+                {title}
+              </Text>
+              <Text className="shrink-0" color="muted">
+                <TimeAgo timestamp={createdAt} />
+              </Text>
+            </Flex>
 
-      <Flex align="center" gap={3} justify="between">
-        <Flex align="center" className="flex-1" gap={2}>
-          <Avatar
-            className="shrink-0"
-            name={actor?.fullName || actor?.username}
-            size="xs"
-            src={actor?.avatarUrl}
-          />
-          <Tooltip className="max-w-[300px]" title={description}>
-            <Text className="line-clamp-1" color="muted">
-              {description}
-            </Text>
-          </Tooltip>
-        </Flex>
-        {entityType === "story" && <StoryIcon className="shrink-0" />}
-        {entityType === "objective" && <ObjectiveIcon className="shrink-0" />}
-      </Flex>
-    </RowWrapper>
+            <Flex align="center" gap={3} justify="between">
+              <Flex align="center" className="flex-1" gap={2}>
+                <Avatar
+                  className="shrink-0"
+                  name={actor?.fullName || actor?.username}
+                  size="xs"
+                  src={actor?.avatarUrl}
+                />
+                <Tooltip className="max-w-[300px]" title={description}>
+                  <Text className="line-clamp-1" color="muted">
+                    {description}
+                  </Text>
+                </Tooltip>
+              </Flex>
+              {entityType === "story" && <StoryIcon className="shrink-0" />}
+              {entityType === "objective" && (
+                <ObjectiveIcon className="shrink-0" />
+              )}
+            </Flex>
+          </RowWrapper>
+        </Box>
+      </ContextMenu.Trigger>
+      <ContextMenu.Items>
+        <ContextMenu.Group>
+          {isUnread ? (
+            <ContextMenu.Item onSelect={handleReadNotification}>
+              <NotificationsCheckIcon />
+              Mark as read
+            </ContextMenu.Item>
+          ) : (
+            <ContextMenu.Item>
+              <NotificationsUnreadIcon />
+              Mark as unread
+            </ContextMenu.Item>
+          )}
+          <ContextMenu.Item>
+            <DeleteIcon />
+            Delete...
+          </ContextMenu.Item>
+        </ContextMenu.Group>
+      </ContextMenu.Items>
+    </ContextMenu>
   );
 };
