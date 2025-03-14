@@ -20,6 +20,7 @@ import {
   workspaceKeys,
   userKeys,
   invitationKeys,
+  notificationKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
@@ -28,6 +29,7 @@ import type { ApiResponse, Workspace } from "@/types";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
+import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -116,6 +118,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: invitationKeys.mine,
       queryFn: getMyInvitations,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: notificationKeys.unread(),
+      queryFn: getUnreadNotifications,
     }),
   ]);
 

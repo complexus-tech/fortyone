@@ -1,5 +1,5 @@
 "use client";
-import { Avatar, Flex, Text, TimeAgo } from "ui";
+import { Avatar, Flex, Text, TimeAgo, Tooltip } from "ui";
 import { ObjectiveIcon, StoryIcon } from "icons";
 import { Dot, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
@@ -39,9 +39,11 @@ export const NotificationCard = ({
             size="xs"
             src={actor?.avatarUrl}
           />
-          <Text className="line-clamp-1" color="muted">
-            {description}
-          </Text>
+          <Tooltip className="max-w-[300px]" title={description}>
+            <Text className="line-clamp-1" color="muted">
+              {description}
+            </Text>
+          </Tooltip>
         </Flex>
         {entityType === "story" && <StoryIcon className="shrink-0" />}
         {entityType === "objective" && <ObjectiveIcon className="shrink-0" />}

@@ -5,7 +5,6 @@ import { ListNotifications } from "@/modules/notifications/list";
 import { getQueryClient } from "@/app/get-query-client";
 import { notificationKeys } from "@/constants/keys";
 import { getNotifications } from "@/modules/notifications/queries/get-notifications";
-import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 
 export const metadata: Metadata = {
   title: "Notifications",
@@ -18,10 +17,6 @@ export default async function Page() {
     queryClient.prefetchQuery({
       queryKey: notificationKeys.all,
       queryFn: getNotifications,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: notificationKeys.unread(),
-      queryFn: getUnreadNotifications,
     }),
   ]);
 
