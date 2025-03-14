@@ -1,4 +1,8 @@
+"use client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { StoryPage } from "@/modules/story";
+import { notificationKeys } from "@/constants/keys";
 
 export const NotificationDetails = ({
   entityId,
@@ -7,9 +11,15 @@ export const NotificationDetails = ({
   entityId: string;
   entityType: "story" | "objective";
 }) => {
-  return (
-    <div>
-      <StoryPage storyId={entityId} />
-    </div>
-  );
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    queryClient.invalidateQueries({
+      queryKey: notificationKeys.unread(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: notificationKeys.all,
+    });
+  }, [queryClient]);
+
+  return <StoryPage storyId={entityId} />;
 };
