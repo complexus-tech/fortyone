@@ -1,24 +1,10 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { ListMyStories } from "@/modules/my-work";
-import { getMyStories } from "@/modules/my-work/queries/get-stories";
-import { storyKeys } from "@/modules/stories/constants";
-import { getQueryClient } from "@/app/get-query-client";
 
 export const metadata: Metadata = {
   title: "My Work",
 };
 
-export default async function Page() {
-  const queryClient = getQueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: storyKeys.mine(),
-    queryFn: () => getMyStories(),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <ListMyStories />
-    </HydrationBoundary>
-  );
+export default function Page() {
+  return <ListMyStories />;
 }

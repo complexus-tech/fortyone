@@ -30,6 +30,11 @@ import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
+import { getMyStories } from "@/modules/my-work/queries/get-stories";
+import { storyKeys } from "@/modules/stories/constants";
+import { getNotifications } from "@/modules/notifications/queries/get-notifications";
+import { getActivities } from "@/lib/queries/activities/get-activities";
+import { getSummary } from "@/lib/queries/analytics/get-summary";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -122,6 +127,22 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: notificationKeys.unread(),
       queryFn: getUnreadNotifications,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: storyKeys.mine(),
+      queryFn: () => getMyStories(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: notificationKeys.all,
+      queryFn: getNotifications,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ["activities"],
+      queryFn: getActivities,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ["summary"],
+      queryFn: getSummary,
     }),
   ]);
 
