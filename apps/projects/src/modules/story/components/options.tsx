@@ -17,7 +17,7 @@ import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
   PrioritiesMenu,
@@ -30,13 +30,13 @@ import {
   StoryLabel,
 } from "@/components/ui";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useUserRole } from "@/hooks";
-import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
-import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useMembers } from "@/lib/hooks/members";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -92,10 +92,10 @@ export const Options = ({ storyId }: { storyId: string }) => {
     sprintId,
     deletedAt,
   } = data!;
-  const { data: sprints = [] } = useTeamSprints(teamId);
-  const { data: statuses = [] } = useTeamStatuses(teamId);
-  const { data: members = [] } = useTeamMembers(teamId);
-  const { data: objectives = [] } = useTeamObjectives(teamId);
+  const { data: sprints = [] } = useSprints();
+  const { data: statuses = [] } = useStatuses();
+  const { data: members = [] } = useMembers();
+  const { data: objectives = [] } = useObjectives();
   const sprint = sprints.find((s) => s.id === sprintId);
   const objective = objectives.find((o) => o.id === objectiveId);
   const { name } = (statuses.find((state) => state.id === statusId) ||

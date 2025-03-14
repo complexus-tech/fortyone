@@ -8,6 +8,8 @@ import {
   StoryIcon,
 } from "icons";
 import Link from "next/link";
+import { cn } from "lib";
+import { usePathname } from "next/navigation";
 import { Dot, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import type { AppNotification } from "./types";
@@ -25,6 +27,7 @@ export const NotificationCard = ({
   createdAt,
   actorId,
 }: AppNotification) => {
+  const pathname = usePathname();
   const { data: members = [] } = useMembers();
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
@@ -50,9 +53,15 @@ export const NotificationCard = ({
         <Box>
           <Link
             className="block"
-            href={`?entityId=${entityId}&entityType=${entityType}`}
+            href={`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`}
           >
-            <RowWrapper className="block cursor-pointer px-4">
+            <RowWrapper
+              className={cn("block cursor-pointer px-4", {
+                "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
+                // "relative left-px border-l border-l-primary dark:border-l-primary":
+                //   isUnread,
+              })}
+            >
               <Flex align="center" className="mb-2" gap={2} justify="between">
                 <Text className="line-clamp-1 flex-1 font-medium">
                   {isUnread ? (
