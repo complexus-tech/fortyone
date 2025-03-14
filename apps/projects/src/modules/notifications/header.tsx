@@ -10,6 +10,8 @@ import {
   SettingsIcon,
 } from "icons";
 import Link from "next/link";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui";
 import { useNotifications } from "./hooks/notifications";
 import { useUnreadNotifications } from "./hooks/unread";
 import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
@@ -17,6 +19,8 @@ import { useDeleteAllMutation } from "./hooks/delete-all-mutation";
 import { useDeleteReadMutation } from "./hooks/delete-read-mutation";
 
 export const NotificationsHeader = () => {
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isDeletingRead, setIsDeletingRead] = useState(false);
   const { data: notifications = [] } = useNotifications();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { mutate: markAllAsRead } = useReadAllNotificationsMutation();
@@ -29,10 +33,12 @@ export const NotificationsHeader = () => {
 
   const handleDeleteAllNotifications = () => {
     deleteAllNotifications();
+    setIsDeletingAll(false);
   };
 
   const handleDeleteReadNotifications = () => {
     deleteReadNotifications();
+    setIsDeletingRead(false);
   };
 
   return (
@@ -113,12 +119,20 @@ export const NotificationsHeader = () => {
             {notifications.length > 0 && (
               <Menu.Group>
                 <Menu.Separator />
-                <Menu.Item onSelect={handleDeleteAllNotifications}>
+                <Menu.Item
+                  onSelect={() => {
+                    setIsDeletingAll(true);
+                  }}
+                >
                   <DeleteIcon className="h-5 w-auto" />
                   Delete all notifications
                 </Menu.Item>
                 {notifications.length > unreadNotifications && (
-                  <Menu.Item onSelect={handleDeleteReadNotifications}>
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsDeletingRead(true);
+                    }}
+                  >
                     <NotificationsCheckIcon className="h-5 w-auto" />
                     Delete read notifications
                   </Menu.Item>
@@ -128,6 +142,26 @@ export const NotificationsHeader = () => {
           </Menu.Items>
         </Menu>
       </Flex>
+
+      <ConfirmDialog
+        description="Are you sure you want to delete all notifications? This action cannot be undone."
+        isOpen={isDeletingAll}
+        onClose={() => {
+          setIsDeletingAll(false);
+        }}
+        onConfirm={handleDeleteAllNotifications}
+        title="Delete all notifications"
+      />
+
+      <ConfirmDialog
+        description="Are you sure you want to delete all read notifications? This action cannot be undone."
+        isOpen={isDeletingRead}
+        onClose={() => {
+          setIsDeletingRead(false);
+        }}
+        onConfirm={handleDeleteReadNotifications}
+        title="Delete all read notifications"
+      />
     </Flex>
   );
 };
