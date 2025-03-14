@@ -13,14 +13,26 @@ import Link from "next/link";
 import { useNotifications } from "./hooks/notifications";
 import { useUnreadNotifications } from "./hooks/unread";
 import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
+import { useDeleteAllMutation } from "./hooks/delete-all-mutation";
+import { useDeleteReadMutation } from "./hooks/delete-read-mutation";
 
 export const NotificationsHeader = () => {
   const { data: notifications = [] } = useNotifications();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { mutate: markAllAsRead } = useReadAllNotificationsMutation();
+  const { mutate: deleteAllNotifications } = useDeleteAllMutation();
+  const { mutate: deleteReadNotifications } = useDeleteReadMutation();
 
   const handleMarkAllAsRead = () => {
     markAllAsRead();
+  };
+
+  const handleDeleteAllNotifications = () => {
+    deleteAllNotifications();
+  };
+
+  const handleDeleteReadNotifications = () => {
+    deleteReadNotifications();
   };
 
   return (
@@ -101,12 +113,12 @@ export const NotificationsHeader = () => {
             {notifications.length > 0 && (
               <Menu.Group>
                 <Menu.Separator />
-                <Menu.Item>
+                <Menu.Item onSelect={handleDeleteAllNotifications}>
                   <DeleteIcon className="h-5 w-auto" />
                   Delete all notifications
                 </Menu.Item>
                 {notifications.length > unreadNotifications && (
-                  <Menu.Item>
+                  <Menu.Item onSelect={handleDeleteReadNotifications}>
                     <NotificationsCheckIcon className="h-5 w-auto" />
                     Delete read notifications
                   </Menu.Item>

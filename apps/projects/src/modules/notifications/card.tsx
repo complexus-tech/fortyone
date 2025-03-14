@@ -11,6 +11,8 @@ import { Dot, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
+import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
+import { useDeleteMutation } from "./hooks/delete-mutation";
 
 export const NotificationCard = ({
   id,
@@ -25,9 +27,19 @@ export const NotificationCard = ({
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
   const { mutate: readNotification } = useReadNotificationMutation();
+  const { mutate: unreadNotification } = useMarkUnreadMutation();
+  const { mutate: deleteNotification } = useDeleteMutation();
 
   const handleReadNotification = () => {
     readNotification(id);
+  };
+
+  const handleDelete = () => {
+    deleteNotification(id);
+  };
+
+  const handleMarkUnread = () => {
+    unreadNotification(id);
   };
 
   return (
@@ -77,12 +89,12 @@ export const NotificationCard = ({
               Mark as read
             </ContextMenu.Item>
           ) : (
-            <ContextMenu.Item>
+            <ContextMenu.Item onSelect={handleMarkUnread}>
               <NotificationsUnreadIcon />
               Mark as unread
             </ContextMenu.Item>
           )}
-          <ContextMenu.Item>
+          <ContextMenu.Item onSelect={handleDelete}>
             <DeleteIcon />
             Delete...
           </ContextMenu.Item>
