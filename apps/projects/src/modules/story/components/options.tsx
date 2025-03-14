@@ -15,10 +15,9 @@ import { type ReactNode } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
-import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useStatuses } from "@/lib/hooks/statuses";
-import { useMembers } from "@/lib/hooks/members";
+import { usePathname } from "next/navigation";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
   PrioritiesMenu,
@@ -31,12 +30,13 @@ import {
   StoryLabel,
 } from "@/components/ui";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useUserRole } from "@/hooks";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -51,30 +51,35 @@ export const Option = ({
   value: ReactNode;
   className?: string;
 }) => {
+  const pathname = usePathname();
+  const isNotifications = pathname.includes("notifications");
   return (
     <Box
       className={cn(
         "my-4 grid grid-cols-[9rem_auto] items-center gap-3",
+        { "grid-cols-1": isNotifications },
         className,
       )}
     >
-      <Text
-        className="flex items-center gap-1 truncate"
-        color="muted"
-        fontWeight="medium"
-      >
-        {label}
-      </Text>
+      {!isNotifications && (
+        <Text
+          className="flex items-center gap-1 truncate"
+          color="muted"
+          fontWeight="medium"
+        >
+          {label}
+        </Text>
+      )}
       {value}
     </Box>
   );
 };
 
-export const Options = () => {
-  const params = useParams<{ storyId: string }>();
-  const { data } = useStoryById(params.storyId);
+export const Options = ({ storyId }: { storyId: string }) => {
+  const pathname = usePathname();
+  const isNotifications = pathname.includes("notifications");
+  const { data } = useStoryById(storyId);
   const {
-    id,
     priority,
     statusId,
     startDate,
@@ -87,10 +92,10 @@ export const Options = () => {
     sprintId,
     deletedAt,
   } = data!;
-  const { data: sprints = [] } = useSprints();
-  const { data: statuses = [] } = useStatuses();
-  const { data: members = [] } = useMembers();
-  const { data: objectives = [] } = useObjectives();
+  const { data: sprints = [] } = useTeamSprints(teamId);
+  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const { data: members = [] } = useTeamMembers(teamId);
+  const { data: objectives = [] } = useTeamObjectives(teamId);
   const sprint = sprints.find((s) => s.id === sprintId);
   const objective = objectives.find((o) => o.id === objectiveId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
@@ -107,19 +112,19 @@ export const Options = () => {
   const isGuest = userRole === "guest";
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
-    mutate({ storyId: id, payload: data });
+    mutate({ storyId, payload: data });
   };
 
   const handleUpdateLabels = (labels: string[] = []) => {
-    updateLabels({ storyId: id, labels });
+    updateLabels({ storyId, labels });
   };
 
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader isAdminOrOwner={isAdminOrOwner} />
+      <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
       <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
-          <Text fontWeight="semibold">Properties</Text>
+          {!isNotifications && <Text fontWeight="semibold">Properties</Text>}
           {isDeleted ? (
             <Badge
               className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
@@ -134,27 +139,29 @@ export const Options = () => {
             </Badge>
           ) : null}
         </Box>
-        <Option
-          label="Reporter"
-          value={
-            <Flex align="center" className="px-2.5" gap={2}>
-              <Avatar
-                className={cn({
-                  "text-dark/80 dark:text-gray-200": !reporter?.fullName,
-                })}
-                name={reporter?.fullName}
-                size="xs"
-                src={reporter?.avatarUrl}
-              />
-              <Link
-                className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
-                href={`/profile/${reporter?.id}`}
-              >
-                {reporter?.username}
-              </Link>
-            </Flex>
-          }
-        />
+        {!isNotifications && (
+          <Option
+            label="Reporter"
+            value={
+              <Flex align="center" className="px-2.5" gap={2}>
+                <Avatar
+                  className={cn({
+                    "text-dark/80 dark:text-gray-200": !reporter?.fullName,
+                  })}
+                  name={reporter?.fullName}
+                  size="xs"
+                  src={reporter?.avatarUrl}
+                />
+                <Link
+                  className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
+                  href={`/profile/${reporter?.id}`}
+                >
+                  {reporter?.username}
+                </Link>
+              </Flex>
+            }
+          />
+        )}
         <Option
           label="Status"
           value={
@@ -545,7 +552,7 @@ export const Options = () => {
         /> */}
 
         <Divider className="my-4" />
-        <AddLinks storyId={id} />
+        <AddLinks storyId={storyId} />
       </Container>
     </Box>
   );

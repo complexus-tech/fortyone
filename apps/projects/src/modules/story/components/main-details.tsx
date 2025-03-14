@@ -10,7 +10,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
-import { useParams } from "next/navigation";
 import { cn } from "lib";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
@@ -26,11 +25,10 @@ import { Activities, Attachments } from ".";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
-export const MainDetails = () => {
-  const params = useParams<{ storyId: string }>();
-  const { data } = useStoryById(params.storyId);
-  const { data: links = [] } = useLinks(params.storyId);
-  const { data: activities = [] } = useStoryActivities(params.storyId);
+export const MainDetails = ({ storyId }: { storyId: string }) => {
+  const { data } = useStoryById(storyId);
+  const { data: links = [] } = useLinks(storyId);
+  const { data: activities = [] } = useStoryActivities(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
 
@@ -40,7 +38,6 @@ export const MainDetails = () => {
   );
   const [isLinksOpen, setIsLinksOpen] = useLocalStorage("isLinksOpen", true);
   const {
-    id: storyId,
     title,
     descriptionHTML,
     description,

@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
 import { StoryStatusIcon } from "@/components/ui";
-import { useStatuses } from "@/lib/hooks/statuses";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -24,8 +24,8 @@ export const SprintRow = ({
   endDate,
   stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
-  const { data: statuses = [] } = useStatuses();
   const { teamId } = useParams<{ teamId: string }>();
+  const { data: statuses = [] } = useTeamStatuses(teamId);
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
 
@@ -45,7 +45,7 @@ export const SprintRow = ({
     (status) => status.category === "backlog",
   );
 
-  const progress = Math.round((completed / total) * 100);
+  const progress = Math.round((completed / total) * 100) || 0;
 
   return (
     <RowWrapper>

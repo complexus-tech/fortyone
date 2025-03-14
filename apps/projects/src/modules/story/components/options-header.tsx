@@ -3,7 +3,6 @@ import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, LinkIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useParams } from "next/navigation";
 import { useCopyToClipboard } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -12,11 +11,12 @@ import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 
 export const OptionsHeader = ({
   isAdminOrOwner,
+  storyId,
 }: {
   isAdminOrOwner: boolean;
+  storyId: string;
 }) => {
-  const params = useParams<{ storyId: string }>();
-  const { data } = useStoryById(params.storyId);
+  const { data } = useStoryById(storyId);
   const { id, teamId, sequenceId, deletedAt } = data!;
   const [isOpen, setIsOpen] = useState(false);
   const { data: teams = [] } = useTeams();

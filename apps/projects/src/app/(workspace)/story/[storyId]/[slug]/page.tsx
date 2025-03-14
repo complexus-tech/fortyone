@@ -25,15 +25,15 @@ export default async function Page(props: Props) {
       queryKey: storyKeys.detail(storyId),
       queryFn: () => getStory(storyId),
     }),
-    queryClient.prefetchQuery({
-      queryKey: storyKeys.activities(storyId),
-      queryFn: () => getStoryActivities(storyId),
-    }),
   ]);
+  queryClient.prefetchQuery({
+    queryKey: storyKeys.activities(storyId),
+    queryFn: () => getStoryActivities(storyId),
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <StoryPage />
+      <StoryPage storyId={storyId} />
     </HydrationBoundary>
   );
 }
