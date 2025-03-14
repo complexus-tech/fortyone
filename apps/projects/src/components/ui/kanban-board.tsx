@@ -1,7 +1,12 @@
+"use client";
+
 import { Box, Flex } from "ui";
 import { cn } from "lib";
+import { useParams } from "next/navigation";
 import type { Story, StoryPriority } from "@/modules/stories/types";
-import { useStatuses } from "@/lib/hooks/statuses";
+import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
+import { useMembers } from "@/lib/hooks/members";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
@@ -14,9 +19,15 @@ export const KanbanBoard = ({
   stories: Story[];
   className?: string;
 }) => {
+  const { teamId } = useParams<{ teamId: string }>();
   const { viewOptions } = useBoard();
   const { groupBy } = viewOptions;
-  const { data: statuses = [] } = useStatuses();
+  const { data: teamStatuses = [] } = useTeamStatuses(teamId);
+  const { data: allStatuses = [] } = useStatuses();
+  const { data: allMembers = [] } = useMembers();
+  const { data: teamMembers = [] } = useTeamMembers(teamId);
+  const members = teamId ? teamMembers : allMembers;
+  const statuses = teamId ? teamStatuses : allStatuses;
   const priorities: StoryPriority[] = [
     "Urgent",
     "High",
@@ -56,6 +67,15 @@ export const KanbanBoard = ({
                 stories={stories}
               />
             ))}
+          {groupBy === "Assignee" &&
+            members.map((member) => (
+              <StoriesKanbanHeader
+                groupBy={groupBy}
+                key={member.id}
+                member={member}
+                stories={stories}
+              />
+            ))}
         </Flex>
       </Box>
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
@@ -74,6 +94,15 @@ export const KanbanBoard = ({
               groupBy={groupBy}
               key={priority}
               priority={priority}
+              stories={stories}
+            />
+          ))}
+        {groupBy === "Assignee" &&
+          members.map((member) => (
+            <KanbanGroup
+              groupBy={groupBy}
+              key={member.id}
+              member={member}
               stories={stories}
             />
           ))}

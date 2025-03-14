@@ -6,6 +6,7 @@ import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
+import type { Member } from "@/types";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -51,25 +52,38 @@ export const KanbanGroup = ({
   stories,
   status,
   priority,
+  member,
   groupBy = "Status",
 }: {
   stories: Story[];
   status?: State;
   priority?: StoryPriority;
+  member?: Member;
   groupBy: ViewOptionsGroupBy;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const filteredStories =
-    groupBy === "Status"
-      ? stories.filter((story) => story.statusId === status?.id)
-      : stories.filter((story) => story.priority === priority);
+
+  let filteredStories: Story[] = [];
+  if (groupBy === "Status") {
+    filteredStories = stories.filter((story) => story.statusId === status?.id);
+  } else if (groupBy === "Priority") {
+    filteredStories = stories.filter((story) => story.priority === priority);
+  } else if (groupBy === "Assignee") {
+    filteredStories = stories.filter(
+      (story) => story.assigneeId === member?.id,
+    );
+  }
+
+  const getId = () => {
+    if (groupBy === "Status") return status?.id;
+    if (groupBy === "Assignee") return member?.id;
+    return priority;
+  };
+
+  const id = getId() || "";
 
   return (
-    <List
-      id={(groupBy === "Status" ? status?.id : priority)!}
-      key={groupBy === "Status" ? status?.id : priority}
-      totalStories={filteredStories.length}
-    >
+    <List id={id} key={id} totalStories={filteredStories.length}>
       {filteredStories.map((story) => (
         <StoryCard key={story.id} story={story} />
       ))}
@@ -86,6 +100,7 @@ export const KanbanGroup = ({
         Story
       </Button>
       <NewStoryDialog
+        assigneeId={member?.id}
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}

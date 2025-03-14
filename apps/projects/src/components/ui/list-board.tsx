@@ -1,10 +1,12 @@
 import { cn } from "lib";
+import { useParams } from "next/navigation";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
-import { useStatuses } from "@/lib/hooks/statuses";
+import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import type { Member } from "@/types";
+import { useTeamMembers } from "@/lib/hooks/team-members";
 import { BodyContainer } from "../shared/body";
 import { StoriesList } from "./stories-list";
 
@@ -17,9 +19,14 @@ export const ListBoard = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
+  const { teamId } = useParams<{ teamId: string }>();
   const { groupBy } = viewOptions;
-  const { data: statuses = [] } = useStatuses();
-  const { data: members = [] } = useMembers();
+  const { data: teamStatuses = [] } = useTeamStatuses(teamId);
+  const { data: allStatuses = [] } = useStatuses();
+  const statuses = teamId ? teamStatuses : allStatuses;
+  const { data: allMembers = [] } = useMembers();
+  const { data: teamMembers = [] } = useTeamMembers(teamId);
+  const members = teamId ? teamMembers : allMembers;
 
   const priorities: StoryPriority[] = [
     "Urgent",

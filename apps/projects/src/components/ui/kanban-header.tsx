@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
-import { Flex, Button, Text, Box, Tooltip } from "ui";
+import { Flex, Button, Text, Box, Tooltip, Avatar } from "ui";
 import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import { useUserRole } from "@/hooks";
+import type { Member } from "@/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
@@ -17,9 +18,11 @@ export const StoriesKanbanHeader = ({
   priority,
   stories,
   groupBy,
+  member,
 }: {
   status?: State;
   priority?: StoryPriority;
+  member?: Member;
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
 }) => {
@@ -27,10 +30,18 @@ export const StoriesKanbanHeader = ({
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
-  const filteredStories =
-    groupBy === "Status"
-      ? stories.filter((story) => story.statusId === status?.id)
-      : stories.filter((story) => story.priority === priority);
+
+  let filteredStories: Story[] = [];
+  if (groupBy === "Status") {
+    filteredStories = stories.filter((story) => story.statusId === status?.id);
+  } else if (groupBy === "Priority") {
+    filteredStories = stories.filter((story) => story.priority === priority);
+  } else if (groupBy === "Assignee") {
+    filteredStories = stories.filter(
+      (story) => story.assigneeId === member?.id,
+    );
+  }
+
   return (
     <Box
       className={cn({
@@ -55,6 +66,19 @@ export const StoriesKanbanHeader = ({
             <>
               <PriorityIcon priority={priority} />
               {priority}
+            </>
+          )}
+          {groupBy === "Assignee" && (
+            <>
+              <Avatar
+                className={cn({
+                  "text-black dark:text-white": !member?.fullName,
+                })}
+                name={member?.fullName}
+                size="xs"
+                src={member?.avatarUrl}
+              />
+              {member?.username || "Unassigned"}
             </>
           )}
           <Tooltip side="bottom" title="Total stories">
@@ -84,6 +108,7 @@ export const StoriesKanbanHeader = ({
         </span>
       </Flex>
       <NewStoryDialog
+        assigneeId={member?.id}
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
