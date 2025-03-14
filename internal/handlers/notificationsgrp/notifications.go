@@ -255,3 +255,117 @@ func (h *Handlers) MarkAllAsRead(ctx context.Context, w http.ResponseWriter, r *
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
+
+// DeleteNotification deletes a specific notification.
+func (h *Handlers) DeleteNotification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteNotification")
+	defer span.End()
+
+	notificationIDParam := web.Params(r, "id")
+	notificationID, err := uuid.Parse(notificationIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidNotificationID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.notifications.DeleteNotification(ctx, notificationID, userID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("notification deleted", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// DeleteAllNotifications deletes all notifications for the user in the workspace.
+func (h *Handlers) DeleteAllNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteAllNotifications")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	count, err := h.notifications.DeleteAllNotifications(ctx, userID, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("all notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", count),
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, map[string]int64{"deleted_count": count}, http.StatusOK)
+}
+
+// DeleteReadNotifications deletes all read notifications for the user in the workspace.
+func (h *Handlers) DeleteReadNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteReadNotifications")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	count, err := h.notifications.DeleteReadNotifications(ctx, userID, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("read notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", count),
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return web.Respond(ctx, w, map[string]int64{"deleted_count": count}, http.StatusOK)
+}
+
+// MarkAsUnread marks a notification as unread.
+func (h *Handlers) MarkAsUnread(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.notifications.MarkAsUnread")
+	defer span.End()
+
+	notificationIDParam := web.Params(r, "id")
+	notificationID, err := uuid.Parse(notificationIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidNotificationID, http.StatusBadRequest)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	if err := h.notifications.MarkAsUnread(ctx, notificationID, userID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("notification marked as unread", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

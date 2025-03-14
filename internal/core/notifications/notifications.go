@@ -20,6 +20,10 @@ type Repository interface {
 	GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreNotificationPreference, error)
 	UpdatePreference(ctx context.Context, userID, workspaceID uuid.UUID, notificationType string, updates map[string]any) error
 	CreateDefaultPreferences(ctx context.Context, userID, workspaceID uuid.UUID) error
+	DeleteNotification(ctx context.Context, notificationID, userID uuid.UUID) error
+	DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
+	DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
+	MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error
 }
 
 // Service provides notification-related operations.
@@ -180,6 +184,84 @@ func (s *Service) CreateDefaultPreferences(ctx context.Context, userID, workspac
 
 	span.AddEvent("default preferences created", trace.WithAttributes(
 		attribute.String("user.id", userID.String()),
+	))
+
+	return nil
+}
+
+// DeleteNotification deletes a notification.
+func (s *Service) DeleteNotification(ctx context.Context, notificationID, userID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.notifications.DeleteNotification")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.DeleteNotification")
+	defer span.End()
+
+	if err := s.repo.DeleteNotification(ctx, notificationID, userID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("notification deleted", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
+	))
+
+	return nil
+}
+
+// DeleteAllNotifications deletes all notifications for a user in a workspace.
+func (s *Service) DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error) {
+	s.log.Info(ctx, "business.core.notifications.DeleteAllNotifications")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.DeleteAllNotifications")
+	defer span.End()
+
+	count, err := s.repo.DeleteAllNotifications(ctx, userID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return 0, err
+	}
+
+	span.AddEvent("all notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", count),
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return count, nil
+}
+
+// DeleteReadNotifications deletes all read notifications for a user in a workspace.
+func (s *Service) DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error) {
+	s.log.Info(ctx, "business.core.notifications.DeleteReadNotifications")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.DeleteReadNotifications")
+	defer span.End()
+
+	count, err := s.repo.DeleteReadNotifications(ctx, userID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return 0, err
+	}
+
+	span.AddEvent("read notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", count),
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return count, nil
+}
+
+// MarkAsUnread marks a notification as unread.
+func (s *Service) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.notifications.MarkAsUnread")
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.MarkAsUnread")
+	defer span.End()
+
+	if err := s.repo.MarkAsUnread(ctx, notificationID, userID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("notification marked as unread", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
 	))
 
 	return nil
