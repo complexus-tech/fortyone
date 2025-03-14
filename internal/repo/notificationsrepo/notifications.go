@@ -161,7 +161,7 @@ func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID)
 		AND recipient_id = :user_id;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"notification_id": notificationID,
 		"user_id":         userID,
 	}
@@ -381,6 +381,192 @@ func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID)
 
 	span.AddEvent("notifications marked as read", trace.WithAttributes(
 		attribute.Int64("notifications.count", rows),
+	))
+
+	return nil
+}
+
+func (r *repo) DeleteNotification(ctx context.Context, notificationID, userID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.DeleteNotification")
+	defer span.End()
+
+	query := `
+		DELETE FROM notifications
+		WHERE notification_id = :notification_id
+		AND recipient_id = :user_id;
+	`
+
+	params := map[string]interface{}{
+		"notification_id": notificationID,
+		"user_id":         userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to delete notification: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete notification"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("notification not found or not authorized to delete")
+	}
+
+	span.AddEvent("notification deleted", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
+	))
+
+	return nil
+}
+
+func (r *repo) DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.DeleteAllNotifications")
+	defer span.End()
+
+	query := `
+		DELETE FROM notifications
+		WHERE recipient_id = :user_id
+		AND workspace_id = :workspace_id;
+	`
+
+	params := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to delete all notifications: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete all notifications"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	span.AddEvent("all notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", rows),
+	))
+
+	return rows, nil
+}
+
+func (r *repo) DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.DeleteReadNotifications")
+	defer span.End()
+
+	query := `
+		DELETE FROM notifications
+		WHERE recipient_id = :user_id
+		AND workspace_id = :workspace_id
+		AND read_at IS NOT NULL;
+	`
+
+	params := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to delete read notifications: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete read notifications"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	span.AddEvent("read notifications deleted", trace.WithAttributes(
+		attribute.Int64("notifications.count", rows),
+	))
+
+	return rows, nil
+}
+
+func (r *repo) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.MarkAsUnread")
+	defer span.End()
+
+	query := `
+		UPDATE notifications
+		SET read_at = NULL
+		WHERE notification_id = :notification_id
+		AND recipient_id = :user_id;
+	`
+
+	params := map[string]any{
+		"notification_id": notificationID,
+		"user_id":         userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to mark notification as unread: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to mark notification as unread"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("notification not found or already unread")
+	}
+
+	span.AddEvent("notification marked as unread", trace.WithAttributes(
+		attribute.String("notification.id", notificationID.String()),
 	))
 
 	return nil
