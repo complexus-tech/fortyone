@@ -1,5 +1,5 @@
 "use client";
-import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
+import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import {
   DeleteIcon,
   NotificationsCheckIcon,
@@ -58,13 +58,11 @@ export const NotificationCard = ({
             <RowWrapper
               className={cn("block cursor-pointer px-4", {
                 "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
-                // "relative left-px border-l border-l-primary dark:border-l-primary":
-                //   isUnread,
               })}
             >
               <Flex align="center" className="mb-2" gap={2} justify="between">
                 <Text className="line-clamp-1 flex-1 font-medium">
-                  {isUnread ? (
+                  {isUnread && !pathname.includes(id) ? (
                     <Dot className="relative -top-px mr-1 inline size-2.5 shrink-0 items-start text-primary" />
                   ) : null}
                   {title}
@@ -82,11 +80,9 @@ export const NotificationCard = ({
                     size="xs"
                     src={actor?.avatarUrl}
                   />
-                  <Tooltip className="max-w-[300px]" title={description}>
-                    <Text className="line-clamp-1" color="muted">
-                      {description}
-                    </Text>
-                  </Tooltip>
+                  <Text className="line-clamp-1" color="muted">
+                    {description}
+                  </Text>
                 </Flex>
                 {entityType === "story" && <StoryIcon className="shrink-0" />}
                 {entityType === "objective" && (
