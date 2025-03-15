@@ -4,11 +4,12 @@ import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useTerminologyDisplay } from "@/hooks";
 
 export const ObjectivesHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminologyDisplay();
 
   return (
     <HeaderContainer className="justify-between">
@@ -16,7 +17,10 @@ export const ObjectivesHeader = () => {
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "Objectives",
+              name: getTermDisplay("objectiveTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
               icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
             },
           ]}
@@ -34,7 +38,7 @@ export const ObjectivesHeader = () => {
           }}
           size="sm"
         >
-          New Objective
+          New {getTermDisplay("objectiveTerm", { capitalize: true })}
         </Button>
       </Flex>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />

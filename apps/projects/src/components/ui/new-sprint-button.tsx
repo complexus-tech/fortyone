@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button } from "ui";
 import { PlusIcon } from "icons";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useTerminologyDisplay } from "@/hooks";
 import { NewSprintDialog } from "./new-sprint-dialog";
 
 export const NewSprintButton = ({
@@ -17,6 +17,8 @@ export const NewSprintButton = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminologyDisplay();
+
   return (
     <>
       <Button
@@ -31,7 +33,8 @@ export const NewSprintButton = ({
         size={size}
         {...rest}
       >
-        {children || "New Sprint"}
+        {children ||
+          `New ${getTermDisplay("sprintTerm", { capitalize: true })}`}
       </Button>
       <NewSprintDialog isOpen={isOpen} setIsOpen={setIsOpen} teamId={teamId} />
     </>

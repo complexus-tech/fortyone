@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "lib";
 import { format } from "date-fns";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -43,6 +43,7 @@ export const NewSprintDialog = ({
   teamId?: string;
 }) => {
   const { data: teams = [] } = useTeams();
+  const { getTermDisplay } = useTerminologyDisplay();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
@@ -193,7 +194,9 @@ export const NewSprintDialog = ({
               </Menu.Items>
             </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New Sprint</Text>
+            <Text color="muted">
+              New {getTermDisplay("sprintTerm", { capitalize: true })}
+            </Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button

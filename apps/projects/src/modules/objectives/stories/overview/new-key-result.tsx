@@ -5,6 +5,7 @@ import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { useTerminologyDisplay } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useCreateKeyResultMutation, useObjective } from "../../hooks";
 import type { NewKeyResult, MeasureType } from "../../types";
@@ -18,6 +19,7 @@ export const NewKeyResultButton = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const { getTermDisplay } = useTerminologyDisplay();
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
       label: "Number",
@@ -88,14 +90,16 @@ export const NewKeyResultButton = ({
           }}
           {...rest}
         >
-          Add Key Result
+          Add {getTermDisplay("keyResultTerm", { capitalize: true })}
         </Button>
       ) : null}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content className="max-w-2xl">
           <form onSubmit={handleSubmit}>
             <Dialog.Header className="px-6">
-              <Dialog.Title className="text-lg">Create Key Result</Dialog.Title>
+              <Dialog.Title className="text-lg">
+                Create {getTermDisplay("keyResultTerm", { capitalize: true })}
+              </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body className="space-y-4">
               <Input
@@ -103,7 +107,7 @@ export const NewKeyResultButton = ({
                 onChange={(e) => {
                   setForm({ ...form, name: e.target.value });
                 }}
-                placeholder="Enter a name for the key result"
+                placeholder={`Enter a name for the ${getTermDisplay("keyResultTerm")}`}
                 required
                 value={form.name}
               />
@@ -253,7 +257,9 @@ export const NewKeyResultButton = ({
               >
                 Cancel
               </Button>
-              <Button type="submit">Create Key Result</Button>
+              <Button type="submit">
+                Create {getTermDisplay("keyResultTerm", { capitalize: true })}
+              </Button>
             </Dialog.Footer>
           </form>
         </Dialog.Content>

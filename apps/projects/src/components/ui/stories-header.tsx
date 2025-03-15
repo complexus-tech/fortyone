@@ -8,7 +8,7 @@ import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-bu
 import type { State } from "@/types/states";
 import { useBoard } from "@/components/ui/board-context";
 import type { Member } from "@/types";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useTerminologyDisplay } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
@@ -37,6 +37,7 @@ export const StoriesHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminologyDisplay();
 
   const groupedStories = stories.map((s) => s.id);
 
@@ -132,10 +133,15 @@ export const StoriesHeader = ({
               />
             </span>
           </Tooltip>
-          <Text color="muted">{count} stories</Text>
+          <Text color="muted">
+            {count} {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Text>
         </Flex>
         <Flex gap={2}>
-          <Tooltip side="top" title="New Story">
+          <Tooltip
+            side="top"
+            title={`New ${getTermDisplay("storyTerm", { capitalize: true })}`}
+          >
             <Button
               color="tertiary"
               disabled={userRole === "guest"}
@@ -150,7 +156,9 @@ export const StoriesHeader = ({
               size="sm"
               variant="outline"
             >
-              <span className="sr-only">New Story</span>
+              <span className="sr-only">
+                New {getTermDisplay("storyTerm", { capitalize: true })}
+              </span>
             </Button>
           </Tooltip>
         </Flex>
