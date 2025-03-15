@@ -52,14 +52,20 @@ export const useCreateTeamMutation = () => {
         },
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      const data = res.data;
+
       // Track team creation
-      if (data.data) {
+      if (data) {
         analytics.track("team_created", {
-          teamId: data.data.id,
-          name: data.data.name,
-          code: data.data.code,
-          isPrivate: data.data.isPrivate,
+          teamId: data.id,
+          name: data.name,
+          code: data.code,
+          isPrivate: data.isPrivate,
         });
       }
 
@@ -69,7 +75,7 @@ export const useCreateTeamMutation = () => {
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
       queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
-      router.push(`/settings/workspace/teams/${data.data?.id}`);
+      router.push(`/settings/workspace/teams/${data?.id}`);
     },
   });
 

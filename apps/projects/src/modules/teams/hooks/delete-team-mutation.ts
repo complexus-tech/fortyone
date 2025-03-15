@@ -32,7 +32,11 @@ export const useDeleteTeamMutation = () => {
         },
       });
     },
-    onSuccess: (_, teamId) => {
+    onSuccess: (res, teamId) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       // Track team deletion
       analytics.track("team_deleted", {
         teamId,

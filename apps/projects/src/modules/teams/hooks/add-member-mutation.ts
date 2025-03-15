@@ -62,7 +62,11 @@ export const useAddMemberMutation = () => {
         },
       );
     },
-    onSuccess: (_, { teamId, memberId }) => {
+    onSuccess: (res, { teamId, memberId }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       toast.success(
         memberId === currentUserId ? "Joined team" : "Added member",
         {

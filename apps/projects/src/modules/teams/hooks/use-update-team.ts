@@ -42,7 +42,11 @@ export const useUpdateTeamMutation = (teamId: string) => {
       });
       queryClient.setQueryData(teamKeys.detail(teamId), context?.previousTeam);
     },
-    onSuccess: (_, input) => {
+    onSuccess: (res, input) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       // Track team update
       analytics.track("team_updated", {
         teamId,

@@ -10,18 +10,14 @@ export type UpdateTeamInput = {
   description?: string;
 };
 
-export const updateTeamAction = async (
-  id: string,
-  input: UpdateTeamInput,
-): Promise<Team> => {
+export const updateTeamAction = async (id: string, input: UpdateTeamInput) => {
   try {
     const team = await put<UpdateTeamInput, ApiResponse<Team>>(
       `teams/${id}`,
       input,
     );
-    return team.data!;
+    return team;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update team");
+    return getApiError(error);
   }
 };

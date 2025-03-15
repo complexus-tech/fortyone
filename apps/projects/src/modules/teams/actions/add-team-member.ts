@@ -6,14 +6,14 @@ import { getApiError } from "@/utils";
 
 export const addTeamMemberAction = async (teamId: string, memberId: string) => {
   try {
-    await post<{ userId: string }, ApiResponse<{ teamId: string }>>(
+    const res = await post<{ userId: string }, ApiResponse<{ teamId: string }>>(
       `teams/${teamId}/members`,
       {
         userId: memberId,
       },
     );
+    return res;
   } catch (error) {
-    const apiError = getApiError(error);
-    throw new Error(apiError.error?.message || "Failed to add member");
+    return getApiError(error);
   }
 };

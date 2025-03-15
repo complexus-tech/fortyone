@@ -35,7 +35,11 @@ export const useUpdateTeamMutation = (id: string) => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({ queryKey: teamKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
     },

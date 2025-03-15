@@ -62,7 +62,11 @@ export const useRemoveMemberMutation = () => {
         },
       );
     },
-    onSuccess: (_, { teamId, memberId }) => {
+    onSuccess: (res, { teamId, memberId }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       toast.success(
         memberId === currentUserId ? "Left team" : "Removed member",
         {

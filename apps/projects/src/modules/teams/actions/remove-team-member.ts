@@ -9,9 +9,11 @@ export const removeTeamMemberAction = async (
   memberId: string,
 ) => {
   try {
-    await remove<ApiResponse<void>>(`teams/${teamId}/members/${memberId}`);
+    const res = await remove<ApiResponse<void>>(
+      `teams/${teamId}/members/${memberId}`,
+    );
+    return res;
   } catch (error) {
-    const apiError = getApiError(error);
-    throw new Error(apiError.error?.message || "Failed to remove member");
+    return getApiError(error);
   }
 };
