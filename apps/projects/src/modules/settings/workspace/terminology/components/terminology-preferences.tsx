@@ -39,24 +39,12 @@ export const TerminologyPreferences = () => {
     },
   } = useTerminology();
   const { mutate: updateTerminology } = useUpdateTerminologyMutation();
-
-  const storyTermPlural = useTerminologyDisplay("storyTerm", {
-    variant: "plural",
-  });
-  const sprintTermPlural = useTerminologyDisplay("sprintTerm", {
-    variant: "plural",
-  });
-  const objectiveTermPlural = useTerminologyDisplay("objectiveTerm", {
-    variant: "plural",
-  });
-  const keyResultTermPlural = useTerminologyDisplay("keyResultTerm", {
-    variant: "plural",
-  });
+  const { getTermDisplay } = useTerminologyDisplay();
 
   const entities: TermEntity[] = useMemo(
     () => [
       {
-        name: storyTermPlural,
+        name: getTermDisplay("storyTerm", { variant: "plural" }),
         description: "Small, actionable units of work in your system",
         icon: <StoryIcon className="h-4" />,
         defaultValue: "story",
@@ -68,7 +56,7 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: sprintTermPlural,
+        name: getTermDisplay("sprintTerm", { variant: "plural" }),
         description: "Time-boxed periods for completing a set of work items",
         icon: <SprintsIcon className="h-4" />,
         defaultValue: "sprint",
@@ -80,7 +68,7 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: objectiveTermPlural,
+        name: getTermDisplay("objectiveTerm", { variant: "plural" }),
         description: "High-level goals that define what you want to achieve",
         icon: <ObjectiveIcon className="h-4" />,
         defaultValue: "objective",
@@ -92,7 +80,7 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: keyResultTermPlural,
+        name: getTermDisplay("keyResultTerm", { variant: "plural" }),
         description:
           "Measurable outcomes that track progress toward objectives",
         icon: <OKRIcon className="h-4" />,
@@ -105,12 +93,7 @@ export const TerminologyPreferences = () => {
         ],
       },
     ],
-    [
-      storyTermPlural,
-      sprintTermPlural,
-      objectiveTermPlural,
-      keyResultTermPlural,
-    ],
+    [getTermDisplay],
   );
 
   const handleTerminologyChange = (key: keyof Terminology, value: string) => {
@@ -186,19 +169,19 @@ export const TerminologyPreferences = () => {
           <Box className="border-r border-gray-100 dark:border-dark-100">
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <StoryIcon />
-              My {storyTermPlural}
+              My {getTermDisplay("storyTerm", { variant: "plural" })}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <SprintsIcon />
-              Active {sprintTermPlural}
+              Active {getTermDisplay("sprintTerm", { variant: "plural" })}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <ObjectiveIcon />
-              All {objectiveTermPlural}
+              All {getTermDisplay("objectiveTerm", { variant: "plural" })}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 border-b-0 px-6 py-3">
               <OKRIcon />
-              Track {keyResultTermPlural}
+              Track {getTermDisplay("keyResultTerm", { variant: "plural" })}
             </RowWrapper>
           </Box>
 
@@ -206,16 +189,16 @@ export const TerminologyPreferences = () => {
             <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
               <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
-                Create {terminology.objectiveTerm}
+                Create {getTermDisplay("objectiveTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                Start {terminology.sprintTerm}
+                Start {getTermDisplay("sprintTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<PlusIcon />}>
-                Create {terminology.storyTerm}
+                Create {getTermDisplay("storyTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<OKRIcon />}>
-                Add {terminology.keyResultTerm}
+                Add {getTermDisplay("keyResultTerm")}
               </Button>
             </Flex>
           </Box>

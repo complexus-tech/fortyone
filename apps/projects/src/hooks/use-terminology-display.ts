@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useTerminology } from "@/lib/hooks/terminology/terminology";
 import type { Terminology } from "@/types";
 
@@ -7,16 +8,13 @@ type DisplayOptions = {
   variant?: "singular" | "plural";
 };
 
+type GetTermDisplayFn = (termKey: TermKey, options?: DisplayOptions) => string;
+
 /**
  * Hook for consistent display of terminology throughout the application
- * @param termKey - The database key for the term (e.g., "storyTerm")
- * @param options - Display options for term variant (singular/plural)
- * @returns Formatted terminology string
+ * @returns A function to format terminology terms with options
  */
-export const useTerminologyDisplay = (
-  termKey: TermKey,
-  options: DisplayOptions = {},
-): string => {
+export const useTerminologyDisplay = () => {
   const {
     data: terminology = {
       storyTerm: "story",
@@ -26,23 +24,30 @@ export const useTerminologyDisplay = (
     },
   } = useTerminology();
 
-  const { variant = "singular" } = options;
+  const getTermDisplay = useCallback<GetTermDisplayFn>(
+    (termKey, options = {}) => {
+      const { variant = "singular" } = options;
 
-  // Get the current term value directly using the key
-  const currentValue = terminology[termKey];
+      // Get the current term value directly using the key
+      const currentValue = terminology[termKey];
 
-  // Handle singular/plural variants
-  let result: string = currentValue;
+      // Handle singular/plural variants
+      let result: string = currentValue;
 
-  if (variant === "plural") {
-    if (currentValue.endsWith("y")) {
-      result = `${currentValue.slice(0, -1)}ies`;
-    } else if (currentValue === "focus area") {
-      result = "focus areas";
-    } else {
-      result = `${currentValue}s`;
-    }
-  }
+      if (variant === "plural") {
+        if (currentValue.endsWith("y")) {
+          result = `${currentValue.slice(0, -1)}ies`;
+        } else if (currentValue === "focus area") {
+          result = "focus areas";
+        } else {
+          result = `${currentValue}s`;
+        }
+      }
 
-  return result;
+      return result;
+    },
+    [terminology],
+  );
+
+  return { getTermDisplay };
 };
