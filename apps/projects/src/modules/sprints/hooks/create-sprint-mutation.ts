@@ -82,7 +82,13 @@ export const useCreateSprintMutation = () => {
         },
       });
     },
-    onSuccess: (sprint) => {
+    onSuccess: (res, newSprint) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      const sprint = res.data!;
+
       // Track sprint creation
       analytics.track("sprint_created", {
         sprintId: sprint.id,
@@ -95,14 +101,13 @@ export const useCreateSprintMutation = () => {
         },
       });
 
-      toast.success("Success", {
-        description: "Sprint created successfully",
-      });
-    },
-    onSettled: (_, __, newSprint) => {
       queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: sprintKeys.team(newSprint.teamId),
+      });
+
+      toast.success("Success", {
+        description: "Sprint created successfully",
       });
     },
   });

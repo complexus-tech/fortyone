@@ -1,6 +1,7 @@
 "use server";
 
 import { put } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { UpdateSprint } from "../types";
 
@@ -9,9 +10,12 @@ export const updateSprintAction = async (
   updates: UpdateSprint,
 ) => {
   try {
-    await put(`sprints/${sprintId}`, updates);
+    const res = await put<UpdateSprint, ApiResponse<null>>(
+      `sprints/${sprintId}`,
+      updates,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update sprint");
+    return getApiError(error);
   }
 };

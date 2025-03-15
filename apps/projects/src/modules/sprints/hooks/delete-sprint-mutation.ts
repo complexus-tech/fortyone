@@ -40,8 +40,12 @@ export const useDeleteSprintMutation = () => {
         },
       });
     },
-    onSuccess: (_, sprintId) => {
-      // Track sprint deletion
+    onSuccess: (res, sprintId) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
       analytics.track("sprint_deleted", {
         sprintId,
       });
@@ -49,9 +53,6 @@ export const useDeleteSprintMutation = () => {
       toast.success("Success", {
         description: "Sprint deleted successfully",
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
     },
   });
 

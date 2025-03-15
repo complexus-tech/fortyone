@@ -11,9 +11,8 @@ export const createSprintAction = async (params: NewSprint) => {
       "sprints",
       params,
     );
-    return sprint.data!;
+    return sprint;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create sprint");
+    return getApiError(error);
   }
 };

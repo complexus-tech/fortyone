@@ -1,13 +1,14 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const deleteSprintAction = async (sprintId: string) => {
   try {
-    await remove(`sprints/${sprintId}`);
+    const res = await remove<ApiResponse<null>>(`sprints/${sprintId}`);
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete sprint");
+    return getApiError(error);
   }
 };

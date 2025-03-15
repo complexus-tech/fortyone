@@ -58,19 +58,21 @@ export const useUpdateSprintMutation = () => {
         },
       });
     },
-    onSuccess: (_, { sprintId, updates }) => {
+    onSuccess: (res, { sprintId, updates }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       // Track sprint update
       analytics.track("sprint_updated", {
         sprintId,
         ...updates,
       });
+      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
 
       toast.success("Success", {
         description: "Sprint updated successfully",
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
     },
   });
 
