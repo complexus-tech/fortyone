@@ -26,7 +26,7 @@ type TermEntity = {
   icon: ReactNode;
   defaultValue: string;
   options: TermOption[];
-  key: string;
+  key: keyof Terminology;
 };
 
 export const TerminologyPreferences = () => {
@@ -113,17 +113,7 @@ export const TerminologyPreferences = () => {
     ],
   );
 
-  const getTermLabel = (key: string) => {
-    const entity = entities.find((e) => e.key === key);
-    if (!entity) return "";
-
-    const selectedOption = entity.options.find(
-      (o) => o.value === terminology[key as keyof Terminology],
-    );
-    return selectedOption ? selectedOption.label : "";
-  };
-
-  const handleTerminologyChange = (key: string, value: string) => {
+  const handleTerminologyChange = (key: keyof Terminology, value: string) => {
     updateTerminology({ [key]: value });
   };
 
@@ -159,7 +149,7 @@ export const TerminologyPreferences = () => {
                 onValueChange={(value) => {
                   handleTerminologyChange(entity.key, value);
                 }}
-                value={terminology[entity.key as keyof Terminology]}
+                value={terminology[entity.key]}
               >
                 <Select.Trigger className="h-9 w-max min-w-36 text-base">
                   <Select.Input />
@@ -216,16 +206,16 @@ export const TerminologyPreferences = () => {
             <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
               <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
-                Create {getTermLabel("objectiveTerm")}
+                Create {terminology.objectiveTerm}
               </Button>
               <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                Start {getTermLabel("sprintTerm")}
+                Start {terminology.sprintTerm}
               </Button>
               <Button color="tertiary" leftIcon={<PlusIcon />}>
-                Create {getTermLabel("storyTerm")}
+                Create {terminology.storyTerm}
               </Button>
               <Button color="tertiary" leftIcon={<OKRIcon />}>
-                Add {getTermLabel("keyResultTerm")}
+                Add {terminology.keyResultTerm}
               </Button>
             </Flex>
           </Box>
