@@ -13,9 +13,8 @@ export type NewLink = {
 export const createLinkAction = async (payload: NewLink) => {
   try {
     const link = await post<NewLink, ApiResponse<Link>>("links", payload);
-    return link.data!;
+    return link;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create link");
+    return getApiError(error);
   }
 };

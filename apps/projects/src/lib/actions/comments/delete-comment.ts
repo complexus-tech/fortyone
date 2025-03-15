@@ -1,14 +1,14 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const deleteCommentAction = async (commentId: string) => {
   try {
-    const _ = await remove(`comments/${commentId}`);
-    return commentId;
+    const res = await remove<ApiResponse<null>>(`comments/${commentId}`);
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete comment");
+    return getApiError(error);
   }
 };

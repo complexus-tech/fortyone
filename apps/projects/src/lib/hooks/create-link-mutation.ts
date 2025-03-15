@@ -49,10 +49,17 @@ export const useCreateLinkMutation = () => {
         queryKey: linkKeys.story(variables.storyId),
       });
     },
-    onSuccess: (newLink) => {
-      queryClient.invalidateQueries({
-        queryKey: linkKeys.story(newLink.storyId),
-      });
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      const newLink = res.data;
+      if (newLink) {
+        queryClient.invalidateQueries({
+          queryKey: linkKeys.story(newLink.storyId),
+        });
+      }
     },
   });
 

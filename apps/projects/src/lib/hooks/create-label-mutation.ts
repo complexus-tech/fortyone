@@ -24,14 +24,19 @@ export const useCreateLabelMutation = () => {
         queryKey: labelKeys.lists(),
       });
     },
-    onSettled: (newLabel) => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      const newLabel = res.data;
       const previousLabels = queryClient.getQueryData<Label[]>(
         labelKeys.lists(),
       );
-      if (previousLabels) {
+      if (previousLabels && newLabel) {
         queryClient.setQueryData<Label[]>(labelKeys.lists(), [
           ...previousLabels,
-          newLabel!,
+          newLabel,
         ]);
       }
       queryClient.invalidateQueries({ queryKey: labelKeys.lists() });

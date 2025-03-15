@@ -15,10 +15,12 @@ export const updateStateAction = async (
   payload: UpdateState,
 ) => {
   try {
-    await put<UpdateState, ApiResponse<State>>(`states/${stateId}`, payload);
-    return stateId;
+    const res = await put<UpdateState, ApiResponse<State>>(
+      `states/${stateId}`,
+      payload,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update state");
+    return getApiError(error);
   }
 };

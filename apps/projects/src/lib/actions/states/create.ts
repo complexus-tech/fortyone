@@ -14,9 +14,8 @@ export type NewState = {
 export const createStateAction = async (payload: NewState) => {
   try {
     const state = await post<NewState, ApiResponse<State>>("states", payload);
-    return state.data!;
+    return state;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create state");
+    return getApiError(error);
   }
 };

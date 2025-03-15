@@ -51,7 +51,11 @@ export const useUpdateLinkMutation = () => {
         queryKey: linkKeys.story(variables.storyId),
       });
     },
-    onSettled: (_, __, { storyId }) => {
+    onSuccess: (res, { storyId }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({
         queryKey: linkKeys.story(storyId),
       });

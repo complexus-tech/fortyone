@@ -18,9 +18,8 @@ export const editLabelAction = async (
       `labels/${labelId}`,
       updates,
     );
-    return label.data!;
+    return label;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to edit label");
+    return getApiError(error);
   }
 };

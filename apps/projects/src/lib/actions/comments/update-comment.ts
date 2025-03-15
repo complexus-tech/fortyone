@@ -1,6 +1,7 @@
 "use server";
 
 import { put } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export type UpdateComment = {
@@ -12,10 +13,12 @@ export const updateCommentAction = async (
   payload: UpdateComment,
 ) => {
   try {
-    await put<UpdateComment, null>(`comments/${commentId}`, payload);
-    return commentId;
+    const res = await put<UpdateComment, ApiResponse<null>>(
+      `comments/${commentId}`,
+      payload,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update comment");
+    return getApiError(error);
   }
 };

@@ -38,7 +38,11 @@ export const useDeleteLabelMutation = () => {
         },
       });
     },
-    onSettled: () => {
+    onSuccess: (res, _labelId) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({ queryKey: labelKeys.lists() });
     },
   });

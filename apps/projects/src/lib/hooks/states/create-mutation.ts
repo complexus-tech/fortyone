@@ -61,7 +61,11 @@ export const useCreateStateMutation = () => {
         queryKey: statusKeys.lists(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       toast.success("State created", {
         id: toastId,
         description: "Your state has been created",

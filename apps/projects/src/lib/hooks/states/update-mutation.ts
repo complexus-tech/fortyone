@@ -52,7 +52,11 @@ export const useUpdateStateMutation = () => {
         queryKey: statusKeys.lists(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
       });
