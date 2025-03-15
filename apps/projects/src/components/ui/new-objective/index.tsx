@@ -41,6 +41,7 @@ import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import type { NewKeyResult, NewObjective } from "@/modules/objectives/types";
 import { useCreateObjectiveMutation } from "@/modules/objectives/hooks";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { TeamColor } from "../team-color";
 import { PriorityIcon } from "../priority-icon";
 import { StoryStatusIcon } from "../story-status-icon";
@@ -108,6 +109,9 @@ export const NewObjectiveDialog = ({
     null,
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const { data: teamObjectives = [] } = useTeamObjectives(
+    currentTeam?.id ?? "",
+  );
   const createMutation = useCreateObjectiveMutation();
 
   const titleEditor = useEditor({
@@ -140,6 +144,17 @@ export const NewObjectiveDialog = ({
       titleEditor.commands.focus();
       toast.warning("Validation Error", {
         description: "Title is required",
+      });
+      return;
+    }
+    if (
+      teamObjectives.some(
+        (objective) =>
+          objective.name.toLowerCase() === titleEditor.getText().toLowerCase(),
+      )
+    ) {
+      toast.warning("Validation Error", {
+        description: "Objective with this name already exists",
       });
       return;
     }
