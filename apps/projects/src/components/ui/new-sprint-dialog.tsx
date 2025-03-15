@@ -70,7 +70,7 @@ export const NewSprintDialog = ({
       Paragraph,
       TextExt,
       Placeholder.configure({
-        placeholder: "Sprint name eg. Sprint 1",
+        placeholder: `${getTermDisplay("sprintTerm", { capitalize: true })} name eg. ${getTermDisplay("sprintTerm", { capitalize: true })} 1`,
       }),
     ],
     content: "",
@@ -99,7 +99,7 @@ export const NewSprintDialog = ({
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
       toast.warning("Validation Error", {
-        description: "Sprint name is required",
+        description: `${getTermDisplay("sprintTerm", { capitalize: true })} name is required`,
       });
       return;
     }
@@ -194,9 +194,7 @@ export const NewSprintDialog = ({
               </Menu.Items>
             </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">
-              New {getTermDisplay("sprintTerm", { capitalize: true })}
-            </Text>
+            <Text color="muted">New {getTermDisplay("sprintTerm")}</Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button
@@ -326,7 +324,8 @@ export const NewSprintDialog = ({
                   variant="outline"
                 >
                   <span className="inline-block max-w-[12ch] truncate">
-                    {objective?.name || "Objective"}
+                    {objective?.name ||
+                      getTermDisplay("objectiveTerm", { capitalize: true })}
                   </span>
                 </Button>
               </ObjectivesMenu.Trigger>
@@ -356,7 +355,7 @@ export const NewSprintDialog = ({
             onClick={handleCreateSprint}
             size="md"
           >
-            Create sprint
+            Create {getTermDisplay("sprintTerm")}
           </Button>
         </Dialog.Footer>
       </Dialog.Content>
