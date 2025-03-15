@@ -7,3 +7,4 @@ export { useUserRole } from "./role";
 export { useIsOwner } from "./owner";
 export * from "./tracking";
 export * from "./feature-flag";
+export * from "./use-terminology-display";
