@@ -7,11 +7,13 @@ import {
   StoryIcon,
 } from "icons";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
 import { useTerminology } from "@/lib/hooks/terminology/terminology";
 import type { Terminology } from "@/types";
 import { useUpdateTerminologyMutation } from "@/lib/hooks/terminology/update-mutation";
+import { useTerminologyDisplay } from "@/hooks/use-terminology-display";
 
 type TermOption = {
   label: string;
@@ -38,75 +40,78 @@ export const TerminologyPreferences = () => {
   } = useTerminology();
   const { mutate: updateTerminology } = useUpdateTerminologyMutation();
 
-  const getTermForms = (term: string) => {
-    const singular = term;
-    let plural = term;
+  const storyTermPlural = useTerminologyDisplay("storyTerm", {
+    variant: "plural",
+  });
+  const sprintTermPlural = useTerminologyDisplay("sprintTerm", {
+    variant: "plural",
+  });
+  const objectiveTermPlural = useTerminologyDisplay("objectiveTerm", {
+    variant: "plural",
+  });
+  const keyResultTermPlural = useTerminologyDisplay("keyResultTerm", {
+    variant: "plural",
+  });
 
-    if (term.endsWith("y")) {
-      plural = `${term.slice(0, -1)}ies`;
-    } else if (term === "focus area") {
-      plural = "focus areas";
-    } else if (term === "strategic priority") {
-      plural = "strategic priorities";
-    } else {
-      plural = `${term}s`;
-    }
-
-    return {
-      singular,
-      plural,
-    };
-  };
-  const entities: TermEntity[] = [
-    {
-      name: getTermForms(terminology.storyTerm).plural,
-      description: "Small, actionable units of work in your system",
-      icon: <StoryIcon className="h-4" />,
-      defaultValue: "story",
-      key: "storyTerm",
-      options: [
-        { label: "Story", value: "story" },
-        { label: "Task", value: "task" },
-        { label: "Issue", value: "issue" },
-      ],
-    },
-    {
-      name: getTermForms(terminology.sprintTerm).plural,
-      description: "Time-boxed periods for completing a set of work items",
-      icon: <SprintsIcon className="h-4" />,
-      defaultValue: "sprint",
-      key: "sprintTerm",
-      options: [
-        { label: "Sprint", value: "sprint" },
-        { label: "Cycle", value: "cycle" },
-        { label: "Iteration", value: "iteration" },
-      ],
-    },
-    {
-      name: getTermForms(terminology.objectiveTerm).plural,
-      description: "High-level goals that define what you want to achieve",
-      icon: <ObjectiveIcon className="h-4" />,
-      defaultValue: "objective",
-      key: "objectiveTerm",
-      options: [
-        { label: "Objective", value: "objective" },
-        { label: "Goal", value: "goal" },
-        { label: "Project", value: "project" },
-      ],
-    },
-    {
-      name: getTermForms(terminology.keyResultTerm).plural,
-      description: "Measurable outcomes that track progress toward objectives",
-      icon: <OKRIcon className="h-4" />,
-      defaultValue: "key result",
-      key: "keyResultTerm",
-      options: [
-        { label: "Key Result", value: "key result" },
-        { label: "Focus Area", value: "focus area" },
-        { label: "Milestone", value: "milestone" },
-      ],
-    },
-  ];
+  const entities: TermEntity[] = useMemo(
+    () => [
+      {
+        name: storyTermPlural,
+        description: "Small, actionable units of work in your system",
+        icon: <StoryIcon className="h-4" />,
+        defaultValue: "story",
+        key: "storyTerm",
+        options: [
+          { label: "Story", value: "story" },
+          { label: "Task", value: "task" },
+          { label: "Issue", value: "issue" },
+        ],
+      },
+      {
+        name: sprintTermPlural,
+        description: "Time-boxed periods for completing a set of work items",
+        icon: <SprintsIcon className="h-4" />,
+        defaultValue: "sprint",
+        key: "sprintTerm",
+        options: [
+          { label: "Sprint", value: "sprint" },
+          { label: "Cycle", value: "cycle" },
+          { label: "Iteration", value: "iteration" },
+        ],
+      },
+      {
+        name: objectiveTermPlural,
+        description: "High-level goals that define what you want to achieve",
+        icon: <ObjectiveIcon className="h-4" />,
+        defaultValue: "objective",
+        key: "objectiveTerm",
+        options: [
+          { label: "Objective", value: "objective" },
+          { label: "Goal", value: "goal" },
+          { label: "Project", value: "project" },
+        ],
+      },
+      {
+        name: keyResultTermPlural,
+        description:
+          "Measurable outcomes that track progress toward objectives",
+        icon: <OKRIcon className="h-4" />,
+        defaultValue: "key result",
+        key: "keyResultTerm",
+        options: [
+          { label: "Key Result", value: "key result" },
+          { label: "Focus Area", value: "focus area" },
+          { label: "Milestone", value: "milestone" },
+        ],
+      },
+    ],
+    [
+      storyTermPlural,
+      sprintTermPlural,
+      objectiveTermPlural,
+      keyResultTermPlural,
+    ],
+  );
 
   const getTermLabel = (key: string) => {
     const entity = entities.find((e) => e.key === key);
@@ -116,13 +121,6 @@ export const TerminologyPreferences = () => {
       (o) => o.value === terminology[key as keyof Terminology],
     );
     return selectedOption ? selectedOption.label : "";
-  };
-
-  const forms = {
-    story: getTermForms(terminology.storyTerm),
-    sprint: getTermForms(terminology.sprintTerm),
-    objective: getTermForms(terminology.objectiveTerm),
-    keyResult: getTermForms(terminology.keyResultTerm),
   };
 
   const handleTerminologyChange = (key: string, value: string) => {
@@ -198,19 +196,19 @@ export const TerminologyPreferences = () => {
           <Box className="border-r border-gray-100 dark:border-dark-100">
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <StoryIcon />
-              My {forms.story.plural}
+              My {storyTermPlural}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <SprintsIcon />
-              Active {forms.sprint.plural}
+              Active {sprintTermPlural}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 px-6 py-3">
               <ObjectiveIcon />
-              All {forms.objective.plural}
+              All {objectiveTermPlural}
             </RowWrapper>
             <RowWrapper className="justify-start gap-2 border-b-0 px-6 py-3">
               <OKRIcon />
-              Track {forms.keyResult.plural}
+              Track {keyResultTermPlural}
             </RowWrapper>
           </Box>
 
