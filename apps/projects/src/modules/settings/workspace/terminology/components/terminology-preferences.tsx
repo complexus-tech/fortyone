@@ -1,191 +1,122 @@
 import { Box, Flex, Text, Select, Button } from "ui";
 import { ObjectiveIcon, OKRIcon, SprintsIcon, StoryIcon } from "icons";
+import type { ReactNode } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
 
+type TermOption = {
+  label: string;
+  value: string;
+};
+
+type TermEntity = {
+  name: string;
+  description: string;
+  icon: ReactNode;
+  defaultValue: string;
+  options: TermOption[];
+};
+
 export const TerminologyPreferences = () => {
+  const entities: TermEntity[] = [
+    {
+      name: "Stories",
+      description: "Small, actionable units of work in your system",
+      icon: <StoryIcon className="h-4" />,
+      defaultValue: "story",
+      options: [
+        { label: "Story", value: "story" },
+        { label: "Task", value: "task" },
+        { label: "Issue", value: "issue" },
+      ],
+    },
+    {
+      name: "Sprints",
+      description: "Time-boxed periods for completing a set of work items",
+      icon: <SprintsIcon className="h-4" />,
+      defaultValue: "sprint",
+      options: [
+        { label: "Sprint", value: "sprint" },
+        { label: "Cycle", value: "cycle" },
+        { label: "Iteration", value: "iteration" },
+      ],
+    },
+    {
+      name: "Objectives",
+      description: "High-level goals that define what you want to achieve",
+      icon: <ObjectiveIcon className="h-4" />,
+      defaultValue: "objective",
+      options: [
+        { label: "Objective", value: "objective" },
+        { label: "Goal", value: "goal" },
+        { label: "Project", value: "project" },
+      ],
+    },
+    {
+      name: "Key Results",
+      description: "Measurable outcomes that track progress toward objectives",
+      icon: <OKRIcon className="h-4" />,
+      defaultValue: "key result",
+      options: [
+        { label: "Key Result", value: "key result" },
+        { label: "Focus Area", value: "focus area" },
+        { label: "Strategic Priority", value: "strategic priority" },
+      ],
+    },
+  ];
+
   return (
     <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
-        description="Customize the terminology used in your workspace to match your team's preferences."
+        action={
+          <Button className="shrink-0" color="tertiary" disabled>
+            Save changes
+          </Button>
+        }
+        description="Customize the terminology used in your workspace by your team."
         title="Terminology Preferences"
       />
       <Box>
-        {/* Story terminology */}
-        <RowWrapper className="px-6">
-          <Flex align="center" gap={2}>
-            <Flex
-              align="center"
-              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-              justify="center"
-            >
-              <StoryIcon className="h-4" />
+        {entities.map((entity) => (
+          <RowWrapper
+            className="px-6 last-of-type:border-b-0"
+            key={entity.name}
+          >
+            <Flex align="center" gap={2}>
+              <Flex
+                align="center"
+                className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+                justify="center"
+              >
+                {entity.icon}
+              </Flex>
+              <Box>
+                <Text className="font-medium">{entity.name}</Text>
+                <Text color="muted">{entity.description}</Text>
+              </Box>
             </Flex>
-            <Box>
-              <Text className="font-medium">Stories</Text>
-              <Text color="muted">
-                Small, actionable units of work in your system
-              </Text>
-            </Box>
-          </Flex>
-          <Select defaultValue="story">
-            <Select.Trigger className="h-10 w-44 text-base">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content align="center">
-              <Select.Group>
-                <Select.Option className="text-base" value="story">
-                  <Flex align="center" gap={2}>
-                    Story
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="task">
-                  <Flex align="center" gap={2}>
-                    Task
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="issue">
-                  <Flex align="center" gap={2}>
-                    Issue
-                  </Flex>
-                </Select.Option>
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </RowWrapper>
-
-        {/* Sprint terminology */}
-        <RowWrapper className="px-6">
-          <Flex align="center" gap={2}>
-            <Flex
-              align="center"
-              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-              justify="center"
-            >
-              <SprintsIcon className="h-4" />
-            </Flex>
-            <Box>
-              <Text className="font-medium">Sprints</Text>
-              <Text color="muted">
-                Time-boxed periods for completing a set of work items
-              </Text>
-            </Box>
-          </Flex>
-          <Select defaultValue="sprint">
-            <Select.Trigger className="h-10 w-44 text-base">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content align="center">
-              <Select.Group>
-                <Select.Option className="text-base" value="sprint">
-                  <Flex align="center" gap={2}>
-                    Sprint
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="cycle">
-                  <Flex align="center" gap={2}>
-                    Cycle
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="iteration">
-                  <Flex align="center" gap={2}>
-                    Iteration
-                  </Flex>
-                </Select.Option>
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </RowWrapper>
-
-        {/* Objective terminology */}
-        <RowWrapper className="px-6">
-          <Flex align="center" gap={2}>
-            <Flex
-              align="center"
-              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-              justify="center"
-            >
-              <ObjectiveIcon className="h-4" />
-            </Flex>
-            <Box>
-              <Text className="font-medium">Objectives</Text>
-              <Text color="muted">
-                High-level goals that define what you want to achieve
-              </Text>
-            </Box>
-          </Flex>
-          <Select defaultValue="objective">
-            <Select.Trigger className="h-10 w-44 text-base">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content align="center">
-              <Select.Group>
-                <Select.Option className="text-base" value="objective">
-                  <Flex align="center" gap={2}>
-                    Objective
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="goal">
-                  <Flex align="center" gap={2}>
-                    Goal
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="project">
-                  <Flex align="center" gap={2}>
-                    Project
-                  </Flex>
-                </Select.Option>
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </RowWrapper>
-
-        {/* Key Result terminology */}
-        <RowWrapper className="px-6">
-          <Flex align="center" gap={2}>
-            <Flex
-              align="center"
-              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-              justify="center"
-            >
-              <OKRIcon className="h-4" />
-            </Flex>
-            <Box>
-              <Text className="font-medium">Key Results</Text>
-              <Text color="muted">
-                Measurable outcomes that track progress toward objectives
-              </Text>
-            </Box>
-          </Flex>
-          <Select defaultValue="key result">
-            <Select.Trigger className="h-10 w-44 text-base">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content align="center">
-              <Select.Group>
-                <Select.Option className="text-base" value="key result">
-                  <Flex align="center" gap={2}>
-                    Key Result
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="focus area">
-                  <Flex align="center" gap={2}>
-                    Focus Area
-                  </Flex>
-                </Select.Option>
-                <Select.Option className="text-base" value="strategic priority">
-                  <Flex align="center" gap={2}>
-                    Strategic Priority
-                  </Flex>
-                </Select.Option>
-              </Select.Group>
-            </Select.Content>
-          </Select>
-        </RowWrapper>
-
-        <Box className="px-6 py-4">
-          <Button>Save</Button>
-        </Box>
+            <Select defaultValue={entity.defaultValue}>
+              <Select.Trigger className="h-9 w-max min-w-36 text-base">
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content align="center">
+                <Select.Group>
+                  {entity.options.map((option) => (
+                    <Select.Option
+                      className="text-base"
+                      key={option.value}
+                      value={option.value}
+                    >
+                      <Flex align="center" gap={2}>
+                        {option.label}
+                      </Flex>
+                    </Select.Option>
+                  ))}
+                </Select.Group>
+              </Select.Content>
+            </Select>
+          </RowWrapper>
+        ))}
       </Box>
     </Box>
   );
