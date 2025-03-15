@@ -15,7 +15,6 @@ export const inviteMembers = async (invites: NewInvitation[]) => {
     });
     return response;
   } catch (error) {
-    const res = getApiError(error);
-    return res;
+    return getApiError(error);
   }
 };

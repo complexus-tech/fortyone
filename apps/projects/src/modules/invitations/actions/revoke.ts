@@ -1,14 +1,16 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const revokeInvitation = async (invitationId: string) => {
   try {
-    const response = await remove(`invitations/${invitationId}`);
+    const response = await remove<ApiResponse<null>>(
+      `invitations/${invitationId}`,
+    );
     return response;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to revoke invitation");
+    return getApiError(error);
   }
 };

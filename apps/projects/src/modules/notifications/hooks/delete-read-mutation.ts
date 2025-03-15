@@ -51,7 +51,11 @@ export const useDeleteReadMutation = () => {
       });
     },
 
-    onSettled: () => {
+    onSuccess: (res) => {
+      if (res?.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
   });

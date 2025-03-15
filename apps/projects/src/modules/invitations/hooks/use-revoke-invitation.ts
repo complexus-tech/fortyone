@@ -64,7 +64,11 @@ export const useRevokeInvitationMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       toast.success("Revoked", {
         description: "Invitation revoked successfully",
         id: toastId,

@@ -64,7 +64,11 @@ export const useAcceptInvitationMutation = () => {
         },
       });
     },
-    onSuccess: (_, __, context) => {
+    onSuccess: (res, __, context) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       if (context.invitation) {
         toast.success("Accepted", {
           description: "Invitation accepted successfully",
