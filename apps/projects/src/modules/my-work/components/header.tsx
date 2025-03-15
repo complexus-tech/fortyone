@@ -34,7 +34,7 @@ export const Header = ({
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: "My Work",
+              name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
               icon: <UserIcon />,
             },
             {

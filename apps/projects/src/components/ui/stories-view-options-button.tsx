@@ -2,6 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useEffect } from "react";
+import { useTerminologyDisplay } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
@@ -63,6 +64,7 @@ export const StoriesViewOptionsButton = ({
   layout: StoriesLayout;
   disabled?: boolean;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
@@ -91,6 +93,17 @@ export const StoriesViewOptionsButton = ({
       });
     }
   }, [layout, displayColumns, setViewOptions, viewOptions]);
+
+  const getDisplayColumnText = (column: DisplayColumn) => {
+    switch (column) {
+      case "Sprint":
+        return getTermDisplay("sprintTerm", { capitalize: true });
+      case "Objective":
+        return getTermDisplay("objectiveTerm", { capitalize: true });
+      default:
+        return column;
+    }
+  };
 
   return (
     <Popover>
@@ -216,7 +229,7 @@ export const StoriesViewOptionsButton = ({
                   size="xs"
                   variant={isSelected ? "solid" : "outline"}
                 >
-                  {column}
+                  {getDisplayColumnText(column)}
                 </Button>
               );
             })}
