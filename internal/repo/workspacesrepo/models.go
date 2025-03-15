@@ -29,6 +29,17 @@ type dbWorkspaceWithRole struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+// dbWorkspaceTerminology represents workspace terminology preferences in the database.
+type dbWorkspaceTerminology struct {
+	WorkspaceID   uuid.UUID `db:"workspace_id"`
+	StoryTerm     string    `db:"story_term"`
+	SprintTerm    string    `db:"sprint_term"`
+	ObjectiveTerm string    `db:"objective_term"`
+	KeyResultTerm string    `db:"key_result_term"`
+	CreatedAt     time.Time `db:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
+}
+
 func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 	return workspaces.CoreWorkspace{
 		ID:        p.ID,
@@ -60,4 +71,17 @@ func toCoreWorkspacesWithRole(du []dbWorkspaceWithRole) []workspaces.CoreWorkspa
 		coreWorkspaces[i] = toCoreWorkspaceWithRole(workspace)
 	}
 	return coreWorkspaces
+}
+
+// toCoreWorkspaceTerminology converts a database workspace terminology to a core workspace terminology.
+func toCoreWorkspaceTerminology(t dbWorkspaceTerminology) workspaces.CoreWorkspaceTerminology {
+	return workspaces.CoreWorkspaceTerminology{
+		WorkspaceID:   t.WorkspaceID,
+		StoryTerm:     t.StoryTerm,
+		SprintTerm:    t.SprintTerm,
+		ObjectiveTerm: t.ObjectiveTerm,
+		KeyResultTerm: t.KeyResultTerm,
+		CreatedAt:     t.CreatedAt,
+		UpdatedAt:     t.UpdatedAt,
+	}
 }

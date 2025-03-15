@@ -544,3 +544,151 @@ func (r *repo) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UU
 
 	return nil
 }
+
+// GetWorkspaceTerminology retrieves the terminology settings for a workspace
+func (r *repo) GetWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreWorkspaceTerminology, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetWorkspaceTerminology")
+	defer span.End()
+
+	var result dbWorkspaceTerminology
+	query := `
+		SELECT 
+			workspace_id,
+			story_term,
+			sprint_term,
+			objective_term,
+			key_result_term,
+			created_at,
+			updated_at
+		FROM 
+			workspace_terminology
+		WHERE 
+			workspace_id = :workspace_id
+	`
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspaceTerminology{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &result, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspaceTerminology{}, workspaces.ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get workspace terminology: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get workspace terminology"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspaceTerminology{}, err
+	}
+
+	return toCoreWorkspaceTerminology(result), nil
+}
+
+// UpdateWorkspaceTerminology updates the terminology settings for a workspace
+func (r *repo) UpdateWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID, terminology workspaces.CoreWorkspaceTerminology) (workspaces.CoreWorkspaceTerminology, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.UpdateWorkspaceTerminology")
+	defer span.End()
+
+	var result dbWorkspaceTerminology
+	query := `
+		UPDATE workspace_terminology
+		SET 
+			story_term = CASE WHEN :story_term = '' THEN story_term ELSE :story_term END,
+			sprint_term = CASE WHEN :sprint_term = '' THEN sprint_term ELSE :sprint_term END,
+			objective_term = CASE WHEN :objective_term = '' THEN objective_term ELSE :objective_term END,
+			key_result_term = CASE WHEN :key_result_term = '' THEN key_result_term ELSE :key_result_term END,
+			updated_at = NOW()
+		WHERE 
+			workspace_id = :workspace_id
+		RETURNING
+			workspace_id,
+			story_term,
+			sprint_term,
+			objective_term,
+			key_result_term,
+			created_at,
+			updated_at
+	`
+
+	params := map[string]interface{}{
+		"workspace_id":    workspaceID,
+		"story_term":      terminology.StoryTerm,
+		"sprint_term":     terminology.SprintTerm,
+		"objective_term":  terminology.ObjectiveTerm,
+		"key_result_term": terminology.KeyResultTerm,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspaceTerminology{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &result, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspaceTerminology{}, workspaces.ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to update workspace terminology: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update workspace terminology"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspaceTerminology{}, err
+	}
+
+	return toCoreWorkspaceTerminology(result), nil
+}
+
+// InitializeWorkspaceTerminology creates default terminology for a new workspace
+func (r *repo) InitializeWorkspaceTerminology(ctx context.Context, tx *sqlx.Tx, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.InitializeWorkspaceTerminology")
+	defer span.End()
+
+	query := `
+		INSERT INTO workspace_terminology (
+			workspace_id,
+			story_term,
+			sprint_term,
+			objective_term,
+			key_result_term
+		)
+		VALUES (
+			:workspace_id,
+			'story',
+			'sprint',
+			'objective',
+			'key result'
+		)
+	`
+
+	params := map[string]interface{}{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		errMsg := fmt.Sprintf("failed to initialize workspace terminology: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to initialize workspace terminology"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}

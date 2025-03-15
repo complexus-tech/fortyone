@@ -33,3 +33,14 @@ var DefaultObjectiveStatuses = []DefaultStatus{
 	{Name: "Blocked", Category: "paused", OrderIndex: 2},
 	{Name: "Done", Category: "completed", OrderIndex: 3},
 }
+
+// CoreWorkspaceTerminology represents workspace terminology preferences in the application layer.
+type CoreWorkspaceTerminology struct {
+	WorkspaceID   uuid.UUID
+	StoryTerm     string
+	SprintTerm    string
+	ObjectiveTerm string
+	KeyResultTerm string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}

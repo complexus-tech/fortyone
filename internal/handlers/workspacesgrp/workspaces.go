@@ -312,3 +312,98 @@ func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWri
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
+
+// GetWorkspaceTerminology retrieves the terminology settings for a workspace.
+func (h *Handlers) GetWorkspaceTerminology(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.GetWorkspaceTerminology")
+	defer span.End()
+
+	// Get workspace ID from path
+	workspaceIDStr := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDStr)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	// Get user ID from context
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Check if user has access to the workspace
+	_, err = h.workspaces.Get(ctx, workspaceID, userID)
+	if err != nil {
+		if errors.Is(err, workspaces.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get or create the terminology settings
+	terminology, err := h.workspaces.GetOrCreateWorkspaceTerminology(ctx, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppWorkspaceTerminology(terminology), http.StatusOK)
+}
+
+// UpdateWorkspaceTerminology updates the terminology settings for a workspace.
+func (h *Handlers) UpdateWorkspaceTerminology(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateWorkspaceTerminology")
+	defer span.End()
+
+	// Get workspace ID from path
+	workspaceIDStr := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDStr)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	// Get user ID from context
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Check if user has access to the workspace
+	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	if err != nil {
+		if errors.Is(err, workspaces.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Check if user has admin role
+	if workspace.UserRole != "admin" {
+		return web.RespondError(ctx, w, errors.New("only workspace admins can update terminology"), http.StatusForbidden)
+	}
+
+	// Decode the request
+	var input AppUpdateWorkspaceTerminology
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// First, ensure terminology exists by getting or creating it
+	_, err = h.workspaces.GetOrCreateWorkspaceTerminology(ctx, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Update the terminology
+	coreTerminology := toCoreWorkspaceTerminology(input, workspaceID)
+	updatedTerminology, err := h.workspaces.UpdateWorkspaceTerminology(ctx, workspaceID, coreTerminology)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace terminology updated.", trace.WithAttributes(
+		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("userId", userID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppWorkspaceTerminology(updatedTerminology), http.StatusOK)
+}

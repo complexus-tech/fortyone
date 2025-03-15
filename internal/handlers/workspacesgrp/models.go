@@ -62,3 +62,44 @@ type AppSlugAvailability struct {
 	Available bool   `json:"available"`
 	Slug      string `json:"slug"`
 }
+
+// AppWorkspaceTerminology represents workspace terminology preferences for the API.
+type AppWorkspaceTerminology struct {
+	StoryTerm     string    `json:"storyTerm"`
+	SprintTerm    string    `json:"sprintTerm"`
+	ObjectiveTerm string    `json:"objectiveTerm"`
+	KeyResultTerm string    `json:"keyResultTerm"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+// AppUpdateWorkspaceTerminology represents the payload for updating workspace terminology.
+type AppUpdateWorkspaceTerminology struct {
+	StoryTerm     string `json:"storyTerm,omitempty"`
+	SprintTerm    string `json:"sprintTerm,omitempty"`
+	ObjectiveTerm string `json:"objectiveTerm,omitempty"`
+	KeyResultTerm string `json:"keyResultTerm,omitempty"`
+}
+
+// toCoreWorkspaceTerminology converts an API update model to a core model
+func toCoreWorkspaceTerminology(term AppUpdateWorkspaceTerminology, workspaceID uuid.UUID) workspaces.CoreWorkspaceTerminology {
+	return workspaces.CoreWorkspaceTerminology{
+		WorkspaceID:   workspaceID,
+		StoryTerm:     term.StoryTerm,
+		SprintTerm:    term.SprintTerm,
+		ObjectiveTerm: term.ObjectiveTerm,
+		KeyResultTerm: term.KeyResultTerm,
+	}
+}
+
+// toAppWorkspaceTerminology converts a core terminology model to an API model
+func toAppWorkspaceTerminology(term workspaces.CoreWorkspaceTerminology) AppWorkspaceTerminology {
+	return AppWorkspaceTerminology{
+		StoryTerm:     term.StoryTerm,
+		SprintTerm:    term.SprintTerm,
+		ObjectiveTerm: term.ObjectiveTerm,
+		KeyResultTerm: term.KeyResultTerm,
+		CreatedAt:     term.CreatedAt,
+		UpdatedAt:     term.UpdatedAt,
+	}
+}
