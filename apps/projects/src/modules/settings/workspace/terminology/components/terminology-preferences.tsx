@@ -7,9 +7,11 @@ import {
   StoryIcon,
 } from "icons";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
+import { useTerminology } from "@/lib/hooks/terminology/terminology";
+import type { Terminology } from "@/types";
+import { useUpdateTerminologyMutation } from "@/lib/hooks/terminology/update-mutation";
 
 type TermOption = {
   label: string;
@@ -26,63 +28,15 @@ type TermEntity = {
 };
 
 export const TerminologyPreferences = () => {
-  const entities: TermEntity[] = [
-    {
-      name: "Stories",
-      description: "Small, actionable units of work in your system",
-      icon: <StoryIcon className="h-4" />,
-      defaultValue: "story",
-      key: "story",
-      options: [
-        { label: "Story", value: "story" },
-        { label: "Task", value: "task" },
-        { label: "Issue", value: "issue" },
-      ],
+  const {
+    data: terminology = {
+      storyTerm: "story",
+      sprintTerm: "sprint",
+      objectiveTerm: "objective",
+      keyResultTerm: "key result",
     },
-    {
-      name: "Sprints",
-      description: "Time-boxed periods for completing a set of work items",
-      icon: <SprintsIcon className="h-4" />,
-      defaultValue: "sprint",
-      key: "sprint",
-      options: [
-        { label: "Sprint", value: "sprint" },
-        { label: "Cycle", value: "cycle" },
-        { label: "Iteration", value: "iteration" },
-      ],
-    },
-    {
-      name: "Objectives",
-      description: "High-level goals that define what you want to achieve",
-      icon: <ObjectiveIcon className="h-4" />,
-      defaultValue: "objective",
-      key: "objective",
-      options: [
-        { label: "Objective", value: "objective" },
-        { label: "Goal", value: "goal" },
-        { label: "Project", value: "project" },
-      ],
-    },
-    {
-      name: "Key Results",
-      description: "Measurable outcomes that track progress toward objectives",
-      icon: <OKRIcon className="h-4" />,
-      defaultValue: "key result",
-      key: "keyResult",
-      options: [
-        { label: "Key Result", value: "key result" },
-        { label: "Focus Area", value: "focus area" },
-        { label: "Milestone", value: "milestone" },
-      ],
-    },
-  ];
-
-  const [terminology, setTerminology] = useState<Record<string, string>>({
-    story: "story",
-    sprint: "sprint",
-    objective: "objective",
-    keyResult: "key result",
-  });
+  } = useTerminology();
+  const { mutate: updateTerminology } = useUpdateTerminologyMutation();
 
   const getTermForms = (term: string) => {
     const singular = term;
@@ -103,29 +57,76 @@ export const TerminologyPreferences = () => {
       plural,
     };
   };
+  const entities: TermEntity[] = [
+    {
+      name: getTermForms(terminology.storyTerm).plural,
+      description: "Small, actionable units of work in your system",
+      icon: <StoryIcon className="h-4" />,
+      defaultValue: "story",
+      key: "storyTerm",
+      options: [
+        { label: "Story", value: "story" },
+        { label: "Task", value: "task" },
+        { label: "Issue", value: "issue" },
+      ],
+    },
+    {
+      name: getTermForms(terminology.sprintTerm).plural,
+      description: "Time-boxed periods for completing a set of work items",
+      icon: <SprintsIcon className="h-4" />,
+      defaultValue: "sprint",
+      key: "sprintTerm",
+      options: [
+        { label: "Sprint", value: "sprint" },
+        { label: "Cycle", value: "cycle" },
+        { label: "Iteration", value: "iteration" },
+      ],
+    },
+    {
+      name: getTermForms(terminology.objectiveTerm).plural,
+      description: "High-level goals that define what you want to achieve",
+      icon: <ObjectiveIcon className="h-4" />,
+      defaultValue: "objective",
+      key: "objectiveTerm",
+      options: [
+        { label: "Objective", value: "objective" },
+        { label: "Goal", value: "goal" },
+        { label: "Project", value: "project" },
+      ],
+    },
+    {
+      name: getTermForms(terminology.keyResultTerm).plural,
+      description: "Measurable outcomes that track progress toward objectives",
+      icon: <OKRIcon className="h-4" />,
+      defaultValue: "key result",
+      key: "keyResultTerm",
+      options: [
+        { label: "Key Result", value: "key result" },
+        { label: "Focus Area", value: "focus area" },
+        { label: "Milestone", value: "milestone" },
+      ],
+    },
+  ];
 
   const getTermLabel = (key: string) => {
     const entity = entities.find((e) => e.key === key);
     if (!entity) return "";
 
     const selectedOption = entity.options.find(
-      (o) => o.value === terminology[key],
+      (o) => o.value === terminology[key as keyof Terminology],
     );
     return selectedOption ? selectedOption.label : "";
   };
 
   const forms = {
-    story: getTermForms(terminology.story),
-    sprint: getTermForms(terminology.sprint),
-    objective: getTermForms(terminology.objective),
-    keyResult: getTermForms(terminology.keyResult),
+    story: getTermForms(terminology.storyTerm),
+    sprint: getTermForms(terminology.sprintTerm),
+    objective: getTermForms(terminology.objectiveTerm),
+    keyResult: getTermForms(terminology.keyResultTerm),
   };
 
   const handleTerminologyChange = (key: string, value: string) => {
-    setTerminology((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    updateTerminology({ [key]: value });
   };
 
   return (
@@ -148,7 +149,7 @@ export const TerminologyPreferences = () => {
                   {entity.icon}
                 </Flex>
                 <Box>
-                  <Text className="font-medium">{entity.name}</Text>
+                  <Text className="font-medium capitalize">{entity.name}</Text>
                   <Text color="muted">{entity.description}</Text>
                 </Box>
               </Flex>
@@ -157,7 +158,7 @@ export const TerminologyPreferences = () => {
                 onValueChange={(value) => {
                   handleTerminologyChange(entity.key, value);
                 }}
-                value={terminology[entity.key]}
+                value={terminology[entity.key as keyof Terminology]}
               >
                 <Select.Trigger className="h-9 w-max min-w-36 text-base">
                   <Select.Input />
@@ -219,16 +220,16 @@ export const TerminologyPreferences = () => {
             <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
               <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
-                Create {getTermLabel("objective")}
+                Create {getTermLabel("objectiveTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                Start {getTermLabel("sprint")}
+                Start {getTermLabel("sprintTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<PlusIcon />}>
-                Create {getTermLabel("story")}
+                Create {getTermLabel("storyTerm")}
               </Button>
               <Button color="tertiary" leftIcon={<OKRIcon />}>
-                Add {getTermLabel("keyResult")}
+                Add {getTermLabel("keyResultTerm")}
               </Button>
             </Flex>
           </Box>
