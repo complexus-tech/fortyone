@@ -99,7 +99,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       }}
       value={tab}
     >
-      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
+      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
           <Tabs.Tab value="all">All stories</Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>

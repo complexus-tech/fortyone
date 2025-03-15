@@ -5,6 +5,7 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
+import { InviteMembersIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { inviteMembers } from "@/modules/invitations/actions/invite";
 import type { NewInvitation } from "@/modules/invitations/types";
@@ -172,22 +173,23 @@ export const InviteMembersDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content className="max-w-2xl">
-        <Dialog.Header className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
-          <Dialog.Title className="px-6 pt-0.5 text-lg">
+        <Dialog.Header>
+          <Dialog.Title className="flex items-center gap-2 px-6 pt-0.5 text-lg">
+            <InviteMembersIcon className="relative top-px" />
             Invite members to your workspace
           </Dialog.Title>
         </Dialog.Header>
-        <Dialog.Body className="py-6">
+        <Dialog.Body className="pb-6">
           <Text className="mb-2" color="muted">
             Email addresses
           </Text>
           <TextArea
-            className="border dark:bg-transparent"
+            className="border py-4 leading-normal dark:bg-transparent"
             onChange={(e) => {
               handleEmailsChange(e.target.value);
             }}
-            placeholder="Enter email addresses separated by commas or new lines"
-            rows={3}
+            placeholder="e.g, member1@example.com, member2@example.com"
+            rows={4}
             value={formState.emails}
           />
           <Text className="mb-2 mt-6" color="muted">
