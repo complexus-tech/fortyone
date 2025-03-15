@@ -58,8 +58,12 @@ export const useUpdateLabelsMutation = () => {
         },
       });
     },
-    onSettled: (storyId) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId!) });
+
+    onSuccess: (res, { storyId }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
       queryClient.invalidateQueries({ queryKey: labelKeys.lists() });

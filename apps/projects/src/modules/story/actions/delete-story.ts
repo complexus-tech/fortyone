@@ -1,14 +1,14 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const deleteStoryAction = async (storyId: string) => {
   try {
-    await remove(`stories/${storyId}`);
-    return storyId;
+    const res = await remove<ApiResponse<null>>(`stories/${storyId}`);
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete story");
+    return getApiError(error);
   }
 };

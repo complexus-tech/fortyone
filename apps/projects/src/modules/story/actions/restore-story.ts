@@ -1,14 +1,17 @@
 "use server";
 
 import { post } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const restoreStoryAction = async (storyId: string) => {
   try {
-    await post(`stories/${storyId}/restore`, {});
-    return storyId;
+    const res = await post<null, ApiResponse<null>>(
+      `stories/${storyId}/restore`,
+      null,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to restore story");
+    return getApiError(error);
   }
 };

@@ -1,6 +1,7 @@
 "use server";
 
 import { put } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { DetailedStory } from "../types";
 
@@ -9,11 +10,12 @@ export const updateStoryAction = async (
   payload: Partial<DetailedStory>,
 ) => {
   try {
-    await put(`stories/${storyId}`, payload);
-
-    return storyId;
+    const res = await put<Partial<DetailedStory>, ApiResponse<null>>(
+      `stories/${storyId}`,
+      payload,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update story");
+    return getApiError(error);
   }
 };

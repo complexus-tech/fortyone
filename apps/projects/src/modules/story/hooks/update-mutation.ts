@@ -80,7 +80,11 @@ export const useUpdateStoryMutation = () => {
         },
       });
     },
-    onSuccess: (_, { storyId, payload }) => {
+    onSuccess: (res, { storyId, payload }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       analytics.track("story_updated", {
         storyId,
         ...payload,

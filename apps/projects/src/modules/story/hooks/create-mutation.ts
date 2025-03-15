@@ -101,14 +101,20 @@ export const useCreateStoryMutation = () => {
         },
       });
     },
-    onSuccess: (story) => {
+    onSuccess: (res, story) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
+      const createdStory = res.data!;
+
       // Track story creation
       analytics.track("story_created", {
-        storyId: story.id,
-        title: story.title,
-        teamId: story.teamId,
-        hasObjective: Boolean(story.objectiveId),
-        hasSprint: Boolean(story.sprintId),
+        storyId: createdStory.id,
+        title: createdStory.title,
+        teamId: createdStory.teamId,
+        hasObjective: Boolean(createdStory.objectiveId),
+        hasSprint: Boolean(createdStory.sprintId),
       });
 
       // Invalidate all queries that contain "stories" in their query key
@@ -138,7 +144,9 @@ export const useCreateStoryMutation = () => {
           label: "View story",
           onClick: () => {
             nProgress.start();
-            router.push(`/story/${story.id}/${slugify(story.title)}`);
+            router.push(
+              `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+            );
           },
         },
       });

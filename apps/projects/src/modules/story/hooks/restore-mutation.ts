@@ -41,7 +41,11 @@ export const useRestoreStoryMutation = () => {
         },
       });
     },
-    onSuccess: (storyId) => {
+    onSuccess: (res, storyId) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       queryClient.invalidateQueries({ queryKey: storyKeys.lists() });
       queryClient.invalidateQueries({ queryKey: storyKeys.teams() });
