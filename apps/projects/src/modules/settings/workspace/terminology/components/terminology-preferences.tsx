@@ -139,7 +139,10 @@ export const TerminologyPreferences = () => {
         />
         <Box>
           {entities.map((entity) => (
-            <RowWrapper className="px-6" key={entity.name}>
+            <RowWrapper
+              className="px-6 last-of-type:border-b-0"
+              key={entity.name}
+            >
               <Flex align="center" gap={2}>
                 <Flex
                   align="center"
@@ -182,11 +185,6 @@ export const TerminologyPreferences = () => {
             </RowWrapper>
           ))}
         </Box>
-        <Flex className="justify-end px-6 py-3.5">
-          <Button className="shrink-0" disabled={false}>
-            Save changes
-          </Button>
-        </Flex>
       </Box>
 
       {/* Preview Section */}
