@@ -1,13 +1,14 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const deleteKeyResult = async (keyResultId: string) => {
   try {
-    await remove(`key-results/${keyResultId}`);
+    const res = await remove<ApiResponse<null>>(`key-results/${keyResultId}`);
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete key result");
+    return getApiError(error);
   }
 };

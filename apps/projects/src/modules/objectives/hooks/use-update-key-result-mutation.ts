@@ -71,15 +71,16 @@ export const useUpdateKeyResultMutation = () => {
         },
       });
     },
-    onSettled: (_, error, { objectiveId, keyResultId, data: updateData }) => {
-      // Track key result update
-      if (!error) {
-        analytics.track("key_result_updated", {
-          keyResultId,
-          objectiveId,
-          ...updateData,
-        });
+    onSuccess: (res, { objectiveId, keyResultId, data: updateData }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
       }
+      analytics.track("key_result_updated", {
+        keyResultId,
+        objectiveId,
+        ...updateData,
+      });
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),
       });

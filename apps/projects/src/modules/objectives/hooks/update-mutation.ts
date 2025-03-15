@@ -84,7 +84,11 @@ export const useUpdateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (_, { objectiveId, data }) => {
+    onSuccess: (res, { objectiveId, data }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       analytics.track("objective_updated", {
         objectiveId,
         ...data,

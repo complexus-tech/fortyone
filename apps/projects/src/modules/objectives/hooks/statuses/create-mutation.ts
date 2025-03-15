@@ -62,7 +62,11 @@ export const useCreateObjectiveStatusMutation = () => {
         queryKey: objectiveKeys.statuses(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       toast.success("Status created", {
         id: toastId,
         description: "Your status has been created",

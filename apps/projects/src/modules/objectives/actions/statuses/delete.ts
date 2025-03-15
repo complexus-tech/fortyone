@@ -6,9 +6,11 @@ import { getApiError } from "@/utils";
 
 export const deleteObjectiveStatusAction = async (statusId: string) => {
   try {
-    await remove<ApiResponse<void>>(`objective-statuses/${statusId}`);
+    const response = await remove<ApiResponse<null>>(
+      `objective-statuses/${statusId}`,
+    );
+    return response;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete objective status");
+    return getApiError(error);
   }
 };

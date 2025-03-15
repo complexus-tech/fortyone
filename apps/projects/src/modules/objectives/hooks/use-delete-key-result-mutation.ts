@@ -53,7 +53,11 @@ export const useDeleteKeyResultMutation = () => {
         },
       });
     },
-    onSettled: (_, __, { objectiveId }) => {
+    onSuccess: (res, { objectiveId }) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),
       });

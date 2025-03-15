@@ -60,13 +60,14 @@ export const useCreateKeyResultMutation = () => {
         },
       });
     },
-    onSettled: (_, error, newKeyResult) => {
-      // Track key result creation
-      if (!error) {
-        analytics.track("key_result_created", {
-          ...newKeyResult,
-        });
+    onSuccess: (res, newKeyResult) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
       }
+
+      analytics.track("key_result_created", {
+        ...newKeyResult,
+      });
 
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),

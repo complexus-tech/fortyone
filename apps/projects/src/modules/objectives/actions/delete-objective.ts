@@ -1,13 +1,14 @@
 "use server";
 
 import { remove } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const deleteObjective = async (objectiveId: string) => {
   try {
-    await remove(`objectives/${objectiveId}`);
+    const res = await remove<ApiResponse<null>>(`objectives/${objectiveId}`);
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete objective");
+    return getApiError(error);
   }
 };

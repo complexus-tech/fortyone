@@ -25,7 +25,11 @@ export const useDeleteObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (_, objectiveId) => {
+    onSuccess: (res, objectiveId) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       // Track the objective deletion event
       analytics.track("objective_deleted", {
         objectiveId,

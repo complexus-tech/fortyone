@@ -20,9 +20,8 @@ export const createObjectiveStatusAction = async (
       NewObjectiveStatus,
       ApiResponse<ObjectiveStatus>
     >("objective-statuses", newStatus);
-    return response.data;
+    return response;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create objective status");
+    return getApiError(error);
   }
 };

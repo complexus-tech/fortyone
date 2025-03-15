@@ -21,9 +21,8 @@ export const updateObjectiveStatusAction = async (
       UpdateObjectiveStatus,
       ApiResponse<ObjectiveStatus>
     >(`objective-statuses/${statusId}`, payload);
-    return response.data;
+    return response;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update objective status");
+    return getApiError(error);
   }
 };

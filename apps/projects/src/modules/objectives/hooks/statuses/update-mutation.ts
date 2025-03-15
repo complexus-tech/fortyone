@@ -55,7 +55,11 @@ export const useUpdateObjectiveStatusMutation = () => {
         queryKey: objectiveKeys.statuses(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.statuses(),
       });

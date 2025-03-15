@@ -1,6 +1,7 @@
 "use server";
 
 import { put } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { KeyResultUpdate } from "../types";
 
@@ -10,9 +11,12 @@ export const updateKeyResult = async (
   params: KeyResultUpdate,
 ) => {
   try {
-    await put<KeyResultUpdate, null>(`key-results/${keyResultId}`, params);
+    const res = await put<KeyResultUpdate, ApiResponse<null>>(
+      `key-results/${keyResultId}`,
+      params,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to update key result");
+    return getApiError(error);
   }
 };

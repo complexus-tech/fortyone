@@ -1,14 +1,18 @@
 "use server";
 
 import { post } from "@/lib/http";
+import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { NewObjectiveKeyResult } from "../types";
 
 export const createKeyResult = async (params: NewObjectiveKeyResult) => {
   try {
-    await post<NewObjectiveKeyResult, null>("key-results", params);
+    const res = await post<NewObjectiveKeyResult, ApiResponse<null>>(
+      "key-results",
+      params,
+    );
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create key result");
+    return getApiError(error);
   }
 };
