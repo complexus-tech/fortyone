@@ -59,6 +59,32 @@ export const useCreateObjectiveMutation = () => {
         }
       });
     },
+
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+      const objective = res.data;
+
+      analytics.track("objective_created", {
+        name: objective?.name,
+        startDate: objective?.startDate,
+        priority: objective?.priority,
+      });
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        if (
+          queryKey.toLowerCase().includes("objectives") &&
+          query.isActive() &&
+          queryKey.toLowerCase().includes("list")
+        ) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey });
+        }
+      });
+    },
     onError: (error, variables) => {
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
@@ -88,26 +114,6 @@ export const useCreateObjectiveMutation = () => {
             mutation.mutate(variables);
           },
         },
-      });
-    },
-    onSuccess: (objective) => {
-      analytics.track("objective_created", {
-        name: objective?.name,
-        startDate: objective?.startDate,
-        priority: objective?.priority,
-      });
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("objectives") &&
-          query.isActive() &&
-          queryKey.toLowerCase().includes("list")
-        ) {
-          queryClient.invalidateQueries({ queryKey: query.queryKey });
-        }
       });
     },
   });

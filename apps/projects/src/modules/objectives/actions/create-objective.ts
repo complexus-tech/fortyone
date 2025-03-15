@@ -11,9 +11,8 @@ export const createObjective = async (params: NewObjective) => {
       "objectives",
       params,
     );
-    return res.data;
+    return res;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to create objective");
+    return getApiError(error);
   }
 };
