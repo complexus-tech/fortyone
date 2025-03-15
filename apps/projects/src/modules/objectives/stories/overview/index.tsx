@@ -11,7 +11,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce } from "@/hooks";
+import { useDebounce, useTerminologyDisplay } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import {
   useDeleteObjectiveMutation,
@@ -30,6 +30,7 @@ export const Overview = () => {
   const { objectiveId } = useParams<{
     objectiveId: string;
   }>();
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +58,9 @@ export const Overview = () => {
       Document,
       Paragraph,
       TextExtension,
-      Placeholder.configure({ placeholder: "Objective name..." }),
+      Placeholder.configure({
+        placeholder: `${getTermDisplay("objectiveTerm", { capitalize: true })} name...`,
+      }),
     ],
     content: objective?.name || "",
     editable: isAdminOrOwner,
@@ -75,7 +78,9 @@ export const Overview = () => {
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Objective description..." }),
+      Placeholder.configure({
+        placeholder: `${getTermDisplay("objectiveTerm", { capitalize: true })} description...`,
+      }),
     ],
     content: objective?.description || "",
     editable: isAdminOrOwner,
@@ -148,13 +153,13 @@ export const Overview = () => {
 
       <ConfirmDialog
         confirmText={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
-        description="Are you sure you want to delete this objective? This action is irreversible."
+        description={`Are you sure you want to delete this ${getTermDisplay("objectiveTerm")}? This action is irreversible.`}
         isOpen={isOpen}
         onClose={() => {
           setIsOpen(false);
         }}
         onConfirm={handleDelete}
-        title="Delete objective"
+        title={`Delete ${getTermDisplay("objectiveTerm")}`}
       />
     </BoardDividedPanel>
   );

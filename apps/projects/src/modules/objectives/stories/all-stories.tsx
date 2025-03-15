@@ -13,7 +13,7 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard, useTerminologyDisplay } from "@/hooks";
 import { Overview } from "./overview";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
@@ -23,7 +23,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
-
+  const { getTermDisplay } = useTerminologyDisplay();
   const tabs = ["overview", "all", "active", "backlog"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
@@ -103,7 +103,9 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="all">All stories</Tabs.Tab>
+          <Tabs.Tab value="all">
+            All {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>

@@ -9,6 +9,7 @@ import {
   LayoutSwitcher,
   NewStoryButton,
 } from "@/components/ui";
+import { useTerminologyDisplay } from "@/hooks";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
@@ -19,6 +20,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
@@ -36,7 +38,10 @@ export const Header = ({
               icon: <UserIcon />,
             },
             {
-              name: tab === "all" ? "All stories" : tab,
+              name:
+                tab === "all"
+                  ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
+                  : tab,
               icon: <StoryIcon strokeWidth={2} />,
               className: "capitalize",
             },
@@ -44,7 +49,7 @@ export const Header = ({
         />
 
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {data?.length} stories
+          {data?.length} {getTermDisplay("storyTerm", { variant: "plural" })}
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

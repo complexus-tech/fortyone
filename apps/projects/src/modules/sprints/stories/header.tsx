@@ -12,6 +12,7 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
+import { useTerminologyDisplay } from "@/hooks";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprints } from "../hooks/sprints";
 import { useSprintOptions } from "./provider";
@@ -27,6 +28,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { viewOptions, setViewOptions } = useSprintOptions();
   const { teamId, sprintId } = useParams<{
     teamId: string;
@@ -58,13 +60,16 @@ export const Header = ({
               url: `/teams/${team.id}/sprints/${sprint.id}`,
             },
             {
-              name: "Stories",
+              name: getTermDisplay("storyTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
               icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {stories.length} stories
+          {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

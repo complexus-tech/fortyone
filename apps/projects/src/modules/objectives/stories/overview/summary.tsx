@@ -5,6 +5,7 @@ import { cn } from "lib";
 import { differenceInDays, format } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useTerminologyDisplay } from "@/hooks";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
 import { useUpdateObjectiveMutation } from "../../hooks";
@@ -24,6 +25,7 @@ const getProgress = (keyResult: KeyResult) => {
 };
 
 export const Summary = () => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const updateObjective = useUpdateObjectiveMutation();
@@ -43,7 +45,7 @@ export const Summary = () => {
     const days = differenceInDays(targetDate, today);
 
     if (days <= 0) {
-      return "Target date has passed";
+      return "Deadline has passed";
     }
 
     if (days === 1) {
@@ -97,7 +99,11 @@ export const Summary = () => {
             fontWeight="semibold"
           >
             <OKRIcon />
-            Key Result Progress
+            {getTermDisplay("keyResultTerm", {
+              variant: "plural",
+              capitalize: true,
+            })}{" "}
+            Progress
           </Text>
           <Text fontSize="2xl">
             {keyResultProgress}%{" "}
@@ -115,7 +121,7 @@ export const Summary = () => {
           fontWeight="semibold"
         >
           <CalendarIcon />
-          Target date
+          Deadline
         </Text>
         {objective?.endDate ? (
           <>
@@ -133,7 +139,7 @@ export const Summary = () => {
           <Flex align="center" gap={1}>
             <CalendarIcon className="relative -left-1 h-10 opacity-30" />
             <Box>
-              <Text color="muted">No target date</Text>
+              <Text color="muted">No deadline</Text>
               <DatePicker>
                 <DatePicker.Trigger>
                   <button
@@ -141,7 +147,7 @@ export const Summary = () => {
                     disabled={!canUpdate}
                     type="button"
                   >
-                    Set target date
+                    Set deadline
                   </button>
                 </DatePicker.Trigger>
                 <DatePicker.Calendar

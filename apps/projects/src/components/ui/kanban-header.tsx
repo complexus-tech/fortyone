@@ -5,7 +5,7 @@ import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useTerminologyDisplay } from "@/hooks";
 import type { Member } from "@/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -26,6 +26,7 @@ export const StoriesKanbanHeader = ({
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { viewOptions } = useBoard();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +87,10 @@ export const StoriesKanbanHeader = ({
               <StoryIcon className="ml-3 h-5 w-auto" strokeWidth={2} />
             </span>
           </Tooltip>
-          <Text color="muted">{filteredStories.length} stories</Text>
+          <Text color="muted">
+            {filteredStories.length}{" "}
+            {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Text>
         </Flex>
         <span className="flex items-center gap-1">
           <Button color="tertiary" size="sm" variant="naked">

@@ -14,6 +14,7 @@ import {
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
+import { useTerminologyDisplay } from "@/hooks";
 import { useObjectiveOptions } from "./provider";
 
 export const Header = ({
@@ -27,6 +28,7 @@ export const Header = ({
     teamId: string;
     objectiveId: string;
   }>();
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();
@@ -52,13 +54,16 @@ export const Header = ({
               icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
             },
             {
-              name: "Stories",
+              name: getTermDisplay("storyTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
               icon: <StoryIcon className="h-[1.1rem]" strokeWidth={2} />,
             },
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {stories.length} stories
+          {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

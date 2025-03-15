@@ -22,6 +22,7 @@ import type {
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTerminologyDisplay } from "@/hooks";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -94,6 +95,7 @@ export const StoriesBoard = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { objectiveId, sprintId, teamId } = useParams<{
     objectiveId: string;
     sprintId: string;
@@ -240,10 +242,11 @@ export const StoriesBoard = ({
                   strokeWidth={1.3}
                 />
                 <Text className="mb-6 mt-8" fontSize="3xl">
-                  No stories found
+                  No {getTermDisplay("storyTerm", { variant: "plural" })} found
                 </Text>
                 <Text className="mb-6 max-w-md text-center" color="muted">
-                  Oops! This board is empty. Why not create a story?
+                  Oops! This board is empty. Why not create a{" "}
+                  {getTermDisplay("storyTerm")}?
                 </Text>
                 <Flex gap={2}>
                   <NewStoryButton
@@ -254,7 +257,7 @@ export const StoriesBoard = ({
                     sprintId={sprintId}
                     teamId={teamId}
                   >
-                    Create new story
+                    Create new {getTermDisplay("storyTerm")}
                   </NewStoryButton>
                 </Flex>
               </Box>

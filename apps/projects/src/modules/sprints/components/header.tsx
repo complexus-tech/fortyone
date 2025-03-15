@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { NewSprintButton, TeamColor } from "@/components/ui";
+import { useTerminologyDisplay } from "@/hooks";
 
 export const SprintsHeader = () => {
   const { teamId } = useParams<{
     teamId: string;
   }>();
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: teams = [] } = useTeams();
 
   const { name, color } = teams.find((team) => team.id === teamId)!;
@@ -22,7 +24,10 @@ export const SprintsHeader = () => {
             icon: <TeamColor color={color} />,
           },
           {
-            name: "All sprints",
+            name: getTermDisplay("sprintTerm", {
+              variant: "plural",
+              capitalize: true,
+            }),
             icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
           },
         ]}

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useTerminologyDisplay } from "@/hooks";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
@@ -212,6 +213,7 @@ const Okr = ({
 };
 
 export const KeyResults = () => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: keyResults = [] } = useKeyResults(objectiveId);
 
@@ -219,7 +221,10 @@ export const KeyResults = () => {
     <Box className="my-8">
       <Flex align="center" className="mb-3" justify="between">
         <Text className="text-lg antialiased" fontWeight="semibold">
-          Key Results
+          {getTermDisplay("keyResultTerm", {
+            variant: "plural",
+            capitalize: true,
+          })}
         </Text>
         {keyResults.length > 0 && <NewKeyResultButton size="sm" />}
       </Flex>
@@ -240,8 +245,19 @@ export const KeyResults = () => {
         >
           <OKRIcon className="h-12" />
           <Text className="max-w-lg text-center" color="muted">
-            You haven&apos;t added any key results yet, add key results to your
-            objective to track your progress
+            You haven&apos;t added any{" "}
+            {getTermDisplay("keyResultTerm", {
+              variant: "plural",
+            })}{" "}
+            yet, add{" "}
+            {getTermDisplay("keyResultTerm", {
+              variant: "plural",
+            })}{" "}
+            to your{" "}
+            {getTermDisplay("objectiveTerm", {
+              variant: "plural",
+            })}{" "}
+            to track your progress
           </Text>
           <NewKeyResultButton />
         </Flex>

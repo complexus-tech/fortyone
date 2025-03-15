@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Text } from "ui";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import type { State, StateCategory } from "@/types/states";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Member } from "@/types";
@@ -60,6 +60,7 @@ export const StoriesGroup = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const pathname = usePathname();
   const { data: statuses = [] } = useStatuses();
   const { id: defaultStatusId } = statuses.at(0)!;
@@ -127,9 +128,13 @@ export const StoriesGroup = ({
         <RowWrapper>
           <Text color="muted">
             Showing{" "}
-            <span className="font-semibold">{filteredStories.length}</span> stor
-            {filteredStories.length === 1 ? "y" : "ies"} with{" "}
-            {groupBy.toLowerCase()}{" "}
+            <span className="font-semibold">
+              {filteredStories.length}{" "}
+              {getTermDisplay("storyTerm", {
+                variant: filteredStories.length === 1 ? "singular" : "plural",
+              })}
+            </span>{" "}
+            with {groupBy.toLowerCase()}{" "}
             <span className="font-semibold">
               {getGroupLabel({ groupBy, status, assignee, priority })}
             </span>

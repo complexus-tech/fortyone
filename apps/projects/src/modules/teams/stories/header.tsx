@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTerminologyDisplay } from "@/hooks";
 import { useTeamOptions } from "./provider";
 
 export const Header = ({
@@ -35,6 +36,7 @@ export const Header = ({
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
+  const { getTermDisplay } = useTerminologyDisplay();
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>
@@ -45,13 +47,16 @@ export const Header = ({
               icon: <TeamColor color={color} />,
             },
             {
-              name: "Stories",
+              name: getTermDisplay("storyTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
               icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
         />
         <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {stories.length} stories
+          {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
         </Badge>
       </Flex>
       <Flex align="center" gap={2}>

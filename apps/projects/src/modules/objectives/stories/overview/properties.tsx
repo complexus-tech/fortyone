@@ -171,7 +171,7 @@ export const Properties = () => {
             {objective?.endDate ? (
               format(new Date(objective.endDate), "MMM d, yy")
             ) : (
-              <Text color="muted">Target date</Text>
+              <Text color="muted">Deadline</Text>
             )}
           </Button>
         </DatePicker.Trigger>

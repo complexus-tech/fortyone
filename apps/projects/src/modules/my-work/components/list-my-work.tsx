@@ -4,10 +4,12 @@ import { useSession } from "next-auth/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { useTerminologyDisplay } from "@/hooks";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { viewOptions } = useMyWork();
   const { data } = useSession();
   const user = data?.user;
@@ -30,7 +32,9 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
         <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
           <Tabs.List>
-            <Tabs.Tab value="all">All stories</Tabs.Tab>
+            <Tabs.Tab value="all">
+              All {getTermDisplay("storyTerm", { variant: "plural" })}
+            </Tabs.Tab>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
