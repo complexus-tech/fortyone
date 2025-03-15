@@ -70,7 +70,11 @@ export const useBulkDeleteStoryMutation = () => {
         },
       });
     },
-    onSuccess: (_, storyIds) => {
+    onSuccess: (res, storyIds) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
 

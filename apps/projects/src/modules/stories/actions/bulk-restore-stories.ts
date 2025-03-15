@@ -17,9 +17,8 @@ export const bulkRestoreAction = async (storyIds: string[]) => {
       },
     );
 
-    return stories.data;
+    return stories;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to restore stories");
+    return getApiError(error);
   }
 };

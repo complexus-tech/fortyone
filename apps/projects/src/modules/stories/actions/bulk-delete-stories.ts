@@ -13,9 +13,8 @@ export const bulkDeleteAction = async (storyIds: string[]) => {
     const stories = await remove<ApiResponse<Payload>>("stories", {
       json: { storyIds },
     });
-    return stories.data;
+    return stories;
   } catch (error) {
-    const res = getApiError(error);
-    throw new Error(res.error?.message || "Failed to delete stories");
+    return getApiError(error);
   }
 };
