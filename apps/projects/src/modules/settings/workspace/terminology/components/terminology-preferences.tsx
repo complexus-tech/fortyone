@@ -1,5 +1,5 @@
-import { Box, Flex, Text, Select } from "ui";
-import { ObjectiveIcon } from "icons";
+import { Box, Flex, Text, Select, Button } from "ui";
+import { ObjectiveIcon, OKRIcon, SprintsIcon, StoryIcon } from "icons";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
 
@@ -19,7 +19,7 @@ export const TerminologyPreferences = () => {
               className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
               justify="center"
             >
-              <ObjectiveIcon className="h-4" />
+              <StoryIcon className="h-4" />
             </Flex>
             <Box>
               <Text className="font-medium">Stories</Text>
@@ -29,7 +29,7 @@ export const TerminologyPreferences = () => {
             </Box>
           </Flex>
           <Select defaultValue="story">
-            <Select.Trigger className="h-9 w-36 text-base">
+            <Select.Trigger className="h-10 w-44 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content align="center">
@@ -56,14 +56,23 @@ export const TerminologyPreferences = () => {
 
         {/* Sprint terminology */}
         <RowWrapper className="px-6">
-          <Box>
-            <Text className="font-medium">Sprints</Text>
-            <Text color="muted">
-              Time-boxed periods for completing a set of work items
-            </Text>
-          </Box>
+          <Flex align="center" gap={2}>
+            <Flex
+              align="center"
+              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+              justify="center"
+            >
+              <SprintsIcon className="h-4" />
+            </Flex>
+            <Box>
+              <Text className="font-medium">Sprints</Text>
+              <Text color="muted">
+                Time-boxed periods for completing a set of work items
+              </Text>
+            </Box>
+          </Flex>
           <Select defaultValue="sprint">
-            <Select.Trigger className="h-9 w-max px-2 text-base">
+            <Select.Trigger className="h-10 w-44 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content align="center">
@@ -90,14 +99,23 @@ export const TerminologyPreferences = () => {
 
         {/* Objective terminology */}
         <RowWrapper className="px-6">
-          <Box>
-            <Text className="font-medium">Objectives</Text>
-            <Text color="muted">
-              High-level goals that define what you want to achieve
-            </Text>
-          </Box>
+          <Flex align="center" gap={2}>
+            <Flex
+              align="center"
+              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+              justify="center"
+            >
+              <ObjectiveIcon className="h-4" />
+            </Flex>
+            <Box>
+              <Text className="font-medium">Objectives</Text>
+              <Text color="muted">
+                High-level goals that define what you want to achieve
+              </Text>
+            </Box>
+          </Flex>
           <Select defaultValue="objective">
-            <Select.Trigger className="h-9 w-max px-2 text-base">
+            <Select.Trigger className="h-10 w-44 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content align="center">
@@ -124,14 +142,23 @@ export const TerminologyPreferences = () => {
 
         {/* Key Result terminology */}
         <RowWrapper className="px-6">
-          <Box>
-            <Text className="font-medium">Key Results</Text>
-            <Text color="muted">
-              Measurable outcomes that track progress toward objectives
-            </Text>
-          </Box>
+          <Flex align="center" gap={2}>
+            <Flex
+              align="center"
+              className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+              justify="center"
+            >
+              <OKRIcon className="h-4" />
+            </Flex>
+            <Box>
+              <Text className="font-medium">Key Results</Text>
+              <Text color="muted">
+                Measurable outcomes that track progress toward objectives
+              </Text>
+            </Box>
+          </Flex>
           <Select defaultValue="key result">
-            <Select.Trigger className="h-9 w-max px-2 text-base">
+            <Select.Trigger className="h-10 w-44 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content align="center">
@@ -155,6 +182,10 @@ export const TerminologyPreferences = () => {
             </Select.Content>
           </Select>
         </RowWrapper>
+
+        <Box className="px-6 py-4">
+          <Button>Save</Button>
+        </Box>
       </Box>
     </Box>
   );
