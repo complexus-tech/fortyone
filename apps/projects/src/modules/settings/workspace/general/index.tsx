@@ -3,6 +3,7 @@
 import { Box, Text, Button, Avatar } from "ui";
 import { SectionHeader } from "../../components";
 import { WorkspaceForm } from "./components/form";
+import { WorkspaceFeatures } from "./components/features";
 
 export const WorkspaceGeneralSettings = () => {
   return (
@@ -18,6 +19,10 @@ export const WorkspaceGeneralSettings = () => {
           title="General Information"
         />
         <WorkspaceForm />
+      </Box>
+
+      <Box className="mb-6">
+        <WorkspaceFeatures />
       </Box>
 
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
