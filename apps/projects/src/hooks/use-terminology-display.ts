@@ -6,6 +6,7 @@ type TermKey = keyof Terminology;
 
 type DisplayOptions = {
   variant?: "singular" | "plural";
+  capitalize?: boolean;
 };
 
 type GetTermDisplayFn = (termKey: TermKey, options?: DisplayOptions) => string;
@@ -26,7 +27,7 @@ export const useTerminologyDisplay = () => {
 
   const getTermDisplay = useCallback<GetTermDisplayFn>(
     (termKey, options = {}) => {
-      const { variant = "singular" } = options;
+      const { variant = "singular", capitalize = false } = options;
 
       // Get the current term value directly using the key
       const currentValue = terminology[termKey];
@@ -42,6 +43,11 @@ export const useTerminologyDisplay = () => {
         } else {
           result = `${currentValue}s`;
         }
+      }
+
+      // Apply capitalization if requested
+      if (capitalize) {
+        result = result.charAt(0).toUpperCase() + result.slice(1);
       }
 
       return result;

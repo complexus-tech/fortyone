@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
 import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import { NavLink, TeamColor } from "../../ui";
 
 type TeamProps = {
@@ -15,6 +15,7 @@ type TeamProps = {
 };
 
 export const Team = ({ id, name: teamName, color }: TeamProps) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
     false,
@@ -22,17 +23,17 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
   const pathname = usePathname();
   const links = [
     {
-      name: "Stories",
+      name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
       href: `/teams/${id}/stories`,
     },
     {
-      name: "Objectives",
+      name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon className="h-[1.1rem]" strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
     },
     {
-      name: "Sprints",
+      name: getTermDisplay("sprintTerm", { variant: "plural" }),
       icon: <SprintsIcon />,
       href: `/teams/${id}/sprints`,
     },
@@ -89,7 +90,7 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
           return (
             <NavLink active={isActive} href={href} key={name}>
               {icon}
-              {name}
+              <span className="capitalize">{name}</span>
             </NavLink>
           );
         })}

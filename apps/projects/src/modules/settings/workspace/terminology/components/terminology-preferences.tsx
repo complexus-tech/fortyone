@@ -44,7 +44,10 @@ export const TerminologyPreferences = () => {
   const entities: TermEntity[] = useMemo(
     () => [
       {
-        name: getTermDisplay("storyTerm", { variant: "plural" }),
+        name: getTermDisplay("storyTerm", {
+          variant: "plural",
+          capitalize: true,
+        }),
         description: "Small, actionable units of work in your system",
         icon: <StoryIcon className="h-4" />,
         defaultValue: "story",
@@ -56,7 +59,10 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: getTermDisplay("sprintTerm", { variant: "plural" }),
+        name: getTermDisplay("sprintTerm", {
+          variant: "plural",
+          capitalize: true,
+        }),
         description: "Time-boxed periods for completing a set of work items",
         icon: <SprintsIcon className="h-4" />,
         defaultValue: "sprint",
@@ -68,7 +74,10 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: getTermDisplay("objectiveTerm", { variant: "plural" }),
+        name: getTermDisplay("objectiveTerm", {
+          variant: "plural",
+          capitalize: true,
+        }),
         description: "High-level goals that define what you want to achieve",
         icon: <ObjectiveIcon className="h-4" />,
         defaultValue: "objective",
@@ -80,7 +89,10 @@ export const TerminologyPreferences = () => {
         ],
       },
       {
-        name: getTermDisplay("keyResultTerm", { variant: "plural" }),
+        name: getTermDisplay("keyResultTerm", {
+          variant: "plural",
+          capitalize: true,
+        }),
         description:
           "Measurable outcomes that track progress toward objectives",
         icon: <OKRIcon className="h-4" />,
@@ -123,7 +135,7 @@ export const TerminologyPreferences = () => {
                   {entity.icon}
                 </Flex>
                 <Box>
-                  <Text className="font-medium capitalize">{entity.name}</Text>
+                  <Text className="font-medium">{entity.name}</Text>
                   <Text color="muted">{entity.description}</Text>
                 </Box>
               </Flex>
@@ -189,16 +201,16 @@ export const TerminologyPreferences = () => {
             <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
               <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
-                Create {getTermDisplay("objectiveTerm")}
+                Create {getTermDisplay("objectiveTerm", { capitalize: true })}
               </Button>
               <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                Start {getTermDisplay("sprintTerm")}
+                Start {getTermDisplay("sprintTerm", { capitalize: true })}
               </Button>
               <Button color="tertiary" leftIcon={<PlusIcon />}>
-                Create {getTermDisplay("storyTerm")}
+                Create {getTermDisplay("storyTerm", { capitalize: true })}
               </Button>
               <Button color="tertiary" leftIcon={<OKRIcon />}>
-                Add {getTermDisplay("keyResultTerm")}
+                Add {getTermDisplay("keyResultTerm", { capitalize: true })}
               </Button>
             </Flex>
           </Box>

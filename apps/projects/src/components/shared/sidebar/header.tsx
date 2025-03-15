@@ -24,7 +24,7 @@ import { useSession } from "next-auth/react";
 import nProgress from "nprogress";
 import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
-import { useAnalytics, useLocalStorage } from "@/hooks";
+import { useAnalytics, useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
@@ -51,6 +51,7 @@ const clearAllStorage = () => {
 };
 
 export const Header = () => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
@@ -376,7 +377,7 @@ export const Header = () => {
           }}
           variant="outline"
         >
-          Create Story
+          Create {getTermDisplay("storyTerm")}
         </Button>
         <Button
           asIcon

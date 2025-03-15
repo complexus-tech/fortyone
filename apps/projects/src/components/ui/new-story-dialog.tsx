@@ -38,7 +38,7 @@ import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -81,6 +81,7 @@ export const NewStoryDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { getTermDisplay } = useTerminologyDisplay();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
@@ -282,7 +283,7 @@ export const NewStoryDialog = ({
               </Menu.Items>
             </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New story</Text>
+            <Text color="muted">New {getTermDisplay("storyTerm")}</Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
@@ -493,7 +494,8 @@ export const NewStoryDialog = ({
                     variant="outline"
                   >
                     <span className="inline-block max-w-[12ch] truncate">
-                      {objective?.name || "Objective"}
+                      {objective?.name ||
+                        getTermDisplay("objectiveTerm", { capitalize: true })}
                     </span>
                   </Button>
                 </ObjectivesMenu.Trigger>
@@ -517,7 +519,8 @@ export const NewStoryDialog = ({
                     variant="outline"
                   >
                     <span className="inline-block max-w-[12ch] truncate">
-                      {sprint?.name || "Sprint"}
+                      {sprint?.name ||
+                        getTermDisplay("sprintTerm", { capitalize: true })}
                     </span>
                   </Button>
                 </SprintsMenu.Trigger>

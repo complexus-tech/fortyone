@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
+import { useTerminologyDisplay } from "@/hooks";
 
 type MenuItem = {
   name: string;
@@ -21,6 +22,7 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
+  const { getTermDisplay } = useTerminologyDisplay();
   const links: MenuItem[] = [
     {
       name: "Inbox",
@@ -30,7 +32,7 @@ export const Navigation = () => {
     },
 
     {
-      name: "My Work",
+      name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
       icon: <UserIcon />,
       href: "/my-work",
     },
@@ -55,7 +57,7 @@ export const Navigation = () => {
     //   href: "/roadmaps",
     // },
     {
-      name: "Objectives",
+      name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
       href: "/objectives",
     },
@@ -76,7 +78,7 @@ export const Navigation = () => {
           >
             <span className="flex items-center gap-2">
               <span>{icon}</span>
-              {name}
+              <span className="first-letter:capitalize">{name}</span>
             </span>
             {messages ? (
               <Badge color="tertiary" rounded="full" size="sm">

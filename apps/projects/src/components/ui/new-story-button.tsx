@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button } from "ui";
 import { PlusIcon } from "icons";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useTerminologyDisplay } from "@/hooks";
 import { NewStoryDialog } from "./new-story-dialog";
 
 export const NewStoryButton = ({
@@ -19,6 +19,7 @@ export const NewStoryButton = ({
   sprintId?: string;
   objectiveId?: string;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
 
@@ -35,7 +36,7 @@ export const NewStoryButton = ({
         size={size}
         {...rest}
       >
-        {children || "New Story"}
+        {children || `New ${getTermDisplay("storyTerm")}`}
       </Button>
       <NewStoryDialog
         isOpen={isOpen}

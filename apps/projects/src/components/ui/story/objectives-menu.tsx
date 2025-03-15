@@ -3,6 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, ObjectiveIcon, LoadingIcon } from "icons";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTerminologyDisplay } from "@/hooks";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -51,6 +52,7 @@ const Items = ({
   align?: "center" | "start" | "end" | undefined;
   teamId?: string;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: objectives = [], isPending } = useTeamObjectives(teamId ?? "");
   const [query, setQuery] = useState("");
   const { setOpen } = useObjectivesMenu();
@@ -69,12 +71,12 @@ const Items = ({
             }
             setQuery(value);
           }}
-          placeholder="Change objective..."
+          placeholder={`Change ${getTermDisplay("objectiveTerm")}...`}
           value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
-          <Text color="muted">No objective found.</Text>
+          <Text color="muted">No {getTermDisplay("objectiveTerm")} found.</Text>
         </Command.Empty>
         <Command.Group>
           {!isPending && (
@@ -90,7 +92,7 @@ const Items = ({
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <ObjectiveIcon className="h-[1.1rem]" />
-                <Text>No objective</Text>
+                <Text>No {getTermDisplay("objectiveTerm")}</Text>
               </Box>
               <Flex align="center" gap={1}>
                 {!objectiveId && (
@@ -105,7 +107,7 @@ const Items = ({
             <Command.Loading className="p-2">
               <Text className="flex items-center gap-2" color="muted">
                 <LoadingIcon className="animate-spin" />
-                Fetching objectives…
+                Fetching {getTermDisplay("objectiveTerm")}…
               </Text>
             </Command.Loading>
           ) : null}

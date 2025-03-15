@@ -4,6 +4,7 @@ import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, LoadingIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useTerminologyDisplay } from "@/hooks";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -52,6 +53,7 @@ const Items = ({
   teamId?: string;
   objectiveId?: string;
 }) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const { data: sprints = [], isPending: isTeamSprintsPending } =
     useTeamSprints(teamId ?? "");
   const [query, setQuery] = useState("");
@@ -71,12 +73,12 @@ const Items = ({
             }
             setQuery(value);
           }}
-          placeholder="Add to sprint..."
+          placeholder={`Add to ${getTermDisplay("sprintTerm")}...`}
           value={query}
         />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
-          <Text color="muted">No sprint found.</Text>
+          <Text color="muted">No {getTermDisplay("sprintTerm")} found.</Text>
         </Command.Empty>
         <Command.Group>
           {!isTeamSprintsPending ? (
@@ -92,7 +94,7 @@ const Items = ({
             >
               <Box className="grid grid-cols-[24px_auto] items-center">
                 <SprintsIcon />
-                <Text>No sprint</Text>
+                <Text>No {getTermDisplay("sprintTerm")}</Text>
               </Box>
               <Flex align="center" gap={1}>
                 {!sprintId && (
@@ -107,7 +109,7 @@ const Items = ({
             <Command.Loading className="p-2">
               <Text className="flex items-center gap-2" color="muted">
                 <LoadingIcon className="animate-spin" />
-                Fetching sprints…
+                Fetching {getTermDisplay("sprintTerm")}…
               </Text>
             </Command.Loading>
           ) : null}
