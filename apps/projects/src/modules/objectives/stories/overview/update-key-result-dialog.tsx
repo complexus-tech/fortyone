@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { useTerminologyDisplay } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
@@ -17,6 +18,7 @@ export const UpdateKeyResultDialog = ({
   isOpen,
   onOpenChange,
 }: UpdateKeyResultDialogProps) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const updateMutation = useUpdateKeyResultMutation();
   const [form, setForm] = useState({
     name: keyResult.name,
@@ -67,7 +69,9 @@ export const UpdateKeyResultDialog = ({
       <Dialog.Content>
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
-            <Dialog.Title className="text-lg">Update Key Result</Dialog.Title>
+            <Dialog.Title className="text-lg capitalize">
+              Update {getTermDisplay("keyResultTerm", { capitalize: true })}
+            </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="space-y-4">
             <Input
@@ -75,7 +79,7 @@ export const UpdateKeyResultDialog = ({
               onChange={(e) => {
                 setForm({ ...form, name: e.target.value });
               }}
-              placeholder="Enter a name for the key result"
+              placeholder={`Enter a name for the ${getTermDisplay("keyResultTerm")}`}
               required
               value={form.name}
             />
@@ -125,20 +129,22 @@ export const UpdateKeyResultDialog = ({
                 </Box>
               ) : (
                 <>
-                  <Input
-                    className="h-[2.7rem] opacity-50"
-                    label="Starting Value"
-                    onChange={(e) => {
-                      setForm({
-                        ...form,
-                        startValue: Number(e.target.value),
-                      });
-                    }}
-                    placeholder="0"
-                    required
-                    type="number"
-                    value={form.startValue}
-                  />
+                  <Box className="opacity-40 focus-within:opacity-80">
+                    <Input
+                      className="h-[2.7rem]"
+                      label="Starting Value"
+                      onChange={(e) => {
+                        setForm({
+                          ...form,
+                          startValue: Number(e.target.value),
+                        });
+                      }}
+                      placeholder="0"
+                      required
+                      type="number"
+                      value={form.startValue}
+                    />
+                  </Box>
                   <Input
                     className="h-[2.7rem]"
                     label="Current Value"
@@ -153,20 +159,22 @@ export const UpdateKeyResultDialog = ({
                     type="number"
                     value={form.currentValue}
                   />
-                  <Input
-                    className="h-[2.7rem] opacity-50"
-                    label="Target Value"
-                    onChange={(e) => {
-                      setForm({
-                        ...form,
-                        targetValue: Number(e.target.value),
-                      });
-                    }}
-                    placeholder="0"
-                    required
-                    type="number"
-                    value={form.targetValue}
-                  />
+                  <Box className="opacity-40 focus-within:opacity-80">
+                    <Input
+                      className="h-[2.7rem]"
+                      label="Target Value"
+                      onChange={(e) => {
+                        setForm({
+                          ...form,
+                          targetValue: Number(e.target.value),
+                        });
+                      }}
+                      placeholder="0"
+                      required
+                      type="number"
+                      value={form.targetValue}
+                    />
+                  </Box>
                 </>
               )}
             </Box>
@@ -182,7 +190,9 @@ export const UpdateKeyResultDialog = ({
             >
               Cancel
             </Button>
-            <Button type="submit">Update Key Result</Button>
+            <Button className="capitalize" type="submit">
+              Update {getTermDisplay("keyResultTerm")}
+            </Button>
           </Dialog.Footer>
         </form>
       </Dialog.Content>

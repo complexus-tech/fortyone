@@ -2,6 +2,7 @@
 import { Box, Flex, Text, Wrapper } from "ui";
 import { useSession } from "next-auth/react";
 import { useSummary } from "@/lib/hooks/summary";
+import { useTerminologyDisplay } from "@/hooks";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
   <Wrapper className="px-5">
@@ -34,18 +35,19 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 export const Overview = () => {
   const { data: session } = useSession();
   const { data: summary } = useSummary();
+  const { getTermDisplay } = useTerminologyDisplay();
   const overview = [
     {
       count: summary?.closed,
-      title: "Stories closed",
+      title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
     },
     {
       count: summary?.overdue,
-      title: "Stories overdue",
+      title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
     },
     {
       count: summary?.inProgress,
-      title: "Stories in progress",
+      title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
     },
     {
       count: summary?.created,
@@ -69,7 +71,8 @@ export const Overview = () => {
         Good {timeOfDay()}, {session?.user?.name}.
       </Text>
       <Text color="muted" fontSize="lg">
-        Here&rsquo;s what&rsquo;s happening with your stories.
+        Here&rsquo;s what&rsquo;s happening with your{" "}
+        {getTermDisplay("storyTerm", { variant: "plural" })}.
       </Text>
       <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
         {overview.map((item) => (

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { cn } from "lib";
 import type { FormEvent } from "react";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
+import { useTerminologyDisplay } from "@/hooks";
 
 type KeyResultEditorProps = {
   keyResult: NewKeyResult | null;
@@ -17,6 +18,7 @@ export const KeyResultEditor = ({
   onCancel,
   onSave,
 }: KeyResultEditorProps) => {
+  const { getTermDisplay } = useTerminologyDisplay();
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
       label: "Number",
@@ -36,13 +38,13 @@ export const KeyResultEditor = ({
     e.preventDefault();
     if (!keyResult?.name) {
       toast.warning("Validation error", {
-        description: "Please enter a name for the key result",
+        description: `Please enter a name for the ${getTermDisplay("keyResultTerm")}`,
       });
       return;
     }
     if (keyResult.measurementType !== "boolean" && !keyResult.targetValue) {
       toast.warning("Validation error", {
-        description: "Please enter a target value for the key result",
+        description: `Please enter a target value for the ${getTermDisplay("keyResultTerm")}`,
       });
       return;
     }
@@ -171,7 +173,9 @@ export const KeyResultEditor = ({
         )}
       </Box>
       <Flex gap={2}>
-        <Button type="submit">Add Key Result</Button>
+        <Button className="capitalize" type="submit">
+          Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+        </Button>
         <Button
           className="px-7"
           color="tertiary"

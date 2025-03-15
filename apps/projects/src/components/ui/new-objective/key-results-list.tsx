@@ -1,5 +1,6 @@
-import { Badge, Box, Button, Flex, Menu, ProgressBar, Text, Wrapper } from "ui";
+import { Badge, Box, Button, Flex, Menu, Text, Wrapper } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
+import { cn } from "lib";
 import type { NewKeyResult } from "@/modules/objectives/types";
 
 type KeyResultsListProps = {
@@ -60,7 +61,7 @@ const Okr = ({
   onRemove: (index: number) => void;
 }) => {
   return (
-    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-2.5">
+    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-2.5 dark:bg-dark-300/40">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-8 border-opacity-50 dark:border-opacity-50"
@@ -80,21 +81,13 @@ const Okr = ({
         className="divide-x divide-gray-100 dark:divide-dark-100/80"
       >
         <Flex align="center" className="gap-0.5 px-6" direction="column">
-          <Text color="muted">Current</Text>
+          <Text color="muted">Start</Text>
           <RenderValue measurementType={measurementType} value={startValue} />
         </Flex>
         <Flex align="center" className="gap-0.5 px-6" direction="column">
           <Text color="muted">Target</Text>
           <RenderValue measurementType={measurementType} value={targetValue} />
         </Flex>
-        <Flex align="center" className="gap-0.5 px-5" direction="column">
-          <Text color="muted">Progress</Text>
-          <Flex align="center" gap={2}>
-            <ProgressBar className="w-16" progress={75} />
-            <Text className="text-[0.95rem]">75%</Text>
-          </Flex>
-        </Flex>
-
         <Box className="h-full py-2 pl-4">
           <Menu>
             <Menu.Button>
@@ -141,7 +134,13 @@ export const KeyResultsList = ({
   onRemove,
 }: KeyResultsListProps) => {
   return (
-    <Flex direction="column" gap={2}>
+    <Flex
+      className={cn({
+        "mb-3": keyResults.length > 0,
+      })}
+      direction="column"
+      gap={2}
+    >
       {keyResults.map((kr, index) => (
         <Okr
           key={kr.name}

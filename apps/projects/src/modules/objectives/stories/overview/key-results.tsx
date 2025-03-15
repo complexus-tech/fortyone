@@ -220,13 +220,15 @@ export const KeyResults = () => {
   return (
     <Box className="my-8">
       <Flex align="center" className="mb-3" justify="between">
-        <Text className="text-lg antialiased" fontWeight="semibold">
+        <Text className="text-lg capitalize antialiased" fontWeight="semibold">
           {getTermDisplay("keyResultTerm", {
             variant: "plural",
             capitalize: true,
           })}
         </Text>
-        {keyResults.length > 0 && <NewKeyResultButton size="sm" />}
+        {keyResults.length > 0 && (
+          <NewKeyResultButton className="capitalize" size="sm" />
+        )}
       </Flex>
       <Divider />
       {keyResults.length > 0 ? (
@@ -259,7 +261,7 @@ export const KeyResults = () => {
             })}{" "}
             to track your progress
           </Text>
-          <NewKeyResultButton />
+          <NewKeyResultButton className="capitalize" />
         </Flex>
       )}
     </Box>

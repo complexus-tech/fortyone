@@ -491,7 +491,6 @@ export const NewObjectiveDialog = ({
                     setEditingIndex(null);
                     setKeyResultMode("add");
                   }}
-                  size="sm"
                   variant="outline"
                 >
                   Add {getTermDisplay("keyResultTerm", { capitalize: true })}
@@ -555,11 +554,11 @@ export const NewObjectiveDialog = ({
             disabled={editingKeyResult !== null}
             leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
             loading={createMutation.isPending}
-            loadingText="Creating objective..."
+            loadingText="Creating..."
             onClick={handleCreateObjective}
             size="md"
           >
-            Create objective
+            Create {getTermDisplay("objectiveTerm", { capitalize: true })}
           </Button>
         </Dialog.Footer>
       </Dialog.Content>

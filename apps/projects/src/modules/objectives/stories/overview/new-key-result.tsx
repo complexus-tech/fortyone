@@ -97,7 +97,7 @@ export const NewKeyResultButton = ({
         <Dialog.Content className="max-w-2xl">
           <form onSubmit={handleSubmit}>
             <Dialog.Header className="px-6">
-              <Dialog.Title className="text-lg">
+              <Dialog.Title className="text-lg capitalize">
                 Create {getTermDisplay("keyResultTerm", { capitalize: true })}
               </Dialog.Title>
             </Dialog.Header>
@@ -257,7 +257,7 @@ export const NewKeyResultButton = ({
               >
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button className="capitalize" type="submit">
                 Create {getTermDisplay("keyResultTerm", { capitalize: true })}
               </Button>
             </Dialog.Footer>

@@ -13,6 +13,7 @@ import { useMembers } from "@/lib/hooks/members";
 import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
+import { useTerminologyDisplay } from "@/hooks";
 
 const StoryRow = ({
   id,
@@ -124,6 +125,7 @@ export const MyStories = () => {
   const { data: session } = useSession();
   const { data: stories = [] } = useMyStories();
   const { data: statuses = [] } = useStatuses();
+  const { getTermDisplay } = useTerminologyDisplay();
 
   const inProgressStatuses = statuses
     .filter((status) => {
@@ -169,7 +171,7 @@ export const MyStories = () => {
     <Wrapper>
       <Flex align="center" justify="between">
         <Text className="mb-2" fontSize="lg">
-          Recent stories
+          Recent {getTermDisplay("storyTerm", { variant: "plural" })}
         </Text>
         <Button
           color="tertiary"
@@ -177,7 +179,7 @@ export const MyStories = () => {
           rightIcon={<ArrowRightIcon className="h-4" />}
           size="sm"
         >
-          More stories
+          More {getTermDisplay("storyTerm", { variant: "plural" })}
         </Button>
       </Flex>
       <Tabs defaultValue="inProgress">
@@ -197,7 +199,9 @@ export const MyStories = () => {
             >
               <StoryIcon className="h-24 opacity-70" />
               <Text color="muted">
-                You do not have any stories in progress.
+                You do not have any{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })} in
+                progress.
               </Text>
             </Flex>
           ) : (
@@ -214,7 +218,10 @@ export const MyStories = () => {
               justify="center"
             >
               <StoryIcon className="h-24 opacity-70" />
-              <Text color="muted">You do not have any stories due soon.</Text>
+              <Text color="muted">
+                You do not have any{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })} due soon.
+              </Text>
             </Flex>
           ) : (
             <List stories={upcomingDueDates} />
@@ -230,7 +237,10 @@ export const MyStories = () => {
               justify="center"
             >
               <StoryIcon className="h-24 opacity-70" />
-              <Text color="muted">You do not have any stories due.</Text>
+              <Text color="muted">
+                You do not have any{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })} due.
+              </Text>
             </Flex>
           ) : (
             <List stories={dueStories} />
