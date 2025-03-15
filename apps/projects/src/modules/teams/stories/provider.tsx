@@ -25,7 +25,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
       "Status",
       "Assignee",
       "Priority",
-      "Due date",
+      "Deadline",
       "Created",
       "Updated",
       // "Sprint",

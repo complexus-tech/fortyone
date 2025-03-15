@@ -10,11 +10,11 @@ export const validateSprintDates = (
   const newStartDate = new Date(startDate);
   const newEndDate = new Date(endDate);
 
-  // Validate that end date is after start date
+  // Validate that deadline is after start date
   if (isBefore(newEndDate, newStartDate) || isEqual(newEndDate, newStartDate)) {
     return {
       isValid: false,
-      error: "End date must be after start date.",
+      error: "Deadline must be after start date.",
     };
   }
 

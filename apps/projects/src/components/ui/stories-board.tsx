@@ -166,7 +166,7 @@ export const StoriesBoard = ({
           return new Date(story.createdAt).getTime();
         case "Updated":
           return new Date(story.updatedAt).getTime();
-        case "Due date": {
+        case "Deadline": {
           const date = new Date(story.endDate!);
           return isNaN(date.getTime()) ? Infinity : date.getTime();
         }

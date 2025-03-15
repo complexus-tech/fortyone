@@ -287,7 +287,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           }
         />
         <Option
-          label="Due date"
+          label="Deadline"
           value={
             <DatePicker>
               <Tooltip
@@ -328,7 +328,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
                       {endDate ? (
                         format(new Date(endDate), "MMM d, yyyy")
                       ) : (
-                        <Text color="muted">Add due date</Text>
+                        <Text color="muted">Add deadline</Text>
                       )}
                     </Button>
                   </DatePicker.Trigger>

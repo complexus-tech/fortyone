@@ -87,7 +87,7 @@ export const Activity = ({
       ),
     },
     end_date: {
-      label: "Due date",
+      label: "Deadline",
       render: (value: string) => (
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4" />

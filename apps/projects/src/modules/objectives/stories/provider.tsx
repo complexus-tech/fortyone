@@ -31,7 +31,7 @@ export const ObjectiveOptionsProvider = ({
       "Status",
       "Assignee",
       "Priority",
-      "Due date",
+      "Deadline",
       "Created",
       "Updated",
       // "Sprint",

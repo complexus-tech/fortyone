@@ -296,7 +296,7 @@ export const NewSprintDialog = ({
                 >
                   {sprintForm.endDate
                     ? format(new Date(sprintForm.endDate), "MMM d, yyyy")
-                    : "End date"}
+                    : "Deadline"}
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar

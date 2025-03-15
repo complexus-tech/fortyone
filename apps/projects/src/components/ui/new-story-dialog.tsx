@@ -440,7 +440,7 @@ export const NewStoryDialog = ({
                 >
                   {storyForm.endDate
                     ? format(new Date(storyForm.endDate), "MMM d, yyyy")
-                    : "Due date"}
+                    : "Deadline"}
                 </Button>
               </DatePicker.Trigger>
               <DatePicker.Calendar

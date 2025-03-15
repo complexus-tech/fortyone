@@ -10,7 +10,7 @@ export type DisplayColumn =
   | "Status"
   | "Assignee"
   | "Priority"
-  | "Due date"
+  | "Deadline"
   | "Created"
   | "Updated"
   | "Sprint"
@@ -19,7 +19,7 @@ export type DisplayColumn =
   | "Labels";
 export type ViewOptionsOrderBy =
   | "Priority"
-  | "Due date"
+  | "Deadline"
   | "Created"
   | "Updated";
 
@@ -39,7 +39,7 @@ const initialViewOptions: StoriesViewOptions = {
     "Status",
     "Assignee",
     "Priority",
-    "Due date",
+    "Deadline",
     "Created",
     "Updated",
     "Sprint",
@@ -52,7 +52,7 @@ export const StoriesViewOptionsButton = ({
   viewOptions,
   setViewOptions,
   groupByOptions = ["Status", "Assignee", "Priority"],
-  orderByOptions = ["Priority", "Due date", "Created", "Updated"],
+  orderByOptions = ["Priority", "Deadline", "Created", "Updated"],
   layout,
   disabled,
 }: {
@@ -70,7 +70,7 @@ export const StoriesViewOptionsButton = ({
     "Status",
     "Assignee",
     "Priority",
-    "Due date",
+    "Deadline",
     ...(layout !== "kanban" ? (["Created", "Updated"] as DisplayColumn[]) : []),
     "Sprint",
     "Objective",

@@ -213,7 +213,7 @@ export const StoryProperties = ({
           teamId={teamId}
         />
       )}
-      {isColumnVisible("Due date") &&
+      {isColumnVisible("Deadline") &&
       endDate &&
       !completedOrCancelled(status?.category) ? (
         <DatePicker>

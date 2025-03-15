@@ -26,8 +26,8 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     parseAsStringLiteral(tabs).withDefault("all"),
   );
   type Tab = (typeof tabs)[number];
-  // a sprint is active if it has a start date and end date and the current date is between the start and end date
-  // use date-fns to check if the current date is between the start and end date
+  // a sprint is active if it has a start date and deadline and the current date is between the start and deadline
+  // use date-fns to check if the current date is between the start and deadline
   const activeSprints = sprints
     .filter(
       (sprint) =>

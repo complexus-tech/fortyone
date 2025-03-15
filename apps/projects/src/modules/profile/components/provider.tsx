@@ -20,7 +20,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       "Status",
       "Assignee",
       "Priority",
-      "Due date",
+      "Deadline",
       "Created",
       "Updated",
       "Sprint",

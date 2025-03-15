@@ -238,7 +238,7 @@ export const StoriesFilterButton = ({
                 <ArrowRightIcon className="h-[1.15rem] w-auto" />
               </Box>
               <Box className="w-full">
-                <Text className="mb-1">Due date</Text>
+                <Text className="mb-1">Deadline</Text>
                 <DatePicker>
                   <DatePicker.Trigger>
                     <Button
