@@ -79,3 +79,10 @@ export type Workspace = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Terminology = {
+  storyTerm: "issue" | "task" | "story";
+  sprintTerm: "sprint" | "cycle" | "iteration";
+  objectiveTerm: "objective" | "goal" | "project";
+  keyResultTerm: "key result" | "milestone" | "focus area";
+};

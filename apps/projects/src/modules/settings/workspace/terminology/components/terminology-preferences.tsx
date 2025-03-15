@@ -72,7 +72,7 @@ export const TerminologyPreferences = () => {
       options: [
         { label: "Key Result", value: "key result" },
         { label: "Focus Area", value: "focus area" },
-        { label: "Strategic Priority", value: "strategic priority" },
+        { label: "Milestone", value: "milestone" },
       ],
     },
   ];

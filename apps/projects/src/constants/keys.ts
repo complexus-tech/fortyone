@@ -68,3 +68,7 @@ export const notificationKeys = {
   all: ["notifications"] as const,
   unread: () => [...notificationKeys.all, "unread"] as const,
 };
+
+export const terminologyKeys = {
+  all: ["terminology"] as const,
+};
