@@ -69,8 +69,10 @@ const Items = ({
       await createLabel(
         { name: query, color, teamId },
         {
-          onSuccess(data) {
-            setLabelIds([...labelIds, data.id]);
+          onSuccess(res) {
+            if (res.data) {
+              setLabelIds([...labelIds, res.data.id]);
+            }
           },
         },
       );
