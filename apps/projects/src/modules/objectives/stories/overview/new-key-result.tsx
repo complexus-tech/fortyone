@@ -46,7 +46,7 @@ export const NewKeyResultButton = ({
     e.preventDefault();
     if (!form.name) {
       toast.warning("Validation error", {
-        description: "Please enter a name for the key result",
+        description: `Please enter a name for the ${getTermDisplay("keyResultTerm")}`,
       });
       return;
     }

@@ -85,7 +85,7 @@ export const NewSprintDialog = ({
         autolink: true,
       }),
       Placeholder.configure({
-        placeholder: "What does the team want to accomplish in this sprint?",
+        placeholder: `What does the team want to accomplish in this ${getTermDisplay("sprintTerm")}?`,
       }),
     ],
     content: "",
@@ -105,7 +105,7 @@ export const NewSprintDialog = ({
     }
     if (!sprintForm.startDate || !sprintForm.endDate) {
       toast.warning("Validation Error", {
-        description: "Start and end dates are required",
+        description: "Start date and deadline are required",
       });
       return;
     }

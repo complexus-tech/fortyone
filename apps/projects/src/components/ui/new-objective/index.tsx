@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "lib";
 import { useRouter } from "next/navigation";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
@@ -67,6 +67,7 @@ export const NewObjectiveDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
+  const { getTermDisplay } = useTerminologyDisplay();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(
@@ -154,7 +155,7 @@ export const NewObjectiveDialog = ({
       )
     ) {
       toast.warning("Validation Error", {
-        description: "Objective with this name already exists",
+        description: `${getTermDisplay("objectiveTerm", { capitalize: true })} with this name already exists`,
       });
       return;
     }
@@ -249,7 +250,7 @@ export const NewObjectiveDialog = ({
               </Menu.Items>
             </Menu>
             <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New Objective</Text>
+            <Text color="muted">New {getTermDisplay("objectiveTerm")}</Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button
@@ -449,7 +450,12 @@ export const NewObjectiveDialog = ({
           </Flex>
           <Divider className="my-4" />
           <Box>
-            <Text className="mb-3 font-medium">Key Results</Text>
+            <Text className="mb-3 font-medium">
+              {getTermDisplay("keyResultTerm", {
+                variant: "plural",
+                capitalize: true,
+              })}
+            </Text>
             {keyResultMode === null ? (
               <>
                 <KeyResultsList
@@ -488,7 +494,7 @@ export const NewObjectiveDialog = ({
                   size="sm"
                   variant="outline"
                 >
-                  Add Key Result
+                  Add {getTermDisplay("keyResultTerm", { capitalize: true })}
                 </Button>
               </>
             ) : (
