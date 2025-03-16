@@ -1,4 +1,3 @@
-/* eslint-disable turbo/no-undeclared-env-vars -- Google One Tap is not typed */
 /* eslint-disable no-console -- Google One Tap is not typed */
 /* eslint-disable @typescript-eslint/no-explicit-any -- Google One Tap is not typed */
 "use client";
@@ -6,8 +5,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import Script from "next/script";
-
-const AUTH_GOOGLE_ID = process.env.AUTH_GOOGLE_ID;
 
 declare global {
   interface Window {
@@ -43,7 +40,8 @@ export default function GoogleOneTap() {
     if (window.google && !session) {
       try {
         window.google.accounts.id.initialize({
-          client_id: AUTH_GOOGLE_ID,
+          client_id:
+            "930302433843-6qh4lvnflrfhp4au1apftcqnjhh8qfog.apps.googleusercontent.com",
           callback: handleCredentialResponse,
           context: "signin",
           ux_mode: "popup",
