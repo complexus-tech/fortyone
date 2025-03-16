@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog, TeamColor } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useUserRole, useTerminology } from "@/hooks";
 
 export const TeamObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -14,7 +14,7 @@ export const TeamObjectivesHeader = () => {
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   return (
     <HeaderContainer className="justify-between">

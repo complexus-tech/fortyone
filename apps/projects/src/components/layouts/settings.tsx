@@ -5,7 +5,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import nProgress from "nprogress";
-import { useLocalStorage, useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useLocalStorage, useUserRole, useTerminology } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { BodyContainer } from "../shared";
 import { NavLink } from "../ui";
@@ -96,7 +96,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { data: myInvitations = [] } = useMyInvitations();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   const goBack = () => {
     nProgress.start();

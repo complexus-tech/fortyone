@@ -22,7 +22,7 @@ import type {
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -95,7 +95,7 @@ export const StoriesBoard = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { objectiveId, sprintId, teamId } = useParams<{
     objectiveId: string;
     sprintId: string;

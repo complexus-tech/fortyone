@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "lib";
 import { useRouter } from "next/navigation";
-import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
+import { useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
@@ -67,7 +67,7 @@ export const NewObjectiveDialog = ({
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
   const [activeTeam, setActiveTeam] = useLocalStorage<Team | null>(

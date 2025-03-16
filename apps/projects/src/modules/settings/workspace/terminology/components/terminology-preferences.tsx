@@ -10,10 +10,10 @@ import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
-import { useTerminology } from "@/lib/hooks/terminology/terminology";
-import type { Terminology } from "@/types";
-import { useUpdateTerminologyMutation } from "@/lib/hooks/terminology/update-mutation";
-import { useTerminologyDisplay } from "@/hooks/use-terminology-display";
+import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
+import type { WorkspaceSettings } from "@/types";
+import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
+import { useTerminology } from "@/hooks/use-terminology-display";
 
 type TermOption = {
   label: string;
@@ -26,20 +26,23 @@ type TermEntity = {
   icon: ReactNode;
   defaultValue: string;
   options: TermOption[];
-  key: keyof Terminology;
+  key: keyof WorkspaceSettings;
 };
 
 export const TerminologyPreferences = () => {
   const {
-    data: terminology = {
+    data: settings = {
       storyTerm: "story",
       sprintTerm: "sprint",
       objectiveTerm: "objective",
       keyResultTerm: "key result",
+      sprintEnabled: true,
+      objectiveEnabled: true,
+      keyResultEnabled: true,
     },
-  } = useTerminology();
-  const { mutate: updateTerminology } = useUpdateTerminologyMutation();
-  const { getTermDisplay } = useTerminologyDisplay();
+  } = useWorkspaceSettings();
+  const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
+  const { getTermDisplay } = useTerminology();
 
   const entities: TermEntity[] = useMemo(
     () => [
@@ -108,8 +111,11 @@ export const TerminologyPreferences = () => {
     [getTermDisplay],
   );
 
-  const handleTerminologyChange = (key: keyof Terminology, value: string) => {
-    updateTerminology({ [key]: value });
+  const handleTerminologyChange = (
+    key: keyof WorkspaceSettings,
+    value: string,
+  ) => {
+    updateSettings({ [key]: value });
   };
 
   return (
@@ -144,7 +150,7 @@ export const TerminologyPreferences = () => {
                 onValueChange={(value) => {
                   handleTerminologyChange(entity.key, value);
                 }}
-                value={terminology[entity.key]}
+                value={settings[entity.key] as string}
               >
                 <Select.Trigger className="h-9 w-max min-w-36 text-base">
                   <Select.Input />

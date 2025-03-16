@@ -17,7 +17,7 @@ import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useKeyResults } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
@@ -213,7 +213,7 @@ const Okr = ({
 };
 
 export const KeyResults = () => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: keyResults = [] } = useKeyResults(objectiveId);
 

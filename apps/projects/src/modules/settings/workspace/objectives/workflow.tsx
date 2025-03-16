@@ -13,7 +13,7 @@ import {
   useDeleteObjectiveStatusMutation,
 } from "@/modules/objectives/hooks/statuses";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { StateRow } from "./components/state-row";
 
 const categories: { label: string; value: StateCategory }[] = [
@@ -34,7 +34,7 @@ export const WorkflowSettings = () => {
   const [statusToDelete, setStatusToDelete] = useState<ObjectiveStatus | null>(
     null,
   );
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   const handleDeleteState = (status: ObjectiveStatus) => {
     const categoryStatuses = statuses.filter(

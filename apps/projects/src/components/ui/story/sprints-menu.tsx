@@ -4,7 +4,7 @@ import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, LoadingIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -53,7 +53,7 @@ const Items = ({
   teamId?: string;
   objectiveId?: string;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: sprints = [], isPending: isTeamSprintsPending } =
     useTeamSprints(teamId ?? "");
   const [query, setQuery] = useState("");

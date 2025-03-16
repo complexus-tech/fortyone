@@ -5,7 +5,7 @@ import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useCreateKeyResultMutation, useObjective } from "../../hooks";
 import type { NewKeyResult, MeasureType } from "../../types";
@@ -19,7 +19,7 @@ export const NewKeyResultButton = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
       label: "Number",

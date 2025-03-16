@@ -14,7 +14,7 @@ import {
 } from "@/components/ui";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useTeamOptions } from "./provider";
 
 export const Header = ({
@@ -36,7 +36,7 @@ export const Header = ({
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>

@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "lib";
 import { format } from "date-fns";
-import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
+import { useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -43,7 +43,7 @@ export const NewSprintDialog = ({
   teamId?: string;
 }) => {
   const { data: teams = [] } = useTeams();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;

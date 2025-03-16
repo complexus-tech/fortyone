@@ -80,9 +80,12 @@ export type Workspace = {
   updatedAt: string;
 };
 
-export type Terminology = {
+export type WorkspaceSettings = {
   storyTerm: "issue" | "task" | "story";
   sprintTerm: "sprint" | "cycle" | "iteration";
   objectiveTerm: "objective" | "goal" | "project";
   keyResultTerm: "key result" | "milestone" | "focus area";
+  sprintEnabled: boolean;
+  objectiveEnabled: boolean;
+  keyResultEnabled: boolean;
 };

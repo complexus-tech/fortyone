@@ -10,7 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 type MenuItem = {
   name: string;
@@ -22,7 +22,7 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const links: MenuItem[] = [
     {
       name: "Inbox",

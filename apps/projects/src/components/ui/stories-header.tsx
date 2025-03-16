@@ -8,7 +8,7 @@ import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-bu
 import type { State } from "@/types/states";
 import { useBoard } from "@/components/ui/board-context";
 import type { Member } from "@/types";
-import { useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useUserRole, useTerminology } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
@@ -37,7 +37,7 @@ export const StoriesHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   const groupedStories = stories.map((s) => s.id);
 

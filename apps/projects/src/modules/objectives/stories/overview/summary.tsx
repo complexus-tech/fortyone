@@ -5,7 +5,7 @@ import { cn } from "lib";
 import { differenceInDays, format } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
 import { useUpdateObjectiveMutation } from "../../hooks";
@@ -25,7 +25,7 @@ const getProgress = (keyResult: KeyResult) => {
 };
 
 export const Summary = () => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const updateObjective = useUpdateObjectiveMutation();

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
 import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
-import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
+import { useLocalStorage, useTerminology } from "@/hooks";
 import { NavLink, TeamColor } from "../../ui";
 
 type TeamProps = {
@@ -15,7 +15,7 @@ type TeamProps = {
 };
 
 export const Team = ({ id, name: teamName, color }: TeamProps) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
     false,

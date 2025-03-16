@@ -2,7 +2,7 @@
 import { Box, Flex, Text, Wrapper } from "ui";
 import { useSession } from "next-auth/react";
 import { useSummary } from "@/lib/hooks/summary";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
   <Wrapper className="px-5">
@@ -35,7 +35,7 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 export const Overview = () => {
   const { data: session } = useSession();
   const { data: summary } = useSummary();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const overview = [
     {
       count: summary?.closed,

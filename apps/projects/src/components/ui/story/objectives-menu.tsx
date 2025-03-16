@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, ObjectiveIcon, LoadingIcon } from "icons";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -52,7 +52,7 @@ const Items = ({
   align?: "center" | "start" | "end" | undefined;
   teamId?: string;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: objectives = [], isPending } = useTeamObjectives(teamId ?? "");
   const [query, setQuery] = useState("");
   const { setOpen } = useObjectivesMenu();

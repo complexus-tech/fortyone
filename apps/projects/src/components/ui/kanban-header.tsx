@@ -5,7 +5,7 @@ import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
-import { useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useUserRole, useTerminology } from "@/hooks";
 import type { Member } from "@/types";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -26,7 +26,7 @@ export const StoriesKanbanHeader = ({
   stories: Story[];
   groupBy: ViewOptionsGroupBy;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { viewOptions } = useBoard();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);

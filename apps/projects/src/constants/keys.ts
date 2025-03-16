@@ -44,6 +44,7 @@ export const linkTags = {
 export const workspaceKeys = {
   all: ["workspaces"] as const,
   lists: () => [...workspaceKeys.all, "list"] as const,
+  settings: () => [...workspaceKeys.all, "settings"] as const,
 };
 
 export const teamKeys = {
@@ -67,8 +68,4 @@ export const invitationKeys = {
 export const notificationKeys = {
   all: ["notifications"] as const,
   unread: () => [...notificationKeys.all, "unread"] as const,
-};
-
-export const terminologyKeys = {
-  all: ["terminology"] as const,
 };

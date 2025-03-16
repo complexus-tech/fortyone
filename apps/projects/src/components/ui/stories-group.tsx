@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Text } from "ui";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
-import { useLocalStorage, useTerminologyDisplay } from "@/hooks";
+import { useLocalStorage, useTerminology } from "@/hooks";
 import type { State, StateCategory } from "@/types/states";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Member } from "@/types";
@@ -60,7 +60,7 @@ export const StoriesGroup = ({
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const pathname = usePathname();
   const { data: statuses = [] } = useStatuses();
   const { id: defaultStatusId } = statuses.at(0)!;

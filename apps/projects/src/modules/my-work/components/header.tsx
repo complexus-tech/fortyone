@@ -9,7 +9,7 @@ import {
   LayoutSwitcher,
   NewStoryButton,
 } from "@/components/ui";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
@@ -20,7 +20,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data } = useMyStories();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;

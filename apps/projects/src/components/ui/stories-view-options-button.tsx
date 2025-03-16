@@ -2,7 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useEffect } from "react";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
@@ -64,7 +64,7 @@ export const StoriesViewOptionsButton = ({
   layout: StoriesLayout;
   disabled?: boolean;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [

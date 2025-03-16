@@ -13,7 +13,7 @@ import { useMembers } from "@/lib/hooks/members";
 import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 const StoryRow = ({
   id,
@@ -125,7 +125,7 @@ export const MyStories = () => {
   const { data: session } = useSession();
   const { data: stories = [] } = useMyStories();
   const { data: statuses = [] } = useStatuses();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   const inProgressStatuses = statuses
     .filter((status) => {

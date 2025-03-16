@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button } from "ui";
 import { PlusIcon } from "icons";
-import { useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useUserRole, useTerminology } from "@/hooks";
 import { NewSprintDialog } from "./new-sprint-dialog";
 
 export const NewSprintButton = ({
@@ -17,7 +17,7 @@ export const NewSprintButton = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   return (
     <>

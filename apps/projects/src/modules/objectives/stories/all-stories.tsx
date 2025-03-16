@@ -13,7 +13,7 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
-import { useCopyToClipboard, useTerminologyDisplay } from "@/hooks";
+import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { Overview } from "./overview";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
@@ -23,7 +23,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const tabs = ["overview", "all", "active", "backlog"] as const;
   const [tab, setTab] = useQueryState(
     "tab",

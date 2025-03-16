@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { useTerminology } from "@/lib/hooks/terminology/terminology";
-import type { Terminology } from "@/types";
+import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
+import type { WorkspaceSettings } from "@/types";
 
-type TermKey = keyof Terminology;
+type TermKey = keyof WorkspaceSettings;
 
 type DisplayOptions = {
   variant?: "singular" | "plural";
@@ -15,15 +15,18 @@ type GetTermDisplayFn = (termKey: TermKey, options?: DisplayOptions) => string;
  * Hook for consistent display of terminology throughout the application
  * @returns A function to format terminology terms with options
  */
-export const useTerminologyDisplay = () => {
+export const useTerminology = () => {
   const {
     data: terminology = {
       storyTerm: "story",
       sprintTerm: "sprint",
       objectiveTerm: "objective",
       keyResultTerm: "key result",
+      sprintEnabled: true,
+      objectiveEnabled: true,
+      keyResultEnabled: true,
     },
-  } = useTerminology();
+  } = useWorkspaceSettings();
 
   const getTermDisplay = useCallback<GetTermDisplayFn>(
     (termKey, options = {}) => {
@@ -31,6 +34,9 @@ export const useTerminologyDisplay = () => {
 
       // Get the current term value directly using the key
       const currentValue = terminology[termKey];
+      if (typeof currentValue === "boolean") {
+        throw new Error(`Invalid term key: ${termKey}`);
+      }
 
       // Handle singular/plural variants
       let result: string = currentValue;

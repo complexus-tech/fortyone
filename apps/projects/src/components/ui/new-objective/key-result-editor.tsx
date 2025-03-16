@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { cn } from "lib";
 import type { FormEvent } from "react";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 type KeyResultEditorProps = {
   keyResult: NewKeyResult | null;
@@ -18,7 +18,7 @@ export const KeyResultEditor = ({
   onCancel,
   onSave,
 }: KeyResultEditorProps) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
       label: "Number",

@@ -12,7 +12,7 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprints } from "../hooks/sprints";
 import { useSprintOptions } from "./provider";
@@ -28,7 +28,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions } = useSprintOptions();
   const { teamId, sprintId } = useParams<{
     teamId: string;

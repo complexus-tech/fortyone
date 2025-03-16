@@ -14,7 +14,7 @@ import {
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useObjectiveOptions } from "./provider";
 
 export const Header = ({
@@ -28,7 +28,7 @@ export const Header = ({
     teamId: string;
     objectiveId: string;
   }>();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();

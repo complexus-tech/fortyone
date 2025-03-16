@@ -11,7 +11,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce, useTerminologyDisplay } from "@/hooks";
+import { useDebounce, useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import {
   useDeleteObjectiveMutation,
@@ -30,7 +30,7 @@ export const Overview = () => {
   const { objectiveId } = useParams<{
     objectiveId: string;
   }>();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const [isOpen, setIsOpen] = useState(false);

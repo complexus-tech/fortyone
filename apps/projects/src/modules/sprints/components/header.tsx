@@ -5,13 +5,13 @@ import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { NewSprintButton, TeamColor } from "@/components/ui";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 export const SprintsHeader = () => {
   const { teamId } = useParams<{
     teamId: string;
   }>();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
 
   const { name, color } = teams.find((team) => team.id === teamId)!;

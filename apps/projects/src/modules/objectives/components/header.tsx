@@ -4,12 +4,12 @@ import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
 import { HeaderContainer } from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
-import { useUserRole, useTerminologyDisplay } from "@/hooks";
+import { useUserRole, useTerminology } from "@/hooks";
 
 export const ObjectivesHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
 
   return (
     <HeaderContainer className="justify-between">

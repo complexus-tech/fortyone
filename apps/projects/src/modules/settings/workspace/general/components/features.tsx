@@ -1,19 +1,26 @@
-import { useState } from "react";
+"use client";
+
 import { Box, Text, Switch } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
+import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
+import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
+import { useTerminology } from "@/hooks";
 
 export const WorkspaceFeatures = () => {
-  const [features, setFeatures] = useState({
-    objectives: true,
-    sprints: true,
-  });
-
-  const handleToggleFeature = (feature: keyof typeof features) => {
-    setFeatures((prev) => ({
-      ...prev,
-      [feature]: !prev[feature],
-    }));
+  const { getTermDisplay } = useTerminology();
+  const {
+    data: settings = {
+      sprintEnabled: true,
+      objectiveEnabled: true,
+      keyResultEnabled: true,
+    },
+  } = useWorkspaceSettings();
+  const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
+  const handleToggleFeature = (
+    feature: "sprintEnabled" | "objectiveEnabled" | "keyResultEnabled",
+  ) => {
+    updateSettings({ [feature]: !settings[feature] });
   };
 
   return (
@@ -25,30 +32,63 @@ export const WorkspaceFeatures = () => {
       <Box>
         <RowWrapper className="px-6">
           <Box>
-            <Text className="font-medium">Objectives</Text>
+            <Text className="font-medium">
+              {getTermDisplay("objectiveTerm", {
+                variant: "plural",
+                capitalize: true,
+              })}
+            </Text>
             <Text color="muted">
               Track high-level goals and connect work to desired outcomes
             </Text>
           </Box>
           <Switch
-            checked={features.objectives}
+            checked={settings.objectiveEnabled}
             onCheckedChange={() => {
-              handleToggleFeature("objectives");
+              handleToggleFeature("objectiveEnabled");
             }}
           />
         </RowWrapper>
 
         <RowWrapper className="px-6">
           <Box>
-            <Text className="font-medium">Sprints</Text>
+            <Text className="font-medium">
+              {getTermDisplay("sprintTerm", {
+                variant: "plural",
+                capitalize: true,
+              })}
+            </Text>
             <Text color="muted">
               Plan and organize work into time-boxed periods
             </Text>
           </Box>
           <Switch
-            checked={features.sprints}
+            checked={settings.sprintEnabled}
             onCheckedChange={() => {
-              handleToggleFeature("sprints");
+              handleToggleFeature("sprintEnabled");
+            }}
+          />
+        </RowWrapper>
+
+        <RowWrapper className="border-b-0 px-6">
+          <Box>
+            <Text className="font-medium">
+              {getTermDisplay("keyResultTerm", {
+                variant: "plural",
+                capitalize: true,
+              })}
+            </Text>
+            <Text color="muted">
+              Measure progress towards key{" "}
+              {getTermDisplay("objectiveTerm", {
+                variant: "plural",
+              })}
+            </Text>
+          </Box>
+          <Switch
+            checked={settings.keyResultEnabled}
+            onCheckedChange={() => {
+              handleToggleFeature("keyResultEnabled");
             }}
           />
         </RowWrapper>

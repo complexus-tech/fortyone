@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
@@ -18,7 +18,7 @@ export const UpdateKeyResultDialog = ({
   isOpen,
   onOpenChange,
 }: UpdateKeyResultDialogProps) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateKeyResultMutation();
   const [form, setForm] = useState({
     name: keyResult.name,

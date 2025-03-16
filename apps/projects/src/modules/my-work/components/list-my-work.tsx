@@ -4,12 +4,12 @@ import { useSession } from "next-auth/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import { useTerminologyDisplay } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
-  const { getTermDisplay } = useTerminologyDisplay();
+  const { getTermDisplay } = useTerminology();
   const { viewOptions } = useMyWork();
   const { data } = useSession();
   const user = data?.user;
