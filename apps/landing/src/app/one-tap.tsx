@@ -3,8 +3,9 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Script from "next/script";
+import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
 
 const AUTH_GOOGLE_ID = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID;
 declare global {
@@ -29,10 +30,7 @@ export default function GoogleOneTap() {
   const handleCredentialResponse = useCallback((response: any) => {
     console.log("handleCredentialResponse", response);
     console.log("credential", response?.credential);
-    signIn("one-tap", {
-      credential: { idToken: response?.credential },
-      redirectTo: "/auth-callback",
-    }).catch((error) => {
+    signInWithGoogleOneTap(response?.credential as string).catch((error) => {
       console.error("Error signing in:", error);
     });
   }, []);
