@@ -2,7 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useEffect } from "react";
-import { useTerminology } from "@/hooks";
+import { useFeatures, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
@@ -64,6 +64,7 @@ export const StoriesViewOptionsButton = ({
   layout: StoriesLayout;
   disabled?: boolean;
 }) => {
+  const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
@@ -74,8 +75,8 @@ export const StoriesViewOptionsButton = ({
     "Priority",
     "Deadline",
     ...(layout !== "kanban" ? (["Created", "Updated"] as DisplayColumn[]) : []),
-    "Sprint",
-    "Objective",
+    ...(features.sprintEnabled ? (["Sprint"] as DisplayColumn[]) : []),
+    ...(features.objectiveEnabled ? (["Objective"] as DisplayColumn[]) : []),
     // "Epic",
     "Labels",
   ];

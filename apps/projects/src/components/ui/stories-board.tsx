@@ -22,7 +22,7 @@ import type {
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useTerminology } from "@/hooks";
+import { useFeatures, useTerminology } from "@/hooks";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -101,14 +101,18 @@ export const StoriesBoard = ({
     sprintId: string;
     teamId: string;
   }>();
+  const features = useFeatures();
   const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
 
   const { mutateAsync } = useUpdateStoryMutation();
 
-  const isColumnVisible = (column: DisplayColumn) =>
-    viewOptions.displayColumns.includes(column);
+  const isColumnVisible = (column: DisplayColumn) => {
+    if (column === "Sprint" && !features.sprintEnabled) return false;
+    if (column === "Objective" && !features.objectiveEnabled) return false;
+    return viewOptions.displayColumns.includes(column);
+  };
 
   const handleDragStart = (e: DragStartEvent) => {
     const story = stories.find(({ id }) => id === e.active.id)!;
