@@ -1,6 +1,7 @@
 package notificationsrepo
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
@@ -40,15 +41,14 @@ type dbNotification struct {
 	ReadAt      *time.Time       `db:"read_at"`
 }
 
-type dbNotificationPreference struct {
-	ID           uuid.UUID        `db:"preference_id"`
-	UserID       uuid.UUID        `db:"user_id"`
-	WorkspaceID  uuid.UUID        `db:"workspace_id"`
-	Type         NotificationType `db:"notification_type"`
-	EmailEnabled bool             `db:"email_enabled"`
-	InAppEnabled bool             `db:"in_app_enabled"`
-	CreatedAt    time.Time        `db:"created_at"`
-	UpdatedAt    time.Time        `db:"updated_at"`
+// New model for the JSONB-based notification preferences
+type dbNotificationPreferences struct {
+	ID          uuid.UUID       `db:"preference_id"`
+	UserID      uuid.UUID       `db:"user_id"`
+	WorkspaceID uuid.UUID       `db:"workspace_id"`
+	Preferences json.RawMessage `db:"preferences"` // JSONB in PostgreSQL
+	CreatedAt   time.Time       `db:"created_at"`
+	UpdatedAt   time.Time       `db:"updated_at"`
 }
 
 type dbNewNotification struct {
@@ -100,23 +100,18 @@ func toCoreNotifications(ns []dbNotification) []notifications.CoreNotification {
 	return result
 }
 
-func toCoreNotificationPreference(p dbNotificationPreference) notifications.CoreNotificationPreference {
-	return notifications.CoreNotificationPreference{
-		ID:           p.ID,
-		UserID:       p.UserID,
-		WorkspaceID:  p.WorkspaceID,
-		Type:         string(p.Type),
-		EmailEnabled: p.EmailEnabled,
-		InAppEnabled: p.InAppEnabled,
-		CreatedAt:    p.CreatedAt,
-		UpdatedAt:    p.UpdatedAt,
-	}
-}
+// Convert database notification preferences to core model
+func toCoreNotificationPreferences(db dbNotificationPreferences) notifications.CoreNotificationPreferences {
+	var prefs map[string]notifications.NotificationChannels
+	// Parse the JSON preferences
+	json.Unmarshal(db.Preferences, &prefs)
 
-func toCoreNotificationPreferences(preferences []dbNotificationPreference) []notifications.CoreNotificationPreference {
-	result := make([]notifications.CoreNotificationPreference, len(preferences))
-	for i, p := range preferences {
-		result[i] = toCoreNotificationPreference(p)
+	return notifications.CoreNotificationPreferences{
+		ID:          db.ID,
+		UserID:      db.UserID,
+		WorkspaceID: db.WorkspaceID,
+		Preferences: prefs,
+		CreatedAt:   db.CreatedAt,
+		UpdatedAt:   db.UpdatedAt,
 	}
-	return result
 }

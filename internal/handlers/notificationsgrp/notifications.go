@@ -128,7 +128,7 @@ func (h *Handlers) MarkAsRead(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// GetPreferences returns a list of notification preferences.
+// GetPreferences returns the notification preferences for a user in a workspace.
 func (h *Handlers) GetPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.GetPreferences")
 	defer span.End()
@@ -150,7 +150,7 @@ func (h *Handlers) GetPreferences(ctx context.Context, w http.ResponseWriter, r 
 	}
 
 	span.AddEvent("preferences retrieved", trace.WithAttributes(
-		attribute.Int("preferences.count", len(preferences)),
+		attribute.Int("preferences.count", len(preferences.Preferences)),
 	))
 
 	return web.Respond(ctx, w, toAppNotificationPreferences(preferences), http.StatusOK)
@@ -199,33 +199,6 @@ func (h *Handlers) UpdatePreference(ctx context.Context, w http.ResponseWriter, 
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
-}
-
-// CreateDefaultPreferences creates default notification preferences for a user.
-func (h *Handlers) CreateDefaultPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.notifications.CreateDefaultPreferences")
-	defer span.End()
-
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
-	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-	}
-
-	if err := h.notifications.CreateDefaultPreferences(ctx, userID, workspaceID); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	span.AddEvent("default preferences created", trace.WithAttributes(
-		attribute.String("user.id", userID.String()),
-	))
-
-	return web.Respond(ctx, w, nil, http.StatusCreated)
 }
 
 // MarkAllAsRead marks all notifications as read for a user in a workspace.

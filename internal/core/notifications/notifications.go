@@ -17,9 +17,8 @@ type Repository interface {
 	GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID) error
-	GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreNotificationPreference, error)
+	GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreNotificationPreferences, error)
 	UpdatePreference(ctx context.Context, userID, workspaceID uuid.UUID, notificationType string, updates map[string]any) error
-	CreateDefaultPreferences(ctx context.Context, userID, workspaceID uuid.UUID) error
 	DeleteNotification(ctx context.Context, notificationID, userID uuid.UUID) error
 	DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
 	DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
@@ -134,8 +133,8 @@ func (s *Service) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UU
 	return nil
 }
 
-// GetPreferences returns a list of notification preferences.
-func (s *Service) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreNotificationPreference, error) {
+// GetPreferences returns a user's notification preferences for a workspace.
+func (s *Service) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreNotificationPreferences, error) {
 	s.log.Info(ctx, "business.core.notifications.GetPreferences")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.GetPreferences")
 	defer span.End()
@@ -143,11 +142,11 @@ func (s *Service) GetPreferences(ctx context.Context, userID, workspaceID uuid.U
 	preferences, err := s.repo.GetPreferences(ctx, userID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
-		return nil, err
+		return CoreNotificationPreferences{}, err
 	}
 
 	span.AddEvent("preferences retrieved", trace.WithAttributes(
-		attribute.Int("preferences.count", len(preferences)),
+		attribute.Int("preferences.count", len(preferences.Preferences)),
 	))
 
 	return preferences, nil
@@ -166,24 +165,6 @@ func (s *Service) UpdatePreference(ctx context.Context, userID, workspaceID uuid
 
 	span.AddEvent("preference updated", trace.WithAttributes(
 		attribute.String("notification.type", notificationType),
-	))
-
-	return nil
-}
-
-// CreateDefaultPreferences creates default notification preferences for a user.
-func (s *Service) CreateDefaultPreferences(ctx context.Context, userID, workspaceID uuid.UUID) error {
-	s.log.Info(ctx, "business.core.notifications.CreateDefaultPreferences")
-	ctx, span := web.AddSpan(ctx, "business.core.notifications.CreateDefaultPreferences")
-	defer span.End()
-
-	if err := s.repo.CreateDefaultPreferences(ctx, userID, workspaceID); err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	span.AddEvent("default preferences created", trace.WithAttributes(
-		attribute.String("user.id", userID.String()),
 	))
 
 	return nil

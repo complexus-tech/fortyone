@@ -21,15 +21,19 @@ type AppNotification struct {
 	ReadAt      *time.Time `json:"readAt"`
 }
 
-type AppNotificationPreference struct {
-	ID           uuid.UUID `json:"id"`
-	UserID       uuid.UUID `json:"userId"`
-	WorkspaceID  uuid.UUID `json:"workspaceId"`
-	Type         string    `json:"type"`
-	EmailEnabled bool      `json:"emailEnabled"`
-	InAppEnabled bool      `json:"inAppEnabled"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+type NotificationChannel struct {
+	Email bool `json:"email"`
+	InApp bool `json:"inApp"`
+}
+
+// AppNotificationPreferences represents the notification preferences for a user in a workspace
+type AppNotificationPreferences struct {
+	ID          uuid.UUID                      `json:"id"`
+	UserID      uuid.UUID                      `json:"userId"`
+	WorkspaceID uuid.UUID                      `json:"workspaceId"`
+	Preferences map[string]NotificationChannel `json:"preferences"`
+	CreatedAt   time.Time                      `json:"createdAt"`
+	UpdatedAt   time.Time                      `json:"updatedAt"`
 }
 
 type AppUpdatePreference struct {
@@ -61,23 +65,24 @@ func toAppNotifications(ns []notifications.CoreNotification) []AppNotification {
 	return result
 }
 
-func toAppNotificationPreference(p notifications.CoreNotificationPreference) AppNotificationPreference {
-	return AppNotificationPreference{
-		ID:           p.ID,
-		UserID:       p.UserID,
-		WorkspaceID:  p.WorkspaceID,
-		Type:         p.Type,
-		EmailEnabled: p.EmailEnabled,
-		InAppEnabled: p.InAppEnabled,
-		CreatedAt:    p.CreatedAt,
-		UpdatedAt:    p.UpdatedAt,
+// Convert core notification preferences to API model
+func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) AppNotificationPreferences {
+	appPrefs := AppNotificationPreferences{
+		ID:          p.ID,
+		UserID:      p.UserID,
+		WorkspaceID: p.WorkspaceID,
+		Preferences: make(map[string]NotificationChannel),
+		CreatedAt:   p.CreatedAt,
+		UpdatedAt:   p.UpdatedAt,
 	}
-}
 
-func toAppNotificationPreferences(preferences []notifications.CoreNotificationPreference) []AppNotificationPreference {
-	result := make([]AppNotificationPreference, len(preferences))
-	for i, p := range preferences {
-		result[i] = toAppNotificationPreference(p)
+	// Convert between internal and API representations
+	for key, channels := range p.Preferences {
+		appPrefs.Preferences[key] = NotificationChannel{
+			Email: channels.Email,
+			InApp: channels.InApp,
+		}
 	}
-	return result
+
+	return appPrefs
 }

@@ -51,8 +51,6 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces", h.Create, auth)
 	app.Get("/workspaces", h.List, auth)
 	app.Get("/workspaces/check-availability", h.CheckSlugAvailability)
-
-	// Workspace settings endpoints (replaces terminology endpoints)
 	app.Get("/workspaces/{workspaceId}/settings", h.GetWorkspaceSettings, auth)
 	app.Put("/workspaces/{workspaceId}/settings", h.UpdateWorkspaceSettings, auth)
 }

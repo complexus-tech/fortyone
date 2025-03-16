@@ -2,9 +2,10 @@ package notificationsrepo
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -195,16 +196,14 @@ func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID)
 	return nil
 }
 
-func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) ([]notifications.CoreNotificationPreference, error) {
+func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (notifications.CoreNotificationPreferences, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.GetPreferences")
 	defer span.End()
 
 	query := `
-		SELECT preference_id, user_id, workspace_id, notification_type,
-			email_enabled, in_app_enabled, created_at, updated_at
+		SELECT preference_id, user_id, workspace_id, preferences, created_at, updated_at
 		FROM notification_preferences
-		WHERE user_id = :user_id
-		AND workspace_id = :workspace_id;
+		WHERE user_id = :user_id AND workspace_id = :workspace_id;
 	`
 
 	params := map[string]interface{}{
@@ -212,27 +211,28 @@ func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID
 		"workspace_id": workspaceID,
 	}
 
-	var dbPreferences []dbNotificationPreference
+	var dbPreferences dbNotificationPreferences
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
+		return notifications.CoreNotificationPreferences{}, err
 	}
 	defer stmt.Close()
 
-	if err := stmt.SelectContext(ctx, &dbPreferences, params); err != nil {
+	if err := stmt.GetContext(ctx, &dbPreferences, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Create default preferences if not found
+			return r.createDefaultPreferences(ctx, userID, workspaceID)
+		}
 		errMsg := fmt.Sprintf("failed to get notification preferences: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to get notification preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
+		return notifications.CoreNotificationPreferences{}, err
 	}
 
-	span.AddEvent("preferences retrieved", trace.WithAttributes(
-		attribute.Int("preferences.count", len(dbPreferences)),
-	))
-
+	span.AddEvent("preferences retrieved")
 	return toCoreNotificationPreferences(dbPreferences), nil
 }
 
@@ -244,100 +244,122 @@ func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UU
 		return nil
 	}
 
-	setClauses := make([]string, 0, len(updates))
-	for field := range updates {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+	// First get current preferences
+	query := `
+		SELECT preferences FROM notification_preferences
+		WHERE user_id = :user_id AND workspace_id = :workspace_id;
+	`
+
+	params := map[string]interface{}{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
 	}
 
-	query := fmt.Sprintf(`
-		UPDATE notification_preferences
-		SET %s,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = :user_id
-		AND workspace_id = :workspace_id
-		AND notification_type = :notification_type;
-	`, strings.Join(setClauses, ", "))
-
-	updates["user_id"] = userID
-	updates["workspace_id"] = workspaceID
-	updates["notification_type"] = NotificationType(notificationType)
-
+	var prefsJSON json.RawMessage
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, updates)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to update notification preference: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to update notification preference"), trace.WithAttributes(attribute.String("error", errMsg)))
+	err = stmt.QueryRowxContext(ctx, params).Scan(&prefsJSON)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	rows, err := result.RowsAffected()
+	// Parse current preferences or use defaults
+	prefs := make(map[string]map[string]bool)
+	if errors.Is(err, sql.ErrNoRows) || len(prefsJSON) == 0 {
+		// Initialize with defaults
+		prefs = getDefaultPreferences()
+	} else {
+		if err := json.Unmarshal(prefsJSON, &prefs); err != nil {
+			return err
+		}
+	}
+
+	// Check if notification type exists
+	if _, exists := prefs[notificationType]; !exists {
+		prefs[notificationType] = map[string]bool{
+			"email":  true,
+			"in_app": true,
+		}
+	}
+
+	// Update specific channel preferences
+	for key, value := range updates {
+		if key == "email_enabled" {
+			prefs[notificationType]["email"] = value.(bool)
+		} else if key == "in_app_enabled" {
+			prefs[notificationType]["in_app"] = value.(bool)
+		}
+	}
+
+	// Marshal back to JSON
+	updatedJSON, err := json.Marshal(prefs)
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return err
 	}
 
-	if rows == 0 {
-		return fmt.Errorf("notification preference not found")
+	// Update the database
+	updateQuery := `
+		INSERT INTO notification_preferences (user_id, workspace_id, preferences)
+		VALUES (:user_id, :workspace_id, :preferences)
+		ON CONFLICT (user_id, workspace_id) 
+		DO UPDATE SET preferences = :preferences, updated_at = CURRENT_TIMESTAMP;
+	`
+
+	updateParams := map[string]interface{}{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+		"preferences":  updatedJSON,
 	}
 
-	return nil
+	updateStmt, err := r.db.PrepareNamedContext(ctx, updateQuery)
+	if err != nil {
+		return err
+	}
+	defer updateStmt.Close()
+
+	_, err = updateStmt.ExecContext(ctx, updateParams)
+	return err
 }
 
-func (r *repo) CreateDefaultPreferences(ctx context.Context, userID, workspaceID uuid.UUID) error {
+func (r *repo) createDefaultPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (notifications.CoreNotificationPreferences, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.CreateDefaultPreferences")
 	defer span.End()
 
+	defaultPrefs := getDefaultPreferences()
+	prefsJSON, err := json.Marshal(defaultPrefs)
+	if err != nil {
+		return notifications.CoreNotificationPreferences{}, err
+	}
+
 	query := `
-		INSERT INTO notification_preferences (
-			user_id, workspace_id, notification_type
-		) VALUES (
-			:user_id, :workspace_id, :notification_type
-		);
+		INSERT INTO notification_preferences (user_id, workspace_id, preferences)
+		VALUES (:user_id, :workspace_id, :preferences)
+		RETURNING preference_id, user_id, workspace_id, preferences, created_at, updated_at;
 	`
 
-	notificationTypes := []NotificationType{
-		NotificationTypeStoryUpdate,
-		NotificationTypeStoryComment,
-		NotificationTypeCommentReply,
-		NotificationTypeObjectiveUpdate,
-		NotificationTypeKeyResultUpdate,
-		NotificationTypeMention,
+	params := map[string]interface{}{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+		"preferences":  prefsJSON,
 	}
 
-	for _, nType := range notificationTypes {
-		params := map[string]interface{}{
-			"user_id":           userID,
-			"workspace_id":      workspaceID,
-			"notification_type": nType,
-		}
+	var result dbNotificationPreferences
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return notifications.CoreNotificationPreferences{}, err
+	}
+	defer stmt.Close()
 
-		stmt, err := r.db.PrepareNamedContext(ctx, query)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
-			r.log.Error(ctx, errMsg)
-			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-			return err
-		}
-
-		if _, err := stmt.ExecContext(ctx, params); err != nil {
-			stmt.Close()
-			errMsg := fmt.Sprintf("failed to create default preference: %s", err)
-			r.log.Error(ctx, errMsg)
-			span.RecordError(errors.New("failed to create default preference"), trace.WithAttributes(attribute.String("error", errMsg)))
-			return err
-		}
-		stmt.Close()
+	err = stmt.GetContext(ctx, &result, params)
+	if err != nil {
+		return notifications.CoreNotificationPreferences{}, err
 	}
 
-	return nil
+	return toCoreNotificationPreferences(result), nil
 }
 
 func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID) error {
@@ -570,4 +592,34 @@ func (r *repo) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUI
 	))
 
 	return nil
+}
+
+// Helper function for default preferences
+func getDefaultPreferences() map[string]map[string]bool {
+	return map[string]map[string]bool{
+		"story_update": {
+			"email":  true,
+			"in_app": true,
+		},
+		"story_comment": {
+			"email":  true,
+			"in_app": true,
+		},
+		"comment_reply": {
+			"email":  true,
+			"in_app": true,
+		},
+		"objective_update": {
+			"email":  true,
+			"in_app": true,
+		},
+		"key_result_update": {
+			"email":  true,
+			"in_app": true,
+		},
+		"mention": {
+			"email":  true,
+			"in_app": true,
+		},
+	}
 }

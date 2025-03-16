@@ -34,5 +34,4 @@ func Routes(cfg Config, app *web.App) {
 	// Notification Preferences
 	app.Get("/workspaces/{workspaceId}/notification-preferences", h.GetPreferences, auth)
 	app.Put("/workspaces/{workspaceId}/notification-preferences/{type}", h.UpdatePreference, auth)
-	app.Post("/workspaces/{workspaceId}/notification-preferences/default", h.CreateDefaultPreferences, auth)
 }
