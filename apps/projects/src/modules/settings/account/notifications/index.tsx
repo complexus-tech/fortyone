@@ -1,0 +1,33 @@
+"use client";
+
+import { Box, Text, Tabs } from "ui";
+import { EmailIcon, NotificationsUnreadIcon } from "icons";
+import { EmailNotifications } from "./components/email";
+import { InAppNotifications } from "./components/in-app";
+
+export const NotificationsSettings = () => {
+  return (
+    <Box>
+      <Text as="h1" className="mb-6 text-2xl font-medium">
+        Notifications
+      </Text>
+
+      <Tabs defaultValue="inApp">
+        <Tabs.List className="mx-0 mb-3">
+          <Tabs.Tab leftIcon={<NotificationsUnreadIcon />} value="inApp">
+            In-App
+          </Tabs.Tab>
+          <Tabs.Tab leftIcon={<EmailIcon />} value="email">
+            Email
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="email">
+          <EmailNotifications />
+        </Tabs.Panel>
+        <Tabs.Panel value="inApp">
+          <InAppNotifications />
+        </Tabs.Panel>
+      </Tabs>
+    </Box>
+  );
+};

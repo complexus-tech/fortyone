@@ -109,7 +109,7 @@ export const NotificationsHeader = () => {
               <Menu.Item>
                 <Link
                   className="flex items-center gap-2"
-                  href="/settings/account/preferences"
+                  href="/settings/account/notifications"
                 >
                   <SettingsIcon className="h-5 w-auto" />
                   Notification settings

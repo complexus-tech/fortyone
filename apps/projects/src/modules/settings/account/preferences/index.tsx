@@ -3,7 +3,6 @@
 import { Box, Text } from "ui";
 import { useUserRole } from "@/hooks";
 import { Theming } from "./components/theming";
-import { Notifications } from "./components/notifications";
 import { Automations } from "./components/automations";
 
 export const PreferencesSettings = () => {
@@ -14,7 +13,6 @@ export const PreferencesSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Preferences
       </Text>
-      <Notifications />
       <Theming />
       {userRole !== "guest" && <Automations />}
     </Box>
