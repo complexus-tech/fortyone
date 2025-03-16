@@ -5,7 +5,7 @@ import { cn } from "lib";
 import { differenceInDays, format } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTerminology } from "@/hooks";
+import { useFeatures, useTerminology } from "@/hooks";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
 import { useUpdateObjectiveMutation } from "../../hooks";
@@ -25,6 +25,7 @@ const getProgress = (keyResult: KeyResult) => {
 };
 
 export const Summary = () => {
+  const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
@@ -91,7 +92,7 @@ export const Summary = () => {
         </Text>
         <ProgressBar className="mt-2.5" progress={progress} />
       </Wrapper>
-      {keyResults.length > 0 && (
+      {features.keyResultEnabled && keyResults.length > 0 ? (
         <Wrapper className="px-5">
           <Text
             className="mb-2 flex items-center gap-1.5 antialiased"
@@ -113,7 +114,7 @@ export const Summary = () => {
           </Text>
           <ProgressBar className="mt-2.5" progress={keyResultProgress} />
         </Wrapper>
-      )}
+      ) : null}
       <Wrapper className="px-5">
         <Text
           className="mb-2 flex items-center gap-1 antialiased"

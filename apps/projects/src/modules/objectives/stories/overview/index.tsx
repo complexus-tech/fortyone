@@ -11,7 +11,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce, useTerminology } from "@/hooks";
+import { useDebounce, useFeatures, useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import {
   useDeleteObjectiveMutation,
@@ -30,6 +30,7 @@ export const Overview = () => {
   const { objectiveId } = useParams<{
     objectiveId: string;
   }>();
+  const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -144,7 +145,7 @@ export const Overview = () => {
           <Properties />
           <Divider className="my-8" />
           <Activity />
-          <KeyResults />
+          {features.keyResultEnabled ? <KeyResults /> : null}
         </Container>
       </BoardDividedPanel.MainPanel>
       <BoardDividedPanel.SideBar className="h-[calc(100vh-7.7rem)]" isExpanded>

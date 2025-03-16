@@ -34,7 +34,7 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useUserRole } from "@/hooks";
+import { useFeatures, useUserRole } from "@/hooks";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
@@ -92,6 +92,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
     sprintId,
     deletedAt,
   } = data!;
+  const features = useFeatures();
   const { data: sprints = [] } = useSprints();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -345,75 +346,79 @@ export const Options = ({ storyId }: { storyId: string }) => {
             </DatePicker>
           }
         />
-        <Option
-          label="Objective"
-          value={
-            <ObjectivesMenu>
-              <ObjectivesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={
-                    objectiveId ? (
-                      <ObjectiveIcon className="h-[1.15rem] w-auto" />
-                    ) : (
-                      <PlusIcon className="h-5 w-auto" />
-                    )
-                  }
-                  title={objectiveId ? objective?.name : undefined}
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="inline-block max-w-[16ch] truncate">
-                    {objective?.name || "Add objective"}
-                  </span>
-                </Button>
-              </ObjectivesMenu.Trigger>
-              <ObjectivesMenu.Items
-                align="end"
-                objectiveId={objectiveId ?? undefined}
-                setObjectiveId={(objectiveId) => {
-                  handleUpdate({ objectiveId });
-                }}
-                teamId={teamId}
-              />
-            </ObjectivesMenu>
-          }
-        />
-        <Option
-          label="Sprint"
-          value={
-            <SprintsMenu>
-              <SprintsMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={
-                    sprintId ? (
-                      <SprintsIcon className="h-5 w-auto" />
-                    ) : (
-                      <PlusIcon className="h-5 w-auto" />
-                    )
-                  }
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="inline-block max-w-[16ch] truncate">
-                    {sprint?.name || "Add sprint"}
-                  </span>
-                </Button>
-              </SprintsMenu.Trigger>
-              <SprintsMenu.Items
-                align="end"
-                setSprintId={(sprintId) => {
-                  handleUpdate({ sprintId });
-                }}
-                sprintId={sprintId ?? undefined}
-                teamId={teamId}
-              />
-            </SprintsMenu>
-          }
-        />
+        {features.objectiveEnabled ? (
+          <Option
+            label="Objective"
+            value={
+              <ObjectivesMenu>
+                <ObjectivesMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      objectiveId ? (
+                        <ObjectiveIcon className="h-[1.15rem] w-auto" />
+                      ) : (
+                        <PlusIcon className="h-5 w-auto" />
+                      )
+                    }
+                    title={objectiveId ? objective?.name : undefined}
+                    type="button"
+                    variant="naked"
+                  >
+                    <span className="inline-block max-w-[16ch] truncate">
+                      {objective?.name || "Add objective"}
+                    </span>
+                  </Button>
+                </ObjectivesMenu.Trigger>
+                <ObjectivesMenu.Items
+                  align="end"
+                  objectiveId={objectiveId ?? undefined}
+                  setObjectiveId={(objectiveId) => {
+                    handleUpdate({ objectiveId });
+                  }}
+                  teamId={teamId}
+                />
+              </ObjectivesMenu>
+            }
+          />
+        ) : null}
+        {features.sprintEnabled ? (
+          <Option
+            label="Sprint"
+            value={
+              <SprintsMenu>
+                <SprintsMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      sprintId ? (
+                        <SprintsIcon className="h-5 w-auto" />
+                      ) : (
+                        <PlusIcon className="h-5 w-auto" />
+                      )
+                    }
+                    type="button"
+                    variant="naked"
+                  >
+                    <span className="inline-block max-w-[16ch] truncate">
+                      {sprint?.name || "Add sprint"}
+                    </span>
+                  </Button>
+                </SprintsMenu.Trigger>
+                <SprintsMenu.Items
+                  align="end"
+                  setSprintId={(sprintId) => {
+                    handleUpdate({ sprintId });
+                  }}
+                  sprintId={sprintId ?? undefined}
+                  teamId={teamId}
+                />
+              </SprintsMenu>
+            }
+          />
+        ) : null}
         <Option
           className={cn("items-start pt-1", {
             "items-center pt-0": labels.length === 0,

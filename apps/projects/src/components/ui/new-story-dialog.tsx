@@ -38,7 +38,7 @@ import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useLocalStorage, useTerminology } from "@/hooks";
+import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -78,6 +78,7 @@ export const NewStoryDialog = ({
 }) => {
   const session = useSession();
   const router = useRouter();
+  const features = useFeatures();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -483,7 +484,7 @@ export const NewStoryDialog = ({
                 }}
               />
             </AssigneesMenu>
-            {objectives.length > 0 && (
+            {features.objectiveEnabled && objectives.length > 0 ? (
               <ObjectivesMenu>
                 <ObjectivesMenu.Trigger>
                   <Button
@@ -507,8 +508,8 @@ export const NewStoryDialog = ({
                   teamId={currentTeamId}
                 />
               </ObjectivesMenu>
-            )}
-            {sprints.length > 0 && (
+            ) : null}
+            {features.sprintEnabled && sprints.length > 0 ? (
               <SprintsMenu>
                 <SprintsMenu.Trigger>
                   <Button
@@ -532,7 +533,7 @@ export const NewStoryDialog = ({
                   teamId={currentTeamId}
                 />
               </SprintsMenu>
-            )}
+            ) : null}
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-between gap-2">

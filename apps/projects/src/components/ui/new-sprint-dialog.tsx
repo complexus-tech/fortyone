@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "lib";
 import { format } from "date-fns";
-import { useLocalStorage, useTerminology } from "@/hooks";
+import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -60,6 +60,7 @@ export const NewSprintDialog = ({
     startDate: "",
     endDate: "",
   };
+  const features = useFeatures();
   const [sprintForm, setSprintForm] = useState<NewSprint>(initialForm);
   const { data: teamSprints = [] } = useTeamSprints(sprintForm.teamId);
   const { data: objectives = [] } = useTeamObjectives(sprintForm.teamId);
@@ -314,29 +315,31 @@ export const NewSprintDialog = ({
                 }}
               />
             </DatePicker>
-            <ObjectivesMenu>
-              <ObjectivesMenu.Trigger>
-                <Button
-                  className="gap-1 px-2 text-sm"
-                  color="tertiary"
-                  leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
-                  size="sm"
-                  variant="outline"
-                >
-                  <span className="inline-block max-w-[12ch] truncate">
-                    {objective?.name ||
-                      getTermDisplay("objectiveTerm", { capitalize: true })}
-                  </span>
-                </Button>
-              </ObjectivesMenu.Trigger>
-              <ObjectivesMenu.Items
-                objectiveId={sprintForm.objectiveId ?? undefined}
-                setObjectiveId={(objectiveId) => {
-                  setSprintForm({ ...sprintForm, objectiveId });
-                }}
-                teamId={sprintForm.teamId}
-              />
-            </ObjectivesMenu>
+            {features.objectiveEnabled && objectives.length > 0 ? (
+              <ObjectivesMenu>
+                <ObjectivesMenu.Trigger>
+                  <Button
+                    className="gap-1 px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[12ch] truncate">
+                      {objective?.name ||
+                        getTermDisplay("objectiveTerm", { capitalize: true })}
+                    </span>
+                  </Button>
+                </ObjectivesMenu.Trigger>
+                <ObjectivesMenu.Items
+                  objectiveId={sprintForm.objectiveId ?? undefined}
+                  setObjectiveId={(objectiveId) => {
+                    setSprintForm({ ...sprintForm, objectiveId });
+                  }}
+                  teamId={sprintForm.teamId}
+                />
+              </ObjectivesMenu>
+            ) : null}
           </Flex>
         </Dialog.Body>
         <Dialog.Footer className="flex items-center justify-end gap-2">
