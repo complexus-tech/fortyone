@@ -40,6 +40,7 @@ export const {
     Google,
     Credentials({
       name: "Credentials",
+      id: "credentials",
       credentials: {},
       async authorize(credentials) {
         const { email, token } = credentials as {
@@ -53,6 +54,19 @@ export const {
           throw error;
         }
         return res.data;
+      },
+    }),
+    Credentials({
+      name: "One Tap",
+      id: "one-tap",
+      credentials: {},
+      async authorize(credentials) {
+        const { idToken } = credentials as { idToken: string };
+        const googleUser = await authenticateGoogleUser({ idToken });
+        if (!googleUser) {
+          throw new Error("Failed to authenticate Google user");
+        }
+        return googleUser;
       },
     }),
   ],
@@ -71,7 +85,7 @@ export const {
   },
 
   callbacks: {
-    async jwt({ token, user, trigger, session, account, profile }) {
+    async jwt({ token, user, trigger, session, account }) {
       if (account && user) {
         if (account.provider === "credentials") {
           return {
@@ -87,9 +101,6 @@ export const {
         if (account.provider === "google") {
           const googleUser = await authenticateGoogleUser({
             idToken: account.id_token!,
-            email: profile?.email || "",
-            fullName: profile?.name || "",
-            avatarUrl: profile?.picture || "",
           });
           if (!googleUser) {
             throw new Error("Failed to authenticate Google user");

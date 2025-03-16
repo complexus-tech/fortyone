@@ -36,7 +36,7 @@ export const ClientPage = ({ invitations }: { invitations: Invitation[] }) => {
       <Flex align="center" direction="column" justify="center">
         <Logo asIcon className="mb-1 h-20 animate-pulse text-white" />
         <Text color="muted" fontWeight="medium">
-          Setting up your workspace...
+          Signing into your workspace...
         </Text>
       </Flex>
     </Flex>

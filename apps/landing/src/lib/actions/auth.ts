@@ -54,24 +54,11 @@ export async function authenticateWithToken({
   }
 }
 
-export async function authenticateGoogleUser({
-  idToken,
-  email,
-  fullName,
-  avatarUrl,
-}: {
-  idToken: string;
-  email: string;
-  fullName: string;
-  avatarUrl: string;
-}) {
+export async function authenticateGoogleUser({ idToken }: { idToken: string }) {
   const res = await ky
     .post(`${apiURL}/users/google/verify`, {
       json: {
         token: idToken,
-        email,
-        fullName,
-        avatarUrl,
       },
     })
     .json<ApiResponse<LoginResponse>>();

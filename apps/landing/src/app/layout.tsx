@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/shared";
 import { PostHogProvider } from "./posthog";
 import { Toaster } from "./toaster";
 import PostHogPageView from "./posthog-page-view";
+import GoogleOneTap from "./one-tap";
 
 export const metadata: Metadata = {
   title: "Complexus | Modern OKR & Project Management Platform",
@@ -87,6 +88,7 @@ export default async function RootLayout({
         <Suspense>
           <PostHogPageView />
         </Suspense>
+        <GoogleOneTap />
         <Toaster />
         {/* <div className="pointer-events-none fixed inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       </body>
