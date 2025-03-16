@@ -33,8 +33,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const accountItems = [
     { title: "Profile", href: "/settings/account" },
-    { title: "Notifications", href: "/settings/account/notifications" },
     { title: "Preferences", href: "/settings/account/preferences" },
+    { title: "Notifications", href: "/settings/account/notifications" },
     { title: "Security", href: "/settings/account/security" },
     { title: "Delete account", href: "/settings/account/delete" },
     ...(myInvitations.length > 0

@@ -1,11 +1,13 @@
 import React from "react";
-import { Box, Flex, Text, Switch } from "ui";
+import { Box, Flex } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useNotificationPreferences } from "@/modules/notifications/hooks/preferences";
+import { Entry } from "./entry";
 
 export const EmailNotifications = () => {
   const { data } = useNotificationPreferences();
   const preferences = data?.preferences;
+
   return (
     <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
@@ -14,34 +16,23 @@ export const EmailNotifications = () => {
       />
       <Box className="p-6">
         <Flex direction="column" gap={6}>
-          <Flex align="center" justify="between">
-            <Box>
-              <Text className="font-medium">Story updates</Text>
-              <Text color="muted">
-                Get notified when a story you&apos;re involved with is updated
-              </Text>
-            </Box>
-            <Switch checked={preferences?.story_update.email} />
-          </Flex>
+          <Entry
+            checked={preferences?.story_update.email}
+            description="Get notified when a story you're involved with is updated"
+            title="Story updates"
+          />
 
-          <Flex align="center" justify="between">
-            <Box>
-              <Text className="font-medium">Comments</Text>
-              <Text color="muted">
-                Get notified when someone comments on your stories
-              </Text>
-            </Box>
-            <Switch checked={preferences?.comment_reply.email} />
-          </Flex>
-          <Flex align="center" justify="between">
-            <Box>
-              <Text className="font-medium">Mentions</Text>
-              <Text color="muted">
-                Get notified when someone mentions you in a comment or story
-              </Text>
-            </Box>
-            <Switch checked={preferences?.mention.email} />
-          </Flex>
+          <Entry
+            checked={preferences?.comment_reply.email}
+            description="Get notified when someone comments on your stories"
+            title="Comments"
+          />
+
+          <Entry
+            checked={preferences?.mention.email}
+            description="Get notified when someone mentions you in a comment or story"
+            title="Mentions"
+          />
         </Flex>
       </Box>
     </Box>
