@@ -34,15 +34,10 @@ func NewService(clientID string) (*Service, error) {
 }
 
 // VerifyToken validates a Google ID token and ensures it matches the provided email
-func (s *Service) VerifyToken(ctx context.Context, token string, email string) (*idtoken.Payload, error) {
+func (s *Service) VerifyToken(ctx context.Context, token string) (*idtoken.Payload, error) {
 	payload, err := s.validator.Validate(ctx, token, s.clientID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidToken, err)
-	}
-
-	// Verify email matches
-	if tokenEmail, ok := payload.Claims["email"].(string); !ok || tokenEmail != email {
-		return nil, ErrEmailMismatch
 	}
 
 	return payload, nil

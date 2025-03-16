@@ -170,15 +170,8 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Validate and normalize email
-	normalizedEmail, err := validate.Email(req.Email)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	req.Email = normalizedEmail
-
 	// Verify Google token
-	payload, err := h.googleService.VerifyToken(ctx, req.Token, req.Email)
+	payload, err := h.googleService.VerifyToken(ctx, req.Token)
 	if err != nil {
 		switch {
 		case errors.Is(err, google.ErrInvalidToken), errors.Is(err, google.ErrEmailMismatch):
@@ -194,7 +187,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	// Try to find existing user
-	user, err := h.users.GetUserByEmail(ctx, req.Email)
+	user, err := h.users.GetUserByEmail(ctx, payload.Claims["email"].(string))
 	if err != nil && !errors.Is(err, users.ErrNotFound) {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -202,9 +195,9 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	if errors.Is(err, users.ErrNotFound) {
 		// Create new user
 		newUser := users.CoreNewUser{
-			Email:     req.Email,
-			FullName:  req.FullName,
-			AvatarURL: req.AvatarURL,
+			Email:     payload.Claims["email"].(string),
+			FullName:  payload.Claims["name"].(string),
+			AvatarURL: payload.Claims["picture"].(string),
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {

@@ -43,10 +43,7 @@ type RegisterRequest struct {
 }
 
 type GoogleAuthRequest struct {
-	Token     string `json:"token"` // ID token from Google
-	Email     string `json:"email"`
-	FullName  string `json:"fullName"`
-	AvatarURL string `json:"avatarUrl"`
+	Token string `json:"token"` // ID token from Google
 }
 
 // EmailVerificationRequest represents a request to send a verification email

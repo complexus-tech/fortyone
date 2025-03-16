@@ -85,7 +85,7 @@ type Config struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
 	}
 	Website struct {
-		URL string `default:"http://localhost:3001" env:"APP_WEBSITE_URL"`
+		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 }
 
