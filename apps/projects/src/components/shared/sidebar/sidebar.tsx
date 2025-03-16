@@ -1,6 +1,6 @@
 "use client";
-import { Box, Button, Text } from "ui";
-import { EmailIcon, PlusIcon } from "icons";
+import { Box, Button, Flex, Text } from "ui";
+import { EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { InviteMembersDialog } from "@/components/ui";
 import { Header } from "./header";
@@ -37,16 +37,21 @@ export const Sidebar = () => {
             Contact developer
           </Button>
         </Box>
-        <button
-          className="mt-3 flex items-center gap-2 px-1"
-          onClick={() => {
-            setIsOpen(true);
-          }}
-          type="button"
-        >
-          <PlusIcon />
-          Invite members
-        </button>
+        <Flex align="center" className="mt-3 gap-3" justify="between">
+          <button
+            className="flex items-center gap-2 px-1"
+            onClick={() => {
+              setIsOpen(true);
+            }}
+            type="button"
+          >
+            <PlusIcon />
+            Invite members
+          </button>
+          <button type="button">
+            <HelpIcon className="h-6" />
+          </button>
+        </Flex>
       </Box>
 
       {/* <Box className="rounded-xl bg-white p-4 shadow dark:bg-dark-300">
