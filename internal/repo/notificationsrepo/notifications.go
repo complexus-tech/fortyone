@@ -396,7 +396,7 @@ func (r *repo) DeleteNotification(ctx context.Context, notificationID, userID uu
 		AND recipient_id = :user_id;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"notification_id": notificationID,
 		"user_id":         userID,
 	}
