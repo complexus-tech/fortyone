@@ -78,7 +78,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     ...(isAdmin
       ? [
           {
-            category: "Settings",
+            category: "Workspace",
             icon: <WorkspaceIcon />,
             items: workspaceItems,
           },
