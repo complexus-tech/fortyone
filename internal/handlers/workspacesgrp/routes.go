@@ -52,7 +52,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces", h.List, auth)
 	app.Get("/workspaces/check-availability", h.CheckSlugAvailability)
 
-	// New terminology endpoints
-	app.Get("/workspaces/{workspaceId}/terminology", h.GetWorkspaceTerminology, auth)
-	app.Put("/workspaces/{workspaceId}/terminology", h.UpdateWorkspaceTerminology, auth)
+	// Workspace settings endpoints (replaces terminology endpoints)
+	app.Get("/workspaces/{workspaceId}/settings", h.GetWorkspaceSettings, auth)
+	app.Put("/workspaces/{workspaceId}/settings", h.UpdateWorkspaceSettings, auth)
 }

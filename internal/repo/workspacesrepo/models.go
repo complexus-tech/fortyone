@@ -29,15 +29,18 @@ type dbWorkspaceWithRole struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-// dbWorkspaceTerminology represents workspace terminology preferences in the database.
-type dbWorkspaceTerminology struct {
-	WorkspaceID   uuid.UUID `db:"workspace_id"`
-	StoryTerm     string    `db:"story_term"`
-	SprintTerm    string    `db:"sprint_term"`
-	ObjectiveTerm string    `db:"objective_term"`
-	KeyResultTerm string    `db:"key_result_term"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+// dbWorkspaceSettings represents workspace settings in the database.
+type dbWorkspaceSettings struct {
+	WorkspaceID      uuid.UUID `db:"workspace_id"`
+	StoryTerm        string    `db:"story_term"`
+	SprintTerm       string    `db:"sprint_term"`
+	ObjectiveTerm    string    `db:"objective_term"`
+	KeyResultTerm    string    `db:"key_result_term"`
+	SprintEnabled    bool      `db:"sprint_enabled"`
+	ObjectiveEnabled bool      `db:"objective_enabled"`
+	KeyResultEnabled bool      `db:"key_result_enabled"`
+	CreatedAt        time.Time `db:"created_at"`
+	UpdatedAt        time.Time `db:"updated_at"`
 }
 
 func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
@@ -73,15 +76,18 @@ func toCoreWorkspacesWithRole(du []dbWorkspaceWithRole) []workspaces.CoreWorkspa
 	return coreWorkspaces
 }
 
-// toCoreWorkspaceTerminology converts a database workspace terminology to a core workspace terminology.
-func toCoreWorkspaceTerminology(t dbWorkspaceTerminology) workspaces.CoreWorkspaceTerminology {
-	return workspaces.CoreWorkspaceTerminology{
-		WorkspaceID:   t.WorkspaceID,
-		StoryTerm:     t.StoryTerm,
-		SprintTerm:    t.SprintTerm,
-		ObjectiveTerm: t.ObjectiveTerm,
-		KeyResultTerm: t.KeyResultTerm,
-		CreatedAt:     t.CreatedAt,
-		UpdatedAt:     t.UpdatedAt,
+// toCoreWorkspaceSettings converts a database workspace settings to core workspace settings.
+func toCoreWorkspaceSettings(s dbWorkspaceSettings) workspaces.CoreWorkspaceSettings {
+	return workspaces.CoreWorkspaceSettings{
+		WorkspaceID:      s.WorkspaceID,
+		StoryTerm:        s.StoryTerm,
+		SprintTerm:       s.SprintTerm,
+		ObjectiveTerm:    s.ObjectiveTerm,
+		KeyResultTerm:    s.KeyResultTerm,
+		SprintEnabled:    s.SprintEnabled,
+		ObjectiveEnabled: s.ObjectiveEnabled,
+		KeyResultEnabled: s.KeyResultEnabled,
+		CreatedAt:        s.CreatedAt,
+		UpdatedAt:        s.UpdatedAt,
 	}
 }

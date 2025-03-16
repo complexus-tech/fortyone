@@ -63,8 +63,8 @@ type AppSlugAvailability struct {
 	Slug      string `json:"slug"`
 }
 
-// AppWorkspaceTerminology represents workspace terminology preferences for the API.
-type AppWorkspaceTerminology struct {
+// AppWorkspaceTerminologySettings represents workspace terminology preferences for the API.
+type AppWorkspaceTerminologySettings struct {
 	StoryTerm     string    `json:"storyTerm"`
 	SprintTerm    string    `json:"sprintTerm"`
 	ObjectiveTerm string    `json:"objectiveTerm"`
@@ -73,33 +73,68 @@ type AppWorkspaceTerminology struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
-// AppUpdateWorkspaceTerminology represents the payload for updating workspace terminology.
-type AppUpdateWorkspaceTerminology struct {
-	StoryTerm     string `json:"storyTerm,omitempty"`
-	SprintTerm    string `json:"sprintTerm,omitempty"`
-	ObjectiveTerm string `json:"objectiveTerm,omitempty"`
-	KeyResultTerm string `json:"keyResultTerm,omitempty"`
+// AppWorkspaceSettings represents workspace settings for the API.
+type AppWorkspaceSettings struct {
+	StoryTerm        string    `json:"storyTerm"`
+	SprintTerm       string    `json:"sprintTerm"`
+	ObjectiveTerm    string    `json:"objectiveTerm"`
+	KeyResultTerm    string    `json:"keyResultTerm"`
+	SprintEnabled    bool      `json:"sprintEnabled"`
+	ObjectiveEnabled bool      `json:"objectiveEnabled"`
+	KeyResultEnabled bool      `json:"keyResultEnabled"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
-// toCoreWorkspaceTerminology converts an API update model to a core model
-func toCoreWorkspaceTerminology(term AppUpdateWorkspaceTerminology, workspaceID uuid.UUID) workspaces.CoreWorkspaceTerminology {
-	return workspaces.CoreWorkspaceTerminology{
-		WorkspaceID:   workspaceID,
-		StoryTerm:     term.StoryTerm,
-		SprintTerm:    term.SprintTerm,
-		ObjectiveTerm: term.ObjectiveTerm,
-		KeyResultTerm: term.KeyResultTerm,
+// AppUpdateWorkspaceSettings represents the payload for updating workspace settings.
+type AppUpdateWorkspaceSettings struct {
+	StoryTerm        string `json:"storyTerm,omitempty"`
+	SprintTerm       string `json:"sprintTerm,omitempty"`
+	ObjectiveTerm    string `json:"objectiveTerm,omitempty"`
+	KeyResultTerm    string `json:"keyResultTerm,omitempty"`
+	SprintEnabled    *bool  `json:"sprintEnabled,omitempty"`
+	ObjectiveEnabled *bool  `json:"objectiveEnabled,omitempty"`
+	KeyResultEnabled *bool  `json:"keyResultEnabled,omitempty"`
+}
+
+// toCoreWorkspaceSettings converts an API update model to a core model
+func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uuid.UUID, current workspaces.CoreWorkspaceSettings) workspaces.CoreWorkspaceSettings {
+	result := workspaces.CoreWorkspaceSettings{
+		WorkspaceID:      workspaceID,
+		StoryTerm:        settings.StoryTerm,
+		SprintTerm:       settings.SprintTerm,
+		ObjectiveTerm:    settings.ObjectiveTerm,
+		KeyResultTerm:    settings.KeyResultTerm,
+		SprintEnabled:    current.SprintEnabled,
+		ObjectiveEnabled: current.ObjectiveEnabled,
+		KeyResultEnabled: current.KeyResultEnabled,
 	}
+
+	// Only update boolean fields if they are provided
+	if settings.SprintEnabled != nil {
+		result.SprintEnabled = *settings.SprintEnabled
+	}
+	if settings.ObjectiveEnabled != nil {
+		result.ObjectiveEnabled = *settings.ObjectiveEnabled
+	}
+	if settings.KeyResultEnabled != nil {
+		result.KeyResultEnabled = *settings.KeyResultEnabled
+	}
+
+	return result
 }
 
-// toAppWorkspaceTerminology converts a core terminology model to an API model
-func toAppWorkspaceTerminology(term workspaces.CoreWorkspaceTerminology) AppWorkspaceTerminology {
-	return AppWorkspaceTerminology{
-		StoryTerm:     term.StoryTerm,
-		SprintTerm:    term.SprintTerm,
-		ObjectiveTerm: term.ObjectiveTerm,
-		KeyResultTerm: term.KeyResultTerm,
-		CreatedAt:     term.CreatedAt,
-		UpdatedAt:     term.UpdatedAt,
+// toAppWorkspaceSettings converts a core settings model to an API model
+func toAppWorkspaceSettings(settings workspaces.CoreWorkspaceSettings) AppWorkspaceSettings {
+	return AppWorkspaceSettings{
+		StoryTerm:        settings.StoryTerm,
+		SprintTerm:       settings.SprintTerm,
+		ObjectiveTerm:    settings.ObjectiveTerm,
+		KeyResultTerm:    settings.KeyResultTerm,
+		SprintEnabled:    settings.SprintEnabled,
+		ObjectiveEnabled: settings.ObjectiveEnabled,
+		KeyResultEnabled: settings.KeyResultEnabled,
+		CreatedAt:        settings.CreatedAt,
+		UpdatedAt:        settings.UpdatedAt,
 	}
 }

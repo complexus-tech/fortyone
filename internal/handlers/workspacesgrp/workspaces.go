@@ -276,6 +276,7 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
+// CheckSlugAvailability checks if a slug is available for use.
 func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.CheckSlugAvailability")
 	defer span.End()
@@ -313,9 +314,9 @@ func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWri
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-// GetWorkspaceTerminology retrieves the terminology settings for a workspace.
-func (h *Handlers) GetWorkspaceTerminology(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.workspaces.GetWorkspaceTerminology")
+// GetWorkspaceSettings retrieves the settings for a workspace.
+func (h *Handlers) GetWorkspaceSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.GetWorkspaceSettings")
 	defer span.End()
 
 	// Get workspace ID from path
@@ -340,18 +341,18 @@ func (h *Handlers) GetWorkspaceTerminology(ctx context.Context, w http.ResponseW
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Get or create the terminology settings
-	terminology, err := h.workspaces.GetOrCreateWorkspaceTerminology(ctx, workspaceID)
+	// Get or create the settings
+	settings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	return web.Respond(ctx, w, toAppWorkspaceTerminology(terminology), http.StatusOK)
+	return web.Respond(ctx, w, toAppWorkspaceSettings(settings), http.StatusOK)
 }
 
-// UpdateWorkspaceTerminology updates the terminology settings for a workspace.
-func (h *Handlers) UpdateWorkspaceTerminology(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateWorkspaceTerminology")
+// UpdateWorkspaceSettings updates the settings for a workspace.
+func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateWorkspaceSettings")
 	defer span.End()
 
 	// Get workspace ID from path
@@ -378,32 +379,32 @@ func (h *Handlers) UpdateWorkspaceTerminology(ctx context.Context, w http.Respon
 
 	// Check if user has admin role
 	if workspace.UserRole != "admin" {
-		return web.RespondError(ctx, w, errors.New("only workspace admins can update terminology"), http.StatusForbidden)
+		return web.RespondError(ctx, w, errors.New("only workspace admins can update workspace settings"), http.StatusForbidden)
 	}
 
 	// Decode the request
-	var input AppUpdateWorkspaceTerminology
+	var input AppUpdateWorkspaceSettings
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// First, ensure terminology exists by getting or creating it
-	_, err = h.workspaces.GetOrCreateWorkspaceTerminology(ctx, workspaceID)
+	// First, ensure settings exist by getting or creating them
+	currentSettings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Update the terminology
-	coreTerminology := toCoreWorkspaceTerminology(input, workspaceID)
-	updatedTerminology, err := h.workspaces.UpdateWorkspaceTerminology(ctx, workspaceID, coreTerminology)
+	// Update the settings
+	coreSettings := toCoreWorkspaceSettings(input, workspaceID, currentSettings)
+	updatedSettings, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspaceID, coreSettings)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	span.AddEvent("workspace terminology updated.", trace.WithAttributes(
+	span.AddEvent("workspace settings updated.", trace.WithAttributes(
 		attribute.String("workspaceId", workspaceID.String()),
 		attribute.String("userId", userID.String()),
 	))
 
-	return web.Respond(ctx, w, toAppWorkspaceTerminology(updatedTerminology), http.StatusOK)
+	return web.Respond(ctx, w, toAppWorkspaceSettings(updatedSettings), http.StatusOK)
 }

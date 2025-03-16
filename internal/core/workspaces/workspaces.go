@@ -45,9 +45,9 @@ type Repository interface {
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
 	UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
-	GetWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceTerminology, error)
-	UpdateWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID, terminology CoreWorkspaceTerminology) (CoreWorkspaceTerminology, error)
-	InitializeWorkspaceTerminology(ctx context.Context, tx *sqlx.Tx, workspaceID uuid.UUID) error
+	GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSettings, error)
+	UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, settings CoreWorkspaceSettings) (CoreWorkspaceSettings, error)
+	InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, workspaceID uuid.UUID) error
 }
 
 // Service provides user-related operations.
@@ -138,8 +138,8 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 		s.log.Error(ctx, "failed to update user's last used workspace", err)
 	}
 
-	// Initialize workspace terminology
-	if err := s.repo.InitializeWorkspaceTerminology(ctx, tx, workspace.ID); err != nil {
+	// Initialize workspace settings
+	if err := s.repo.InitializeWorkspaceSettings(ctx, tx, workspace.ID); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
 			s.log.Error(ctx, "error rolling back tx", "method", "Create")
 		}
@@ -315,92 +315,92 @@ func (s *Service) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid
 	return nil
 }
 
-// GetWorkspaceTerminology retrieves the terminology settings for a workspace.
-func (s *Service) GetWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceTerminology, error) {
-	s.log.Info(ctx, "business.core.workspaces.getTerminology")
-	ctx, span := web.AddSpan(ctx, "business.core.workspaces.GetWorkspaceTerminology")
+// GetWorkspaceSettings retrieves the settings for a workspace.
+func (s *Service) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSettings, error) {
+	s.log.Info(ctx, "business.core.workspaces.getSettings")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.GetWorkspaceSettings")
 	defer span.End()
 
-	terminology, err := s.repo.GetWorkspaceTerminology(ctx, workspaceID)
+	settings, err := s.repo.GetWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
 		span.RecordError(err)
-		return CoreWorkspaceTerminology{}, err
+		return CoreWorkspaceSettings{}, err
 	}
 
-	span.AddEvent("terminology retrieved.", trace.WithAttributes(
+	span.AddEvent("settings retrieved.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 	))
-	return terminology, nil
+	return settings, nil
 }
 
-// GetOrCreateWorkspaceTerminology retrieves terminology settings or creates default settings if none exist.
-func (s *Service) GetOrCreateWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceTerminology, error) {
-	s.log.Info(ctx, "business.core.workspaces.getOrCreateTerminology")
-	ctx, span := web.AddSpan(ctx, "business.core.workspaces.GetOrCreateWorkspaceTerminology")
+// GetOrCreateWorkspaceSettings retrieves settings or creates default settings if none exist.
+func (s *Service) GetOrCreateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSettings, error) {
+	s.log.Info(ctx, "business.core.workspaces.getOrCreateSettings")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.GetOrCreateWorkspaceSettings")
 	defer span.End()
 
-	terminology, err := s.repo.GetWorkspaceTerminology(ctx, workspaceID)
+	settings, err := s.repo.GetWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			// Start transaction to create default terminology
+			// Start transaction to create default settings
 			tx, err := s.db.BeginTxx(ctx, nil)
 			if err != nil {
 				span.RecordError(err)
-				return CoreWorkspaceTerminology{}, err
+				return CoreWorkspaceSettings{}, err
 			}
 			defer tx.Rollback()
 
-			// Initialize default terminology
-			if err := s.repo.InitializeWorkspaceTerminology(ctx, tx, workspaceID); err != nil {
+			// Initialize default settings
+			if err := s.repo.InitializeWorkspaceSettings(ctx, tx, workspaceID); err != nil {
 				span.RecordError(err)
-				return CoreWorkspaceTerminology{}, err
+				return CoreWorkspaceSettings{}, err
 			}
 
 			// Commit the transaction
 			if err := tx.Commit(); err != nil {
 				span.RecordError(err)
-				return CoreWorkspaceTerminology{}, err
+				return CoreWorkspaceSettings{}, err
 			}
 
-			// Retrieve the newly created terminology
-			terminology, err = s.repo.GetWorkspaceTerminology(ctx, workspaceID)
+			// Retrieve the newly created settings
+			settings, err = s.repo.GetWorkspaceSettings(ctx, workspaceID)
 			if err != nil {
 				span.RecordError(err)
-				return CoreWorkspaceTerminology{}, err
+				return CoreWorkspaceSettings{}, err
 			}
 
-			span.AddEvent("default terminology created and retrieved.", trace.WithAttributes(
+			span.AddEvent("default settings created and retrieved.", trace.WithAttributes(
 				attribute.String("workspace_id", workspaceID.String()),
 			))
-			return terminology, nil
+			return settings, nil
 		}
 
 		span.RecordError(err)
-		return CoreWorkspaceTerminology{}, err
+		return CoreWorkspaceSettings{}, err
 	}
 
-	span.AddEvent("terminology retrieved.", trace.WithAttributes(
+	span.AddEvent("settings retrieved.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 	))
-	return terminology, nil
+	return settings, nil
 }
 
-// UpdateWorkspaceTerminology updates the terminology settings for a workspace.
-func (s *Service) UpdateWorkspaceTerminology(ctx context.Context, workspaceID uuid.UUID, terminology CoreWorkspaceTerminology) (CoreWorkspaceTerminology, error) {
-	s.log.Info(ctx, "business.core.workspaces.updateTerminology")
-	ctx, span := web.AddSpan(ctx, "business.core.workspaces.UpdateWorkspaceTerminology")
+// UpdateWorkspaceSettings updates the settings for a workspace.
+func (s *Service) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, settings CoreWorkspaceSettings) (CoreWorkspaceSettings, error) {
+	s.log.Info(ctx, "business.core.workspaces.updateSettings")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.UpdateWorkspaceSettings")
 	defer span.End()
 
 	// Ensure workspaceID is set correctly
-	terminology.WorkspaceID = workspaceID
+	settings.WorkspaceID = workspaceID
 
-	updated, err := s.repo.UpdateWorkspaceTerminology(ctx, workspaceID, terminology)
+	updated, err := s.repo.UpdateWorkspaceSettings(ctx, workspaceID, settings)
 	if err != nil {
 		span.RecordError(err)
-		return CoreWorkspaceTerminology{}, err
+		return CoreWorkspaceSettings{}, err
 	}
 
-	span.AddEvent("terminology updated.", trace.WithAttributes(
+	span.AddEvent("settings updated.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return updated, nil
