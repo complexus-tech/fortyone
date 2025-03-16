@@ -87,7 +87,10 @@ export const {
   callbacks: {
     async jwt({ token, user, trigger, session, account }) {
       if (account && user) {
-        if (account.provider === "credentials") {
+        if (
+          account.provider === "credentials" ||
+          account.provider === "one-tap"
+        ) {
           return {
             ...token,
             id: user.id,

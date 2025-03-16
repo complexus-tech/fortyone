@@ -10,7 +10,7 @@ export const signInWithGoogle = async (callbackUrl = "/auth-callback") => {
 
 export const signInWithGoogleOneTap = async (idToken: string) => {
   await signIn("one-tap", {
-    redirectTo: "/auth-callback",
+    redirect: false,
     idToken,
   });
 };
