@@ -4,13 +4,14 @@ import { SectionHeader } from "@/modules/settings/components";
 import { useNotificationPreferences } from "@/modules/notifications/hooks/preferences";
 import { useUpdateNotificationPreferenceMutation } from "@/modules/notifications/hooks/update-preference-mutation";
 import { type NotificationType } from "@/modules/notifications/types";
-import { notificationConfigs } from "../constants/notification-configs";
+import { useNotificationConfigs } from "../hooks/use-notification-configs";
 import { Entry } from "./entry";
 
 export const EmailNotifications = () => {
   const { data } = useNotificationPreferences();
   const preferences = data?.preferences;
   const { mutate } = useUpdateNotificationPreferenceMutation();
+  const notificationConfigs = useNotificationConfigs();
 
   const handleTogglePreference = (type: NotificationType, checked: boolean) => {
     mutate({
