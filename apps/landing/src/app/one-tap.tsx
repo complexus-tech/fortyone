@@ -27,9 +27,9 @@ export default function GoogleOneTap() {
 
   const handleCredentialResponse = useCallback((response: any) => {
     console.log("handleCredentialResponse", response);
-    console.log("credential", response.credential);
+    console.log("credential", response?.credential);
     signIn("one-tap", {
-      credential: { idToken: response.credential },
+      credential: { idToken: response?.credential },
       redirectTo: "/auth-callback",
     }).catch((error) => {
       console.error("Error signing in:", error);
@@ -37,7 +37,7 @@ export default function GoogleOneTap() {
   }, []);
 
   const initializeGoogleOneTap = useCallback(() => {
-    if (window.google && !session) {
+    if (window?.google && !session) {
       try {
         window.google.accounts.id.initialize({
           client_id:
@@ -50,20 +50,20 @@ export default function GoogleOneTap() {
         });
 
         window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed()) {
+          if (notification?.isNotDisplayed()) {
             console.log(
               "One Tap was not displayed:",
-              notification.getNotDisplayedReason(),
+              notification?.getNotDisplayedReason(),
             );
-          } else if (notification.isSkippedMoment()) {
+          } else if (notification?.isSkippedMoment()) {
             console.log(
               "One Tap was skipped:",
-              notification.getSkippedReason(),
+              notification?.getSkippedReason(),
             );
-          } else if (notification.isDismissedMoment()) {
+          } else if (notification?.isDismissedMoment()) {
             console.log(
               "One Tap was dismissed:",
-              notification.getDismissedReason(),
+              notification?.getDismissedReason(),
             );
           }
         });
