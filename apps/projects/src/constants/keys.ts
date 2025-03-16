@@ -68,4 +68,5 @@ export const invitationKeys = {
 export const notificationKeys = {
   all: ["notifications"] as const,
   unread: () => [...notificationKeys.all, "unread"] as const,
+  preferences: () => [...notificationKeys.all, "preferences"] as const,
 };

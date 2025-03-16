@@ -8,6 +8,7 @@ import {
   invitationKeys,
   labelKeys,
   memberKeys,
+  notificationKeys,
   teamKeys,
   userKeys,
 } from "@/constants/keys";
@@ -16,6 +17,7 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
+import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -52,6 +54,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: invitationKeys.mine,
       queryFn: () => getMyInvitations(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: notificationKeys.preferences(),
+      queryFn: () => getNotificationPreferences(),
     }),
   ]);
 
