@@ -5,15 +5,8 @@ import { updateNotificationPreferences } from "../actions/update-preferences";
 import type {
   NotificationPreferences,
   UpdateNotificationPreferences,
+  NotificationType,
 } from "../types";
-
-type NotificationType =
-  | "story_update"
-  | "objective_update"
-  | "comment_reply"
-  | "mention"
-  | "key_result_update"
-  | "story_comment";
 
 type UpdatePreferenceParams = {
   type: NotificationType;

@@ -33,6 +33,14 @@ export type NotificationPreferences = {
   updatedAt: string;
 };
 
+export type NotificationType =
+  | "story_update"
+  | "objective_update"
+  | "comment_reply"
+  | "mention"
+  | "key_result_update"
+  | "story_comment";
+
 export type UpdateNotificationPreferences = {
   emailEnabled?: boolean;
   inAppEnabled?: boolean;

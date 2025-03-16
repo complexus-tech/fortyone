@@ -3,15 +3,9 @@ import { Box, Flex } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useNotificationPreferences } from "@/modules/notifications/hooks/preferences";
 import { useUpdateNotificationPreferenceMutation } from "@/modules/notifications/hooks/update-preference-mutation";
+import { type NotificationType } from "@/modules/notifications/types";
+import { notificationConfigs } from "../constants/notification-configs";
 import { Entry } from "./entry";
-
-type NotificationType =
-  | "story_update"
-  | "objective_update"
-  | "comment_reply"
-  | "mention"
-  | "key_result_update"
-  | "story_comment";
 
 export const InAppNotifications = () => {
   const { data } = useNotificationPreferences();
@@ -35,32 +29,17 @@ export const InAppNotifications = () => {
       />
       <Box className="p-6">
         <Flex direction="column" gap={6}>
-          <Entry
-            checked={preferences?.story_update.inApp}
-            description="Get notified when a story you're involved with is updated"
-            onChange={(checked) => {
-              handleTogglePreference("story_update", checked);
-            }}
-            title="Story updates"
-          />
-
-          <Entry
-            checked={preferences?.comment_reply.inApp}
-            description="Get notified when someone comments on your stories"
-            onChange={(checked) => {
-              handleTogglePreference("comment_reply", checked);
-            }}
-            title="Comments"
-          />
-
-          <Entry
-            checked={preferences?.mention.inApp}
-            description="Get notified when someone mentions you in a comment or story"
-            onChange={(checked) => {
-              handleTogglePreference("mention", checked);
-            }}
-            title="Mentions"
-          />
+          {notificationConfigs.map((config) => (
+            <Entry
+              checked={preferences?.[config.type]?.inApp}
+              description={config.description}
+              key={config.type}
+              onChange={(checked) => {
+                handleTogglePreference(config.type, checked);
+              }}
+              title={config.title}
+            />
+          ))}
         </Flex>
       </Box>
     </Box>
