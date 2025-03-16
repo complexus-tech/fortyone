@@ -24,7 +24,12 @@ import { useSession } from "next-auth/react";
 import nProgress from "nprogress";
 import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
-import { useAnalytics, useLocalStorage, useTerminology } from "@/hooks";
+import {
+  useAnalytics,
+  useFeatures,
+  useLocalStorage,
+  useTerminology,
+} from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
@@ -65,6 +70,7 @@ export const Header = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { data: myInvitations = [] } = useMyInvitations();
   const { workspace } = useCurrentWorkspace();
+  const features = useFeatures();
 
   useHotkeys("shift+n", () => {
     if (userRole !== "guest") {
@@ -73,13 +79,13 @@ export const Header = () => {
   });
 
   useHotkeys("shift+o", () => {
-    if (userRole !== "guest") {
+    if (userRole !== "guest" && features.objectiveEnabled) {
       setIsObjectivesOpen(true);
     }
   });
 
   useHotkeys("shift+s", () => {
-    if (userRole !== "guest") {
+    if (userRole !== "guest" && features.sprintEnabled) {
       setIsSprintsOpen(true);
     }
   });
