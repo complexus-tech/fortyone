@@ -5,7 +5,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { useSession } from "next-auth/react";
 import Script from "next/script";
-import { redirect } from "next/navigation";
 import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
@@ -37,7 +36,10 @@ export default function GoogleOneTap() {
       const newSession = await getSession();
       if (newSession) {
         const invitations = await getMyInvitations();
-        redirect(getRedirectUrl(newSession, invitations.data || []));
+        window.location.href = getRedirectUrl(
+          newSession,
+          invitations.data || [],
+        );
       }
     } catch (error) {
       console.error("Error signing in:", error);
