@@ -90,7 +90,7 @@ export const Header = () => {
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.complexus.app";
+      window.location.href = "https://www.complexus.app?signedOut=true";
     }
   };
 

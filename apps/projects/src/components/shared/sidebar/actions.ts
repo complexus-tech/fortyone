@@ -6,7 +6,7 @@ import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 
 export const logOut = async () => {
   await signOut();
-  redirect("https://www.complexus.app");
+  redirect("https://www.complexus.app?signedOut=true");
 };
 
 export const changeWorkspace = async (workspaceId: string) => {

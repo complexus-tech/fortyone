@@ -5,6 +5,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { useSession } from "next-auth/react";
 import Script from "next/script";
+import { useSearchParams } from "next/navigation";
 import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
@@ -20,6 +21,7 @@ declare global {
           prompt: (callback: (notification: any) => void) => void;
           cancel: () => void;
           revoke: (hint: string, callback: () => void) => void;
+          disableAutoSelect: () => void;
         };
       };
     };
@@ -28,6 +30,8 @@ declare global {
 
 export default function GoogleOneTap() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+
   const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false);
 
   const handleCredentialResponse = useCallback(async (response: any) => {
@@ -57,6 +61,11 @@ export default function GoogleOneTap() {
           auto_select: true,
           use_fedcm_for_prompt: true,
         });
+
+        // disable auto select if signedOut is true
+        if (searchParams.get("signedOut")) {
+          window.google.accounts.id.disableAutoSelect();
+        }
 
         window.google.accounts.id.prompt((notification: any) => {
           if (notification?.isNotDisplayed()) {
