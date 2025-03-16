@@ -6,6 +6,7 @@ import { useEffect, useCallback, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import Script from "next/script";
 
+const AUTH_GOOGLE_ID = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID;
 declare global {
   interface Window {
     google: {
@@ -40,8 +41,7 @@ export default function GoogleOneTap() {
     if (window?.google && !session) {
       try {
         window.google.accounts.id.initialize({
-          client_id:
-            "930302433843-6qh4lvnflrfhp4au1apftcqnjhh8qfog.apps.googleusercontent.com",
+          client_id: AUTH_GOOGLE_ID,
           callback: handleCredentialResponse,
           context: "signin",
           ux_mode: "popup",

@@ -84,11 +84,11 @@ export default async function RootLayout({
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
           </PostHogProvider>
+          <GoogleOneTap />
         </SessionProvider>
         <Suspense>
           <PostHogPageView />
         </Suspense>
-        <GoogleOneTap />
         <Toaster />
         {/* <div className="pointer-events-none fixed inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       </body>
