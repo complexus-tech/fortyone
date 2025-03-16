@@ -10,19 +10,21 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useFeatures } from "@/hooks";
 
 type MenuItem = {
   name: string;
   icon: ReactNode;
   href: string;
   messages?: number;
+  disabled?: boolean;
 };
 
 export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { getTermDisplay } = useTerminology();
+  const features = useFeatures();
   const links: MenuItem[] = [
     {
       name: "Inbox",
@@ -60,34 +62,37 @@ export const Navigation = () => {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
       href: "/objectives",
+      disabled: !features.objectiveEnabled,
     },
   ];
 
   return (
     <Flex direction="column" gap={2}>
-      {links.map(({ name, icon, href, messages }) => {
-        const isActive = pathname === href;
-        return (
-          <NavLink
-            active={isActive}
-            className={cn({
-              "justify-between": messages,
-            })}
-            href={href}
-            key={name}
-          >
-            <span className="flex items-center gap-2">
-              <span>{icon}</span>
-              <span className="first-letter:capitalize">{name}</span>
-            </span>
-            {messages ? (
-              <Badge color="tertiary" rounded="full" size="sm">
-                {messages}
-              </Badge>
-            ) : null}
-          </NavLink>
-        );
-      })}
+      {links
+        .filter(({ disabled }) => !disabled)
+        .map(({ name, icon, href, messages }) => {
+          const isActive = pathname === href;
+          return (
+            <NavLink
+              active={isActive}
+              className={cn({
+                "justify-between": messages,
+              })}
+              href={href}
+              key={name}
+            >
+              <span className="flex items-center gap-2">
+                <span>{icon}</span>
+                <span className="first-letter:capitalize">{name}</span>
+              </span>
+              {messages ? (
+                <Badge color="tertiary" rounded="full" size="sm">
+                  {messages}
+                </Badge>
+              ) : null}
+            </NavLink>
+          );
+        })}
     </Flex>
   );
 };

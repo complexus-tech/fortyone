@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, Flex } from "ui";
 import { ArrowDownIcon, ObjectiveIcon, SprintsIcon, StoryIcon } from "icons";
-import { useLocalStorage, useTerminology } from "@/hooks";
+import { useLocalStorage, useTerminology, useFeatures } from "@/hooks";
 import { NavLink, TeamColor } from "../../ui";
 
 type TeamProps = {
@@ -16,6 +16,7 @@ type TeamProps = {
 
 export const Team = ({ id, name: teamName, color }: TeamProps) => {
   const { getTermDisplay } = useTerminology();
+  const features = useFeatures();
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
     false,
@@ -31,11 +32,13 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon className="h-[1.1rem]" strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
+      disabled: !features.objectiveEnabled,
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
       icon: <SprintsIcon />,
       href: `/teams/${id}/sprints`,
+      disabled: !features.sprintEnabled,
     },
   ];
 
@@ -82,18 +85,20 @@ export const Team = ({ id, name: teamName, color }: TeamProps) => {
         gap={1}
         suppressHydrationWarning
       >
-        {links.map(({ name, icon, href }) => {
-          const isActive =
-            href === "/"
-              ? pathname === href || pathname.startsWith("/dashboard")
-              : pathname.startsWith(href);
-          return (
-            <NavLink active={isActive} href={href} key={name}>
-              {icon}
-              <span className="capitalize">{name}</span>
-            </NavLink>
-          );
-        })}
+        {links
+          .filter(({ disabled }) => !disabled)
+          .map(({ name, icon, href }) => {
+            const isActive =
+              href === "/"
+                ? pathname === href || pathname.startsWith("/dashboard")
+                : pathname.startsWith(href);
+            return (
+              <NavLink active={isActive} href={href} key={name}>
+                {icon}
+                <span className="capitalize">{name}</span>
+              </NavLink>
+            );
+          })}
       </Flex>
     </Box>
   );

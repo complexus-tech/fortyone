@@ -3,24 +3,17 @@
 import { Box, Text, Switch } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { RowWrapper } from "@/components/ui";
-import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
 import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
-import { useTerminology } from "@/hooks";
+import { useFeatures, useTerminology } from "@/hooks";
 
 export const WorkspaceFeatures = () => {
   const { getTermDisplay } = useTerminology();
-  const {
-    data: settings = {
-      sprintEnabled: true,
-      objectiveEnabled: true,
-      keyResultEnabled: true,
-    },
-  } = useWorkspaceSettings();
+  const features = useFeatures();
   const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
   const handleToggleFeature = (
     feature: "sprintEnabled" | "objectiveEnabled" | "keyResultEnabled",
   ) => {
-    updateSettings({ [feature]: !settings[feature] });
+    updateSettings({ [feature]: !features[feature] });
   };
 
   return (
@@ -43,7 +36,7 @@ export const WorkspaceFeatures = () => {
             </Text>
           </Box>
           <Switch
-            checked={settings.objectiveEnabled}
+            checked={features.objectiveEnabled}
             onCheckedChange={() => {
               handleToggleFeature("objectiveEnabled");
             }}
@@ -63,7 +56,7 @@ export const WorkspaceFeatures = () => {
             </Text>
           </Box>
           <Switch
-            checked={settings.sprintEnabled}
+            checked={features.sprintEnabled}
             onCheckedChange={() => {
               handleToggleFeature("sprintEnabled");
             }}
@@ -86,7 +79,7 @@ export const WorkspaceFeatures = () => {
             </Text>
           </Box>
           <Switch
-            checked={settings.keyResultEnabled}
+            checked={features.keyResultEnabled}
             onCheckedChange={() => {
               handleToggleFeature("keyResultEnabled");
             }}
