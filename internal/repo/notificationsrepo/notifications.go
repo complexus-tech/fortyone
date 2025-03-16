@@ -250,7 +250,7 @@ func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UU
 		WHERE user_id = :user_id AND workspace_id = :workspace_id;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 	}
@@ -309,7 +309,7 @@ func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UU
 		DO UPDATE SET preferences = :preferences, updated_at = CURRENT_TIMESTAMP;
 	`
 
-	updateParams := map[string]interface{}{
+	updateParams := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 		"preferences":  updatedJSON,
@@ -341,7 +341,7 @@ func (r *repo) createDefaultPreferences(ctx context.Context, userID, workspaceID
 		RETURNING preference_id, user_id, workspace_id, preferences, created_at, updated_at;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 		"preferences":  prefsJSON,
@@ -374,7 +374,7 @@ func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID)
 		AND read_at IS NULL;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 	}
