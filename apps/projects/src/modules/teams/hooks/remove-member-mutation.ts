@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useParams, useRouter } from "next/navigation";
 import { memberKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
@@ -9,7 +10,9 @@ import { useAddMemberMutation } from "./add-member-mutation";
 
 export const useRemoveMemberMutation = () => {
   const queryClient = useQueryClient();
+  const { teamId: teamIdParam } = useParams<{ teamId?: string }>();
   const { data: session } = useSession();
+  const router = useRouter();
   const currentUserId = session?.user?.id ?? "";
   const toastId = "remove-member-mutation";
   const { mutate: addMember } = useAddMemberMutation();
@@ -88,6 +91,9 @@ export const useRemoveMemberMutation = () => {
         queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
         queryClient.invalidateQueries({ queryKey: teamKeys.public() });
         queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
+        if (teamIdParam) {
+          router.push("/my-work");
+        }
       }
     },
   });

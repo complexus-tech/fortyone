@@ -1,16 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useParams, useRouter } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import { deleteTeamAction } from "../actions/delete-team";
 
 export const useDeleteTeamMutation = () => {
-  const { teamId: teamIdParam } = useParams<{ teamId?: string }>();
   const queryClient = useQueryClient();
   const { analytics } = useAnalytics();
   const toastId = "delete-team";
-  const router = useRouter();
 
   const mutation = useMutation({
     mutationFn: (id: string) => deleteTeamAction(id),
@@ -48,10 +45,6 @@ export const useDeleteTeamMutation = () => {
         id: toastId,
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-      if (teamIdParam) {
-        // If the team is deleted from the team page, redirect to the my work page
-        router.push("/my-work");
-      }
     },
   });
 
