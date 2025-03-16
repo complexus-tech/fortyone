@@ -27,6 +27,7 @@ type TermEntity = {
   defaultValue: string;
   options: TermOption[];
   key: keyof WorkspaceSettings;
+  disabled?: boolean;
 };
 
 export const TerminologyPreferences = () => {
@@ -75,6 +76,7 @@ export const TerminologyPreferences = () => {
           { label: "Cycle", value: "cycle" },
           { label: "Iteration", value: "iteration" },
         ],
+        disabled: !settings.sprintEnabled,
       },
       {
         name: getTermDisplay("objectiveTerm", {
@@ -90,6 +92,7 @@ export const TerminologyPreferences = () => {
           { label: "Goal", value: "goal" },
           { label: "Project", value: "project" },
         ],
+        disabled: !settings.objectiveEnabled,
       },
       {
         name: getTermDisplay("keyResultTerm", {
@@ -106,9 +109,10 @@ export const TerminologyPreferences = () => {
           { label: "Focus Area", value: "focus area" },
           { label: "Milestone", value: "milestone" },
         ],
+        disabled: !settings.keyResultEnabled,
       },
     ],
-    [getTermDisplay],
+    [getTermDisplay, settings],
   );
 
   const handleTerminologyChange = (
@@ -127,52 +131,54 @@ export const TerminologyPreferences = () => {
           title="Terminology Preferences"
         />
         <Box>
-          {entities.map((entity) => (
-            <RowWrapper
-              className="px-6 last-of-type:border-b-0"
-              key={entity.name}
-            >
-              <Flex align="center" gap={2}>
-                <Flex
-                  align="center"
-                  className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-                  justify="center"
-                >
-                  {entity.icon}
-                </Flex>
-                <Box>
-                  <Text className="font-medium">{entity.name}</Text>
-                  <Text color="muted">{entity.description}</Text>
-                </Box>
-              </Flex>
-              <Select
-                defaultValue={entity.defaultValue}
-                onValueChange={(value) => {
-                  handleTerminologyChange(entity.key, value);
-                }}
-                value={settings[entity.key] as string}
+          {entities
+            .filter((entity) => !entity.disabled)
+            .map((entity) => (
+              <RowWrapper
+                className="px-6 last-of-type:border-b-0"
+                key={entity.name}
               >
-                <Select.Trigger className="h-9 w-max min-w-36 text-base">
-                  <Select.Input />
-                </Select.Trigger>
-                <Select.Content align="center">
-                  <Select.Group>
-                    {entity.options.map((option) => (
-                      <Select.Option
-                        className="text-base"
-                        key={option.value}
-                        value={option.value}
-                      >
-                        <Flex align="center" gap={2}>
-                          {option.label}
-                        </Flex>
-                      </Select.Option>
-                    ))}
-                  </Select.Group>
-                </Select.Content>
-              </Select>
-            </RowWrapper>
-          ))}
+                <Flex align="center" gap={2}>
+                  <Flex
+                    align="center"
+                    className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+                    justify="center"
+                  >
+                    {entity.icon}
+                  </Flex>
+                  <Box>
+                    <Text className="font-medium">{entity.name}</Text>
+                    <Text color="muted">{entity.description}</Text>
+                  </Box>
+                </Flex>
+                <Select
+                  defaultValue={entity.defaultValue}
+                  onValueChange={(value) => {
+                    handleTerminologyChange(entity.key, value);
+                  }}
+                  value={settings[entity.key] as string}
+                >
+                  <Select.Trigger className="h-9 w-max min-w-36 text-base">
+                    <Select.Input />
+                  </Select.Trigger>
+                  <Select.Content align="center">
+                    <Select.Group>
+                      {entity.options.map((option) => (
+                        <Select.Option
+                          className="text-base"
+                          key={option.value}
+                          value={option.value}
+                        >
+                          <Flex align="center" gap={2}>
+                            {option.label}
+                          </Flex>
+                        </Select.Option>
+                      ))}
+                    </Select.Group>
+                  </Select.Content>
+                </Select>
+              </RowWrapper>
+            ))}
         </Box>
       </Box>
 
@@ -189,35 +195,49 @@ export const TerminologyPreferences = () => {
               <StoryIcon />
               My {getTermDisplay("storyTerm", { variant: "plural" })}
             </RowWrapper>
-            <RowWrapper className="justify-start gap-2 px-6 py-3">
-              <SprintsIcon />
-              Active {getTermDisplay("sprintTerm", { variant: "plural" })}
-            </RowWrapper>
-            <RowWrapper className="justify-start gap-2 px-6 py-3">
-              <ObjectiveIcon />
-              All {getTermDisplay("objectiveTerm", { variant: "plural" })}
-            </RowWrapper>
-            <RowWrapper className="justify-start gap-2 border-b-0 px-6 py-3">
-              <OKRIcon />
-              Track {getTermDisplay("keyResultTerm", { variant: "plural" })}
-            </RowWrapper>
+            {settings.sprintEnabled ? (
+              <RowWrapper className="justify-start gap-2 px-6 py-3">
+                <SprintsIcon />
+                Active {getTermDisplay("sprintTerm", { variant: "plural" })}
+              </RowWrapper>
+            ) : null}
+
+            {settings.objectiveEnabled ? (
+              <RowWrapper className="justify-start gap-2 px-6 py-3">
+                <ObjectiveIcon />
+                All {getTermDisplay("objectiveTerm", { variant: "plural" })}
+              </RowWrapper>
+            ) : null}
+
+            {settings.keyResultEnabled ? (
+              <RowWrapper className="justify-start gap-2 border-b-0 px-6 py-3">
+                <OKRIcon />
+                Track {getTermDisplay("keyResultTerm", { variant: "plural" })}
+              </RowWrapper>
+            ) : null}
           </Box>
 
           <Box>
             <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
-              <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
-                Create {getTermDisplay("objectiveTerm", { capitalize: true })}
-              </Button>
-              <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                Start {getTermDisplay("sprintTerm", { capitalize: true })}
-              </Button>
+              {settings.objectiveEnabled ? (
+                <Button color="tertiary" leftIcon={<ObjectiveIcon />}>
+                  Create {getTermDisplay("objectiveTerm", { capitalize: true })}
+                </Button>
+              ) : null}
+              {settings.sprintEnabled ? (
+                <Button color="tertiary" leftIcon={<SprintsIcon />}>
+                  Start {getTermDisplay("sprintTerm", { capitalize: true })}
+                </Button>
+              ) : null}
               <Button color="tertiary" leftIcon={<PlusIcon />}>
                 Create {getTermDisplay("storyTerm", { capitalize: true })}
               </Button>
-              <Button color="tertiary" leftIcon={<OKRIcon />}>
-                Add {getTermDisplay("keyResultTerm", { capitalize: true })}
-              </Button>
+              {settings.keyResultEnabled ? (
+                <Button color="tertiary" leftIcon={<OKRIcon />}>
+                  Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+                </Button>
+              ) : null}
             </Flex>
           </Box>
         </Box>
