@@ -92,7 +92,7 @@ export const useRemoveMemberMutation = () => {
         queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
         queryClient.invalidateQueries({ queryKey: teamKeys.public() });
         queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
-        if (teamIdParam) {
+        if (teamIdParam === teamId) {
           nProgress.start();
           router.push("/my-work");
         }
