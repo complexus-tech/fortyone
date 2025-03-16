@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
+import nProgress from "nprogress";
 import { memberKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
@@ -92,6 +93,7 @@ export const useRemoveMemberMutation = () => {
         queryClient.invalidateQueries({ queryKey: teamKeys.public() });
         queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
         if (teamIdParam) {
+          nProgress.start();
           router.push("/my-work");
         }
       }
