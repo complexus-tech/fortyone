@@ -3,7 +3,7 @@ import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, GitIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useCopyToClipboard, useTerminology } from "@/hooks";
+import { useCopyToClipboard, useTerminology, useUserRole } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
@@ -36,6 +36,7 @@ export const OptionsHeader = ({
   const { mutateAsync } = useRestoreStoryMutation();
   const { getTermDisplay } = useTerminology();
   const { data: automationPreferences } = useAutomationPreferences();
+  const { userRole } = useUserRole();
 
   const generateGitBranchName = () => {
     const branchName =
@@ -110,16 +111,18 @@ export const OptionsHeader = ({
               </span>
             </Button>
           </Tooltip>
-          <Tooltip title="Copy git branch name">
-            <Button
-              color="tertiary"
-              leftIcon={<GitIcon />}
-              onClick={copyBranchName}
-              variant="naked"
-            >
-              <span className="sr-only">Copy git branch name</span>
-            </Button>
-          </Tooltip>
+          {userRole !== "guest" && (
+            <Tooltip title="Copy git branch name">
+              <Button
+                color="tertiary"
+                leftIcon={<GitIcon />}
+                onClick={copyBranchName}
+                variant="naked"
+              >
+                <span className="sr-only">Copy git branch name</span>
+              </Button>
+            </Tooltip>
+          )}
 
           {isDeleted ? (
             <Tooltip
