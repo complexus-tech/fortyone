@@ -66,7 +66,7 @@ export const WorkspaceTeam = ({
                 }}
               >
                 <SettingsIcon />
-                Manage team
+                Team settings
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />

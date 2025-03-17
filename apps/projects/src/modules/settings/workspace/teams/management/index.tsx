@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { Box, Text, Tabs } from "ui";
-import { FilterIcon, SettingsIcon, TeamIcon } from "icons";
+import { FilterIcon, TeamIcon } from "icons";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { StoryStatusIcon, TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
@@ -44,12 +44,6 @@ export const TeamManagement = () => {
             value="workflows"
           >
             Workflow
-          </Tabs.Tab>
-          <Tabs.Tab
-            leftIcon={<SettingsIcon className="h-[1.1rem]" />}
-            value="automations"
-          >
-            Automations
           </Tabs.Tab>
         </Tabs.List>
 

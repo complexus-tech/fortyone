@@ -80,7 +80,7 @@ export const useRemoveMemberMutation = () => {
               ? "You are no longer a member of this team."
               : "Member removed",
           action: {
-            label: "Undo",
+            label: memberId === currentUserId ? "Rejoin" : "Undo",
             onClick: () => {
               addMember({ teamId, memberId });
             },
