@@ -23,7 +23,8 @@ export const OptionsHeader = ({
 }) => {
   const { data: currentUser } = useProfile();
   const { data } = useStoryById(storyId);
-  const { id, teamId, title, sequenceId, deletedAt } = data!;
+  const { id, teamId, title, sequenceId, deletedAt, assigneeId, statusId } =
+    data!;
   const [isOpen, setIsOpen] = useState(false);
   const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
@@ -50,15 +51,24 @@ export const OptionsHeader = ({
       description: "Git branch name copied to clipboard",
     });
 
-    const startedStatus = statuses?.find(
-      (status) => status.category === "started",
-    );
+    const startedStatuses =
+      statuses?.filter((status) => status.category === "started") || [];
     const updatePayload: { assigneeId?: string; statusId?: string } = {};
-    if (automationPreferences?.assignSelfOnBranchCopy) {
+    const currentStatusCategory = statuses?.find(
+      (status) => status.id === statusId,
+    )?.category;
+    if (
+      automationPreferences?.assignSelfOnBranchCopy &&
+      assigneeId !== currentUser?.id
+    ) {
       updatePayload.assigneeId = currentUser?.id;
     }
-    if (automationPreferences?.moveStoryToStartedOnBranch && startedStatus) {
-      updatePayload.statusId = startedStatus.id;
+    if (
+      automationPreferences?.moveStoryToStartedOnBranch &&
+      startedStatuses.length > 0 &&
+      currentStatusCategory !== "started"
+    ) {
+      updatePayload.statusId = startedStatuses[0].id;
     }
     if (Object.keys(updatePayload).length > 0) {
       updateStory({ storyId: id, payload: updatePayload });
