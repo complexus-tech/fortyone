@@ -18,8 +18,8 @@ const categories: { label: string; value: StateCategory }[] = [
   { label: "Backlog", value: "backlog" },
   { label: "Unstarted", value: "unstarted" },
   { label: "Started", value: "started" },
-  { label: "Paused", value: "paused" },
   { label: "Completed", value: "completed" },
+  { label: "Paused", value: "paused" },
   { label: "Cancelled", value: "cancelled" },
 ];
 

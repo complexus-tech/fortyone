@@ -2,12 +2,13 @@
 
 import { useParams } from "next/navigation";
 import { Box, Text, Tabs } from "ui";
-import { FilterIcon, TeamIcon } from "icons";
+import { FilterIcon, TeamIcon, WarningIcon, WorkflowIcon } from "icons";
 import { useTeam } from "@/modules/teams/hooks/use-team";
-import { StoryStatusIcon, TeamColor } from "@/components/ui";
+import { TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
 import { WorkflowSettings } from "./components/workflows";
+import { DeleteTeam } from "./components/delete";
 
 export const TeamManagement = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -40,10 +41,16 @@ export const TeamManagement = () => {
             Members
           </Tabs.Tab>
           <Tabs.Tab
-            leftIcon={<StoryStatusIcon className="h-[1.1rem]" />}
+            leftIcon={<WorkflowIcon className="h-[1.1rem]" />}
             value="workflows"
           >
             Workflow
+          </Tabs.Tab>
+          <Tabs.Tab
+            leftIcon={<WarningIcon className="h-[1.1rem]" />}
+            value="delete"
+          >
+            Danger Zone
           </Tabs.Tab>
         </Tabs.List>
 
@@ -56,6 +63,9 @@ export const TeamManagement = () => {
           </Tabs.Panel>
           <Tabs.Panel value="workflows">
             <WorkflowSettings />
+          </Tabs.Panel>
+          <Tabs.Panel value="delete">
+            <DeleteTeam team={team} />
           </Tabs.Panel>
         </Box>
       </Tabs>
