@@ -36,4 +36,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/users/profile", h.UpdateProfile, auth)
 	app.Delete("/users/profile", h.DeleteProfile, auth)
 	app.Post("/workspaces/switch", h.SwitchWorkspace, auth)
+
+	// Automation preferences endpoints
+	app.Get("/workspaces/{workspaceId}/automation/preferences", h.GetAutomationPreferences, auth)
+	app.Put("/workspaces/{workspaceId}/automation/preferences", h.UpdateAutomationPreferences, auth)
 }

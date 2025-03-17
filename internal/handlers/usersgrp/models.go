@@ -57,6 +57,24 @@ type VerifyEmailRequest struct {
 	Email string `json:"email"`
 }
 
+// AppAutomationPreferences represents the user's automation preferences
+type AppAutomationPreferences struct {
+	UserID                     uuid.UUID `json:"userId"`
+	WorkspaceID                uuid.UUID `json:"workspaceId"`
+	AutoAssignSelf             bool      `json:"autoAssignSelf"`
+	AssignSelfOnBranchCopy     bool      `json:"assignSelfOnBranchCopy"`
+	MoveStoryToStartedOnBranch bool      `json:"moveStoryToStartedOnBranch"`
+	CreatedAt                  time.Time `json:"createdAt"`
+	UpdatedAt                  time.Time `json:"updatedAt"`
+}
+
+// UpdateAutomationPreferencesRequest represents a request to update automation preferences
+type UpdateAutomationPreferencesRequest struct {
+	AutoAssignSelf             *bool `json:"autoAssignSelf,omitempty"`
+	AssignSelfOnBranchCopy     *bool `json:"assignSelfOnBranchCopy,omitempty"`
+	MoveStoryToStartedOnBranch *bool `json:"moveStoryToStartedOnBranch,omitempty"`
+}
+
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
 		ID:                  user.ID,
@@ -80,4 +98,26 @@ func toAppUsers(users []users.CoreUser) []AppUser {
 		appUsers[i] = toAppUser(user)
 	}
 	return appUsers
+}
+
+// Convert core automation preferences to app model
+func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutomationPreferences {
+	return AppAutomationPreferences{
+		UserID:                     prefs.UserID,
+		WorkspaceID:                prefs.WorkspaceID,
+		AutoAssignSelf:             prefs.AutoAssignSelf,
+		AssignSelfOnBranchCopy:     prefs.AssignSelfOnBranchCopy,
+		MoveStoryToStartedOnBranch: prefs.MoveStoryToStartedOnBranch,
+		CreatedAt:                  prefs.CreatedAt,
+		UpdatedAt:                  prefs.UpdatedAt,
+	}
+}
+
+// Convert update request to core update model
+func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) users.CoreUpdateAutomationPreferences {
+	return users.CoreUpdateAutomationPreferences{
+		AutoAssignSelf:             req.AutoAssignSelf,
+		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
+		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
+	}
 }

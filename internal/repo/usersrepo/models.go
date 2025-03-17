@@ -34,6 +34,17 @@ type dbVerificationToken struct {
 	UpdatedAt time.Time  `db:"updated_at"`
 }
 
+// dbAutomationPreferences represents automation preferences in the database
+type dbAutomationPreferences struct {
+	UserID                     uuid.UUID `db:"user_id"`
+	WorkspaceID                uuid.UUID `db:"workspace_id"`
+	AutoAssignSelf             bool      `db:"auto_assign_self"`
+	AssignSelfOnBranchCopy     bool      `db:"assign_self_on_branch_copy"`
+	MoveStoryToStartedOnBranch bool      `db:"move_story_to_started_on_branch"`
+	CreatedAt                  time.Time `db:"created_at"`
+	UpdatedAt                  time.Time `db:"updated_at"`
+}
+
 func toCoreUser(p dbUser) users.CoreUser {
 	return users.CoreUser{
 		ID:                  p.ID,
@@ -69,5 +80,18 @@ func toCoreVerificationToken(dbToken dbVerificationToken) users.CoreVerification
 		TokenType: dbToken.TokenType,
 		CreatedAt: dbToken.CreatedAt,
 		UpdatedAt: dbToken.UpdatedAt,
+	}
+}
+
+// Convert database automation preferences to core model
+func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomationPreferences {
+	return users.CoreAutomationPreferences{
+		UserID:                     p.UserID,
+		WorkspaceID:                p.WorkspaceID,
+		AutoAssignSelf:             p.AutoAssignSelf,
+		AssignSelfOnBranchCopy:     p.AssignSelfOnBranchCopy,
+		MoveStoryToStartedOnBranch: p.MoveStoryToStartedOnBranch,
+		CreatedAt:                  p.CreatedAt,
+		UpdatedAt:                  p.UpdatedAt,
 	}
 }

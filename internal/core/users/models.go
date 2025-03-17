@@ -48,3 +48,21 @@ type CoreNewUser struct {
 	FullName  string
 	AvatarURL string
 }
+
+// CoreAutomationPreferences represents the automation preferences for a user in a workspace
+type CoreAutomationPreferences struct {
+	UserID                     uuid.UUID
+	WorkspaceID                uuid.UUID
+	AutoAssignSelf             bool
+	AssignSelfOnBranchCopy     bool
+	MoveStoryToStartedOnBranch bool
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+}
+
+// CoreUpdateAutomationPreferences represents the fields that can be updated for automation preferences
+type CoreUpdateAutomationPreferences struct {
+	AutoAssignSelf             *bool
+	AssignSelfOnBranchCopy     *bool
+	MoveStoryToStartedOnBranch *bool
+}

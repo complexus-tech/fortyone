@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Token types
@@ -46,6 +47,9 @@ type Repository interface {
 	InvalidateTokens(ctx context.Context, email string) error
 	GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error)
 	UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error
+	// Automation preferences methods
+	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
+	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
 }
 
 // Service provides user-related operations.
@@ -297,15 +301,57 @@ func (s *Service) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, us
 	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserWorkspaceWithTx")
 	defer span.End()
 
-	span.SetAttributes(
+	if err := s.repo.UpdateUserWorkspaceWithTx(ctx, tx, userID, workspaceID); err != nil {
+		s.log.Error(ctx, "Error updating user workspace with transaction: %v", err)
+		span.RecordError(err)
+		return fmt.Errorf("failed to update user last_used_workspace_id: %w", err)
+	}
+
+	span.AddEvent("user workspace updated", trace.WithAttributes(
 		attribute.String("user.id", userID.String()),
 		attribute.String("workspace.id", workspaceID.String()),
-	)
+	))
 
-	if err := s.repo.UpdateUserWorkspaceWithTx(ctx, tx, userID, workspaceID); err != nil {
+	return nil
+}
+
+// GetAutomationPreferences retrieves a user's automation preferences for a workspace.
+func (s *Service) GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error) {
+	s.log.Info(ctx, "business.core.users.GetAutomationPreferences")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetAutomationPreferences")
+	defer span.End()
+
+	preferences, err := s.repo.GetAutomationPreferences(ctx, userID, workspaceID)
+	if err != nil {
+		s.log.Error(ctx, "Error getting automation preferences: %v", err)
 		span.RecordError(err)
-		return err
+		return CoreAutomationPreferences{}, fmt.Errorf("failed to get automation preferences: %w", err)
 	}
+
+	span.AddEvent("automation preferences retrieved", trace.WithAttributes(
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return preferences, nil
+}
+
+// UpdateAutomationPreferences updates a user's automation preferences for a workspace.
+func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error {
+	s.log.Info(ctx, "business.core.users.UpdateAutomationPreferences")
+	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateAutomationPreferences")
+	defer span.End()
+
+	if err := s.repo.UpdateAutomationPreferences(ctx, userID, workspaceID, updates); err != nil {
+		s.log.Error(ctx, "Error updating automation preferences: %v", err)
+		span.RecordError(err)
+		return fmt.Errorf("failed to update automation preferences: %w", err)
+	}
+
+	span.AddEvent("automation preferences updated", trace.WithAttributes(
+		attribute.String("user.id", userID.String()),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
 
 	return nil
 }

@@ -352,3 +352,62 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	user.Token = &tokenString
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
+
+// GetAutomationPreferences retrieves the user's automation preferences for a workspace
+func (h *Handlers) GetAutomationPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.GetAutomationPreferences")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("invalid workspace ID: %w", err), http.StatusBadRequest)
+	}
+
+	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to get automation preferences: %w", err), http.StatusInternalServerError)
+	}
+
+	span.AddEvent("automation preferences retrieved")
+	return web.Respond(ctx, w, toAppAutomationPreferences(preferences), http.StatusOK)
+}
+
+// UpdateAutomationPreferences updates the user's automation preferences for a workspace
+func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.UpdateAutomationPreferences")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("invalid workspace ID: %w", err), http.StatusBadRequest)
+	}
+
+	var req UpdateAutomationPreferencesRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
+	}
+
+	updates := toCoreUpdateAutomationPreferences(req)
+	if err := h.users.UpdateAutomationPreferences(ctx, userID, workspaceID, updates); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to update automation preferences: %w", err), http.StatusInternalServerError)
+	}
+
+	// Get the updated preferences to return to the client
+	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspaceID)
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to get updated automation preferences: %w", err), http.StatusInternalServerError)
+	}
+
+	span.AddEvent("automation preferences updated")
+	return web.Respond(ctx, w, toAppAutomationPreferences(preferences), http.StatusOK)
+}
