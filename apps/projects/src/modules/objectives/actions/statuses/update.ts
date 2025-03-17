@@ -1,7 +1,7 @@
 "use server";
 
 import type { StateCategory } from "@/types/states";
-import { patch } from "@/lib/http";
+import { put } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { ObjectiveStatus } from "../../types";
@@ -17,7 +17,7 @@ export const updateObjectiveStatusAction = async (
   payload: UpdateObjectiveStatus,
 ) => {
   try {
-    const response = await patch<
+    const response = await put<
       UpdateObjectiveStatus,
       ApiResponse<ObjectiveStatus>
     >(`objective-statuses/${statusId}`, payload);
