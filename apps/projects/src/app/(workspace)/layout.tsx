@@ -31,6 +31,7 @@ import { getProfile } from "@/lib/queries/users/profile";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
+import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const getWorkspaces = async (token?: string) => {
@@ -127,6 +128,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.settings(),
       queryFn: () => getWorkspaceSettings(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: userKeys.automationPreferences(),
+      queryFn: () => getAutomationPreferences(),
     }),
   ]);
 

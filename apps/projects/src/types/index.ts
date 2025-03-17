@@ -89,3 +89,14 @@ export type WorkspaceSettings = {
   objectiveEnabled: boolean;
   keyResultEnabled: boolean;
 };
+
+export type AutomationPreferences = {
+  id: string;
+  autoAssignSelf: boolean;
+  assignSelfOnBranchCopy: boolean;
+  moveStoryToStartedOnBranch: boolean;
+};
+
+export type UpdateAutomationPreferences = Partial<
+  Omit<AutomationPreferences, "id">
+>;

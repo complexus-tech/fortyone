@@ -18,6 +18,7 @@ import { getProfile } from "@/lib/queries/users/profile";
 import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
 import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
+import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -58,6 +59,10 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: notificationKeys.preferences(),
       queryFn: () => getNotificationPreferences(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: userKeys.automationPreferences(),
+      queryFn: () => getAutomationPreferences(),
     }),
   ]);
 

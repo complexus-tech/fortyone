@@ -58,6 +58,8 @@ export const teamKeys = {
 export const userKeys = {
   all: ["users"] as const,
   profile: () => [...userKeys.all, "profile"] as const,
+  automationPreferences: () =>
+    [...userKeys.all, "automation-preferences"] as const,
 };
 
 export const invitationKeys = {

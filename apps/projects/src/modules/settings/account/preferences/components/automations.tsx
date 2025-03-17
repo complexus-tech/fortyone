@@ -1,8 +1,10 @@
 import { Box, Flex, Text, Switch } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useTerminology } from "@/hooks";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 
 export const Automations = () => {
+  const { data: preferences } = useAutomationPreferences();
   const { getTermDisplay } = useTerminology();
   return (
     <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
@@ -21,7 +23,10 @@ export const Automations = () => {
                 assign them to yourself by default
               </Text>
             </Box>
-            <Switch name="autoAssignSelf" />
+            <Switch
+              checked={preferences?.autoAssignSelf}
+              name="autoAssignSelf"
+            />
           </Flex>
 
           <Flex align="center" justify="between">
@@ -35,7 +40,10 @@ export const Automations = () => {
                 is moved to the started workflow status
               </Text>
             </Box>
-            <Switch name="autoBranchMoveStatus" />
+            <Switch
+              checked={preferences?.moveStoryToStartedOnBranch}
+              name="autoBranchMoveStatus"
+            />
           </Flex>
 
           <Flex align="center" justify="between">
@@ -48,7 +56,10 @@ export const Automations = () => {
                 is assigned to yourself
               </Text>
             </Box>
-            <Switch name="autoBranchAssign" />
+            <Switch
+              checked={preferences?.assignSelfOnBranchCopy}
+              name="autoBranchAssign"
+            />
           </Flex>
         </Flex>
       </Box>
