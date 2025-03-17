@@ -745,62 +745,23 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateAutomationPreferences")
 	defer span.End()
 
-	// Check if the record exists
-	exists, err := r.automationPreferencesExist(ctx, userID, workspaceID)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to check if preferences exist: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to check if preferences exist"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-
-	if exists {
-		// If record exists, update it
-		return r.updateExistingAutomationPreferences(ctx, userID, workspaceID, updates)
-	}
-
-	// If record doesn't exist, create it with default values plus updates
-	return r.createAutomationPreferencesWithUpdates(ctx, userID, workspaceID, updates)
-}
-
-// automationPreferencesExist checks if preferences exist for a user in a workspace
-func (r *repo) automationPreferencesExist(ctx context.Context, userID, workspaceID uuid.UUID) (bool, error) {
+	// Use a single UPSERT query to handle both insert and update cases
 	query := `
-		SELECT EXISTS (
-			SELECT 1 FROM user_automation_preferences
-			WHERE user_id = :user_id AND workspace_id = :workspace_id
-		);
-	`
-
-	params := map[string]interface{}{
-		"user_id":      userID,
-		"workspace_id": workspaceID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		return false, err
-	}
-	defer stmt.Close()
-
-	var exists bool
-	err = stmt.GetContext(ctx, &exists, params)
-	return exists, err
-}
-
-// updateExistingAutomationPreferences updates an existing preferences record
-func (r *repo) updateExistingAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates users.CoreUpdateAutomationPreferences) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateExistingAutomationPreferences")
-	defer span.End()
-
-	query := `
-		UPDATE user_automation_preferences
-		SET 
-			auto_assign_self = CASE WHEN :auto_assign_self_set THEN :auto_assign_self ELSE auto_assign_self END,
-			assign_self_on_branch_copy = CASE WHEN :assign_self_on_branch_copy_set THEN :assign_self_on_branch_copy ELSE assign_self_on_branch_copy END,
-			move_story_to_started_on_branch = CASE WHEN :move_story_to_started_on_branch_set THEN :move_story_to_started_on_branch ELSE move_story_to_started_on_branch END,
+		INSERT INTO user_automation_preferences (
+			user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
+			move_story_to_started_on_branch, created_at, updated_at
+		) VALUES (
+			:user_id, :workspace_id, 
+			COALESCE(:auto_assign_self, FALSE), 
+			COALESCE(:assign_self_on_branch_copy, FALSE), 
+			COALESCE(:move_story_to_started_on_branch, FALSE),
+			CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+		)
+		ON CONFLICT (user_id, workspace_id) DO UPDATE SET
+			auto_assign_self = CASE WHEN :auto_assign_self_set THEN COALESCE(:auto_assign_self, FALSE) ELSE user_automation_preferences.auto_assign_self END,
+			assign_self_on_branch_copy = CASE WHEN :assign_self_on_branch_copy_set THEN COALESCE(:assign_self_on_branch_copy, FALSE) ELSE user_automation_preferences.assign_self_on_branch_copy END,
+			move_story_to_started_on_branch = CASE WHEN :move_story_to_started_on_branch_set THEN COALESCE(:move_story_to_started_on_branch, FALSE) ELSE user_automation_preferences.move_story_to_started_on_branch END,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = :user_id AND workspace_id = :workspace_id
 		RETURNING user_id;
 	`
 
@@ -812,7 +773,7 @@ func (r *repo) updateExistingAutomationPreferences(ctx context.Context, userID, 
 		"move_story_to_started_on_branch_set": updates.MoveStoryToStartedOnBranch != nil,
 	}
 
-	// Add the actual values only if they're set
+	// Add the actual values if they're set
 	if updates.AutoAssignSelf != nil {
 		params["auto_assign_self"] = *updates.AutoAssignSelf
 	}
@@ -841,66 +802,6 @@ func (r *repo) updateExistingAutomationPreferences(ctx context.Context, userID, 
 	}
 
 	span.AddEvent("automation preferences updated")
-	return nil
-}
-
-// createAutomationPreferencesWithUpdates creates a new preferences record with updates applied
-func (r *repo) createAutomationPreferencesWithUpdates(ctx context.Context, userID, workspaceID uuid.UUID, updates users.CoreUpdateAutomationPreferences) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.CreateAutomationPreferencesWithUpdates")
-	defer span.End()
-
-	autoAssignSelf := false
-	if updates.AutoAssignSelf != nil {
-		autoAssignSelf = *updates.AutoAssignSelf
-	}
-
-	assignSelfOnBranchCopy := false
-	if updates.AssignSelfOnBranchCopy != nil {
-		assignSelfOnBranchCopy = *updates.AssignSelfOnBranchCopy
-	}
-
-	moveStoryToStartedOnBranch := false
-	if updates.MoveStoryToStartedOnBranch != nil {
-		moveStoryToStartedOnBranch = *updates.MoveStoryToStartedOnBranch
-	}
-
-	query := `
-		INSERT INTO user_automation_preferences (
-			user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
-			move_story_to_started_on_branch, created_at, updated_at
-		) VALUES (
-			:user_id, :workspace_id, :auto_assign_self, :assign_self_on_branch_copy, 
-			:move_story_to_started_on_branch, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-		)
-		RETURNING user_id;
-	`
-
-	params := map[string]any{
-		"user_id":                         userID,
-		"workspace_id":                    workspaceID,
-		"auto_assign_self":                autoAssignSelf,
-		"assign_self_on_branch_copy":      assignSelfOnBranchCopy,
-		"move_story_to_started_on_branch": moveStoryToStartedOnBranch,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-	defer stmt.Close()
-
-	var returnedID uuid.UUID
-	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
-		errMsg := fmt.Sprintf("failed to create automation preferences: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create automation preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
-	}
-
-	span.AddEvent("automation preferences created")
 	return nil
 }
 
