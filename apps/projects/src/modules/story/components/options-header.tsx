@@ -1,13 +1,18 @@
 "use client";
 import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
-import { CopyIcon, DeleteIcon, LinkIcon, UndoIcon } from "icons";
+import { CopyIcon, DeleteIcon, GitIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
+import { useProfile } from "@/lib/hooks/profile";
+import { slugify } from "@/utils";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
+import { useUpdateStoryMutation } from "../hooks/update-mutation";
 
 export const OptionsHeader = ({
   isAdminOrOwner,
@@ -16,15 +21,49 @@ export const OptionsHeader = ({
   isAdminOrOwner: boolean;
   storyId: string;
 }) => {
+  const { data: currentUser } = useProfile();
   const { data } = useStoryById(storyId);
-  const { id, teamId, sequenceId, deletedAt } = data!;
+  const { id, teamId, title, sequenceId, deletedAt } = data!;
   const [isOpen, setIsOpen] = useState(false);
   const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
   const { code } = teams.find((team) => team.id === teamId)!;
   const isDeleted = Boolean(deletedAt);
   const { mutate: deleteStory } = useDeleteStoryMutation();
+  const { mutate: updateStory } = useUpdateStoryMutation();
+  const { data: statuses } = useTeamStatuses(teamId);
   const { mutateAsync } = useRestoreStoryMutation();
+  const { getTermDisplay } = useTerminology();
+  const { data: automationPreferences } = useAutomationPreferences();
+
+  const generateGitBranchName = () => {
+    const branchName =
+      `${currentUser?.username}/${code}-${sequenceId}-${slugify(
+        title.slice(0, 32),
+      )}`.toLowerCase();
+    return branchName.replace(/-$/, "");
+  };
+
+  const copyBranchName = async () => {
+    await copyText(generateGitBranchName());
+    toast.info(generateGitBranchName(), {
+      description: "Git branch name copied to clipboard",
+    });
+
+    const startedStatus = statuses?.find(
+      (status) => status.category === "started",
+    );
+    const updatePayload: { assigneeId?: string; statusId?: string } = {};
+    if (automationPreferences?.assignSelfOnBranchCopy) {
+      updatePayload.assigneeId = currentUser?.id;
+    }
+    if (automationPreferences?.moveStoryToStartedOnBranch && startedStatus) {
+      updatePayload.statusId = startedStatus.id;
+    }
+    if (Object.keys(updatePayload).length > 0) {
+      updateStory({ storyId: id, payload: updatePayload });
+    }
+  };
 
   const handleDelete = () => {
     deleteStory(id);
@@ -41,35 +80,34 @@ export const OptionsHeader = ({
           {code}-{sequenceId}
         </Text>
         <Flex gap={2}>
-          <Tooltip title="Copy Story Link">
+          <Tooltip
+            title={`Copy ${getTermDisplay("storyTerm", { capitalize: true })} link`}
+          >
             <Button
               color="tertiary"
-              leftIcon={<LinkIcon className="-rotate-45" strokeWidth={2.5} />}
+              leftIcon={<CopyIcon />}
               onClick={async () => {
                 await copyText(window.location.href);
                 toast.info("Success", {
-                  description: "Link copied to clipboard",
+                  description: `${getTermDisplay("storyTerm", { capitalize: true })} link copied to clipboard`,
                 });
               }}
               suppressHydrationWarning
               variant="naked"
             >
-              <span className="sr-only">Copy story link</span>
+              <span className="sr-only">
+                Copy {getTermDisplay("storyTerm")} link
+              </span>
             </Button>
           </Tooltip>
-          <Tooltip title="Copy Story ID">
+          <Tooltip title="Copy git branch name">
             <Button
               color="tertiary"
-              leftIcon={<CopyIcon />}
-              onClick={async () => {
-                await copyText(id);
-                toast.info("Success", {
-                  description: "Story ID copied to clipboard",
-                });
-              }}
+              leftIcon={<GitIcon />}
+              onClick={copyBranchName}
               variant="naked"
             >
-              <span className="sr-only">Copy story id</span>
+              <span className="sr-only">Copy git branch name</span>
             </Button>
           </Tooltip>
 

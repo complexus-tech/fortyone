@@ -97,3 +97,4 @@ export * from "./invite";
 export * from "./workflow";
 export * from "./workspace";
 export * from "./help";
+export * from "./git";

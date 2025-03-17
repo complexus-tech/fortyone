@@ -31,7 +31,7 @@ export const Sidebar = () => {
             className="mt-3"
             color="tertiary"
             href="mailto:joseph@complexus.app"
-            leftIcon={<EmailIcon className="h-4" />}
+            leftIcon={<EmailIcon />}
             size="sm"
           >
             Contact developer
