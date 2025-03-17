@@ -49,6 +49,7 @@ import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -98,6 +99,7 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
+  const { data: automationPreferences } = useAutomationPreferences();
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
@@ -117,7 +119,10 @@ export const NewStoryDialog = ({
     statusId: defaultStatus?.id,
     endDate: null,
     startDate: null,
-    assigneeId,
+    assigneeId:
+      assigneeId || automationPreferences?.autoAssignSelf
+        ? session.data?.user?.id
+        : null,
     priority,
     objectiveId: objectiveId || null,
     sprintId: sprintId || null,
