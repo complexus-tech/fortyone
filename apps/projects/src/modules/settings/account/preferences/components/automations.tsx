@@ -2,10 +2,18 @@ import { Box, Flex, Text, Switch } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useTerminology } from "@/hooks";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { useUpdateAutomationPreferencesMutation } from "@/lib/hooks/users/update-auto-preferences";
 
 export const Automations = () => {
   const { data: preferences } = useAutomationPreferences();
   const { getTermDisplay } = useTerminology();
+  const { mutate: updatePreferences } =
+    useUpdateAutomationPreferencesMutation();
+
+  const handleToggle = (field: string, checked: boolean) => {
+    updatePreferences({ [field]: checked });
+  };
+
   return (
     <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
@@ -26,6 +34,9 @@ export const Automations = () => {
             <Switch
               checked={preferences?.autoAssignSelf}
               name="autoAssignSelf"
+              onCheckedChange={(checked) => {
+                handleToggle("autoAssignSelf", checked);
+              }}
             />
           </Flex>
 
@@ -43,6 +54,9 @@ export const Automations = () => {
             <Switch
               checked={preferences?.moveStoryToStartedOnBranch}
               name="autoBranchMoveStatus"
+              onCheckedChange={(checked) => {
+                handleToggle("moveStoryToStartedOnBranch", checked);
+              }}
             />
           </Flex>
 
@@ -59,6 +73,9 @@ export const Automations = () => {
             <Switch
               checked={preferences?.assignSelfOnBranchCopy}
               name="autoBranchAssign"
+              onCheckedChange={(checked) => {
+                handleToggle("assignSelfOnBranchCopy", checked);
+              }}
             />
           </Flex>
         </Flex>
