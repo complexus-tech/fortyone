@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
@@ -745,63 +746,140 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateAutomationPreferences")
 	defer span.End()
 
-	// Use a single UPSERT query to handle both insert and update cases
-	query := `
-		INSERT INTO user_automation_preferences (
-			user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
-			move_story_to_started_on_branch, created_at, updated_at
-		) VALUES (
-			:user_id, :workspace_id, 
-			COALESCE(:auto_assign_self, FALSE), 
-			COALESCE(:assign_self_on_branch_copy, FALSE), 
-			COALESCE(:move_story_to_started_on_branch, FALSE),
-			CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-		)
-		ON CONFLICT (user_id, workspace_id) DO UPDATE SET
-			auto_assign_self = CASE WHEN :auto_assign_self_set THEN COALESCE(:auto_assign_self, FALSE) ELSE user_automation_preferences.auto_assign_self END,
-			assign_self_on_branch_copy = CASE WHEN :assign_self_on_branch_copy_set THEN COALESCE(:assign_self_on_branch_copy, FALSE) ELSE user_automation_preferences.assign_self_on_branch_copy END,
-			move_story_to_started_on_branch = CASE WHEN :move_story_to_started_on_branch_set THEN COALESCE(:move_story_to_started_on_branch, FALSE) ELSE user_automation_preferences.move_story_to_started_on_branch END,
-			updated_at = CURRENT_TIMESTAMP
-		RETURNING user_id;
-	`
-
+	// Build the query dynamically based on which fields are provided
+	var setClauses []string
 	params := map[string]any{
-		"user_id":                             userID,
-		"workspace_id":                        workspaceID,
-		"auto_assign_self_set":                updates.AutoAssignSelf != nil,
-		"assign_self_on_branch_copy_set":      updates.AssignSelfOnBranchCopy != nil,
-		"move_story_to_started_on_branch_set": updates.MoveStoryToStartedOnBranch != nil,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
 	}
 
-	// Add the actual values if they're set
-	if updates.AutoAssignSelf != nil {
-		params["auto_assign_self"] = *updates.AutoAssignSelf
-	}
-	if updates.AssignSelfOnBranchCopy != nil {
-		params["assign_self_on_branch_copy"] = *updates.AssignSelfOnBranchCopy
-	}
-	if updates.MoveStoryToStartedOnBranch != nil {
-		params["move_story_to_started_on_branch"] = *updates.MoveStoryToStartedOnBranch
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	// Check if the record exists first
+	existsQuery := `
+		SELECT EXISTS (
+			SELECT 1 FROM user_automation_preferences
+			WHERE user_id = :user_id AND workspace_id = :workspace_id
+		);
+	`
+	existsStmt, err := r.db.PrepareNamedContext(ctx, existsQuery)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
-	defer stmt.Close()
+	defer existsStmt.Close()
 
-	var returnedID uuid.UUID
-	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
-		errMsg := fmt.Sprintf("failed to update automation preferences: %s", err)
+	var exists bool
+	if err := existsStmt.GetContext(ctx, &exists, params); err != nil {
+		errMsg := fmt.Sprintf("failed to check if preferences exist: %s", err)
 		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to update automation preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
+		span.RecordError(errors.New("failed to check if preferences exist"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 
-	span.AddEvent("automation preferences updated")
+	// Handle different cases for insert vs update
+	if !exists {
+		// Insert case - create a new record with provided values or defaults
+		insertQuery := `
+			INSERT INTO user_automation_preferences (
+				user_id, workspace_id, 
+				auto_assign_self, 
+				assign_self_on_branch_copy, 
+				move_story_to_started_on_branch, 
+				created_at, updated_at
+			) VALUES (
+				:user_id, :workspace_id, 
+				:auto_assign_self, 
+				:assign_self_on_branch_copy, 
+				:move_story_to_started_on_branch, 
+				CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+			);
+		`
+
+		// Set values or defaults
+		params["auto_assign_self"] = false
+		if updates.AutoAssignSelf != nil {
+			params["auto_assign_self"] = *updates.AutoAssignSelf
+		}
+
+		params["assign_self_on_branch_copy"] = false
+		if updates.AssignSelfOnBranchCopy != nil {
+			params["assign_self_on_branch_copy"] = *updates.AssignSelfOnBranchCopy
+		}
+
+		params["move_story_to_started_on_branch"] = false
+		if updates.MoveStoryToStartedOnBranch != nil {
+			params["move_story_to_started_on_branch"] = *updates.MoveStoryToStartedOnBranch
+		}
+
+		insertStmt, err := r.db.PrepareNamedContext(ctx, insertQuery)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+		defer insertStmt.Close()
+
+		if _, err := insertStmt.ExecContext(ctx, params); err != nil {
+			errMsg := fmt.Sprintf("failed to create automation preferences: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to create automation preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+
+		span.AddEvent("automation preferences created")
+	} else {
+		// Update case - only update fields that were provided
+		if updates.AutoAssignSelf != nil {
+			setClauses = append(setClauses, "auto_assign_self = :auto_assign_self")
+			params["auto_assign_self"] = *updates.AutoAssignSelf
+		}
+
+		if updates.AssignSelfOnBranchCopy != nil {
+			setClauses = append(setClauses, "assign_self_on_branch_copy = :assign_self_on_branch_copy")
+			params["assign_self_on_branch_copy"] = *updates.AssignSelfOnBranchCopy
+		}
+
+		if updates.MoveStoryToStartedOnBranch != nil {
+			setClauses = append(setClauses, "move_story_to_started_on_branch = :move_story_to_started_on_branch")
+			params["move_story_to_started_on_branch"] = *updates.MoveStoryToStartedOnBranch
+		}
+
+		// If no fields to update, just return
+		if len(setClauses) == 0 {
+			return nil
+		}
+
+		// Add updated_at to SET clauses
+		setClauses = append(setClauses, "updated_at = CURRENT_TIMESTAMP")
+
+		// Build the update query
+		updateQuery := fmt.Sprintf(`
+			UPDATE user_automation_preferences
+			SET %s
+			WHERE user_id = :user_id AND workspace_id = :workspace_id;
+		`, strings.Join(setClauses, ", "))
+
+		updateStmt, err := r.db.PrepareNamedContext(ctx, updateQuery)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+		defer updateStmt.Close()
+
+		if _, err := updateStmt.ExecContext(ctx, params); err != nil {
+			errMsg := fmt.Sprintf("failed to update automation preferences: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to update automation preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+
+		span.AddEvent("automation preferences updated")
+	}
+
 	return nil
 }
 
