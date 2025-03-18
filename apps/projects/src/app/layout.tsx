@@ -4,7 +4,6 @@ import { Suspense, type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { auth } from "@/auth";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
@@ -21,17 +20,11 @@ export const metadata: Metadata = {
   title: "Complexus",
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const session = await auth();
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
-        <SessionProvider session={session}>
+        <SessionProvider>
           <Providers>
             {children}
             <Toaster />

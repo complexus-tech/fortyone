@@ -7,7 +7,7 @@ import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
 import { MyWorkSkeleton } from "./components/my-work-skeleton";
 
-export const ListMyStories = () => {
+const ListMyStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
     "kanban",
@@ -22,3 +22,5 @@ export const ListMyStories = () => {
     </MyWorkProvider>
   );
 };
+
+export default ListMyStories;
