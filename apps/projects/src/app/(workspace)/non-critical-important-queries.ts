@@ -38,7 +38,6 @@ export const fetchNonCriticalImportantQueries = (
     queryKey: sprintKeys.lists(),
     queryFn: getSprints,
   });
-
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
     queryFn: getObjectives,
