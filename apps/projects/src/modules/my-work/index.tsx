@@ -1,6 +1,5 @@
 "use client";
 import { Suspense } from "react";
-import { Box } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { Header } from "./components/header";
@@ -18,10 +17,7 @@ export const ListMyStories = () => {
     <MyWorkProvider>
       <Header layout={layout} setLayout={setLayout} />
       <Suspense fallback={<MyWorkSkeleton layout={layout} />}>
-        <Box>
-          <MyWorkSkeleton layout={layout} />
-          <ListMyWork layout={layout} />
-        </Box>
+        <ListMyWork layout={layout} />
       </Suspense>
     </MyWorkProvider>
   );
