@@ -1,10 +1,12 @@
 "use client";
 import { Suspense } from "react";
+import { Box } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { Header } from "./components/header";
 import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
+import { MyWorkSkeleton } from "./components/my-work-skeleton";
 
 export const ListMyStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
@@ -15,8 +17,11 @@ export const ListMyStories = () => {
   return (
     <MyWorkProvider>
       <Header layout={layout} setLayout={setLayout} />
-      <Suspense fallback={<div>Loading...</div>}>
-        <ListMyWork layout={layout} />
+      <Suspense fallback={<MyWorkSkeleton layout={layout} />}>
+        <Box>
+          <MyWorkSkeleton layout={layout} />
+          <ListMyWork layout={layout} />
+        </Box>
       </Suspense>
     </MyWorkProvider>
   );
