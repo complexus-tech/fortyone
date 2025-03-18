@@ -8,8 +8,10 @@ import { useNotificationConfigs } from "../hooks/use-notification-configs";
 import { Entry } from "./entry";
 
 export const EmailNotifications = () => {
-  const { data } = useNotificationPreferences();
-  const preferences = data?.preferences;
+  const {
+    data: { preferences },
+  } = useNotificationPreferences();
+
   const { mutate } = useUpdateNotificationPreferenceMutation();
   const notificationConfigs = useNotificationConfigs();
 
@@ -32,7 +34,7 @@ export const EmailNotifications = () => {
         <Flex direction="column" gap={6}>
           {notificationConfigs.map((config) => (
             <Entry
-              checked={preferences?.[config.type]?.email}
+              checked={preferences[config.type].email}
               description={config.description}
               key={config.type}
               onChange={(checked) => {
