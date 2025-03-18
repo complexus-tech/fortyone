@@ -1,4 +1,5 @@
 import { Box, Container } from "ui";
+import { Suspense } from "react";
 import { BodyContainer } from "@/components/shared/body";
 import { Overview } from "./components/overview";
 import { Activities } from "./components/activities";
@@ -15,7 +16,9 @@ export const SummaryPage = () => {
           <Overview />
           <Contributions />
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
-            <MyStories />
+            <Suspense fallback={<div>Loading...</div>}>
+              <MyStories />
+            </Suspense>
             <Activities />
           </Box>
         </Container>
