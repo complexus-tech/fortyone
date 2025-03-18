@@ -27,6 +27,7 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>

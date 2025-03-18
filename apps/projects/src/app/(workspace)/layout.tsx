@@ -18,18 +18,22 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
+  if (!session) {
+    redirect("/login");
+  }
+
   const headersList = await headers();
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
-  const token = session?.token || "";
+  const token = session.token || "";
 
   // First try to find workspace in session
-  let workspace = session?.workspaces.find(
+  let workspace = session.workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
   );
 
   // Only fetch workspaces if not found in session
-  let workspaces = session?.workspaces || [];
+  let workspaces = session.workspaces;
   if (!workspace) {
     workspaces = await getWorkspaces(token);
     workspace = workspaces.find(

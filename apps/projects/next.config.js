@@ -4,7 +4,6 @@ module.exports = {
   transpilePackages: ["ui", "icons"],
   experimental: {
     reactCompiler: true,
-    viewTransition: true,
   },
   compiler: {
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for now
