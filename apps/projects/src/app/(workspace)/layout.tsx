@@ -5,8 +5,11 @@ import { redirect } from "next/navigation";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
-import { teamKeys } from "@/constants/keys";
+import { teamKeys, statusKeys } from "@/constants/keys";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { objectiveKeys } from "@/modules/objectives/constants";
+import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
+import { getStatuses } from "@/lib/queries/states/get-states";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 
 export default async function RootLayout({
@@ -44,10 +47,20 @@ export default async function RootLayout({
   // kick off non-critical important queries without waiting for them
   const queryClient = fetchNonCriticalImportantQueries(getQueryClient(), token);
   // await critical queries
-  await queryClient.prefetchQuery({
-    queryKey: teamKeys.lists(),
-    queryFn: getTeams,
-  });
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: teamKeys.lists(),
+      queryFn: getTeams,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: statusKeys.lists(),
+      queryFn: getStatuses,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: objectiveKeys.statuses(),
+      queryFn: getObjectiveStatuses,
+    }),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
