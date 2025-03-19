@@ -15,7 +15,7 @@ export default async function Page(props: {
 
   const { sprintId } = params;
 
-  await queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: storyKeys.sprint(sprintId),
     queryFn: () => getStories({ sprintId }),
   });

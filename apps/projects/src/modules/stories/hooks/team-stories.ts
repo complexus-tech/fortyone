@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { storyKeys } from "../constants";
 import { getStories } from "../queries/get-stories";
 
 export const useTeamStories = (teamId: string) => {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: storyKeys.team(teamId),
     queryFn: () => getStories({ teamId }),
   });

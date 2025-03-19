@@ -20,7 +20,7 @@ export default async function Page(props: {
 
   const queryClient = getQueryClient();
 
-  await queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: storyKeys.team(teamId),
     queryFn: () => getStories({ teamId }),
   });
