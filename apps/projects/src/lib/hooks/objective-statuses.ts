@@ -5,6 +5,6 @@ import { getObjectiveStatuses } from "../../modules/objectives/queries/statuses"
 export const useObjectiveStatuses = () => {
   return useQuery({
     queryKey: objectiveKeys.statuses(),
-    queryFn: getObjectiveStatuses,
+    queryFn: () => getObjectiveStatuses(),
   });
 };

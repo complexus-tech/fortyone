@@ -5,6 +5,6 @@ import { userKeys } from "@/constants/keys";
 export const useAutomationPreferences = () => {
   return useQuery({
     queryKey: userKeys.automationPreferences(),
-    queryFn: getAutomationPreferences,
+    queryFn: () => getAutomationPreferences(),
   });
 };

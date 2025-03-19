@@ -32,15 +32,15 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
-    queryFn: getPublicTeams,
+    queryFn: () => getPublicTeams(),
   });
   queryClient.prefetchQuery({
     queryKey: sprintKeys.lists(),
-    queryFn: getSprints,
+    queryFn: () => getSprints(),
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
-    queryFn: getObjectives,
+    queryFn: () => getObjectives(),
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
@@ -48,11 +48,11 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
-    queryFn: getMyInvitations,
+    queryFn: () => getMyInvitations(),
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(),
-    queryFn: getUnreadNotifications,
+    queryFn: () => getUnreadNotifications(),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
@@ -64,7 +64,7 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
-    queryFn: getMembers,
+    queryFn: () => getMembers(),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),

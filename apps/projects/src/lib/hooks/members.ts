@@ -5,6 +5,6 @@ import { memberKeys } from "@/constants/keys";
 export const useMembers = () => {
   return useQuery({
     queryKey: memberKeys.lists(),
-    queryFn: getMembers,
+    queryFn: () => getMembers(),
   });
 };
