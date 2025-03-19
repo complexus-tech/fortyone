@@ -26,7 +26,7 @@ export const Calendar = ({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-50 bg-white/50 z-50 dark:bg-dark-200/80 backdrop-blur w-max shadow-lg",
+        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-50 bg-white/80 z-50 dark:bg-dark-200/90 backdrop-blur w-max shadow-lg",
         className
       )}
       classNames={{
