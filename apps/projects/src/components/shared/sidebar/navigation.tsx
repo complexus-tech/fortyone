@@ -86,7 +86,7 @@ export const Navigation = () => {
                 <span className="first-letter:capitalize">{name}</span>
               </span>
               {messages ? (
-                <Badge color="tertiary" rounded="full" size="sm">
+                <Badge rounded="full" size="sm">
                   {messages}
                 </Badge>
               ) : null}
