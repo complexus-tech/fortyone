@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: "Summary",
 };
 
-export default async function Page() {
+export default function Page() {
   const queryClient = getQueryClient();
-  await Promise.all([
+  Promise.all([
     queryClient.prefetchQuery({
       queryKey: ["activities"],
       queryFn: getActivities,
