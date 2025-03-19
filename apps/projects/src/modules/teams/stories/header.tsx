@@ -1,8 +1,7 @@
 "use client";
-import { Badge, BreadCrumbs, Flex } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
-import { Suspense } from "react";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -13,21 +12,9 @@ import {
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTerminology } from "@/hooks";
 import { useTeamOptions } from "./provider";
-
-const StoriesCount = ({ teamId }: { teamId: string }) => {
-  const { data: stories = [] } = useTeamStories(teamId);
-  const { getTermDisplay } = useTerminology();
-
-  return (
-    <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-      {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
-    </Badge>
-  );
-};
 
 export const Header = ({
   isExpanded,
@@ -66,15 +53,6 @@ export const Header = ({
             },
           ]}
         />
-        <Suspense
-          fallback={
-            <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-              Loading...
-            </Badge>
-          }
-        >
-          <StoriesCount teamId={teamId} />
-        </Suspense>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />

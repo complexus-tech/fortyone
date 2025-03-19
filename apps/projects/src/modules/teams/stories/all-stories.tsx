@@ -5,10 +5,10 @@ import { isAfter, isBefore, isThisWeek, isToday } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { ArrowUpDownIcon } from "icons";
+import { ArrowUpDownIcon, StoryIcon } from "icons";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useTeamOptions } from "@/modules/teams/stories/provider";
-import { StoriesBoard } from "@/components/ui";
+import { StoriesBoard, StoryStatusIcon } from "@/components/ui";
 import type { StoriesLayout } from "@/components/ui";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
@@ -101,9 +101,18 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     >
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
-          <Tabs.Tab value="all">All stories</Tabs.Tab>
-          <Tabs.Tab value="active">Active</Tabs.Tab>
-          <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
+          <Tabs.Tab leftIcon={<StoryIcon />} value="all">
+            All stories
+          </Tabs.Tab>
+          <Tabs.Tab
+            leftIcon={<StoryStatusIcon category="unstarted" />}
+            value="active"
+          >
+            Active
+          </Tabs.Tab>
+          <Tabs.Tab leftIcon={<StoryStatusIcon />} value="backlog">
+            Backlog
+          </Tabs.Tab>
         </Tabs.List>
         <Text
           className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
