@@ -4,7 +4,6 @@ import { Suspense, type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
@@ -28,9 +27,6 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
-  if (!session) {
-    redirect("/login");
-  }
 
   return (
     <html className={font.className} lang="en" suppressHydrationWarning>
