@@ -11,7 +11,6 @@ export const Activities = () => {
       <Flex align="center" className="mb-5" justify="between">
         <Text fontSize="lg">Recent activities</Text>
       </Flex>
-
       {activities.length === 0 ? (
         <Flex
           align="center"

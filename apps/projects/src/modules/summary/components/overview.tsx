@@ -1,6 +1,5 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
-import { useSession } from "next-auth/react";
 import { useSummary } from "@/lib/hooks/summary";
 import { useTerminology } from "@/hooks";
 
@@ -33,52 +32,36 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 );
 
 export const Overview = () => {
-  const { data: session } = useSession();
   const { data: summary } = useSummary();
   const { getTermDisplay } = useTerminology();
   const overview = [
     {
-      count: summary?.closed,
+      count: summary.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
     },
     {
-      count: summary?.overdue,
+      count: summary.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
     },
     {
-      count: summary?.inProgress,
+      count: summary.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
     },
     {
-      count: summary?.created,
+      count: summary.created,
       title: "Created by you",
     },
     {
-      count: summary?.assigned,
+      count: summary.assigned,
       title: "Assigned to you",
     },
   ];
 
-  const timeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
-  };
   return (
-    <Box>
-      <Text as="h2" className="mb-2" fontSize="3xl" fontWeight="medium">
-        Good {timeOfDay()}, {session?.user?.name}.
-      </Text>
-      <Text color="muted" fontSize="lg">
-        Here&rsquo;s what&rsquo;s happening with your{" "}
-        {getTermDisplay("storyTerm", { variant: "plural" })}.
-      </Text>
-      <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
-        {overview.map((item) => (
-          <Card key={item.title} {...item} />
-        ))}
-      </Box>
+    <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
+      {overview.map((item) => (
+        <Card key={item.title} {...item} />
+      ))}
     </Box>
   );
 };
