@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { getActivities } from "../queries/activities/get-activities";
 
 export const useActivities = () => {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: ["activities"],
     queryFn: getActivities,
   });
