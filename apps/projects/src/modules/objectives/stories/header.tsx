@@ -1,7 +1,8 @@
 "use client";
-import { Badge, BreadCrumbs, Flex } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { ObjectiveIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
 import { useTerminology } from "@/hooks";
 import { useObjectiveOptions } from "./provider";
 
@@ -28,8 +28,8 @@ export const Header = ({
     teamId: string;
     objectiveId: string;
   }>();
+  const [tab] = useQueryState("tab", parseAsString.withDefault("overview"));
   const { getTermDisplay } = useTerminology();
-  const { data: stories = [] } = useObjectiveStories(objectiveId);
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useObjectives();
   const { name: teamName, color: teamColor } = teams.find(
@@ -51,34 +51,43 @@ export const Header = ({
             },
             {
               name: objectiveName,
-              icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
+              icon: <ObjectiveIcon className="h-[1.05rem]" />,
             },
             {
-              name: getTermDisplay("storyTerm", {
-                variant: "plural",
-                capitalize: true,
-              }),
-              icon: <StoryIcon className="h-[1.1rem]" strokeWidth={2} />,
+              name:
+                tab === "stories"
+                  ? getTermDisplay("storyTerm", {
+                      variant: "plural",
+                      capitalize: true,
+                    })
+                  : "Overview",
+              icon:
+                tab === "stories" ? (
+                  <StoryIcon className="h-[1.1rem]" />
+                ) : (
+                  <ObjectiveIcon className="h-[1.05rem]" />
+                ),
             },
           ]}
         />
-        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
-        </Badge>
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesFilterButton
-          filters={filters}
-          resetFilters={resetFilters}
-          setFilters={setFilters}
-        />
-        <StoriesViewOptionsButton
-          layout={layout}
-          setViewOptions={setViewOptions}
-          viewOptions={viewOptions}
-        />
-        <span className="text-gray-200 dark:text-dark-100">|</span>
+        {tab === "stories" && (
+          <>
+            <LayoutSwitcher layout={layout} setLayout={setLayout} />
+            <StoriesFilterButton
+              filters={filters}
+              resetFilters={resetFilters}
+              setFilters={setFilters}
+            />
+            <StoriesViewOptionsButton
+              layout={layout}
+              setViewOptions={setViewOptions}
+              viewOptions={viewOptions}
+            />
+            <span className="text-gray-200 dark:text-dark-100">|</span>
+          </>
+        )}
         <NewStoryButton objectiveId={objectiveId} teamId={teamId} />
       </Flex>
     </HeaderContainer>

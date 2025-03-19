@@ -5,7 +5,7 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { Box, Button, Tabs, Text } from "ui";
-import { ArrowUpDownIcon, CopyIcon } from "icons";
+import { ArrowUpDownIcon, CopyIcon, ObjectiveIcon, StoryIcon } from "icons";
 import { toast } from "sonner";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
@@ -24,7 +24,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { data: statuses = [] } = useStatuses();
   const { data: sprints = [] } = useSprints();
   const { getTermDisplay } = useTerminology();
-  const tabs = ["overview", "all", "active", "backlog"] as const;
+  const tabs = ["overview", "stories"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
     parseAsStringLiteral(tabs).withDefault("overview"),
@@ -46,12 +46,6 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     .filter((state) => state.category === "completed")
     .map((state) => state.id);
   const { viewOptions, filters } = useObjectiveOptions();
-  const backlogStatuses = statuses
-    .filter((state) => state.category === "backlog")
-    .map((state) => state.id);
-  const activeStatuses = statuses
-    .filter((state) => state.category === "started")
-    .map((state) => state.id);
 
   //filters
   const filteredStories = useMemo(() => {
@@ -89,25 +83,21 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     return newStories;
   }, [stories, filters]);
 
-  const backlog = filteredStories.filter((story) =>
-    backlogStatuses.includes(story.statusId),
-  );
-  const activeStories = filteredStories.filter((story) =>
-    activeStatuses.includes(story.statusId),
-  );
-
   const [isCopied, setIsCopied] = useState(false);
 
   return (
     <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
       <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
         <Tabs.List className="h-min">
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="all">
-            All {getTermDisplay("storyTerm", { variant: "plural" })}
+          <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
+            Overview
           </Tabs.Tab>
-          <Tabs.Tab value="active">Active</Tabs.Tab>
-          <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
+          <Tabs.Tab leftIcon={<StoryIcon />} value="stories">
+            {getTermDisplay("storyTerm", {
+              variant: "plural",
+              capitalize: true,
+            })}
+          </Tabs.Tab>
         </Tabs.List>
         {tab !== "overview" ? (
           <Text
@@ -141,28 +131,11 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       <Tabs.Panel value="overview">
         <Overview />
       </Tabs.Panel>
-
-      <Tabs.Panel value="all">
+      <Tabs.Panel value="stories">
         <StoriesBoard
           className="h-[calc(100vh-7.7rem)]"
           layout={layout}
           stories={filteredStories}
-          viewOptions={viewOptions}
-        />
-      </Tabs.Panel>
-      <Tabs.Panel value="active">
-        <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
-          layout={layout}
-          stories={activeStories}
-          viewOptions={viewOptions}
-        />
-      </Tabs.Panel>
-      <Tabs.Panel value="backlog">
-        <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
-          layout={layout}
-          stories={backlog}
           viewOptions={viewOptions}
         />
       </Tabs.Panel>
