@@ -12,6 +12,8 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: {

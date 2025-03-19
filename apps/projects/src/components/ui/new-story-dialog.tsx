@@ -144,6 +144,7 @@ export const NewStoryDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const editor = useEditor({
@@ -161,6 +162,7 @@ export const NewStoryDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const handleCreateStory = async () => {

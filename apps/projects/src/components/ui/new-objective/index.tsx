@@ -124,6 +124,7 @@ export const NewObjectiveDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const editor = useEditor({
@@ -137,6 +138,7 @@ export const NewObjectiveDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const handleCreateObjective = () => {

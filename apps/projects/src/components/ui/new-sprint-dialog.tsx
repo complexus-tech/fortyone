@@ -76,6 +76,7 @@ export const NewSprintDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const editor = useEditor({
@@ -91,6 +92,7 @@ export const NewSprintDialog = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const { mutateAsync } = useCreateSprintMutation();
