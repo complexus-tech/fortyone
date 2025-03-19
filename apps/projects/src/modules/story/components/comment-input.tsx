@@ -66,6 +66,7 @@ export const CommentInput = ({
     ],
     content: initialComment ?? "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const handleComment = () => {

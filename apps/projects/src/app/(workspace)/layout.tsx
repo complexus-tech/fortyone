@@ -69,8 +69,10 @@ export default async function RootLayout({
   ]);
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      {children}
-    </HydrationBoundary>
+    <div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        {children}
+      </HydrationBoundary>
+    </div>
   );
 }

@@ -89,6 +89,7 @@ export const MainDetails = ({ storyId }: { storyId: string }) => {
         description: editor.getText(),
       });
     },
+    immediatelyRender: false,
   });
 
   const titleEditor = useEditor({
@@ -105,6 +106,7 @@ export const MainDetails = ({ storyId }: { storyId: string }) => {
         title: editor.getText(),
       });
     },
+    immediatelyRender: false,
   });
 
   return (
