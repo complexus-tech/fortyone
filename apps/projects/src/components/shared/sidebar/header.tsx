@@ -188,7 +188,7 @@ export const Header = () => {
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
-              <Menu.Item className="pl-3" onSelect={handleCreateWorkspace}>
+              <Menu.Item onSelect={handleCreateWorkspace}>
                 <PlusIcon />
                 Create workspace
               </Menu.Item>
