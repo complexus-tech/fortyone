@@ -1,3 +1,4 @@
+/* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
 
 import Credentials from "next-auth/providers/credentials";
@@ -6,9 +7,9 @@ import type { Workspace, UserRole } from "@/types";
 import { authenticateWithToken } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 
-// const domain =
-//   process.env.NODE_ENV === "production" ? ".complexus.app" : "localhost";
-// const useSecureCookies = process.env.NODE_ENV === "production";
+const domain =
+  process.env.NODE_ENV === "production" ? ".complexus.app" : "localhost";
+const useSecureCookies = process.env.NODE_ENV === "production";
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
@@ -52,18 +53,18 @@ export const {
     }),
   ],
 
-  // cookies: {
-  //   sessionToken: {
-  //     name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: "lax",
-  //       path: "/",
-  //       domain: useSecureCookies ? domain : undefined,
-  //       secure: useSecureCookies,
-  //     },
-  //   },
-  // },
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: useSecureCookies ? domain : undefined,
+        secure: useSecureCookies,
+      },
+    },
+  },
   callbacks: {
     jwt({ token, user, trigger, session }) {
       if (user) {
