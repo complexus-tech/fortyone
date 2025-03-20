@@ -10,7 +10,6 @@ import { getNotificationPreferences } from "@/modules/notifications/queries/get-
 export const metadata: Metadata = {
   title: "Settings",
 };
-export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
