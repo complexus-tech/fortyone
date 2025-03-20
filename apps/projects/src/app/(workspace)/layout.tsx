@@ -2,14 +2,20 @@ import type { ReactNode } from "react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { teamKeys, statusKeys } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
-import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
-import { getStatuses } from "@/lib/queries/states/get-states";
+import {
+  getCachedTeams,
+  getCachedStatuses,
+  getCachedObjectiveStatuses,
+} from "@/lib/cached-queries";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
+
+// Add route segment config options to improve caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0; // Revalidate at every request
 
 export default async function RootLayout({
   children,
@@ -22,6 +28,7 @@ export default async function RootLayout({
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
   const token = session?.token || "";
+
   const workspaces = session?.workspaces || [];
 
   // redirect to login if not authenticated on local dev only
@@ -48,15 +55,15 @@ export default async function RootLayout({
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
-      queryFn: getTeams,
+      queryFn: getCachedTeams,
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
-      queryFn: getStatuses,
+      queryFn: getCachedStatuses,
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
-      queryFn: getObjectiveStatuses,
+      queryFn: getCachedObjectiveStatuses,
     }),
   ]);
 
