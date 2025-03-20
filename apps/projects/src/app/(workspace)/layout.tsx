@@ -6,7 +6,6 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
 import { teamKeys, statusKeys } from "@/constants/keys";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
@@ -20,32 +19,27 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
-  if (!session) {
-    redirect("/login");
-  }
 
   const headersList = await headers();
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
-  const token = session.token || "";
+  const token = session?.token || "";
+  const workspaces = session?.workspaces || [];
 
-  // First try to find workspace in session
-  let workspace = session.workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
-  );
-
-  // Only fetch workspaces if not found in session
-  let workspaces = session.workspaces;
-  if (!workspace) {
-    workspaces = await getWorkspaces(token);
-    workspace = workspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
-    );
+  // redirect to login if not authenticated on local dev only
+  // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for this
+  if (!session && process.env.NODE_ENV === "development") {
+    redirect("/login");
   }
 
   if (workspaces.length === 0) {
-    redirect("/onboarding/create");
+    redirect("https://www.complexus.app/onboarding/create");
   }
+
+  // First try to find workspace in session
+  const workspace = workspaces.find(
+    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
+  );
 
   if (!workspace) {
     redirect("/unauthorized");
