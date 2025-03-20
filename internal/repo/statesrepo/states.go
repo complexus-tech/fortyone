@@ -31,7 +31,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreSt
 	ctx, span := web.AddSpan(ctx, "business.repository.states.List")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
 
@@ -352,7 +352,7 @@ func (r *repo) CountStatusesInCategory(ctx context.Context, teamID uuid.UUID, ca
 	ctx, span := web.AddSpan(ctx, "business.repository.states.CountStatusesInCategory")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":  teamID,
 		"category": category,
 	}
