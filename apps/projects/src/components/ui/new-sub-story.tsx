@@ -72,6 +72,7 @@ export const NewSubStory = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const editor = useEditor({
@@ -89,6 +90,7 @@ export const NewSubStory = ({
     ],
     content: "",
     editable: true,
+    immediatelyRender: false,
   });
 
   const handleCreateStory = () => {

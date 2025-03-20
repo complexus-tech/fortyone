@@ -35,10 +35,11 @@ export default async function RootLayout({
           <Providers>
             {children}
             <Toaster />
+            <Suspense>
+              <PostHogPageView />
+            </Suspense>
           </Providers>
-          <Suspense>
-            <PostHogPageView />
-          </Suspense>
+
           <ProgressBar />
         </SessionProvider>
         <OnlineStatusMonitor />
