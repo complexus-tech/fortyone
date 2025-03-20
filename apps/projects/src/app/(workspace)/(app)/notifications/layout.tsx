@@ -15,7 +15,6 @@ export const metadata: Metadata = {
 export default function Layout({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
 
-  // Start fetch but don't await it
   queryClient.prefetchQuery({
     queryKey: notificationKeys.all,
     queryFn: getNotifications,
