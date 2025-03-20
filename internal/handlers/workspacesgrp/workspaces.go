@@ -326,21 +326,6 @@ func (h *Handlers) GetWorkspaceSettings(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	// Get user ID from context
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-
-	// Check if user has access to the workspace
-	_, err = h.workspaces.Get(ctx, workspaceID, userID)
-	if err != nil {
-		if errors.Is(err, workspaces.ErrNotFound) {
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
 	// Get or create the settings
 	settings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
 	if err != nil {

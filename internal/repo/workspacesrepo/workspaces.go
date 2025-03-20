@@ -392,7 +392,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 			AND wm.user_id = :user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
 	}
@@ -510,7 +510,7 @@ func (r *repo) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UU
 		WHERE workspace_id = :workspace_id AND user_id = :user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
 		"role":         role,
@@ -569,7 +569,7 @@ func (r *repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) 
 			workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
