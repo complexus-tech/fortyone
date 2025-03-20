@@ -1,5 +1,3 @@
-"use server";
-
 import { get } from "@/lib/http";
 import type { Sprint } from "@/modules/sprints/types";
 import type { ApiResponse } from "@/types";
