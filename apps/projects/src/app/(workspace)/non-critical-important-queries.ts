@@ -1,4 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { getObjectives } from "@/modules/objectives/queries/get-objectives";
+import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import {
   labelKeys,
   teamKeys,
@@ -10,19 +12,15 @@ import {
   memberKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
-import {
-  getCachedObjectives,
-  getCachedSprints,
-  getCachedLabels,
-  getCachedPublicTeams,
-  getCachedMyInvitations,
-  getCachedAutomationPreferences,
-  getCachedUnreadNotifications,
-  getCachedWorkspaceSettings,
-  getCachedProfile,
-  getCachedMembers,
-  getCachedWorkspaces,
-} from "@/lib/cached-queries";
+import { getLabels } from "@/lib/queries/labels/get-labels";
+import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
+import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
+import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
+import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
+import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
+import { getProfile } from "@/lib/queries/users/profile";
+import { getMembers } from "@/lib/queries/members/get-members";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
@@ -30,47 +28,47 @@ export const fetchNonCriticalImportantQueries = (
 ) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
-    queryFn: () => getCachedAutomationPreferences(),
+    queryFn: () => getAutomationPreferences(),
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
-    queryFn: () => getCachedPublicTeams(),
+    queryFn: () => getPublicTeams(),
   });
   queryClient.prefetchQuery({
     queryKey: sprintKeys.lists(),
-    queryFn: () => getCachedSprints(),
+    queryFn: () => getSprints(),
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
-    queryFn: () => getCachedObjectives(),
+    queryFn: () => getObjectives(),
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
-    queryFn: () => getCachedLabels(),
+    queryFn: () => getLabels(),
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
-    queryFn: () => getCachedMyInvitations(),
+    queryFn: () => getMyInvitations(),
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(),
-    queryFn: () => getCachedUnreadNotifications(),
+    queryFn: () => getUnreadNotifications(),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
-    queryFn: () => getCachedWorkspaceSettings(),
+    queryFn: () => getWorkspaceSettings(),
   });
   queryClient.prefetchQuery({
     queryKey: userKeys.profile(),
-    queryFn: () => getCachedProfile(),
+    queryFn: () => getProfile(),
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
-    queryFn: () => getCachedMembers(),
+    queryFn: () => getMembers(),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: () => getCachedWorkspaces(token),
+    queryFn: () => getWorkspaces(token),
   });
   return queryClient;
 };
