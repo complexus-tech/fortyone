@@ -21,6 +21,7 @@ import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
@@ -29,26 +30,38 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
     queryFn: () => getAutomationPreferences(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
     queryFn: () => getPublicTeams(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: sprintKeys.lists(),
     queryFn: () => getSprints(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
     queryFn: () => getObjectives(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
     queryFn: () => getLabels(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
     queryFn: () => getMyInvitations(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(),
@@ -57,18 +70,26 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
     queryFn: () => getWorkspaceSettings(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: userKeys.profile(),
     queryFn: () => getProfile(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
     queryFn: () => getMembers(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
     queryFn: () => getWorkspaces(token),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
   return queryClient;
 };

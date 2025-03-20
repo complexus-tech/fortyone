@@ -9,6 +9,7 @@ import { teamKeys, statusKeys } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 
 export const dynamic = "force-dynamic";
@@ -51,14 +52,20 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
       queryFn: getTeams,
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+      gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
       queryFn: getStatuses,
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+      gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
       queryFn: getObjectiveStatuses,
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+      gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
     }),
   ]);
 

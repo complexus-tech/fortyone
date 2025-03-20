@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { sprintKeys } from "@/constants/keys";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getTeamSprints } from "../queries/get-team-sprints";
 
 export const useTeamSprints = (teamId: string) => {
@@ -7,5 +8,7 @@ export const useTeamSprints = (teamId: string) => {
     queryKey: sprintKeys.team(teamId),
     queryFn: () => getTeamSprints(teamId),
     enabled: Boolean(teamId),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
   });
 };
