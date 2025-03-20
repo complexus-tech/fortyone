@@ -12,7 +12,9 @@ const makeQueryClient = () => {
         // With SSR, we usually want to set some default staleTime
         // above 0 to avoid refetching immediately on the client
         staleTime: DURATION_FROM_SECONDS.MINUTE * 6,
-        gcTime: DURATION_FROM_SECONDS.MINUTE * 15,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMount: true,
         retry: 1,
       },
       mutations: {
