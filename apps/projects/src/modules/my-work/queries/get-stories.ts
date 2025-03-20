@@ -1,5 +1,3 @@
-"use server";
-
 import { get } from "@/lib/http";
 import type { Story } from "@/modules/stories/types";
 import type { ApiResponse } from "@/types";

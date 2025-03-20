@@ -2,14 +2,17 @@
 import type { Options } from "ky";
 import ky from "ky";
 import { headers } from "next/headers";
+import { cache } from "react";
 import { auth } from "@/auth";
 import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-const createClient = async () => {
+// Cache client creation with workspace context using React's cache function
+const getClientContext = cache(async () => {
   const headersList = await headers();
-  const subdomain = headersList.get("host")!.split(".")[0];
+  const host = headersList.get("host");
+  const subdomain = host ? host.split(".")[0] : "";
   const session = await auth();
 
   const workspaces = session?.workspaces || [];
@@ -18,7 +21,8 @@ const createClient = async () => {
   );
 
   const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
-  return ky.create({
+
+  const client = ky.create({
     prefixUrl,
     hooks: {
       beforeError: [
@@ -33,47 +37,72 @@ const createClient = async () => {
       ],
     },
   });
-};
 
-const addAuth = async (options?: Options) => {
-  const session = await auth();
-  if (session) {
-    return {
-      headers: {
+  const authHeaders = session
+    ? {
         Authorization: `Bearer ${session.token}`,
-      },
-      ...options,
-    };
-  }
-  return options;
-};
+      }
+    : {};
+
+  return { client, authHeaders };
+});
 
 export const get = async <T>(url: string, options?: Options) => {
-  const client = await createClient();
-  const authenticatedOptions = await addAuth(options);
-  return client.get(url, authenticatedOptions).json<T>();
+  const { client, authHeaders } = await getClientContext();
+  const mergedOptions = {
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+    ...options,
+  };
+  return client.get(url, mergedOptions).json<T>();
 };
 
 export const post = async <T, U>(url: string, json: T, options?: Options) => {
-  const client = await createClient();
-  const authenticatedOptions = await addAuth(options);
-  return client.post(url, { json, ...authenticatedOptions }).json<U>();
+  const { client, authHeaders } = await getClientContext();
+  const mergedOptions = {
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+    ...options,
+  };
+  return client.post(url, { json, ...mergedOptions }).json<U>();
 };
 
 export const put = async <T, U>(url: string, json: T, options?: Options) => {
-  const client = await createClient();
-  const authenticatedOptions = await addAuth(options);
-  return client.put(url, { json, ...authenticatedOptions }).json<U>();
+  const { client, authHeaders } = await getClientContext();
+  const mergedOptions = {
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+    ...options,
+  };
+  return client.put(url, { json, ...mergedOptions }).json<U>();
 };
 
 export const patch = async <T, U>(url: string, json: T, options?: Options) => {
-  const client = await createClient();
-  const authenticatedOptions = await addAuth(options);
-  return client.patch(url, { json, ...authenticatedOptions }).json<U>();
+  const { client, authHeaders } = await getClientContext();
+  const mergedOptions = {
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+    ...options,
+  };
+  return client.patch(url, { json, ...mergedOptions }).json<U>();
 };
 
 export const remove = async <T>(url: string, options?: Options) => {
-  const client = await createClient();
-  const authenticatedOptions = await addAuth(options);
-  return client.delete(url, authenticatedOptions).json<T>();
+  const { client, authHeaders } = await getClientContext();
+  const mergedOptions = {
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+    ...options,
+  };
+  return client.delete(url, mergedOptions).json<T>();
 };
