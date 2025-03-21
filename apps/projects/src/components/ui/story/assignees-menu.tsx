@@ -67,7 +67,7 @@ const Items = ({
   const self = members.find(({ id }) => id === session?.user?.id);
 
   return (
-    <Popover.Content align={align} className="w-72">
+    <Popover.Content align={align} className="w-80">
       <Command>
         <Command.Input autoFocus placeholder={placeholder} />
         <Divider className="my-2" />

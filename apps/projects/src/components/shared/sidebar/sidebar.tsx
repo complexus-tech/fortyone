@@ -11,7 +11,7 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Box className="flex h-screen flex-col justify-between bg-gray-50/40 px-4 pb-6 dark:bg-black">
+    <Box className="flex h-screen flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-black">
       <Box>
         <Header />
         <Navigation />
@@ -19,7 +19,7 @@ export const Sidebar = () => {
       </Box>
 
       <Box>
-        <Box className="rounded-xl bg-white p-4 shadow-lg shadow-gray-100 dark:bg-dark-300 dark:shadow-none">
+        <Box className="rounded-xl border-[0.5px] border-gray-100 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
           <Text color="gradient" fontWeight="medium">
             System Under Development
           </Text>
