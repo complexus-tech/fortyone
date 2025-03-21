@@ -80,6 +80,7 @@ export const {
       if (trigger === "update") {
         if (session.activeWorkspace) {
           token.lastUsedWorkspaceId = session.activeWorkspace.id;
+          token.workspaces = session.workspaces;
         } else {
           token.workspaces = session.workspaces;
         }
