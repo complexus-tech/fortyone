@@ -5,6 +5,6 @@ import { getNotifications } from "../queries/get-notifications";
 export const useNotifications = () => {
   return useSuspenseQuery({
     queryKey: notificationKeys.all,
-    queryFn: getNotifications,
+    queryFn: () => getNotifications(),
   });
 };
