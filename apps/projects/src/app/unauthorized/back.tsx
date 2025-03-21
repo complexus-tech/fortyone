@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "ui";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { useAnalytics } from "@/hooks";
