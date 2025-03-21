@@ -89,7 +89,7 @@ export const {
       return token;
     },
     async session({ session, token }) {
-      if (!token.workspaces) {
+      if (!token.workspaces || (token.workspaces as Workspace[]).length === 0) {
         const workspaces = await getWorkspaces(token.accessToken as string);
         token.workspaces = workspaces;
       }
