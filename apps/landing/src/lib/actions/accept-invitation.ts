@@ -1,7 +1,7 @@
 "use server";
 
 import ky from "ky";
-import { auth } from "@/auth";
+import { auth, refreshSession } from "@/auth";
 import type { ApiResponse } from "@/types";
 import { requestError } from "../fetch-error";
 
@@ -18,6 +18,7 @@ export async function acceptInvitation(token: string) {
     });
 
     const data = await response.json<ApiResponse<null>>();
+    await refreshSession();
     return data;
   } catch (error) {
     return requestError<null>(error);

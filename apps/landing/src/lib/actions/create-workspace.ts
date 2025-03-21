@@ -26,6 +26,7 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
       .json<ApiResponse<Workspace>>();
     await updateSession({
       activeWorkspace: workspace.data!,
+      workspaces: undefined,
     }).catch();
 
     return workspace;
