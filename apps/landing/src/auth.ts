@@ -99,6 +99,7 @@ export const {
             picture: user.image,
             accessToken: user.token,
             lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+            workspaces: user.workspaces,
           };
         }
         if (account.provider === "google") {
@@ -116,16 +117,25 @@ export const {
             email: googleUser.email,
             accessToken: googleUser.token,
             lastUsedWorkspaceId: googleUser.lastUsedWorkspaceId,
+            workspaces: googleUser.workspaces,
           };
         }
       }
       if (trigger === "update") {
-        token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        if (session.activeWorkspace) {
+          token.lastUsedWorkspaceId = session.activeWorkspace.id;
+        } else {
+          token.workspaces = session.workspaces;
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      const workspaces = await getWorkspaces(token.accessToken as string);
+      if (!token.workspaces) {
+        const workspaces = await getWorkspaces(token.accessToken as string);
+        token.workspaces = workspaces;
+      }
+      const workspaces = token.workspaces as Workspace[];
       const activeWorkspace =
         workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
         workspaces.at(0);
@@ -152,3 +162,7 @@ export const {
   },
   debug: true,
 });
+
+export const refreshSession = async () => {
+  await updateSession({ workspaces: undefined });
+};
