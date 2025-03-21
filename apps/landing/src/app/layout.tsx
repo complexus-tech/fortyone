@@ -5,7 +5,6 @@ import { SessionProvider } from "next-auth/react";
 import { instrumentSans, satoshi } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
-import { auth } from "@/auth";
 import { JsonLd } from "@/components/shared";
 import { PostHogProvider } from "./posthog";
 import { Toaster } from "./toaster";
@@ -66,12 +65,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const session = await auth();
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
       <head>
@@ -80,7 +74,7 @@ export default async function RootLayout({
       <body
         className={cn(satoshi.variable, instrumentSans.variable, "relative")}
       >
-        <SessionProvider session={session}>
+        <SessionProvider>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
           </PostHogProvider>
@@ -89,7 +83,6 @@ export default async function RootLayout({
             <PostHogPageView />
           </Suspense>
         </SessionProvider>
-
         <Toaster />
         {/* <div className="pointer-events-none fixed inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       </body>
