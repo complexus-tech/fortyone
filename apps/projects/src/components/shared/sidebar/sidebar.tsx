@@ -19,7 +19,7 @@ export const Sidebar = () => {
       </Box>
 
       <Box>
-        <Box className="rounded-xl bg-white p-4 shadow-lg shadow-gray-100 dark:bg-dark-200 dark:shadow-none">
+        <Box className="rounded-xl bg-white p-4 shadow-lg shadow-gray-100 dark:bg-dark-300 dark:shadow-none">
           <Text color="gradient" fontWeight="medium">
             System Under Development
           </Text>

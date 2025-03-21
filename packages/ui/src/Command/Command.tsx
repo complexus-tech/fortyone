@@ -46,7 +46,7 @@ const CommandInput = forwardRef<
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-200/90 backdrop-blur z-50 border border-gray-50 dark:border-dark-50 w-max shadow-sm shadow-dark/10 dark:shadow-dark/20 mt-1 py-1",
+  "bg-white/80 dark:bg-dark-300/90 backdrop-blur z-50 border border-gray-50 dark:border-dark-100 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
   {
     variants: {
       rounded: {
