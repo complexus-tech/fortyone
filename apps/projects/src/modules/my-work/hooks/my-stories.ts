@@ -5,6 +5,6 @@ import { getMyStories } from "../queries/get-stories";
 export const useMyStories = () => {
   return useQuery({
     queryKey: storyKeys.mine(),
-    queryFn: getMyStories,
+    queryFn: () => getMyStories(),
   });
 };

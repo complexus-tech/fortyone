@@ -3,7 +3,7 @@ import { NotificationsIcon } from "icons";
 import { Flex, Text } from "ui";
 import { useNotifications } from "./hooks/notifications";
 
-const SelectNotificationSkeleton = () => {
+export const SelectNotificationSkeleton = () => {
   return (
     <Flex align="center" className="h-full" justify="center">
       <Flex align="center" direction="column">

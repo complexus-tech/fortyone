@@ -1,5 +1,5 @@
-import { NotificationsSkeleton } from "@/modules/notifications/notifications-skeleton";
+import { SelectNotificationSkeleton } from "@/modules/notifications/message";
 
 export default function Loading() {
-  return <NotificationsSkeleton />;
+  return <SelectNotificationSkeleton />;
 }
