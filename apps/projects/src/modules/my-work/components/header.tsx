@@ -2,7 +2,6 @@
 import { BreadCrumbs, Flex, Badge } from "ui";
 import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { Suspense } from "react";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -14,17 +13,6 @@ import { useTerminology } from "@/hooks";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
-const StoriesCount = () => {
-  const { data } = useMyStories();
-  const { getTermDisplay } = useTerminology();
-
-  return (
-    <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-      {data.length} {getTermDisplay("storyTerm", { variant: "plural" })}
-    </Badge>
-  );
-};
-
 export const Header = ({
   layout,
   setLayout,
@@ -32,6 +20,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const { data } = useMyStories();
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
@@ -58,15 +47,9 @@ export const Header = ({
             },
           ]}
         />
-        <Suspense
-          fallback={
-            <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-              Loading...
-            </Badge>
-          }
-        >
-          <StoriesCount />
-        </Suspense>
+        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
+          {data.length} {getTermDisplay("storyTerm", { variant: "plural" })}
+        </Badge>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />

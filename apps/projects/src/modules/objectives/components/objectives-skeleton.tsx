@@ -8,10 +8,7 @@ import { TableHeader } from "./heading";
 export const ObjectivesSkeleton = ({ isInTeam }: { isInTeam?: boolean }) => {
   return (
     <BodyContainer className="h-[calc(100vh-3.7rem)]">
-      {/* Reuse the original header */}
       <TableHeader isInTeam={isInTeam} />
-
-      {/* Objective Cards */}
       {Array.from({ length: 8 }).map((_, index) => (
         <RowWrapper className="px-5 py-3 md:px-12" key={index}>
           <Box className="flex w-[300px] shrink-0 items-center gap-2">
@@ -31,28 +28,22 @@ export const ObjectivesSkeleton = ({ isInTeam }: { isInTeam?: boolean }) => {
                 <Skeleton className="h-5 w-8" />
               </Box>
             )}
-
             <Box className="flex w-[40px] shrink-0 items-center">
               <Skeleton className="h-6 w-6 rounded-full" />
             </Box>
-
             <Box className="flex w-[60px] shrink-0 items-center gap-1.5 pl-0.5">
               <Skeleton className="h-4 w-4 rounded-full" />
               <Skeleton className="h-5 w-10" />
             </Box>
-
             <Box className="w-[120px] shrink-0">
               <Skeleton className="h-5 w-24" />
             </Box>
-
             <Box className="w-[100px] shrink-0">
               <Skeleton className="h-5 w-20" />
             </Box>
-
             <Box className="w-[100px] shrink-0">
               <Skeleton className="h-5 w-24" />
             </Box>
-
             <Box className="w-[120px] shrink-0">
               <Skeleton className="h-5 w-20" />
             </Box>

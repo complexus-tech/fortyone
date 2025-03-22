@@ -61,8 +61,13 @@ export const CallToAction = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Button href="/signup" rounded="full" size="lg">
-                Get Started Free
+              <Button
+                className="md:px-4"
+                href="/signup"
+                rounded="full"
+                size="lg"
+              >
+                Manage Projects Free
               </Button>
             </motion.span>
             <motion.span
@@ -75,7 +80,7 @@ export const CallToAction = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-4 md:pl-4 md:pr-5"
+                className="px-4 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {
