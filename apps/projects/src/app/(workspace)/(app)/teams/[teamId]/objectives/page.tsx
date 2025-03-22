@@ -11,7 +11,7 @@ export default async function Page({
 }) {
   const { teamId } = await params;
   const queryClient = getQueryClient();
-  queryClient.prefetchQuery({
+  await queryClient.prefetchQuery({
     queryKey: objectiveKeys.team(teamId),
     queryFn: () => getTeamObjectives(teamId),
   });

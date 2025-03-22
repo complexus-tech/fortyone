@@ -1,9 +1,9 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { notificationKeys } from "@/constants/keys";
 import { getNotificationPreferences } from "../queries/get-preferences";
 
 export const useNotificationPreferences = () => {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: notificationKeys.preferences(),
     queryFn: getNotificationPreferences,
   });
