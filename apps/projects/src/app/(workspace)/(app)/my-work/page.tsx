@@ -9,13 +9,13 @@ export const metadata: Metadata = {
   title: "My Work",
 };
 
-export default async function Page() {
+export default function Page() {
   const queryClient = getQueryClient();
 
   // Start timing
   const startTime = performance.now();
 
-  await queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: storyKeys.mine(),
     queryFn: () => getMyStories(),
   });
@@ -34,6 +34,8 @@ export default async function Page() {
   return (
     <HydrationBoundary state={dehydratedState}>
       <ListMyStories />
+
+      {/* <>stories</> */}
     </HydrationBoundary>
   );
 }
