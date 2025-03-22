@@ -2,6 +2,9 @@
 "use client";
 import { Box, Container, Divider, Flex, Skeleton, Wrapper } from "ui";
 import { BodyContainer } from "@/components/shared";
+import { ActivitiesSkeleton } from "./activities-skeleton";
+import { LinksSkeleton } from "./links-skeleton";
+import { AttachmentsSkeleton } from "./attachments-skeleton";
 
 export const MainDetailsSkeleton = () => {
   return (
@@ -34,46 +37,13 @@ export const MainDetailsSkeleton = () => {
           </Box>
         </Wrapper>
 
-        {/* Links skeleton */}
-        <Wrapper className="mb-4">
-          <Flex align="center" className="mb-4" justify="between">
-            <Skeleton className="h-6 w-24 rounded" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </Flex>
-          <Box className="pl-2">
-            <Flex align="center" className="mb-4" gap={3}>
-              <Skeleton className="h-5 w-5 rounded" />
-              <Skeleton className="h-5 w-48 rounded" />
-            </Flex>
-          </Box>
-        </Wrapper>
+        <LinksSkeleton />
 
-        {/* Attachments skeleton */}
-        <Wrapper className="mb-4 mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80">
-          <Flex align="center" className="mb-4" justify="between">
-            <Skeleton className="h-6 w-32 rounded" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </Flex>
-        </Wrapper>
+        <AttachmentsSkeleton />
 
         <Divider className="my-6" />
 
-        {/* Activities skeleton */}
-        <Box>
-          <Skeleton className="mb-6 h-6 w-32 rounded" />
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Flex align="center" className="mb-5" gap={3} key={index}>
-              <Skeleton className="size-8 shrink-0 rounded-full" />
-              <Box className="w-full">
-                <Flex align="center" gap={2}>
-                  <Skeleton className="h-5 w-24 rounded" />
-                  <Skeleton className="h-5 w-16 rounded" />
-                </Flex>
-                <Skeleton className="mt-1 h-4 w-2/3 rounded" />
-              </Box>
-            </Flex>
-          ))}
-        </Box>
+        <ActivitiesSkeleton />
       </Container>
     </BodyContainer>
   );

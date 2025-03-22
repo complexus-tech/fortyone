@@ -21,14 +21,17 @@ import type { DetailedStory } from "../types";
 import { useStoryActivities } from "../hooks/story-activities";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
+import { LinksSkeleton } from "./links-skeleton";
+import { ActivitiesSkeleton } from "./activities-skeleton";
 import { Activities, Attachments } from ".";
 
 const DEBOUNCE_DELAY = 500; // 500ms delay
 
 export const MainDetails = ({ storyId }: { storyId: string }) => {
   const { data } = useStoryById(storyId);
-  const { data: links = [] } = useLinks(storyId);
-  const { data: activities = [] } = useStoryActivities(storyId);
+  const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
+  const { data: activities = [], isLoading: isActivitiesLoading } =
+    useStoryActivities(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
 
@@ -125,12 +128,16 @@ export const MainDetails = ({ storyId }: { storyId: string }) => {
           subStories={subStories}
           teamId={teamId}
         />
-        <Links
-          isLinksOpen={isLinksOpen}
-          links={links}
-          setIsLinksOpen={setIsLinksOpen}
-          storyId={storyId}
-        />
+        {isLinksLoading ? (
+          <LinksSkeleton />
+        ) : (
+          <Links
+            isLinksOpen={isLinksOpen}
+            links={links}
+            setIsLinksOpen={setIsLinksOpen}
+            storyId={storyId}
+          />
+        )}
         <Attachments
           className={cn(
             "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
@@ -142,7 +149,11 @@ export const MainDetails = ({ storyId }: { storyId: string }) => {
           )}
         />
         <Divider className="my-6" />
-        <Activities activities={allActivities} storyId={storyId} />
+        {isActivitiesLoading ? (
+          <ActivitiesSkeleton />
+        ) : (
+          <Activities activities={allActivities} storyId={storyId} />
+        )}
       </Container>
     </BodyContainer>
   );

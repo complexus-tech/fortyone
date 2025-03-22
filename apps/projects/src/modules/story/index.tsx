@@ -1,12 +1,23 @@
 "use client";
 import { ResizablePanel } from "ui";
-import { usePathname } from "next/navigation";
 import { MainDetails } from "./components/main-details";
 import { Options } from "./components/options";
+import { useStoryById } from "./hooks/story";
+import { StorySkeleton } from "./components/story-skeleton";
 
-export const StoryPage = ({ storyId }: { storyId: string }) => {
-  const pathname = usePathname();
-  const isNotifications = pathname.includes("notifications");
+export const StoryPage = ({
+  storyId,
+  isNotifications,
+}: {
+  storyId: string;
+  isNotifications?: boolean;
+}) => {
+  const { isPending } = useStoryById(storyId);
+
+  if (isPending) {
+    return <StorySkeleton isNotifications={isNotifications} />;
+  }
+
   return (
     <ResizablePanel
       autoSaveId={

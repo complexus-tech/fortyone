@@ -21,5 +21,5 @@ export const NotificationDetails = ({
     });
   }, [queryClient]);
 
-  return <StoryPage storyId={entityId} />;
+  return <StoryPage isNotifications storyId={entityId} />;
 };
