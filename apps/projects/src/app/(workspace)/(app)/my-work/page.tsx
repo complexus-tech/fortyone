@@ -9,15 +9,30 @@ export const metadata: Metadata = {
   title: "My Work",
 };
 
-export default function Page() {
+export default async function Page() {
   const queryClient = getQueryClient();
-  queryClient.prefetchQuery({
+
+  // Start timing
+  const startTime = performance.now();
+
+  await queryClient.prefetchQuery({
     queryKey: storyKeys.mine(),
     queryFn: () => getMyStories(),
   });
 
+  // End timing
+  const endTime = performance.now();
+  // eslint-disable-next-line no-console -- debug
+  console.log(`Query prefetching took ${endTime - startTime}ms`);
+
+  const dehydratedState = dehydrate(queryClient);
+  // eslint-disable-next-line no-console -- debug
+  console.log(`Dehydration took ${performance.now() - endTime}ms`);
+  // eslint-disable-next-line no-console -- debug
+  console.log("Dehydrated state:", dehydratedState);
+
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    <HydrationBoundary state={dehydratedState}>
       <ListMyStories />
     </HydrationBoundary>
   );
