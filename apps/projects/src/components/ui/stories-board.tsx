@@ -177,7 +177,7 @@ export const StoriesBoard = ({
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
 
-  const { mutateAsync } = useUpdateStoryMutation();
+  const { mutate } = useUpdateStoryMutation();
 
   // Memoize the isColumnVisible function
   const isColumnVisible = useCallback(
@@ -198,15 +198,15 @@ export const StoriesBoard = ({
     setActiveStory(story);
   };
 
-  const updateStory = async (
-    storyId: string,
-    payload: Partial<DetailedStory>,
-  ) => {
-    await mutateAsync({ storyId, payload });
-  };
-
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
+      const updateStory = (
+        storyId: string,
+        payload: Partial<DetailedStory>,
+      ) => {
+        mutate({ storyId, payload });
+      };
+
       const { groupBy } = viewOptions;
 
       if (e.over) {
@@ -258,7 +258,7 @@ export const StoriesBoard = ({
 
       setActiveStory(null);
     },
-    [viewOptions.groupBy, updateStory],
+    [viewOptions, mutate],
   );
 
   // Memoize the ordered stories
