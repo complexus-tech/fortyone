@@ -10,14 +10,14 @@ import { ObjectivesSkeleton } from "./components/objectives-skeleton";
 export const ObjectivesList = () => {
   const { data: objectives = [], isPending } = useObjectives();
 
+  if (isPending) {
+    return <ObjectivesSkeleton />;
+  }
+
   return (
     <>
       <ObjectivesHeader />
-      {isPending ? (
-        <ObjectivesSkeleton />
-      ) : (
-        <ListObjectives objectives={objectives} />
-      )}
+      <ListObjectives objectives={objectives} />
     </>
   );
 };
@@ -26,14 +26,14 @@ export const TeamObjectivesList = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: objectives = [], isPending } = useTeamObjectives(teamId);
 
+  if (isPending) {
+    return <ObjectivesSkeleton isInTeam />;
+  }
+
   return (
     <>
       <TeamObjectivesHeader />
-      {isPending ? (
-        <ObjectivesSkeleton isInTeam />
-      ) : (
-        <ListObjectives isInTeam objectives={objectives} />
-      )}
+      <ListObjectives isInTeam objectives={objectives} />
     </>
   );
 };
