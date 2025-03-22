@@ -1,15 +1,16 @@
 "use client";
-import { Suspense } from "react";
+
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import { BoardSkeleton } from "@/components/ui/board-skeleton";
+import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
 import { AllStories } from "./all-stories";
 import { Sidebar } from "./sidebar";
+import { StoriesSkeleton } from "./skeleton";
 
-export const ListSprintStories = () => {
+export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:sprints:layout",
     "kanban",
@@ -18,6 +19,11 @@ export const ListSprintStories = () => {
     "objective:sprints:isExpanded",
     false,
   );
+  const { isPending } = useSprintStories(sprintId);
+
+  if (isPending) {
+    return <StoriesSkeleton layout={layout} />;
+  }
 
   return (
     <SprintStoriesProvider>
@@ -27,16 +33,14 @@ export const ListSprintStories = () => {
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
-      <Suspense fallback={<BoardSkeleton layout={layout} />}>
-        <BoardDividedPanel autoSaveId="my-stories:divided-panel">
-          <BoardDividedPanel.MainPanel>
-            <AllStories layout={layout} />
-          </BoardDividedPanel.MainPanel>
-          <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-            <Sidebar />
-          </BoardDividedPanel.SideBar>
-        </BoardDividedPanel>
-      </Suspense>
+      <BoardDividedPanel autoSaveId="my-stories:divided-panel">
+        <BoardDividedPanel.MainPanel>
+          <AllStories layout={layout} />
+        </BoardDividedPanel.MainPanel>
+        <BoardDividedPanel.SideBar isExpanded={isExpanded}>
+          <Sidebar />
+        </BoardDividedPanel.SideBar>
+      </BoardDividedPanel>
     </SprintStoriesProvider>
   );
 };

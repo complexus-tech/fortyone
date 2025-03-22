@@ -12,7 +12,7 @@ export const SprintsHeader = () => {
     teamId: string;
   }>();
   const { getTermDisplay } = useTerminology();
-  const { data: teams = [], isPending } = useTeams();
+  const { data: teams = [] } = useTeams();
 
   const { name, color } = teams.find((team) => team.id === teamId)!;
   return (
@@ -20,7 +20,7 @@ export const SprintsHeader = () => {
       <BreadCrumbs
         breadCrumbs={[
           {
-            name: isPending ? name : "loading...",
+            name,
             icon: <TeamColor color={color} />,
           },
           {

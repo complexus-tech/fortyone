@@ -1,8 +1,6 @@
 "use client";
-import { Box, Tabs, BreadCrumbs, Flex, Skeleton } from "ui";
-import { parseAsString, useQueryState } from "nuqs";
-import { cn } from "lib";
-import { StoryIcon } from "icons";
+import { BreadCrumbs, Flex, Skeleton } from "ui";
+import { SprintsIcon, StoryIcon } from "icons";
 import type { StoriesLayout } from "@/components/ui";
 import { LayoutSwitcher } from "@/components/ui";
 import { useTerminology } from "@/hooks";
@@ -10,7 +8,6 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { HeaderContainer } from "@/components/shared";
 
 export const StoriesSkeleton = ({ layout }: { layout: StoriesLayout }) => {
-  const [tab] = useQueryState("tab", parseAsString.withDefault("all"));
   const { getTermDisplay } = useTerminology();
   return (
     <>
@@ -21,6 +18,15 @@ export const StoriesSkeleton = ({ layout }: { layout: StoriesLayout }) => {
               {
                 name: "Team",
                 icon: <Skeleton className="size-4" />,
+              },
+              {
+                name: getTermDisplay("sprintTerm", {
+                  variant: "plural",
+                  capitalize: true,
+                }),
+                icon: (
+                  <SprintsIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+                ),
               },
               {
                 name: getTermDisplay("storyTerm", {
@@ -37,29 +43,10 @@ export const StoriesSkeleton = ({ layout }: { layout: StoriesLayout }) => {
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={() => {}} />
           <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-20" />
           <Skeleton className="h-6 w-16" />
         </Flex>
       </HeaderContainer>
-      <Box className="2xl:h-[calc(100vh-4rem)]">
-        <Tabs defaultValue={tab}>
-          <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
-            <Tabs.List>
-              <Tabs.Tab value="all">
-                All {getTermDisplay("storyTerm", { variant: "plural" })}
-              </Tabs.Tab>
-              <Tabs.Tab value="active">Active</Tabs.Tab>
-              <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
-            </Tabs.List>
-          </Box>
-        </Tabs>
-        <BoardSkeleton
-          className={cn({
-            "h-[calc(100vh-7.7rem)]": layout === "kanban",
-          })}
-          layout={layout}
-        />
-      </Box>
+      <BoardSkeleton layout={layout} />
     </>
   );
 };

@@ -1,9 +1,8 @@
 "use client";
-import { BreadCrumbs, Flex, Badge } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
-import { Suspense } from "react";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -12,22 +11,10 @@ import {
   SideDetailsSwitch,
   TeamColor,
 } from "@/components/ui";
-import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
 import { useTerminology } from "@/hooks";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprints } from "../hooks/sprints";
 import { useSprintOptions } from "./provider";
-
-const StoriesCount = ({ sprintId }: { sprintId: string }) => {
-  const { data: stories = [] } = useSprintStories(sprintId);
-  const { getTermDisplay } = useTerminology();
-
-  return (
-    <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-      {stories.length} {getTermDisplay("storyTerm", { variant: "plural" })}
-    </Badge>
-  );
-};
 
 export const Header = ({
   isExpanded,
@@ -79,15 +66,6 @@ export const Header = ({
             },
           ]}
         />
-        <Suspense
-          fallback={
-            <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-              Loading...
-            </Badge>
-          }
-        >
-          <StoriesCount sprintId={sprintId} />
-        </Suspense>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
