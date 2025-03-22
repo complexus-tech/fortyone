@@ -1,5 +1,5 @@
 "use client";
-import { CheckIcon } from "icons";
+import { CheckIcon, LoadingIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "next-auth/react";
@@ -60,10 +60,12 @@ const Items = ({
 }) => {
   const { data: session } = useSession();
   const { setOpen } = useAssigneesMenu();
-  const { data: allMembers = [] } = useMembers();
-  const { data: teamMembers = [] } = useTeamMembers(teamId);
+  const { data: allMembers = [], isPending: isLoadingMembers } = useMembers();
+  const { data: teamMembers = [], isPending: isLoadingTeamMembers } =
+    useTeamMembers(teamId);
 
   const members = teamId ? teamMembers : allMembers;
+  const isPending = teamId ? isLoadingTeamMembers : isLoadingMembers;
   const self = members.find(({ id }) => id === session?.user?.id);
 
   return (
@@ -75,68 +77,80 @@ const Items = ({
           <Text color="muted">No user found.</Text>
         </Command.Empty>
         <Command.Group>
-          {!disallowEmptySelection ? (
+          {isPending ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Please wait...
+              </Text>
+            </Command.Loading>
+          ) : null}
+
+          {!isPending && (
             <>
+              {!disallowEmptySelection ? (
+                <>
+                  <Command.Item
+                    active={!assigneeId}
+                    className="justify-between opacity-70"
+                    onSelect={() => {
+                      if (assigneeId) {
+                        onAssigneeSelected(null);
+                      }
+                      setOpen(false);
+                    }}
+                  >
+                    <Flex align="center" gap={2}>
+                      <Avatar
+                        className="text-dark/80 dark:text-gray-200"
+                        color="primary"
+                        size="sm"
+                      />
+                      <Text className="max-w-[10rem] truncate">Unassigned</Text>
+                    </Flex>
+                    <Flex align="center" gap={1}>
+                      {!assigneeId && (
+                        <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                      )}
+                      <Text color="muted">0</Text>
+                    </Flex>
+                  </Command.Item>
+                  {members.length > 0 && <Divider className="my-2" />}
+                </>
+              ) : null}
               <Command.Item
-                active={!assigneeId}
-                className="justify-between opacity-70"
+                active={self?.id === assigneeId}
+                className="justify-between"
                 onSelect={() => {
-                  if (assigneeId) {
-                    onAssigneeSelected(null);
+                  if (self?.id !== assigneeId) {
+                    onAssigneeSelected(self?.id ?? null);
                   }
                   setOpen(false);
                 }}
               >
                 <Flex align="center" gap={2}>
                   <Avatar
-                    className="text-dark/80 dark:text-gray-200"
                     color="primary"
+                    name={self?.fullName}
                     size="sm"
+                    src={self?.avatarUrl}
                   />
-                  <Text className="max-w-[10rem] truncate">Unassigned</Text>
+                  <Text className="max-w-[12rem] truncate">
+                    {self?.fullName || self?.username}{" "}
+                    <Text as="span" color="muted">
+                      (You)
+                    </Text>
+                  </Text>
                 </Flex>
                 <Flex align="center" gap={1}>
-                  {!assigneeId && (
+                  {self?.id === assigneeId && (
                     <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                   )}
-                  <Text color="muted">0</Text>
+                  <Text color="muted">{1}</Text>
                 </Flex>
               </Command.Item>
-              {members.length > 0 && <Divider className="my-2" />}
             </>
-          ) : null}
-          <Command.Item
-            active={self?.id === assigneeId}
-            className="justify-between"
-            onSelect={() => {
-              if (self?.id !== assigneeId) {
-                onAssigneeSelected(self?.id ?? null);
-              }
-              setOpen(false);
-            }}
-          >
-            <Flex align="center" gap={2}>
-              <Avatar
-                color="primary"
-                name={self?.fullName}
-                size="sm"
-                src={self?.avatarUrl}
-              />
-              <Text className="max-w-[12rem] truncate">
-                {self?.fullName || self?.username}{" "}
-                <Text as="span" color="muted">
-                  (You)
-                </Text>
-              </Text>
-            </Flex>
-            <Flex align="center" gap={1}>
-              {self?.id === assigneeId && (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              )}
-              <Text color="muted">{1}</Text>
-            </Flex>
-          </Command.Item>
-
+          )}
           {members
             .filter(
               ({ id }) =>

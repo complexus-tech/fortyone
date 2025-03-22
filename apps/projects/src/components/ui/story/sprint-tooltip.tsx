@@ -17,10 +17,10 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
     new Date(selectedSprint.endDate),
     new Date(),
   );
-  const isPanned = new Date(selectedSprint.startDate) > new Date();
+  const isPlanned = new Date(selectedSprint.startDate) > new Date();
 
   const getBadgeColor = () => {
-    if (isCompleted || isPanned) {
+    if (isCompleted || isPlanned) {
       return "tertiary";
     }
     if (inProgress && daysLeft < 5) {
@@ -36,7 +36,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
     if (isCompleted) {
       return "Completed";
     }
-    if (isPanned) {
+    if (isPlanned) {
       return "Planned";
     }
     if (inProgress && daysLeft < 5) {
@@ -77,9 +77,10 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
       {selectedSprint.goal ? (
         <>
           <Text fontSize="md">Sprint Goal:</Text>
-          <Text className="mt-1 line-clamp-4" color="muted" fontSize="md">
-            {selectedSprint.goal}
-          </Text>
+          <Box
+            className="mt-1 line-clamp-4 text-gray dark:text-gray-300/80"
+            html={selectedSprint.goal}
+          />
         </>
       ) : null}
     </Box>
