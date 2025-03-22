@@ -350,7 +350,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 
 // MyStories returns a list of stories.
 func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.MyStories")
 	defer span.End()
 
 	currentUser, _ := mid.GetUserID(ctx)
