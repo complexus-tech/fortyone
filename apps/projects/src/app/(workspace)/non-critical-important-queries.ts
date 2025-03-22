@@ -21,6 +21,8 @@ import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
+import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
@@ -69,6 +71,14 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
     queryFn: () => getWorkspaces(token),
+  });
+  queryClient.prefetchQuery({
+    queryKey: invitationKeys.pending,
+    queryFn: () => getPendingInvitations(),
+  });
+  queryClient.prefetchQuery({
+    queryKey: notificationKeys.preferences(),
+    queryFn: () => getNotificationPreferences(),
   });
   return queryClient;
 };
