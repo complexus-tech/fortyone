@@ -118,7 +118,7 @@ export const {
     signIn: "/login",
     signOut: "/login",
   },
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
 });
 
 export const refreshWorkspaces = async () => {
