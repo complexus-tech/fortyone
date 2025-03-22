@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useTerminology } from "@/hooks";
-import { MyStoriesSkeleton } from "@/modules/summary/components/my-stories-skeleton";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
@@ -16,7 +15,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const { data } = useSession();
 
   const user = data?.user;
-  const { data: stories = [], isPending } = useMyStories();
+  const { data: stories = [] } = useMyStories();
   const tabs = ["all", "assigned", "created"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
@@ -30,10 +29,6 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       return stories.filter((story) => story.reporterId === user?.id);
     return stories;
   }, [stories, tab, user?.id]);
-
-  if (isPending) {
-    return <MyStoriesSkeleton />;
-  }
 
   return (
     <Box className="h-[calc(100vh-4rem)]">
