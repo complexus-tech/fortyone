@@ -12,10 +12,10 @@ export const ContributionsSkeleton = () => {
 
       <Box className="mt-3">
         {/* Calendar/chart skeleton */}
-        <Box className="mb-4 grid grid-cols-7 gap-1">
-          {Array.from({ length: 28 }).map((_, index) => (
+        <Box className="mb-4 flex flex-wrap gap-1">
+          {Array.from({ length: 220 }).map((_, index) => (
             <Skeleton
-              className="aspect-square rounded"
+              className="aspect-square size-6 rounded"
               key={index}
               style={{ opacity: Math.max(0.2, Math.random()) }}
             />
