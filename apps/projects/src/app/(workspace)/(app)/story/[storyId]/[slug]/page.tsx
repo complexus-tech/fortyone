@@ -5,6 +5,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import { StoryPage } from "@/modules/story";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
 import { getStory } from "@/modules/story/queries/get-story";
+import { StorySkeleton } from "@/modules/story/components/story-skeleton";
 
 export const metadata: Metadata = {
   title: "Story",
@@ -33,7 +34,8 @@ export default async function Page(props: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <StoryPage storyId={storyId} />
+      {/* <StoryPage storyId={storyId} /> */}
+      <StorySkeleton />
     </HydrationBoundary>
   );
 }
