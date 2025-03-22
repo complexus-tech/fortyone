@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { workspaceKeys } from "@/constants/keys";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import type { Workspace } from "@/types";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 const getCurrentWorkspace = (workspaces: Workspace[]) => {
   if (typeof window === "undefined") return null;
@@ -15,6 +16,7 @@ export const useWorkspaces = () => {
   return useQuery({
     queryKey: workspaceKeys.lists(),
     queryFn: () => getWorkspaces(session!.token),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };
 

@@ -3,9 +3,13 @@ import { Flex, Text, Wrapper } from "ui";
 import { ClockIcon } from "icons";
 import { useActivities } from "@/lib/hooks/activities";
 import { Activity } from "@/components/ui/activity";
+import { ActivitiesSkeleton } from "./activities-skeleton";
 
 export const Activities = () => {
-  const { data: activities = [] } = useActivities();
+  const { data: activities = [], isPending } = useActivities();
+  if (isPending) {
+    return <ActivitiesSkeleton />;
+  }
   return (
     <Wrapper>
       <Flex align="center" className="mb-5" justify="between">

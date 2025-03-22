@@ -8,6 +8,6 @@ export const useTeamMembers = (teamId?: string) => {
     queryKey: memberKeys.team(teamId ?? ""),
     queryFn: () => getTeamMembers(teamId!),
     enabled: Boolean(teamId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

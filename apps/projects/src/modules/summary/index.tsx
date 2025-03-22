@@ -1,6 +1,5 @@
 "use client";
 import { Box, Container, Text } from "ui";
-import { Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { BodyContainer } from "@/components/shared/body";
 import { useTerminology } from "@/hooks";
@@ -9,10 +8,6 @@ import { Activities } from "./components/activities";
 import { MyStories } from "./components/my-stories";
 import { Contributions } from "./components/contributions";
 import { Header } from "./components/header";
-import { MyStoriesSkeleton } from "./components/my-stories-skeleton";
-import { OverviewSkeleton } from "./components/overview-skeleton";
-import { ContributionsSkeleton } from "./components/contributions-skeleton";
-import { ActivitiesSkeleton } from "./components/activities-skeleton";
 
 export const SummaryPage = () => {
   const { getTermDisplay } = useTerminology();
@@ -35,19 +30,11 @@ export const SummaryPage = () => {
             Here&rsquo;s what&rsquo;s happening with your{" "}
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
-          <Suspense fallback={<OverviewSkeleton />}>
-            <Overview />
-          </Suspense>
-          <Suspense fallback={<ContributionsSkeleton />}>
-            <Contributions />
-          </Suspense>
+          <Overview />
+          <Contributions />
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
-            <Suspense fallback={<MyStoriesSkeleton />}>
-              <MyStories />
-            </Suspense>
-            <Suspense fallback={<ActivitiesSkeleton />}>
-              <Activities />
-            </Suspense>
+            <MyStories />
+            <Activities />
           </Box>
         </Container>
       </BodyContainer>

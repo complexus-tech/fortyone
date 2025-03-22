@@ -2,6 +2,7 @@
 import { Box, Flex, Text, Wrapper } from "ui";
 import { useSummary } from "@/lib/hooks/summary";
 import { useTerminology } from "@/hooks";
+import { OverviewSkeleton } from "./overview-skeleton";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
   <Wrapper className="px-5">
@@ -32,27 +33,30 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 );
 
 export const Overview = () => {
-  const { data: summary } = useSummary();
+  const { data: summary, isPending } = useSummary();
   const { getTermDisplay } = useTerminology();
+  if (isPending) {
+    return <OverviewSkeleton />;
+  }
   const overview = [
     {
-      count: summary.closed,
+      count: summary?.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
     },
     {
-      count: summary.overdue,
+      count: summary?.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
     },
     {
-      count: summary.inProgress,
+      count: summary?.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
     },
     {
-      count: summary.created,
+      count: summary?.created,
       title: "Created by you",
     },
     {
-      count: summary.assigned,
+      count: summary?.assigned,
       title: "Assigned to you",
     },
   ];

@@ -8,7 +8,6 @@ export const useTeamSprints = (teamId: string) => {
     queryKey: sprintKeys.team(teamId),
     queryFn: () => getTeamSprints(teamId),
     enabled: Boolean(teamId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
-    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

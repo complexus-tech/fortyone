@@ -14,6 +14,7 @@ import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology } from "@/hooks";
+import { MyStoriesSkeleton } from "./my-stories-skeleton";
 
 const StoryRow = ({
   id,
@@ -123,9 +124,13 @@ const List = ({ stories }: { stories: Story[] }) => {
 
 export const MyStories = () => {
   const { data: session } = useSession();
-  const { data: stories = [] } = useMyStories();
+  const { data: stories = [], isPending } = useMyStories();
   const { data: statuses = [] } = useStatuses();
   const { getTermDisplay } = useTerminology();
+
+  if (isPending) {
+    return <MyStoriesSkeleton />;
+  }
 
   const inProgressStatuses = statuses
     .filter((status) => {

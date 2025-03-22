@@ -7,7 +7,6 @@ export const useLinks = (storyId: string) => {
   return useQuery({
     queryKey: linkKeys.story(storyId),
     queryFn: () => getLinks(storyId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 30,
-    gcTime: Number(DURATION_FROM_MILLISECONDS.HOUR),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

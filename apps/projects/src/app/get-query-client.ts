@@ -1,9 +1,10 @@
 import {
-  // defaultShouldDehydrateQuery,
+  defaultShouldDehydrateQuery,
   // isServer,
   QueryClient,
 } from "@tanstack/react-query";
 import { cache } from "react";
+import { DURATION_FROM_SECONDS } from "@/constants/time";
 // import { DURATION_FROM_SECONDS } from "@/constants/time";
 
 // const makeQueryClient = () => {
@@ -46,4 +47,25 @@ import { cache } from "react";
 //   return browserQueryClient;
 // };
 
-export const getQueryClient = cache(() => new QueryClient());
+export const getQueryClient = cache(
+  () =>
+    new QueryClient({
+      defaultOptions: {
+        queries: {
+          // With SSR, we usually want to set some default staleTime
+          // above 0 to avoid refetching immediately on the client
+          staleTime: DURATION_FROM_SECONDS.MINUTE * 10,
+          retry: 1,
+        },
+        mutations: {
+          retry: 1,
+        },
+        dehydrate: {
+          // include pending queries in dehydration
+          shouldDehydrateQuery: (query) =>
+            defaultShouldDehydrateQuery(query) ||
+            query.state.status === "pending",
+        },
+      },
+    }),
+);
