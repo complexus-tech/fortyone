@@ -1,5 +1,5 @@
 "use client";
-import { BreadCrumbs, Flex, Badge } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { HeaderContainer } from "@/components/shared";
@@ -10,7 +10,6 @@ import {
   NewStoryButton,
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
-import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
 export const Header = ({
@@ -20,7 +19,6 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { data } = useMyStories();
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
@@ -47,9 +45,6 @@ export const Header = ({
             },
           ]}
         />
-        <Badge className="bg-opacity-50" color="tertiary" rounded="full">
-          {data.length} {getTermDisplay("storyTerm", { variant: "plural" })}
-        </Badge>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
