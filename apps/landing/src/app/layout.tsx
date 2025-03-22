@@ -78,7 +78,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
           </PostHogProvider>
-          <GoogleOneTap />
+          <Suspense>
+            <GoogleOneTap />
+          </Suspense>
           <Suspense>
             <PostHogPageView />
           </Suspense>
