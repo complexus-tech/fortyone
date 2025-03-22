@@ -22,6 +22,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     parseAsStringLiteral(tabs).withDefault("all"),
   );
 
+  // Memoize filtered stories to avoid recalculations on each render
   const filteredStories = useMemo(() => {
     if (tab === "assigned")
       return stories.filter((story) => story.assigneeId === user?.id);

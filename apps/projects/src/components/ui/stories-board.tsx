@@ -10,7 +10,7 @@ import {
   TouchSensor,
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -84,6 +84,77 @@ const StoryOverlay = ({
   );
 };
 
+// Move orderStories out of the component for better performance
+const orderStories = (stories: Story[] = [], orderBy = ""): Story[] => {
+  const getSortValue = (story: Story): number => {
+    switch (orderBy) {
+      case "Created":
+        return new Date(story.createdAt).getTime();
+      case "Updated":
+        return new Date(story.updatedAt).getTime();
+      case "Deadline": {
+        const date = new Date(story.endDate!);
+        return isNaN(date.getTime()) ? Infinity : date.getTime();
+      }
+      case "Priority": {
+        const prioritiesMap: Record<StoryPriority, number> = {
+          "No Priority": 0,
+          Low: 1,
+          Medium: 2,
+          High: 3,
+          Urgent: 4,
+        };
+        return (
+          prioritiesMap[story.priority] * 1e15 -
+          new Date(story.createdAt).getTime()
+        );
+      }
+      default:
+        return 0;
+    }
+  };
+
+  return [...stories].sort((a, b) => getSortValue(b) - getSortValue(a));
+};
+
+// Move EmptyState component outside StoriesBoard to prevent recreation on each render
+const EmptyState = ({
+  objectiveId,
+  sprintId,
+  teamId,
+  getTermDisplay,
+}: {
+  objectiveId?: string;
+  sprintId?: string;
+  teamId?: string;
+  getTermDisplay: ReturnType<typeof useTerminology>["getTermDisplay"];
+}) => (
+  <Box className="flex h-[70vh] items-center justify-center">
+    <Box className="flex flex-col items-center">
+      <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      <Text className="mb-6 mt-8" fontSize="3xl">
+        No {getTermDisplay("storyTerm", { variant: "plural" })} found
+      </Text>
+      <Text className="mb-6 max-w-md text-center" color="muted">
+        Oops! This board is empty. Why not create a{" "}
+        {getTermDisplay("storyTerm")}?
+      </Text>
+      <Flex gap={2}>
+        <NewStoryButton
+          color="tertiary"
+          leftIcon={<PlusIcon />}
+          objectiveId={objectiveId}
+          size="md"
+          sprintId={sprintId}
+          teamId={teamId}
+        >
+          Create new {getTermDisplay("storyTerm")}
+        </NewStoryButton>
+      </Flex>
+    </Box>
+  </Box>
+);
+
 export const StoriesBoard = ({
   layout,
   stories,
@@ -108,11 +179,19 @@ export const StoriesBoard = ({
 
   const { mutateAsync } = useUpdateStoryMutation();
 
-  const isColumnVisible = (column: DisplayColumn) => {
-    if (column === "Sprint" && !features.sprintEnabled) return false;
-    if (column === "Objective" && !features.objectiveEnabled) return false;
-    return viewOptions.displayColumns.includes(column);
-  };
+  // Memoize the isColumnVisible function
+  const isColumnVisible = useCallback(
+    (column: DisplayColumn) => {
+      if (column === "Sprint" && !features.sprintEnabled) return false;
+      if (column === "Objective" && !features.objectiveEnabled) return false;
+      return viewOptions.displayColumns.includes(column);
+    },
+    [
+      features.objectiveEnabled,
+      features.sprintEnabled,
+      viewOptions.displayColumns,
+    ],
+  );
 
   const handleDragStart = (e: DragStartEvent) => {
     const story = stories.find(({ id }) => id === e.active.id)!;
@@ -126,76 +205,67 @@ export const StoriesBoard = ({
     await mutateAsync({ storyId, payload });
   };
 
-  const handleDragEnd = (e: DragEndEvent) => {
-    const { groupBy } = viewOptions;
-    if (groupBy === "Status") {
-      const newStatus = e.over?.id.toString() ?? null;
-      if (newStatus) {
-        const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
-        storiesBoard[index].statusId = newStatus;
-        setStoriesBoard([...storiesBoard]);
-        updateStory(e.active.id.toString(), {
-          statusId: newStatus,
-        });
-      }
-    }
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { groupBy } = viewOptions;
 
-    if (groupBy === "Priority") {
-      const newPriority = e.over?.id as StoryPriority | null;
-      if (newPriority) {
-        const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
-        storiesBoard[index].priority = newPriority;
-        setStoriesBoard([...storiesBoard]);
-        updateStory(e.active.id.toString(), {
-          priority: newPriority,
-        });
-      }
-    }
+      if (e.over) {
+        const storyId = e.active.id.toString();
+        const updatePayload: Partial<DetailedStory> = {};
 
-    if (groupBy === "Assignee") {
-      const newAssignee = e.over?.id as string | null;
-      const index = storiesBoard.findIndex(({ id }) => id === e.active.id);
-      storiesBoard[index].assigneeId = newAssignee;
-      setStoriesBoard([...storiesBoard]);
-      updateStory(e.active.id.toString(), {
-        assigneeId: newAssignee,
-      });
-    }
+        if (groupBy === "Status") {
+          const newStatus = e.over.id.toString();
+          updatePayload.statusId = newStatus;
 
-    setActiveStory(null);
-  };
-
-  const orderStories = (stories: Story[] = []) => {
-    const getSortValue = (story: Story): number => {
-      switch (viewOptions.orderBy) {
-        case "Created":
-          return new Date(story.createdAt).getTime();
-        case "Updated":
-          return new Date(story.updatedAt).getTime();
-        case "Deadline": {
-          const date = new Date(story.endDate!);
-          return isNaN(date.getTime()) ? Infinity : date.getTime();
-        }
-        case "Priority": {
-          const prioritiesMap: Record<StoryPriority, number> = {
-            "No Priority": 0,
-            Low: 1,
-            Medium: 2,
-            High: 3,
-            Urgent: 4,
-          };
-          return (
-            prioritiesMap[story.priority] * 1e15 -
-            new Date(story.createdAt).getTime()
+          setStoriesBoard((prev) =>
+            prev.map((story) =>
+              story.id === storyId ? { ...story, statusId: newStatus } : story,
+            ),
           );
         }
-        default:
-          return 0;
-      }
-    };
 
-    return stories.sort((a, b) => getSortValue(b) - getSortValue(a));
-  };
+        if (groupBy === "Priority") {
+          const newPriority = e.over.id as StoryPriority;
+          updatePayload.priority = newPriority;
+
+          setStoriesBoard((prev) =>
+            prev.map((story) =>
+              story.id === storyId
+                ? { ...story, priority: newPriority }
+                : story,
+            ),
+          );
+        }
+
+        if (groupBy === "Assignee") {
+          const newAssignee = e.over.id as string;
+          updatePayload.assigneeId = newAssignee;
+
+          setStoriesBoard((prev) =>
+            prev.map((story) =>
+              story.id === storyId
+                ? { ...story, assigneeId: newAssignee }
+                : story,
+            ),
+          );
+        }
+
+        // Only call the API if we have updates
+        if (Object.keys(updatePayload).length > 0) {
+          updateStory(storyId, updatePayload);
+        }
+      }
+
+      setActiveStory(null);
+    },
+    [viewOptions.groupBy, updateStory],
+  );
+
+  // Memoize the ordered stories
+  const orderedStories = useMemo(
+    () => orderStories(storiesBoard, viewOptions.orderBy),
+    [storiesBoard, viewOptions.orderBy],
+  );
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
@@ -223,78 +293,61 @@ export const StoriesBoard = ({
     setStoriesBoard(stories);
   }, [stories]);
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const boardContextValue = useMemo(
+    () => ({
+      selectedStories,
+      setSelectedStories,
+      viewOptions,
+      isColumnVisible,
+    }),
+    [selectedStories, viewOptions, isColumnVisible],
+  );
+
   return (
-    <BoardContext.Provider
-      value={{
-        selectedStories,
-        setSelectedStories,
-        viewOptions,
-        isColumnVisible,
-      }}
-    >
-      <DndContext
-        onDragEnd={handleDragEnd}
-        onDragStart={handleDragStart}
-        sensors={sensors}
-      >
-        <Box>
-          {storiesBoard.length === 0 && (
-            <Box className="flex h-[70vh] items-center justify-center">
-              <Box className="flex flex-col items-center">
-                <StoryMissingIcon
-                  className="h-20 w-auto rotate-12"
-                  strokeWidth={1.3}
-                />
-                <Text className="mb-6 mt-8" fontSize="3xl">
-                  No {getTermDisplay("storyTerm", { variant: "plural" })} found
-                </Text>
-                <Text className="mb-6 max-w-md text-center" color="muted">
-                  Oops! This board is empty. Why not create a{" "}
-                  {getTermDisplay("storyTerm")}?
-                </Text>
-                <Flex gap={2}>
-                  <NewStoryButton
-                    color="tertiary"
-                    leftIcon={<PlusIcon />}
-                    objectiveId={objectiveId}
-                    size="md"
-                    sprintId={sprintId}
-                    teamId={teamId}
-                  >
-                    Create new {getTermDisplay("storyTerm")}
-                  </NewStoryButton>
-                </Flex>
-              </Box>
-            </Box>
-          )}
+    <BoardContext.Provider value={boardContextValue}>
+      <Box>
+        {storiesBoard.length === 0 && (
+          <EmptyState
+            getTermDisplay={getTermDisplay}
+            objectiveId={objectiveId}
+            sprintId={sprintId}
+            teamId={teamId}
+          />
+        )}
 
-          {layout === "kanban" ? (
-            <KanbanBoard
-              className={className}
-              stories={orderStories(storiesBoard)}
-            />
-          ) : (
-            <ListBoard
-              className={className}
-              stories={orderStories(storiesBoard)}
-              viewOptions={viewOptions}
-            />
-          )}
-
-          {typeof window !== "undefined" &&
-            createPortal(
-              <StoryOverlay
-                layout={layout}
-                selectedStories={selectedStories.length}
-                story={activeStory}
-              />,
-              document.body,
+        {storiesBoard.length > 0 && (
+          <DndContext
+            onDragEnd={handleDragEnd}
+            onDragStart={handleDragStart}
+            sensors={sensors}
+          >
+            {layout === "kanban" ? (
+              <KanbanBoard className={className} stories={orderedStories} />
+            ) : (
+              <ListBoard
+                className={className}
+                stories={orderedStories}
+                viewOptions={viewOptions}
+              />
             )}
 
-          {/* This toolbar pops up when the user selects stories */}
-          {selectedStories.length > 0 && <StoriesToolbar />}
-        </Box>
-      </DndContext>
+            {activeStory && typeof window !== "undefined"
+              ? createPortal(
+                  <StoryOverlay
+                    layout={layout}
+                    selectedStories={selectedStories.length}
+                    story={activeStory}
+                  />,
+                  document.body,
+                )
+              : null}
+          </DndContext>
+        )}
+
+        {/* This toolbar pops up when the user selects stories */}
+        {selectedStories.length > 0 && <StoriesToolbar />}
+      </Box>
     </BoardContext.Provider>
   );
 };
