@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: "My Work",
 };
 
-export default function Page() {
+export default async function Page() {
   const queryClient = getQueryClient();
-  queryClient.prefetchQuery({
+  await queryClient.prefetchQuery({
     queryKey: storyKeys.mine(),
     queryFn: () => getMyStories(),
   });
