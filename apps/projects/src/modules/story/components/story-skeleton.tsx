@@ -1,13 +1,13 @@
 "use client";
 import { ResizablePanel } from "ui";
+import { usePathname } from "next/navigation";
 import { MainDetailsSkeleton } from "./main-details-skeleton";
 import { OptionsSkeleton } from "./options-skeleton";
 
-export const StorySkeleton = ({
-  isNotifications,
-}: {
-  isNotifications?: boolean;
-}) => {
+export const StorySkeleton = () => {
+  const pathname = usePathname();
+  const isNotifications = pathname.includes("notifications");
+
   return (
     <ResizablePanel
       autoSaveId={
