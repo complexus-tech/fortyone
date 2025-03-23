@@ -18,10 +18,11 @@ import {
   FilterIcon,
   SprintsIcon,
 } from "icons";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { cn } from "lib";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { StoryStatusIcon } from "./story-status-icon";
 
@@ -89,7 +90,7 @@ export const StoriesFilterButton = ({
     from: new Date(),
     to: new Date(),
   });
-
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const { data: statuses = [] } = useStatuses();
   const doneStatusId = statuses.find(
     (state) => state.category === "completed",
@@ -117,12 +118,18 @@ export const StoriesFilterButton = ({
     return "Filters";
   };
 
+  useHotkeys("v+f", (e) => {
+    e.preventDefault();
+    buttonRef.current?.click();
+  });
+
   return (
     <Popover>
       <Popover.Trigger asChild>
         <Button
           color="tertiary"
           leftIcon={<FilterIcon className="h-4 w-auto" />}
+          ref={buttonRef}
           rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
           size="sm"
           variant="outline"

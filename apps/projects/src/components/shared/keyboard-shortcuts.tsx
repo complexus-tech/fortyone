@@ -164,7 +164,12 @@ export const KeyboardShortcuts = ({
       items: [
         {
           name: "View filters",
-          shortcut: <Kbd>f</Kbd>,
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>v</Kbd>
+              <Kbd>f</Kbd>
+            </Flex>
+          ),
         },
         {
           name: "List view",
