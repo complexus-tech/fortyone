@@ -1,14 +1,31 @@
 "use client";
-import { Box, Button, Flex, Text } from "ui";
-import { EmailIcon, HelpIcon, PlusIcon } from "icons";
+import { Box, Button, Dialog, Flex, Menu, Text } from "ui";
+import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { InviteMembersDialog } from "@/components/ui";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 
+
+const KeyboardShortcuts = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog.Content  className="mb-auto mt-auto"
+          // overlayClassName="justify-end pr-[2.5vh]"
+          >
+        <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
+        <Dialog.Description>
+          Use the following shortcuts to navigate through the app.
+        </Dialog.Description>
+      </Dialog.Content>
+    </Dialog>
+  );
+};
+
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
 
   return (
     <Box className="flex h-screen flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-black">
@@ -48,9 +65,29 @@ export const Sidebar = () => {
             <PlusIcon />
             Invite members
           </button>
-          <button type="button">
-            <HelpIcon className="h-6" />
-          </button>
+          <Menu>
+            <Menu.Button>
+              <Button color="tertiary" variant="naked" asIcon rounded="full">
+                <HelpIcon className="h-6" />
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item onClick={() => setIsKeyboardShortcutsOpen(true)}>
+                  <CommandIcon />
+                  Keyboard shortcuts
+                </Menu.Item>
+                <Menu.Item disabled>
+                  <EmailIcon />
+                  Contact support
+                </Menu.Item>
+                <Menu.Item disabled>
+                  <DocsIcon />
+                  Documentation
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
         </Flex>
       </Box>
 
@@ -65,6 +102,7 @@ export const Sidebar = () => {
       </Box> */}
 
       <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
+      <KeyboardShortcuts isOpen setIsOpen={setIsKeyboardShortcutsOpen} />
     </Box>
   );
 };
