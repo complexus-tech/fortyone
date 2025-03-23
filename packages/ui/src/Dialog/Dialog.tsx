@@ -52,30 +52,36 @@ const DialogContent = forwardRef<
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     hideClose?: boolean;
     size?: "sm" | "md" | "lg" | "xl";
+    overlayClassName?: string;
   }
->(({ className, children, hideClose, size = "md", ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay>
-      <DialogPrimitive.Content
-        ref={ref}
-        className={cn(
-          "relative mt-[10%] w-full max-w-3xl overflow-hidden rounded-[0.85rem] border border-gray-50 bg-white shadow-xl shadow-dark/20 backdrop-blur dark:border-dark-100 dark:bg-dark-200/80 dark:shadow-none",
-          {
-            "max-w-md": size === "sm",
-            "max-w-xl": size === "md",
-            "max-w-5xl": size === "lg",
-            "max-w-7xl": size === "xl",
-          },
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {!hideClose && <DialogClose className="absolute right-4 top-4" />}
-      </DialogPrimitive.Content>
-    </DialogOverlay>
-  </DialogPortal>
-));
+>(
+  (
+    { className, children, hideClose, overlayClassName, size = "md", ...props },
+    ref
+  ) => (
+    <DialogPortal>
+      <DialogOverlay className={overlayClassName}>
+        <DialogPrimitive.Content
+          ref={ref}
+          className={cn(
+            "relative mt-[10%] w-full max-w-3xl overflow-hidden rounded-[0.85rem] border border-gray-50 bg-white shadow-xl shadow-dark/20 backdrop-blur dark:border-dark-100 dark:bg-dark-200/80 dark:shadow-none",
+            {
+              "max-w-md": size === "sm",
+              "max-w-xl": size === "md",
+              "max-w-5xl": size === "lg",
+              "max-w-7xl": size === "xl",
+            },
+            className
+          )}
+          {...props}
+        >
+          {children}
+          {!hideClose && <DialogClose className="absolute right-4 top-4" />}
+        </DialogPrimitive.Content>
+      </DialogOverlay>
+    </DialogPortal>
+  )
+);
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({

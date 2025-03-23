@@ -1,23 +1,276 @@
 "use client";
-import { Box, Button, Dialog, Flex, Menu, Text } from "ui";
+import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
 import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { InviteMembersDialog } from "@/components/ui";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 
+type Shortcuts = {
+  name: string;
+  items: {
+    name: string;
+    shortcut: ReactNode;
+  }[];
+};
 
-const KeyboardShortcuts = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
+const Kbd = ({ children }: { children: ReactNode }) => (
+  <Badge
+    className="h-6 min-w-6 rounded px-1 uppercase dark:border-dark-50"
+    color="tertiary"
+    size="sm"
+  >
+    {children}
+  </Badge>
+);
+
+const shortcuts: Shortcuts[] = [
+  {
+    name: "General",
+    items: [
+      {
+        name: "Open command menu",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⌘</Kbd>
+            <Kbd>K</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Search",
+        shortcut: <Kbd>/</Kbd>,
+      },
+      {
+        name: "Show keyboard shortcut help",
+        shortcut: <Kbd>?</Kbd>,
+      },
+      {
+        name: "Undo",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⌘</Kbd>
+            <Kbd>Z</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Redo",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⌘</Kbd>
+            <Kbd>⇧</Kbd>
+            <Kbd>Z</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Go to settings",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⌘</Kbd>
+            <Kbd>⇧</Kbd>
+            <Kbd>s</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Log out",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⌘</Kbd>
+            <Kbd>⇧</Kbd>
+            <Kbd>q</Kbd>
+          </Flex>
+        ),
+      },
+    ],
+  },
+  {
+    name: "Navigation",
+    items: [
+      {
+        name: "Go to inbox",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>g</Kbd>
+            <Kbd>i</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Go to my work",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>g</Kbd>
+            <Kbd>m</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Go to summary",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>g</Kbd>
+            <Kbd>s</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Go to projects",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>g</Kbd>
+            <Kbd>o</Kbd>
+          </Flex>
+        ),
+      },
+    ],
+  },
+  {
+    name: "Creation",
+    items: [
+      {
+        name: "Create new item",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⇧</Kbd>
+            <Kbd>n</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Create new Objective/Project/Goal",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⇧</Kbd>
+            <Kbd>o</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Create new Sprint/Cycle/Iteration",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⇧</Kbd>
+            <Kbd>s</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Create new Key Result/Milestone/Focus Area",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>⇧</Kbd>
+            <Kbd>k</Kbd>
+          </Flex>
+        ),
+      },
+    ],
+  },
+  {
+    name: "Work Item Management",
+    items: [
+      {
+        name: "Delete selected item",
+        shortcut: <Kbd>Delete</Kbd>,
+      },
+      {
+        name: "Comment on selected item",
+        shortcut: <Kbd>c</Kbd>,
+      },
+      {
+        name: "Assign selected item",
+        shortcut: <Kbd>a</Kbd>,
+      },
+      {
+        name: "Add label",
+        shortcut: <Kbd>l</Kbd>,
+      },
+      {
+        name: "Change status",
+        shortcut: <Kbd>s</Kbd>,
+      },
+      {
+        name: "Change priority",
+        shortcut: <Kbd>p</Kbd>,
+      },
+      {
+        name: "Set due date",
+        shortcut: <Kbd>d</Kbd>,
+      },
+    ],
+  },
+  {
+    name: "View Controls",
+    items: [
+      {
+        name: "View filters",
+        shortcut: <Kbd>f</Kbd>,
+      },
+      {
+        name: "List view",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>v</Kbd>
+            <Kbd>l</Kbd>
+          </Flex>
+        ),
+      },
+      {
+        name: "Board view",
+        shortcut: (
+          <Flex align="center" gap={1}>
+            <Kbd>v</Kbd>
+            <Kbd>b</Kbd>
+          </Flex>
+        ),
+      },
+    ],
+  },
+];
+
+const KeyboardShortcuts = ({
+  isOpen,
+  setIsOpen,
+}: {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}) => {
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Dialog.Content  className="mb-auto mt-auto"
-          // overlayClassName="justify-end pr-[2.5vh]"
-          >
-        <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
-        <Dialog.Description>
-          Use the following shortcuts to navigate through the app.
-        </Dialog.Description>
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <Dialog.Content
+        className="mb-auto mt-auto"
+        overlayClassName="justify-end pr-[2vh]"
+        size="sm"
+      >
+        <Dialog.Title className="px-6 py-4 text-lg">
+          Keyboard Shortcuts
+        </Dialog.Title>
+        <Dialog.Body className="h-[91vh] max-h-[91vh] pt-2">
+          {shortcuts.map((shortcut) => (
+            <Box className="mb-7" key={shortcut.name}>
+              <Text className="mb-3" fontWeight="medium">
+                {shortcut.name}
+              </Text>
+              <Box className="space-y-3">
+                {shortcut.items.map((item) => (
+                  <Flex
+                    align="center"
+                    gap={3}
+                    justify="between"
+                    key={item.name}
+                  >
+                    <Text color="muted">{item.name}</Text>
+                    <Box>{item.shortcut}</Box>
+                  </Flex>
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Dialog.Body>
       </Dialog.Content>
     </Dialog>
   );
@@ -67,13 +320,17 @@ export const Sidebar = () => {
           </button>
           <Menu>
             <Menu.Button>
-              <Button color="tertiary" variant="naked" asIcon rounded="full">
+              <Button asIcon color="tertiary" rounded="full" variant="naked">
                 <HelpIcon className="h-6" />
               </Button>
             </Menu.Button>
             <Menu.Items align="end">
               <Menu.Group>
-                <Menu.Item onClick={() => setIsKeyboardShortcutsOpen(true)}>
+                <Menu.Item
+                  onClick={() => {
+                    setIsKeyboardShortcutsOpen(true);
+                  }}
+                >
                   <CommandIcon />
                   Keyboard shortcuts
                 </Menu.Item>
@@ -102,7 +359,10 @@ export const Sidebar = () => {
       </Box> */}
 
       <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
-      <KeyboardShortcuts isOpen={false} setIsOpen={setIsKeyboardShortcutsOpen} />
+      <KeyboardShortcuts
+        isOpen={isKeyboardShortcutsOpen}
+        setIsOpen={setIsKeyboardShortcutsOpen}
+      />
     </Box>
   );
 };
