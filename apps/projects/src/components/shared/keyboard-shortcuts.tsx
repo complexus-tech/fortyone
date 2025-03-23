@@ -198,7 +198,6 @@ export const KeyboardShortcuts = ({
     },
     {
       name: getTermDisplay("storyTerm", {
-        variant: "plural",
         capitalize: true,
       }),
       items: [
@@ -226,6 +225,10 @@ export const KeyboardShortcuts = ({
           name: "Set due date",
           shortcut: <Kbd>d</Kbd>,
         },
+        {
+          name: `Create child ${getTermDisplay("storyTerm")}`,
+          shortcut: <Kbd>c</Kbd>,
+        },
       ],
     },
   ];
@@ -233,7 +236,7 @@ export const KeyboardShortcuts = ({
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
         className="mb-auto mt-auto"
-        overlayClassName="justify-end pr-[2vh]"
+        overlayClassName="justify-start pl-[2vh]"
         size="sm"
       >
         <Dialog.Title className="px-6 py-4 text-lg">
