@@ -23,6 +23,7 @@ import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { NewKeyResultButton } from "./new-key-result";
 import { UpdateKeyResultDialog } from "./update-key-result-dialog";
+import { KeyResultsSkeleton } from "./key-results-skeleton";
 
 const RenderValue = ({
   value,
@@ -215,7 +216,28 @@ const Okr = ({
 export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
-  const { data: keyResults = [] } = useKeyResults(objectiveId);
+  const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
+
+  if (isPending) {
+    return (
+      <Box className="my-8">
+        <Flex align="center" className="mb-3" justify="between">
+          <Text
+            className="text-lg capitalize antialiased"
+            fontWeight="semibold"
+          >
+            {getTermDisplay("keyResultTerm", {
+              variant: "plural",
+              capitalize: true,
+            })}
+          </Text>
+          <NewKeyResultButton className="capitalize" size="sm" />
+        </Flex>
+        <Divider className="my-3" />
+        <KeyResultsSkeleton />
+      </Box>
+    );
+  }
 
   return (
     <Box className="my-8">

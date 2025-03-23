@@ -89,34 +89,31 @@ const Items = ({
           {!isPending && (
             <>
               {!disallowEmptySelection ? (
-                <>
-                  <Command.Item
-                    active={!assigneeId}
-                    className="justify-between opacity-70"
-                    onSelect={() => {
-                      if (assigneeId) {
-                        onAssigneeSelected(null);
-                      }
-                      setOpen(false);
-                    }}
-                  >
-                    <Flex align="center" gap={2}>
-                      <Avatar
-                        className="text-dark/80 dark:text-gray-200"
-                        color="primary"
-                        size="sm"
-                      />
-                      <Text className="max-w-[10rem] truncate">Unassigned</Text>
-                    </Flex>
-                    <Flex align="center" gap={1}>
-                      {!assigneeId && (
-                        <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                      )}
-                      <Text color="muted">0</Text>
-                    </Flex>
-                  </Command.Item>
-                  {members.length > 0 && <Divider className="my-2" />}
-                </>
+                <Command.Item
+                  active={!assigneeId}
+                  className="justify-between opacity-70"
+                  onSelect={() => {
+                    if (assigneeId) {
+                      onAssigneeSelected(null);
+                    }
+                    setOpen(false);
+                  }}
+                >
+                  <Flex align="center" gap={2}>
+                    <Avatar
+                      className="text-dark/80 dark:text-gray-200"
+                      color="primary"
+                      size="sm"
+                    />
+                    <Text className="max-w-[10rem] truncate">Unassigned</Text>
+                  </Flex>
+                  <Flex align="center" gap={1}>
+                    {!assigneeId && (
+                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                    )}
+                    <Text color="muted">0</Text>
+                  </Flex>
+                </Command.Item>
               ) : null}
               <Command.Item
                 active={self?.id === assigneeId}
