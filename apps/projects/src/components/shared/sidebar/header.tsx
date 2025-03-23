@@ -90,6 +90,10 @@ export const Header = () => {
     }
   });
 
+  useHotkeys("alt+shift+l", async () => {
+    await handleLogout();
+  });
+
   const handleLogout = async () => {
     try {
       await logOut();

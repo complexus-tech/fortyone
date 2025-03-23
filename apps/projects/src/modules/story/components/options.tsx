@@ -11,11 +11,12 @@ import {
   Tooltip,
   Badge,
 } from "ui";
-import { type ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -115,6 +116,17 @@ export const Options = ({
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
 
+  // References to button elements for keyboard shortcuts
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
+  const priorityButtonRef = useRef<HTMLButtonElement>(null);
+  const assigneeButtonRef = useRef<HTMLButtonElement>(null);
+  const startDateButtonRef = useRef<HTMLButtonElement>(null);
+  const dueDateButtonRef = useRef<HTMLButtonElement>(null);
+  const labelsButtonRef = useRef<HTMLButtonElement>(null);
+  const emptyLabelsButtonRef = useRef<HTMLButtonElement>(null);
+  const objectiveButtonRef = useRef<HTMLButtonElement>(null);
+  const sprintButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleUpdate = (data: Partial<DetailedStory>) => {
     mutate({ storyId, payload: data });
   };
@@ -122,6 +134,66 @@ export const Options = ({
   const handleUpdateLabels = (labels: string[] = []) => {
     updateLabels({ storyId, labels });
   };
+
+  useHotkeys("s", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      statusButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("p", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      priorityButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("a", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      assigneeButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("d", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      dueDateButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("l", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      if (labels.length > 0) {
+        labelsButtonRef.current?.click();
+      } else {
+        emptyLabelsButtonRef.current?.click();
+      }
+    }
+  });
+
+  useHotkeys("o", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest && features.objectiveEnabled) {
+      objectiveButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("n", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest && features.sprintEnabled) {
+      sprintButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("b", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      startDateButtonRef.current?.click();
+    }
+  });
 
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
@@ -181,6 +253,7 @@ export const Options = ({
                   color="tertiary"
                   disabled={isDeleted || isGuest}
                   leftIcon={<StoryStatusIcon statusId={statusId} />}
+                  ref={statusButtonRef}
                   type="button"
                   variant="naked"
                 >
@@ -207,6 +280,7 @@ export const Options = ({
                   color="tertiary"
                   disabled={isDeleted || isGuest}
                   leftIcon={<PriorityIcon priority={priority} />}
+                  ref={priorityButtonRef}
                   type="button"
                   variant="naked"
                 >
@@ -243,6 +317,7 @@ export const Options = ({
                       src={assignee?.avatarUrl}
                     />
                   }
+                  ref={assigneeButtonRef}
                   type="button"
                   variant="naked"
                 >
@@ -279,6 +354,7 @@ export const Options = ({
                       })}
                     />
                   }
+                  ref={startDateButtonRef}
                   variant="naked"
                 >
                   {startDate ? (
@@ -337,6 +413,7 @@ export const Options = ({
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
+                      ref={dueDateButtonRef}
                       variant="naked"
                     >
                       {endDate ? (
@@ -376,6 +453,7 @@ export const Options = ({
                         <PlusIcon className="h-5 w-auto" />
                       )
                     }
+                    ref={objectiveButtonRef}
                     title={objectiveId ? objective?.name : undefined}
                     type="button"
                     variant="naked"
@@ -414,6 +492,7 @@ export const Options = ({
                         <PlusIcon className="h-5 w-auto" />
                       )
                     }
+                    ref={sprintButtonRef}
                     type="button"
                     variant="naked"
                   >
@@ -493,6 +572,7 @@ export const Options = ({
                           color="tertiary"
                           disabled={isDeleted || isGuest}
                           leftIcon={<PlusIcon />}
+                          ref={labelsButtonRef}
                           rounded="full"
                           size="sm"
                           title="Add labels"
@@ -519,6 +599,7 @@ export const Options = ({
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={<PlusIcon />}
+                      ref={emptyLabelsButtonRef}
                       type="button"
                       variant="naked"
                     >

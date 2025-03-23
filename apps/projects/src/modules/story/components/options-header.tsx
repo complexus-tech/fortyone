@@ -3,6 +3,7 @@ import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
 import { CopyIcon, DeleteIcon, GitIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useCopyToClipboard, useTerminology, useUserRole } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -86,6 +87,12 @@ export const OptionsHeader = ({
   const restoreStory = async () => {
     await mutateAsync(id);
   };
+
+  useHotkeys("backspace, delete", () => {
+    if (isAdminOrOwner) {
+      setIsOpen(true);
+    }
+  });
   return (
     <>
       <Container className="flex h-16 w-full items-center justify-between md:px-6">

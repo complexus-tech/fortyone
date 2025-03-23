@@ -43,3 +43,4 @@ export * from "./ColorPicker/ColorPicker";
 export * from "./CircleProgressBar/CircleProgressBar";
 export * from "./Skeleton/Skeleton";
 export * from "./Blur/Blur";
+export * from "./Kbd/Kbd";

@@ -1,4 +1,5 @@
-import { Badge, Box, Dialog, Flex, Text } from "ui";
+"use client";
+import { Kbd, Box, Dialog, Flex, Text } from "ui";
 import type { ReactNode } from "react";
 import { useTerminology } from "@/hooks";
 
@@ -9,16 +10,6 @@ type Shortcuts = {
     shortcut: ReactNode;
   }[];
 };
-
-const Kbd = ({ children }: { children: ReactNode }) => (
-  <Badge
-    className="h-6 min-w-6 rounded px-1 uppercase dark:border-dark-50"
-    color="tertiary"
-    size="sm"
-  >
-    {children}
-  </Badge>
-);
 
 export const KeyboardShortcuts = ({
   isOpen,
@@ -77,7 +68,7 @@ export const KeyboardShortcuts = ({
           name: "Go to settings",
           shortcut: (
             <Flex align="center" gap={1}>
-              <Kbd>⌘</Kbd>
+              <Kbd>⌥</Kbd>
               <Kbd>⇧</Kbd>
               <Kbd>s</Kbd>
             </Flex>
@@ -87,9 +78,9 @@ export const KeyboardShortcuts = ({
           name: "Log out",
           shortcut: (
             <Flex align="center" gap={1}>
-              <Kbd>⌘</Kbd>
+              <Kbd>⌥</Kbd>
               <Kbd>⇧</Kbd>
-              <Kbd>q</Kbd>
+              <Kbd>l</Kbd>
             </Flex>
           ),
         },
@@ -166,48 +157,6 @@ export const KeyboardShortcuts = ({
             </Flex>
           ),
         },
-        {
-          name: `Create new ${getTermDisplay("keyResultTerm")}`,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>⇧</Kbd>
-              <Kbd>k</Kbd>
-            </Flex>
-          ),
-        },
-      ],
-    },
-    {
-      name: `Manage ${getTermDisplay("storyTerm")}`,
-      items: [
-        {
-          name: `Delete selected ${getTermDisplay("storyTerm")}`,
-          shortcut: <Kbd>Delete</Kbd>,
-        },
-        {
-          name: `Comment on selected ${getTermDisplay("storyTerm")}`,
-          shortcut: <Kbd>c</Kbd>,
-        },
-        {
-          name: "Change assignee",
-          shortcut: <Kbd>a</Kbd>,
-        },
-        {
-          name: "Add label",
-          shortcut: <Kbd>l</Kbd>,
-        },
-        {
-          name: "Change status",
-          shortcut: <Kbd>s</Kbd>,
-        },
-        {
-          name: "Change priority",
-          shortcut: <Kbd>p</Kbd>,
-        },
-        {
-          name: "Set due date",
-          shortcut: <Kbd>d</Kbd>,
-        },
       ],
     },
     {
@@ -234,6 +183,48 @@ export const KeyboardShortcuts = ({
               <Kbd>b</Kbd>
             </Flex>
           ),
+        },
+        {
+          name: "Toggle theme",
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>⌥</Kbd>
+              <Kbd>⇧</Kbd>
+              <Kbd>t</Kbd>
+            </Flex>
+          ),
+        },
+      ],
+    },
+    {
+      name: getTermDisplay("storyTerm", {
+        variant: "plural",
+        capitalize: true,
+      }),
+      items: [
+        {
+          name: `Delete selected ${getTermDisplay("storyTerm")}`,
+          shortcut: <Kbd>Delete</Kbd>,
+        },
+        {
+          name: "Change assignee",
+          shortcut: <Kbd>a</Kbd>,
+        },
+        {
+          name: "Add label",
+          shortcut: <Kbd>l</Kbd>,
+        },
+        {
+          name: "Change status",
+          shortcut: <Kbd>s</Kbd>,
+        },
+        {
+          name: "Change priority",
+          shortcut: <Kbd>p</Kbd>,
+        },
+        {
+          name: "Set due date",
+          shortcut: <Kbd>d</Kbd>,
         },
       ],
     },
