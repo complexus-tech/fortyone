@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Flex, Text, Tooltip, Avatar, Checkbox, Box, Button } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
@@ -10,6 +11,8 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import { storyKeys } from "@/modules/stories/constants";
+import { getStory } from "@/modules/story/queries/get-story";
 import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
 import { AssigneesMenu } from "./assignees-menu";
@@ -18,6 +21,7 @@ import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
 
 export const StoryRow = ({ story }: { story: StoryProps }) => {
+  const queryClient = useQueryClient();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useTeamMembers(story.teamId);
   const { userRole } = useUserRole();
@@ -75,7 +79,15 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
                 </Text>
               </Tooltip>
             )}
-            <Link href={`/story/${story.id}/${slugify(story.title)}`}>
+            <Link
+              href={`/story/${story.id}/${slugify(story.title)}`}
+              onMouseEnter={() => {
+                queryClient.prefetchQuery({
+                  queryKey: storyKeys.detail(story.id),
+                  queryFn: () => getStory(story.id),
+                });
+              }}
+            >
               <Text
                 className="line-clamp-1 hover:opacity-90"
                 fontWeight="medium"

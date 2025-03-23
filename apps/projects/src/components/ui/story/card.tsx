@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Box, Flex, Button, Text, Avatar, Tooltip } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -10,6 +11,8 @@ import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useMembers } from "@/lib/hooks/members";
 import { useUserRole } from "@/hooks";
+import { storyKeys } from "@/modules/stories/constants";
+import { getStory } from "@/modules/story/queries/get-story";
 import { useBoard } from "../board-context";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
@@ -25,6 +28,7 @@ export const StoryCard = ({
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { userRole } = useUserRole();
+  const queryClient = useQueryClient();
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
 
@@ -58,6 +62,12 @@ export const StoryCard = ({
           },
           className,
         )}
+        onMouseEnter={() => {
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.detail(story.id),
+            queryFn: () => getStory(story.id),
+          });
+        }}
       >
         <div
           className={cn("cursor-pointer pb-2 pt-3", {
