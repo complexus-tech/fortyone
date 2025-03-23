@@ -17,9 +17,11 @@ import { useUpdateStoryMutation } from "../hooks/update-mutation";
 export const OptionsHeader = ({
   isAdminOrOwner,
   storyId,
+  isNotifications,
 }: {
   isAdminOrOwner: boolean;
   storyId: string;
+  isNotifications?: boolean;
 }) => {
   const { data: currentUser } = useProfile();
   const { data } = useStoryById(storyId);
@@ -124,51 +126,55 @@ export const OptionsHeader = ({
             </Tooltip>
           )}
 
-          {isDeleted ? (
-            <Tooltip
-              title={
-                isAdminOrOwner
-                  ? "Restore Story"
-                  : "You are not allowed to restore this story"
-              }
-            >
-              <Button
-                color="tertiary"
-                disabled={!isAdminOrOwner}
-                leftIcon={<UndoIcon />}
-                onClick={() => {
-                  if (isAdminOrOwner) {
-                    restoreStory();
+          {!isNotifications ? (
+            <>
+              {isDeleted ? (
+                <Tooltip
+                  title={
+                    isAdminOrOwner
+                      ? "Restore Story"
+                      : "You are not allowed to restore this story"
                   }
-                }}
-                variant="naked"
-              >
-                <span className="sr-only">Restore story</span>
-              </Button>
-            </Tooltip>
-          ) : (
-            <Tooltip
-              title={
-                isAdminOrOwner
-                  ? "Delete Story"
-                  : "You are not allowed to delete this story"
-              }
-            >
-              <Button
-                color="tertiary"
-                disabled={!isAdminOrOwner}
-                leftIcon={<DeleteIcon />}
-                onClick={() => {
-                  if (isAdminOrOwner) {
-                    setIsOpen(true);
+                >
+                  <Button
+                    color="tertiary"
+                    disabled={!isAdminOrOwner}
+                    leftIcon={<UndoIcon />}
+                    onClick={() => {
+                      if (isAdminOrOwner) {
+                        restoreStory();
+                      }
+                    }}
+                    variant="naked"
+                  >
+                    <span className="sr-only">Restore story</span>
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Tooltip
+                  title={
+                    isAdminOrOwner
+                      ? "Delete Story"
+                      : "You are not allowed to delete this story"
                   }
-                }}
-                variant="naked"
-              >
-                <span className="sr-only">Delete story</span>
-              </Button>
-            </Tooltip>
-          )}
+                >
+                  <Button
+                    color="tertiary"
+                    disabled={!isAdminOrOwner}
+                    leftIcon={<DeleteIcon />}
+                    onClick={() => {
+                      if (isAdminOrOwner) {
+                        setIsOpen(true);
+                      }
+                    }}
+                    variant="naked"
+                  >
+                    <span className="sr-only">Delete story</span>
+                  </Button>
+                </Tooltip>
+              )}
+            </>
+          ) : null}
         </Flex>
       </Container>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>

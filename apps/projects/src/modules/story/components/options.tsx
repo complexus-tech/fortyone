@@ -16,7 +16,6 @@ import { addDays, format, differenceInDays, formatISO } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -46,13 +45,13 @@ export const Option = ({
   label,
   value,
   className,
+  isNotifications,
 }: {
   label: string;
   value: ReactNode;
   className?: string;
+  isNotifications: boolean;
 }) => {
-  const pathname = usePathname();
-  const isNotifications = pathname.includes("notifications");
   return (
     <Box
       className={cn(
@@ -75,9 +74,13 @@ export const Option = ({
   );
 };
 
-export const Options = ({ storyId }: { storyId: string }) => {
-  const pathname = usePathname();
-  const isNotifications = pathname.includes("notifications");
+export const Options = ({
+  storyId,
+  isNotifications,
+}: {
+  storyId: string;
+  isNotifications: boolean;
+}) => {
   const { data } = useStoryById(storyId);
   const {
     priority,
@@ -122,7 +125,11 @@ export const Options = ({ storyId }: { storyId: string }) => {
 
   return (
     <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
+      <OptionsHeader
+        isAdminOrOwner={isAdminOrOwner}
+        isNotifications={isNotifications}
+        storyId={storyId}
+      />
       <Container className="pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           {!isNotifications && <Text fontWeight="semibold">Properties</Text>}
@@ -142,6 +149,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
         </Box>
         {!isNotifications && (
           <Option
+            isNotifications={isNotifications}
             label="Reporter"
             value={
               <Flex align="center" className="px-2.5" gap={2}>
@@ -164,6 +172,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           />
         )}
         <Option
+          isNotifications={isNotifications}
           label="Status"
           value={
             <StatusesMenu>
@@ -189,6 +198,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           }
         />
         <Option
+          isNotifications={isNotifications}
           label="Priority"
           value={
             <PrioritiesMenu>
@@ -212,6 +222,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           }
         />
         <Option
+          isNotifications={isNotifications}
           label="Assignee"
           value={
             <AssigneesMenu>
@@ -253,6 +264,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           }
         />
         <Option
+          isNotifications={isNotifications}
           label="Start date"
           value={
             <DatePicker>
@@ -288,6 +300,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           }
         />
         <Option
+          isNotifications={isNotifications}
           label="Deadline"
           value={
             <DatePicker>
@@ -348,6 +361,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
         />
         {features.objectiveEnabled ? (
           <Option
+            isNotifications={isNotifications}
             label="Objective"
             value={
               <ObjectivesMenu>
@@ -385,6 +399,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
         ) : null}
         {features.sprintEnabled ? (
           <Option
+            isNotifications={isNotifications}
             label="Sprint"
             value={
               <SprintsMenu>
@@ -423,6 +438,7 @@ export const Options = ({ storyId }: { storyId: string }) => {
           className={cn("items-start pt-1", {
             "items-center pt-0": labels.length === 0,
           })}
+          isNotifications={isNotifications}
           label="Labels"
           value={
             <>

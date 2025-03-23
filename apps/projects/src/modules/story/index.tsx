@@ -34,7 +34,7 @@ export const StoryPage = ({
         maxSize={isNotifications ? 28 : 35}
         minSize={isNotifications ? 24 : 25}
       >
-        <Options storyId={storyId} />
+        <Options isNotifications={Boolean(isNotifications)} storyId={storyId} />
       </ResizablePanel.Panel>
     </ResizablePanel>
   );
