@@ -1,5 +1,3 @@
-"use server";
-
 import { remove } from "@/lib/http";
 import { getApiError } from "@/utils";
 

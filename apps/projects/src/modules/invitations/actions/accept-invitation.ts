@@ -1,5 +1,3 @@
-"use server";
-
 import ky from "ky";
 import { auth, refreshWorkspaces } from "@/auth";
 import type { ApiResponse } from "@/types";
