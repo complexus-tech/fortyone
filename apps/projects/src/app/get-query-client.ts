@@ -4,8 +4,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { cache } from "react";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
-// import { DURATION_FROM_SECONDS } from "@/constants/time";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 // const makeQueryClient = () => {
 //   return new QueryClient({
@@ -13,7 +12,7 @@ import { DURATION_FROM_SECONDS } from "@/constants/time";
 //       queries: {
 //         // With SSR, we usually want to set some default staleTime
 //         // above 0 to avoid refetching immediately on the client
-//         staleTime: DURATION_FROM_SECONDS.MINUTE * 6,
+//         staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 6,
 //         refetchOnWindowFocus: true,
 //         refetchOnReconnect: true,
 //         refetchOnMount: true,
@@ -54,7 +53,8 @@ export const getQueryClient = cache(
         queries: {
           // With SSR, we usually want to set some default staleTime
           // above 0 to avoid refetching immediately on the client
-          staleTime: DURATION_FROM_SECONDS.MINUTE * 10,
+          staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 6,
+          refetchOnReconnect: true,
           retry: 1,
         },
         mutations: {
