@@ -1,4 +1,3 @@
-"use server";
 import { get } from "@/lib/http";
 import type { ApiResponse, Link } from "@/types";
 

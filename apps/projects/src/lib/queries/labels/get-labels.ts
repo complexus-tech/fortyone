@@ -1,4 +1,3 @@
-"use server";
 import { stringify } from "qs";
 import { get } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
