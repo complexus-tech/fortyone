@@ -26,6 +26,7 @@ export const Header = ({
     "tab",
     parseAsStringLiteral(tabs).withDefault("all"),
   );
+
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
