@@ -236,7 +236,7 @@ export const KeyboardShortcuts = ({
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
         className="mb-auto mt-auto"
-        overlayClassName="justify-start pl-[2vh]"
+        overlayClassName="justify-end pr-[2vh]"
         size="sm"
       >
         <Dialog.Title className="px-6 py-4 text-lg">

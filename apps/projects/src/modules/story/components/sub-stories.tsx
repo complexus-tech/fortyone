@@ -2,6 +2,7 @@ import { Flex, Badge, Button, Tooltip } from "ui";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { cn } from "lib";
+import { useHotkeys } from "react-hotkeys-hook";
 import { NewSubStory } from "@/components/ui/new-sub-story";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
@@ -31,6 +32,12 @@ export const SubStories = ({
   const completedStories = subStories.filter(
     (story) => story.statusId === completedStatus?.id,
   ).length;
+
+  useHotkeys("c", () => {
+    if (userRole !== "guest") {
+      setIsCreateSubStoryOpen(true);
+    }
+  });
 
   return (
     <>
