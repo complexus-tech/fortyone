@@ -2,6 +2,7 @@
 import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
+import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -35,6 +36,14 @@ export const Header = ({
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useTeamOptions();
   const { getTermDisplay } = useTerminology();
+
+  useHotkeys("v+l", () => {
+    setLayout("list");
+  });
+
+  useHotkeys("v+b", () => {
+    setLayout("kanban");
+  });
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>

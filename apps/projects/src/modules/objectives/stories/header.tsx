@@ -3,6 +3,7 @@ import { BreadCrumbs, Flex } from "ui";
 import { ObjectiveIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
+import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -40,6 +41,14 @@ export const Header = ({
   )!;
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useObjectiveOptions();
+
+  useHotkeys("v+l", () => {
+    setLayout("list");
+  });
+
+  useHotkeys("v+b", () => {
+    setLayout("kanban");
+  });
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>

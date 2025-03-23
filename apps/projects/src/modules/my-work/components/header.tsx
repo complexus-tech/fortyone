@@ -2,6 +2,7 @@
 import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -26,6 +27,14 @@ export const Header = ({
     "tab",
     parseAsStringLiteral(tabs).withDefault("all"),
   );
+
+  useHotkeys("v+l", () => {
+    setLayout("list");
+  });
+
+  useHotkeys("v+b", () => {
+    setLayout("kanban");
+  });
 
   return (
     <HeaderContainer className="justify-between">

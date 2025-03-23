@@ -1,6 +1,7 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
 import { UserIcon } from "icons";
+import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -22,6 +23,14 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { viewOptions, setViewOptions } = useProfile();
+
+  useHotkeys("v+l", () => {
+    setLayout("list");
+  });
+
+  useHotkeys("v+b", () => {
+    setLayout("kanban");
+  });
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>

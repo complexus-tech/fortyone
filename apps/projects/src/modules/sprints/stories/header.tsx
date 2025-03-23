@@ -3,6 +3,7 @@ import { BreadCrumbs, Flex } from "ui";
 import { SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
@@ -41,6 +42,14 @@ export const Header = ({
   const startDate = format(new Date(sprint.startDate), "MMM d");
   const endDate = format(new Date(sprint.endDate), "MMM d");
   const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
+
+  useHotkeys("v+l", () => {
+    setLayout("list");
+  });
+
+  useHotkeys("v+b", () => {
+    setLayout("kanban");
+  });
 
   return (
     <HeaderContainer className="justify-between">
