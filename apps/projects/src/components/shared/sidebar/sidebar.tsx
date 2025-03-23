@@ -102,7 +102,7 @@ export const Sidebar = () => {
       </Box> */}
 
       <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
-      <KeyboardShortcuts isOpen setIsOpen={setIsKeyboardShortcutsOpen} />
+      <KeyboardShortcuts isOpen={false} setIsOpen={setIsKeyboardShortcutsOpen} />
     </Box>
   );
 };
