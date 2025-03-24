@@ -15,12 +15,17 @@ import {
   UserIcon,
   DashboardIcon,
   MoonIcon,
+  UsersAddIcon,
 } from "icons";
 import nProgress from "nprogress";
 import { useRouter, usePathname } from "next/navigation";
 import { useTerminology, useTheme, useAnalytics } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
-import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
+import {
+  NewObjectiveDialog,
+  NewStoryDialog,
+  InviteMembersDialog,
+} from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { logOut } from "@/components/shared/sidebar/actions";
 
@@ -46,6 +51,7 @@ export const CommandMenu = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
+  const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -107,6 +113,11 @@ export const CommandMenu = () => {
   useHotkeys("mod+/", () => {
     setIsKeyboardShortcutsOpen((prev) => !prev);
   });
+  useHotkeys("mod+i", () => {
+    setIsInviteMembersOpen((prev) => !prev);
+    setOpen(false);
+  });
+
   useHotkeys("/", () => {
     if (pathname !== "search") {
       nProgress.start();
@@ -157,6 +168,20 @@ export const CommandMenu = () => {
           ),
           action: () => {
             setIsSprintsOpen(true);
+            setOpen(false);
+          },
+        },
+        {
+          label: "Invite Members",
+          icon: <UsersAddIcon />,
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>⌘</Kbd>
+              <Kbd>i</Kbd>
+            </Flex>
+          ),
+          action: () => {
+            setIsInviteMembersOpen(true);
             setOpen(false);
           },
         },
@@ -387,6 +412,10 @@ export const CommandMenu = () => {
       <NewObjectiveDialog
         isOpen={isObjectivesOpen}
         setIsOpen={setIsObjectivesOpen}
+      />
+      <InviteMembersDialog
+        isOpen={isInviteMembersOpen}
+        setIsOpen={setIsInviteMembersOpen}
       />
     </>
   );
