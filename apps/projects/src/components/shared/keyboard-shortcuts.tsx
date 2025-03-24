@@ -181,11 +181,11 @@ export const KeyboardShortcuts = ({
           ),
         },
         {
-          name: "Board view",
+          name: "Kanban view",
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>v</Kbd>
-              <Kbd>b</Kbd>
+              <Kbd>k</Kbd>
             </Flex>
           ),
         },

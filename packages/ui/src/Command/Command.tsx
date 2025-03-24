@@ -28,20 +28,33 @@ Command.displayName = CommandPrimitive.displayName;
 
 const CommandInput = forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex items-center" cmdk-input-wrapper="">
-    <SearchIcon className="h-[1.15rem] w-auto relative left-2.5 opacity-60" />
-    <CommandPrimitive.Input
-      ref={ref}
-      className={cn(
-        "bg-transparent placeholder:text-gray/80 placeholder:dark:text-gray-200/60 py-[0.15rem] pl-[1.1rem] outline-none w-full",
-        className
-      )}
-      {...props}
-    />
-  </div>
-));
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & {
+    icon?: React.ReactNode;
+  }
+>(
+  (
+    {
+      className,
+      icon = (
+        <SearchIcon className="h-[1.15rem] w-auto relative left-2.5 opacity-60" />
+      ),
+      ...props
+    },
+    ref
+  ) => (
+    <div className="flex items-center" cmdk-input-wrapper="">
+      {icon}
+      <CommandPrimitive.Input
+        ref={ref}
+        className={cn(
+          "bg-transparent placeholder:text-gray/80 placeholder:dark:text-gray-200/60 py-[0.15rem] pl-[1.1rem] outline-none w-full",
+          className
+        )}
+        {...props}
+      />
+    </div>
+  )
+);
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 

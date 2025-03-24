@@ -41,7 +41,7 @@ export const Header = ({
     setLayout("list");
   });
 
-  useHotkeys("v+b", () => {
+  useHotkeys("v+k", () => {
     setLayout("kanban");
   });
   return (
