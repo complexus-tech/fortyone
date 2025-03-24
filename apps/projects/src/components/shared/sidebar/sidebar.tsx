@@ -8,6 +8,7 @@ import nProgress from "nprogress";
 import { useTheme } from "next-themes";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "../keyboard-shortcuts";
+import { CommandMenu } from "../command-menu";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
@@ -148,6 +149,7 @@ export const Sidebar = () => {
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}
       />
+      <CommandMenu />
     </Box>
   );
 };
