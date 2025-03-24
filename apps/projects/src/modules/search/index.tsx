@@ -1,0 +1,41 @@
+import { ArrowLeftIcon, SearchIcon } from "icons";
+import { Box, Button, Flex, Text } from "ui";
+import { NewStoryButton } from "@/components/ui";
+import { BodyContainer } from "@/components/shared";
+import { Header } from "./components/header";
+
+export const SearchPage = () => {
+  return (
+    <>
+      <Header />
+      <BodyContainer className="flex items-center justify-center">
+        <Box className="flex flex-col items-center">
+          <SearchIcon className="h-20" strokeWidth={1.3} />
+          <Text className="mb-6 mt-10" fontSize="3xl">
+            Coming soon...
+          </Text>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            This page is under construction. Our team is working on it! While we
+            clear the roadblock, why not explore other routes to productivity?
+          </Text>
+          <Flex gap={2}>
+            <Button
+              className="gap-1 pl-2"
+              color="tertiary"
+              href="/my-work"
+              leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+            >
+              Goto my work
+            </Button>
+            <NewStoryButton
+              className="dark:bg-opacity-20 dark:hover:bg-opacity-40"
+              size="md"
+            >
+              Create story
+            </NewStoryButton>
+          </Flex>
+        </Box>
+      </BodyContainer>
+    </>
+  );
+};
