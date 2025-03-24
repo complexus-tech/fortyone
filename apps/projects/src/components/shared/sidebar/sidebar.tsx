@@ -2,12 +2,8 @@
 import { Box, Button, Flex, Menu, Text } from "ui";
 import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useHotkeys } from "react-hotkeys-hook";
-import nProgress from "nprogress";
-import { useTheme } from "next-themes";
 import { InviteMembersDialog } from "@/components/ui";
-import { KeyboardShortcuts } from "../keyboard-shortcuts";
+import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { CommandMenu } from "../command-menu";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
@@ -16,56 +12,6 @@ import { Teams } from "./teams";
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  // Navigation shortcuts
-  useHotkeys("g+i", () => {
-    if (pathname !== "/notifications") {
-      nProgress.start();
-      router.push("/notifications");
-    }
-  });
-  useHotkeys("g+m", () => {
-    if (pathname !== "/my-work") {
-      nProgress.start();
-      router.push("/my-work");
-    }
-  });
-
-  useHotkeys("g+s", () => {
-    if (pathname !== "/summary") {
-      nProgress.start();
-      router.push("/summary");
-    }
-  });
-  useHotkeys("g+o", () => {
-    if (pathname !== "/objectives") {
-      nProgress.start();
-      router.push("/objectives");
-    }
-  });
-
-  useHotkeys("alt+shift+s", () => {
-    if (pathname !== "/settings") {
-      nProgress.start();
-      router.push("/settings");
-    }
-  });
-
-  useHotkeys("alt+shift+t", () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  });
-
-  useHotkeys("mod+/", () => {
-    setIsKeyboardShortcutsOpen((prev) => !prev);
-  });
-  useHotkeys("/", () => {
-    if (pathname !== "search") {
-      nProgress.start();
-      router.push("/search");
-    }
-  });
 
   return (
     <Box className="flex h-screen flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-black">
@@ -143,12 +89,11 @@ export const Sidebar = () => {
           Upgrade to Pro
         </Button>
       </Box> */}
-
-      <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
       <KeyboardShortcuts
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}
       />
+      <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
       <CommandMenu />
     </Box>
   );

@@ -7,8 +7,6 @@ import {
   PlusIcon,
   NotificationsIcon,
   ObjectiveIcon,
-  ListIcon,
-  FilterIcon,
   SunIcon,
   HelpIcon,
   LogoutIcon,
@@ -16,17 +14,104 @@ import {
   SettingsIcon,
   UserIcon,
   DashboardIcon,
-  KanbanIcon,
+  MoonIcon,
 } from "icons";
-import { useTerminology } from "@/hooks";
+import nProgress from "nprogress";
+import { useRouter, usePathname } from "next/navigation";
+import { useTerminology, useTheme, useAnalytics } from "@/hooks";
+import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
+import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
+import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
+import { logOut } from "@/components/shared/sidebar/actions";
+
+const clearAllStorage = () => {
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+  });
+
+  if ("caches" in window) {
+    caches.keys().then((names) => {
+      names.forEach((name) => {
+        caches.delete(name);
+      });
+    });
+  }
+};
 
 export const CommandMenu = () => {
+  const { analytics } = useAnalytics();
   const { getTermDisplay } = useTerminology();
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isSprintsOpen, setIsSprintsOpen] = useState(false);
+  const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toggleTheme, theme } = useTheme();
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      analytics.logout(true);
+    } finally {
+      clearAllStorage();
+      window.location.href = "https://www.complexus.app?signedOut=true";
+    }
+  };
 
   useHotkeys("mod+k", (e) => {
     e.preventDefault();
     setOpen((prev) => !prev);
+  });
+
+  useHotkeys("g+i", () => {
+    if (pathname !== "/notifications") {
+      nProgress.start();
+      router.push("/notifications");
+    }
+  });
+  useHotkeys("g+m", () => {
+    if (pathname !== "/my-work") {
+      nProgress.start();
+      router.push("/my-work");
+    }
+  });
+
+  useHotkeys("g+s", () => {
+    if (pathname !== "/summary") {
+      nProgress.start();
+      router.push("/summary");
+    }
+  });
+  useHotkeys("g+o", () => {
+    if (pathname !== "/objectives") {
+      nProgress.start();
+      router.push("/objectives");
+    }
+  });
+
+  useHotkeys("alt+shift+s", () => {
+    if (pathname !== "/settings") {
+      nProgress.start();
+      router.push("/settings");
+    }
+  });
+
+  useHotkeys("alt+shift+t", () => {
+    toggleTheme();
+  });
+
+  useHotkeys("mod+/", () => {
+    setIsKeyboardShortcutsOpen((prev) => !prev);
+  });
+  useHotkeys("/", () => {
+    if (pathname !== "search") {
+      nProgress.start();
+      router.push("/search");
+    }
   });
 
   const commands = [
@@ -42,7 +127,10 @@ export const CommandMenu = () => {
               <Kbd>n</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setIsStoryOpen(true);
+            setOpen(false);
+          },
         },
         {
           label: `New ${getTermDisplay("objectiveTerm")}`,
@@ -53,7 +141,10 @@ export const CommandMenu = () => {
               <Kbd>o</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setIsObjectivesOpen(true);
+            setOpen(false);
+          },
         },
         {
           label: `New ${getTermDisplay("sprintTerm")}`,
@@ -64,7 +155,10 @@ export const CommandMenu = () => {
               <Kbd>s</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setIsSprintsOpen(true);
+            setOpen(false);
+          },
         },
       ],
     },
@@ -80,7 +174,13 @@ export const CommandMenu = () => {
               <Kbd>m</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "/my-work") {
+              nProgress.start();
+              router.push("/my-work");
+            }
+          },
         },
         {
           label: "Inbox",
@@ -91,7 +191,13 @@ export const CommandMenu = () => {
               <Kbd>i</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "/notifications") {
+              nProgress.start();
+              router.push("/notifications");
+            }
+          },
         },
         {
           label: "Summary",
@@ -102,7 +208,13 @@ export const CommandMenu = () => {
               <Kbd>s</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "/summary") {
+              nProgress.start();
+              router.push("/summary");
+            }
+          },
         },
         {
           label: getTermDisplay("objectiveTerm", {
@@ -116,68 +228,30 @@ export const CommandMenu = () => {
               <Kbd>o</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "/objectives") {
+              nProgress.start();
+              router.push("/objectives");
+            }
+          },
         },
         {
           label: "Search",
           icon: <SearchIcon className="h-[1.15rem]" />,
           shortcut: <Kbd>/</Kbd>,
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "search") {
+              nProgress.start();
+              router.push("/search");
+            }
+          },
         },
       ],
     },
     {
-      group: "Display",
-      items: [
-        {
-          label: "List View",
-          icon: <ListIcon className="h-[1.35rem]" />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>v</Kbd>
-              <Kbd>l</Kbd>
-            </Flex>
-          ),
-          action: () => {},
-        },
-        {
-          label: "Kanban View",
-          icon: <KanbanIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>v</Kbd>
-              <Kbd>b</Kbd>
-            </Flex>
-          ),
-          action: () => {},
-        },
-        {
-          label: "Show Filters",
-          icon: <FilterIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>v</Kbd>
-              <Kbd>f</Kbd>
-            </Flex>
-          ),
-          action: () => {},
-        },
-        {
-          label: "Toggle Theme",
-          icon: <SunIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>⌥</Kbd>
-              <Kbd>⇧</Kbd>
-              <Kbd>t</Kbd>
-            </Flex>
-          ),
-          action: () => {},
-        },
-      ],
-    },
-    {
-      group: "Settings & Help",
+      group: "Settings & Display",
       items: [
         {
           label: "Settings",
@@ -189,7 +263,28 @@ export const CommandMenu = () => {
               <Kbd>s</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setOpen(false);
+            if (pathname !== "/settings") {
+              nProgress.start();
+              router.push("/settings");
+            }
+          },
+        },
+        {
+          label: "Toggle Theme",
+          icon: theme === "dark" ? <SunIcon /> : <MoonIcon />,
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>⌥</Kbd>
+              <Kbd>⇧</Kbd>
+              <Kbd>t</Kbd>
+            </Flex>
+          ),
+          action: () => {
+            toggleTheme();
+            setOpen(false);
+          },
         },
         {
           label: "Keyboard Shortcuts",
@@ -200,7 +295,10 @@ export const CommandMenu = () => {
               <Kbd>/</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: () => {
+            setIsKeyboardShortcutsOpen((prev) => !prev);
+            setOpen(false);
+          },
         },
         {
           label: "Log Out",
@@ -212,68 +310,84 @@ export const CommandMenu = () => {
               <Kbd>l</Kbd>
             </Flex>
           ),
-          action: () => {},
+          action: async () => {
+            setOpen(false);
+            await handleLogout();
+          },
         },
       ],
     },
   ];
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <Dialog.Content className="max-w-3xl" hideClose>
-        <Dialog.Header className="sr-only">
-          <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body className="px-0 pb-0 pt-2">
-          <Command>
-            <Command.Input
-              className="my-2.5 text-2xl antialiased"
-              icon={null}
-              placeholder="What do you want to do?"
-            />
-            <Divider className="my-2.5" />
-            <Command.Empty className="py-2">
-              <Text color="muted" fontSize="xl" fontWeight="normal">
-                No results found.
-              </Text>
-            </Command.Empty>
-            <Box className="max-h-[35rem] overflow-y-auto px-4 pt-2">
-              {commands.map((command) => (
-                <Command.Group
-                  className="mb-4 px-0"
-                  heading={
-                    <Text
-                      className="mb-1.5 pl-3 dark:antialiased"
-                      color="muted"
-                    >
-                      {command.group}
-                    </Text>
-                  }
-                  key={command.group}
-                >
-                  {command.items.map((item) => (
-                    <Command.Item
-                      className="justify-between rounded-[0.6rem] p-3 text-lg opacity-85"
-                      key={item.label}
-                      onSelect={item.action}
-                    >
-                      <Flex
-                        align="center"
-                        className="font-medium antialiased"
-                        gap={3}
+    <>
+      <Dialog onOpenChange={setOpen} open={open}>
+        <Dialog.Content className="max-w-3xl" hideClose>
+          <Dialog.Header className="sr-only">
+            <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="px-0 pb-0 pt-2">
+            <Command>
+              <Command.Input
+                className="my-2.5 text-2xl antialiased"
+                icon={null}
+                placeholder="What do you want to do?"
+              />
+              <Divider className="my-2.5" />
+              <Command.Empty className="py-2">
+                <Text color="muted" fontSize="xl" fontWeight="normal">
+                  No results found.
+                </Text>
+              </Command.Empty>
+              <Box className="max-h-[35rem] overflow-y-auto px-4 pt-2">
+                {commands.map((command) => (
+                  <Command.Group
+                    className="mb-4 px-0"
+                    heading={
+                      <Text
+                        className="mb-1.5 pl-3 dark:antialiased"
+                        color="muted"
                       >
-                        {item.icon}
-                        {item.label}
-                      </Flex>
-                      {item.shortcut}
-                    </Command.Item>
-                  ))}
-                </Command.Group>
-              ))}
-            </Box>
-          </Command>
-        </Dialog.Body>
-      </Dialog.Content>
-    </Dialog>
+                        {command.group}
+                      </Text>
+                    }
+                    key={command.group}
+                  >
+                    {command.items.map((item) => (
+                      <Command.Item
+                        className="justify-between rounded-[0.6rem] p-3 text-[1.1rem] opacity-85"
+                        key={item.label}
+                        onSelect={item.action}
+                      >
+                        <Flex
+                          align="center"
+                          className="font-medium antialiased"
+                          gap={3}
+                        >
+                          {item.icon}
+                          {item.label}
+                        </Flex>
+                        {item.shortcut}
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                ))}
+              </Box>
+            </Command>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
+      <KeyboardShortcuts
+        isOpen={isKeyboardShortcutsOpen}
+        setIsOpen={setIsKeyboardShortcutsOpen}
+      />
+      <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
+      <NewSprintDialog isOpen={isSprintsOpen} setIsOpen={setIsSprintsOpen} />
+      <NewObjectiveDialog
+        isOpen={isObjectivesOpen}
+        setIsOpen={setIsObjectivesOpen}
+      />
+    </>
   );
 };
