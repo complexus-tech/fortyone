@@ -19,7 +19,8 @@ import {
 } from "icons";
 import nProgress from "nprogress";
 import { useRouter, usePathname } from "next/navigation";
-import { useTerminology, useTheme, useAnalytics } from "@/hooks";
+import { useTheme } from "next-themes";
+import { useTerminology, useAnalytics } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
   NewObjectiveDialog,
@@ -55,8 +56,12 @@ export const CommandMenu = () => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { toggleTheme, theme } = useTheme();
+  const { resolvedTheme: theme, setTheme } = useTheme();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   const handleLogout = async () => {
     try {
@@ -106,9 +111,7 @@ export const CommandMenu = () => {
     }
   });
 
-  useHotkeys("alt+shift+t", () => {
-    toggleTheme();
-  });
+  useHotkeys("alt+shift+t", () => {});
 
   useHotkeys("mod+/", () => {
     setIsKeyboardShortcutsOpen((prev) => !prev);
@@ -297,7 +300,7 @@ export const CommandMenu = () => {
           },
         },
         {
-          label: "Toggle Theme",
+          label: `Toggle ${theme === "dark" ? "light" : "dark"} mode`,
           icon: theme === "dark" ? <SunIcon /> : <MoonIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
