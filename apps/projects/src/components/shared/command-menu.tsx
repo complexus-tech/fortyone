@@ -367,7 +367,7 @@ export const CommandMenu = () => {
                   No results found.
                 </Text>
               </Command.Empty>
-              <Box className="max-h-[35rem] overflow-y-auto px-4 pt-2">
+              <Box className="max-h-[35rem] overflow-y-auto px-3 pt-2">
                 {commands.map((command) => (
                   <Command.Group
                     className="mb-4 px-0"
