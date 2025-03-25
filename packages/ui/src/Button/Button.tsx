@@ -24,15 +24,12 @@ export const buttonVariants = cva(
         full: "rounded-full",
       },
       color: {
-        primary:
-          "border-primary bg-primary ring-primary-200 enabled:hover:bg-primary-200 enabled:hover:border-primary-200 focus:bg-primary-200 focus:border-primary-200",
-        danger:
-          "text-danger border-danger bg-danger ring-danger hover:bg-danger/10",
-        info: "text-info border-info bg-info ring-info enabled:hover:bg-info-300 enabled:hover:border-info-300 focus:bg-info-300 focus:border-info-300",
-        warning:
-          "text-warning border-warning bg-warning ring-warning enabled:hover:bg-warning-300 enabled:hover:border-warning-300 focus:bg-warning-300 focus:border-warning-300",
+        primary: "border-primary bg-primary",
+        danger: "text-danger border-danger bg-danger ring-danger",
+        info: "text-info border-info bg-info ring-info",
+        warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "dark:border-dark-100/90 dark:bg-dark-100/50 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
+          "dark:border-dark-100 dark:bg-dark-100/50 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },
