@@ -3,6 +3,7 @@ package storiesrepo
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -1039,4 +1040,129 @@ func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUI
 	}
 
 	return nil
+}
+
+// DuplicateStory creates a copy of an existing story with a new sequence ID
+func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (stories.CoreSingleStory, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.DuplicateStory")
+	defer span.End()
+
+	// Start a transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Get the original story
+	originalStory, err := r.getStoryById(ctx, originalStoryID, workspaceId)
+	if err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to get original story: %w", err)
+	}
+
+	// Get new sequence ID
+	nextSequence, commit, rollback, err := r.GetNextSequenceID(ctx, originalStory.Team, workspaceId)
+	if err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
+	}
+	defer rollback()
+
+	// Prepare the insert query for the new story
+	q := `
+		INSERT INTO stories (
+			sequence_id,
+			title,
+			description,
+			description_html,
+			team_id,
+			objective_id,
+			status_id,
+			assignee_id,
+			priority,
+			sprint_id,
+			workspace_id,
+			reporter_id,
+			created_at,
+			updated_at
+		) VALUES (
+			:sequence_id,
+			:title,
+			:description,
+			:description_html,
+			:team_id,
+			:objective_id,
+			:status_id,
+			:assignee_id,
+			:priority,
+			:sprint_id,
+			:workspace_id,
+			:reporter_id,
+			NOW(),
+			NOW()
+		) RETURNING stories.*;
+	`
+
+	// Prepare parameters for the new story
+	params := map[string]any{
+		"sequence_id":      nextSequence,
+		"title":            "Copy of " + originalStory.Title,
+		"description":      originalStory.Description,
+		"description_html": originalStory.DescriptionHTML,
+		"team_id":          originalStory.Team,
+		"objective_id":     originalStory.Objective,
+		"status_id":        originalStory.Status,
+		"assignee_id":      originalStory.Assignee,
+		"priority":         originalStory.Priority,
+		"sprint_id":        originalStory.Sprint,
+		"workspace_id":     workspaceId,
+		"reporter_id":      userID,
+	}
+
+	// Execute the insert
+	stmt, err := tx.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var newStory dbStory
+	if err := stmt.GetContext(ctx, &newStory, params); err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to create duplicate story: %w", err)
+	}
+
+	// Copy labels if any exist
+	if originalStory.Labels != nil {
+		var labels []uuid.UUID
+		if err := json.Unmarshal(*originalStory.Labels, &labels); err != nil {
+			return stories.CoreSingleStory{}, fmt.Errorf("failed to unmarshal labels: %w", err)
+		}
+
+		if len(labels) > 0 {
+			if err := r.UpdateLabels(ctx, newStory.ID, workspaceId, labels); err != nil {
+				return stories.CoreSingleStory{}, fmt.Errorf("failed to copy labels: %w", err)
+			}
+		}
+	}
+
+	// Commit the sequence ID transaction
+	if err := commit(); err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit sequence ID transaction: %w", err)
+	}
+
+	// Commit the main transaction
+	if err := tx.Commit(); err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Successfully duplicated story #%s", originalStoryID))
+	span.AddEvent("Story duplicated.", trace.WithAttributes(
+		attribute.String("original_story.id", originalStoryID.String()),
+		attribute.String("new_story.id", newStory.ID.String()),
+	))
+
+	return toCoreStory(newStory), nil
 }
