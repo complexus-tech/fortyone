@@ -382,3 +382,33 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 
 }
+
+// DuplicateStory creates a copy of an existing story.
+func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Get the user ID from context
+	userID, _ := mid.GetUserID(ctx)
+
+	duplicatedStory, err := h.stories.DuplicateStory(ctx, storyId, workspaceId, userID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	web.Respond(ctx, w, toAppStory(duplicatedStory), http.StatusCreated)
+	return nil
+}

@@ -67,7 +67,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 		// If no record exists, insert a new one starting from 1
 		q := `
 			INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence)
-			VALUES (:workspace_id, :team_id, 1)
+			VALUES (:workspace_id, :team_id, 0)
 			RETURNING current_sequence
 		`
 		stmt, err = tx.PrepareNamedContext(ctx, q)
@@ -1065,7 +1065,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 	}
 
 	// Get new sequence ID
-	nextSequence, commit, rollback, err := r.GetNextSequenceID(ctx, originalStory.Team, workspaceId)
+	lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, originalStory.Team, workspaceId)
 	if err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
 	}
@@ -1108,7 +1108,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 
 	// Prepare parameters for the new story
 	params := map[string]any{
-		"sequence_id":      nextSequence,
+		"sequence_id":      lastSequence + 1,
 		"title":            "Copy of " + originalStory.Title,
 		"description":      originalStory.Description,
 		"description_html": originalStory.DescriptionHTML,
