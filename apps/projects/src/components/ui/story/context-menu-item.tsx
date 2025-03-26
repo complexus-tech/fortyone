@@ -7,11 +7,18 @@ export const ContextMenuItem = ({
   icon,
   subMenu,
   shortCut,
+  onSelect,
 }: {
   label: string;
   icon: ReactNode;
-  subMenu?: { label: string; icon: ReactNode; shortCut?: string }[];
+  subMenu?: {
+    label: string;
+    icon: ReactNode;
+    shortCut?: string;
+    onSelect?: () => void;
+  }[];
   shortCut?: string;
+  onSelect?: () => void;
 }) => {
   return (
     <>
@@ -34,13 +41,19 @@ export const ContextMenuItem = ({
               />
             </Flex>
           </ContextMenu.SubTrigger>
-          <ContextMenu.SubItems className="min-w-[14rem]" rounded="md">
+          <ContextMenu.SubItems className="min-w-[10rem]" rounded="md">
             <ContextMenu.Group>
               {subMenu.map(
-                ({ label: subLabel, icon: subIcon, shortCut: subShortCut }) => (
+                ({
+                  label: subLabel,
+                  icon: subIcon,
+                  shortCut: subShortCut,
+                  onSelect: subOnSelect,
+                }) => (
                   <ContextMenu.Item
                     className="mb-1 justify-between py-1.5"
                     key={label}
+                    onSelect={subOnSelect}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center gap-1">
                       <span className="flex text-gray dark:text-gray-200">
@@ -60,7 +73,7 @@ export const ContextMenuItem = ({
           </ContextMenu.SubItems>
         </ContextMenu.SubMenu>
       ) : (
-        <ContextMenu.Item className="justify-between">
+        <ContextMenu.Item className="justify-between" onSelect={onSelect}>
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
             <span className="flex text-gray dark:text-gray-200">{icon}</span>
             <Text className="max-w-[10rem] truncate">{label}</Text>
