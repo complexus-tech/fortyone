@@ -79,7 +79,9 @@ export const StoryContextMenu = ({
       options: [
         {
           label: "Delete",
-          icon: <DeleteIcon className="h-5 w-auto text-danger" />,
+          icon: (
+            <DeleteIcon className="h-5 w-auto text-danger dark:text-danger" />
+          ),
           onSelect: () => {
             setIsDeleteOpen(true);
           },
