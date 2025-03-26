@@ -251,7 +251,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		}
 
 		// Create notification for original assignee if exists
-		if payload.AssigneeID != nil {
+		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
 			// Skip if the original assignee and new assignee are the same
 			if newAssigneeID != nil && *payload.AssigneeID == *newAssigneeID {
 				c.log.Info(ctx, "same assignee, not creating notification")
@@ -283,7 +283,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		}
 
 		// Create notification for new assignee if exists
-		if newAssigneeID != nil {
+		if newAssigneeID != nil && *newAssigneeID != event.ActorID {
 			// Skip if the original assignee and new assignee are the same
 			if payload.AssigneeID != nil && *payload.AssigneeID == *newAssigneeID {
 				c.log.Info(ctx, "same assignee, not creating notification")
@@ -315,8 +315,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		}
 	} else {
 		// Handle other updates (status, priority, due date)
-		// Only create notification if there's an assignee to notify
-		if payload.AssigneeID != nil {
+		// Only create notification if there's an assignee to notify and they're not the actor
+		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
 			description := c.generateStoryUpdateDescription(
 				actorUsername,
 				payload.Updates,
