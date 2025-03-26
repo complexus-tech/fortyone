@@ -11,6 +11,7 @@ type EventType string
 const (
 	StoryUpdated       EventType = "story.updated"
 	StoryCommented     EventType = "story.commented"
+	StoryDuplicated    EventType = "story.duplicated"
 	ObjectiveUpdated   EventType = "objective.updated"
 	KeyResultUpdated   EventType = "keyresult.updated"
 	EmailVerification  EventType = "email.verification"
@@ -86,4 +87,11 @@ type InvitationAcceptedPayload struct {
 	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	WorkspaceName string    `json:"workspace_name"`
 	WorkspaceSlug string    `json:"workspace_slug"`
+}
+
+// StoryDuplicatedPayload contains data for story duplication events
+type StoryDuplicatedPayload struct {
+	StoryID         uuid.UUID `json:"story_id"`
+	OriginalStoryID uuid.UUID `json:"original_story_id"`
+	WorkspaceID     uuid.UUID `json:"workspace_id"`
 }

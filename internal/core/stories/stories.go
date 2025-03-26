@@ -42,6 +42,7 @@ type Repository interface {
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
+	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -363,4 +364,24 @@ func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]comment
 	))
 
 	return comments, nil
+}
+
+// DuplicateStory creates a copy of an existing story.
+func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error) {
+	s.log.Info(ctx, "business.core.stories.DuplicateStory")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.DuplicateStory")
+	defer span.End()
+
+	duplicatedStory, err := s.repo.DuplicateStory(ctx, originalStoryID, workspaceId, userID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, fmt.Errorf("failed to duplicate story: %w", err)
+	}
+
+	span.AddEvent("Story duplicated.", trace.WithAttributes(
+		attribute.String("original_story.id", originalStoryID.String()),
+		attribute.String("new_story.id", duplicatedStory.ID.String()),
+	))
+
+	return duplicatedStory, nil
 }
