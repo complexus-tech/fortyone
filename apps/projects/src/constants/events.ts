@@ -1,5 +1,10 @@
 const sprints = ["sprint_created", "sprint_updated", "sprint_deleted"] as const;
-const stories = ["story_created", "story_updated", "story_deleted"] as const;
+const stories = [
+  "story_created",
+  "story_updated",
+  "story_deleted",
+  "story_duplicated",
+] as const;
 const objectives = [
   "objective_created",
   "objective_updated",

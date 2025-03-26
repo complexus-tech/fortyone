@@ -12,10 +12,10 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
-import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useCopyToClipboard } from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
+import { useDuplicateStoryMutation } from "@/modules/story/hooks/duplicate-mutation";
 import { ContextMenuItem } from "./context-menu-item";
 
 export const StoryContextMenu = ({
@@ -29,7 +29,7 @@ export const StoryContextMenu = ({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [_, copy] = useCopyToClipboard();
   const { mutate: deleteStory } = useBulkDeleteStoryMutation();
-  const { mutate: createStory } = useCreateStoryMutation();
+  const { mutate: duplicateStory } = useDuplicateStoryMutation();
 
   const storyUrl = `/story/${story.id}/${slugify(story.title)}`;
 
@@ -48,13 +48,20 @@ export const StoryContextMenu = ({
           label: "Duplicate",
           icon: <DuplicateIcon />,
           onSelect: () => {
-            const newStory = {
-              ...story,
-              title: `${story.title} (Copy)`,
-              labels: undefined,
-              parentId: undefined,
-            };
-            createStory(newStory);
+            duplicateStory({
+              storyId: story.id,
+              story: {
+                title: story.title,
+                teamId: story.teamId,
+                objectiveId: story.objectiveId,
+                sprintId: story.sprintId,
+                statusId: story.statusId,
+                assigneeId: story.assigneeId,
+                priority: story.priority,
+                startDate: story.startDate,
+                endDate: story.endDate,
+              },
+            });
           },
         },
         {
@@ -79,9 +86,7 @@ export const StoryContextMenu = ({
       options: [
         {
           label: "Delete",
-          icon: (
-            <DeleteIcon className="h-5 w-auto text-danger dark:text-danger" />
-          ),
+          icon: <DeleteIcon className="text-danger dark:text-danger" />,
           onSelect: () => {
             setIsDeleteOpen(true);
           },
