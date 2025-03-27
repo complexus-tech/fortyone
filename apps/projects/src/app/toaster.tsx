@@ -18,7 +18,7 @@ export const Toaster = (_: ToasterProps) => {
       position="bottom-right"
       theme={theme as ToasterProps["theme"]}
       toastOptions={{
-        className: "w-full rounded-lg p-4 flex items-center gap-3 shadow-lg",
+        className: "w-full rounded-xl p-4 flex items-center gap-3 shadow-lg",
         classNames: {
           toast:
             "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-gray-100/60 dark:border-dark-50",
