@@ -141,6 +141,7 @@ export const WorkflowSettings = () => {
                         id: "new",
                         name: "",
                         color: "#6366F1",
+                        isDefault: false,
                         category: value,
                         orderIndex: 50,
                         workspaceId: "workspace",

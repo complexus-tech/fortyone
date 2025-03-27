@@ -16,7 +16,6 @@ export const useTeamStatuses = (teamId: string) => {
   return useQuery({
     queryKey: statusKeys.team(teamId),
     queryFn: () => statuses.filter((status) => status.teamId === teamId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
     enabled: Boolean(teamId),
   });
 };

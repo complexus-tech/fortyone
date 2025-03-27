@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import { statusKeys } from "@/constants/keys";
 import type { State } from "@/types/states";
 import type { UpdateState } from "../../actions/states/update";
@@ -7,6 +8,7 @@ import { updateStateAction } from "../../actions/states/update";
 
 export const useUpdateStateMutation = () => {
   const queryClient = useQueryClient();
+  const { teamId } = useParams<{ teamId: string }>();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -22,12 +24,32 @@ export const useUpdateStateMutation = () => {
         statusKeys.lists(),
       );
       if (previousStates) {
-        const updatedStates = previousStates.map((state) =>
-          state.id === newState.stateId
-            ? { ...state, ...newState.payload }
-            : state,
-        );
+        const updatedStates = previousStates.map((state) => {
+          // If we're setting a new default status and this status is currently the default
+          if (
+            newState.payload.isDefault === true &&
+            state.isDefault &&
+            state.id !== newState.stateId
+          ) {
+            // Set the previous default status to not default
+            return { ...state, isDefault: false };
+          }
+
+          // Update the target status with new payload
+          if (state.id === newState.stateId) {
+            return { ...state, ...newState.payload };
+          }
+
+          // Return other statuses unchanged
+          return state;
+        });
         queryClient.setQueryData<State[]>(statusKeys.lists(), updatedStates);
+        if (teamId) {
+          queryClient.setQueryData<State[]>(
+            statusKeys.team(teamId),
+            updatedStates.filter((state) => state.teamId === teamId),
+          );
+        }
       }
 
       return { previousStates };

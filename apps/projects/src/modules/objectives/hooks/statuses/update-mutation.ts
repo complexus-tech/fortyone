@@ -22,11 +22,26 @@ export const useUpdateObjectiveStatusMutation = () => {
         objectiveKeys.statuses(),
       );
       if (previousStatuses) {
-        const updatedStatuses = previousStatuses.map((status) =>
-          status.id === newStatus.statusId
-            ? { ...status, ...newStatus.payload }
-            : status,
-        );
+        const updatedStatuses = previousStatuses.map((status) => {
+          // If we're setting a new default status and this status is currently the default
+          if (
+            newStatus.payload.isDefault === true &&
+            status.isDefault &&
+            status.id !== newStatus.statusId
+          ) {
+            // Set the previous default status to not default
+            return { ...status, isDefault: false };
+          }
+
+          // Update the target status with new payload
+          if (status.id === newStatus.statusId) {
+            return { ...status, ...newStatus.payload };
+          }
+
+          // Return other statuses unchanged
+          return status;
+        });
+
         queryClient.setQueryData<ObjectiveStatus[]>(
           objectiveKeys.statuses(),
           updatedStatuses,
