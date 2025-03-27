@@ -44,6 +44,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreSt
 			order_index,
 			team_id,
 			workspace_id,
+			is_default,
 			created_at,
 			updated_at
 		FROM
@@ -95,6 +96,7 @@ func (r *repo) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.
 			order_index,
 			team_id,
 			workspace_id,
+			is_default,
 			created_at,
 			updated_at
 		FROM
@@ -133,6 +135,47 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Create")
 	defer span.End()
 
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to begin transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return states.CoreState{}, err
+	}
+
+	// If this status is going to be default, reset any existing defaults for this team
+	if ns.IsDefault {
+		resetQuery := `
+			UPDATE statuses 
+			SET is_default = false, updated_at = NOW() 
+			WHERE team_id = :team_id 
+			AND workspace_id = :workspace_id 
+			AND is_default = true
+		`
+		resetParams := map[string]interface{}{
+			"team_id":      ns.Team,
+			"workspace_id": workspaceId,
+		}
+
+		resetStmt, err := tx.PrepareNamedContext(ctx, resetQuery)
+		if err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to prepare reset query: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+		defer resetStmt.Close()
+
+		if _, err := resetStmt.ExecContext(ctx, resetParams); err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to reset existing default statuses: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+	}
+
 	// Get the next order index based on category
 	params := map[string]interface{}{
 		"workspace_id": workspaceId,
@@ -147,8 +190,9 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		AND category = :category
 	`
 
-	stmt1, err := r.db.PrepareNamedContext(ctx, q1)
+	stmt1, err := tx.PrepareNamedContext(ctx, q1)
 	if err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to prepare max order statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -157,6 +201,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	defer stmt1.Close()
 
 	if err := stmt1.GetContext(ctx, &maxOrder, params); err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to get max order: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -170,6 +215,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		OrderIndex: maxOrder + 1,
 		Team:       ns.Team,
 		Workspace:  workspaceId,
+		IsDefault:  ns.IsDefault,
 	}
 
 	params = map[string]interface{}{
@@ -178,21 +224,23 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		"order_index":  state.OrderIndex,
 		"team_id":      state.Team,
 		"workspace_id": state.Workspace,
+		"is_default":   state.IsDefault,
 	}
 
 	q2 := `
 		INSERT INTO statuses (
 			name, category, order_index,
-			team_id, workspace_id
+			team_id, workspace_id, is_default
 		) VALUES (
 			:name, :category, :order_index,
-			:team_id, :workspace_id
+			:team_id, :workspace_id, :is_default
 		)
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
 	`
 
-	stmt2, err := r.db.PrepareNamedContext(ctx, q2)
+	stmt2, err := tx.PrepareNamedContext(ctx, q2)
 	if err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to prepare insert statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -202,7 +250,15 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 
 	var created dbState
 	if err := stmt2.GetContext(ctx, &created, params); err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to create state: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return states.CoreState{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return states.CoreState{}, err
@@ -214,6 +270,79 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us states.CoreUpdateState) (states.CoreState, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Update")
 	defer span.End()
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to begin transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return states.CoreState{}, err
+	}
+
+	// If we're setting this as default, we need to handle that in a transaction
+	if us.IsDefault != nil && *us.IsDefault {
+		// First, get the team_id for this status
+		var teamID uuid.UUID
+		teamQuery := `
+			SELECT team_id 
+			FROM statuses 
+			WHERE status_id = :status_id 
+			AND workspace_id = :workspace_id
+		`
+		teamParams := map[string]interface{}{
+			"status_id":    stateId,
+			"workspace_id": workspaceId,
+		}
+
+		teamStmt, err := tx.PrepareNamedContext(ctx, teamQuery)
+		if err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to prepare team query: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+		defer teamStmt.Close()
+
+		if err := teamStmt.GetContext(ctx, &teamID, teamParams); err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to get team for status: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+
+		// Reset all existing default statuses for this team
+		resetQuery := `
+			UPDATE statuses 
+			SET is_default = false, updated_at = NOW() 
+			WHERE team_id = :team_id 
+			AND workspace_id = :workspace_id 
+			AND is_default = true
+		`
+		resetParams := map[string]interface{}{
+			"team_id":      teamID,
+			"workspace_id": workspaceId,
+		}
+
+		resetStmt, err := tx.PrepareNamedContext(ctx, resetQuery)
+		if err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to prepare reset query: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+		defer resetStmt.Close()
+
+		if _, err := resetStmt.ExecContext(ctx, resetParams); err != nil {
+			tx.Rollback()
+			errMsg := fmt.Sprintf("failed to reset existing default statuses: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return states.CoreState{}, err
+		}
+	}
 
 	params := map[string]interface{}{
 		"status_id":    stateId,
@@ -230,8 +359,13 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		params["order_index"] = *us.OrderIndex
 		setClauses = append(setClauses, "order_index = :order_index")
 	}
+	if us.IsDefault != nil {
+		params["is_default"] = *us.IsDefault
+		setClauses = append(setClauses, "is_default = :is_default")
+	}
 
 	if len(setClauses) == 0 {
+		tx.Rollback()
 		// No fields to update
 		return states.CoreState{}, errors.New("no fields to update")
 	}
@@ -243,11 +377,12 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
 	`, setClause)
 
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err := tx.PrepareNamedContext(ctx, q)
 	if err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to prepare update statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -257,7 +392,15 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 
 	var updated dbState
 	if err := stmt.GetContext(ctx, &updated, params); err != nil {
+		tx.Rollback()
 		errMsg := fmt.Sprintf("failed to update state: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return states.CoreState{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("database error"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return states.CoreState{}, err
@@ -402,6 +545,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, stateId uuid.UUID) (states.
 			order_index,
 			team_id,
 			workspace_id,
+			is_default,
 			created_at,
 			updated_at
 		FROM

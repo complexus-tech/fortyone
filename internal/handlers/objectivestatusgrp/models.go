@@ -14,19 +14,22 @@ type AppObjectiveStatusList struct {
 	Category   string     `json:"category"`
 	OrderIndex int        `json:"orderIndex"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
+	IsDefault  bool       `json:"isDefault"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
 }
 
 type NewObjectiveStatus struct {
-	Name     string `json:"name" validate:"required"`
-	Category string `json:"category" validate:"required,oneof=unstarted started paused completed cancelled"`
+	Name      string `json:"name" validate:"required"`
+	Category  string `json:"category" validate:"required,oneof=unstarted started paused completed cancelled"`
+	IsDefault bool   `json:"isDefault"`
 }
 
 type UpdateObjectiveStatus struct {
 	Name       *string `json:"name,omitempty"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
+	IsDefault  *bool   `json:"isDefault,omitempty"`
 }
 
 func toAppObjectiveStatus(s objectivestatus.CoreObjectiveStatus) AppObjectiveStatusList {
@@ -36,6 +39,7 @@ func toAppObjectiveStatus(s objectivestatus.CoreObjectiveStatus) AppObjectiveSta
 		Category:   s.Category,
 		OrderIndex: s.OrderIndex,
 		Workspace:  s.Workspace,
+		IsDefault:  s.IsDefault,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 	}
@@ -51,8 +55,9 @@ func toAppObjectiveStatuses(ss []objectivestatus.CoreObjectiveStatus) []AppObjec
 
 func toCoreNewObjectiveStatus(ns NewObjectiveStatus) objectivestatus.CoreNewObjectiveStatus {
 	return objectivestatus.CoreNewObjectiveStatus{
-		Name:     ns.Name,
-		Category: ns.Category,
+		Name:      ns.Name,
+		Category:  ns.Category,
+		IsDefault: ns.IsDefault,
 	}
 }
 
@@ -60,5 +65,6 @@ func toCoreUpdateObjectiveStatus(us UpdateObjectiveStatus) objectivestatus.CoreU
 	return objectivestatus.CoreUpdateObjectiveStatus{
 		Name:       us.Name,
 		OrderIndex: us.OrderIndex,
+		IsDefault:  us.IsDefault,
 	}
 }

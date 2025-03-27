@@ -12,16 +12,19 @@ type CoreObjectiveStatus struct {
 	Category   string
 	OrderIndex int
 	Workspace  uuid.UUID
+	IsDefault  bool
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
 
 type CoreNewObjectiveStatus struct {
-	Name     string
-	Category string
+	Name      string
+	Category  string
+	IsDefault bool
 }
 
 type CoreUpdateObjectiveStatus struct {
 	Name       *string
 	OrderIndex *int
+	IsDefault  *bool
 }

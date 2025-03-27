@@ -15,20 +15,23 @@ type AppStatesList struct {
 	OrderIndex int        `json:"orderIndex"`
 	Team       uuid.UUID  `json:"teamId"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
+	IsDefault  bool       `json:"isDefault"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
 }
 
 type NewState struct {
-	Name     string    `json:"name" validate:"required"`
-	Category string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
-	Team     uuid.UUID `json:"teamId" validate:"required"`
+	Name      string    `json:"name" validate:"required"`
+	Category  string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
+	Team      uuid.UUID `json:"teamId" validate:"required"`
+	IsDefault bool      `json:"isDefault"`
 }
 
 type UpdateState struct {
 	Name       *string `json:"name,omitempty"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
+	IsDefault  *bool   `json:"isDefault,omitempty"`
 }
 
 func toAppState(s states.CoreState) AppStatesList {
@@ -39,6 +42,7 @@ func toAppState(s states.CoreState) AppStatesList {
 		OrderIndex: s.OrderIndex,
 		Team:       s.Team,
 		Workspace:  s.Workspace,
+		IsDefault:  s.IsDefault,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 	}
@@ -54,9 +58,10 @@ func toAppStates(ss []states.CoreState) []AppStatesList {
 
 func toCoreNewState(ns NewState) states.CoreNewState {
 	return states.CoreNewState{
-		Name:     ns.Name,
-		Category: ns.Category,
-		Team:     ns.Team,
+		Name:      ns.Name,
+		Category:  ns.Category,
+		Team:      ns.Team,
+		IsDefault: ns.IsDefault,
 	}
 }
 
@@ -64,5 +69,6 @@ func toCoreUpdateState(us UpdateState) states.CoreUpdateState {
 	return states.CoreUpdateState{
 		Name:       us.Name,
 		OrderIndex: us.OrderIndex,
+		IsDefault:  us.IsDefault,
 	}
 }

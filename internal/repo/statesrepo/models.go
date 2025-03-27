@@ -14,6 +14,7 @@ type dbState struct {
 	OrderIndex int        `db:"order_index"`
 	Team       uuid.UUID  `db:"team_id"`
 	Workspace  uuid.UUID  `db:"workspace_id"`
+	IsDefault  bool       `db:"is_default"`
 	CreatedAt  time.Time  `db:"created_at"`
 	UpdatedAt  time.Time  `db:"updated_at"`
 	DeletedAt  *time.Time `db:"deleted_at"`
@@ -28,6 +29,7 @@ func toCoreState(p dbState) states.CoreState {
 		OrderIndex: p.OrderIndex,
 		Team:       p.Team,
 		Workspace:  p.Workspace,
+		IsDefault:  p.IsDefault,
 		CreatedAt:  p.CreatedAt,
 		UpdatedAt:  p.UpdatedAt,
 	}
