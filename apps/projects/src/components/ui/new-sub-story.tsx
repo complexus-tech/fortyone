@@ -47,14 +47,16 @@ export const NewSubStory = ({
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useTeamMembers(teamId);
   const defaultStatus =
-    statuses.find((status) => status.id === statusId) || statuses.at(0);
+    statuses.find((status) => status.id === statusId) ||
+    statuses.find((status) => status.isDefault) ||
+    statuses[0];
 
   const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
     teamId,
-    statusId: defaultStatus?.id,
+    statusId: statuses.length > 0 ? defaultStatus.id : "",
     endDate: null,
     startDate: null,
     assigneeId: null,

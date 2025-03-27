@@ -83,7 +83,8 @@ export const NewObjectiveDialog = ({
   const currentTeamId = initialTeamId || validActiveTeam?.id;
   const currentTeam =
     teams.find((team) => team.id === currentTeamId) || firstTeam;
-  const defaultStatus = statuses.at(0);
+  const defaultStatus =
+    statuses.find((status) => status.isDefault) || statuses[0];
 
   // Add effect to update activeTeam if it's not valid
   useEffect(() => {
@@ -99,7 +100,7 @@ export const NewObjectiveDialog = ({
     teamId: currentTeamId || "",
     startDate: null,
     endDate: null,
-    statusId: defaultStatus!.id,
+    statusId: statuses.length > 0 ? defaultStatus.id : "",
     priority: "No Priority",
     keyResults: [],
   };
