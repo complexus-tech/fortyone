@@ -1,3 +1,5 @@
+"use server";
+
 import { post } from "@/lib/http";
 import type { ApiResponse, Link } from "@/types";
 import { getApiError } from "@/utils";

@@ -1,3 +1,5 @@
+"use server";
+
 import type { StateCategory } from "@/types/states";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";

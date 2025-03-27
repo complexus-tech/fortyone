@@ -54,6 +54,10 @@ export const useCreateTeamMutation = () => {
     },
     onSuccess: (res) => {
       if (res.error?.message) {
+        toast.error("Failed to create team", {
+          description: JSON.stringify(res.error),
+          id: toastId,
+        });
         throw new Error(res.error.message);
       }
 
