@@ -23,6 +23,7 @@ export const useCreateObjectiveStatusMutation = () => {
         id: "optimistic",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        isDefault: false,
         color: newStatus.color || "#000000",
         orderIndex: 50,
         workspaceId: "optimistic",

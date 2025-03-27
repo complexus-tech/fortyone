@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type FormEvent } from "react";
 import { useState } from "react";
-import { Box, Button, Flex, Menu } from "ui";
+import { Box, Button, Flex, Menu, Text } from "ui";
 import {
   CheckIcon,
   CloseIcon,
@@ -10,6 +10,7 @@ import {
   DragIcon,
   EditIcon,
   MoreHorizontalIcon,
+  SuccessIcon,
 } from "icons";
 import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
 import { StoryStatusIcon } from "@/components/ui";
@@ -52,6 +53,13 @@ export const StateRow = ({
     setIsEditing(false);
   };
 
+  const handleMakeDefault = () => {
+    updateMutation.mutate({
+      statusId: status.id,
+      payload: { isDefault: true },
+    });
+  };
+
   const handleCancelEditing = () => {
     setIsEditing(false);
     if (isNew) {
@@ -79,7 +87,7 @@ export const StateRow = ({
         </Box>
         <Box>
           <input
-            className="bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
+            className="w-max bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}
@@ -108,33 +116,50 @@ export const StateRow = ({
             </Button>
           </>
         ) : (
-          <Menu>
-            <Menu.Button>
-              <Button color="tertiary" rounded="full" size="sm" variant="naked">
-                <MoreHorizontalIcon />
-              </Button>
-            </Menu.Button>
-            <Menu.Items className="w-36">
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    setIsEditing(true);
-                  }}
+          <Flex align="center" gap={2}>
+            {status.isDefault ? <Text color="muted">Default</Text> : null}
+            <Menu>
+              <Menu.Button>
+                <Button
+                  color="tertiary"
+                  rounded="full"
+                  size="sm"
+                  variant="naked"
                 >
-                  <EditIcon className="h-[1.15rem]" />
-                  Edit
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    onDelete(status);
-                  }}
-                >
-                  <DeleteIcon className="h-[1.15rem]" />
-                  Delete...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
+                  <MoreHorizontalIcon />
+                </Button>
+              </Menu.Button>
+              <Menu.Items className="w-44">
+                <Menu.Group>
+                  {(status.category === "backlog" ||
+                    status.category === "unstarted") &&
+                    !status.isDefault && (
+                      <Menu.Item onSelect={handleMakeDefault}>
+                        <SuccessIcon className="h-[1.15rem]" />
+                        Make default
+                      </Menu.Item>
+                    )}
+
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsEditing(true);
+                    }}
+                  >
+                    <EditIcon className="h-[1.15rem]" />
+                    Edit
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      onDelete(status);
+                    }}
+                  >
+                    <DeleteIcon className="h-[1.15rem]" />
+                    Delete...
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Flex>
         )}
       </Flex>
     </form>

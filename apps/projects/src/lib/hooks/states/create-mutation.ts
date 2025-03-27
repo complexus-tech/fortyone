@@ -23,6 +23,7 @@ export const useCreateStateMutation = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         color: "#000000",
+        isDefault: false,
         orderIndex: 50,
         workspaceId: "optimistic",
       };

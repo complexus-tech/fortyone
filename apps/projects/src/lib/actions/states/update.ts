@@ -6,6 +6,7 @@ import { getApiError } from "@/utils";
 export type UpdateState = {
   name?: string;
   orderIndex?: number;
+  isDefault?: boolean;
 };
 
 export const updateStateAction = async (

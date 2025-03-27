@@ -8,6 +8,7 @@ export type UpdateObjectiveStatus = {
   name?: string;
   category?: StateCategory;
   color?: string;
+  isDefault?: boolean;
 };
 
 export const updateObjectiveStatusAction = async (

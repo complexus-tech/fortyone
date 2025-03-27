@@ -11,6 +11,7 @@ export type State = {
   name: string;
   color: string;
   category: StateCategory;
+  isDefault: boolean;
   orderIndex: number;
   teamId: string;
   workspaceId: string;

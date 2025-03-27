@@ -9,6 +9,7 @@ import {
   DragIcon,
   EditIcon,
   MoreHorizontalIcon,
+  SuccessIcon,
 } from "icons";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
@@ -64,6 +65,13 @@ export const StateRow = ({
     }
   };
 
+  const handleMakeDefault = () => {
+    updateMutation.mutate({
+      stateId: state.id,
+      payload: { isDefault: true },
+    });
+  };
+
   useEffect(() => {
     if (isEditing) {
       inputRef.current?.focus();
@@ -116,40 +124,56 @@ export const StateRow = ({
             </Button>
           </>
         ) : (
-          <Menu>
-            <Menu.Button>
-              <Button color="tertiary" rounded="full" size="sm" variant="naked">
-                <MoreHorizontalIcon />
-              </Button>
-            </Menu.Button>
-            <Menu.Items className="w-36">
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    setIsEditing(true);
-                  }}
+          <Flex align="center" gap={2}>
+            {state.isDefault ? <Text color="muted">Default</Text> : null}
+            <Menu>
+              <Menu.Button>
+                <Button
+                  color="tertiary"
+                  rounded="full"
+                  size="sm"
+                  variant="naked"
                 >
-                  <EditIcon className="h-[1.15rem]" />
-                  Edit
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    if (storyCount) {
-                      toast.warning(`Cannot delete status "${form.name}"`, {
-                        description:
-                          "Move all stories to another status before deleting, or delete the stories first.",
-                      });
-                    } else {
-                      onDelete(state);
-                    }
-                  }}
-                >
-                  <DeleteIcon className="h-[1.15rem]" />
-                  Delete...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
+                  <MoreHorizontalIcon />
+                </Button>
+              </Menu.Button>
+              <Menu.Items className="w-44">
+                <Menu.Group>
+                  {(state.category === "backlog" ||
+                    state.category === "unstarted") &&
+                    !state.isDefault && (
+                      <Menu.Item onSelect={handleMakeDefault}>
+                        <SuccessIcon className="h-[1.15rem]" />
+                        Make default
+                      </Menu.Item>
+                    )}
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsEditing(true);
+                    }}
+                  >
+                    <EditIcon className="h-[1.15rem]" />
+                    Edit
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      if (storyCount) {
+                        toast.warning(`Cannot delete status "${form.name}"`, {
+                          description:
+                            "Move all stories to another status before deleting, or delete the stories first.",
+                        });
+                      } else {
+                        onDelete(state);
+                      }
+                    }}
+                  >
+                    <DeleteIcon className="h-[1.15rem]" />
+                    Delete...
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Flex>
         )}
       </Flex>
     </form>
