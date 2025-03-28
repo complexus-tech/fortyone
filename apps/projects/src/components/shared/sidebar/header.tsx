@@ -152,6 +152,7 @@ export const Header = () => {
                 <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto text-gray dark:text-gray-300" />
               }
               size="sm"
+              suppressHydrationWarning
               variant="naked"
             >
               <span className="max-w-[18ch] truncate">{workspace?.name}</span>

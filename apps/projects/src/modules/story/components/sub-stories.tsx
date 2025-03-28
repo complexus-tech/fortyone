@@ -93,12 +93,7 @@ export const SubStories = ({
           </Tooltip>
         )}
       </Flex>
-      <NewSubStory
-        isOpen={isCreateSubStoryOpen}
-        parentId={parentId}
-        setIsOpen={setIsCreateSubStoryOpen}
-        teamId={teamId}
-      />
+
       {isSubStoriesOpen && subStories.length > 0 ? (
         <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
@@ -112,6 +107,12 @@ export const SubStories = ({
           }}
         />
       ) : null}
+      <NewSubStory
+        isOpen={isCreateSubStoryOpen}
+        parentId={parentId}
+        setIsOpen={setIsCreateSubStoryOpen}
+        teamId={teamId}
+      />
     </>
   );
 };

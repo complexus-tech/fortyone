@@ -49,14 +49,14 @@ export const NewSubStory = ({
   const defaultStatus =
     statuses.find((status) => status.id === statusId) ||
     statuses.find((status) => status.isDefault) ||
-    statuses[0];
+    statuses.at(0);
 
   const initialForm: NewStory = {
     title: "",
     description: "",
     descriptionHTML: "",
     teamId,
-    statusId: statuses.length > 0 ? defaultStatus.id : "",
+    statusId: defaultStatus?.id,
     endDate: null,
     startDate: null,
     assigneeId: null,
@@ -131,6 +131,12 @@ export const NewSubStory = ({
     }
   }, [isOpen, titleEditor]);
 
+  useEffect(() => {
+    if (statuses.length > 0) {
+      setStoryForm((prev) => ({ ...prev, statusId: statuses[0].id }));
+    }
+  }, [statuses]);
+
   return (
     <Box>
       {isOpen ? (
@@ -141,7 +147,6 @@ export const NewSubStory = ({
             editor={titleEditor}
           />
           <TextEditor editor={editor} />
-
           <Flex align="center" justify="between">
             <Flex gap={1}>
               <StatusesMenu>

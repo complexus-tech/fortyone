@@ -3,7 +3,7 @@ import { Box, Flex, Skeleton, Wrapper } from "ui";
 
 export const LinksSkeleton = () => {
   return (
-    <Wrapper className="mb-4">
+    <Wrapper className="mb-4 mt-2">
       <Flex align="center" className="mb-4" justify="between">
         <Skeleton className="h-6 w-24 rounded" />
         <Skeleton className="h-8 w-8 rounded-full" />
