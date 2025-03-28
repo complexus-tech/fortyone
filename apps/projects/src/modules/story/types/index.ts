@@ -25,7 +25,7 @@ export type DetailedStory = {
   updatedAt: string;
   deletedAt: string | null;
   subStories: Story[];
-  labels: string[];
+  labels: string[] | null;
 };
 
 export type NewStory = Partial<DetailedStory>;

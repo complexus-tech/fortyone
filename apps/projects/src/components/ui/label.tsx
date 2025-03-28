@@ -23,7 +23,7 @@ export const StoryLabel = ({
     >
       <Badge
         className={cn(
-          "h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem] font-normal",
+          "h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem]",
           {
             "px-1.5": isRectangular,
           },

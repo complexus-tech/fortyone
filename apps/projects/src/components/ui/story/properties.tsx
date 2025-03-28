@@ -8,7 +8,13 @@ import {
   Badge,
   Divider,
 } from "ui";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon, SubStoryIcon } from "icons";
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  ObjectiveIcon,
+  SprintsIcon,
+  SubStoryIcon,
+} from "icons";
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
@@ -35,6 +41,8 @@ type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
   asKanban?: boolean;
   teamCode?: string;
+  isExpanded?: boolean;
+  setIsExpanded?: (isExpanded: boolean) => void;
 };
 
 export const StoryProperties = ({
@@ -52,6 +60,8 @@ export const StoryProperties = ({
   asKanban,
   subStories,
   teamCode,
+  isExpanded,
+  setIsExpanded,
 }: StoryPropertiesProps) => {
   const { getTermDisplay } = useTerminology();
   const { isColumnVisible } = useBoard();
@@ -264,26 +274,40 @@ export const StoryProperties = ({
           }
         >
           <Badge
-            className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+            className="h-[1.85rem] cursor-pointer text-[0.95rem]"
             color="tertiary"
+            onClick={() => {
+              if (!asKanban) {
+                setIsExpanded?.(!isExpanded);
+              }
+            }}
+            role="button"
             rounded={asKanban ? "md" : "xl"}
+            tabIndex={0}
           >
             <SubStoryIcon />
             {subStories.length <= 10 ? subStories.length : `10+`} sub{" "}
             {getTermDisplay("storyTerm", {
               variant: subStories.length === 1 ? "singular" : "plural",
             })}
+            {!asKanban && (
+              <ArrowRightIcon
+                className={cn("h-3.5 transition-transform", {
+                  "rotate-90": isExpanded,
+                })}
+              />
+            )}
           </Badge>
         </Tooltip>
       )}
-      {isColumnVisible("Labels") && storyLabels.length > 0 && (
+      {isColumnVisible("Labels") && storyLabels && storyLabels.length > 0 ? (
         <Labels
           isRectangular={asKanban}
           storyId={id}
           storyLabels={storyLabels}
           teamId={teamId}
         />
-      )}
+      ) : null}
       {isColumnVisible("Deadline") &&
       endDate &&
       !completedOrCancelled(status?.category) ? (
