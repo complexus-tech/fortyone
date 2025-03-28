@@ -69,6 +69,11 @@ export type StoriesSummary = {
   assigned: number;
 };
 
+export type Contribution = {
+  date: string;
+  contributions: number;
+};
+
 export type Workspace = {
   id: string;
   name: string;
