@@ -6,7 +6,6 @@ import { useTerminology } from "@/hooks";
 import { BodyContainer } from "@/components/shared/body";
 import { Header } from "@/modules/summary/components/header";
 import { OverviewSkeleton } from "./components/overview-skeleton";
-import { ContributionsSkeleton } from "./components/contributions-skeleton";
 import { MyStoriesSkeleton } from "./components/my-stories-skeleton";
 import { ActivitiesSkeleton } from "./components/activities-skeleton";
 
@@ -32,7 +31,6 @@ export const SummarySkeleton = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <OverviewSkeleton />
-          <ContributionsSkeleton />
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
             <MyStoriesSkeleton />
             <ActivitiesSkeleton />

@@ -6,8 +6,9 @@ import { useTerminology } from "@/hooks";
 import { Overview } from "./components/overview";
 import { Activities } from "./components/activities";
 import { MyStories } from "./components/my-stories";
-import { Contributions } from "./components/contributions";
 import { Header } from "./components/header";
+import { Priority } from "./components/priority";
+import { Status } from "./components/status";
 
 export const SummaryPage = () => {
   const { getTermDisplay } = useTerminology();
@@ -31,10 +32,10 @@ export const SummaryPage = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <Overview />
-          <Contributions />
+          {/* <Contributions /> */}
           <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
-            <MyStories />
-            <Activities />
+            <Priority />
+            <Status />
             <MyStories />
             <Activities />
           </Box>
