@@ -70,7 +70,8 @@ export const UpdateKeyResultDialog = ({
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title className="text-lg capitalize">
-              Update {getTermDisplay("keyResultTerm", { capitalize: true })}
+              Update {getTermDisplay("keyResultTerm", { capitalize: true })}{" "}
+              progress
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="space-y-4">

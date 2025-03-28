@@ -168,7 +168,7 @@ const Okr = ({
                     }}
                   >
                     <EditIcon />
-                    Update...
+                    Update progress...
                   </Menu.Item>
                   <Menu.Item
                     onSelect={() => {
