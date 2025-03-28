@@ -19,24 +19,25 @@ type CoreLabel struct {
 
 // CoreStoryList represents a list of stories.
 type CoreStoryList struct {
-	ID         uuid.UUID   `json:"id"`
-	SequenceID int         `json:"sequence_id"`
-	Title      string      `json:"title"`
-	Parent     *uuid.UUID  `json:"parent_id"`
-	Objective  *uuid.UUID  `json:"objective_id"`
-	Epic       *uuid.UUID  `json:"epic_id"`
-	Status     *uuid.UUID  `json:"status_id"`
-	Assignee   *uuid.UUID  `json:"assignee_id"`
-	Reporter   *uuid.UUID  `json:"reporter_id"`
-	Priority   string      `json:"priority"`
-	Sprint     *uuid.UUID  `json:"sprint_id"`
-	Team       uuid.UUID   `json:"team_id"`
-	Workspace  uuid.UUID   `json:"workspace_id"`
-	StartDate  *time.Time  `json:"start_date"`
-	EndDate    *time.Time  `json:"end_date"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
-	Labels     []uuid.UUID `json:"labels"`
+	ID         uuid.UUID       `json:"id"`
+	SequenceID int             `json:"sequence_id"`
+	Title      string          `json:"title"`
+	Parent     *uuid.UUID      `json:"parent_id"`
+	Objective  *uuid.UUID      `json:"objective_id"`
+	Epic       *uuid.UUID      `json:"epic_id"`
+	Status     *uuid.UUID      `json:"status_id"`
+	Assignee   *uuid.UUID      `json:"assignee_id"`
+	Reporter   *uuid.UUID      `json:"reporter_id"`
+	Priority   string          `json:"priority"`
+	Sprint     *uuid.UUID      `json:"sprint_id"`
+	Team       uuid.UUID       `json:"team_id"`
+	Workspace  uuid.UUID       `json:"workspace_id"`
+	StartDate  *time.Time      `json:"start_date"`
+	EndDate    *time.Time      `json:"end_date"`
+	CreatedAt  time.Time       `json:"created_at"`
+	UpdatedAt  time.Time       `json:"updated_at"`
+	Labels     []uuid.UUID     `json:"labels"`
+	SubStories []CoreStoryList `json:"subStories"`
 }
 
 // CoreSingleStory represents a single story.

@@ -95,10 +95,20 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 	cl := make([]stories.CoreStoryList, len(is))
 	for i, story := range is {
 		var labels []uuid.UUID
+		var subStories []stories.CoreStoryList
 
-		err := json.Unmarshal(*story.Labels, &labels)
-		if err != nil {
-			log.Printf("Failed to unmarshal labels: %s", err)
+		if story.Labels != nil {
+			err := json.Unmarshal(*story.Labels, &labels)
+			if err != nil {
+				log.Printf("Failed to unmarshal labels: %s", err)
+			}
+		}
+
+		if story.SubStories != nil {
+			err := json.Unmarshal(*story.SubStories, &subStories)
+			if err != nil {
+				log.Printf("Failed to unmarshal sub_stories: %s", err)
+			}
 		}
 
 		cl[i] = stories.CoreStoryList{
@@ -120,6 +130,7 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			CreatedAt:  story.CreatedAt,
 			UpdatedAt:  story.UpdatedAt,
 			Labels:     labels,
+			SubStories: subStories,
 		}
 	}
 	return cl
