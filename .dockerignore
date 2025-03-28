@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Temporary files
+tmp
+*.tmp
+*.log
+
+# Environment files
+.env*
+!.env.example
+
+# Build artifacts
+bin/
+pkg/
+
+# Docker
+Dockerfile
+.dockerignore
+docker/
+
+# Development tools
+.air.toml
+
+# Go specific
+vendor/ 
