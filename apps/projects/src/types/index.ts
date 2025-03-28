@@ -69,6 +69,16 @@ export type StoriesSummary = {
   assigned: number;
 };
 
+export type StatusSummary = {
+  name: string;
+  count: number;
+};
+
+export type PrioritySummary = {
+  priority: string;
+  count: number;
+};
+
 export type Contribution = {
   date: string;
   contributions: number;
