@@ -315,7 +315,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 								'assignee_id', sub.assignee_id,
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
-								'updated_at', sub.updated_at		
+								'updated_at', sub.updated_at,
+								'labels', '[]'
 							)
 						)
 					FROM
@@ -427,7 +428,8 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 								'assignee_id', sub.assignee_id,
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
-								'updated_at', sub.updated_at		
+								'updated_at', sub.updated_at,
+								'labels', '[]'		
 							)
 						)
 					FROM
