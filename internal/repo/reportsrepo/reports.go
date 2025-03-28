@@ -157,3 +157,121 @@ func (r *repo) GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID u
 
 	return toCoreUserStats(stats), nil
 }
+
+func (r *repo) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filters reports.StatsFilters) ([]reports.CoreStatusStats, error) {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		r.log.Error(ctx, "failed to get user id", "error", err)
+		return nil, fmt.Errorf("getting user id: %w", err)
+	}
+
+	query := `
+		WITH user_teams AS (
+			SELECT team_id 
+			FROM team_members 
+			WHERE user_id = $2
+		),
+		story_stats AS (
+			SELECT 
+				s.status_id,
+				s.name,
+				COUNT(st.id) as count
+			FROM statuses s
+			INNER JOIN stories st ON st.status_id = s.status_id 
+				AND st.deleted_at IS NULL
+				AND st.is_draft = false
+				AND st.team_id IN (SELECT team_id FROM user_teams)
+			WHERE s.workspace_id = $1
+			GROUP BY s.status_id, s.name, s.order_index
+			ORDER BY s.order_index
+		)
+		SELECT 
+			name,
+			count::integer
+		FROM story_stats`
+
+	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute query", "error", err)
+		return nil, fmt.Errorf("executing query: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []dbStatusStats
+	for rows.Next() {
+		var stat dbStatusStats
+		if err := rows.Scan(&stat.Name, &stat.Count); err != nil {
+			r.log.Error(ctx, "failed to scan row", "error", err)
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		stats = append(stats, stat)
+	}
+
+	if err := rows.Err(); err != nil {
+		r.log.Error(ctx, "error iterating rows", "error", err)
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return toCoreStatusStats(stats), nil
+}
+
+func (r *repo) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filters reports.StatsFilters) ([]reports.CorePriorityStats, error) {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		r.log.Error(ctx, "failed to get user id", "error", err)
+		return nil, fmt.Errorf("getting user id: %w", err)
+	}
+
+	query := `
+		WITH priority_stats AS (
+			SELECT 
+				COALESCE(priority, 'No Priority') as priority,
+				COUNT(*) as count
+			FROM stories
+			WHERE workspace_id = $1
+				AND deleted_at IS NULL
+				AND is_draft = false
+				AND team_id IN (
+					SELECT team_id 
+					FROM team_members 
+					WHERE user_id = $2
+				)
+			GROUP BY priority
+		)
+		SELECT 
+			priority,
+			count::integer
+		FROM priority_stats
+		ORDER BY 
+			CASE priority
+				WHEN 'Urgent' THEN 1
+				WHEN 'High' THEN 2
+				WHEN 'Medium' THEN 3
+				WHEN 'Low' THEN 4
+				WHEN 'No Priority' THEN 5
+			END`
+
+	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute query", "error", err)
+		return nil, fmt.Errorf("executing query: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []dbPriorityStats
+	for rows.Next() {
+		var stat dbPriorityStats
+		if err := rows.Scan(&stat.Priority, &stat.Count); err != nil {
+			r.log.Error(ctx, "failed to scan row", "error", err)
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		stats = append(stats, stat)
+	}
+
+	if err := rows.Err(); err != nil {
+		r.log.Error(ctx, "error iterating rows", "error", err)
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return toCorePriorityStats(stats), nil
+}

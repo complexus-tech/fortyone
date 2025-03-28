@@ -2,6 +2,8 @@ package reports
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // CoreStoryStats represents story statistics
@@ -23,4 +25,20 @@ type CoreContributionStats struct {
 type CoreUserStats struct {
 	AssignedToMe int `db:"assigned_to_me"`
 	CreatedByMe  int `db:"created_by_me"`
+}
+
+type CoreStatusStats struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+type CorePriorityStats struct {
+	Priority string `json:"priority"`
+	Count    int    `json:"count"`
+}
+
+type StatsFilters struct {
+	TeamID      *uuid.UUID
+	SprintID    *uuid.UUID
+	ObjectiveID *uuid.UUID
 }

@@ -3,6 +3,7 @@ package reportsgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -100,4 +101,94 @@ func (h *Handlers) GetUserStats(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	return web.Respond(ctx, w, toAppUserStats(stats), http.StatusOK)
+}
+
+// GetStatusStats returns status statistics for stories
+func (h *Handlers) GetStatusStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetStatusStats")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppStatsFilters
+	filters, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	coreFilters := reports.StatsFilters{}
+	if filters["teamId"] != nil {
+		teamID, err := uuid.Parse(filters["teamId"].(string))
+		if err == nil {
+			coreFilters.TeamID = &teamID
+		}
+	}
+	if filters["sprintId"] != nil {
+		sprintID, err := uuid.Parse(filters["sprintId"].(string))
+		if err == nil {
+			coreFilters.SprintID = &sprintID
+		}
+	}
+	if filters["objectiveId"] != nil {
+		objectiveID, err := uuid.Parse(filters["objectiveId"].(string))
+		if err == nil {
+			coreFilters.ObjectiveID = &objectiveID
+		}
+	}
+
+	stats, err := h.reports.GetStatusStats(ctx, workspaceID, coreFilters)
+	if err != nil {
+		return fmt.Errorf("getting status stats: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppStatusStats(stats), http.StatusOK)
+}
+
+// GetPriorityStats returns priority statistics for stories
+func (h *Handlers) GetPriorityStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetPriorityStats")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppStatsFilters
+	filters, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	coreFilters := reports.StatsFilters{}
+	if filters["teamId"] != nil {
+		teamID, err := uuid.Parse(filters["teamId"].(string))
+		if err == nil {
+			coreFilters.TeamID = &teamID
+		}
+	}
+	if filters["sprintId"] != nil {
+		sprintID, err := uuid.Parse(filters["sprintId"].(string))
+		if err == nil {
+			coreFilters.SprintID = &sprintID
+		}
+	}
+	if filters["objectiveId"] != nil {
+		objectiveID, err := uuid.Parse(filters["objectiveId"].(string))
+		if err == nil {
+			coreFilters.ObjectiveID = &objectiveID
+		}
+	}
+
+	stats, err := h.reports.GetPriorityStats(ctx, workspaceID, coreFilters)
+	if err != nil {
+		return fmt.Errorf("getting priority stats: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppPriorityStats(stats), http.StatusOK)
 }

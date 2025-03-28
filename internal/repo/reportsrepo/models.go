@@ -24,6 +24,16 @@ type dbUserStats struct {
 	CreatedByMe  int `db:"created_by_me"`
 }
 
+type dbStatusStats struct {
+	Name  string `db:"name"`
+	Count int    `db:"count"`
+}
+
+type dbPriorityStats struct {
+	Priority string `db:"priority"`
+	Count    int    `db:"count"`
+}
+
 func toCoreStoryStats(s dbStoryStats) reports.CoreStoryStats {
 	return reports.CoreStoryStats{
 		Closed:     s.Closed,
@@ -54,4 +64,26 @@ func toCoreUserStats(s dbUserStats) reports.CoreUserStats {
 		AssignedToMe: s.AssignedToMe,
 		CreatedByMe:  s.CreatedByMe,
 	}
+}
+
+func toCoreStatusStats(s []dbStatusStats) []reports.CoreStatusStats {
+	stats := make([]reports.CoreStatusStats, len(s))
+	for i, stat := range s {
+		stats[i] = reports.CoreStatusStats{
+			Name:  stat.Name,
+			Count: stat.Count,
+		}
+	}
+	return stats
+}
+
+func toCorePriorityStats(s []dbPriorityStats) []reports.CorePriorityStats {
+	stats := make([]reports.CorePriorityStats, len(s))
+	for i, stat := range s {
+		stats[i] = reports.CorePriorityStats{
+			Priority: stat.Priority,
+			Count:    stat.Count,
+		}
+	}
+	return stats
 }
