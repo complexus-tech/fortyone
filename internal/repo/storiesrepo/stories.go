@@ -414,6 +414,36 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			COALESCE(
 				(
 					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'description', sub.description,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at		
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), '[]'
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
 						json_agg(l.label_id)
 					FROM
 						labels l
