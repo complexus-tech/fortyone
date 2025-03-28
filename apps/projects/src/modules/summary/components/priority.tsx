@@ -1,5 +1,6 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
+import type { TooltipProps } from "recharts";
 import {
   BarChart,
   Bar,
@@ -13,10 +14,39 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePrioritySummary } from "@/lib/hooks/analytics-summaries";
 import type { PrioritySummary } from "@/types";
+import { PriorityIcon } from "@/components/ui";
+import type { StoryPriority } from "@/modules/stories/types";
+import { useTerminology } from "@/hooks";
 
 type ChartDataItem = {
   priority: string;
   count: number;
+};
+
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
+  const { getTermDisplay } = useTerminology();
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <Box className="z-50 min-w-28 rounded-[0.6rem] border border-gray-100 bg-white/80 px-3 py-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:text-gray-200">
+      <Flex align="center" gap={2}>
+        <PriorityIcon priority={label as StoryPriority} />
+        {label}
+      </Flex>
+      <Text className="mt-1 pl-0.5">
+        {payload[0].value}{" "}
+        {getTermDisplay("storyTerm", {
+          variant: payload[0].value === 1 ? "singular" : "plural",
+        })}
+      </Text>
+    </Box>
+  );
 };
 
 export const Priority = () => {
@@ -69,14 +99,13 @@ export const Priority = () => {
             />
             <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
             <Tooltip
+              content={<CustomTooltip />}
               cursor={{
                 fill:
                   resolvedTheme === "dark"
                     ? "rgba(255, 255, 255, 0.03)"
                     : "rgba(0, 0, 0, 0.05)",
               }}
-              formatter={(value: number) => [`${value} items`, "Count"]}
-              labelFormatter={(label: string) => `${label} Priority`}
             />
             <Bar
               barSize={35}
