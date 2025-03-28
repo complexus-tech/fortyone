@@ -26,7 +26,7 @@ const badge = cva(
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
         tertiary:
-          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-100 dark:border-dark-50 dark:text-gray-200",
+          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-100/70 dark:border-dark-50 dark:text-gray-200",
         secondary: "text-white bg-secondary border-secondary",
       },
       size: {

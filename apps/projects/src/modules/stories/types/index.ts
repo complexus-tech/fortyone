@@ -24,6 +24,7 @@ export type Story = {
   createdAt: string;
   updatedAt: string;
   labels: string[];
+  subStories: Story[];
 };
 
 export type StoryActivity = {

@@ -1,5 +1,5 @@
 import { Flex, Badge, Button, Tooltip } from "ui";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "icons";
+import { ArrowDownIcon, ArrowUpIcon, PlusIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -53,6 +53,7 @@ export const SubStories = ({
           <Flex align="center" gap={2}>
             <Button
               color="tertiary"
+              leftIcon={<SubStoryIcon />}
               onClick={() => {
                 setIsSubStoriesOpen(!isSubStoriesOpen);
               }}

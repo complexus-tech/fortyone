@@ -42,6 +42,7 @@ export const useCreateStoryMutation = () => {
                           updatedAt: new Date().toISOString(),
                           createdAt: new Date().toISOString(),
                           labels: [],
+                          subStories: [],
                         },
                       ],
                     };
@@ -62,6 +63,7 @@ export const useCreateStoryMutation = () => {
                     updatedAt: new Date().toISOString(),
                     createdAt: new Date().toISOString(),
                     labels: [],
+                    subStories: [],
                   },
                 ];
               },

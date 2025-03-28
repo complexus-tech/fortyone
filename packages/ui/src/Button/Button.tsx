@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "dark:border-dark-50 dark:bg-dark-100/50 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
+          "dark:border-dark-50 dark:bg-dark-100/70 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
       },

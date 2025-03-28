@@ -1,7 +1,17 @@
-import { Box, Flex, Button, Text, DatePicker, Tooltip } from "ui";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import {
+  Box,
+  Flex,
+  Button,
+  Text,
+  DatePicker,
+  Tooltip,
+  Badge,
+  Divider,
+} from "ui";
+import { CalendarIcon, ObjectiveIcon, SprintsIcon, SubStoryIcon } from "icons";
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
+import Link from "next/link";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { Labels } from "@/components/ui/story/labels";
@@ -15,13 +25,16 @@ import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useUserRole } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { slugify } from "@/utils";
+import { RowWrapper } from "../row-wrapper";
 
 type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
   asKanban?: boolean;
+  teamCode?: string;
 };
 
 export const StoryProperties = ({
@@ -37,7 +50,10 @@ export const StoryProperties = ({
   updatedAt,
   labels: storyLabels,
   asKanban,
+  subStories,
+  teamCode,
 }: StoryPropertiesProps) => {
+  const { getTermDisplay } = useTerminology();
   const { isColumnVisible } = useBoard();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: sprints = [] } = useTeamSprints(teamId);
@@ -205,6 +221,61 @@ export const StoryProperties = ({
           />
         </SprintsMenu>
       ) : null}
+      {subStories.length > 0 && (
+        <Tooltip
+          title={
+            <Box className="min-w-72">
+              <Text
+                className="mb-2.5 flex items-center gap-2 pt-1"
+                fontSize="md"
+              >
+                <SubStoryIcon />
+                Sub{" "}
+                {getTermDisplay("storyTerm", {
+                  variant: "plural",
+                })}
+              </Text>
+              <Divider />
+              {subStories.map((subStory) => (
+                <Link
+                  href={`/story/${subStory.id}/${slugify(subStory.title)}`}
+                  key={subStory.id}
+                >
+                  <RowWrapper className="group max-w-72 gap-4 truncate px-0 py-2 last-of-type:border-b-0 dark:border-dark-50">
+                    <Flex align="center" gap={2}>
+                      <Text color="muted">
+                        {teamCode}-{subStory.sequenceId}
+                      </Text>
+                      <Text className="group-hover:underline">
+                        {subStory.title}
+                      </Text>
+                    </Flex>
+                    <Flex align="center" gap={2}>
+                      <PriorityIcon priority={subStory.priority} />
+                      <StoryStatusIcon
+                        className="h-[1.15rem]"
+                        statusId={subStory.statusId}
+                      />
+                    </Flex>
+                  </RowWrapper>
+                </Link>
+              ))}
+            </Box>
+          }
+        >
+          <Badge
+            className="h-[1.85rem] cursor-pointer text-[0.95rem] font-normal"
+            color="tertiary"
+            rounded={asKanban ? "md" : "xl"}
+          >
+            <SubStoryIcon />
+            {subStories.length <= 10 ? subStories.length : `10+`} sub{" "}
+            {getTermDisplay("storyTerm", {
+              variant: subStories.length === 1 ? "singular" : "plural",
+            })}
+          </Badge>
+        </Tooltip>
+      )}
       {isColumnVisible("Labels") && storyLabels.length > 0 && (
         <Labels
           isRectangular={asKanban}

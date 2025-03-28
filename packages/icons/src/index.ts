@@ -104,3 +104,4 @@ export * from "./warning";
 export * from "./info";
 export * from "./share";
 export * from "./new-tab";
+export * from "./sub-story";

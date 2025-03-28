@@ -4,6 +4,8 @@ import { Flex, Text, Tooltip, Avatar, Checkbox, Box, Button } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
+import { ArrowRightIcon } from "icons";
+import { useState } from "react";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
@@ -20,7 +22,14 @@ import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
 
-export const StoryRow = ({ story }: { story: StoryProps }) => {
+export const StoryRow = ({
+  story,
+  isSubStory = false,
+}: {
+  story: StoryProps;
+  isSubStory?: boolean;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useTeamMembers(story.teamId);
@@ -56,7 +65,7 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
           })}
         >
           <Flex align="center" className="relative shrink select-none" gap={2}>
-            <DragHandle {...listeners} {...attributes} />
+            {!isSubStory && <DragHandle {...listeners} {...attributes} />}
             <Checkbox
               checked={selectedStories.includes(story.id)}
               className="absolute -left-[1.6rem] rounded-[0.35rem]"
@@ -72,13 +81,28 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             {isColumnVisible("ID") && (
               <Tooltip title={`Story ID: ${teamCode}-${story.sequenceId}`}>
                 <Text
-                  className="min-w-[6ch] truncate text-[0.99rem]"
+                  className={cn(
+                    "flex min-w-[6ch] items-center gap-1 truncate text-[0.95rem] transition-colors",
+                    {
+                      "cursor-pointer dark:hover:text-white/80":
+                        story.subStories.length > 0,
+                    },
+                  )}
                   color="muted"
+                  onClick={() => {
+                    setIsExpanded(!isExpanded);
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   {teamCode}-{story.sequenceId}
+                  {story.subStories.length > 0 && (
+                    <ArrowRightIcon className="h-4" />
+                  )}
                 </Text>
               </Tooltip>
             )}
+
             <Link
               href={`/story/${story.id}/${slugify(story.title)}`}
               onMouseEnter={() => {
@@ -97,7 +121,11 @@ export const StoryRow = ({ story }: { story: StoryProps }) => {
             </Link>
           </Flex>
           <Flex align="center" className="shrink-0" gap={3}>
-            <StoryProperties {...story} handleUpdate={handleUpdate} />
+            <StoryProperties
+              {...story}
+              handleUpdate={handleUpdate}
+              teamCode={teamCode}
+            />
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip

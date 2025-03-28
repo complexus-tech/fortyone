@@ -174,7 +174,12 @@ export const StoryCard = ({
               />
             </AssigneesMenu>
           )}
-          <StoryProperties {...story} asKanban handleUpdate={handleUpdate} />
+          <StoryProperties
+            {...story}
+            asKanban
+            handleUpdate={handleUpdate}
+            teamCode={teamCode}
+          />
         </Flex>
       </Box>
     </StoryContextMenu>
