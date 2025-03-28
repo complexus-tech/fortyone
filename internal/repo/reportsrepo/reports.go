@@ -55,7 +55,7 @@ func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (report
 		return reports.CoreStoryStats{}, fmt.Errorf("getting user id: %w", err)
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
 	}
@@ -80,7 +80,7 @@ func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (report
 func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, days int) ([]reports.CoreContributionStats, error) {
 	const query = `
 		WITH RECURSIVE dates AS (
-			SELECT CURRENT_DATE - INTERVAL ':days days' as date
+			SELECT CURRENT_DATE - make_interval(days => :days) as date
 			UNION ALL
 			SELECT date + INTERVAL '1 day'
 			FROM dates
@@ -93,7 +93,7 @@ func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, works
 			FROM story_activities
 			WHERE user_id = :user_id
 			AND workspace_id = :workspace_id
-			AND created_at >= CURRENT_DATE - INTERVAL ':days days'
+			AND created_at >= CURRENT_DATE - make_interval(days => :days)
 			GROUP BY DATE(created_at)
 		)
 		SELECT 
@@ -103,7 +103,7 @@ func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, works
 		LEFT JOIN activity_counts ac ON d.date = ac.date
 		ORDER BY d.date`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 		"days":         days,
@@ -137,7 +137,7 @@ func (r *repo) GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID u
 		)
 		SELECT * FROM user_stats`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
 	}
