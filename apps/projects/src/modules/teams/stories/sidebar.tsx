@@ -98,7 +98,7 @@ export const Sidebar = () => {
 
   // Calculate label statistics
   const allLabels = stories.reduce<Record<string, number>>((acc, story) => {
-    story.labels.forEach((labelId) => {
+    story.labels?.forEach((labelId) => {
       if (!acc[labelId]) {
         acc[labelId] = 0;
       }

@@ -115,7 +115,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
   const storiesWithNoAssignee = stories.filter((s) => !s.assigneeId).length;
 
   const allLabels = stories.reduce<Record<string, number>>((acc, story) => {
-    story.labels.forEach((labelId) => {
+    story.labels?.forEach((labelId) => {
       if (!acc[labelId]) acc[labelId] = 0;
       acc[labelId]++;
     });

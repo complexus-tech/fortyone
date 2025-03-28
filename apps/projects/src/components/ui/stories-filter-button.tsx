@@ -86,6 +86,7 @@ export const StoriesFilterButton = ({
   setFilters,
   resetFilters,
 }: StoriesFilterButtonProps) => {
+  // eslint-disable-next-line react/hook-use-state -- ok for now
   const [date, _] = useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(),

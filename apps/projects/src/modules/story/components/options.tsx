@@ -109,7 +109,7 @@ export const Options = ({
   const assignee = members.find((m) => m.id === assigneeId);
   const reporter = members.find((m) => m.id === reporterId);
   const { data: allLabels = [] } = useLabels();
-  const labels = allLabels.filter((label) => storyLabels.includes(label.id));
+  const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
   const { mutate: updateLabels } = useUpdateLabelsMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
@@ -536,7 +536,7 @@ export const Options = ({
                         </span>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        labelIds={storyLabels}
+                        labelIds={storyLabels ?? []}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
@@ -557,7 +557,7 @@ export const Options = ({
                         </span>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        labelIds={storyLabels}
+                        labelIds={storyLabels ?? []}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
@@ -583,7 +583,7 @@ export const Options = ({
                         </Button>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
-                        labelIds={storyLabels}
+                        labelIds={storyLabels ?? []}
                         setLabelIds={(labelIds) => {
                           handleUpdateLabels(labelIds);
                         }}
@@ -607,7 +607,7 @@ export const Options = ({
                     </Button>
                   </LabelsMenu.Trigger>
                   <LabelsMenu.Items
-                    labelIds={storyLabels}
+                    labelIds={storyLabels ?? []}
                     setLabelIds={(labelIds) => {
                       handleUpdateLabels(labelIds);
                     }}
