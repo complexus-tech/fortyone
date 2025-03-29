@@ -2,13 +2,13 @@
 import { Box, Flex, Text, Wrapper } from "ui";
 import type { TooltipProps } from "recharts";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
@@ -77,10 +77,16 @@ export const Contributions = () => {
         </Flex>
       ) : (
         <ResponsiveContainer height={220} width="100%">
-          <BarChart
+          <AreaChart
             data={chartData}
             margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
           >
+            <defs>
+              <linearGradient id="colorGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#6366F1" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
             <CartesianGrid
               stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
               strokeDasharray="3 3"
@@ -103,13 +109,32 @@ export const Contributions = () => {
                     : "rgba(0, 0, 0, 0.05)",
               }}
             />
-            <Bar
-              barSize={20}
+            <Area
+              activeDot={{
+                r: 4,
+                fill: "#6366F1",
+                strokeWidth: 2,
+                stroke:
+                  resolvedTheme === "dark"
+                    ? "rgba(255, 255, 255, 0.8)"
+                    : "#6366F1",
+              }}
               dataKey="count"
-              fill="#6366F1"
-              radius={[6, 6, 0, 0]}
+              dot={{
+                r: 2,
+                fill: "#6366F1",
+                strokeWidth: 2,
+                stroke:
+                  resolvedTheme === "dark"
+                    ? "rgba(255, 255, 255, 0.8)"
+                    : "#6366F1",
+              }}
+              fill="url(#colorGradient)"
+              stroke="#6366F1"
+              strokeWidth={2}
+              type="monotone"
             />
-          </BarChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </Wrapper>
