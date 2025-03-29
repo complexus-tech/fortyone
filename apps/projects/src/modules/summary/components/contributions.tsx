@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import type { Contribution } from "@/types";
 import { useContributions } from "@/lib/hooks/contributions";
+import { ContributionsSkeleton } from "./contributions-skeleton";
 
 type ChartDataItem = {
   date: string;
@@ -62,6 +63,10 @@ export const Contributions = () => {
     }
   }, [contributions]);
 
+  if (isLoading) {
+    return <ContributionsSkeleton />;
+  }
+
   return (
     <Wrapper>
       <Box className="mb-6">
@@ -71,72 +76,66 @@ export const Contributions = () => {
         <Text color="muted">Your contributions in the last 7 days.</Text>
       </Box>
 
-      {isLoading ? (
-        <Flex align="center" className="h-[220px]" justify="center">
-          <Text color="muted">Loading...</Text>
-        </Flex>
-      ) : (
-        <ResponsiveContainer height={220} width="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="colorGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#6366F1" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
-              strokeDasharray="3 3"
-              vertical={false}
-            />
-            <XAxis
-              axisLine={{
-                stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
-              }}
-              dataKey="date"
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{
-                fill:
-                  resolvedTheme === "dark"
-                    ? "rgba(255, 255, 255, 0.03)"
-                    : "rgba(0, 0, 0, 0.05)",
-              }}
-            />
-            <Area
-              activeDot={{
-                r: 4,
-                fill: "#6366F1",
-                strokeWidth: 2,
-                stroke:
-                  resolvedTheme === "dark"
-                    ? "rgba(255, 255, 255, 0.8)"
-                    : "#6366F1",
-              }}
-              dataKey="count"
-              dot={{
-                r: 2,
-                fill: "#6366F1",
-                strokeWidth: 2,
-                stroke:
-                  resolvedTheme === "dark"
-                    ? "rgba(255, 255, 255, 0.8)"
-                    : "#6366F1",
-              }}
-              fill="url(#colorGradient)"
-              stroke="#6366F1"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
+      <ResponsiveContainer height={220} width="100%">
+        <AreaChart
+          data={chartData}
+          margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="colorGradient" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#6366F1" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+          <XAxis
+            axisLine={{
+              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
+            }}
+            dataKey="date"
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{
+              fill:
+                resolvedTheme === "dark"
+                  ? "rgba(255, 255, 255, 0.03)"
+                  : "rgba(0, 0, 0, 0.05)",
+            }}
+          />
+          <Area
+            activeDot={{
+              r: 4,
+              fill: "#6366F1",
+              strokeWidth: 2,
+              stroke:
+                resolvedTheme === "dark"
+                  ? "rgba(255, 255, 255, 0.8)"
+                  : "#6366F1",
+            }}
+            dataKey="count"
+            dot={{
+              r: 2,
+              fill: "#6366F1",
+              strokeWidth: 2,
+              stroke:
+                resolvedTheme === "dark"
+                  ? "rgba(255, 255, 255, 0.8)"
+                  : "#6366F1",
+            }}
+            fill="url(#colorGradient)"
+            stroke="#6366F1"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </Wrapper>
   );
 };

@@ -8,6 +8,9 @@ import { Header } from "@/modules/summary/components/header";
 import { OverviewSkeleton } from "./components/overview-skeleton";
 import { MyStoriesSkeleton } from "./components/my-stories-skeleton";
 import { ActivitiesSkeleton } from "./components/activities-skeleton";
+import { PrioritySkeleton } from "./components/priority-skeleton";
+import { StatusSkeleton } from "./components/status-skeleton";
+import { ContributionsSkeleton } from "./components/contributions-skeleton";
 
 export const SummarySkeleton = () => {
   const { getTermDisplay } = useTerminology();
@@ -31,7 +34,12 @@ export const SummarySkeleton = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <OverviewSkeleton />
-          <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
+          <Box className="my-4 grid grid-cols-3 gap-4">
+            <PrioritySkeleton />
+            <StatusSkeleton />
+            <ContributionsSkeleton />
+          </Box>
+          <Box className="my-4 grid grid-cols-2 gap-4">
             <MyStoriesSkeleton />
             <ActivitiesSkeleton />
           </Box>

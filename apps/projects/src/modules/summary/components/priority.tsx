@@ -17,6 +17,7 @@ import type { PrioritySummary } from "@/types";
 import { PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useTerminology } from "@/hooks";
+import { PrioritySkeleton } from "./priority-skeleton";
 
 type ChartDataItem = {
   priority: string;
@@ -64,6 +65,10 @@ export const Priority = () => {
     }
   }, [prioritySummary]);
 
+  if (isLoading) {
+    return <PrioritySkeleton />;
+  }
+
   return (
     <Wrapper>
       <Box className="mb-6">
@@ -75,47 +80,41 @@ export const Priority = () => {
         </Text>
       </Box>
 
-      {isLoading ? (
-        <Flex align="center" className="h-[220px]" justify="center">
-          <Text color="muted">Loading...</Text>
-        </Flex>
-      ) : (
-        <ResponsiveContainer height={220} width="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
-          >
-            <CartesianGrid
-              stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
-              strokeDasharray="3 3"
-              vertical={false}
-            />
-            <XAxis
-              axisLine={{
-                stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
-              }}
-              dataKey="priority"
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{
-                fill:
-                  resolvedTheme === "dark"
-                    ? "rgba(255, 255, 255, 0.03)"
-                    : "rgba(0, 0, 0, 0.05)",
-              }}
-            />
-            <Bar
-              barSize={35}
-              dataKey="count"
-              fill="#6366F1"
-              radius={[6, 6, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
+      <ResponsiveContainer height={220} width="100%">
+        <BarChart
+          data={chartData}
+          margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
+        >
+          <CartesianGrid
+            stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+          <XAxis
+            axisLine={{
+              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
+            }}
+            dataKey="priority"
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{
+              fill:
+                resolvedTheme === "dark"
+                  ? "rgba(255, 255, 255, 0.03)"
+                  : "rgba(0, 0, 0, 0.05)",
+            }}
+          />
+          <Bar
+            barSize={35}
+            dataKey="count"
+            fill="#6366F1"
+            radius={[6, 6, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
     </Wrapper>
   );
 };

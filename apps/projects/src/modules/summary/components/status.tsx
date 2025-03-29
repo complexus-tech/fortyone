@@ -7,6 +7,7 @@ import type { TooltipProps } from "recharts";
 import { useStatusSummary } from "@/lib/hooks/analytics-summaries";
 import type { StatusSummary } from "@/types";
 import { useTerminology } from "@/hooks";
+import { StatusSkeleton } from "./status-skeleton";
 
 // Define colors for different statuses
 const COLORS = [
@@ -57,6 +58,10 @@ export const Status = () => {
     }
   }, [statusSummary]);
 
+  if (isLoading) {
+    return <StatusSkeleton />;
+  }
+
   return (
     <Wrapper>
       <Box className="mb-6">
@@ -64,63 +69,57 @@ export const Status = () => {
         <Text color="muted">See how your work is progressing.</Text>
       </Box>
 
-      {isLoading ? (
-        <Flex align="center" className="h-[220px]" justify="center">
-          <Text color="muted">Loading...</Text>
-        </Flex>
-      ) : (
-        <Box>
-          <Box className="relative isolate">
-            <Box className="absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
-              <Text fontSize="3xl">{totalCount}</Text>
-              <Text color="muted">
-                Total{" "}
-                {getTermDisplay("storyTerm", {
-                  variant: "plural",
-                })}
-              </Text>
-            </Box>
-            <ResponsiveContainer height={160} width="100%">
-              <PieChart className="relative">
-                <Pie
-                  cornerRadius={4}
-                  cx="50%"
-                  cy="50%"
-                  data={chartData}
-                  dataKey="count"
-                  fill="#8884d8"
-                  innerRadius={60}
-                  labelLine={false}
-                  nameKey="name"
-                  outerRadius={80}
-                  paddingAngle={2}
-                  stroke="none"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      fill={COLORS[index % COLORS.length]}
-                      key={`cell-${index}`}
-                      stroke="none"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+      <Box>
+        <Box className="relative isolate">
+          <Box className="absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
+            <Text fontSize="3xl">{totalCount}</Text>
+            <Text color="muted">
+              Total{" "}
+              {getTermDisplay("storyTerm", {
+                variant: "plural",
+              })}
+            </Text>
           </Box>
-          <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
-            {chartData.map((entry, index) => (
-              <Flex align="center" gap={1} key={entry.name}>
-                <Box
-                  className="size-4 rounded"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
-                <Text>{entry.name}</Text>
-              </Flex>
-            ))}
-          </Flex>
+          <ResponsiveContainer height={160} width="100%">
+            <PieChart className="relative">
+              <Pie
+                cornerRadius={4}
+                cx="50%"
+                cy="50%"
+                data={chartData}
+                dataKey="count"
+                fill="#8884d8"
+                innerRadius={60}
+                labelLine={false}
+                nameKey="name"
+                outerRadius={80}
+                paddingAngle={2}
+                stroke="none"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    fill={COLORS[index % COLORS.length]}
+                    key={`cell-${index}`}
+                    stroke="none"
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
         </Box>
-      )}
+        <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
+          {chartData.map((entry, index) => (
+            <Flex align="center" gap={1} key={entry.name}>
+              <Box
+                className="size-4 rounded"
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+              />
+              <Text>{entry.name}</Text>
+            </Flex>
+          ))}
+        </Flex>
+      </Box>
     </Wrapper>
   );
 };
