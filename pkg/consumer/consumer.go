@@ -279,6 +279,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 				if _, err := c.notifications.Create(ctx, notification); err != nil {
 					c.log.Error(ctx, "failed to create notification for original assignee", "error", err)
 				}
+				return nil
 			}
 		}
 
@@ -311,6 +312,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 				if _, err := c.notifications.Create(ctx, notification); err != nil {
 					c.log.Error(ctx, "failed to create notification for new assignee", "error", err)
 				}
+				return nil
 			}
 		}
 	} else {
@@ -340,6 +342,7 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			if _, err := c.notifications.Create(ctx, notification); err != nil {
 				c.log.Error(ctx, "failed to create notification", "error", err)
 			}
+			return nil
 		}
 	}
 
