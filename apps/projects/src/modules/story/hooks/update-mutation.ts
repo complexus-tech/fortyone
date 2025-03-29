@@ -24,13 +24,6 @@ export const useUpdateStoryMutation = () => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId),
       );
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          ...payload,
-        });
-        return { previousStory };
-      }
 
       const activeQueries = queryClient.getQueryCache().getAll();
 
@@ -62,6 +55,14 @@ export const useUpdateStoryMutation = () => {
           }
         }
       });
+
+      if (previousStory) {
+        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+          ...previousStory,
+          ...payload,
+        });
+        return { previousStory };
+      }
     },
     onError: (error, variables, context) => {
       if (context?.previousStory) {
