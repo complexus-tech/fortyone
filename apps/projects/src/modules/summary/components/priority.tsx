@@ -35,16 +35,16 @@ const CustomTooltip = ({
 
   return (
     <Box className="z-50 min-w-28 rounded-[0.6rem] border border-gray-100 bg-white/80 px-3 py-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:text-gray-200">
-      <Flex align="center" gap={2}>
-        <PriorityIcon priority={label as StoryPriority} />
-        {label}
-      </Flex>
-      <Text className="mt-1 pl-0.5">
+      <Text className="mb-1 pl-0.5">
         {payload[0].value}{" "}
         {getTermDisplay("storyTerm", {
           variant: payload[0].value === 1 ? "singular" : "plural",
         })}
       </Text>
+      <Flex align="center" gap={2}>
+        <PriorityIcon priority={label as StoryPriority} />
+        {label}
+      </Flex>
     </Box>
   );
 };
@@ -76,14 +76,14 @@ export const Priority = () => {
       </Box>
 
       {isLoading ? (
-        <Flex align="center" className="h-[300px]" justify="center">
+        <Flex align="center" className="h-[220px]" justify="center">
           <Text color="muted">Loading...</Text>
         </Flex>
       ) : (
-        <ResponsiveContainer height={300} width="100%">
+        <ResponsiveContainer height={220} width="100%">
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: 10, left: -20, bottom: 5 }}
+            margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
           >
             <CartesianGrid
               stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}

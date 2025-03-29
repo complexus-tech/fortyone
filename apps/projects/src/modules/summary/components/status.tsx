@@ -7,15 +7,7 @@ import type { StatusSummary } from "@/types";
 import { useTerminology } from "@/hooks";
 
 // Define colors for different statuses
-const COLORS = [
-  "#F06292",
-  "#64B5F6",
-  "#FFB74D",
-  "#81C784",
-  "#9575CD",
-  "#4DD0E1",
-  "#F8BBD0",
-];
+const COLORS = ["#6366F1"];
 
 export const Status = () => {
   const { getTermDisplay } = useTerminology();
@@ -45,14 +37,15 @@ export const Status = () => {
       </Box>
 
       {isLoading ? (
-        <Flex align="center" className="h-[300px]" justify="center">
+        <Flex align="center" className="h-[220px]" justify="center">
           <Text color="muted">Loading...</Text>
         </Flex>
       ) : (
         <div className="relative">
-          <ResponsiveContainer height={300} width="100%">
+          <ResponsiveContainer height={220} width="100%">
             <PieChart className="relative">
               <Pie
+                cornerRadius={5}
                 cx="50%"
                 cy="50%"
                 data={chartData}
@@ -62,11 +55,14 @@ export const Status = () => {
                 labelLine={false}
                 nameKey="name"
                 outerRadius={100}
+                paddingAngle={2}
+                stroke="none"
               >
                 {chartData.map((entry, index) => (
                   <Cell
                     fill={COLORS[index % COLORS.length]}
                     key={`cell-${index}`}
+                    stroke="none"
                   />
                 ))}
               </Pie>
@@ -77,9 +73,7 @@ export const Status = () => {
             </PieChart>
           </ResponsiveContainer>
           <Box className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform text-center">
-            <Text fontSize="2xl" fontWeight="bold">
-              {totalCount}
-            </Text>
+            <Text fontSize="3xl">{totalCount}</Text>
             <Text color="muted">
               Total{" "}
               {getTermDisplay("storyTerm", {
