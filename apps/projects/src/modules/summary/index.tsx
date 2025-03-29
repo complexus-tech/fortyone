@@ -9,6 +9,7 @@ import { MyStories } from "./components/my-stories";
 import { Header } from "./components/header";
 import { Priority } from "./components/priority";
 import { Status } from "./components/status";
+import { Contributions } from "./components/contributions";
 
 export const SummaryPage = () => {
   const { getTermDisplay } = useTerminology();
@@ -32,11 +33,10 @@ export const SummaryPage = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <Overview />
-          {/* <Contributions /> */}
           <Box className="my-4 grid grid-cols-3 gap-4">
             <Priority />
             <Status />
-            <Priority />
+            <Contributions />
           </Box>
           <Box className="my-4 grid grid-cols-2 gap-4">
             <MyStories />
