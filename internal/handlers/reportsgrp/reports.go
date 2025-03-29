@@ -66,7 +66,7 @@ func (h *Handlers) GetContributionStats(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	days := 7 // Default to 7 days
+	days := 6 // Default to 7 days
 	if filters["days"] != nil {
 		days, err = strconv.Atoi(filters["days"].(string))
 		if err != nil || days <= 0 {
