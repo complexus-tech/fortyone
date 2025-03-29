@@ -38,7 +38,7 @@ export const SummaryPage = () => {
             <Status />
             <Contributions />
           </Box>
-          <Box className="my-4 grid grid-cols-2 gap-4">
+          <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
             <MyStories />
             <Activities />
           </Box>
