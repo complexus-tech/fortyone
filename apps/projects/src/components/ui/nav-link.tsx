@@ -26,6 +26,7 @@ export const NavLink = ({
         className,
       )}
       href={href}
+      prefetch
       {...rest}
     >
       {children}
