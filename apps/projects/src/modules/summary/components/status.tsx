@@ -108,7 +108,7 @@ export const Status = () => {
               </PieChart>
             </ResponsiveContainer>
           </Box>
-          <Flex className="line-clamp-2 h-[60px] pt-3" gap={2} wrap>
+          <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
             {chartData.map((entry, index) => (
               <Flex align="center" gap={1} key={entry.name}>
                 <Box
