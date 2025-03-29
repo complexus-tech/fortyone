@@ -138,7 +138,7 @@ func (c *Consumer) generateStoryUpdateDescription(actorUsername string, updates 
 	if statusValue, exists := updates["status_id"]; exists {
 		// Try to get status name from states service
 		statusUUID, ok := statusValue.(uuid.UUID)
-		if ok && c.statuses != nil {
+		if ok {
 			statusName := c.getStatusName(context.Background(), workspaceID, statusUUID)
 			return fmt.Sprintf("%s changed the status to %s", actorUsername, statusName)
 		}
