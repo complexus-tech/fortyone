@@ -23,6 +23,8 @@ WORKDIR /app
 # Copy the binary
 COPY --from=builder /app/bin/api /app/api
 
+# Copy templates directory
+COPY templates/ /app/templates/
 
 # Expose the API port
 EXPOSE 8000
