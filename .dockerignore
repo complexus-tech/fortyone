@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+tmp/
+bin/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Air configuration for local development
+.air.toml
+
+# Dependency directories
+vendor/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+
+# Local environment files (don't include sensitive data)
+.env
+.env.local 
