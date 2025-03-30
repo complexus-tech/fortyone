@@ -58,8 +58,8 @@ type Config struct {
 		User         string `default:"postgres"`
 		Password     string `default:"password"`
 		Name         string `default:"complexus"`
-		MaxIdleConns int    `default:"2" env:"APP_DB_MAX_IDLE_CONNS"`
-		MaxOpenConns int    `default:"3" env:"APP_DB_MAX_OPEN_CONNS"`
+		MaxIdleConns int    `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
+		MaxOpenConns int    `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Cache struct {

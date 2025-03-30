@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/api ./cmd/api
+RUN CGO_ENABLED=0 go build -o /app/bin/api ./cmd/api
 
 # Create final lightweight image
 FROM alpine:latest
