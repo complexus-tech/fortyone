@@ -26,7 +26,8 @@ export const NotificationCard = ({
   readAt,
   createdAt,
   actorId,
-}: AppNotification) => {
+  index,
+}: AppNotification & { index: number }) => {
   const pathname = usePathname();
   const { data: members = [] } = useMembers();
   const actor = members.find((member) => member.id === actorId);
@@ -54,7 +55,7 @@ export const NotificationCard = ({
           <Link
             className="block"
             href={`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`}
-            prefetch={isUnread ? true : null}
+            prefetch={index <= 10 ? true : null}
           >
             <RowWrapper
               className={cn("block cursor-pointer px-4", {
