@@ -54,7 +54,7 @@ export const NotificationCard = ({
           <Link
             className="block"
             href={`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`}
-            prefetch
+            prefetch={isUnread ? true : null}
           >
             <RowWrapper
               className={cn("block cursor-pointer px-4", {
