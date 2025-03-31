@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/objectivestatusgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/reportsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/searchgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
@@ -169,6 +170,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Publisher: cfg.Publisher,
+	}, app)
+
+	// register the search routes
+	searchgrp.Routes(searchgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 }
