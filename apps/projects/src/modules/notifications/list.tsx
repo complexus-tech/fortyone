@@ -13,8 +13,12 @@ export const ListNotifications = () => {
     <Box className="h-screen border-r-[0.5px] border-gray-200/60 pb-6 dark:border-dark-100">
       <NotificationsHeader />
       <Box className="h-[calc(100vh-4rem)] overflow-y-auto">
-        {notifications.map((notification) => (
-          <NotificationCard key={notification.id} {...notification} />
+        {notifications.map((notification, idx) => (
+          <NotificationCard
+            key={notification.id}
+            {...notification}
+            index={idx}
+          />
         ))}
         {notifications.length === 0 && (
           <Flex align="center" className="h-full px-6" justify="center">
