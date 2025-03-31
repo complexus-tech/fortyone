@@ -86,6 +86,12 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		params.Priority = &priority
 	}
 
+	// Parse sort option
+	params.SortBy = r.URL.Query().Get("sortBy")
+	if params.SortBy == "" {
+		params.SortBy = "relevance"
+	}
+
 	// Parse pagination
 	params.Page = 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
@@ -114,6 +120,17 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, ErrInvalidSearchType, http.StatusBadRequest)
 	}
 
+	// Convert sort option
+	sortOption := search.SortByRelevance
+	switch params.SortBy {
+	case "updated":
+		sortOption = search.SortByUpdated
+	case "created":
+		sortOption = search.SortByCreated
+	case "relevance":
+		sortOption = search.SortByRelevance
+	}
+
 	searchParams := search.SearchParams{
 		Type:       searchType,
 		Query:      params.Query,
@@ -122,6 +139,7 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		LabelID:    params.LabelID,
 		StatusID:   params.StatusID,
 		Priority:   params.Priority,
+		SortBy:     sortOption,
 		Page:       params.Page,
 		PageSize:   params.PageSize,
 	}

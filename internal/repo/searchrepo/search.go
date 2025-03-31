@@ -118,19 +118,22 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params 
 		`)
 	}
 
-	// Add order by
-	if params.Query != "" {
-		queryBuilder.WriteString(`
-			ORDER BY 
-				CASE WHEN :query = '' THEN 0
-					ELSE ts_rank(s.search_vector, plainto_tsquery('english', :query))
-				END DESC,
-				s.created_at DESC
-		`)
-	} else {
-		queryBuilder.WriteString(`
-			ORDER BY s.created_at DESC
-		`)
+	// Add order by based on sort option
+	switch params.SortBy {
+	case search.SortByUpdated:
+		queryBuilder.WriteString(`ORDER BY s.updated_at DESC`)
+	case search.SortByCreated:
+		queryBuilder.WriteString(`ORDER BY s.created_at DESC`)
+	default: // SortByRelevance or empty
+		if params.Query != "" {
+			queryBuilder.WriteString(`
+				ORDER BY 
+					ts_rank(s.search_vector, plainto_tsquery('english', :query)) DESC,
+					s.created_at DESC
+			`)
+		} else {
+			queryBuilder.WriteString(`ORDER BY s.created_at DESC`)
+		}
 	}
 
 	// Add pagination
@@ -296,19 +299,22 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, para
 		`)
 	}
 
-	// Add order by
-	if params.Query != "" {
-		queryBuilder.WriteString(`
-			ORDER BY 
-				CASE WHEN :query = '' THEN 0
-					ELSE ts_rank(o.search_vector, plainto_tsquery('english', :query))
-				END DESC,
-				o.created_at DESC
-		`)
-	} else {
-		queryBuilder.WriteString(`
-			ORDER BY o.created_at DESC
-		`)
+	// Add order by based on sort option
+	switch params.SortBy {
+	case search.SortByUpdated:
+		queryBuilder.WriteString(`ORDER BY o.updated_at DESC`)
+	case search.SortByCreated:
+		queryBuilder.WriteString(`ORDER BY o.created_at DESC`)
+	default: // SortByRelevance or empty
+		if params.Query != "" {
+			queryBuilder.WriteString(`
+				ORDER BY 
+					ts_rank(o.search_vector, plainto_tsquery('english', :query)) DESC,
+					o.created_at DESC
+			`)
+		} else {
+			queryBuilder.WriteString(`ORDER BY o.created_at DESC`)
+		}
 	}
 
 	// Add pagination
@@ -345,7 +351,7 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, para
 	}
 
 	// Prepare named parameters
-	namedParams := map[string]any{
+	namedParams := map[string]interface{}{
 		"workspace_id": workspaceID,
 		"query":        params.Query,
 		"team_id":      params.TeamID,

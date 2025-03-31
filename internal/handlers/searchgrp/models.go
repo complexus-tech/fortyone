@@ -65,6 +65,7 @@ type AppSearchParams struct {
 	LabelID    *uuid.UUID `query:"labelId"`
 	StatusID   *uuid.UUID `query:"statusId"`
 	Priority   *string    `query:"priority"`
+	SortBy     string     `query:"sortBy"`
 	Page       int        `query:"page"`
 	PageSize   int        `query:"pageSize"`
 }

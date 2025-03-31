@@ -64,6 +64,18 @@ const (
 	SearchTypeObjectives SearchType = "objectives"
 )
 
+// SortOption defines how search results should be sorted
+type SortOption string
+
+const (
+	// SortByRelevance sorts by search relevance (default)
+	SortByRelevance SortOption = "relevance"
+	// SortByUpdated sorts by last updated time
+	SortByUpdated SortOption = "updated"
+	// SortByCreated sorts by creation time
+	SortByCreated SortOption = "created"
+)
+
 // SearchParams represents the parameters for a search query
 type SearchParams struct {
 	Type       SearchType
@@ -73,6 +85,7 @@ type SearchParams struct {
 	LabelID    *uuid.UUID
 	StatusID   *uuid.UUID
 	Priority   *string
+	SortBy     SortOption
 	Page       int
 	PageSize   int
 }
