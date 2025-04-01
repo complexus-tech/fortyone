@@ -59,7 +59,7 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 			:name, :description, :lead_user_id, :team_id,
 			:workspace_id, :start_date, :end_date, :is_private,
 			:status_id, :priority, :created_by
-		) RETURNING *;
+		) RETURNING objectives.objective_id, objectives.name, objectives.description, objectives.lead_user_id, objectives.team_id, objectives.workspace_id, objectives.start_date, objectives.end_date, objectives.is_private, objectives.status_id, objectives.priority, objectives.created_at, objectives.updated_at, objectives.created_by, objectives.health;
 	`
 
 	var createdObj dbObjective
