@@ -56,7 +56,7 @@ const Items = ({
   const state =
     filteredStatuses.find((state) => state.id === statusId) ||
     filteredStatuses.at(0);
-  const { id: defaultStateId } = state!;
+  const defaultStateId = state?.id;
   const { setOpen } = useStatusMenu();
   if (!filteredStatuses.length) return null;
 
