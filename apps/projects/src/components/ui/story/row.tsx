@@ -215,7 +215,11 @@ export const StoryRow = ({
       {isExpanded && story.subStories.length > 0 ? (
         <>
           {story.subStories.map((subStory) => (
-            <StoryRow isSubStory key={subStory.id} story={subStory} />
+            <StoryRow
+              isSubStory
+              key={subStory.id}
+              story={{ ...subStory, subStories: [], labels: [] }}
+            />
           ))}
         </>
       ) : null}
