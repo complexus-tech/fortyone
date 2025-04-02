@@ -106,15 +106,15 @@ export const SearchPage = () => {
                   isInSearch
                   objectives={results?.objectives || []}
                 />
-                {(results?.objectives.length === 0 ||
-                  results?.stories.length === 0) && (
-                  <Box className="flex h-[70vh] items-center justify-center">
-                    <Text className="max-w-md text-center">
-                      No results found for your search. Try again with a
-                      different query.
-                    </Text>
-                  </Box>
-                )}
+                {results?.objectives.length === 0 &&
+                  results.stories.length === 0 && (
+                    <Box className="flex h-[70vh] items-center justify-center">
+                      <Text className="max-w-md text-center">
+                        No results found for your search. Try again with a
+                        different query.
+                      </Text>
+                    </Box>
+                  )}
               </Tabs.Panel>
               <Tabs.Panel value="stories">
                 <StoriesBoard
