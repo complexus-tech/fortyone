@@ -46,6 +46,7 @@ const getGroupLabel = ({
 };
 
 export const StoriesGroup = ({
+  isInSearch,
   stories,
   status,
   priority,
@@ -53,6 +54,7 @@ export const StoriesGroup = ({
   viewOptions,
   assignee,
 }: {
+  isInSearch?: boolean;
   stories: Story[];
   status?: State;
   priority?: StoryPriority;
@@ -123,7 +125,9 @@ export const StoriesGroup = ({
         status={status}
         stories={filteredStories}
       />
-      {!isCollapsed && <StoriesList stories={filteredStories} />}
+      {!isCollapsed && (
+        <StoriesList isInSearch={isInSearch} stories={filteredStories} />
+      )}
       {!isCollapsed && (
         <RowWrapper>
           <Text color="muted">

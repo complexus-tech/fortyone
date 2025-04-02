@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { searchQuery } from "../queries/search";
 import type { SearchQueryParams } from "../types";
 
@@ -12,5 +13,6 @@ export const useSearch = (params: SearchQueryParams = {}) => {
     queryKey: searchKeys.query(params),
     queryFn: () => searchQuery(params),
     enabled: Boolean(params.query),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
   });
 };

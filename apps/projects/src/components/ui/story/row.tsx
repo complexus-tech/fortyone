@@ -4,7 +4,7 @@ import { Flex, Text, Tooltip, Avatar, Checkbox, Box, Button } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRightIcon, SubStoryIcon } from "icons";
+import { ArrowRightIcon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
@@ -25,9 +25,11 @@ import { StoryProperties } from "./properties";
 export const StoryRow = ({
   story,
   isSubStory = false,
+  isInSearch = false,
 }: {
   story: StoryProps;
   isSubStory?: boolean;
+  isInSearch?: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
@@ -71,7 +73,10 @@ export const StoryRow = ({
               className="relative shrink select-none"
               gap={2}
             >
-              {!isSubStory && <DragHandle {...listeners} {...attributes} />}
+              {isInSearch ? <StoryIcon className="h-[1.1rem]" /> : null}
+              {isSubStory || isInSearch ? null : (
+                <DragHandle {...listeners} {...attributes} />
+              )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
                 className="absolute -left-[1.6rem] rounded-[0.35rem]"

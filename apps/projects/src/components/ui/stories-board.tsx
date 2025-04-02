@@ -12,7 +12,7 @@ import {
 import { Box, Flex, Text } from "ui";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon, StoryMissingIcon } from "icons";
+import { PlusIcon, SearchIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type {
@@ -123,44 +123,63 @@ const EmptyState = ({
   sprintId,
   teamId,
   getTermDisplay,
+  isInSearch,
 }: {
   objectiveId?: string;
   sprintId?: string;
   teamId?: string;
   getTermDisplay: ReturnType<typeof useTerminology>["getTermDisplay"];
+  isInSearch?: boolean;
 }) => (
   <Box className="flex h-[70vh] items-center justify-center">
     <Box className="flex flex-col items-center">
-      <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      {isInSearch ? (
+        <SearchIcon className="h-20 w-auto" strokeWidth={1.3} />
+      ) : (
+        <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      )}
       <Text className="mb-6 mt-8" fontSize="3xl">
-        No {getTermDisplay("storyTerm", { variant: "plural" })} found
+        {isInSearch
+          ? "No results found"
+          : `No ${getTermDisplay("storyTerm", { variant: "plural" })} found`}
       </Text>
-      <Text className="mb-6 max-w-md text-center" color="muted">
-        Oops! This board is empty. Why not create a{" "}
-        {getTermDisplay("storyTerm")}?
-      </Text>
-      <Flex gap={2}>
-        <NewStoryButton
-          color="tertiary"
-          leftIcon={<PlusIcon />}
-          objectiveId={objectiveId}
-          size="md"
-          sprintId={sprintId}
-          teamId={teamId}
-        >
-          Create new {getTermDisplay("storyTerm")}
-        </NewStoryButton>
-      </Flex>
+      {isInSearch ? (
+        <Text className="mb-6 max-w-md text-center" color="muted">
+          Oops! There are no results for your search. Try a different search
+          query.
+        </Text>
+      ) : (
+        <>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            Oops! This board is empty. Why not create a{" "}
+            {getTermDisplay("storyTerm")}?
+          </Text>
+          <Flex gap={2}>
+            <NewStoryButton
+              color="tertiary"
+              leftIcon={<PlusIcon />}
+              objectiveId={objectiveId}
+              size="md"
+              sprintId={sprintId}
+              teamId={teamId}
+            >
+              Create new {getTermDisplay("storyTerm")}
+            </NewStoryButton>
+          </Flex>
+        </>
+      )}
     </Box>
   </Box>
 );
 
 export const StoriesBoard = ({
+  isInSearch,
   layout,
   stories,
   className,
   viewOptions,
 }: {
+  isInSearch?: boolean;
   layout: StoriesLayout;
   stories: Story[];
   className?: string;
@@ -310,6 +329,7 @@ export const StoriesBoard = ({
         {storiesBoard.length === 0 && (
           <EmptyState
             getTermDisplay={getTermDisplay}
+            isInSearch={isInSearch}
             objectiveId={objectiveId}
             sprintId={sprintId}
             teamId={teamId}
@@ -327,6 +347,7 @@ export const StoriesBoard = ({
             ) : (
               <ListBoard
                 className={className}
+                isInSearch={isInSearch}
                 stories={orderedStories}
                 viewOptions={viewOptions}
               />

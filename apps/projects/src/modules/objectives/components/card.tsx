@@ -37,13 +37,14 @@ export const ObjectiveCard = ({
   leadUser,
   teamId,
   endDate,
-  stats: { completed, total },
   isInTeam,
+  isInSearch,
   statusId,
   health,
   priority,
   createdBy,
-}: Objective & { isInTeam?: boolean }) => {
+  ...rest
+}: Objective & { isInTeam?: boolean; isInSearch?: boolean }) => {
   const { data: session } = useSession();
   const { data: members = [] } = useTeamMembers(teamId);
   const { data: teams = [] } = useTeams();
@@ -55,7 +56,10 @@ export const ObjectiveCard = ({
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
   const status = statuses.find((s) => s.id === statusId);
-  const progress = Math.round((completed / total) * 100) || 0;
+  let progress = 0;
+  if (rest.stats) {
+    progress = Math.round((rest.stats.completed / rest.stats.total) * 100) || 0;
+  }
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -65,7 +69,11 @@ export const ObjectiveCard = ({
   };
 
   return (
-    <RowWrapper className="px-5 py-3 md:px-12">
+    <RowWrapper
+      className={cn("px-5 py-3 md:px-12", {
+        "py-2 md:px-6": isInSearch,
+      })}
+    >
       <Box
         className={cn("flex w-[300px] shrink-0 items-center gap-2", {
           "pointer-events-none opacity-40": id === "optimistic",
@@ -94,7 +102,6 @@ export const ObjectiveCard = ({
             </Text>
           </Box>
         ) : null}
-
         <Box className="flex w-[40px] shrink-0 items-center">
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
@@ -130,11 +137,12 @@ export const ObjectiveCard = ({
             />
           </AssigneesMenu>
         </Box>
-
-        <Box className="flex w-[60px] shrink-0 items-center gap-1.5 pl-0.5">
-          <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
-          {progress}%
-        </Box>
+        {!isInSearch && (
+          <Box className="flex w-[60px] shrink-0 items-center gap-1.5 pl-0.5">
+            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+            {progress}%
+          </Box>
+        )}
         <Box className="w-[120px] shrink-0">
           <ObjectiveStatusesMenu>
             <ObjectiveStatusesMenu.Trigger>

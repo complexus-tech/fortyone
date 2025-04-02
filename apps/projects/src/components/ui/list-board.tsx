@@ -14,10 +14,12 @@ export const ListBoard = ({
   stories,
   className,
   viewOptions,
+  isInSearch,
 }: {
   stories: Story[];
   className?: string;
   viewOptions: StoriesViewOptions;
+  isInSearch?: boolean;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { groupBy } = viewOptions;
@@ -49,12 +51,23 @@ export const ListBoard = ({
   };
 
   return (
-    <BodyContainer className={cn("overflow-x-auto pb-6", className)}>
-      {groupBy === "None" && <StoriesList stories={stories} />}
+    <BodyContainer
+      className={cn(
+        "overflow-x-auto pb-6",
+        {
+          "h-auto pb-0": isInSearch,
+        },
+        className,
+      )}
+    >
+      {groupBy === "None" && (
+        <StoriesList isInSearch={isInSearch} stories={stories} />
+      )}
       {groupBy === "Status" &&
         statuses.map((status) => (
           <StoriesGroup
             className="-top-[0.5px]"
+            isInSearch={isInSearch}
             key={status.id}
             status={status}
             stories={stories}
@@ -65,6 +78,7 @@ export const ListBoard = ({
         priorities.map((priority) => (
           <StoriesGroup
             className="-top-[0.5px]"
+            isInSearch={isInSearch}
             key={priority}
             priority={priority}
             stories={stories}
@@ -77,6 +91,7 @@ export const ListBoard = ({
           <StoriesGroup
             assignee={member as Member}
             className="-top-[0.5px]"
+            isInSearch={isInSearch}
             key={(member as Member).email}
             stories={stories}
             viewOptions={viewOptions}

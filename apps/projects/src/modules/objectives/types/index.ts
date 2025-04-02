@@ -19,7 +19,7 @@ export type Objective = {
   statusId: string;
   priority?: StoryPriority;
   health: ObjectiveHealth;
-  stats: {
+  stats?: {
     total: number;
     cancelled: number;
     completed: number;
