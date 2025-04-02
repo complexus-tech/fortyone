@@ -37,7 +37,8 @@ export const Summary = () => {
 
   const progress =
     Math.round(
-      ((objective?.stats.completed || 0) / (objective?.stats.total || 1)) * 100,
+      ((objective?.stats?.completed || 0) / (objective?.stats?.total || 1)) *
+        100,
     ) || 0;
 
   const getTargetDateMessage = () => {
