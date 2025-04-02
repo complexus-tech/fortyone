@@ -1,5 +1,5 @@
 "use client";
-import { Box, Tabs } from "ui";
+import { Box, Tabs, Text } from "ui";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { ObjectiveIcon, StoryIcon } from "icons";
 import { useState } from "react";
@@ -63,7 +63,7 @@ export const SearchPage = () => {
           }}
           value={tab}
         >
-          <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
+          <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100 dark:border-dark-100">
             <Tabs.List>
               <Tabs.Tab value="all">All results</Tabs.Tab>
               <Tabs.Tab
@@ -106,6 +106,15 @@ export const SearchPage = () => {
                   isInSearch
                   objectives={results?.objectives || []}
                 />
+                {(results?.objectives.length === 0 ||
+                  results?.stories.length === 0) && (
+                  <Box className="flex h-[70vh] items-center justify-center">
+                    <Text className="max-w-md text-center">
+                      No results found for your search. Try again with a
+                      different query.
+                    </Text>
+                  </Box>
+                )}
               </Tabs.Panel>
               <Tabs.Panel value="stories">
                 <StoriesBoard
@@ -119,12 +128,34 @@ export const SearchPage = () => {
                     displayColumns: ["Status", "Assignee", "Priority"],
                   }}
                 />
+                {results?.stories.length === 0 && (
+                  <Box className="flex h-[70vh] items-center justify-center">
+                    <Text>
+                      No{" "}
+                      {getTermDisplay("storyTerm", {
+                        variant: "plural",
+                      })}{" "}
+                      matched your search
+                    </Text>
+                  </Box>
+                )}
               </Tabs.Panel>
               <Tabs.Panel value="objectives">
                 <ListObjectives
                   isInSearch
                   objectives={results?.objectives || []}
                 />
+                {results?.objectives.length === 0 && (
+                  <Box className="flex h-[70vh] items-center justify-center">
+                    <Text>
+                      No{" "}
+                      {getTermDisplay("objectiveTerm", {
+                        variant: "plural",
+                      })}{" "}
+                      matched your search
+                    </Text>
+                  </Box>
+                )}
               </Tabs.Panel>
             </>
           )}

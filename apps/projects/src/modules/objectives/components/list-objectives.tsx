@@ -30,20 +30,7 @@ export const ListObjectives = ({
       {!isInSearch && <TableHeader isInTeam={isInTeam} />}
       {objectives.length === 0 ? (
         <>
-          {isInSearch ? (
-            <Box className="flex h-full items-center justify-center">
-              <Box className="flex flex-col items-center">
-                <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
-                <Text className="mb-6 mt-8" fontSize="3xl">
-                  No results found
-                </Text>
-                <Text className="mb-6 max-w-md text-center" color="muted">
-                  Oops! There are no results for your search. Try a different
-                  search query.
-                </Text>
-              </Box>
-            </Box>
-          ) : (
+          {isInSearch ? null : (
             <Box className="flex h-full items-center justify-center">
               <Box className="flex flex-col items-center">
                 <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
