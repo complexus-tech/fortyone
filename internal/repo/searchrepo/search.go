@@ -27,12 +27,13 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 }
 
 // SearchStories searches for stories based on the provided parameters.
-func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params search.SearchParams) ([]search.CoreSearchStory, int, error) {
+func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, params search.SearchParams) ([]search.CoreSearchStory, int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.search.SearchStories")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("workspace.id", workspaceID.String()),
+		attribute.String("user.id", userID.String()),
 		attribute.String("search.query", params.Query),
 	)
 
@@ -69,6 +70,7 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params 
 			) AS labels
 		FROM
 			stories s
+			INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
 		WHERE
 			s.workspace_id = :workspace_id
 			AND s.deleted_at IS NULL
@@ -145,6 +147,7 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params 
 	countQuery := `
 		SELECT COUNT(*)
 		FROM stories s
+		INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
 		WHERE s.workspace_id = :workspace_id
 		AND s.deleted_at IS NULL
 	`
@@ -194,6 +197,7 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params 
 	// Prepare named parameters
 	namedParams := map[string]any{
 		"workspace_id": workspaceID,
+		"user_id":      userID,
 		"query":        params.Query,
 		"team_id":      params.TeamID,
 		"assignee_id":  params.AssigneeID,
@@ -244,12 +248,13 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, params 
 }
 
 // SearchObjectives searches for objectives based on the provided parameters.
-func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, params search.SearchParams) ([]search.CoreSearchObjective, int, error) {
+func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, params search.SearchParams) ([]search.CoreSearchObjective, int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.search.SearchObjectives")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("workspace.id", workspaceID.String()),
+		attribute.String("user.id", userID.String()),
 		attribute.String("search.query", params.Query),
 	)
 
@@ -272,6 +277,7 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, para
 			o.updated_at
 		FROM
 			objectives o
+			INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
 		WHERE
 			o.workspace_id = :workspace_id
 	`)
@@ -326,6 +332,7 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, para
 	countQuery := `
 		SELECT COUNT(*)
 		FROM objectives o
+		INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
 		WHERE o.workspace_id = :workspace_id
 	`
 
@@ -353,6 +360,7 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, para
 	// Prepare named parameters
 	namedParams := map[string]interface{}{
 		"workspace_id": workspaceID,
+		"user_id":      userID,
 		"query":        params.Query,
 		"team_id":      params.TeamID,
 		"status_id":    params.StatusID,

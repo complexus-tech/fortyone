@@ -12,8 +12,8 @@ import (
 
 // Repository provides access to the search storage.
 type Repository interface {
-	SearchStories(ctx context.Context, workspaceID uuid.UUID, params SearchParams) ([]CoreSearchStory, int, error)
-	SearchObjectives(ctx context.Context, workspaceID uuid.UUID, params SearchParams) ([]CoreSearchObjective, int, error)
+	SearchStories(ctx context.Context, workspaceID uuid.UUID, userId uuid.UUID, params SearchParams) ([]CoreSearchStory, int, error)
+	SearchObjectives(ctx context.Context, workspaceID uuid.UUID, userId uuid.UUID, params SearchParams) ([]CoreSearchObjective, int, error)
 }
 
 // Service provides search-related operations.
@@ -31,7 +31,7 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // Search searches for content based on the provided parameters.
-func (s *Service) Search(ctx context.Context, workspaceID uuid.UUID, params SearchParams) (CoreSearchResult, error) {
+func (s *Service) Search(ctx context.Context, workspaceID uuid.UUID, userId uuid.UUID, params SearchParams) (CoreSearchResult, error) {
 	s.log.Info(ctx, "business.core.search.Search")
 	ctx, span := web.AddSpan(ctx, "business.core.search.Search")
 	defer span.End()
@@ -59,7 +59,7 @@ func (s *Service) Search(ctx context.Context, workspaceID uuid.UUID, params Sear
 
 	// Search stories if requested
 	if params.Type == SearchTypeAll || params.Type == SearchTypeStories {
-		storiesResult, totalStories, err = s.repo.SearchStories(ctx, workspaceID, params)
+		storiesResult, totalStories, err = s.repo.SearchStories(ctx, workspaceID, userId, params)
 		if err != nil {
 			span.RecordError(err)
 			return CoreSearchResult{}, err
@@ -68,7 +68,7 @@ func (s *Service) Search(ctx context.Context, workspaceID uuid.UUID, params Sear
 
 	// Search objectives if requested
 	if params.Type == SearchTypeAll || params.Type == SearchTypeObjectives {
-		objectivesResult, totalObjectives, err = s.repo.SearchObjectives(ctx, workspaceID, params)
+		objectivesResult, totalObjectives, err = s.repo.SearchObjectives(ctx, workspaceID, userId, params)
 		if err != nil {
 			span.RecordError(err)
 			return CoreSearchResult{}, err

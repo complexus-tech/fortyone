@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/complexus-tech/projects-api/internal/core/search"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -35,6 +36,7 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
+	userID, _ := mid.GetUserID(ctx)
 
 	// Extract query parameters
 	var params AppSearchParams
@@ -145,7 +147,7 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Call search service
-	result, err := h.searchService.Search(ctx, workspaceID, searchParams)
+	result, err := h.searchService.Search(ctx, workspaceID, userID, searchParams)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
