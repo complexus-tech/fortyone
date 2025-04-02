@@ -28,26 +28,24 @@ export const Story = () => {
   ];
 
   return (
-    <Container className="mt-16 max-w-5xl md:mt-28">
+    <Container className="mt-16 md:mt-28">
       <Box className="relative">
         <Text
-          align="center"
           as="h1"
-          className="mb-8 h-max max-w-4xl pb-2 text-5xl font-semibold md:mb-10 md:mt-6 md:text-7xl"
+          className="mb-8 h-max max-w-5xl pb-2 text-5xl font-semibold md:mb-10 md:mt-6 md:text-7xl"
           color="gradient"
         >
           Better Tools, Bigger Impact
         </Text>
         <Text
-          align="center"
-          className="mb-12 max-w-6xl text-xl leading-snug opacity-80 md:mb-20 md:text-2xl"
+          className=" mb-12 max-w-5xl text-xl leading-snug opacity-80 md:mb-20 md:text-2xl"
           fontWeight="normal"
         >
           Your strategy deserves better than spreadsheets and slides. Complexus
           delivers a complete platform for OKR management, strategic planning,
           and team alignment that turns great plans into greater achievements.
         </Text>
-        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-2 md:gap-x-20 md:gap-y-16">
+        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-3 md:gap-x-20 md:gap-y-16">
           {features.map(({ heading, description }, idx) => (
             <Box
               className={cn(

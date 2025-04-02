@@ -21,9 +21,9 @@ const Brand = ({ logo }: { logo: string }) => {
 export const SampleClients = () => {
   const brands = [
     "/images/brands/miningo.svg",
-    "/images/brands/mds.svg",
+    // "/images/brands/mds.svg",
     "/images/brands/zimboriginal.png",
-    "/images/brands/digitank.png",
+    // "/images/brands/digitank.png",
     "/images/brands/miningo.svg",
     "/images/brands/wastemate.png",
     "/images/brands/nesbil.png",
