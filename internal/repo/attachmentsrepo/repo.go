@@ -31,7 +31,7 @@ func (r *Repository) CreateAttachment(ctx context.Context, attachment attachment
 	const query = `
 		INSERT INTO attachments 
 		(filename, size, mime_type, uploaded_by, workspace_id)
-		VALUES (:attachment_id, :filename, :size, :mime_type, :uploaded_by, :workspace_id)
+		VALUES (:filename, :size, :mime_type, :uploaded_by, :workspace_id)
 		RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at
 	`
 
