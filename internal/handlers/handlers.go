@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/complexus-tech/projects-api/internal/handlers/activitiesgrp"
-	"github.com/complexus-tech/projects-api/internal/handlers/attachmentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/commentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
@@ -44,10 +43,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the stories routes
 	storiesgrp.Routes(storiesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Publisher: cfg.Publisher,
+		DB:          cfg.DB,
+		Log:         cfg.Log,
+		SecretKey:   cfg.SecretKey,
+		Publisher:   cfg.Publisher,
+		AzureConfig: cfg.AzureConfig,
+		Validate:    cfg.Validate,
 	}, app)
 
 	// register the objectives routes
@@ -178,15 +179,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
-	}, app)
-
-	// register the attachments routes
-	attachmentsgrp.Routes(attachmentsgrp.Config{
-		DB:          cfg.DB,
-		Log:         cfg.Log,
-		SecretKey:   cfg.SecretKey,
-		Validate:    cfg.Validate,
-		AzureConfig: cfg.AzureConfig,
 	}, app)
 
 }
