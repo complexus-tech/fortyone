@@ -30,19 +30,17 @@ func (r *Repository) CreateAttachment(ctx context.Context, attachment attachment
 
 	const query = `
 		INSERT INTO attachments 
-		(attachment_id, filename, size, mime_type, uploaded_by, team_id, workspace_id)
-		VALUES (:attachment_id, :filename, :size, :mime_type, :uploaded_by, :team_id, :workspace_id)
-		RETURNING attachment_id, filename, size, mime_type, uploaded_by, team_id, workspace_id, created_at
+		(filename, size, mime_type, uploaded_by, workspace_id)
+		VALUES (:attachment_id, :filename, :size, :mime_type, :uploaded_by, :workspace_id)
+		RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at
 	`
 
-	params := map[string]interface{}{
-		"attachment_id": attachment.ID,
-		"filename":      attachment.Filename,
-		"size":          attachment.Size,
-		"mime_type":     attachment.MimeType,
-		"uploaded_by":   attachment.UploadedBy,
-		"team_id":       attachment.TeamID,
-		"workspace_id":  attachment.WorkspaceID,
+	params := map[string]any{
+		"filename":     attachment.Filename,
+		"size":         attachment.Size,
+		"mime_type":    attachment.MimeType,
+		"uploaded_by":  attachment.UploadedBy,
+		"workspace_id": attachment.WorkspaceID,
 	}
 
 	rows, err := r.db.NamedQueryContext(ctx, query, params)
@@ -71,7 +69,7 @@ func (r *Repository) GetAttachmentByID(ctx context.Context, id uuid.UUID) (attac
 		WHERE attachment_id = :id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id": id,
 	}
 
@@ -98,14 +96,14 @@ func (r *Repository) GetAttachmentsByStoryID(ctx context.Context, storyID uuid.U
 	r.log.Info(ctx, "repo.attachments.getByStoryID")
 
 	const query = `
-		SELECT a.attachment_id, a.filename, a.size, a.mime_type, a.uploaded_by, a.team_id, a.workspace_id, a.created_at
+		SELECT a.attachment_id, a.filename, a.size, a.mime_type, a.uploaded_by, a.workspace_id, a.created_at
 		FROM attachments a
 		JOIN story_attachments sa ON a.attachment_id = sa.attachment_id
 		WHERE sa.story_id = :story_id
 		ORDER BY a.created_at DESC
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"story_id": storyID,
 	}
 
@@ -137,7 +135,7 @@ func (r *Repository) DeleteAttachment(ctx context.Context, id uuid.UUID) error {
 
 	const query = `DELETE FROM attachments WHERE attachment_id = :id`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id": id,
 	}
 
@@ -168,7 +166,7 @@ func (r *Repository) LinkAttachmentToStory(ctx context.Context, storyID, attachm
 		ON CONFLICT (story_id, attachment_id) DO NOTHING
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"story_id":      storyID,
 		"attachment_id": attachmentID,
 	}
@@ -187,7 +185,7 @@ func (r *Repository) UnlinkAttachmentFromStory(ctx context.Context, storyID, att
 
 	const query = `DELETE FROM story_attachments WHERE story_id = :story_id AND attachment_id = :attachment_id`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"story_id":      storyID,
 		"attachment_id": attachmentID,
 	}

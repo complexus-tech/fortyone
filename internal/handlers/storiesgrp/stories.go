@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
@@ -22,19 +24,21 @@ var (
 )
 
 type Handlers struct {
-	stories  *stories.Service
-	comments *comments.Service
-	links    *links.Service
-	log      *logger.Logger
+	stories     *stories.Service
+	comments    *comments.Service
+	links       *links.Service
+	attachments *attachments.Service
+	log         *logger.Logger
 }
 
 // NewStoriesHandlers returns a new storiesHandlers instance.
-func New(stories *stories.Service, comments *comments.Service, links *links.Service, log *logger.Logger) *Handlers {
+func New(stories *stories.Service, comments *comments.Service, links *links.Service, attachments *attachments.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
-		stories:  stories,
-		comments: comments,
-		links:    links,
-		log:      log,
+		stories:     stories,
+		comments:    comments,
+		links:       links,
+		attachments: attachments,
+		log:         log,
 	}
 }
 
@@ -411,4 +415,100 @@ func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r 
 
 	web.Respond(ctx, w, toAppStory(duplicatedStory), http.StatusCreated)
 	return nil
+}
+
+// GetAttachmentsForStory returns the attachments for a story.
+func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	fileInfos, err := h.attachments.GetAttachmentsForStory(ctx, storyId)
+	if err != nil {
+		return fmt.Errorf("error getting attachments for story: %w", err)
+	}
+
+	return web.Respond(ctx, w, attachments.ToAppAttachments(fileInfos), http.StatusOK)
+}
+
+// DeleteAttachment deletes an attachment from a story.
+func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyIdParam := web.Params(r, "id")
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, _ := mid.GetUserID(ctx)
+
+	attachmentIDStr := web.Params(r, "attachmentId")
+	attachmentID, err := uuid.Parse(attachmentIDStr)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid attachment ID"), http.StatusBadRequest)
+	}
+
+	// delete attachment from Azure
+	err = h.attachments.DeleteAttachment(ctx, attachmentID, userID)
+	if err != nil {
+		return fmt.Errorf("error deleting attachment: %w", err)
+	}
+
+	// Unlink attachment from story
+	err = h.attachments.UnlinkAttachmentFromStory(ctx, storyId, attachmentID)
+	if err != nil {
+		if errors.Is(err, attachments.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return fmt.Errorf("error unlinking attachment from story: %w", err)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// UploadStoryAttachment handles the upload of a new attachment specifically for a story
+func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, _ := mid.GetUserID(ctx)
+	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Parse multipart form, limit to 10MB
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Get file from form
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("error getting file: %w", err), http.StatusBadRequest)
+	}
+	defer file.Close()
+
+	// Upload file and automatically link to story
+	fileInfo, err := h.attachments.UploadAndLinkToStory(ctx, file, header, userID, storyId, workspaceId)
+	if err != nil {
+		switch {
+		case errors.Is(err, attachments.ErrFileTooLarge), errors.Is(err, attachments.ErrInvalidFileType):
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		default:
+			return fmt.Errorf("error uploading attachment: %w", err)
+		}
+	}
+
+	return web.Respond(ctx, w, attachments.ToAppAttachment(fileInfo), http.StatusCreated)
 }

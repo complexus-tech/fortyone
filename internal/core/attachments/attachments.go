@@ -3,7 +3,6 @@ package attachments
 import (
 	"context"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"time"
 
@@ -45,7 +44,7 @@ func New(log *logger.Logger, repo Repository, azureBlob *azure.BlobService, conf
 }
 
 // UploadAttachment uploads a file and creates an attachment record
-func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, teamID, workspaceID *uuid.UUID) (FileInfo, error) {
+func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.upload")
 	ctx, span := web.AddSpan(ctx, "core.attachments.UploadAttachment")
 	defer span.End()
@@ -74,12 +73,10 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 
 	// Create attachment record in database
 	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
-		ID:          uuid.New(),
 		Filename:    fileHeader.Filename,
 		Size:        fileHeader.Size,
 		MimeType:    fileHeader.Header.Get("Content-Type"),
 		UploadedBy:  userID,
-		TeamID:      teamID,
 		WorkspaceID: workspaceID,
 	})
 	if err != nil {
@@ -105,50 +102,6 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 		attribute.String("attachment_id", attachment.ID.String()),
 		attribute.String("filename", fileHeader.Filename),
 	))
-
-	return FileInfo{
-		ID:        attachment.ID,
-		Filename:  attachment.Filename,
-		Size:      attachment.Size,
-		MimeType:  attachment.MimeType,
-		URL:       blobURL + "?" + sasToken,
-		CreatedAt: attachment.CreatedAt,
-	}, nil
-}
-
-// GetAttachment gets an attachment by ID with a SAS token for access
-func (s *Service) GetAttachment(ctx context.Context, id uuid.UUID) (FileInfo, error) {
-	s.log.Info(ctx, "core.attachments.get")
-	ctx, span := web.AddSpan(ctx, "core.attachments.GetAttachment")
-	defer span.End()
-
-	// Get attachment from database
-	attachment, err := s.repo.GetAttachmentByID(ctx, id)
-	if err != nil {
-		span.RecordError(err)
-		return FileInfo{}, err
-	}
-
-	// Generate the blob name (UUID + extension from the filename)
-	filenameUUID := validate.GenerateFileName(attachment.Filename)
-
-	// Generate a SAS token for the file (15 minutes)
-	sasToken, err := s.azureBlob.GenerateSASToken(
-		ctx,
-		s.config.AttachmentsContainer,
-		filenameUUID,
-		15*time.Minute,
-	)
-	if err != nil {
-		span.RecordError(err)
-		return FileInfo{}, fmt.Errorf("failed to generate SAS token: %w", err)
-	}
-
-	// Construct the blob URL
-	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
-		s.config.StorageAccountName,
-		s.config.AttachmentsContainer,
-		filenameUUID)
 
 	return FileInfo{
 		ID:        attachment.ID,
@@ -260,15 +213,8 @@ func (s *Service) LinkAttachmentToStory(ctx context.Context, storyID, attachment
 	ctx, span := web.AddSpan(ctx, "core.attachments.LinkAttachmentToStory")
 	defer span.End()
 
-	// Verify attachment exists
-	_, err := s.repo.GetAttachmentByID(ctx, attachmentID)
-	if err != nil {
-		span.RecordError(err)
-		return err
-	}
-
 	// Link attachment to story
-	err = s.repo.LinkAttachmentToStory(ctx, storyID, attachmentID)
+	err := s.repo.LinkAttachmentToStory(ctx, storyID, attachmentID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -303,74 +249,14 @@ func (s *Service) UnlinkAttachmentFromStory(ctx context.Context, storyID, attach
 	return nil
 }
 
-// UploadProfileImage is a specialized method for uploading user profile images
-func (s *Service) UploadProfileImage(ctx context.Context, file io.Reader, filename string, size int64, contentType string, userID uuid.UUID) (string, error) {
-	s.log.Info(ctx, "core.attachments.uploadProfileImage")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UploadProfileImage")
-	defer span.End()
-
-	// Generate a unique filename
-	uniqueFilename := validate.GenerateFileName(filename)
-
-	// Upload to Azure
-	blobURL, err := s.azureBlob.UploadBlob(
-		ctx,
-		s.config.ProfileImagesContainer,
-		uniqueFilename,
-		file,
-		contentType,
-	)
-	if err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to upload to Azure: %w", err)
-	}
-
-	span.AddEvent("profile image uploaded", trace.WithAttributes(
-		attribute.String("user_id", userID.String()),
-		attribute.String("url", blobURL),
-	))
-
-	return blobURL, nil
-}
-
-// UploadWorkspaceLogo is a specialized method for uploading workspace logos
-func (s *Service) UploadWorkspaceLogo(ctx context.Context, file io.Reader, filename string, size int64, contentType string, workspaceID uuid.UUID) (string, error) {
-	s.log.Info(ctx, "core.attachments.uploadWorkspaceLogo")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UploadWorkspaceLogo")
-	defer span.End()
-
-	// Generate a unique filename
-	uniqueFilename := validate.GenerateFileName(filename)
-
-	// Upload to Azure
-	blobURL, err := s.azureBlob.UploadBlob(
-		ctx,
-		s.config.WorkspaceLogosContainer,
-		uniqueFilename,
-		file,
-		contentType,
-	)
-	if err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to upload to Azure: %w", err)
-	}
-
-	span.AddEvent("workspace logo uploaded", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
-		attribute.String("url", blobURL),
-	))
-
-	return blobURL, nil
-}
-
 // UploadAndLinkToStory uploads a file and links it to a story in a single operation
-func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, storyID uuid.UUID, teamID, workspaceID *uuid.UUID) (FileInfo, error) {
+func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, storyID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.uploadAndLinkToStory")
 	ctx, span := web.AddSpan(ctx, "core.attachments.UploadAndLinkToStory")
 	defer span.End()
 
 	// First upload the attachment
-	fileInfo, err := s.UploadAttachment(ctx, file, fileHeader, userID, teamID, workspaceID)
+	fileInfo, err := s.UploadAttachment(ctx, file, fileHeader, userID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return FileInfo{}, err
