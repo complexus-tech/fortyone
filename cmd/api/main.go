@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net"
@@ -160,9 +161,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Connect to redis client
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
-		Password: cfg.Cache.Password,
-		DB:       cfg.Cache.Name,
+		Addr:      net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
+		Password:  cfg.Cache.Password,
+		DB:        cfg.Cache.Name,
+		TLSConfig: &tls.Config{},
 	})
 
 	// Close the redis connection when the main function returns
