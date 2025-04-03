@@ -24,6 +24,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/pkg/azure"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
@@ -172,6 +173,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
+	// Initialize cache service
+	cacheService := cache.New(rdb, log)
+	log.Info(ctx, "initialized cache service")
+
 	// Initialize validator
 	validate := validator.New()
 
@@ -264,14 +269,16 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GoogleService: googleService,
 		Validate:      validate,
 		AzureConfig:   azureConfig,
+		Cache:         cacheService,
 	}
 
 	// Create the mux
-	app := mux.New(muxConfig, handlers.New())
+	routeAdder := handlers.New()
+	handler := mux.New(muxConfig, routeAdder)
 
 	server := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      app,
+		Handler:      handler,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,

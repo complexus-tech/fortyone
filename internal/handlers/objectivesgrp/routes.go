@@ -2,10 +2,11 @@ package objectivesgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
-	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +16,7 @@ type Config struct {
 	DB        *sqlx.DB
 	Log       *logger.Logger
 	SecretKey string
+	Cache     *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -22,7 +24,7 @@ func Routes(cfg Config, app *web.App) {
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	h := New(objectivesService, keyResultsService)
+	h := New(objectivesService, keyResultsService, cfg.Cache, cfg.Log)
 
 	app.Get("/workspaces/{workspaceId}/objectives", h.List, auth)
 	app.Get("/workspaces/{workspaceId}/objectives/{id}", h.Get, auth)

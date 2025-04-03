@@ -3,18 +3,26 @@ package objectivesgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Handlers struct {
 	objectives *objectives.Service
 	keyResults *keyresults.Service
+	cache      *cache.Service
+	log        *logger.Logger
 	// audit  *audit.Service
 }
 
@@ -24,15 +32,19 @@ var (
 )
 
 // New constructs a new objectives handlers instance.
-func New(objectives *objectives.Service, keyResults *keyresults.Service) *Handlers {
+func New(objectives *objectives.Service, keyResults *keyresults.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		objectives: objectives,
 		keyResults: keyResults,
+		cache:      cacheService,
+		log:        log,
 	}
 }
 
 // List returns a list of objectives.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.List")
+	defer span.End()
 	workspaceIdParam := web.Params(r, "workspaceId")
 	workspaceId, err := uuid.Parse(workspaceIdParam)
 	if err != nil {
@@ -51,16 +63,47 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	objectives, err := h.objectives.List(ctx, workspaceId, userID, filters)
+	// Try to get from cache first
+	filtersStr := ""
+	if filters != nil {
+		// Convert filters to string representation for cache key
+		// This is a simple implementation - you might want to make this more sophisticated
+		for k, v := range filters {
+			filtersStr += fmt.Sprintf("%s:%v;", k, v)
+		}
+	}
+	cacheKey := cache.ObjectiveListCacheKey(workspaceId, filtersStr)
+	var cachedObjectives []objectives.CoreObjective
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedObjectives); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppObjectives(cachedObjectives), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	objectivesList, err := h.objectives.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		return err
 	}
-	web.Respond(ctx, w, toAppObjectives(objectives), http.StatusOK)
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, objectivesList, cache.ListTTL); err != nil {
+		// Log error but continue - cache failure shouldn't affect response
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
+	web.Respond(ctx, w, toAppObjectives(objectivesList), http.StatusOK)
 	return nil
 }
 
 // Get returns an objective by ID.
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Get")
+	defer span.End()
 	objectiveID := web.Params(r, "id")
 	workspaceID := web.Params(r, "workspaceId")
 
@@ -76,6 +119,20 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
+	// Try to get from cache first
+	cacheKey := cache.ObjectiveDetailCacheKey(wsID, objID)
+	var cachedObjective objectives.CoreObjective
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedObjective); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppObjective(cachedObjective), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
 	objective, err := h.objectives.Get(ctx, objID, wsID)
 	if err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
@@ -86,12 +143,20 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, objective, cache.DetailTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
 	web.Respond(ctx, w, toAppObjective(objective), http.StatusOK)
 	return nil
 }
 
 // Update updates an objective in the system
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Update")
+	defer span.End()
 	objectiveID := web.Params(r, "id")
 	workspaceID := web.Params(r, "workspaceId")
 
@@ -155,12 +220,26 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
+	// Invalidate cache after successful update
+	cacheKeys := cache.InvalidateObjectiveKeys(wsID, objID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			h.cache.DeleteByPattern(ctx, key)
+		} else {
+			// Handle exact key deletion
+			h.cache.Delete(ctx, key)
+		}
+	}
+
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
 // Delete removes an objective from the system
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Delete")
+	defer span.End()
 	objectiveID := web.Params(r, "id")
 	workspaceID := web.Params(r, "workspaceId")
 
@@ -174,6 +253,18 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
+	}
+
+	// Invalidate cache before deleting the objective
+	cacheKeys := cache.InvalidateObjectiveKeys(wsID, objID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			h.cache.DeleteByPattern(ctx, key)
+		} else {
+			// Handle exact key deletion
+			h.cache.Delete(ctx, key)
+		}
 	}
 
 	if err := h.objectives.Delete(ctx, objID, wsID); err != nil {
@@ -191,6 +282,8 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 // GetKeyResults returns all key results for an objective.
 func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.GetKeyResults")
+	defer span.End()
 	objectiveID := web.Params(r, "id")
 	workspaceID := web.Params(r, "workspaceId")
 
@@ -206,11 +299,30 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	krs, err := h.keyResults.List(ctx, objID, wsID)
+	// Try to get from cache first
+	cacheKey := cache.KeyResultsListCacheKey(wsID, objID)
+	var cachedKeyResults []keyresults.CoreKeyResult
 
+	if err := h.cache.Get(ctx, cacheKey, &cachedKeyResults); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppKeyResults(cachedKeyResults), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	krs, err := h.keyResults.List(ctx, objID, wsID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
+	}
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, krs, cache.ListTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppKeyResults(krs), http.StatusOK)
@@ -219,6 +331,8 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 
 // Create creates a new objective with optional key results
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Create")
+	defer span.End()
 	workspaceID := web.Params(r, "workspaceId")
 	wsID, err := uuid.Parse(workspaceID)
 	if err != nil {
@@ -258,6 +372,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
+
+	// After successful creation, invalidate list cache
+	listCachePattern := fmt.Sprintf(cache.ObjectiveListKey+"*", wsID.String())
+	h.cache.DeleteByPattern(ctx, listCachePattern)
 
 	response := struct {
 		Objective  AppObjectiveList `json:"objective"`

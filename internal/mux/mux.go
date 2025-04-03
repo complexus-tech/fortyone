@@ -6,6 +6,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -35,6 +36,7 @@ type Config struct {
 	GoogleService *google.Service
 	Validate      *validator.Validate
 	AzureConfig   azure.Config
+	Cache         *cache.Service
 }
 
 // New returns a new HTTP handler that defines all the API routes.
