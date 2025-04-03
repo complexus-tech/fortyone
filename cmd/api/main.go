@@ -23,6 +23,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
+	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
@@ -30,6 +31,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
+	"github.com/go-playground/validator/v10"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 )
@@ -86,6 +88,14 @@ type Config struct {
 	}
 	Website struct {
 		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
+	}
+	Azure struct {
+		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
+		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
+		StorageAccountKey       string `env:"APP_AZURE_STORAGE_ACCOUNT_KEY"`
+		ProfileImagesContainer  string `default:"profile-images" env:"APP_AZURE_CONTAINER_PROFILE_IMAGES"`
+		WorkspaceLogosContainer string `default:"workspace-logos" env:"APP_AZURE_CONTAINER_WORKSPACE_LOGOS"`
+		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
 	}
 }
 
@@ -162,6 +172,19 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
+	// Initialize validator
+	validate := validator.New()
+
+	// Initialize Azure configuration
+	azureConfig := azure.Config{
+		ConnectionString:        cfg.Azure.StorageConnectionString,
+		StorageAccountName:      cfg.Azure.StorageAccountName,
+		AccountKey:              cfg.Azure.StorageAccountKey,
+		ProfileImagesContainer:  cfg.Azure.ProfileImagesContainer,
+		WorkspaceLogosContainer: cfg.Azure.WorkspaceLogosContainer,
+		AttachmentsContainer:    cfg.Azure.AttachmentsContainer,
+	}
+
 	// Initialize email service
 	emailService, err := email.NewService(email.Config{
 		Host:        cfg.Email.Host,
@@ -226,6 +249,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, "google auth service initialized")
 
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
 	// Update mux configuration
 	muxConfig := mux.Config{
 		DB:            db,
@@ -237,6 +262,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SecretKey:     cfg.Auth.SecretKey,
 		EmailService:  emailService,
 		GoogleService: googleService,
+		Validate:      validate,
+		AzureConfig:   azureConfig,
 	}
 
 	// Create the mux
@@ -258,6 +285,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
+	// Blocking main and waiting for shutdown.
 	select {
 	case err := <-serverErrors:
 		return fmt.Errorf("error: listening and serving: %s", err)

@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
@@ -31,6 +33,8 @@ type Config struct {
 	SecretKey     string
 	EmailService  email.Service
 	GoogleService *google.Service
+	Validate      *validator.Validate
+	AzureConfig   azure.Config
 }
 
 // New returns a new HTTP handler that defines all the API routes.
