@@ -17,7 +17,6 @@ var (
 
 type Handlers struct {
 	objectiveStatus *objectivestatus.Service
-	// audit  *audit.Service
 }
 
 // New constructs a new objective status handlers instance.

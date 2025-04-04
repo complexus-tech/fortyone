@@ -23,7 +23,6 @@ type Handlers struct {
 	keyResults *keyresults.Service
 	cache      *cache.Service
 	log        *logger.Logger
-	// audit  *audit.Service
 }
 
 var (

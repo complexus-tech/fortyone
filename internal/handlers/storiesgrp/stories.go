@@ -431,7 +431,7 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 		return fmt.Errorf("error getting attachments for story: %w", err)
 	}
 
-	return web.Respond(ctx, w, attachments.ToAppAttachments(fileInfos), http.StatusOK)
+	return web.Respond(ctx, w, fileInfos, http.StatusOK)
 }
 
 // DeleteAttachment deletes an attachment from a story.
@@ -510,5 +510,5 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 		}
 	}
 
-	return web.Respond(ctx, w, attachments.ToAppAttachment(fileInfo), http.StatusCreated)
+	return web.Respond(ctx, w, fileInfo, http.StatusCreated)
 }
