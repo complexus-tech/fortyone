@@ -2,8 +2,15 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { BlurImage, Box, Button, Dialog, Flex, Text, Wrapper } from "ui";
-import { DocsIcon, DownloadIcon, CloseIcon, MoreHorizontalIcon } from "icons";
+import { BlurImage, Box, Button, Dialog, Flex, Menu, Text, Wrapper } from "ui";
+import {
+  DocsIcon,
+  DownloadIcon,
+  CloseIcon,
+  MoreHorizontalIcon,
+  NewTabIcon,
+  DeleteIcon,
+} from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
 import type { StoryAttachment } from "../types";
@@ -58,7 +65,7 @@ export const StoryAttachmentPreview = ({
     if (isImage || isVideo) {
       return (
         <Box
-          className="relative h-28 overflow-hidden rounded-xl bg-gray-50/70 dark:bg-dark-200/50"
+          className="group relative h-28 overflow-hidden rounded-xl border border-gray-50 bg-gray-50/70 shadow-lg shadow-gray-100 ring-gray-200 transition-all duration-300 hover:ring hover:grayscale dark:border-dark-200 dark:bg-dark-200/50 dark:shadow-none dark:ring-dark-50"
           onClick={() => {
             setIsOpen(true);
           }}
@@ -66,7 +73,7 @@ export const StoryAttachmentPreview = ({
           {isImage ? (
             <BlurImage
               alt={file.filename}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-all duration-300 group-hover:scale-105"
               src={file.url}
             />
           ) : (
@@ -82,7 +89,7 @@ export const StoryAttachmentPreview = ({
     }
 
     return (
-      <Wrapper className="px-4 py-2.5">
+      <Wrapper className="px-4 py-2.5 ring-gray-200 ring-offset-1 transition-all duration-300 hover:ring dark:ring-dark-50 dark:ring-offset-dark">
         <Flex align="center" gap={6} justify="between">
           <Flex
             align="center"
@@ -105,6 +112,18 @@ export const StoryAttachmentPreview = ({
             </Box>
           </Flex>
           <Flex align="center" gap={1}>
+            {isPdf ? (
+              <Button
+                asIcon
+                color="tertiary"
+                onClick={() => {
+                  setIsOpen(true);
+                }}
+                variant="naked"
+              >
+                <NewTabIcon className="h-5" />
+              </Button>
+            ) : null}
             <Button
               asIcon
               color="tertiary"
@@ -113,9 +132,20 @@ export const StoryAttachmentPreview = ({
             >
               <DownloadIcon className="h-5" />
             </Button>
-            <Button asIcon color="tertiary" variant="naked">
-              <MoreHorizontalIcon className="h-5" />
-            </Button>
+            <Menu>
+              <Menu.Button>
+                <Button asIcon color="tertiary" variant="naked">
+                  <MoreHorizontalIcon className="h-5" />
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end" className="w-36">
+                <Menu.Group>
+                  <Menu.Item>
+                    <DeleteIcon /> Delete...
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
           </Flex>
         </Flex>
       </Wrapper>
@@ -125,7 +155,6 @@ export const StoryAttachmentPreview = ({
   return (
     <>
       <Box className={cn("cursor-pointer", className)}>{renderThumbnail()}</Box>
-
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className="relative my-auto px-2 pt-2"
@@ -183,6 +212,24 @@ export const StoryAttachmentPreview = ({
                   {file.filename}
                 </Text>
                 <Flex align="center" gap={3}>
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    leftIcon={<DeleteIcon className="h-4" />}
+                    size="xs"
+                  >
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    href={file.url}
+                    leftIcon={<NewTabIcon className="h-4" />}
+                    size="xs"
+                    target="_blank"
+                  >
+                    <span className="sr-only">Open in new tab</span>
+                  </Button>
                   <Button
                     asIcon
                     color="tertiary"
