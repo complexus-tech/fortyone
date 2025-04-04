@@ -1,29 +1,38 @@
 "use client";
 import { Box, Text } from "ui";
-import { cn } from "lib";
 import { Container } from "@/components/ui";
 
 export const Story = () => {
   const features: { heading: string; description: string }[] = [
     {
-      heading: "OKR Management",
+      heading: "Intuitive User Experience",
       description:
-        "Set and track Objectives and Key Results (OKRs) with powerful tools for measuring progress and aligning teams.",
+        "Beautiful interface that can be learned in a day. No extensive training required.",
     },
     {
-      heading: "Strategic Roadmapping",
+      heading: "Customizable Terminology",
       description:
-        "Plan and visualize your organization's journey with interactive roadmaps and milestone tracking.",
+        "Make the platform speak your language with custom terminology.",
+    },
+    {
+      heading: "Flexible Workflows",
+      description:
+        "Create custom workflows for each team while maintaining cross-organization visibility.",
+    },
+    {
+      heading: "Visual Task Management",
+      description:
+        "Intuitive Kanban boards for real-time work visualization and resource optimization.",
+    },
+    {
+      heading: "OKR Management",
+      description:
+        "Set and track Objectives and Key Results (OKRs) to align teams with your vision.",
     },
     {
       heading: "Team Collaboration",
       description:
-        "Foster cross-functional teamwork with shared objectives, real-time updates, and integrated team workspaces.",
-    },
-    {
-      heading: "Progress Tracking",
-      description:
-        "Monitor objective health, track key results, and get insights into team performance with comprehensive analytics.",
+        "Foster teamwork with shared objectives and integrated workspaces that break down silos.",
     },
   ];
 
@@ -35,29 +44,19 @@ export const Story = () => {
           className="mb-8 h-max max-w-5xl pb-2 text-5xl font-semibold md:mb-10 md:mt-6 md:text-7xl"
           color="gradient"
         >
-          Better Tools, Bigger Impact
+          Why Choose Complexus
         </Text>
         <Text
           className=" mb-12 max-w-5xl text-xl leading-snug opacity-80 md:mb-20 md:text-2xl"
           fontWeight="normal"
         >
-          Your strategy deserves better than spreadsheets and slides. Complexus
-          delivers a complete platform for OKR management, strategic planning,
-          and team alignment that turns great plans into greater achievements.
+          Simplify complexity without sacrifice. Complexus adapts to your
+          team&apos;s needs while keeping everyone aligned with strategic goals.
         </Text>
-        <Box className="mb-16 grid grid-cols-1 gap-10 md:mb-32 md:grid-cols-3 md:gap-x-20 md:gap-y-16">
+        <Box className="mb-16 grid grid-cols-1 divide-x divide-y divide-dashed divide-gray-200/10 border border-gray-200/10 md:mb-32 md:grid-cols-3">
           {features.map(({ heading, description }, idx) => (
-            <Box
-              className={cn(
-                "border-t border-gray-200/10 pt-8 text-center md:pt-12",
-                {
-                  "border-b pb-12 md:border-b-0 md:pb-0":
-                    idx === features.length - 1,
-                },
-              )}
-              key={heading}
-            >
-              <Text className="mb-4 text-6xl opacity-30 md:text-8xl">
+            <Box className="p-8 md:px-12 md:py-16" key={heading}>
+              <Text className="mb-4 text-6xl opacity-20 md:text-8xl">
                 {idx + 1}.
               </Text>
               <Text fontSize="xl" fontWeight="semibold" transform="uppercase">

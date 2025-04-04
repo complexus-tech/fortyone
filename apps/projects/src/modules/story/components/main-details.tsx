@@ -25,7 +25,7 @@ import { LinksSkeleton } from "./links-skeleton";
 import { ActivitiesSkeleton } from "./activities-skeleton";
 import { Activities, Attachments } from ".";
 
-const DEBOUNCE_DELAY = 500; // 500ms delay
+const DEBOUNCE_DELAY = 1000; // 500ms delay
 
 export const MainDetails = ({ storyId }: { storyId: string }) => {
   const { data } = useStoryById(storyId);
