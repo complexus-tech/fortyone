@@ -14,6 +14,7 @@ import {
 } from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
+import { useUserRole } from "@/hooks";
 import type { StoryAttachment } from "../types";
 
 export const ObjectViewer = ({
@@ -48,12 +49,14 @@ export const StoryAttachmentPreview = ({
   className,
   children,
   onDownload,
+  onDelete,
 }: StoryAttachmentPreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isImage = file.mimeType.includes("image");
   const isVideo = file.mimeType.startsWith("video/");
   const isPdf = file.mimeType === "application/pdf";
   const isUploading = file.id.includes("temp-");
+  const { userRole } = useUserRole();
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -147,25 +150,27 @@ export const StoryAttachmentPreview = ({
             >
               <DownloadIcon className="h-5" />
             </Button>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  asIcon
-                  color="tertiary"
-                  disabled={isUploading}
-                  variant="naked"
-                >
-                  <MoreHorizontalIcon className="h-5" />
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="end" className="w-36">
-                <Menu.Group>
-                  <Menu.Item>
-                    <DeleteIcon /> Delete...
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
+            {userRole !== "guest" && (
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    disabled={isUploading}
+                    variant="naked"
+                  >
+                    <MoreHorizontalIcon className="h-5" />
+                  </Button>
+                </Menu.Button>
+                <Menu.Items align="end" className="w-36">
+                  <Menu.Group>
+                    <Menu.Item onClick={onDelete}>
+                      <DeleteIcon /> Delete...
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            )}
           </Flex>
         </Flex>
       </Wrapper>
@@ -234,14 +239,17 @@ export const StoryAttachmentPreview = ({
                   {file.filename}
                 </Text>
                 <Flex align="center" gap={3}>
-                  <Button
-                    asIcon
-                    color="tertiary"
-                    leftIcon={<DeleteIcon className="h-4" />}
-                    size="xs"
-                  >
-                    <span className="sr-only">Delete</span>
-                  </Button>
+                  {userRole !== "guest" && (
+                    <Button
+                      asIcon
+                      color="tertiary"
+                      leftIcon={<DeleteIcon className="h-4" />}
+                      onClick={onDelete}
+                      size="xs"
+                    >
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  )}
                   <Button
                     asIcon
                     color="tertiary"

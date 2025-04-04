@@ -4,6 +4,7 @@ import { AttachmentIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
 import { useStoryAttachments } from "../hooks/story-attachments";
 import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
+import { useDeleteAttachmentMutation } from "../hooks/delete-attachment-mutation";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
 import { StoryAttachmentPreview } from "./story-attachment-preview";
 
@@ -24,6 +25,7 @@ export const Attachments = ({
 }) => {
   const { data: attachments = [], isPending } = useStoryAttachments(storyId);
   const uploadMutation = useUploadAttachmentMutation(storyId);
+  const deleteMutation = useDeleteAttachmentMutation(storyId);
 
   const onDrop = (acceptedFiles: CustomFile[]) => {
     if (acceptedFiles.length > 0) {
@@ -79,6 +81,10 @@ export const Attachments = ({
     return <AttachmentsSkeleton />;
   }
 
+  const handleDelete = (attachmentId: string) => {
+    deleteMutation.mutate(attachmentId);
+  };
+
   return (
     <Box className={className} suppressHydrationWarning>
       <Flex align="center" className="mb-2" justify="between">
@@ -119,6 +125,9 @@ export const Attachments = ({
             <StoryAttachmentPreview
               file={file}
               key={file.id}
+              onDelete={() => {
+                handleDelete(file.id);
+              }}
               onDownload={() => window.open(file.url, "_blank")}
             />
           ))}
@@ -130,6 +139,9 @@ export const Attachments = ({
             <StoryAttachmentPreview
               file={file}
               key={file.id}
+              onDelete={() => {
+                handleDelete(file.id);
+              }}
               onDownload={() => window.open(file.url, "_blank")}
             />
           ))}
