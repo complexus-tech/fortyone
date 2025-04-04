@@ -147,6 +147,7 @@ export const MainDetails = ({ storyId }: { storyId: string }) => {
                 (subStories.length > 0 || links.length > 0),
             },
           )}
+          storyId={storyId}
         />
         <Divider className="my-6" />
         {isActivitiesLoading ? (

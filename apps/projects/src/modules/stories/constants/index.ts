@@ -14,6 +14,8 @@ export const storyKeys = {
   sprints: () => [...storyKeys.all, "sprints"] as const,
   sprint: (sprintId: string) => [...storyKeys.sprints(), sprintId] as const,
   comments: (id: string) => [...storyKeys.detail(id), "comments"] as const,
+  attachments: (id: string) =>
+    [...storyKeys.detail(id), "attachments"] as const,
 };
 
 export const storyTags = {

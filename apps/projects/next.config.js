@@ -1,3 +1,4 @@
+/* eslint-disable turbo/no-undeclared-env-vars -- this is a workaround for turbo */
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
@@ -6,7 +7,7 @@ module.exports = {
     reactCompiler: true,
   },
   compiler: {
-    // removeConsole: process.env.NODE_ENV === "production",
+    removeConsole: process.env.NODE_ENV === "production",
   },
   images: {
     remotePatterns: [
@@ -17,6 +18,10 @@ module.exports = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "complexus.blob.core.windows.net",
       },
     ],
   },
