@@ -436,12 +436,12 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 
 // DeleteAttachment deletes an attachment from a story.
 func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	storyIdParam := web.Params(r, "id")
-	storyId, err := uuid.Parse(storyIdParam)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
-		return nil
-	}
+	// storyIdParam := web.Params(r, "id")
+	// storyId, err := uuid.Parse(storyIdParam)
+	// if err != nil {
+	// 	web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+	// 	return nil
+	// }
 
 	userID, _ := mid.GetUserID(ctx)
 
@@ -454,16 +454,7 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 	// delete attachment from Azure
 	err = h.attachments.DeleteAttachment(ctx, attachmentID, userID)
 	if err != nil {
-		return fmt.Errorf("error deleting attachment: %w", err)
-	}
-
-	// Unlink attachment from story
-	err = h.attachments.UnlinkAttachmentFromStory(ctx, storyId, attachmentID)
-	if err != nil {
-		if errors.Is(err, attachments.ErrNotFound) {
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		}
-		return fmt.Errorf("error unlinking attachment from story: %w", err)
+		return web.RespondError(ctx, w, fmt.Errorf("error deleting attachment: %w", err), http.StatusBadRequest)
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)

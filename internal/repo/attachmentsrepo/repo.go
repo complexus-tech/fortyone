@@ -65,7 +65,7 @@ func (r *Repository) GetAttachmentByID(ctx context.Context, id uuid.UUID) (attac
 	r.log.Info(ctx, "repo.attachments.getByID")
 
 	const query = `
-		SELECT attachment_id, filename, blob_name, size, mime_type, uploaded_by, team_id, workspace_id, created_at
+		SELECT attachment_id, filename, blob_name, size, mime_type, uploaded_by, workspace_id, created_at
 		FROM attachments 
 		WHERE attachment_id = :id
 	`
@@ -175,34 +175,6 @@ func (r *Repository) LinkAttachmentToStory(ctx context.Context, storyID, attachm
 	_, err := r.db.NamedExecContext(ctx, query, params)
 	if err != nil {
 		return fmt.Errorf("failed to link attachment to story: %w", err)
-	}
-
-	return nil
-}
-
-// UnlinkAttachmentFromStory unlinks an attachment from a story
-func (r *Repository) UnlinkAttachmentFromStory(ctx context.Context, storyID, attachmentID uuid.UUID) error {
-	r.log.Info(ctx, "repo.attachments.unlinkFromStory")
-
-	const query = `DELETE FROM story_attachments WHERE story_id = :story_id AND attachment_id = :attachment_id`
-
-	params := map[string]any{
-		"story_id":      storyID,
-		"attachment_id": attachmentID,
-	}
-
-	result, err := r.db.NamedExecContext(ctx, query, params)
-	if err != nil {
-		return fmt.Errorf("failed to unlink attachment from story: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return attachments.ErrNotFound
 	}
 
 	return nil

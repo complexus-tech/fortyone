@@ -30,11 +30,12 @@ type CoreNewAttachment struct {
 
 // FileInfo contains information about a file for responses
 type FileInfo struct {
-	ID        uuid.UUID `json:"id"`
-	Filename  string    `json:"filename"`
-	BlobName  string    `json:"-"`
-	Size      int64     `json:"size"`
-	MimeType  string    `json:"mimeType"`
-	URL       string    `json:"url"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID         uuid.UUID `json:"id"`
+	Filename   string    `json:"filename"`
+	BlobName   string    `json:"-"`
+	Size       int64     `json:"size"`
+	MimeType   string    `json:"mimeType"`
+	URL        string    `json:"url"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UploadedBy uuid.UUID `json:"uploadedBy"`
 }

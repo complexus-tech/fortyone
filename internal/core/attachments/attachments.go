@@ -22,7 +22,6 @@ type Repository interface {
 	GetAttachmentsByStoryID(ctx context.Context, storyID uuid.UUID) ([]CoreAttachment, error)
 	DeleteAttachment(ctx context.Context, id uuid.UUID) error
 	LinkAttachmentToStory(ctx context.Context, storyID, attachmentID uuid.UUID) error
-	UnlinkAttachmentFromStory(ctx context.Context, storyID, attachmentID uuid.UUID) error
 }
 
 // Service manages attachment operations
@@ -105,13 +104,14 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	))
 
 	return FileInfo{
-		ID:        attachment.ID,
-		Filename:  attachment.Filename,
-		BlobName:  blobName,
-		Size:      attachment.Size,
-		MimeType:  attachment.MimeType,
-		URL:       blobURL + "?" + sasToken,
-		CreatedAt: attachment.CreatedAt,
+		ID:         attachment.ID,
+		Filename:   attachment.Filename,
+		BlobName:   blobName,
+		Size:       attachment.Size,
+		MimeType:   attachment.MimeType,
+		URL:        blobURL + "?" + sasToken,
+		CreatedAt:  attachment.CreatedAt,
+		UploadedBy: attachment.UploadedBy,
 	}, nil
 }
 
@@ -152,13 +152,14 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 			blobName)
 
 		fileInfos[i] = FileInfo{
-			ID:        attachment.ID,
-			Filename:  attachment.Filename,
-			BlobName:  blobName,
-			Size:      attachment.Size,
-			MimeType:  attachment.MimeType,
-			URL:       blobURL + "?" + sasToken,
-			CreatedAt: attachment.CreatedAt,
+			ID:         attachment.ID,
+			Filename:   attachment.Filename,
+			BlobName:   blobName,
+			Size:       attachment.Size,
+			MimeType:   attachment.MimeType,
+			URL:        blobURL + "?" + sasToken,
+			CreatedAt:  attachment.CreatedAt,
+			UploadedBy: attachment.UploadedBy,
 		}
 	}
 
@@ -223,27 +224,6 @@ func (s *Service) LinkAttachmentToStory(ctx context.Context, storyID, attachment
 	}
 
 	span.AddEvent("attachment linked to story", trace.WithAttributes(
-		attribute.String("attachment_id", attachmentID.String()),
-		attribute.String("story_id", storyID.String()),
-	))
-
-	return nil
-}
-
-// UnlinkAttachmentFromStory unlinks an attachment from a story
-func (s *Service) UnlinkAttachmentFromStory(ctx context.Context, storyID, attachmentID uuid.UUID) error {
-	s.log.Info(ctx, "core.attachments.unlinkFromStory")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UnlinkAttachmentFromStory")
-	defer span.End()
-
-	// Unlink attachment from story
-	err := s.repo.UnlinkAttachmentFromStory(ctx, storyID, attachmentID)
-	if err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	span.AddEvent("attachment unlinked from story", trace.WithAttributes(
 		attribute.String("attachment_id", attachmentID.String()),
 		attribute.String("story_id", storyID.String()),
 	))
