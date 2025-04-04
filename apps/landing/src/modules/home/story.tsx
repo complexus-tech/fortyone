@@ -1,6 +1,6 @@
 "use client";
 import { Box, Text } from "ui";
-import { Container } from "@/components/ui";
+import { Container, Blur } from "@/components/ui";
 
 export const Story = () => {
   const features: { heading: string; description: string }[] = [
@@ -72,6 +72,7 @@ export const Story = () => {
             </Box>
           ))}
         </Box>
+        <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/5 md:h-[600px] md:w-[600px]" />
       </Box>
     </Container>
   );
