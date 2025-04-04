@@ -1,6 +1,7 @@
 import { useDropzone } from "react-dropzone";
 import { Box, Button, DropZone, Flex, Text, Tooltip } from "ui";
 import { AttachmentIcon, PlusIcon } from "icons";
+import { toast } from "sonner";
 import { useStoryAttachments } from "../hooks/story-attachments";
 import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
@@ -9,6 +10,10 @@ import { StoryAttachmentPreview } from "./story-attachment-preview";
 interface CustomFile extends File {
   preview?: string;
 }
+
+const formatFileSize = (bytes: number) => {
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
 
 export const Attachments = ({
   className,
@@ -22,7 +27,24 @@ export const Attachments = ({
 
   const onDrop = (acceptedFiles: CustomFile[]) => {
     if (acceptedFiles.length > 0) {
-      uploadMutation.mutate(acceptedFiles[0]);
+      if (acceptedFiles.length > 1) {
+        toast.warning("Only one file can be uploaded at a time", {
+          description: "Please select only one file",
+        });
+        return;
+      }
+      const file = acceptedFiles[0];
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > MAX_FILE_SIZE) {
+        toast.warning(
+          `File size(${formatFileSize(file.size)}) exceeds the 5MB limit`,
+          {
+            description: `${file.name} is too large.`,
+          },
+        );
+        return;
+      }
+      uploadMutation.mutate(file);
     }
   };
 
