@@ -30,13 +30,14 @@ func (r *Repository) CreateAttachment(ctx context.Context, attachment attachment
 
 	const query = `
 		INSERT INTO attachments 
-		(filename, size, mime_type, uploaded_by, workspace_id)
-		VALUES (:filename, :size, :mime_type, :uploaded_by, :workspace_id)
-		RETURNING attachment_id, filename, size, mime_type, uploaded_by, workspace_id, created_at
+		(filename, blob_name, size, mime_type, uploaded_by, workspace_id)
+		VALUES (:filename, :blob_name, :size, :mime_type, :uploaded_by, :workspace_id)
+		RETURNING attachment_id, filename, blob_name, size, mime_type, uploaded_by, workspace_id, created_at
 	`
 
 	params := map[string]any{
 		"filename":     attachment.Filename,
+		"blob_name":    attachment.BlobName,
 		"size":         attachment.Size,
 		"mime_type":    attachment.MimeType,
 		"uploaded_by":  attachment.UploadedBy,
@@ -64,7 +65,7 @@ func (r *Repository) GetAttachmentByID(ctx context.Context, id uuid.UUID) (attac
 	r.log.Info(ctx, "repo.attachments.getByID")
 
 	const query = `
-		SELECT attachment_id, filename, size, mime_type, uploaded_by, team_id, workspace_id, created_at
+		SELECT attachment_id, filename, blob_name, size, mime_type, uploaded_by, team_id, workspace_id, created_at
 		FROM attachments 
 		WHERE attachment_id = :id
 	`
@@ -96,7 +97,7 @@ func (r *Repository) GetAttachmentsByStoryID(ctx context.Context, storyID uuid.U
 	r.log.Info(ctx, "repo.attachments.getByStoryID")
 
 	const query = `
-		SELECT a.attachment_id, a.filename, a.size, a.mime_type, a.uploaded_by, a.workspace_id, a.created_at
+		SELECT a.attachment_id, a.filename, a.blob_name, a.size, a.mime_type, a.uploaded_by, a.workspace_id, a.created_at
 		FROM attachments a
 		JOIN story_attachments sa ON a.attachment_id = sa.attachment_id
 		WHERE sa.story_id = :story_id

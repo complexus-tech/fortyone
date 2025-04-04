@@ -56,13 +56,13 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	}
 
 	// Generate a unique filename
-	filename := validate.GenerateFileName(fileHeader.Filename)
+	blobName := validate.GenerateFileName(fileHeader.Filename)
 
 	// Upload to Azure
 	blobURL, err := s.azureBlob.UploadBlob(
 		ctx,
 		s.config.AttachmentsContainer,
-		filename,
+		blobName,
 		file,
 		fileHeader.Header.Get("Content-Type"),
 	)
@@ -74,6 +74,7 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	// Create attachment record in database
 	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
 		Filename:    fileHeader.Filename,
+		BlobName:    blobName,
 		Size:        fileHeader.Size,
 		MimeType:    fileHeader.Header.Get("Content-Type"),
 		UploadedBy:  userID,
@@ -82,7 +83,7 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	if err != nil {
 		span.RecordError(err)
 		// Try to clean up the blob since DB insert failed
-		_ = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, filename)
+		_ = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, blobName)
 		return FileInfo{}, fmt.Errorf("failed to create attachment record: %w", err)
 	}
 
@@ -90,7 +91,7 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	sasToken, err := s.azureBlob.GenerateSASToken(
 		ctx,
 		s.config.AttachmentsContainer,
-		filename,
+		blobName,
 		30*time.Minute,
 	)
 	if err != nil {
@@ -106,6 +107,7 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	return FileInfo{
 		ID:        attachment.ID,
 		Filename:  attachment.Filename,
+		BlobName:  blobName,
 		Size:      attachment.Size,
 		MimeType:  attachment.MimeType,
 		URL:       blobURL + "?" + sasToken,
@@ -128,14 +130,14 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 
 	fileInfos := make([]FileInfo, len(attachments))
 	for i, attachment := range attachments {
-		// Generate the blob name (UUID + extension)
-		filenameUUID := validate.GenerateFileName(attachment.Filename)
+		// Use the stored blob name instead of generating a new one
+		blobName := attachment.BlobName
 
 		// Generate a SAS token for each file (15 minutes)
 		sasToken, err := s.azureBlob.GenerateSASToken(
 			ctx,
 			s.config.AttachmentsContainer,
-			filenameUUID,
+			blobName,
 			15*time.Minute,
 		)
 		if err != nil {
@@ -147,11 +149,12 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 		blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
 			s.config.StorageAccountName,
 			s.config.AttachmentsContainer,
-			filenameUUID)
+			blobName)
 
 		fileInfos[i] = FileInfo{
 			ID:        attachment.ID,
 			Filename:  attachment.Filename,
+			BlobName:  blobName,
 			Size:      attachment.Size,
 			MimeType:  attachment.MimeType,
 			URL:       blobURL + "?" + sasToken,
@@ -182,9 +185,8 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 		return ErrUnauthorized
 	}
 
-	// Generate the blob name (UUID + extension)
-	filenameUUID := validate.GenerateFileName(attachment.Filename)
-
+	// Use the stored blob name if available, otherwise generate it
+	blobName := attachment.BlobName
 	// Delete from database first
 	err = s.repo.DeleteAttachment(ctx, id)
 	if err != nil {
@@ -193,7 +195,7 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 	}
 
 	// Delete from Azure
-	err = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, filenameUUID)
+	err = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, blobName)
 	if err != nil {
 		span.RecordError(err)
 		s.log.Error(ctx, "failed to delete blob from Azure", "error", err)

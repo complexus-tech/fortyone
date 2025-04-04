@@ -10,6 +10,7 @@ import (
 type CoreAttachment struct {
 	ID          uuid.UUID
 	Filename    string
+	BlobName    string
 	Size        int64
 	MimeType    string
 	UploadedBy  uuid.UUID
@@ -20,6 +21,7 @@ type CoreAttachment struct {
 // CoreNewAttachment represents a new attachment
 type CoreNewAttachment struct {
 	Filename    string
+	BlobName    string
 	Size        int64
 	MimeType    string
 	UploadedBy  uuid.UUID
@@ -30,6 +32,7 @@ type CoreNewAttachment struct {
 type FileInfo struct {
 	ID        uuid.UUID `json:"id"`
 	Filename  string    `json:"filename"`
+	BlobName  string    `json:"-"`
 	Size      int64     `json:"size"`
 	MimeType  string    `json:"mimeType"`
 	URL       string    `json:"url"`
