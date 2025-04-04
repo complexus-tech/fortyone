@@ -73,6 +73,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
       toast.success("File uploaded", {
         id: toastid,
         description: `${res.data?.filename} uploaded`,
+        action: null,
       });
     },
   });

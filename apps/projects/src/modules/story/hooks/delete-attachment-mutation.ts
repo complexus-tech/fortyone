@@ -62,6 +62,7 @@ export const useDeleteAttachmentMutation = (storyId: string) => {
       });
       toast.success("Attachment deleted", {
         id: toastId,
+        action: null,
       });
     },
   });
