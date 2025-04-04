@@ -96,7 +96,7 @@ export const Attachments = ({ className }: { className?: string }) => {
           ))}
       </Box>
       <Box
-        className={cn("grid gap-3", {
+        className={cn("grid gap-2", {
           "mt-3": files.length > 0,
         })}
       >
