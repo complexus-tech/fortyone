@@ -10,6 +10,7 @@ import {
   MoreHorizontalIcon,
   NewTabIcon,
   DeleteIcon,
+  LoadingIcon,
 } from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
@@ -52,6 +53,7 @@ export const StoryAttachmentPreview = ({
   const isImage = file.mimeType.includes("image");
   const isVideo = file.mimeType.startsWith("video/");
   const isPdf = file.mimeType === "application/pdf";
+  const isUploading = file.id.includes("temp-");
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -67,6 +69,7 @@ export const StoryAttachmentPreview = ({
         <Box
           className="group relative h-28 overflow-hidden rounded-xl border border-gray-50 bg-gray-50/70 shadow-lg shadow-gray-100 ring-gray-200 transition-all duration-300 hover:ring hover:grayscale dark:border-dark-200 dark:bg-dark-200/50 dark:shadow-none dark:ring-dark-50"
           onClick={() => {
+            if (isUploading) return;
             setIsOpen(true);
           }}
         >
@@ -84,6 +87,11 @@ export const StoryAttachmentPreview = ({
               src={file.url}
             />
           )}
+          {isUploading ? (
+            <Box className="absolute inset-0 flex items-center justify-center bg-dark/50">
+              <LoadingIcon className="h-6 animate-spin" />
+            </Box>
+          ) : null}
         </Box>
       );
     }
@@ -96,15 +104,20 @@ export const StoryAttachmentPreview = ({
             className="flex-1"
             gap={3}
             onClick={() => {
+              if (isUploading) return;
               setIsOpen(true);
             }}
           >
             <Box className="rounded-lg bg-gray-100/50 p-2 dark:bg-dark-200/80">
-              <DocsIcon className="h-6" />
+              {isUploading ? (
+                <LoadingIcon className="h-6 animate-spin" />
+              ) : (
+                <DocsIcon className="h-6" />
+              )}
             </Box>
             <Box>
               <Text className="mb-0.5 line-clamp-1 first-letter:uppercase">
-                {file.filename}
+                {isUploading ? "Uploading..." : file.filename}
               </Text>
               <Text className="text-[0.95rem]" color="muted">
                 {formatFileSize(file.size)}
@@ -116,6 +129,7 @@ export const StoryAttachmentPreview = ({
               <Button
                 asIcon
                 color="tertiary"
+                disabled={isUploading}
                 onClick={() => {
                   setIsOpen(true);
                 }}
@@ -127,6 +141,7 @@ export const StoryAttachmentPreview = ({
             <Button
               asIcon
               color="tertiary"
+              disabled={isUploading}
               onClick={onDownload}
               variant="naked"
             >
@@ -134,7 +149,12 @@ export const StoryAttachmentPreview = ({
             </Button>
             <Menu>
               <Menu.Button>
-                <Button asIcon color="tertiary" variant="naked">
+                <Button
+                  asIcon
+                  color="tertiary"
+                  disabled={isUploading}
+                  variant="naked"
+                >
                   <MoreHorizontalIcon className="h-5" />
                 </Button>
               </Menu.Button>

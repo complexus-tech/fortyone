@@ -1,8 +1,8 @@
 import { useDropzone } from "react-dropzone";
 import { Box, Button, DropZone, Flex, Text, Tooltip } from "ui";
 import { AttachmentIcon, PlusIcon } from "icons";
-import { useCallback } from "react";
 import { useStoryAttachments } from "../hooks/story-attachments";
+import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
 import { StoryAttachmentPreview } from "./story-attachment-preview";
 
@@ -18,15 +18,30 @@ export const Attachments = ({
   storyId: string;
 }) => {
   const { data: attachments = [], isPending } = useStoryAttachments(storyId);
+  const uploadMutation = useUploadAttachmentMutation(storyId);
 
-  const onDrop = useCallback((acceptedFiles: CustomFile[]) => {
+  const onDrop = (acceptedFiles: CustomFile[]) => {
     if (acceptedFiles.length > 0) {
-      // upload files here
+      uploadMutation.mutate(acceptedFiles[0]);
     }
-  }, []);
+  };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    open: openFilePicker,
+  } = useDropzone({
     onDrop,
+    multiple: false,
+    maxFiles: 1,
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+      "video/*": [".mp4"],
+      "application/pdf": [".pdf"],
+    },
+    noClick: attachments.length > 0,
+    noKeyboard: attachments.length > 0,
   });
 
   const imagesAndVideos = attachments.filter(
@@ -49,17 +64,20 @@ export const Attachments = ({
           <AttachmentIcon className="h-5 w-auto" />
           Attachments
         </Text>
-        <Tooltip title="Add attachment">
-          <Button
-            asIcon
-            color="tertiary"
-            leftIcon={<PlusIcon />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Add attachment</span>
-          </Button>
-        </Tooltip>
+        {attachments.length > 0 && (
+          <Tooltip title="Add attachment">
+            <Button
+              asIcon
+              color="tertiary"
+              leftIcon={<PlusIcon />}
+              onClick={openFilePicker}
+              size="sm"
+              variant="naked"
+            >
+              <span className="sr-only">Add attachment</span>
+            </Button>
+          </Tooltip>
+        )}
       </Flex>
       {attachments.length === 0 && (
         <DropZone>

@@ -68,6 +68,11 @@ export const post = async <T, U>(url: string, json: T, options?: Options) => {
     },
     ...options,
   };
+
+  if (json instanceof FormData) {
+    return client.post(url, { body: json, ...mergedOptions }).json<U>();
+  }
+
   return client.post(url, { json, ...mergedOptions }).json<U>();
 };
 
@@ -80,6 +85,9 @@ export const put = async <T, U>(url: string, json: T, options?: Options) => {
     },
     ...options,
   };
+  if (json instanceof FormData) {
+    return client.put(url, { body: json, ...mergedOptions }).json<U>();
+  }
   return client.put(url, { json, ...mergedOptions }).json<U>();
 };
 
@@ -92,6 +100,9 @@ export const patch = async <T, U>(url: string, json: T, options?: Options) => {
     },
     ...options,
   };
+  if (json instanceof FormData) {
+    return client.patch(url, { body: json, ...mergedOptions }).json<U>();
+  }
   return client.patch(url, { json, ...mergedOptions }).json<U>();
 };
 
