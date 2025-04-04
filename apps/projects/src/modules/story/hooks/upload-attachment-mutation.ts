@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { storyKeys } from "@/modules/stories/constants";
 import { addAttachmentAction } from "../actions/add-attachment";
 import type { StoryAttachment } from "../types";
@@ -7,6 +8,7 @@ import type { StoryAttachment } from "../types";
 export const useUploadAttachmentMutation = (storyId: string) => {
   const queryClient = useQueryClient();
   const toastid = "upload-attachment";
+  const { data: session } = useSession();
 
   const mutation = useMutation({
     mutationFn: (file: File) => addAttachmentAction(storyId, file),
@@ -26,6 +28,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
         mimeType: file.type,
         url: URL.createObjectURL(file),
         createdAt: new Date().toISOString(),
+        uploadedBy: session?.user?.id || "",
       };
       queryClient.setQueryData(storyKeys.attachments(storyId), [
         ...previousAttachments,

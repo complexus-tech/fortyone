@@ -14,7 +14,8 @@ import {
 } from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
-import { useUserRole } from "@/hooks";
+import { ConfirmDialog } from "@/components/ui";
+import { useIsAdminOrOwner } from "@/hooks/owner";
 import type { StoryAttachment } from "../types";
 
 export const ObjectViewer = ({
@@ -52,11 +53,12 @@ export const StoryAttachmentPreview = ({
   onDelete,
 }: StoryAttachmentPreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isImage = file.mimeType.includes("image");
   const isVideo = file.mimeType.startsWith("video/");
   const isPdf = file.mimeType === "application/pdf";
   const isUploading = file.id.includes("temp-");
-  const { userRole } = useUserRole();
+  const { isAdminOrOwner } = useIsAdminOrOwner(file.uploadedBy);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -150,7 +152,7 @@ export const StoryAttachmentPreview = ({
             >
               <DownloadIcon className="h-5" />
             </Button>
-            {userRole !== "guest" && (
+            {isAdminOrOwner ? (
               <Menu>
                 <Menu.Button>
                   <Button
@@ -164,13 +166,17 @@ export const StoryAttachmentPreview = ({
                 </Menu.Button>
                 <Menu.Items align="end" className="w-36">
                   <Menu.Group>
-                    <Menu.Item onClick={onDelete}>
+                    <Menu.Item
+                      onClick={() => {
+                        setIsDeleting(true);
+                      }}
+                    >
                       <DeleteIcon /> Delete...
                     </Menu.Item>
                   </Menu.Group>
                 </Menu.Items>
               </Menu>
-            )}
+            ) : null}
           </Flex>
         </Flex>
       </Wrapper>
@@ -239,17 +245,19 @@ export const StoryAttachmentPreview = ({
                   {file.filename}
                 </Text>
                 <Flex align="center" gap={3}>
-                  {userRole !== "guest" && (
+                  {isAdminOrOwner ? (
                     <Button
                       asIcon
                       color="tertiary"
                       leftIcon={<DeleteIcon className="h-4" />}
-                      onClick={onDelete}
+                      onClick={() => {
+                        setIsDeleting(true);
+                      }}
                       size="xs"
                     >
                       <span className="sr-only">Delete</span>
                     </Button>
-                  )}
+                  ) : null}
                   <Button
                     asIcon
                     color="tertiary"
@@ -289,6 +297,20 @@ export const StoryAttachmentPreview = ({
           ) : null}
         </Dialog.Content>
       </Dialog>
+      <ConfirmDialog
+        confirmText="Yes, delete"
+        description="Are you sure you want to delete this attachment? You cannot undo this action."
+        isOpen={isDeleting}
+        onClose={() => {
+          setIsDeleting(false);
+        }}
+        onConfirm={() => {
+          if (onDelete) {
+            onDelete();
+          }
+        }}
+        title="Delete attachment"
+      />
     </>
   );
 };

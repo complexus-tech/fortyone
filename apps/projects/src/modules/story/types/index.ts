@@ -37,4 +37,5 @@ export type StoryAttachment = {
   mimeType: string;
   url: string;
   createdAt: string;
+  uploadedBy: string;
 };
