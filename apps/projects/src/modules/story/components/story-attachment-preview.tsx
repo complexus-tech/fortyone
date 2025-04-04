@@ -157,7 +157,9 @@ export const StoryAttachmentPreview = ({
       <Box className={cn("cursor-pointer", className)}>{renderThumbnail()}</Box>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="relative my-auto px-2 pt-2"
+          className={cn("relative my-auto px-2 pt-2", {
+            "bg-dark dark:bg-dark": isImage,
+          })}
           hideClose
           size="lg"
         >
@@ -168,7 +170,7 @@ export const StoryAttachmentPreview = ({
             <Box className="flex h-[70vh] items-center justify-center overflow-y-auto rounded-lg">
               <BlurImage
                 alt={file.filename}
-                className="h-full"
+                className="h-full bg-dark dark:bg-dark"
                 imageClassName="object-contain"
                 src={file.url}
               />
@@ -202,7 +204,7 @@ export const StoryAttachmentPreview = ({
           ) : null}
 
           {isImage || isVideo ? (
-            <Box className="pointer-events-none absolute left-0 right-0 top-0 z-[3] h-20 bg-gradient-to-b from-dark/80 px-6 py-5">
+            <Box className="dark pointer-events-none absolute left-0 right-0 top-0 z-[3] h-20 bg-gradient-to-b from-dark/80 px-6 py-5">
               <Flex
                 align="center"
                 className="pointer-events-auto"
