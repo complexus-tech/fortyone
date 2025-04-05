@@ -13,13 +13,14 @@ export const Testimonials = () => {
         title: "Founder & Spatial Data Scientist",
         company: "Miningo Technologies",
         message:
-          "At Miningo Tech we aspire to shape the development of geoinformation systems in Africa. We can easily communicate with our clients thanks to Complexus' digital solution, and we're eager to work with them to push the boundaries of what's possible.",
+          "At Miningo Tech, managing multiple projects across Africa was challenging until we found this solution. The project tracking system has revolutionized how we handle our geoinformation systems development. Team collaboration has never been smoother.",
       },
       {
         author: "Shungu Chidovi",
         title: "Founder & Teacher",
         company: "Zimboriginal",
-        message: `"Mom, your site is really great, thanks to complexus," my daughter said.  Being able to update my own website, share it with my friends and family, and use it as a teaching tool for my kids and clients makes me really pleased.`,
+        message:
+          "The project management platform has transformed how I organize my teaching materials and coordinate with other educators. Being able to track progress, set milestones, and share resources with my team has made a tremendous difference in our educational projects.",
       },
     ],
     [],
@@ -78,9 +79,9 @@ export const Testimonials = () => {
         <Box className="relative col-span-2 flex flex-col items-start justify-center pl-4 md:col-span-4 lg:col-span-2 xl:pl-0">
           <Text
             as="span"
-            className="3xl:mb-16 3xl:text-3xl 3xl:leading-normal relative mb-16 text-lg leading-[2] xl:text-2xl"
+            className="relative mb-16 text-xl font-normal md:text-3xl md:leading-snug"
           >
-            <span className="font-serif 3xl:-left-12 3xl:text-8xl absolute -left-7 -top-6 text-6xl text-primary xl:text-6xl">
+            <span className="3xl:-left-12 3xl:text-8xl absolute -left-7 -top-6 text-6xl text-primary xl:text-6xl">
               &ldquo;
             </span>
             <motion.div
@@ -112,7 +113,7 @@ export const Testimonials = () => {
           <Text
             className="3xl:mb-4 relative mb-2"
             fontSize="3xl"
-            fontWeight="medium"
+            fontWeight="normal"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
             <span className="absolute -left-7 top-3 text-primary">//</span>
@@ -142,7 +143,7 @@ export const Testimonials = () => {
               {slide.author}
             </motion.div>
           </Text>
-          <Text className="3xl:mb-2 3xl:text-lg mb-1 text-gray-100">
+          <Text className="mb-1 text-gray-100 md:mb-2 md:text-xl">
             <motion.div
               animate="animateState"
               exit="exitState"
@@ -169,7 +170,11 @@ export const Testimonials = () => {
               {slide.title}
             </motion.div>
           </Text>
-          <Text className="3xl:mb-20 mb-12" transform="uppercase">
+          <Text
+            className="3xl:mb-20 mb-12 text-lg"
+            color="muted"
+            transform="uppercase"
+          >
             <motion.div
               animate="animateState"
               exit="exitState"
