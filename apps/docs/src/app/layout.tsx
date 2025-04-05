@@ -16,8 +16,8 @@ const font = InstrumentSans({
 });
 
 export const metadata: Metadata = {
-  title: "Complexus Documentation",
-  description: "Complexus Documentation",
+  title: "Complexus Docs",
+  description: "Learn how to use Complexus to manage your projects.",
 };
 
 const navbar = (
