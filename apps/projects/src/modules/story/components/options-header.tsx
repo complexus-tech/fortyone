@@ -139,8 +139,10 @@ export const OptionsHeader = ({
                 <Tooltip
                   title={
                     isAdminOrOwner
-                      ? "Restore Story"
-                      : "You are not allowed to restore this story"
+                      ? `Restore ${getTermDisplay("storyTerm", {
+                          capitalize: true,
+                        })}`
+                      : `You are not allowed to restore this ${getTermDisplay("storyTerm")}`
                   }
                 >
                   <Button
@@ -154,15 +156,22 @@ export const OptionsHeader = ({
                     }}
                     variant="naked"
                   >
-                    <span className="sr-only">Restore story</span>
+                    <span className="sr-only">
+                      Restore{" "}
+                      {getTermDisplay("storyTerm", {
+                        capitalize: true,
+                      })}
+                    </span>
                   </Button>
                 </Tooltip>
               ) : (
                 <Tooltip
                   title={
                     isAdminOrOwner
-                      ? "Delete Story"
-                      : "You are not allowed to delete this story"
+                      ? `Delete ${getTermDisplay("storyTerm", {
+                          capitalize: true,
+                        })}`
+                      : `You are not allowed to delete this ${getTermDisplay("storyTerm")}`
                   }
                 >
                   <Button
@@ -176,7 +185,12 @@ export const OptionsHeader = ({
                     }}
                     variant="naked"
                   >
-                    <span className="sr-only">Delete story</span>
+                    <span className="sr-only">
+                      Delete{" "}
+                      {getTermDisplay("storyTerm", {
+                        capitalize: true,
+                      })}
+                    </span>
                   </Button>
                 </Tooltip>
               )}
@@ -188,14 +202,15 @@ export const OptionsHeader = ({
         <Dialog.Content>
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
             <Dialog.Title className="flex items-center gap-1 text-lg">
-              Are you sure you want to delete this story?
+              Are you sure you want to delete this {getTermDisplay("storyTerm")}
+              ?
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
-              This story will be moved to the recycle bin and will be
-              permanently deleted after 30 days. You can restore it at any time
-              before that.
+              This {getTermDisplay("storyTerm")} will be moved to the recycle
+              bin and will be permanently deleted after 30 days. You can restore
+              it at any time before that.
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button

@@ -115,7 +115,10 @@ export const Attachments = ({
                 multiple: true,
               })}
             />
-            <DropZone.Body isDragActive={isDragActive} />
+            <DropZone.Body
+              isDragActive={isDragActive}
+              message="Drag 'n' drop your file here, or click to select the file."
+            />
           </DropZone.Root>
         </DropZone>
       )}

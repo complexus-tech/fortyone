@@ -1,12 +1,12 @@
-import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu } from "ui";
+import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu, BlurImage } from "ui";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   CopyIcon,
   DeleteIcon,
   EditIcon,
-  InternetIcon,
   MoreHorizontalIcon,
+  NewTabIcon,
   PlusIcon,
 } from "icons";
 import { useState } from "react";
@@ -37,14 +37,13 @@ const StoryLink = ({ link }: { link: LinkType }) => {
         >
           <Flex align="center" gap={2}>
             {metadata?.image ? (
-              <img
+              <BlurImage
                 alt={metadata.title || link.title || link.url}
-                className="size-6 rounded-full object-cover"
-                loading="lazy"
+                className="size-6 rounded-full"
                 src={metadata.image}
               />
             ) : (
-              <InternetIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
+              <NewTabIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
             )}
             <Text
               className="max-w-[24ch] shrink-0 truncate font-medium"

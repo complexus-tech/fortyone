@@ -7,7 +7,7 @@ import { NewSubStory } from "@/components/ui/new-sub-story";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { useUserRole } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 
 export const SubStories = ({
   subStories,
@@ -22,6 +22,7 @@ export const SubStories = ({
   setIsSubStoriesOpen: (value: boolean) => void;
   isSubStoriesOpen: boolean;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { userRole } = useUserRole();
@@ -67,7 +68,7 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              Sub stories
+              Sub {getTermDisplay("storyTerm", { variant: "plural" })}
             </Button>
             <Badge className="px-1.5" color="tertiary" rounded="full">
               {completedStories}/{subStories.length} Done
@@ -87,7 +88,10 @@ export const SubStories = ({
               variant="naked"
             >
               <span className={cn({ "sr-only": subStories.length > 0 })}>
-                Add Sub Story
+                Add Sub{" "}
+                {getTermDisplay("storyTerm", {
+                  capitalize: true,
+                })}
               </span>
             </Button>
           </Tooltip>

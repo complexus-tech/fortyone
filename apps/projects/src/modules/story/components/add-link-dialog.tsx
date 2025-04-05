@@ -7,6 +7,7 @@ import { useCreateLinkMutation } from "@/lib/hooks/create-link-mutation";
 import type { NewLink } from "@/lib/actions/links/create-link";
 import type { Link } from "@/types";
 import { useUpdateLinkMutation } from "@/lib/hooks/update-link-mutation";
+import { useTerminology } from "@/hooks";
 
 export const AddLinkDialog = ({
   isOpen,
@@ -19,6 +20,7 @@ export const AddLinkDialog = ({
   storyId: string;
   link?: Link;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const { mutate: createLink } = useCreateLinkMutation();
   const { mutate: updateLink } = useUpdateLinkMutation();
   const [form, setForm] = useState<NewLink>({
@@ -66,7 +68,9 @@ export const AddLinkDialog = ({
         <Dialog.Header className="flex items-center justify-between px-6 pb-2">
           <Dialog.Title>
             <Text fontSize="lg" fontWeight="medium">
-              {isEditing ? "Edit link" : "Add link to story"}
+              {isEditing
+                ? "Update link"
+                : `Add link to ${getTermDisplay("storyTerm")}`}
             </Text>
           </Dialog.Title>
         </Dialog.Header>
