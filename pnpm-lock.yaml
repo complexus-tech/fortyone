@@ -23,6 +23,12 @@ importers:
 
   apps/docs:
     dependencies:
+      icons:
+        specifier: workspace:*
+        version: link:../../packages/icons
+      lib:
+        specifier: workspace:*
+        version: link:../../packages/lib
       next:
         specifier: 15.2.4
         version: 15.2.4(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
