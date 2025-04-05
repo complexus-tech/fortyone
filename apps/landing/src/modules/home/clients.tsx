@@ -30,12 +30,12 @@ export const SampleClients = () => {
     <Container className="relative md:mt-16">
       <img
         alt=""
-        className="absolute left-0 top-0 h-16 w-auto -rotate-12 opacity-20 invert md:-bottom-28"
+        className="absolute left-0 top-0 h-20 w-auto -rotate-12 opacity-20 invert md:-bottom-28"
         src="/svgs/xx.svg"
       />
       <img
         alt=""
-        className="absolute right-0 top-0 h-16 w-auto -rotate-[24deg] opacity-20 invert md:-bottom-28"
+        className="absolute right-0 top-0 h-24 w-auto -rotate-[40deg] opacity-20 invert md:-bottom-28"
         src="/svgs/arrow-2.svg"
       />
       <Box className="py-16 md:py-28">

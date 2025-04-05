@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-dark/80">
+    <Box className="relative border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-dark/80">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -27,9 +27,16 @@ export const CallToAction = () => {
             <Text
               as="h1"
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
-              color="gradient"
             >
-              Set Objectives. Drive Outcomes.
+              Set <span className="text-stroke-white">Objectives</span>. Drive{" "}
+              <Text as="span" className="relative" color="gradient">
+                Outcomes.
+                <img
+                  alt=""
+                  className="absolute -bottom-20 left-0 h-auto w-full rotate-6 opacity-50 invert md:-bottom-36"
+                  src="/svgs/dash.svg"
+                />
+              </Text>
             </Text>
           </motion.div>
           <motion.div
@@ -42,7 +49,7 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[600px] md:mt-6"
+              className="mt-4 max-w-[600px] md:mt-16"
               color="muted"
               fontSize="xl"
             >
@@ -95,6 +102,7 @@ export const CallToAction = () => {
           </Box>
         </Flex>
       </Container>
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
     </Box>
   );
 };

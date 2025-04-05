@@ -13,6 +13,8 @@ export * from "./plus-icon";
 export * from "./arrow-down";
 export * from "./arrow-left";
 export * from "./arrow-right";
+export * from "./arrow-right2";
+export * from "./arrow-left2";
 export * from "./search";
 export * from "./drag";
 export * from "./star";

@@ -4,9 +4,7 @@ import {
   SampleClients,
   Features,
   Integrations,
-  Story,
-  // Reviews,
-  // SampleClients,
+  Testimonials,
 } from "@/modules/home";
 
 export default function Page() {
@@ -15,9 +13,8 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
-      <Story />
+      <Testimonials />
       <Features />
-      {/* <Reviews /> */}
       <Integrations />
     </>
   );

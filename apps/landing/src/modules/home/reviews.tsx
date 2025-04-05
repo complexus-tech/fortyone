@@ -1,150 +1,253 @@
 "use client";
-import { Avatar, Box, Button, Flex, Text, Wrapper } from "ui";
-import { ArrowRightIcon } from "icons";
-import { motion } from "framer-motion";
-import { Container, Blur } from "@/components/ui";
+import { motion, AnimatePresence } from "framer-motion";
+import { Container, Box, Text, Button, Flex } from "ui";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import "./reviews.css";
+import { ArrowLeft2Icon, ArrowRight2Icon } from "icons";
 
-export const Reviews = () => {
-  const reviews = [
-    {
-      id: 1,
-      name: "Thomas Davis",
-      avatar:
-        "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
-      content:
-        "Complexus is a game-changer! It's intuitive, efficient, and powerful. Say goodbye to wasted time - it's a must-have!",
-    },
-    {
-      id: 2,
-      name: "Theresa Webb",
-      avatar:
-        "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
-      content:
-        "Complexus simplifies project management like no other system. Highly recommend for enhanced productivity!",
-    },
-    {
-      id: 3,
-      name: "Joseph Mukorivo",
-      avatar:
-        "https://lh3.googleusercontent.com/ogw/AGvuzYY32iGR6_5Wg1K3NUh7jN2ciCHB12ClyNHIJ1zOZQ=s64-c-mo",
-      content:
-        "Empowering and effortless - Complexus helps us conquer project complexity. A must-have for achieving exceptional results!",
-    },
-  ];
+export const Testimonials = () => {
+  const slides = useMemo(
+    () => [
+      {
+        author: "Tshaxedue Gondo",
+        title: "Founder & Spatial Data Scientist",
+        company: "Miningo Technologies",
+        message:
+          "At Miningo Tech we aspire to shape the development of geoinformation systems in Africa. We can easily communicate with our clients thanks to Complexus' digital solution, and we're eager to work with them to push the boundaries of what's possible.",
+      },
+      {
+        author: "Shungu Chidovi",
+        title: "Founder & Teacher",
+        company: "Zimboriginal",
+        message: `"Mom, your site is really great, thanks to complexus," my daughter said.  Being able to update my own website, share it with my friends and family, and use it as a teaching tool for my kids and clients makes me really pleased.`,
+      },
+    ],
+    [],
+  );
+  const [slide, setSlide] = useState(slides[0]);
+
+  const nextSlide = useCallback(() => {
+    const nextIndex = slides.indexOf(slide) + 1;
+    if (nextIndex >= slides.length) {
+      setSlide(slides[0]);
+    } else {
+      setSlide(slides[nextIndex]);
+    }
+  }, [slide, slides]);
+
+  const prevSlide = useCallback(() => {
+    const prevIndex = slides.indexOf(slide) - 1;
+    if (prevIndex < 0) {
+      setSlide(slides[slides.length - 1]);
+    } else {
+      setSlide(slides[prevIndex]);
+    }
+  }, [slide, slides]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 8000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="relative pb-16 pt-4 md:pb-32">
-      <Text
-        align="center"
-        as="h3"
-        className="mb-6 tracking-wider"
-        color="primary"
-        fontSize="sm"
-        fontWeight="medium"
-        transform="uppercase"
-      >
-        Customer stories
-      </Text>
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{
-          duration: 1,
-          delay: 0,
-        }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
-      >
-        <Text
-          align="center"
-          as="h2"
-          className="mx-auto mb-6 max-w-5xl pb-2 text-5xl md:text-7xl"
-          color="gradient"
-          fontWeight="medium"
-        >
-          Why they choose complexus.
-        </Text>
-      </motion.div>
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{
-          duration: 1,
-          delay: 0.3,
-        }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
-      >
-        <Text
-          className="mx-auto mb-10 max-w-2xl text-center text-lg md:text-xl"
-          fontWeight="normal"
-        >
-          Complexus is trusted by some of the world&rsquo;s leading companies.
-          Here&rsquo;s what they have to say about their experience.
-        </Text>
-      </motion.div>
-
-      <Box className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-12">
-        {reviews.map(({ id, name, avatar, content }) => (
-          <Wrapper
-            className="rounded-3xl border-2 shadow-2xl shadow-secondary/20 md:min-h-[38vh] md:rounded-[1.5rem]"
-            key={id}
-          >
-            <Flex
-              className="relative h-full px-4 py-6 md:px-6 md:py-10"
-              direction="column"
-              justify="between"
-            >
-              <Box>
-                <Flex align="center" className="mb-8" gap={4}>
-                  <Avatar name={name} src={avatar} />
-                  <Text as="h5" fontSize="lg">
-                    {name}
-                  </Text>
-                </Flex>
-                <Text
-                  className="mb-8 leading-relaxed opacity-80"
-                  fontWeight="normal"
-                >
-                  {content}
-                </Text>
-                <Text className="mb-6">CEO, Company Name</Text>
-              </Box>
-              <Button
-                className="px-4"
-                color="tertiary"
-                rightIcon={
-                  <ArrowRightIcon className="relative top-[0.5px] h-3.5 w-auto" />
-                }
-                rounded="full"
-              >
-                Read full story
-              </Button>
-            </Flex>
-          </Wrapper>
-        ))}
-      </Box>
-
-      <Box className="mx-auto mt-12 w-max md:mt-20">
+    <Container className="3xl:py-48 relative grid-cols-5 py-20 text-white md:grid xl:border-0 xl:py-36 2xl:py-52">
+      <Box className="absolute inset-0 bg-dark">
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ width: "20%" }}
           transition={{
             duration: 1,
-            delay: 0.3,
           }}
-          viewport={{ once: true, amount: 0.5 }}
-          whileInView={{ y: 0, opacity: 1 }}
-        >
-          <Button
-            className="md:py-3.5"
-            rightIcon={<ArrowRightIcon className="h-4 w-auto" />}
-            rounded="full"
-            size="lg"
-          >
-            See all customer stories
-          </Button>
-        </motion.div>
+          viewport={{ once: true }}
+          whileInView={{ width: "100%" }}
+        />
       </Box>
+      <Box className="absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
+        <Text
+          as="h2"
+          className="text-stroke-white introText text-8xl"
+          fontWeight="medium"
+        >
+          Testimonials
+        </Text>
+      </Box>
+      <AnimatePresence>
+        <Box className="relative col-span-2 flex flex-col items-start justify-center pl-4 md:col-span-4 lg:col-span-2 xl:pl-0">
+          <Text
+            as="span"
+            className="3xl:mb-16 3xl:text-3xl 3xl:leading-normal relative mb-16 text-lg leading-[2] xl:text-2xl"
+          >
+            <span className="font-serif 3xl:-left-12 3xl:text-8xl absolute -left-7 -top-6 text-6xl text-primary xl:text-6xl">
+              &ldquo;
+            </span>
+            <motion.div
+              animate="animateState"
+              exit="exitState"
+              initial="initialState"
+              key={slide.author + slide.company}
+              transition={{
+                duration: 0.75,
+                type: "spring",
+                damping: 10,
+              }}
+              variants={{
+                initialState: {
+                  y: 15,
+                },
+                animateState: {
+                  y: 0,
+                },
+                exitState: {
+                  y: -15,
+                },
+              }}
+            >
+              {slide.message}
+            </motion.div>
+          </Text>
 
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/5 md:h-[600px] md:w-[600px]" />
+          <Text
+            className="3xl:mb-4 relative mb-2"
+            fontSize="3xl"
+            fontWeight="medium"
+          >
+            {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
+            <span className="absolute -left-7 top-3 text-primary">//</span>
+            <motion.div
+              animate="animateState"
+              exit="exitState"
+              initial="initialState"
+              key={slide.author + slide.company}
+              transition={{
+                duration: 0.65,
+                delay: 0.15,
+                type: "spring",
+                damping: 10,
+              }}
+              variants={{
+                initialState: {
+                  y: 10,
+                },
+                animateState: {
+                  y: 0,
+                },
+                exitState: {
+                  y: -10,
+                },
+              }}
+            >
+              {slide.author}
+            </motion.div>
+          </Text>
+          <Text className="3xl:mb-2 3xl:text-lg mb-1 text-gray-100">
+            <motion.div
+              animate="animateState"
+              exit="exitState"
+              initial="initialState"
+              key={slide.author + slide.company}
+              transition={{
+                duration: 0.65,
+                delay: 0.2,
+                type: "spring",
+                damping: 10,
+              }}
+              variants={{
+                initialState: {
+                  y: 10,
+                },
+                animateState: {
+                  y: 0,
+                },
+                exitState: {
+                  y: -10,
+                },
+              }}
+            >
+              {slide.title}
+            </motion.div>
+          </Text>
+          <Text className="3xl:mb-20 mb-12" transform="uppercase">
+            <motion.div
+              animate="animateState"
+              exit="exitState"
+              initial="initialState"
+              key={slide.author + slide.company}
+              transition={{
+                duration: 0.65,
+                delay: 0.22,
+                type: "spring",
+                damping: 10,
+              }}
+              variants={{
+                initialState: {
+                  y: 10,
+                },
+                animateState: {
+                  y: 0,
+                },
+                exitState: {
+                  y: -10,
+                },
+              }}
+            >
+              {slide.company}
+            </motion.div>
+          </Text>
+          <Flex className="gap-5">
+            <Button
+              asIcon
+              className="ml-auto md:h-[3.5rem]"
+              color="tertiary"
+              leftIcon={<ArrowLeft2Icon className="h-6" />}
+              onClick={prevSlide}
+              rounded="full"
+            >
+              <span className="sr-only">Previous</span>
+            </Button>
+
+            <Button
+              asIcon
+              className="ml-auto md:h-[3.5rem]"
+              color="tertiary"
+              leftIcon={<ArrowRight2Icon className="h-6" />}
+              onClick={nextSlide}
+              rounded="full"
+            >
+              <span className="sr-only">Next</span>
+            </Button>
+          </Flex>
+
+          <Box className="3xl:-bottom-32 absolute -bottom-12 right-6 md:-right-40 xl:-bottom-16 xl:-right-60">
+            <svg
+              className="3xl:w-40 h-auto w-20 rotate-6 text-white opacity-30 xl:w-32 2xl:w-36"
+              fill="none"
+              height="470"
+              viewBox="0 0 266 470"
+              width="266"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <line
+                stroke="currentColor"
+                x1="202.44"
+                x2="0.43993"
+                y1="33.2376"
+                y2="407.238"
+              />
+              <line
+                stroke="currentColor"
+                x1="265.439"
+                x2="10.4393"
+                y1="0.238835"
+                y2="469.239"
+              />
+              <circle cx="123.5" cy="212.5" r="86" stroke="currentColor" />
+            </svg>
+          </Box>
+        </Box>
+      </AnimatePresence>
     </Container>
   );
 };
