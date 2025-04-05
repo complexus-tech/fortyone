@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 article {
-  @apply border-x border-gray-200 dark:border-gray-400/20 antialiased md:px-24 md:pt-10;
+  @apply md:border-x border-gray-200 dark:border-gray-400/20 antialiased md:px-24 md:pt-10;
 }
 
 h1,
