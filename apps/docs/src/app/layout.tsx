@@ -45,12 +45,29 @@ export default async function RootLayout({
       className={font.className}
     >
       <Head
-      // ... Your additional head options
+        backgroundColor={{
+          dark: "#09090a",
+          light: "#ffffff",
+        }}
+        color={{
+          lightness: 65,
+          saturation: 77,
+          hue: 0,
+        }}
+
+        // ... Your additional head options
       >
         {/* Your additional tags should be passed as `children` of `<Head>` element */}
       </Head>
       <body className="antialiased">
-        <Layout navbar={navbar} pageMap={await getPageMap()}>
+        <Layout
+          navbar={navbar}
+          pageMap={await getPageMap()}
+          editLink={null}
+          sidebar={{
+            defaultMenuCollapseLevel: 1,
+          }}
+        >
           {children}
         </Layout>
       </body>
