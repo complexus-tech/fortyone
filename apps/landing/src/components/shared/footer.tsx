@@ -133,7 +133,8 @@ export const Footer = () => {
         <Box className="col-span-2">
           <Logo className="-left-4 h-7" />
           <Text className="mt-2">
-            Project Management That Works for Everyone
+            Project management software that adapts to your team&apos;s
+            workflow, not the other way around.
           </Text>
         </Box>
         <Box>
