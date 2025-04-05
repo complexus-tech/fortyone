@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 article {
-  @apply border-gray-200 dark:border-gray-400/20 antialiased;
+  @apply border-x border-gray-200 dark:border-gray-400/20 antialiased;
 }
 
 h1,
@@ -11,4 +11,9 @@ h4,
 h5,
 h6 {
   @apply font-semibold pb-3;
+}
+
+aside a,
+aside button {
+  @apply rounded-[0.4rem] px-2.5 py-2;
 }
