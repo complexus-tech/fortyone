@@ -116,7 +116,7 @@ export const Testimonials = () => {
             fontWeight="normal"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
-            <span className="absolute -left-7 top-3 text-primary">//</span>
+            <span className="absolute -left-7 text-primary">//</span>
             <motion.div
               animate="animateState"
               exit="exitState"
