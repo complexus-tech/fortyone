@@ -3,5 +3,5 @@ import type { ContainerProps } from "ui";
 import { Container as UContainer } from "ui";
 
 export const Container = ({ className, ...rest }: ContainerProps) => {
-  return <UContainer className={cn("max-w-[85rem]", className)} {...rest} />;
+  return <UContainer className={cn("max-w-[90rem]", className)} {...rest} />;
 };

@@ -1,79 +1,95 @@
 "use client";
-import { Box, Text } from "ui";
-import { Container, Blur } from "@/components/ui";
+import { Blur, Box, Text } from "ui";
+import { KanbanIcon, OKRIcon, SystemIcon, TeamIcon, WorkflowIcon } from "icons";
+import { Container } from "@/components/ui";
 
-export const Story = () => {
-  const features: { heading: string; description: string }[] = [
+const Spap = ({
+  title,
+  overview,
+  icon,
+}: {
+  title: string;
+  overview: string;
+  icon: React.ReactNode;
+}) => (
+  <Box>
+    {icon}
+    <Text
+      className="mt-6"
+      fontSize="xl"
+      fontWeight="medium"
+      transform="uppercase"
+    >
+      {title}
+    </Text>
+
+    <Text className="3xl:text-lg mt-4 max-w-xs pl-1 leading-normal opacity-80">
+      {overview}
+    </Text>
+  </Box>
+);
+
+const Snapshot = () => {
+  const snapshots = [
     {
-      heading: "Intuitive User Experience",
-      description:
+      title: "Intuitive User Experience",
+      icon: <SystemIcon className="h-16" />,
+      overview:
         "Beautiful interface that can be learned in a day. No extensive training required.",
     },
     {
-      heading: "Customizable Terminology",
-      description:
-        "Make the platform speak your language with custom terminology.",
-    },
-    {
-      heading: "Flexible Workflows",
-      description:
+      title: "Flexible Workflows",
+      icon: <WorkflowIcon className="h-16" />,
+      overview:
         "Create custom workflows for each team while maintaining cross-organization visibility.",
     },
     {
-      heading: "Visual Task Management",
-      description:
-        "Intuitive Kanban boards for real-time work visualization and resource optimization.",
-    },
-    {
-      heading: "OKR Management",
-      description:
+      title: "OKR Management",
+      icon: <OKRIcon className="h-16" />,
+      overview:
         "Set and track Objectives and Key Results (OKRs) to align teams with your vision.",
     },
     {
-      heading: "Team Collaboration",
-      description:
+      title: "Team Collaboration",
+      icon: <TeamIcon className="h-16" />,
+      overview:
         "Foster teamwork with shared objectives and integrated workspaces that break down silos.",
     },
   ];
 
   return (
-    <Container className="mt-16 md:mt-28">
-      <Box className="relative">
-        <Text
-          as="h1"
-          className="mb-8 h-max max-w-5xl pb-2 text-5xl font-semibold md:mb-10 md:mt-6 md:text-7xl"
-          color="gradient"
-        >
-          Why Choose Complexus
-        </Text>
-        <Text
-          className=" mb-12 max-w-5xl text-xl leading-snug opacity-80 md:mb-20 md:text-2xl"
-          fontWeight="normal"
-        >
-          Simplify complexity without sacrifice. Complexus adapts to your
-          team&apos;s needs while keeping everyone aligned with strategic goals.
-        </Text>
-        <Box className="mb-16 grid grid-cols-1 divide-x divide-y divide-dashed divide-gray-200/10 border border-gray-200/10 md:mb-32 md:grid-cols-3">
-          {features.map(({ heading, description }, idx) => (
-            <Box className="p-8 md:px-12 md:py-16" key={heading}>
-              <Text className="mb-4 text-6xl opacity-20 md:text-8xl">
-                {idx + 1}.
-              </Text>
-              <Text fontSize="xl" fontWeight="semibold" transform="uppercase">
-                {heading}
-              </Text>
-              <Text
-                className="mt-4 opacity-80"
-                fontSize="lg"
-                fontWeight="normal"
-              >
-                {description}
-              </Text>
-            </Box>
+    <Box className="relative mt-16 border-y border-dark-300 bg-black py-12 md:py-24 xl:py-32">
+      <Container className="grid-cols-3 gap-12 md:grid">
+        <Box>
+          <Text
+            as="h3"
+            className="mb-10 tracking-wide lg:mb-0"
+            fontSize="4xl"
+            transform="uppercase"
+          >
+            Why <br /> <span className="text-stroke-white">Choose </span>Us?
+          </Text>
+          <Text
+            className="mt-8 w-11/12 leading-snug opacity-80"
+            fontWeight="normal"
+          >
+            Simplify complexity without sacrifice. Complexus adapts to your
+            team&apos;s needs while keeping everyone aligned with strategic
+            goals.
+          </Text>
+        </Box>
+        <Box className="col-span-2 grid grid-cols-2 gap-x-8 gap-y-16 lg:gap-x-12 xl:gap-y-36">
+          {snapshots.map(({ title, icon, overview }) => (
+            <Spap icon={icon} key={title} overview={overview} title={title} />
           ))}
         </Box>
-        <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/5 md:h-[600px] md:w-[600px]" />
-      </Box>
-    </Container>
+      </Container>
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-80" />
+      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-warning/[0.08]" />
+    </Box>
   );
+};
+
+export const Story = () => {
+  return <Snapshot />;
 };

@@ -18,7 +18,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "3xl:text-lg mb-4 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
+      "3xl:text-lg mb-6 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
       className,
     )}
     href={href}
@@ -129,9 +129,12 @@ export const Footer = () => {
   ];
   return (
     <Box as="footer" className="relative bg-white dark:bg-black">
-      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-20">
+      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-28">
         <Box className="col-span-2">
-          <Logo className="-left-1 h-7" />
+          <Logo className="-left-4 h-7" />
+          <Text className="mt-2">
+            Project Management That Works for Everyone
+          </Text>
         </Box>
         <Box>
           <Text
@@ -194,9 +197,9 @@ export const Footer = () => {
           ))}
         </Box>
       </Container>
-      <Container className="pb-10">
+      <Container className="pb-16">
         <Copyright />
-        <Text className="mt-4" color="muted" fontSize="sm">
+        <Text className="mt-6" color="muted" fontSize="sm">
           Complexus is a product of{" "}
           <a
             className="underline underline-offset-[3px] hover:text-primary"

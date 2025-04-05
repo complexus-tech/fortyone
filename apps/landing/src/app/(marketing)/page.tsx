@@ -1,7 +1,7 @@
 import {
   Hero,
   HeroCards,
-  // SampleClients,
+  SampleClients,
   Features,
   Integrations,
   Story,
@@ -14,7 +14,7 @@ export default function Page() {
     <>
       <Hero />
       <HeroCards />
-      {/* <SampleClients /> */}
+      <SampleClients />
       <Story />
       <Features />
       {/* <Reviews /> */}
