@@ -45,7 +45,6 @@ export const Transform = () => {
             <Text
               as="h2"
               className="mt-6 text-center text-5xl md:text-left md:text-7xl"
-              fontWeight="medium"
             >
               <span className="text-stroke-white">Transform</span> how your{" "}
               <Text as="span" color="gradient">
