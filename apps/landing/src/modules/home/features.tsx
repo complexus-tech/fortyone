@@ -1,26 +1,20 @@
 "use client";
-import { Box, Text, Flex, Wrapper, Button } from "ui";
-import {
-  ArrowRightIcon,
-  KanbanIcon,
-  SprintsIcon,
-  StoryIcon,
-  AnalyticsIcon,
-} from "icons";
+import { Box, Flex, Text } from "ui";
+import { CommandIcon, DashboardIcon, GitIcon, OKRIcon } from "icons";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import type { StaticImageData } from "next/image";
 import Image from "next/image";
 import { cn } from "lib";
 import { Container } from "@/components/ui";
-import kanbanImg from "../../../public/kanban.png";
-import storyImg from "../../../public/story1.png";
-import sprintImg from "../../../public/sprints.png";
-import analyticsImg from "../../../public/analytics1.png";
+import keyboardImg from "../../../public/features/keyboard.png";
+import analyticsImg from "../../../public/features/analytics.png";
+import workflowImg from "../../../public/features/workflow.png";
+import okrImg from "../../../public/features/okr.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="my-12 flex flex-col md:mb-28 md:flex-row">
+    <Box className="flex flex-col py-12 md:flex-row md:items-end md:py-32">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -48,8 +42,7 @@ const Intro = () => (
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
-          className="mt-6 max-w-xl"
-          color="muted"
+          className="mt-6 max-w-xl opacity-80 md:mt-0"
           fontSize="xl"
           fontWeight="normal"
         >
@@ -62,135 +55,116 @@ const Intro = () => (
   </Box>
 );
 
-const ItemWrapper = ({
-  className,
-  children,
+const Card = ({
+  name,
+  icon,
+  description,
+  image: { src, alt },
 }: {
-  children: ReactNode;
-  className?: string;
+  name: string;
+  icon: ReactNode;
+  description: string;
+  image: { src: StaticImageData; alt: string };
 }) => {
   const [isActive, setIsActive] = useState(false);
   return (
-    <Box
-      className={className}
-      onMouseEnter={() => {
-        setIsActive(true);
-      }}
-      onMouseLeave={() => {
-        setIsActive(false);
-      }}
+    <motion.div
+      animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+      initial={{ y: 0, x: 0 }}
+      transition={{ type: "spring", stiffness: 100 }}
     >
-      <Box className="h-full">
-        <motion.div
-          animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
-          initial={{ y: 0, x: 0 }}
-          transition={{ type: "spring", stiffness: 100 }}
-        >
-          <Wrapper className="h-full rounded-3xl px-6 py-8 shadow-2xl dark:bg-dark-300/30 md:rounded-[2rem]">
-            <>{children}</>
-          </Wrapper>
-        </motion.div>
+      <Box
+        className={cn(
+          "relative flex h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8",
+        )}
+        onMouseEnter={() => {
+          setIsActive(true);
+        }}
+        onMouseLeave={() => {
+          setIsActive(false);
+        }}
+      >
+        <Flex justify="between">
+          <Text as="h3" className="text-lg font-semibold">
+            {name}
+          </Text>
+          {icon}
+        </Flex>
+        <Box>
+          <Box className="relative">
+            <Image
+              alt={alt}
+              className="pointer-events-none mx-auto block rounded-xl"
+              placeholder="blur"
+              quality={100}
+              src={src}
+            />
+            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-dark/90 to-dark" />
+          </Box>
+          <Text className="mt-4 opacity-80">{description}</Text>
+        </Box>
+        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
       </Box>
-    </Box>
+    </motion.div>
   );
 };
 
 export const Features = () => {
   const features = [
     {
-      id: 4,
-      name: "Kanban Boards",
-      description:
-        "Visualize work in progress and optimize your team's flow. Intuitive drag-and-drop interface makes project management effortless.",
-      icon: <KanbanIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
-      image: {
-        src: kanbanImg,
-        alt: "Kanban Board View",
-      },
-      className: "md:col-span-2",
-    },
-    {
       id: 1,
-      name: "User Stories",
+      name: "Advanced workflows",
       description:
-        "Create, organize, and prioritize work items with clarity and purpose.",
-      icon: <StoryIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
+        "Define complex workflows. Customize statuses, and conditions to meet your team's needs.",
+      icon: <GitIcon className="h-6" />,
       image: {
-        src: storyImg,
-        alt: "User Story Management",
-      },
-    },
-    {
-      id: 3,
-      name: "Sprint Planning",
-      description:
-        "Plan and execute sprints with confidence. Track velocity and deliver predictably.",
-      icon: <SprintsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
-      image: {
-        src: sprintImg,
-        alt: "Sprint Planning",
+        src: workflowImg,
+        alt: "Kanban Board View",
       },
     },
     {
       id: 2,
       name: "Analytics & Insights",
       description:
-        "Make informed decisions with real-time metrics and customizable dashboards. Identify bottlenecks and optimize team performance.",
-      icon: <AnalyticsIcon className="h-6 w-auto md:h-7" strokeWidth={1.4} />,
+        "Track progress, identify bottlenecks, and optimize your workflow with detailed analytics.",
+      icon: <DashboardIcon className="h-6" />,
       image: {
         src: analyticsImg,
-        alt: "Analytics Dashboard",
+        alt: "Analytics & Insights",
       },
-      className: "md:col-span-2",
+    },
+    {
+      id: 3,
+      name: "Track OKRs",
+      description:
+        "Set and track OKRs to align your team and measure progress towards goals.",
+      icon: <OKRIcon className="h-6" />,
+      image: {
+        src: okrImg,
+        alt: "OKR Tracking",
+      },
+    },
+    {
+      id: 4,
+      name: "Keyboard shortcuts",
+      description:
+        "Manage your work faster with intuitive keyboard shortcuts for enhanced productivity.",
+      icon: <CommandIcon className="h-6" />,
+      image: {
+        src: keyboardImg,
+        alt: "Keyboard Shortcuts",
+      },
     },
   ];
 
   return (
-    <Box className="pb-20">
+    <Box className="relativ bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-200/90 via-dark-300/60 to-black pb-20 md:pb-48">
       <Container as="section">
         <Intro />
-        <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {features.map(
-            ({
-              id,
-              icon,
-              name,
-              description,
-              className,
-              image: { src, alt },
-            }) => (
-              <ItemWrapper className={className} key={id}>
-                <Flex align="center" className="mb-3" gap={4} justify="between">
-                  <Text
-                    as="h3"
-                    className="flex items-center gap-2"
-                    fontSize="2xl"
-                    fontWeight="medium"
-                  >
-                    {icon}
-                    {name}
-                  </Text>
-                  <Button color="tertiary" rounded="full" size="sm">
-                    <ArrowRightIcon className="h-4 w-auto" />
-                  </Button>
-                </Flex>
-                <Text className="mb-4" color="muted">
-                  {description}
-                </Text>
-                <Image
-                  alt={alt}
-                  className={cn(
-                    "pointer-events-none mx-auto block rounded-xl border-[3px] border-dark-200 object-cover object-top shadow-xl shadow-dark-300/60 md:aspect-[4/3]",
-                    {
-                      "md:aspect-[16/5.5]": className === "md:col-span-2",
-                    },
-                  )}
-                  placeholder="blur"
-                  src={src}
-                />
-              </ItemWrapper>
-            ),
-          )}
+        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
+          {features.map((feature) => (
+            <Card key={feature.id} {...feature} />
+          ))}
         </Box>
       </Container>
     </Box>

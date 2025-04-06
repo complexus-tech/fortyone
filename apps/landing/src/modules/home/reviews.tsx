@@ -55,7 +55,7 @@ export const Testimonials = () => {
   }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-dark-300/80 via-black via-50% to-black py-28 text-white md:grid md:h-[90vh] xl:py-36 2xl:py-52">
+    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-dark-300 via-black via-40% to-black py-28 text-white md:grid md:h-[95vh] xl:py-36 2xl:py-52">
       <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
@@ -242,7 +242,7 @@ export const Testimonials = () => {
           </Box>
         </Box>
       </AnimatePresence>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
     </Container>
   );
 };

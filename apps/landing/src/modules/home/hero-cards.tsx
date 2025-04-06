@@ -53,8 +53,8 @@ export const HeroCards = () => {
           cursor.removeText();
         }}
       >
-        <Blur className="absolute -bottom-28 -left-36 isolate hidden h-[500px] w-[500px] bg-warning/15 dark:md:block" />
-        <Blur className="absolute -bottom-6 -right-20 hidden h-[400px] w-[400px] bg-warning/20 dark:md:block" />
+        <Blur className="absolute -bottom-28 -left-36 isolate hidden h-[600px] w-[600px] bg-warning/15 dark:md:block" />
+        <Blur className="absolute -bottom-6 -right-20 hidden h-[500px] w-[500px] bg-warning/20 dark:md:block" />
         <Swiper
           autoplay={{
             delay: 2000,

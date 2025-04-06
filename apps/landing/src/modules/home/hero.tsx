@@ -3,13 +3,13 @@ import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { ArrowRight2Icon } from "icons";
-import { Container, GoogleIcon, Blur } from "@/components/ui";
+import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative">
+    <Box>
       <Container className="pt-12 md:pt-16">
         <Flex
           align="center"
@@ -134,7 +134,6 @@ export const Hero = () => {
           </Text>
         </Flex>
       </Container>
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 hidden h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-warning/[0.07] md:block" />
     </Box>
   );
 };

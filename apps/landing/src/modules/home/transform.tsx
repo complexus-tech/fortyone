@@ -8,12 +8,12 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid border-y border-dark-300/80 bg-gradient-to-r from-dark-300/80 via-black to-black py-20 md:grid-cols-2 md:py-0">
+    <Box className="relative grid border-y border-dark-300/60 bg-gradient-to-r from-dark-300 via-black to-black py-20 md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
           alt="Login"
-          className="h-[80vh] w-full"
+          className="h-[85vh] w-full"
           imageClassName="object-top"
           quality={100}
           src="/images/login.webp"
