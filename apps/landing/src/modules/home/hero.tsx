@@ -130,7 +130,7 @@ export const Hero = () => {
           </Text>
         </Flex>
       </Container>
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-warning/[0.08]" />
+      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 hidden h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-warning/[0.07] md:block" />
     </Box>
   );
 };

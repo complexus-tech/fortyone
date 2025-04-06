@@ -55,7 +55,7 @@ export const Testimonials = () => {
   }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="3xl:py-48 relative grid-cols-5 py-20 text-white md:grid xl:border-0 xl:py-36 2xl:py-52">
+    <Container className="3xl:py-48 relative grid-cols-5 py-28 text-white md:grid xl:border-0 xl:py-36 2xl:py-52">
       <Box className="absolute inset-0 bg-dark">
         <motion.div
           initial={{ width: "20%" }}
@@ -66,7 +66,7 @@ export const Testimonials = () => {
           whileInView={{ width: "100%" }}
         />
       </Box>
-      <Box className="absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
+      <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
           className="text-stroke-white introText text-8xl"

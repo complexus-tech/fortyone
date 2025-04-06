@@ -33,7 +33,7 @@ export const CallToAction = () => {
                 Outcomes.
                 <img
                   alt=""
-                  className="absolute -bottom-20 left-0 h-auto w-full rotate-6 opacity-50 invert md:-bottom-36"
+                  className="absolute -bottom-20 left-0 hidden h-auto w-full rotate-6 opacity-50 invert md:-bottom-36 md:inline-block"
                   src="/svgs/dash.svg"
                 />
               </Text>
@@ -58,7 +58,7 @@ export const CallToAction = () => {
             </Text>
           </motion.div>
 
-          <Box className="mt-8 flex items-center gap-3">
+          <Box className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <motion.span
               initial={{ y: -10, opacity: 0 }}
               transition={{
