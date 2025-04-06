@@ -12,9 +12,9 @@ import PostHogPageView from "./posthog-page-view";
 import GoogleOneTap from "./one-tap";
 
 export const metadata: Metadata = {
-  title: "Complexus | Modern OKR & Project Management Platform",
+  title: "Project Management & OKR Software for Teams | Complexus",
   description:
-    "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+    "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
   keywords: [
     "OKR management",
     "project management",
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Complexus | Modern OKR & Project Management Platform",
+    title: "Project Management & OKR Software for Teams | Complexus",
     description:
-      "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+      "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
     siteName: "Complexus",
     url: "https://www.complexus.app",
   },
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@complexus_app",
     creator: "@complexus_app",
-    title: "Complexus | Modern OKR & Project Management Platform",
+    title: "Project Management Software with OKR Framework | Complexus",
     description:
-      "Transform how teams achieve objectives with Complexus. Powerful OKR tracking, sprint planning, and project management tools that help teams align, execute, and deliver results.",
+      "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
   },
   robots: {
     index: true,
@@ -71,9 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <JsonLd />
       </head>
-      <body
-        className={cn(satoshi.variable, instrumentSans.variable, "relative")}
-      >
+      <body className={cn(satoshi.variable, instrumentSans.variable)}>
         <SessionProvider>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>
@@ -86,7 +84,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </Suspense>
         </SessionProvider>
         <Toaster />
-        {/* <div className="pointer-events-none fixed inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       </body>
     </html>
   );

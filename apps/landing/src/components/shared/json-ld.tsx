@@ -50,7 +50,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "User Stories",
   ],
   description:
-    "Complexus is a comprehensive project management platform that helps teams set and achieve objectives through OKR tracking, sprint planning, and collaborative tools.",
+    "Complexus is an advanced project management platform that integrates OKR frameworks with agile methodologies, helping teams align objectives, track progress, and deliver consistent results through collaborative workflows.",
 };
 
 const organization: WithContext<Organization> = {
@@ -71,9 +71,9 @@ const organization: WithContext<Organization> = {
 const product: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Complexus Project Management Platform",
+  name: "Project Management & OKR Software for Teams",
   description:
-    "A comprehensive project management solution featuring OKR tracking, sprint planning, and team collaboration tools.",
+    "An integrated project management solution that combines OKR frameworks, sprint planning, and collaborative tools to help teams set clear objectives, execute efficiently, and deliver measurable outcomes.",
   category: "Software",
   brand: {
     "@type": "Brand",
@@ -118,7 +118,7 @@ const faq: WithContext<FAQPage> = {
       name: "What is Complexus?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Complexus is a modern project management platform that helps teams set, track, and achieve objectives through OKR management, sprint planning, and collaborative tools.",
+        text: "Complexus is a comprehensive project management platform designed for modern teams. It combines OKR tracking, sprint planning, and collaborative workflows to help teams align strategic objectives with day-to-day execution, ensuring measurable results and improved team productivity.",
       },
     },
     {
@@ -126,7 +126,7 @@ const faq: WithContext<FAQPage> = {
       name: "What features does Complexus offer?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Complexus offers comprehensive features including OKR management, sprint planning, kanban boards, user stories, strategic roadmapping, team collaboration tools, and analytics & insights.",
+        text: "Complexus offers a complete suite of project management features including OKR management, sprint planning, kanban boards, user stories, strategic roadmapping, real-time team collaboration tools, customizable dashboards, progress tracking, and in-depth analytics & insights to drive team performance.",
       },
     },
     {
@@ -134,7 +134,23 @@ const faq: WithContext<FAQPage> = {
       name: "How does Complexus help with team alignment?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Complexus helps teams align through shared objectives, real-time updates, integrated team workspaces, and comprehensive OKR tracking tools that ensure everyone is working towards common goals.",
+        text: "Complexus helps teams align by connecting high-level objectives with tactical work through its integrated OKR framework. Teams benefit from shared objectives, real-time progress updates, integrated workspaces, and visual tracking tools that ensure everyone understands how their work contributes to organizational goals.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can Complexus integrate with other tools my team uses?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes, Complexus integrates seamlessly with popular collaboration, development, and productivity tools including Slack, Microsoft Teams, GitHub, GitLab, Jira, Figma, and Google Workspace, allowing teams to maintain their existing workflows while gaining the benefits of centralized project management.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is Complexus suitable for remote or distributed teams?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Absolutely. Complexus is built with remote and distributed teams in mind, offering real-time collaboration features, asynchronous communication tools, transparent goal tracking, and centralized documentation that keeps everyone aligned regardless of time zone or location.",
       },
     },
   ],
