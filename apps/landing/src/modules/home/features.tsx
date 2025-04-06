@@ -75,7 +75,7 @@ const Card = ({
     >
       <Box
         className={cn(
-          "relative flex h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8",
+          "relative flex h-[420px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8",
         )}
         onMouseEnter={() => {
           setIsActive(true);
@@ -84,7 +84,7 @@ const Card = ({
           setIsActive(false);
         }}
       >
-        <Flex justify="between">
+        <Flex className="mb-4" justify="between">
           <Text as="h3" className="text-lg font-semibold">
             {name}
           </Text>
@@ -94,7 +94,13 @@ const Card = ({
           <Box className="relative">
             <Image
               alt={alt}
-              className="pointer-events-none mx-auto block rounded-xl"
+              className={cn(
+                "pointer-events-none mx-auto block aspect-square rounded-xl object-contain",
+                {
+                  "aspect-[6/4]": name.toLowerCase().includes("keyboard"),
+                  "object-bottom": name.toLowerCase().includes("analytics"),
+                },
+              )}
               placeholder="blur"
               quality={100}
               src={src}
