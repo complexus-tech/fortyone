@@ -64,7 +64,7 @@ export const Transform = () => {
               className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl"
               fontWeight="normal"
             >
-              Join innovative teams who use Morpheus to deliver projects faster
+              Join innovative teams who use complexus to deliver projects faster
               and with better results.
             </Text>
             <Flex
