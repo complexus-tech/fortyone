@@ -1,4 +1,3 @@
-import { CallToAction } from "@/components/shared";
 import {
   Hero,
   HeroCards,
@@ -6,6 +5,7 @@ import {
   Features,
   Integrations,
   Testimonials,
+  Transform,
 } from "@/modules/home";
 
 export default function Page() {
@@ -16,7 +16,7 @@ export default function Page() {
       <SampleClients />
       <Testimonials />
       <Features />
-      <CallToAction />
+      <Transform />
       <Integrations />
     </>
   );

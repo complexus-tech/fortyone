@@ -2,6 +2,7 @@
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { ArrowRight2Icon } from "icons";
 import { Container, GoogleIcon, Blur } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
@@ -81,7 +82,7 @@ export const Hero = () => {
 
           <Flex
             align="center"
-            className="relative mt-10 justify-center gap-4"
+            className="relative mt-6 justify-center gap-2 md:mt-10 md:gap-4"
             wrap
           >
             <motion.span
@@ -94,12 +95,14 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="font-semibold md:px-5"
+                className="px-3 font-semibold md:pl-5 md:pr-4"
                 href="/signup"
+                rightIcon={<ArrowRight2Icon className="dark:text-gray-200" />}
                 rounded="full"
                 size="lg"
               >
-                Manage in 3 minutes
+                <span className="hidden md:inline">Manage in 3 minutes</span>
+                <span className="md:hidden">Get Started</span>
               </Button>
             </motion.span>
             <motion.span
@@ -112,7 +115,7 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-4 md:pl-3.5 md:pr-4"
+                className="px-3 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {

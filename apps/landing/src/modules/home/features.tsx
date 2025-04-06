@@ -20,7 +20,7 @@ import analyticsImg from "../../../public/analytics1.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="my-12 text-center md:my-28">
+    <Box as="section" className="mb-12 text-center md:mb-28">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -145,44 +145,53 @@ export const Features = () => {
   ];
 
   return (
-    <Container as="section" className="mb-20 md:mb-40">
-      <Intro />
-      <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {features.map(
-          ({ id, icon, name, description, className, image: { src, alt } }) => (
-            <ItemWrapper className={className} key={id}>
-              <Flex align="center" className="mb-3" gap={4} justify="between">
-                <Text
-                  as="h3"
-                  className="flex items-center gap-2"
-                  fontSize="2xl"
-                  fontWeight="medium"
-                >
-                  {icon}
-                  {name}
+    <Box className="py-20">
+      <Container as="section">
+        <Intro />
+        <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {features.map(
+            ({
+              id,
+              icon,
+              name,
+              description,
+              className,
+              image: { src, alt },
+            }) => (
+              <ItemWrapper className={className} key={id}>
+                <Flex align="center" className="mb-3" gap={4} justify="between">
+                  <Text
+                    as="h3"
+                    className="flex items-center gap-2"
+                    fontSize="2xl"
+                    fontWeight="medium"
+                  >
+                    {icon}
+                    {name}
+                  </Text>
+                  <Button color="tertiary" rounded="full" size="sm">
+                    <ArrowRightIcon className="h-4 w-auto" />
+                  </Button>
+                </Flex>
+                <Text className="mb-4" color="muted">
+                  {description}
                 </Text>
-                <Button color="tertiary" rounded="full" size="sm">
-                  <ArrowRightIcon className="h-4 w-auto" />
-                </Button>
-              </Flex>
-              <Text className="mb-4" color="muted">
-                {description}
-              </Text>
-              <Image
-                alt={alt}
-                className={cn(
-                  "pointer-events-none mx-auto block rounded-xl border-[3px] border-dark-200 object-cover object-top shadow-xl shadow-dark-300/60 md:aspect-[4/3]",
-                  {
-                    "md:aspect-[16/5.5]": className === "md:col-span-2",
-                  },
-                )}
-                placeholder="blur"
-                src={src}
-              />
-            </ItemWrapper>
-          ),
-        )}
-      </Box>
-    </Container>
+                <Image
+                  alt={alt}
+                  className={cn(
+                    "pointer-events-none mx-auto block rounded-xl border-[3px] border-dark-200 object-cover object-top shadow-xl shadow-dark-300/60 md:aspect-[4/3]",
+                    {
+                      "md:aspect-[16/5.5]": className === "md:col-span-2",
+                    },
+                  )}
+                  placeholder="blur"
+                  src={src}
+                />
+              </ItemWrapper>
+            ),
+          )}
+        </Box>
+      </Container>
+    </Box>
   );
 };

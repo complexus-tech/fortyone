@@ -19,11 +19,10 @@ const Brand = ({ logo }: { logo: string }) => {
 export const SampleClients = () => {
   const brands = [
     "/images/brands/miningo.svg",
-    // "/images/brands/mds.svg",
+    "/images/brands/mds.svg",
     "/images/brands/nesbil.png",
     "/images/brands/zimboriginal.png",
     "/images/brands/digitank.png",
-    "/images/brands/miningo.svg",
     "/images/brands/wastemate.png",
   ];
   return (
@@ -62,7 +61,7 @@ export const SampleClients = () => {
             these ambitious teams relying on us to crush their{" "}
             <Text
               as="span"
-              className="text-stroke-white relative opacity-80"
+              className="text-stroke-whitee opacity-80"
               fontWeight="semibold"
             >
               objectives{" "}

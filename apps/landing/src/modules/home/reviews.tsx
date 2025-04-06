@@ -55,21 +55,11 @@ export const Testimonials = () => {
   }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="3xl:py-48 relative grid-cols-5 py-28 text-white md:grid xl:border-0 xl:py-36 2xl:py-52">
-      <Box className="absolute inset-0 bg-dark">
-        <motion.div
-          initial={{ width: "20%" }}
-          transition={{
-            duration: 1,
-          }}
-          viewport={{ once: true }}
-          whileInView={{ width: "100%" }}
-        />
-      </Box>
+    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-dark-300/80 via-black via-50% to-black py-28 text-white md:grid xl:py-36 2xl:py-52">
       <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
-          className="text-stroke-white introText text-6xl md:text-8xl"
+          className="text-stroke-white introText hidden text-6xl md:block md:text-8xl"
           fontWeight="medium"
         >
           Testimonials
@@ -111,8 +101,7 @@ export const Testimonials = () => {
           </Text>
 
           <Text
-            className="3xl:mb-4 relative mb-2"
-            fontSize="3xl"
+            className="3xl:mb-4 relative mb-2 text-2xl md:text-3xl"
             fontWeight="normal"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
@@ -171,7 +160,7 @@ export const Testimonials = () => {
             </motion.div>
           </Text>
           <Text
-            className="3xl:mb-20 mb-12 text-lg"
+            className="3xl:mb-20 mb-8 text-lg md:mb-12"
             color="muted"
             transform="uppercase"
           >
@@ -206,7 +195,7 @@ export const Testimonials = () => {
               asIcon
               className="ml-auto md:h-[3.5rem]"
               color="tertiary"
-              leftIcon={<ArrowLeft2Icon className="h-6" />}
+              leftIcon={<ArrowLeft2Icon className="md:h-6" />}
               onClick={prevSlide}
               rounded="full"
             >
@@ -217,7 +206,7 @@ export const Testimonials = () => {
               asIcon
               className="ml-auto md:h-[3.5rem]"
               color="tertiary"
-              leftIcon={<ArrowRight2Icon className="h-6" />}
+              leftIcon={<ArrowRight2Icon className="md:h-6" />}
               onClick={nextSlide}
               rounded="full"
             >
@@ -253,6 +242,7 @@ export const Testimonials = () => {
           </Box>
         </Box>
       </AnimatePresence>
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
     </Container>
   );
 };

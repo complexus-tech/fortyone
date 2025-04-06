@@ -2,11 +2,11 @@
 import { Flex, Text, Box, Button } from "ui";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Container, Blur } from "@/components/ui";
+import { Container } from "@/components/ui";
 
 export const Integrations = () => {
   return (
-    <Box className="relative bg-white py-16 dark:bg-black md:py-40">
+    <Box className="relative bg-gradient-to-b from-black via-dark to-black py-16 md:py-40">
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute left-16 top-24 hidden rotate-6 md:block"
@@ -139,7 +139,6 @@ export const Integrations = () => {
         src="/integrations/zend.svg"
         width={80}
       />
-      <Blur className="absolute bottom-1/2 left-1/2 right-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 bg-warning/10" />
     </Box>
   );
 };

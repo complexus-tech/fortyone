@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative border-y border-gray-100 bg-gray-50 dark:border-dark-300 dark:bg-dark/80">
+    <Box className="relative bg-gradient-to-b from-dark via-black to-black">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -102,7 +102,7 @@ export const CallToAction = () => {
           </Box>
         </Flex>
       </Container>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
     </Box>
   );
 };
