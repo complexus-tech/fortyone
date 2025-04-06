@@ -69,7 +69,7 @@ export const Testimonials = () => {
       <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
-          className="text-stroke-white introText text-8xl"
+          className="text-stroke-white introText text-6xl md:text-8xl"
           fontWeight="medium"
         >
           Testimonials
