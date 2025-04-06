@@ -48,11 +48,12 @@ export const Hero = () => {
             <Text
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold antialiased md:max-w-4xl md:text-7xl md:leading-[1.1]"
+              // color="gradient"
             >
-              <span className="text-stroke-white font-bold">Project</span>{" "}
-              Management That Works for{" "}
+              <span className="text-stroke-white">Project</span> Management That
+              Works the Way{" "}
               <Text as="span" className="relative" color="gradient">
-                You
+                You Do
                 <img
                   alt=""
                   className="absolute -bottom-20 left-0 h-auto w-full -rotate-12 opacity-80 invert md:-bottom-28"
