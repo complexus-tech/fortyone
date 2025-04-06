@@ -129,9 +129,9 @@ export const Footer = () => {
   ];
   return (
     <Box as="footer" className="relative bg-white dark:bg-black">
-      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-28">
+      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 md:grid-cols-6 md:pt-28">
         <Box className="col-span-2">
-          <Logo className="-left-4 h-7" />
+          <Logo className="-left-1 h-8 md:-left-4 md:h-7" />
           <Text className="mt-2">
             Project management software that adapts to your team&apos;s
             workflow, not the other way around.

@@ -76,14 +76,13 @@ export const SampleClients = () => {
               growth
               <img
                 alt=""
-                className="absolute -bottom-20 left-0 h-auto w-full -rotate-12 opacity-80 invert md:-bottom-20"
+                className="absolute -bottom-20 left-0 hidden h-auto w-full -rotate-12 opacity-80 invert md:-bottom-20 md:inline-block"
                 src="/svgs/arrow.svg"
               />
             </Text>
-            .
           </Text>
         </motion.div>
-        <Box className="mx-auto mt-36 grid max-w-5xl grid-cols-2 gap-x-4 gap-y-20 md:grid-cols-3">
+        <Box className="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-x-4 gap-y-10 md:mt-36 md:grid-cols-3 md:gap-y-20">
           {brands.map((logo) => (
             <Brand key={logo} logo={logo} />
           ))}

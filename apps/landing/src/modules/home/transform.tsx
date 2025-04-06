@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid border-y border-dark-300/80 bg-gradient-to-r from-dark-300/80 via-black to-black md:grid-cols-2">
+    <Box className="relative grid border-y border-dark-300/80 bg-gradient-to-r from-dark-300/80 via-black to-black py-20 md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
@@ -33,7 +33,7 @@ export const Transform = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 text-sm md:text-base"
+                className="mx-auto px-3 text-sm md:mx-0 md:text-base"
                 color="tertiary"
                 href="/signup"
                 rounded="full"
@@ -44,7 +44,7 @@ export const Transform = () => {
             </motion.span>
             <Text
               as="h2"
-              className="mt-4 text-5xl md:text-7xl"
+              className="mt-4 text-center text-5xl md:text-left md:text-7xl"
               fontWeight="medium"
             >
               <span className="text-stroke-white">Transform</span> how your{" "}
@@ -62,7 +62,7 @@ export const Transform = () => {
               </span>
             </Text>
             <Text
-              className="mt-10 max-w-[600px] text-lg opacity-80 md:mt-16 md:text-2xl"
+              className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl"
               fontWeight="normal"
             >
               Join innovative teams who use Morpheus to deliver projects faster
@@ -70,7 +70,7 @@ export const Transform = () => {
             </Text>
             <Flex
               align="center"
-              className="relative mt-6 gap-2 md:mt-10 md:gap-4"
+              className="relative mt-6 justify-center gap-2 md:mt-10 md:justify-start md:gap-4"
               wrap
             >
               <motion.span

@@ -5,7 +5,7 @@ export const Blur = ({ className }: { className?: string }) => {
   return (
     <Box
       className={cn(
-        "pointer-events-none hidden h-[300px] w-[300px] rounded-full blur-3xl dark:block",
+        "pointer-events-none h-[300px] w-[300px] rounded-full blur-3xl",
         className,
       )}
     />

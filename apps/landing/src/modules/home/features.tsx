@@ -20,7 +20,7 @@ import analyticsImg from "../../../public/analytics1.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box as="section" className="mb-12 text-center md:mb-28">
+    <Box className="my-12 flex flex-col md:mb-28 md:flex-row">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -32,10 +32,10 @@ const Intro = () => (
       >
         <Text
           as="h2"
-          className="mx-auto pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl"
-          color="gradient"
+          className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
         >
-          Ship faster, collaborate better.
+          Built on <span className="text-stroke-white">strong</span>{" "}
+          foundations.
         </Text>
       </motion.div>
       <motion.div
@@ -48,13 +48,14 @@ const Intro = () => (
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
-          className="mx-auto mt-6 max-w-[700px]"
+          className="mt-6 max-w-xl"
+          color="muted"
           fontSize="xl"
           fontWeight="normal"
         >
-          Transform your team&apos;s productivity with powerful project
-          management tools. From sprint planning to analytics, we&apos;ve got
-          everything you need to deliver exceptional results.
+          Complexus is so simple to use, it&apos;s easy to overlook the wealth
+          of complex technologies packed under the hood that keep it robust,
+          safe, and blazing fast.
         </Text>
       </motion.div>
     </Box>
@@ -145,7 +146,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="py-20">
+    <Box className="pb-20">
       <Container as="section">
         <Intro />
         <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">

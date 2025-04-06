@@ -11,9 +11,6 @@ import { useCursor } from "@/hooks";
 import listImg from "../../../public/images/product/list.webp";
 import objectiveImg from "../../../public/images/product/objective.webp";
 import kanbanImg from "../../../public/images/product/kanban.webp";
-// import listImgLight from "../../../public/images/product/list-light.webp";
-// import objectiveImgLight from "../../../public/images/product/objective-light.webp";
-// import summaryImgLight from "../../../public/images/product/summary-light.webp";
 
 export const HeroCards = () => {
   const cursor = useCursor();
@@ -45,32 +42,6 @@ export const HeroCards = () => {
     },
   ];
 
-  // const cards = [
-  //   {
-  //     id: 1,
-  //     title: "List stories",
-  //     image: {
-  //       src: listImgLight,
-  //       alt: "List stories",
-  //     },
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "Objective",
-  //     image: {
-  //       src: objectiveImgLight,
-  //       alt: "Objective",
-  //     },
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "Summary",
-  //     image: {
-  //       src: summaryImgLight,
-  //       alt: "Summary",
-  //     },
-  //   },
-  // ];
   return (
     <Container>
       <Box
