@@ -201,7 +201,7 @@ export const Footer = () => {
           ))}
         </Box>
       </Container>
-      <Container className="pb-16">
+      <Container className="pb-8 md:pb-16">
         <Copyright />
         <Text className="mt-6" color="muted" fontSize="sm">
           Complexus is a product of{" "}
