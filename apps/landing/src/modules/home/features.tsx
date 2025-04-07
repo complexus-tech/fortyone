@@ -75,7 +75,7 @@ const Card = ({
     >
       <Box
         className={cn(
-          "relative flex h-[420px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8",
+          "relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8 md:h-[420px]",
         )}
         onMouseEnter={() => {
           setIsActive(true);
