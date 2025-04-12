@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
-import nProgress from "nprogress";
 import { useLocalStorage, useUserRole, useTerminology } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { BodyContainer } from "../shared";
@@ -19,7 +18,6 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { getTermDisplay } = useTerminology();
 
   const goBack = () => {
-    nProgress.start();
     router.push(prevPage || "/my-work");
     setPrevPage("");
   };
