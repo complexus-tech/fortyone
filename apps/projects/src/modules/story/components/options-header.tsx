@@ -32,7 +32,7 @@ export const OptionsHeader = ({
   const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
   const team = teams.find((team) => team.id === teamId);
-  const code = team ? team.code : "UNKNOWN";
+  const code = team ? team.code : "";
   const isDeleted = Boolean(deletedAt);
   const { mutate: deleteStory } = useDeleteStoryMutation();
   const { mutate: updateStory } = useUpdateStoryMutation();
@@ -98,7 +98,11 @@ export const OptionsHeader = ({
     <>
       <Container className="flex h-16 w-full items-center justify-between md:px-6">
         <Text color="muted" fontWeight="semibold" transform="uppercase">
-          {code}-{sequenceId}
+          {code ? (
+            <>
+              {code}-{sequenceId}
+            </>
+          ) : null}
         </Text>
         <Flex gap={2}>
           <Tooltip
@@ -125,6 +129,7 @@ export const OptionsHeader = ({
             <Tooltip title="Copy git branch name">
               <Button
                 color="tertiary"
+                disabled={!code}
                 leftIcon={<GitIcon />}
                 onClick={copyBranchName}
                 variant="naked"
@@ -148,7 +153,7 @@ export const OptionsHeader = ({
                 >
                   <Button
                     color="tertiary"
-                    disabled={!isAdminOrOwner}
+                    disabled={!isAdminOrOwner || !code}
                     leftIcon={<UndoIcon />}
                     onClick={() => {
                       if (isAdminOrOwner) {
@@ -177,7 +182,7 @@ export const OptionsHeader = ({
                 >
                   <Button
                     color="tertiary"
-                    disabled={!isAdminOrOwner}
+                    disabled={!isAdminOrOwner || !code}
                     leftIcon={<DeleteIcon />}
                     onClick={() => {
                       if (isAdminOrOwner) {
