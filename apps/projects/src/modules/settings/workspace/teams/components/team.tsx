@@ -1,8 +1,7 @@
 import { Box, Flex, Text, Button, Menu, TimeAgo } from "ui";
 import { DeleteIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import nProgress from "nprogress";
+import Link from "next/link";
 import type { Team } from "@/modules/teams/types";
 import { ConfirmDialog, RowWrapper, TeamColor } from "@/components/ui";
 import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
@@ -15,7 +14,6 @@ export const WorkspaceTeam = ({
   createdAt,
   memberCount,
 }: Team) => {
-  const router = useRouter();
   const { mutate: deleteTeam } = useDeleteTeamMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -59,14 +57,15 @@ export const WorkspaceTeam = ({
           </Menu.Button>
           <Menu.Items className="w-44">
             <Menu.Group>
-              <Menu.Item
-                onSelect={() => {
-                  nProgress.start();
-                  router.push(`/settings/workspace/teams/${id}`);
-                }}
-              >
-                <SettingsIcon />
-                Team settings
+              <Menu.Item className="p-0">
+                <Link
+                  className="flex items-center gap-2 px-2 py-1.5"
+                  href={`/settings/workspace/teams/${id}`}
+                  prefetch
+                >
+                  <SettingsIcon />
+                  Team settings
+                </Link>
               </Menu.Item>
             </Menu.Group>
             <Menu.Separator />
