@@ -9,5 +9,6 @@ export const useTeamStories = (teamId: string) => {
     queryFn: () => getStories({ teamId }),
     enabled: Boolean(teamId),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+    refetchOnMount: true,
   });
 };

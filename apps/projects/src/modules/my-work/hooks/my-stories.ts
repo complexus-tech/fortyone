@@ -8,5 +8,6 @@ export const useMyStories = () => {
     queryKey: storyKeys.mine(),
     queryFn: () => getMyStories(),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+    refetchOnMount: true,
   });
 };

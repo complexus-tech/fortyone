@@ -8,5 +8,6 @@ export const useSprintStories = (sprintId: string) => {
     queryKey: storyKeys.sprint(sprintId),
     queryFn: () => getStories({ sprintId }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+    refetchOnMount: true,
   });
 };

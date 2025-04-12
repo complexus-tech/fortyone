@@ -8,5 +8,6 @@ export const useObjectiveStories = (objectiveId: string) => {
     queryKey: storyKeys.objective(objectiveId),
     queryFn: () => getStories({ objectiveId }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+    refetchOnMount: true,
   });
 };
