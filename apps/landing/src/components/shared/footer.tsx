@@ -18,7 +18,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "3xl:text-lg mb-6 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
+      "3xl:text-lg mb-4 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
       className,
     )}
     href={href}
@@ -135,7 +135,7 @@ export const Footer = () => {
       <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-28">
         <Box className="col-span-2">
           <Logo className="-left-1 h-8 md:-left-4 md:h-7" />
-          <Text className="mt-2">
+          <Text className="mt-2 w-11/12">
             Project management software that adapts to your team&apos;s
             workflow, not the other way around.
           </Text>
