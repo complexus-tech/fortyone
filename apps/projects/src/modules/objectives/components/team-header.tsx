@@ -30,7 +30,7 @@ export const TeamObjectivesHeader = () => {
                 variant: "plural",
                 capitalize: true,
               }),
-              icon: <ObjectiveIcon className="h-[1.05rem]" strokeWidth={2} />,
+              icon: <ObjectiveIcon strokeWidth={2} />,
             },
           ]}
         />

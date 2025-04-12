@@ -46,7 +46,7 @@ export const Team = ({
     },
     {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
-      icon: <ObjectiveIcon className="h-[1.1rem]" strokeWidth={2} />,
+      icon: <ObjectiveIcon strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
       disabled: !features.objectiveEnabled,
     },
