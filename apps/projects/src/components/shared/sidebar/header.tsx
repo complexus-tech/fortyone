@@ -277,6 +277,7 @@ export const Header = () => {
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}
+                  prefetch
                 >
                   <SettingsIcon />
                   Account settings
@@ -350,6 +351,7 @@ export const Header = () => {
                     onClick={() => {
                       setPathBeforeSettings(pathname);
                     }}
+                    prefetch
                   >
                     <Flex gap={2}>
                       <InvitesIcon
