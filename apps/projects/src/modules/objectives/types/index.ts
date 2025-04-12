@@ -79,7 +79,6 @@ export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">> & {
 export type ObjectiveStatus = {
   id: string;
   name: string;
-  color: string;
   category: StateCategory;
   isDefault: boolean;
   orderIndex: number;

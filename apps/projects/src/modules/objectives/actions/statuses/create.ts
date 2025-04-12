@@ -9,7 +9,6 @@ import type { ObjectiveStatus } from "../../types";
 export type NewObjectiveStatus = {
   name: string;
   category: StateCategory;
-  color?: string;
 };
 
 export const createObjectiveStatusAction = async (
