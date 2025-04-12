@@ -31,7 +31,8 @@ export const OptionsHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { data: teams = [] } = useTeams();
   const [_, copyText] = useCopyToClipboard();
-  const { code } = teams.find((team) => team.id === teamId)!;
+  const team = teams.find((team) => team.id === teamId);
+  const code = team ? team.code : "UNKNOWN";
   const isDeleted = Boolean(deletedAt);
   const { mutate: deleteStory } = useDeleteStoryMutation();
   const { mutate: updateStory } = useUpdateStoryMutation();
