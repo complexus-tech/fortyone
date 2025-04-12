@@ -72,6 +72,9 @@ export const useCreateStateMutation = () => {
         description: "Your state has been created",
       });
       queryClient.invalidateQueries({
+        queryKey: statusKeys.team(res.data!.teamId),
+      });
+      queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
       });
     },
