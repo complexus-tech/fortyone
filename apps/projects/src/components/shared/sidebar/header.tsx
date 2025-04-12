@@ -206,6 +206,7 @@ export const Header = () => {
                       onClick={() => {
                         setPathBeforeSettings(pathname);
                       }}
+                      prefetch
                     >
                       <SettingsIcon className="h-[1.15rem]" />
                       Workspace settings
