@@ -5,6 +5,10 @@ module.exports = {
   transpilePackages: ["ui", "icons"],
   experimental: {
     reactCompiler: true,
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
