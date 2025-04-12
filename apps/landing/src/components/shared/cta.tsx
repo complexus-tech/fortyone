@@ -29,13 +29,8 @@ export const CallToAction = () => {
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
               Set <span className="text-stroke-white">Objectives</span>. Drive{" "}
-              <Text as="span" className="relative" color="gradient">
+              <Text as="span" color="gradient">
                 Outcomes.
-                <img
-                  alt=""
-                  className="absolute -bottom-20 left-0 hidden h-auto w-full rotate-6 opacity-50 invert md:-bottom-36 md:inline-block"
-                  src="/svgs/dash.svg"
-                />
               </Text>
             </Text>
           </motion.div>
