@@ -7,6 +7,6 @@ export const useSprintStories = (sprintId: string) => {
   return useQuery({
     queryKey: storyKeys.sprint(sprintId),
     queryFn: () => getStories({ sprintId }),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
   });
 };

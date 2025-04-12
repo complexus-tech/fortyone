@@ -55,6 +55,7 @@ export const getQueryClient = cache(
           // above 0 to avoid refetching immediately on the client
           staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 6,
           refetchOnReconnect: true,
+          refetchOnMount: true,
           retry: 1,
         },
         mutations: {

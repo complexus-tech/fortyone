@@ -8,6 +8,6 @@ export const useTeamStories = (teamId: string) => {
     queryKey: storyKeys.team(teamId),
     queryFn: () => getStories({ teamId }),
     enabled: Boolean(teamId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
   });
 };
