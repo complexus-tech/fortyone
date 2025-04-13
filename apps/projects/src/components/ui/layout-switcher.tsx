@@ -40,7 +40,7 @@ export const LayoutSwitcher = ({
         type="button"
       >
         <ListIcon className="h-[1.1rem] w-auto" strokeWidth={3} />
-        List
+        <span className="hidden md:inline">List</span>
       </button>
       <button
         className={cn(
@@ -58,7 +58,7 @@ export const LayoutSwitcher = ({
         type="button"
       >
         <KanbanIcon className="h-5 w-auto" />
-        Kanban
+        <span className="hidden md:inline">Kanban</span>
       </button>
     </Flex>
   );

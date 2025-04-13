@@ -10,7 +10,7 @@ import {
   LayoutSwitcher,
   NewStoryButton,
 } from "@/components/ui";
-import { useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { useMyWork } from "./provider";
 
 export const Header = ({
@@ -20,6 +20,7 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
@@ -45,14 +46,18 @@ export const Header = ({
               name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
               icon: <UserIcon />,
             },
-            {
-              name:
-                tab === "all"
-                  ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
-                  : tab,
-              icon: <StoryIcon strokeWidth={2} />,
-              className: "capitalize",
-            },
+            ...(isDesktop
+              ? [
+                  {
+                    name:
+                      tab === "all"
+                        ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
+                        : tab,
+                    icon: <StoryIcon strokeWidth={2} />,
+                    className: "capitalize",
+                  },
+                ]
+              : []),
           ]}
         />
       </Flex>
@@ -64,8 +69,10 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="text-gray-200 dark:text-dark-100">|</span>
-        <NewStoryButton />
+        <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+          |
+        </span>
+        <NewStoryButton className="hidden md:flex" />
       </Flex>
     </HeaderContainer>
   );

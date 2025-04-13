@@ -2,7 +2,7 @@
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
 import { useEffect } from "react";
-import { useFeatures, useTerminology } from "@/hooks";
+import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
 export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
@@ -64,21 +64,27 @@ export const StoriesViewOptionsButton = ({
   layout: StoriesLayout;
   disabled?: boolean;
 }) => {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
-    "ID",
-    "Status",
-    "Assignee",
+    ...(isDesktop
+      ? (["ID", "Assignee", "Deadline", "Labels"] as DisplayColumn[])
+      : []),
     "Priority",
-    "Deadline",
-    ...(layout !== "kanban" ? (["Created", "Updated"] as DisplayColumn[]) : []),
-    ...(features.sprintEnabled ? (["Sprint"] as DisplayColumn[]) : []),
-    ...(features.objectiveEnabled ? (["Objective"] as DisplayColumn[]) : []),
-    // "Epic",
-    "Labels",
+    "Status",
+    ...(layout !== "kanban" && isDesktop
+      ? (["Created", "Updated"] as DisplayColumn[])
+      : []),
+    ...(features.sprintEnabled && isDesktop
+      ? (["Sprint"] as DisplayColumn[])
+      : []),
+    ...(features.objectiveEnabled && isDesktop
+      ? (["Objective"] as DisplayColumn[])
+      : []),
   ];
 
   useEffect(() => {
@@ -93,7 +99,13 @@ export const StoriesViewOptionsButton = ({
         ),
       });
     }
-  }, [layout, displayColumns, setViewOptions, viewOptions]);
+    if (isMobile) {
+      setViewOptions({
+        ...viewOptions,
+        displayColumns: ["Assignee", "Priority", "Status"],
+      });
+    }
+  }, [layout, displayColumns, setViewOptions, viewOptions, isMobile]);
 
   const getDisplayColumnText = (column: DisplayColumn) => {
     switch (column) {
@@ -122,7 +134,7 @@ export const StoriesViewOptionsButton = ({
           size="sm"
           variant="outline"
         >
-          Customise
+          <span className="hidden md:inline">Customise</span>
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">
