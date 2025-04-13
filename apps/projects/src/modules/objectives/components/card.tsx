@@ -82,6 +82,7 @@ export const ObjectiveCard = ({
         <Link
           className="flex w-full items-center gap-2 hover:opacity-90"
           href={`/teams/${teamId}/objectives/${id}`}
+          prefetch
         >
           <Flex
             align="center"
