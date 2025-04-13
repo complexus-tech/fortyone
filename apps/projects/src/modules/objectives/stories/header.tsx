@@ -60,7 +60,7 @@ export const Header = ({
             },
             {
               name: objectiveName,
-              icon: <ObjectiveIcon className="h-[1.05rem]" />,
+              icon: <ObjectiveIcon />,
             },
             {
               name:
@@ -74,7 +74,7 @@ export const Header = ({
                 tab === "stories" ? (
                   <StoryIcon className="h-[1.1rem]" />
                 ) : (
-                  <ObjectiveIcon className="h-[1.05rem]" />
+                  <ObjectiveIcon />
                 ),
             },
           ]}
