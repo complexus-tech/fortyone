@@ -4,10 +4,14 @@ import Link from "next/link";
 import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { QueryClient } from "@tanstack/react-query";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
 import { StoryStatusIcon } from "@/components/ui";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { storyKeys } from "@/modules/stories/constants";
+import { getStories } from "@/modules/stories/queries/get-stories";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -24,6 +28,7 @@ export const SprintRow = ({
   endDate,
   stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
+  const queryClient = new QueryClient();
   const { teamId } = useParams<{ teamId: string }>();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const startDateObj = new Date(startDate);
@@ -52,6 +57,14 @@ export const SprintRow = ({
       <Link
         className="flex flex-1 items-center gap-4"
         href={`/teams/${teamId}/sprints/${id}/stories`}
+        onMouseEnter={() => {
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.sprint(id),
+            queryFn: () => getStories({ sprintId: id }),
+            staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+          });
+        }}
+        prefetch
       >
         <Flex
           align="center"
