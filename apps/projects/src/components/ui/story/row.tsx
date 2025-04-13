@@ -6,6 +6,7 @@ import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRightIcon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
@@ -31,6 +32,7 @@ export const StoryRow = ({
   isSubStory?: boolean;
   isInSearch?: boolean;
 }) => {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { data: teams = [] } = useTeams();
@@ -57,7 +59,15 @@ export const StoryRow = ({
   };
 
   return (
-    <>
+    <Box
+      onMouseEnter={() => {
+        queryClient.prefetchQuery({
+          queryKey: storyKeys.detail(story.id),
+          queryFn: () => getStory(story.id),
+        });
+        router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
+      }}
+    >
       <div ref={setNodeRef}>
         <StoryContextMenu story={story}>
           <RowWrapper
@@ -120,15 +130,7 @@ export const StoryRow = ({
                 </Tooltip>
               )}
 
-              <Link
-                href={`/story/${story.id}/${slugify(story.title)}`}
-                onMouseEnter={() => {
-                  queryClient.prefetchQuery({
-                    queryKey: storyKeys.detail(story.id),
-                    queryFn: () => getStory(story.id),
-                  });
-                }}
-              >
+              <Link href={`/story/${story.id}/${slugify(story.title)}`}>
                 <Text
                   className="line-clamp-1 flex items-center gap-1.5 hover:opacity-90"
                   fontWeight="medium"
@@ -228,6 +230,6 @@ export const StoryRow = ({
           ))}
         </>
       ) : null}
-    </>
+    </Box>
   );
 };
