@@ -2,6 +2,7 @@
 import posthog from "posthog-js";
 import { PostHogProvider as PostHogProviderPrimitive } from "posthog-js/react";
 import type { ReactNode } from "react";
+import PostHogPageView from "./posthog-page-view";
 
 if (typeof window !== "undefined") {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
@@ -15,6 +16,8 @@ if (typeof window !== "undefined") {
 export const PostHogProvider = ({ children }: { children: ReactNode }) => {
   return (
     <PostHogProviderPrimitive client={posthog}>
+      {/* Page view tracking should be above the children */}
+      <PostHogPageView />
       {children}
     </PostHogProviderPrimitive>
   );
