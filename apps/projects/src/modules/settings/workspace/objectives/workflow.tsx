@@ -63,7 +63,7 @@ export const WorkflowSettings = () => {
         {
           name: status.name,
           category: selectedCategory,
-          color: status.color,
+          // color: status.color,
         },
         {
           onSuccess: () => {
@@ -140,7 +140,7 @@ export const WorkflowSettings = () => {
                       status={{
                         id: "new",
                         name: "",
-                        color: "#6366F1",
+                        // color: "#6366F1",
                         isDefault: false,
                         category: value,
                         orderIndex: 50,

@@ -33,7 +33,7 @@ export const StateRow = ({
 }: StateRowProps) => {
   const updateMutation = useUpdateObjectiveStatusMutation();
   const [isEditing, setIsEditing] = useState(isNew);
-  const [form, setForm] = useState({ name: status.name, color: status.color });
+  const [form, setForm] = useState({ name: status.name });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -42,7 +42,7 @@ export const StateRow = ({
       onCreate?.({
         ...status,
         name: form.name,
-        color: form.color,
+        // color: form.color,
       });
       return;
     }
@@ -65,7 +65,7 @@ export const StateRow = ({
     if (isNew) {
       onCreateCancel?.();
     } else {
-      setForm({ name: status.name, color: status.color });
+      setForm({ name: status.name });
     }
   };
 
