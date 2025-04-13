@@ -145,12 +145,15 @@ export const StoryRow = ({
                 </Tooltip>
               )}
 
-              <Link href={`/story/${story.id}/${slugify(story.title)}`}>
+              <Link
+                className="flex items-center gap-1.5"
+                href={`/story/${story.id}/${slugify(story.title)}`}
+              >
+                {isSubStory ? <SubStoryIcon /> : null}
                 <Text
-                  className="line-clamp-1 flex items-center gap-1.5 hover:opacity-90"
+                  className="line-clamp-1 hover:opacity-90"
                   fontWeight="medium"
                 >
-                  {isSubStory ? <SubStoryIcon /> : null}
                   {story.title}
                 </Text>
               </Link>

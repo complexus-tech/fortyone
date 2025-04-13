@@ -4,7 +4,6 @@ import { type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
-// import { ProgressBar } from "./progress";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
 import { OnlineStatusMonitor } from "./online-monitor";
