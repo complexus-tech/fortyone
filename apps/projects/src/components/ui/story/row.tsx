@@ -96,11 +96,15 @@ export const StoryRow = ({
             >
               {isInSearch ? <StoryIcon className="h-[1.1rem]" /> : null}
               {isSubStory || isInSearch ? null : (
-                <DragHandle {...listeners} {...attributes} />
+                <DragHandle
+                  {...listeners}
+                  {...attributes}
+                  className="hidden md:inline"
+                />
               )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
-                className="absolute -left-[1.6rem] rounded-[0.35rem]"
+                className="absolute -left-[1.6rem] hidden rounded-[0.35rem] md:inline"
                 disabled={userRole === "guest"}
                 onCheckedChange={(checked) => {
                   setSelectedStories(

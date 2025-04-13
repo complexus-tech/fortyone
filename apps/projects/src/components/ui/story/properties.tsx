@@ -102,7 +102,8 @@ export const StoryProperties = ({
                 disabled={isGuest}
                 type="button"
               >
-                <StoryStatusIcon statusId={statusId} /> {status?.name}
+                <StoryStatusIcon statusId={statusId} />
+                <span className="hidden md:inline">{status?.name}</span>
               </button>
             )}
           </StatusesMenu.Trigger>
@@ -137,7 +138,7 @@ export const StoryProperties = ({
                 type="button"
               >
                 <PriorityIcon priority={priority} />
-                {priority}
+                <span className="hidden md:inline">{priority}</span>
               </button>
             )}
           </PrioritiesMenu.Trigger>
