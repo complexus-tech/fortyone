@@ -17,18 +17,12 @@ type Props = {
 export default async function Page(props: Props) {
   const params = await props.params;
 
-  const start = performance.now();
-
   const { storyId } = params;
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
     queryKey: storyKeys.detail(storyId),
     queryFn: () => getStory(storyId),
   });
-
-  const end = performance.now();
-  // eslint-disable-next-line no-console -- debug
-  console.log(`Time taken: ${end - start} milliseconds`);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
