@@ -65,17 +65,15 @@ export const StoriesViewOptionsButton = ({
   disabled?: boolean;
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
-    ...(isDesktop
-      ? (["ID", "Assignee", "Deadline", "Labels"] as DisplayColumn[])
-      : []),
-    "Priority",
+    ...(isDesktop ? (["ID", "Deadline", "Labels"] as DisplayColumn[]) : []),
     "Status",
+    "Assignee",
+    "Priority",
     ...(layout !== "kanban" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
       : []),
@@ -99,13 +97,7 @@ export const StoriesViewOptionsButton = ({
         ),
       });
     }
-    if (isMobile) {
-      setViewOptions({
-        ...viewOptions,
-        displayColumns: ["Assignee", "Priority", "Status"],
-      });
-    }
-  }, [layout, displayColumns, setViewOptions, viewOptions, isMobile]);
+  }, [layout, displayColumns, setViewOptions, viewOptions]);
 
   const getDisplayColumnText = (column: DisplayColumn) => {
     switch (column) {
