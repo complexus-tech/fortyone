@@ -3,7 +3,14 @@ import posthog from "posthog-js";
 import { ArrowLeftIcon } from "icons";
 import { Box, Button, Text } from "ui";
 import { useEffect } from "react";
+import { Instrument_Sans as InstrumentSans } from "next/font/google";
 import { ComplexusLogo } from "@/components/ui";
+
+const font = InstrumentSans({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 
 export default function GlobalError({
   error,
@@ -16,7 +23,7 @@ export default function GlobalError({
     posthog.captureException(error);
   }, [error]);
   return (
-    <html lang="en">
+    <html className={font.className} lang="en">
       <body>
         <Box className="flex h-screen items-center justify-center">
           <Box className="flex flex-col items-center">
