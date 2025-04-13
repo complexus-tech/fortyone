@@ -39,7 +39,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
             {metadata?.image ? (
               <BlurImage
                 alt={metadata.title || link.title || link.url}
-                className="size-6 rounded-full"
+                className="size-6 w-max rounded-full"
                 src={metadata.image}
               />
             ) : (

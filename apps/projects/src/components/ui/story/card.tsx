@@ -14,6 +14,9 @@ import { useMembers } from "@/lib/hooks/members";
 import { useUserRole } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
+import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
+import { linkKeys } from "@/constants/keys";
+import { getLinks } from "@/lib/queries/links/get-links";
 import { useBoard } from "../board-context";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
@@ -58,6 +61,14 @@ export const StoryCard = ({
         queryClient.prefetchQuery({
           queryKey: storyKeys.detail(story.id),
           queryFn: () => getStory(story.id),
+        });
+        queryClient.prefetchQuery({
+          queryKey: storyKeys.attachments(story.id),
+          queryFn: () => getStoryAttachments(story.id),
+        });
+        queryClient.prefetchQuery({
+          queryKey: linkKeys.story(story.id),
+          queryFn: () => getLinks(story.id),
         });
         router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
       }}
