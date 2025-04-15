@@ -28,6 +28,7 @@ import {
   useAnalytics,
   useFeatures,
   useLocalStorage,
+  useMediaQuery,
   useTerminology,
 } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
@@ -59,6 +60,7 @@ export const Header = () => {
   const { getTermDisplay } = useTerminology();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { data: session } = useSession();
   const { data: profile } = useProfile();
   const { analytics } = useAnalytics();
@@ -262,7 +264,7 @@ export const Header = () => {
               )}
             </Box>
           </Menu.Button>
-          <Menu.Items align="start" className="ml-4 pt-0">
+          <Menu.Items align="start" className="ml-4 mr-3 pt-0">
             <Menu.Group className="px-4 pb-2 pt-2.5">
               <Text className="line-clamp-1" color="muted">
                 {session?.user?.email}
@@ -298,7 +300,7 @@ export const Header = () => {
                     </span>
                     <span className="flex items-center gap-1">
                       <Text
-                        className="text-[0.95rem] first-letter:uppercase"
+                        className="hidden text-[0.95rem] first-letter:uppercase md:block"
                         color="muted"
                       >
                         {theme === "system"
@@ -389,6 +391,7 @@ export const Header = () => {
               setIsOpen(!isOpen);
             }
           }}
+          size={isMobile ? "sm" : "md"}
           variant="outline"
         >
           Create {getTermDisplay("storyTerm")}
@@ -399,7 +402,7 @@ export const Header = () => {
           color="tertiary"
           href="/search"
           leftIcon={<SearchIcon className="h-4" />}
-          size="sm"
+          size={isMobile ? "sm" : "md"}
           variant="outline"
         >
           <span className="sr-only">Search</span>
