@@ -7,6 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "A Product Management Platform",
     start_url: "/",
     display: "standalone",
+    theme_color: "#09090a",
+    background_color: "#09090a",
     icons: [
       {
         src: "/icon-192x192.png",
