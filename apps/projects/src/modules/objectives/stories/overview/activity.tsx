@@ -25,7 +25,7 @@ export const Activity = () => {
   return (
     <Tabs defaultValue="summary">
       <Flex align="center" className="mb-3" justify="between">
-        <Tabs.List className="mx-0">
+        <Tabs.List className="mx-0 md:mx-0">
           <Tabs.Tab
             className="gap-1.5"
             leftIcon={<ObjectiveIcon className="h-[1.1rem]" />}

@@ -336,7 +336,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
       <Divider className="mb-3" />
       <Text className="mb-3">Stories Overview</Text>
       <Tabs defaultValue="status">
-        <Tabs.List className="mx-0 mb-3">
+        <Tabs.List className="mx-0 mb-3 md:mx-0">
           <Tabs.Tab value="assignees">Assignees</Tabs.Tab>
           <Tabs.Tab value="status">Status</Tabs.Tab>
           <Tabs.Tab value="labels">Labels</Tabs.Tab>

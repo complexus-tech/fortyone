@@ -24,10 +24,6 @@ export const metadata: Metadata = {
     minimumScale: 1,
     userScalable: false,
   },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090a" },
-  ],
 };
 
 export default async function RootLayout({
@@ -42,6 +38,18 @@ export default async function RootLayout({
 
   return (
     <html className={font.className} lang="en" suppressHydrationWarning>
+      <head>
+        <meta
+          content="#ffffff"
+          media="(prefers-color-scheme: light)"
+          name="theme-color"
+        />
+        <meta
+          content="#09090a"
+          media="(prefers-color-scheme: dark)"
+          name="theme-color"
+        />
+      </head>
       <body>
         <SessionProvider session={session}>
           <Providers>

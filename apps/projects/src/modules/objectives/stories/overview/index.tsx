@@ -102,7 +102,7 @@ export const Overview = () => {
   return (
     <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
       <BoardDividedPanel.MainPanel>
-        <Container className="h-[calc(100vh-7.7rem)] overflow-y-auto pt-6">
+        <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
           <Box>
             <Flex align="center" gap={6} justify="between">
               <TextEditor
@@ -148,8 +148,8 @@ export const Overview = () => {
           {features.keyResultEnabled ? <KeyResults /> : null}
         </Container>
       </BoardDividedPanel.MainPanel>
-      <BoardDividedPanel.SideBar className="h-[calc(100vh-7.7rem)]" isExpanded>
-        <Sidebar className="h-[calc(100vh-7.7rem)] overflow-y-auto" />
+      <BoardDividedPanel.SideBar className="h-[calc(100dvh-7.7rem)]" isExpanded>
+        <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
       </BoardDividedPanel.SideBar>
 
       <ConfirmDialog
