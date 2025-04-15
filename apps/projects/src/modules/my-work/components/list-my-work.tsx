@@ -32,7 +32,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   }, [stories, tab, user?.id]);
 
   return (
-    <Box className="h-[calc(100vh-4rem)]">
+    <Box className="h-[calc(100dvh-4rem)]">
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
         <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100 dark:border-dark-100">
           <Tabs.List>
@@ -45,7 +45,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         </Box>
         <Tabs.Panel value="all">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className="h-[calc(100dvh-7.7rem)]"
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}
@@ -53,7 +53,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className="h-[calc(100dvh-7.7rem)]"
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}
@@ -61,7 +61,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.Panel>
         <Tabs.Panel value="created">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className="h-[calc(100dvh-7.7rem)]"
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}
