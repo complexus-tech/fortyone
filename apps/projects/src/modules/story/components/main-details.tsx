@@ -126,7 +126,7 @@ export const MainDetails = ({
   });
 
   return (
-    <BodyContainer className="h-dvh overflow-y-auto pb-4 md:pb-8">
+    <BodyContainer className="h-dvh overflow-y-auto pb-8">
       <Box className="md:hidden">
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
