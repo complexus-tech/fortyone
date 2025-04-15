@@ -5,7 +5,7 @@ import { useTerminology } from "@/hooks";
 import { OverviewSkeleton } from "./overview-skeleton";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
-  <Wrapper className="px-5">
+  <Wrapper className="px-3 py-3 md:px-5 md:py-4">
     <Flex justify="between">
       <Text className="mb-1.5 text-2xl antialiased" fontWeight="semibold">
         {count}
@@ -62,7 +62,7 @@ export const Overview = () => {
   ];
 
   return (
-    <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
+    <Box className="mb-4 mt-3 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
       {overview.map((item) => (
         <Card key={item.title} {...item} />
       ))}

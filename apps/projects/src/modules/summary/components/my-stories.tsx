@@ -47,7 +47,11 @@ const StoryRow = ({
       <RowWrapper className="gap-4 px-0" key={id}>
         <Flex align="center" className="relative select-none" gap={2}>
           <Flex align="center" gap={2}>
-            <Text className="opacity-80" color="muted" fontWeight="normal">
+            <Text
+              className="hidden opacity-80 md:block"
+              color="muted"
+              fontWeight="normal"
+            >
               {getTeamLabel()}-{sequenceId}
             </Text>
             <PriorityIcon className="relative -top-px" priority={priority} />
@@ -58,7 +62,7 @@ const StoryRow = ({
         <Flex align="center" className="shrink-0" gap={3}>
           <Text className="flex shrink-0 items-center gap-1">
             <StoryStatusIcon className="relative -top-px" statusId={statusId} />
-            <span className="inline-block max-w-[16ch] truncate">
+            <span className="hidden max-w-[16ch] truncate md:inline-block">
               {getStoryStatus()}
             </span>
           </Text>
@@ -173,8 +177,8 @@ export const MyStories = () => {
   });
 
   return (
-    <Wrapper>
-      <Flex align="center" justify="between">
+    <Wrapper className="min-h-[25rem] md:min-h-[30rem]">
+      <Flex align="center" className="mb-2 md:mb-0" justify="between">
         <Text className="mb-2" fontSize="lg">
           Recent {getTermDisplay("storyTerm", { variant: "plural" })}
         </Text>
@@ -188,7 +192,7 @@ export const MyStories = () => {
         </Button>
       </Flex>
       <Tabs defaultValue="inProgress">
-        <Tabs.List className="mx-0">
+        <Tabs.List className="mx-0 mb-2 md:mb-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
           <Tabs.Tab value="due">Overdue</Tabs.Tab>

@@ -217,34 +217,41 @@ export const Activity = ({
             </Text>
           </Flex>
         </Tooltip>
-        <Text className="text-sm md:text-[0.95rem]" color="muted">
-          {type === "create" ? "created the story" : "changed"}
-        </Text>
-        {type === "update" && (
-          <>
-            <Text
-              className="text-sm text-black dark:text-white md:text-[0.95rem]"
-              fontWeight="medium"
-            >
-              {fieldMap[field].label}
-            </Text>
-            <Text className="text-sm md:text-[0.95rem]" color="muted">
-              to
-            </Text>
-            <Text
-              as="span"
-              className="line-clamp-1 inline-block text-sm text-black dark:text-white md:text-[0.95rem]"
-              fontWeight="medium"
-            >
-              {fieldMap[field].render(currentValue)}
-            </Text>
-          </>
-        )}
-        <Text className="mx-0.5 text-sm md:text-[0.95rem]" color="muted">
-          ·
-        </Text>
-        <Text className="line-clamp-1 text-sm md:text-[0.95rem]" color="muted">
-          <TimeAgo timestamp={createdAt} />
+        <Text className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
+          <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
+            {type === "create" ? "created the story" : "changed"}
+          </Text>
+          {type === "update" && (
+            <>
+              <Text
+                as="span"
+                className="text-sm text-black dark:text-white md:text-[0.95rem]"
+                fontWeight="medium"
+              >
+                {fieldMap[field].label}
+              </Text>
+              <Text
+                as="span"
+                className="text-sm md:text-[0.95rem]"
+                color="muted"
+              >
+                to
+              </Text>
+              <Text
+                as="span"
+                className="inline-block shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
+                fontWeight="medium"
+              >
+                {fieldMap[field].render(currentValue)}
+              </Text>
+            </>
+          )}
+          <Text className="mx-0.5 text-sm md:text-[0.95rem]" color="muted">
+            ·
+          </Text>
+          <Text className="shrink-0 text-sm md:text-[0.95rem]" color="muted">
+            <TimeAgo timestamp={createdAt} />
+          </Text>
         </Text>
       </Flex>
     </Box>

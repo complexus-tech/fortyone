@@ -11,7 +11,7 @@ export const Activities = () => {
     return <ActivitiesSkeleton />;
   }
   return (
-    <Wrapper>
+    <Wrapper className="min-h-[25rem] md:min-h-[30rem]">
       <Flex align="center" className="mb-5" justify="between">
         <Text fontSize="lg">Recent activities</Text>
       </Flex>

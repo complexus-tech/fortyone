@@ -3,7 +3,7 @@ import { Box, BreadCrumbs, Flex } from "ui";
 import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
   StoriesViewOptionsButton,
@@ -11,7 +11,6 @@ import {
   NewStoryButton,
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
-import { MobileMenuButton } from "@/components/shared/mobile-menu";
 import { useMyWork } from "./provider";
 
 export const Header = ({

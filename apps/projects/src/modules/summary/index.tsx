@@ -25,7 +25,11 @@ export const SummaryPage = () => {
       <Header />
       <BodyContainer>
         <Container className="pb-4 pt-3">
-          <Text as="h2" className="mb-2" fontSize="3xl" fontWeight="medium">
+          <Text
+            as="h2"
+            className="mb-1 text-2xl md:mb-2 md:text-3xl"
+            fontWeight="medium"
+          >
             Good {timeOfDay()}, {session?.user?.name}.
           </Text>
           <Text color="muted" fontSize="lg">
@@ -33,12 +37,12 @@ export const SummaryPage = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <Overview />
-          <Box className="my-4 grid grid-cols-3 gap-4">
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
             <Priority />
             <Status />
             <Contributions />
           </Box>
-          <Box className="my-4 grid min-h-[30rem] grid-cols-2 gap-4">
+          <Box className="my-4 grid gap-4 md:grid-cols-2">
             <MyStories />
             <Activities />
           </Box>
