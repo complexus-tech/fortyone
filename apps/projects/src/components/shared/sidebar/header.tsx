@@ -28,7 +28,6 @@ import {
   useAnalytics,
   useFeatures,
   useLocalStorage,
-  useMediaQuery,
   useTerminology,
 } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
@@ -60,7 +59,6 @@ export const Header = () => {
   const { getTermDisplay } = useTerminology();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const { data: session } = useSession();
   const { data: profile } = useProfile();
   const { analytics } = useAnalytics();
@@ -391,7 +389,6 @@ export const Header = () => {
               setIsOpen(!isOpen);
             }
           }}
-          size={isMobile ? "sm" : "md"}
           variant="outline"
         >
           Create {getTermDisplay("storyTerm")}
@@ -402,7 +399,6 @@ export const Header = () => {
           color="tertiary"
           href="/search"
           leftIcon={<SearchIcon className="h-4" />}
-          size={isMobile ? "sm" : "md"}
           variant="outline"
         >
           <span className="sr-only">Search</span>
