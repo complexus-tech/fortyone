@@ -147,7 +147,10 @@ export const StoriesViewOptionsButton = ({
           <span className="hidden md:inline">Customise</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="max-w-[24rem] rounded-[0.6rem]">
+      <Popover.Content
+        align="end"
+        className="min-w-[20rem] rounded-[0.6rem] md:max-w-[24rem]"
+      >
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select

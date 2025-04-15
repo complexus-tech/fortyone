@@ -1,5 +1,5 @@
 "use client";
-import { BreadCrumbs, Flex } from "ui";
+import { Box, BreadCrumbs, Flex } from "ui";
 import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -10,7 +10,7 @@ import {
   LayoutSwitcher,
   NewStoryButton,
 } from "@/components/ui";
-import { useMediaQuery, useTerminology } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { useMyWork } from "./provider";
 
 export const Header = ({
@@ -20,7 +20,6 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions } = useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
@@ -40,26 +39,34 @@ export const Header = ({
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
-        <BreadCrumbs
-          breadCrumbs={[
-            {
-              name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
-              icon: <UserIcon />,
-            },
-            ...(isDesktop
-              ? [
-                  {
-                    name:
-                      tab === "all"
-                        ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
-                        : tab,
-                    icon: <StoryIcon strokeWidth={2} />,
-                    className: "capitalize",
-                  },
-                ]
-              : []),
-          ]}
-        />
+        <Box className="md:hidden">
+          <BreadCrumbs
+            breadCrumbs={[
+              {
+                name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+                icon: <UserIcon />,
+              },
+            ]}
+          />
+        </Box>
+        <Box className="hidden md:block">
+          <BreadCrumbs
+            breadCrumbs={[
+              {
+                name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+                icon: <UserIcon />,
+              },
+              {
+                name:
+                  tab === "all"
+                    ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
+                    : tab,
+                icon: <StoryIcon strokeWidth={2} />,
+                className: "capitalize",
+              },
+            ]}
+          />
+        </Box>
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
@@ -72,7 +79,9 @@ export const Header = ({
         <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
           |
         </span>
-        <NewStoryButton className="hidden md:flex" />
+        <Box className="hidden md:block">
+          <NewStoryButton />
+        </Box>
       </Flex>
     </HeaderContainer>
   );
