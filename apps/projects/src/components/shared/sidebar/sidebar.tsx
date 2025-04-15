@@ -14,7 +14,7 @@ export const Sidebar = () => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
 
   return (
-    <Box className="flex h-screen flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-black">
+    <Box className="flex h-dvh flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-black">
       <Box>
         <Header />
         <Navigation />
