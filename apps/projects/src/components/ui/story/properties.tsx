@@ -31,7 +31,7 @@ import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { slugify } from "@/utils";
@@ -73,6 +73,7 @@ export const StoryProperties = ({
   const selectedObjective = objectives.find(
     (objective) => objective.id === objectiveId,
   );
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
@@ -210,7 +211,7 @@ export const StoryProperties = ({
                   className="gap-1 pr-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded={asKanban || isMobile ? "md" : "xl"}
                   size="xs"
                   type="button"
                   variant="outline"
