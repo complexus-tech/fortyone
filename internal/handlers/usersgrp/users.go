@@ -208,7 +208,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 14)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 30)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 	}
@@ -339,7 +339,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 14)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 30)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 	}
