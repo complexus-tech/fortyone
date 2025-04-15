@@ -3,7 +3,7 @@ import { Box, Flex, Skeleton } from "ui";
 
 export const NotificationsSkeleton = () => {
   return (
-    <Box className="h-screen border-r-[0.5px] border-gray-200/60 pb-6 dark:border-dark-50">
+    <Box className="h-dvh border-r-[0.5px] border-gray-200/60 pb-6 dark:border-dark-50">
       <Flex
         align="center"
         className="h-16 border-b-[0.5px] border-gray-200/60 px-4 dark:border-dark-50"
@@ -18,7 +18,7 @@ export const NotificationsSkeleton = () => {
           <Skeleton className="size-8 rounded-md" />
         </Flex>
       </Flex>
-      <Box className="h-[calc(100vh-4rem)] overflow-y-auto">
+      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {Array.from({ length: 8 }).map((_, index) => (
           <Flex
             className="border-b border-gray-100/70 px-4 py-3 dark:border-dark-50/60"

@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
+import { MobileMenuButton } from "@/components/shared";
 import { useNotifications } from "./hooks/notifications";
 import { useUnreadNotifications } from "./hooks/unread";
 import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
@@ -48,6 +49,7 @@ export const NotificationsHeader = () => {
       justify="between"
     >
       <Text className="flex items-center gap-2">
+        <MobileMenuButton />
         <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
         Notifications
       </Text>

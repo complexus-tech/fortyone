@@ -58,7 +58,7 @@ export const NotificationCard = ({
             prefetch={index <= 10 ? true : null}
           >
             <RowWrapper
-              className={cn("block cursor-pointer px-4 md:px-4", {
+              className={cn("block cursor-pointer px-5 md:px-4", {
                 "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
               })}
             >

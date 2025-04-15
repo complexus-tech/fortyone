@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { Box } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { ListNotifications } from "@/modules/notifications/list";
 import { getQueryClient } from "@/app/get-query-client";
@@ -19,9 +20,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   });
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <BodyContainer className="grid h-screen grid-cols-[320px_auto]">
+      <BodyContainer className="grid h-dvh md:grid-cols-[320px_auto]">
         <ListNotifications />
-        {children}
+        <Box className="hidden md:block">{children}</Box>
       </BodyContainer>
     </HydrationBoundary>
   );
