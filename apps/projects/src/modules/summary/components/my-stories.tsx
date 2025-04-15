@@ -44,7 +44,7 @@ const StoryRow = ({
 
   return (
     <Link href={`/story/${id}/${slugify(title)}`}>
-      <RowWrapper className="gap-4 px-0" key={id}>
+      <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
         <Flex align="center" className="relative select-none" gap={2}>
           <Flex align="center" gap={2}>
             <Text
@@ -192,7 +192,7 @@ export const MyStories = () => {
         </Button>
       </Flex>
       <Tabs defaultValue="inProgress">
-        <Tabs.List className="mx-0 mb-2 md:mb-0">
+        <Tabs.List className="mx-0 mb-2 md:mx-0 md:mb-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
           <Tabs.Tab value="due">Overdue</Tabs.Tab>
