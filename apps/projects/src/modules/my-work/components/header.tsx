@@ -11,6 +11,7 @@ import {
   NewStoryButton,
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
+import { MobileMenuButton } from "@/components/shared/mobile-menu";
 import { useMyWork } from "./provider";
 
 export const Header = ({
@@ -39,6 +40,7 @@ export const Header = ({
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
+        <MobileMenuButton />
         <Box className="md:hidden">
           <BreadCrumbs
             breadCrumbs={[
