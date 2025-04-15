@@ -96,11 +96,7 @@ export const StoryRow = ({
             >
               {isInSearch ? <StoryIcon className="h-[1.1rem]" /> : null}
               {isSubStory || isInSearch ? null : (
-                <DragHandle
-                  {...listeners}
-                  {...attributes}
-                  className="hidden md:inline"
-                />
+                <DragHandle {...listeners} {...attributes} />
               )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
@@ -149,7 +145,7 @@ export const StoryRow = ({
                 className="flex items-center gap-1.5"
                 href={`/story/${story.id}/${slugify(story.title)}`}
               >
-                {isSubStory ? <SubStoryIcon /> : null}
+                {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
                 <Text
                   className="line-clamp-1 hover:opacity-90"
                   fontWeight="medium"
