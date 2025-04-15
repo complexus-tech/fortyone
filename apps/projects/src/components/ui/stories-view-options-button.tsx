@@ -1,7 +1,7 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
@@ -85,19 +85,37 @@ export const StoriesViewOptionsButton = ({
       : []),
   ];
 
+  const getFilteredDisplayColumns = useCallback(
+    (columns: DisplayColumn[]) => {
+      let filteredColumns = [...columns];
+      if (layout === "kanban") {
+        filteredColumns = filteredColumns.filter(
+          (column) => column !== "Created" && column !== "Updated",
+        );
+      }
+
+      // For mobile and not kanban, only keep Status, Assignee, Priority
+      if (!isDesktop && layout !== "kanban") {
+        filteredColumns = filteredColumns.filter((column) =>
+          ["Status", "Assignee", "Priority"].includes(column),
+        );
+      }
+
+      return filteredColumns;
+    },
+    [layout, isDesktop],
+  );
+
   useEffect(() => {
-    if (
-      layout === "kanban" &&
-      displayColumns.some((col) => col === "Created" || col === "Updated")
-    ) {
+    const filteredColumns = getFilteredDisplayColumns([...displayColumns]);
+
+    if (JSON.stringify(filteredColumns) !== JSON.stringify(displayColumns)) {
       setViewOptions({
         ...viewOptions,
-        displayColumns: displayColumns.filter(
-          (column) => column !== "Created" && column !== "Updated",
-        ),
+        displayColumns: filteredColumns,
       });
     }
-  }, [layout, displayColumns, setViewOptions, viewOptions]);
+  }, [displayColumns, getFilteredDisplayColumns, setViewOptions, viewOptions]);
 
   const getDisplayColumnText = (column: DisplayColumn) => {
     switch (column) {
