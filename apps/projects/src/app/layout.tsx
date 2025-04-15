@@ -24,6 +24,10 @@ export const metadata: Metadata = {
     minimumScale: 1,
     userScalable: false,
   },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090a" },
+  ],
 };
 
 export default async function RootLayout({
