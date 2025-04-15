@@ -3,6 +3,7 @@ import { Instrument_Sans as InstrumentSans } from "next/font/google";
 import { type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
@@ -30,6 +31,9 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
+  if (process.env.NODE_ENV === "development" && !session) {
+    redirect("/login");
+  }
 
   return (
     <html className={font.className} lang="en" suppressHydrationWarning>
@@ -39,7 +43,6 @@ export default async function RootLayout({
             {children}
             <Toaster />
           </Providers>
-          {/* <ProgressBar /> */}
         </SessionProvider>
         <OnlineStatusMonitor />
       </body>

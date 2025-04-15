@@ -157,7 +157,7 @@ export const Activity = ({
   >;
 
   return (
-    <Box className="relative pb-4 last-of-type:pb-0">
+    <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
       <Box
         className={cn(
           "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-200 dark:border-dark-50",
@@ -201,8 +201,8 @@ export const Activity = ({
             ) : null
           }
         >
-          <Flex className="cursor-pointer" gap={1}>
-            <Box className="relative top-[1px] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+          <Flex align="center" className="cursor-pointer" gap={1}>
+            <Box className="relative left-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
                 name={member?.fullName}
                 size="xs"
@@ -210,40 +210,40 @@ export const Activity = ({
               />
             </Box>
             <Text
-              className="relative top-0.5 ml-1 text-black dark:text-white"
+              className="relative ml-1 text-sm text-black dark:text-white md:text-[0.95rem]"
               fontWeight="medium"
             >
               {member?.username}
             </Text>
           </Flex>
         </Tooltip>
-        <Text className="text-[0.95rem]" color="muted">
+        <Text className="text-sm md:text-[0.95rem]" color="muted">
           {type === "create" ? "created the story" : "changed"}
         </Text>
         {type === "update" && (
           <>
             <Text
-              className="text-[0.95rem] text-black dark:text-white"
+              className="text-sm text-black dark:text-white md:text-[0.95rem]"
               fontWeight="medium"
             >
               {fieldMap[field].label}
             </Text>
-            <Text className="text-[0.95rem]" color="muted">
+            <Text className="text-sm md:text-[0.95rem]" color="muted">
               to
             </Text>
             <Text
               as="span"
-              className="text-[0.95rem] text-black dark:text-white"
+              className="line-clamp-1 inline-block text-sm text-black dark:text-white md:text-[0.95rem]"
               fontWeight="medium"
             >
               {fieldMap[field].render(currentValue)}
             </Text>
           </>
         )}
-        <Text className="mx-0.5 text-[0.95rem]" color="muted">
+        <Text className="mx-0.5 text-sm md:text-[0.95rem]" color="muted">
           ·
         </Text>
-        <Text className="text-[0.95rem]" color="muted">
+        <Text className="line-clamp-1 text-sm md:text-[0.95rem]" color="muted">
           <TimeAgo timestamp={createdAt} />
         </Text>
       </Flex>

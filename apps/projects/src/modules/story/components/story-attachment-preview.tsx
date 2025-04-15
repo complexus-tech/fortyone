@@ -72,7 +72,7 @@ export const StoryAttachmentPreview = ({
     if (isImage || isVideo) {
       return (
         <Box
-          className="group relative h-28 overflow-hidden rounded-xl border border-gray-50 bg-gray-50/70 shadow-lg shadow-gray-100 ring-gray-200 transition-all duration-300 hover:ring hover:grayscale dark:border-dark-200 dark:bg-dark-200/50 dark:shadow-none dark:ring-dark-50"
+          className="group relative h-24 overflow-hidden rounded-xl border border-gray-50 bg-gray-50/70 shadow-lg shadow-gray-100 ring-gray-200 transition-all duration-300 hover:ring hover:grayscale dark:border-dark-200 dark:bg-dark-200/50 dark:shadow-none dark:ring-dark-50 md:h-28"
           onClick={() => {
             if (isUploading) return;
             setIsOpen(true);
@@ -102,8 +102,8 @@ export const StoryAttachmentPreview = ({
     }
 
     return (
-      <Wrapper className="px-4 py-2.5 ring-gray-200 ring-offset-1 transition-all duration-300 hover:ring dark:ring-dark-50 dark:ring-offset-dark">
-        <Flex align="center" gap={6} justify="between">
+      <Wrapper className="px-3 py-2 ring-gray-200 ring-offset-1 transition-all duration-300 hover:ring dark:ring-dark-50 dark:ring-offset-dark md:px-4 md:py-2.5">
+        <Flex align="center" className="gap-3 md:gap-6" justify="between">
           <Flex
             align="center"
             className="flex-1"
@@ -115,9 +115,9 @@ export const StoryAttachmentPreview = ({
           >
             <Box className="rounded-lg bg-gray-100/50 p-2 dark:bg-dark-200/80">
               {isUploading ? (
-                <LoadingIcon className="h-6 animate-spin" />
+                <LoadingIcon className="h-5 animate-spin md:h-6" />
               ) : (
-                <DocsIcon className="h-6" />
+                <DocsIcon className="h-5 md:h-6" />
               )}
             </Box>
             <Box>
@@ -198,7 +198,7 @@ export const StoryAttachmentPreview = ({
             <Dialog.Title className="mb-0 px-6">{file.filename}</Dialog.Title>
           </Dialog.Header>
           {isImage ? (
-            <Box className="flex h-[70vh] items-center justify-center overflow-y-auto rounded-lg">
+            <Box className="flex h-[50dvh] items-center justify-center overflow-y-auto rounded-lg md:h-[70dvh]">
               <BlurImage
                 alt={file.filename}
                 className="h-full bg-dark dark:bg-dark"
@@ -211,7 +211,7 @@ export const StoryAttachmentPreview = ({
           {isVideo ? (
             <MediaThemeSutro
               className={cn(
-                "aspect-video h-[55vh] w-full overflow-hidden rounded-lg",
+                "aspect-video h-[55dvh] w-full overflow-hidden rounded-lg",
                 className,
               )}
               title={file.filename}
@@ -228,7 +228,7 @@ export const StoryAttachmentPreview = ({
 
           {isPdf ? (
             <ObjectViewer
-              className="min-h-[80vh] overflow-hidden rounded-lg"
+              className="min-h-[80dvh] overflow-hidden rounded-lg"
               data={file.url}
               type="application/pdf"
             />

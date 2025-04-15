@@ -196,13 +196,15 @@ export const Options = ({
   });
 
   return (
-    <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
-      <OptionsHeader
-        isAdminOrOwner={isAdminOrOwner}
-        isNotifications={isNotifications}
-        storyId={storyId}
-      />
-      <Container className="pt-4 text-gray-300/90 md:px-6">
+    <Box className="from-white via-gray-50/50 to-gray-50 pb-2 dark:from-dark-200/50 dark:to-dark md:h-dvh md:overflow-y-auto md:bg-gradient-to-br md:pb-6">
+      <Box className="hidden md:block">
+        <OptionsHeader
+          isAdminOrOwner={isAdminOrOwner}
+          isNotifications={isNotifications}
+          storyId={storyId}
+        />
+      </Box>
+      <Container className="px-0.5 pt-4 text-gray-300/90 md:px-6">
         <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
           {!isNotifications && <Text fontWeight="semibold">Properties</Text>}
           {isDeleted ? (
@@ -653,7 +655,7 @@ export const Options = ({
           }
         /> */}
 
-        <Divider className="my-4" />
+        <Divider className="my-4 hidden md:block" />
         <AddLinks storyId={storyId} />
       </Container>
     </Box>

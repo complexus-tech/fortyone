@@ -147,8 +147,8 @@ export const NewSubStory = ({
             editor={titleEditor}
           />
           <TextEditor editor={editor} />
-          <Flex align="center" justify="between">
-            <Flex gap={1}>
+          <Box className="items-center justify-between space-y-2 md:flex">
+            <Flex gap={1} wrap>
               <StatusesMenu>
                 <StatusesMenu.Trigger>
                   <Button
@@ -325,7 +325,7 @@ export const NewSubStory = ({
                 />
               </AssigneesMenu>
             </Flex>
-            <Flex gap={1}>
+            <Flex gap={1} justify="end">
               <Button
                 className="px-2"
                 color="tertiary"
@@ -348,7 +348,7 @@ export const NewSubStory = ({
                 Create
               </Button>
             </Flex>
-          </Flex>
+          </Box>
         </Box>
       ) : null}
     </Box>

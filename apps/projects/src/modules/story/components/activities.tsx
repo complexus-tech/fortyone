@@ -29,7 +29,7 @@ export const Activities = ({
       </Text>
 
       <Tabs defaultValue="comments">
-        <Tabs.List className="mx-0 mb-5">
+        <Tabs.List className="mx-0 mb-5 md:mx-0">
           <Tabs.Tab
             className="gap-1 px-2"
             leftIcon={<CommentIcon className="h-[1.1rem]" />}

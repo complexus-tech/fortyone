@@ -1,5 +1,5 @@
 "use client";
-import { ResizablePanel } from "ui";
+import { Box, ResizablePanel } from "ui";
 import { MainDetails } from "./components/main-details";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
@@ -19,23 +19,39 @@ export const StoryPage = ({
   }
 
   return (
-    <ResizablePanel
-      autoSaveId={
-        isNotifications ? "story-details-notification" : "story-details"
-      }
-      direction="horizontal"
-    >
-      <ResizablePanel.Panel defaultSize={72}>
-        <MainDetails storyId={storyId} />
-      </ResizablePanel.Panel>
-      <ResizablePanel.Handle />
-      <ResizablePanel.Panel
-        defaultSize={isNotifications ? 25 : 28}
-        maxSize={isNotifications ? 28 : 35}
-        minSize={isNotifications ? 24 : 25}
-      >
-        <Options isNotifications={Boolean(isNotifications)} storyId={storyId} />
-      </ResizablePanel.Panel>
-    </ResizablePanel>
+    <Box className="h-dvh">
+      <Box className="md:hidden">
+        <MainDetails
+          isNotifications={Boolean(isNotifications)}
+          storyId={storyId}
+        />
+      </Box>
+      <Box className="hidden md:block">
+        <ResizablePanel
+          autoSaveId={
+            isNotifications ? "story-details-notification" : "story-details"
+          }
+          direction="horizontal"
+        >
+          <ResizablePanel.Panel defaultSize={72}>
+            <MainDetails
+              isNotifications={Boolean(isNotifications)}
+              storyId={storyId}
+            />
+          </ResizablePanel.Panel>
+          <ResizablePanel.Handle />
+          <ResizablePanel.Panel
+            defaultSize={isNotifications ? 25 : 28}
+            maxSize={isNotifications ? 28 : 35}
+            minSize={isNotifications ? 24 : 25}
+          >
+            <Options
+              isNotifications={Boolean(isNotifications)}
+              storyId={storyId}
+            />
+          </ResizablePanel.Panel>
+        </ResizablePanel>
+      </Box>
+    </Box>
   );
 };

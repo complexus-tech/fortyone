@@ -1,5 +1,3 @@
-/* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
-
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -9,6 +7,7 @@ import {
   authenticateWithToken,
 } from "./lib/actions/auth";
 import { getWorkspaces } from "./lib/queries/get-workspaces";
+import { DURATION_FROM_SECONDS } from "./utils";
 
 const domain =
   process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
@@ -157,6 +156,9 @@ export const {
     },
   },
   trustHost: true,
+  session: {
+    maxAge: DURATION_FROM_SECONDS.DAY * 28,
+  },
   pages: {
     signIn: "/login",
     signOut: "/",

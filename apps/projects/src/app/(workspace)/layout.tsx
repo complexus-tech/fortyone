@@ -24,12 +24,6 @@ export default async function RootLayout({
   const token = session?.token || "";
   const workspaces = session?.workspaces || [];
 
-  // redirect to login if not authenticated on local dev only
-  // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok for this
-  if (!session && process.env.NODE_ENV === "development") {
-    redirect("/login");
-  }
-
   if (workspaces.length === 0) {
     redirect("https://www.complexus.app/onboarding/create");
   }

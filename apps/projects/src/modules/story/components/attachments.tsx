@@ -123,7 +123,7 @@ export const Attachments = ({
         </DropZone>
       )}
       {imagesAndVideos.length > 0 && (
-        <Box className="mt-3 grid grid-cols-5 gap-3">
+        <Box className="mt-3 grid grid-cols-3 gap-3 md:grid-cols-5">
           {imagesAndVideos.map((file) => (
             <StoryAttachmentPreview
               file={file}

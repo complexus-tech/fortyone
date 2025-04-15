@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_*"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -10,7 +11,8 @@
     "type-check": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "clean": {
       "cache": false
