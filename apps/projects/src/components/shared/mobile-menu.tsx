@@ -17,8 +17,7 @@ export const MobileMenuButton = () => {
         onClick={() => {
           setIsOpen(true);
         }}
-        rounded="sm"
-        size="xs"
+        size="sm"
         variant="naked"
       >
         <span className="sr-only">Mobile Menu</span>
