@@ -15,6 +15,25 @@ body {
   @apply border-t-[0.5px] border-gray-100 dark:border-dark-100 md:border-gray-100/50 md:dark:border-dark-100/50;
 }
 
+@layer base {
+  input,
+  textarea,
+  select {
+    font-size: 13px; /* Default for all devices */
+  }
+
+  @media (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px; /* Prevent zoom on mobile */
+      transform: scale(0.8125); /* Makes it look like 13px */
+      transform-origin: top left;
+      line-height: 1.2;
+    }
+  }
+}
+
 svg {
   shape-rendering: auto;
   vector-effect: non-scaling-stroke;
