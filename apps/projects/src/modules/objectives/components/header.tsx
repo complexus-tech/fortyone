@@ -2,7 +2,7 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
 import { useUserRole, useTerminology } from "@/hooks";
 
@@ -14,6 +14,7 @@ export const ObjectivesHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>
+        <MobileMenuButton />
         <BreadCrumbs
           breadCrumbs={[
             {

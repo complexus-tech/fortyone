@@ -71,11 +71,11 @@ export const ObjectiveCard = ({
   return (
     <RowWrapper
       className={cn("px-5 py-3 md:px-12", {
-        "py-2 md:px-6": isInSearch,
+        "gap-4 py-2 md:px-6": isInSearch,
       })}
     >
       <Box
-        className={cn("flex w-[300px] shrink-0 items-center gap-2", {
+        className={cn("flex shrink-0 items-center gap-2 md:w-[300px]", {
           "pointer-events-none opacity-40": id === "optimistic",
         })}
       >
@@ -94,16 +94,16 @@ export const ObjectiveCard = ({
           <Text className="truncate font-medium">{name}</Text>
         </Link>
       </Box>
-      <Flex align="center" gap={4}>
+      <Flex align="center" className="gap-2 md:gap-4">
         {!isInTeam ? (
-          <Box className="flex w-[45px] shrink-0 items-center gap-1.5">
+          <Box className="hidden w-[45px] shrink-0 items-center gap-1.5 md:flex">
             <TeamColor color={team?.color} />
             <Text className="truncate uppercase" color="muted">
               {team?.code}
             </Text>
           </Box>
         ) : null}
-        <Box className="flex w-[40px] shrink-0 items-center">
+        <Box className="hidden w-[40px] shrink-0 items-center md:flex">
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
               <Button
@@ -139,12 +139,12 @@ export const ObjectiveCard = ({
           </AssigneesMenu>
         </Box>
         {!isInSearch && (
-          <Box className="flex w-[60px] shrink-0 items-center gap-1.5 pl-0.5">
+          <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 pl-0.5 md:flex">
             <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
             {progress}%
           </Box>
         )}
-        <Box className="w-[120px] shrink-0">
+        <Box className="shrink-0 md:w-[120px]">
           <ObjectiveStatusesMenu>
             <ObjectiveStatusesMenu.Trigger>
               <Button
@@ -155,7 +155,7 @@ export const ObjectiveCard = ({
                 type="button"
                 variant="naked"
               >
-                <span className="inline-block max-w-[7ch] truncate">
+                <span className="hidden max-w-[7ch] truncate md:inline-block">
                   {status?.name ?? "Backlog"}
                 </span>
               </Button>
@@ -168,7 +168,7 @@ export const ObjectiveCard = ({
             />
           </ObjectiveStatusesMenu>
         </Box>
-        <Box className="w-[100px] shrink-0">
+        <Box className="shrink-0 md:w-[100px]">
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>
               <Button
@@ -179,7 +179,9 @@ export const ObjectiveCard = ({
                 type="button"
                 variant="naked"
               >
-                {priority ?? "No Priority"}
+                <span className="hidden md:inline-block">
+                  {priority ?? "No Priority"}
+                </span>
               </Button>
             </PrioritiesMenu.Trigger>
             <PrioritiesMenu.Items
@@ -191,7 +193,7 @@ export const ObjectiveCard = ({
           </PrioritiesMenu>
         </Box>
 
-        <Box className="w-[100px] shrink-0">
+        <Box className="hidden w-[100px] shrink-0 md:block">
           <DatePicker>
             <DatePicker.Trigger>
               <Button
@@ -226,7 +228,7 @@ export const ObjectiveCard = ({
           </DatePicker>
         </Box>
 
-        <Box className="w-[120px] shrink-0">
+        <Box className="hidden w-[120px] shrink-0 md:block">
           <HealthMenu>
             <HealthMenu.Trigger>
               <Button

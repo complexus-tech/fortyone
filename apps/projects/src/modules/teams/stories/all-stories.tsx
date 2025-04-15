@@ -115,7 +115,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
           </Tabs.Tab>
         </Tabs.List>
         <Text
-          className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
+          className="ml-2 hidden shrink-0 items-center gap-1.5 px-1 opacity-80 md:flex"
           color="muted"
         >
           <ArrowUpDownIcon className="h-4 w-auto" />
@@ -128,7 +128,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
 
       <Tabs.Panel value="all">
         <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
+          className="h-[calc(100dvh-7.7rem)]"
           layout={layout}
           stories={filteredStories}
           viewOptions={viewOptions}
@@ -136,7 +136,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       </Tabs.Panel>
       <Tabs.Panel value="active">
         <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
+          className="h-[calc(100dvh-7.7rem)]"
           layout={layout}
           stories={activeStories}
           viewOptions={viewOptions}
@@ -144,7 +144,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       </Tabs.Panel>
       <Tabs.Panel value="backlog">
         <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
+          className="h-[calc(100dvh-7.7rem)]"
           layout={layout}
           stories={backlog}
           viewOptions={viewOptions}
