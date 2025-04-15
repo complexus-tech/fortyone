@@ -86,7 +86,7 @@ export const StoryRow = ({
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,
               "pointer-events-none opacity-40": story.id === "123",
-              "bg-gray-50 pl-[4.5rem] dark:bg-dark-200/50": isSubStory,
+              "bg-gray-50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]": isSubStory,
             })}
           >
             <Flex
@@ -104,7 +104,7 @@ export const StoryRow = ({
               )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
-                className="rounded-[0.35rem] shrink-0 md:absolute md:-left-[1.6rem]"
+                className="shrink-0 rounded-[0.35rem] md:absolute md:-left-[1.6rem]"
                 disabled={userRole === "guest"}
                 onCheckedChange={(checked) => {
                   setSelectedStories(
