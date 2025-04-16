@@ -108,7 +108,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     <>
       <Box className="md:hidden">
         <Container>
-          <Flex align="center" className="h-12" gap={2}>
+          <Flex align="center" className="h-16" gap={2}>
             <MobileMenuButton />
             <button
               className="group flex items-center gap-1 font-medium"
@@ -125,7 +125,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             {mobileMenu.map(({ href, title }) => (
               <Link
                 className={cn(
-                  "h-[2.8rem] shrink-0 border-b border-transparent px-3 leading-[2.8rem]",
+                  "h-16 shrink-0 border-b border-transparent px-3 leading-[4rem]",
                   {
                     "border-primary text-primary": pathname === href,
                   },
@@ -139,7 +139,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             ))}
           </Flex>
         </Box>
-        <Box className="h-[calc(100dvh-5.8rem)] overflow-y-auto pb-8 pt-6">
+        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pb-8 pt-6">
           <Container>{children}</Container>
         </Box>
       </Box>
