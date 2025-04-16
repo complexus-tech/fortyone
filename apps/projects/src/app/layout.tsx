@@ -32,6 +32,9 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const session = await auth();
+  if (process.env.NODE_ENV === "production" && !session) {
+    redirect("https://www.complexus.app/login");
+  }
   if (process.env.NODE_ENV === "development" && !session) {
     redirect("/login");
   }
