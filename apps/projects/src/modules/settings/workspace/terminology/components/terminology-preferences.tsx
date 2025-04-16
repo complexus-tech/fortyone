@@ -135,7 +135,7 @@ export const TerminologyPreferences = () => {
             .filter((entity) => !entity.disabled)
             .map((entity) => (
               <RowWrapper
-                className="px-6 last-of-type:border-b-0"
+                className="last-of-type:border-b-0 md:px-6"
                 key={entity.name}
               >
                 <Flex align="center" gap={2}>
@@ -191,26 +191,26 @@ export const TerminologyPreferences = () => {
 
         <Box className="grid grid-cols-1 md:grid-cols-2">
           <Box className="border-r border-gray-100 dark:border-dark-100">
-            <RowWrapper className="justify-start gap-2 px-6 py-3">
+            <RowWrapper className="justify-start gap-2 py-3 md:px-6">
               <StoryIcon />
               My {getTermDisplay("storyTerm", { variant: "plural" })}
             </RowWrapper>
             {settings.sprintEnabled ? (
-              <RowWrapper className="justify-start gap-2 px-6 py-3">
+              <RowWrapper className="justify-start gap-2 py-3 md:px-6">
                 <SprintsIcon />
                 Active {getTermDisplay("sprintTerm", { variant: "plural" })}
               </RowWrapper>
             ) : null}
 
             {settings.objectiveEnabled ? (
-              <RowWrapper className="justify-start gap-2 px-6 py-3">
+              <RowWrapper className="justify-start gap-2 py-3 md:px-6">
                 <ObjectiveIcon />
                 All {getTermDisplay("objectiveTerm", { variant: "plural" })}
               </RowWrapper>
             ) : null}
 
             {settings.keyResultEnabled ? (
-              <RowWrapper className="justify-start gap-2 border-b-0 px-6 py-3">
+              <RowWrapper className="justify-start gap-2 border-b-0 py-3 md:px-6">
                 <OKRIcon />
                 Track {getTermDisplay("keyResultTerm", { variant: "plural" })}
               </RowWrapper>
@@ -218,7 +218,7 @@ export const TerminologyPreferences = () => {
           </Box>
 
           <Box>
-            <RowWrapper className="px-6 py-3">Buttons & Actions</RowWrapper>
+            <RowWrapper className="py-3 md:px-6">Buttons & Actions</RowWrapper>
             <Flex className="gap-2.5 px-6 py-4" wrap>
               {settings.objectiveEnabled ? (
                 <Button color="tertiary" leftIcon={<ObjectiveIcon />}>

@@ -23,7 +23,7 @@ export const WorkspaceTeam = ({
   };
 
   return (
-    <RowWrapper className="px-6 last-of-type:border-b-0">
+    <RowWrapper className="last-of-type:border-b-0 md:px-6">
       <Flex align="center" gap={3}>
         <Box className="flex size-8 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-dark-100/80">
           <TeamColor color={color} />

@@ -23,7 +23,7 @@ export const WorkspaceFeatures = () => {
         title="Features"
       />
       <Box>
-        <RowWrapper className="px-6">
+        <RowWrapper className="md:px-6">
           <Box>
             <Text className="font-medium">
               {getTermDisplay("objectiveTerm", {
@@ -43,7 +43,7 @@ export const WorkspaceFeatures = () => {
           />
         </RowWrapper>
 
-        <RowWrapper className="px-6">
+        <RowWrapper className="md:px-6">
           <Box>
             <Text className="font-medium">
               {getTermDisplay("sprintTerm", {
@@ -63,7 +63,7 @@ export const WorkspaceFeatures = () => {
           />
         </RowWrapper>
 
-        <RowWrapper className="border-b-0 px-6">
+        <RowWrapper className="border-b-0 md:px-6">
           <Box>
             <Text className="font-medium">
               {getTermDisplay("keyResultTerm", {

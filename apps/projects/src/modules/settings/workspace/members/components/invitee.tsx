@@ -29,7 +29,7 @@ export const WorkspaceInvitee = ({
   };
 
   return (
-    <RowWrapper className="border-0 px-6 py-3">
+    <RowWrapper className="border-0 py-3 md:px-6">
       <Flex align="center" gap={3}>
         <Avatar
           className="border border-dashed dark:border-dark-50 dark:bg-dark-100"

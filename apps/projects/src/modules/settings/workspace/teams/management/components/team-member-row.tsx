@@ -27,7 +27,7 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
   };
 
   return (
-    <RowWrapper className="px-6 py-4">
+    <RowWrapper className="py-4 md:px-6">
       <Flex align="center" gap={3}>
         <Avatar name={member.fullName} src={member.avatarUrl} />
         <Box>

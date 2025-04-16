@@ -27,7 +27,7 @@ export const TeamManagement = () => {
       </Text>
 
       <Tabs defaultValue="general">
-        <Tabs.List className="mx-0">
+        <Tabs.List className="mx-0 md:mx-0">
           <Tabs.Tab
             leftIcon={<FilterIcon className="h-[1.1rem]" />}
             value="general"

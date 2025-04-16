@@ -15,7 +15,7 @@ export const NotificationsSettings = () => {
       </Text>
 
       <Tabs defaultValue="inApp">
-        <Tabs.List className="mx-0 mb-3">
+        <Tabs.List className="mx-0 mb-3 md:mx-0">
           <Tabs.Tab leftIcon={<NotificationsUnreadIcon />} value="inApp">
             In-App
           </Tabs.Tab>
