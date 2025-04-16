@@ -1,10 +1,10 @@
 "use client";
-import { BreadCrumbs, Flex } from "ui";
+import { Box, BreadCrumbs, Flex } from "ui";
 import { SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { useHotkeys } from "react-hotkeys-hook";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
@@ -52,8 +52,9 @@ export const Header = ({
   });
 
   return (
-    <HeaderContainer className="justify-between">
-      <Flex gap={2}>
+    <HeaderContainer className="justify-between gap-3">
+      <Flex align="center" gap={2}>
+        <MobileMenuButton />
         <BreadCrumbs
           breadCrumbs={[
             {
@@ -74,6 +75,17 @@ export const Header = ({
               icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
+          className="hidden md:flex"
+        />
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name: sprintName,
+              icon: <SprintsIcon className="h-4 w-auto" />,
+              url: `/teams/${team.id}/sprints/${sprint.id}`,
+            },
+          ]}
+          className="md:hidden"
         />
       </Flex>
       <Flex align="center" gap={2}>
@@ -83,11 +95,15 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="text-gray-200 dark:text-dark-100">|</span>
-        <SideDetailsSwitch
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-        />
+        <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+          |
+        </span>
+        <Box className="hidden md:block">
+          <SideDetailsSwitch
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+          />
+        </Box>
       </Flex>
     </HeaderContainer>
   );

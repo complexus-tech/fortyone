@@ -1,8 +1,8 @@
 "use client";
-import { BreadCrumbs } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { NewSprintButton, TeamColor } from "@/components/ui";
 import { useTerminology } from "@/hooks";
@@ -17,21 +17,37 @@ export const SprintsHeader = () => {
   const { name, color } = teams.find((team) => team.id === teamId)!;
   return (
     <HeaderContainer className="justify-between">
-      <BreadCrumbs
-        breadCrumbs={[
-          {
-            name,
-            icon: <TeamColor color={color} />,
-          },
-          {
-            name: getTermDisplay("sprintTerm", {
-              variant: "plural",
-              capitalize: true,
-            }),
-            icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
-          },
-        ]}
-      />
+      <Flex align="center" gap={2}>
+        <MobileMenuButton />
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name: getTermDisplay("sprintTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
+            },
+          ]}
+          className="md:hidden"
+        />
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name,
+              icon: <TeamColor color={color} />,
+            },
+            {
+              name: getTermDisplay("sprintTerm", {
+                variant: "plural",
+                capitalize: true,
+              }),
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
+            },
+          ]}
+          className="hidden md:flex"
+        />
+      </Flex>
       <NewSprintButton teamId={teamId} />
     </HeaderContainer>
   );

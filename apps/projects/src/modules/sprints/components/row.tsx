@@ -53,7 +53,7 @@ export const SprintRow = ({
   const progress = Math.round((completed / total) * 100) || 0;
 
   return (
-    <RowWrapper>
+    <RowWrapper className="gap-3">
       <Link
         className="flex flex-1 items-center gap-4"
         href={`/teams/${teamId}/sprints/${id}/stories`}
@@ -74,7 +74,10 @@ export const SprintRow = ({
           <SprintsIcon />
         </Flex>
         <Box className="space-y-1">
-          <Text className="text-[1.05rem] antialiased" fontWeight="semibold">
+          <Text
+            className="line-clamp-1 antialiased md:text-[1.05rem]"
+            fontWeight="semibold"
+          >
             {name}
           </Text>
           <Text className="flex items-center gap-1.5" color="muted">
@@ -95,13 +98,13 @@ export const SprintRow = ({
         </Badge>
 
         <Tooltip title={`${progress}% Complete`}>
-          <Flex align="center" className="w-36" gap={3}>
+          <Flex align="center" className="hidden w-36 md:flex" gap={3}>
             <ProgressBar className="h-2 flex-1" progress={progress} />
             <Text>{progress}%</Text>
           </Flex>
         </Tooltip>
 
-        <Flex className="min-w-[300px]" gap={4}>
+        <Flex className="hidden min-w-[300px] md:flex" gap={4}>
           <Flex align="center" className="min-w-[80px] gap-1.5">
             <StoryStatusIcon statusId={completedStatus?.id} />
             <Text>
