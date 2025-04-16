@@ -134,6 +134,7 @@ export const MainDetails = ({
           storyId={storyId}
         />
       </Box>
+
       <Container className="pt-4 md:pt-7">
         <TextEditor
           asTitle
@@ -159,7 +160,7 @@ export const MainDetails = ({
           />
         )}
         <Box className="md:hidden">
-          <Divider className="my-2" />
+          <Divider />
           <Options isNotifications={isNotifications} storyId={storyId} />
         </Box>
 

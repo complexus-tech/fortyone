@@ -210,8 +210,12 @@ export const Options = ({
         />
       </Box>
       <Container className="px-0.5 pt-4 text-gray-300/90 md:px-6">
-        <Box className="mb-3 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
-          {!isNotifications && <Text fontWeight="semibold">Properties</Text>}
+        <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+          {!isNotifications && (
+            <Text className="hidden md:block" fontWeight="semibold">
+              Properties
+            </Text>
+          )}
           {isDeleted ? (
             <Badge
               className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
@@ -543,7 +547,11 @@ export const Options = ({
                                 isDeleted || isGuest,
                             })}
                           >
-                            <StoryLabel {...label} />
+                            <StoryLabel
+                              {...label}
+                              isRectangular={isMobile}
+                              size="md"
+                            />
                           </span>
                         </LabelsMenu.Trigger>
                         <LabelsMenu.Items
@@ -564,7 +572,11 @@ export const Options = ({
                                 isDeleted || isGuest,
                             })}
                           >
-                            <StoryLabel {...labels.at(-1)!} />
+                            <StoryLabel
+                              {...labels.at(-1)!}
+                              isRectangular={isMobile}
+                              size="md"
+                            />
                           </span>
                         </LabelsMenu.Trigger>
                         <LabelsMenu.Items
@@ -585,7 +597,6 @@ export const Options = ({
                             leftIcon={<PlusIcon />}
                             ref={labelsButtonRef}
                             rounded="full"
-                            size="sm"
                             title="Add labels"
                             type="button"
                             variant={isMobile ? "solid" : "naked"}

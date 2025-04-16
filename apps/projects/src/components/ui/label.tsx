@@ -7,8 +7,10 @@ export const StoryLabel = ({
   color,
   name,
   isRectangular,
+  size = "sm",
 }: Label & {
   isRectangular?: boolean;
+  size?: "sm" | "md";
 }) => {
   return (
     <Tooltip
@@ -26,6 +28,7 @@ export const StoryLabel = ({
           "h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem]",
           {
             "px-1.5": isRectangular,
+            "h-[2.3rem] rounded-lg px-2 text-base": size === "md",
           },
         )}
         color="tertiary"
