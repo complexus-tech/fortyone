@@ -100,14 +100,71 @@ export const Overview = () => {
   }, [objective, nameEditor, descriptionEditor]);
 
   return (
-    <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
-      <BoardDividedPanel.MainPanel>
+    <>
+      <Box className="hidden md:block">
+        <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
+          <BoardDividedPanel.MainPanel>
+            <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
+              <Box>
+                <Flex align="center" gap={6} justify="between">
+                  <TextEditor
+                    asTitle
+                    className="text-4xl font-medium"
+                    editor={nameEditor}
+                  />
+                  {isAdminOrOwner ? (
+                    <Menu>
+                      <Menu.Button>
+                        <Button
+                          className="gap-1 pl-2.5"
+                          color="tertiary"
+                          rightIcon={<ArrowDownIcon className="h-4" />}
+                          size="sm"
+                        >
+                          More
+                        </Button>
+                      </Menu.Button>
+                      <Menu.Items align="end" className="w-36">
+                        <Menu.Group>
+                          <Menu.Item
+                            onSelect={() => {
+                              setIsOpen(true);
+                            }}
+                          >
+                            <DeleteIcon /> Delete...
+                          </Menu.Item>
+                        </Menu.Group>
+                      </Menu.Items>
+                    </Menu>
+                  ) : null}
+                </Flex>
+
+                <TextEditor
+                  className="text-gray antialiased dark:text-gray-300"
+                  editor={descriptionEditor}
+                />
+              </Box>
+              <Properties />
+              <Divider className="my-8" />
+              <Activity />
+              {features.keyResultEnabled ? <KeyResults /> : null}
+            </Container>
+          </BoardDividedPanel.MainPanel>
+          <BoardDividedPanel.SideBar
+            className="h-[calc(100dvh-7.7rem)]"
+            isExpanded
+          >
+            <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
+          </BoardDividedPanel.SideBar>
+        </BoardDividedPanel>
+      </Box>
+      <Box className="md:hidden">
         <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
           <Box>
             <Flex align="center" gap={6} justify="between">
               <TextEditor
                 asTitle
-                className="text-4xl font-medium"
+                className="text-2xl font-medium md:text-4xl"
                 editor={nameEditor}
               />
               {isAdminOrOwner ? (
@@ -143,14 +200,11 @@ export const Overview = () => {
             />
           </Box>
           <Properties />
-          <Divider className="my-8" />
+          <Divider className="my-6 md:my-8" />
           <Activity />
           {features.keyResultEnabled ? <KeyResults /> : null}
         </Container>
-      </BoardDividedPanel.MainPanel>
-      <BoardDividedPanel.SideBar className="h-[calc(100dvh-7.7rem)]" isExpanded>
-        <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
-      </BoardDividedPanel.SideBar>
+      </Box>
 
       <ConfirmDialog
         confirmText={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
@@ -162,6 +216,6 @@ export const Overview = () => {
         onConfirm={handleDelete}
         title={`Delete ${getTermDisplay("objectiveTerm")}`}
       />
-    </BoardDividedPanel>
+    </>
   );
 };

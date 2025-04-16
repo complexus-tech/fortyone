@@ -42,8 +42,9 @@ export const Activity = () => {
           </Tabs.Tab>
         </Tabs.List>
         <Flex align="center" gap={2}>
-          <Text color="muted">Health:</Text>
-
+          <Text className="hidden md:block" color="muted">
+            Health:
+          </Text>
           <HealthMenu>
             <HealthMenu.Trigger>
               <Button

@@ -100,7 +100,7 @@ const Okr = ({
   };
 
   return (
-    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-3">
+    <Wrapper className="flex flex-col gap-4 rounded-[0.65rem] py-3 md:flex-row md:items-center md:justify-between md:gap-2">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
@@ -109,8 +109,11 @@ const Okr = ({
           <OKRIcon strokeWidth={2.8} />
         </Badge>
         <Box>
-          <Text>{name}</Text>
-          <Text className="text-[0.95rem] opacity-80" color="muted">
+          <Text className="line-clamp-1">{name}</Text>
+          <Text
+            className="line-clamp-1 text-[0.95rem] opacity-80"
+            color="muted"
+          >
             Last updated <TimeAgo timestamp={updatedAt} /> by{" "}
             <Link
               className="text-dark dark:text-white/85"
@@ -123,9 +126,14 @@ const Okr = ({
       </Flex>
       <Flex
         align="center"
-        className="divide-x divide-gray-100 dark:divide-dark-100/80"
+        className="justify-between divide-x divide-gray-100 dark:divide-dark-100/80"
       >
-        <Flex align="center" className="px-6" direction="column" gap={1}>
+        <Flex
+          align="center"
+          className="pr-6 md:px-6"
+          direction="column"
+          gap={1}
+        >
           <Text color="muted">Current</Text>
           <RenderValue measurementType={measurementType} value={currentValue} />
         </Flex>
@@ -147,7 +155,7 @@ const Okr = ({
         </Flex>
 
         {isAdminOrOwner ? (
-          <Box className="h-full py-2 pl-6">
+          <Box className="h-full py-2 pl-4 md:pl-6">
             <Menu>
               <Menu.Button>
                 <Button
@@ -231,6 +239,7 @@ export const KeyResults = () => {
               capitalize: true,
             })}
           </Text>
+
           <NewKeyResultButton className="capitalize" size="sm" />
         </Flex>
         <Divider className="my-3" />

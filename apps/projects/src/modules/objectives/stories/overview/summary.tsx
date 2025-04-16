@@ -73,19 +73,18 @@ export const Summary = () => {
   return (
     <Box
       className={cn("mt-3 grid grid-cols-2 gap-4", {
-        "grid-cols-3": keyResults.length > 0,
+        "md:grid-cols-3": keyResults.length > 0,
       })}
     >
-      <Wrapper className="px-5">
+      <Wrapper className="px-4 md:px-5">
         <Text
-          className="mb-2 flex items-center gap-1.5 antialiased"
-          fontSize="lg"
+          className="mb-2 flex items-center gap-1.5 antialiased md:text-lg"
           fontWeight="semibold"
         >
           <HealthIcon />
           Progress
         </Text>
-        <Text fontSize="2xl">
+        <Text className="text-xl md:text-2xl">
           {progress}%{" "}
           <Text as="span" color="muted" fontSize="md">
             completed
@@ -94,10 +93,9 @@ export const Summary = () => {
         <ProgressBar className="mt-2.5" progress={progress} />
       </Wrapper>
       {features.keyResultEnabled && keyResults.length > 0 ? (
-        <Wrapper className="px-5">
+        <Wrapper className="px-4 md:px-5">
           <Text
-            className="mb-2 flex items-center gap-1.5 antialiased"
-            fontSize="lg"
+            className="mb-2 flex items-center gap-1.5 antialiased md:text-lg"
             fontWeight="semibold"
           >
             <OKRIcon />
@@ -105,9 +103,9 @@ export const Summary = () => {
               variant: "plural",
               capitalize: true,
             })}{" "}
-            Progress
+            <span className="hidden md:inline">Progress</span>
           </Text>
-          <Text fontSize="2xl">
+          <Text className="text-xl md:text-2xl">
             {keyResultProgress}%{" "}
             <Text as="span" color="muted" fontSize="md">
               completed
@@ -116,10 +114,9 @@ export const Summary = () => {
           <ProgressBar className="mt-2.5" progress={keyResultProgress} />
         </Wrapper>
       ) : null}
-      <Wrapper className="px-5">
+      <Wrapper className="px-4 md:px-5">
         <Text
-          className="mb-2 flex items-center gap-1 antialiased"
-          fontSize="lg"
+          className="mb-2 flex items-center gap-1 antialiased md:text-lg"
           fontWeight="semibold"
         >
           <CalendarIcon />
@@ -127,7 +124,7 @@ export const Summary = () => {
         </Text>
         {objective?.endDate ? (
           <>
-            <Text fontSize="2xl">
+            <Text className="text-xl md:text-2xl">
               {format(new Date(objective.endDate), "MMM d")}
               <Text as="span" color="muted" fontSize="md">
                 , {new Date(objective.endDate).getFullYear()}

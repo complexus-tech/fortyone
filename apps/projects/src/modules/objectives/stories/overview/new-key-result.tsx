@@ -5,7 +5,7 @@ import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useCreateKeyResultMutation, useObjective } from "../../hooks";
 import type { NewKeyResult, MeasureType } from "../../types";
@@ -14,6 +14,7 @@ export const NewKeyResultButton = ({
   color = "tertiary",
   ...rest
 }: ButtonProps) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -26,11 +27,11 @@ export const NewKeyResultButton = ({
       value: "number",
     },
     {
-      label: "Percentage (0-100%)",
+      label: isMobile ? "Percentage" : "Percentage (0-100%)",
       value: "percentage",
     },
     {
-      label: "Boolean (Complete/Incomplete)",
+      label: isMobile ? "Boolean" : "Boolean (Complete/Incomplete)",
       value: "boolean",
     },
   ];
@@ -121,7 +122,9 @@ export const NewKeyResultButton = ({
                     "col-span-3": form.measurementType === "boolean",
                   })}
                 >
-                  <Text className="mb-[0.35rem]">Measurement Type</Text>
+                  <Text className="mb-[0.35rem]">
+                    {isMobile ? "Type" : "Measurement Type"}
+                  </Text>
                   <Select
                     defaultValue={form.measurementType}
                     onValueChange={(measurementType: MeasureType) => {
@@ -133,7 +136,7 @@ export const NewKeyResultButton = ({
                       });
                     }}
                   >
-                    <Select.Trigger className="h-[2.7rem] bg-white/70 text-base dark:bg-dark/20">
+                    <Select.Trigger className="h-[2.65rem] bg-white/70 text-base dark:bg-dark/20">
                       <Select.Input placeholder="Select measurement type" />
                     </Select.Trigger>
                     <Select.Content>
@@ -152,7 +155,9 @@ export const NewKeyResultButton = ({
                 </Box>
                 {form.measurementType === "boolean" ? (
                   <Box className="col-span-4">
-                    <Text className="mb-[0.35rem]">Current Value</Text>
+                    <Text className="mb-[0.35rem]">
+                      {isMobile ? "Current" : "Current Value"}
+                    </Text>
                     <Flex
                       className="rounded-[0.45rem] border bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
                       gap={1}
@@ -197,7 +202,7 @@ export const NewKeyResultButton = ({
                   <>
                     <Input
                       className="h-[2.7rem] bg-gray-50/30"
-                      label="Starting Value"
+                      label={isMobile ? "Starting" : "Starting Value"}
                       max={
                         form.measurementType === "percentage" ? 100 : undefined
                       }
@@ -217,7 +222,7 @@ export const NewKeyResultButton = ({
                     />
                     <Input
                       className="h-[2.7rem]"
-                      label="Target Value"
+                      label={isMobile ? "Target" : "Target Value"}
                       max={
                         form.measurementType === "percentage" ? 100 : undefined
                       }

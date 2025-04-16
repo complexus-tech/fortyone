@@ -87,7 +87,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
 
   return (
     <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
-      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-200/60 pr-12 dark:border-dark-100">
+      <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-200/60 pr-6 dark:border-dark-100 md:pr-12">
         <Tabs.List className="h-min">
           <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
             Overview
@@ -124,7 +124,10 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
             }}
             size="sm"
           >
-            {isCopied ? "Copied" : "Copy link"}
+            <span className="hidden md:inline">
+              {isCopied ? "Copied" : "Copy link"}
+            </span>
+            <span className="md:hidden">{isCopied ? "Copied" : "Copy"}</span>
           </Button>
         )}
       </Box>
@@ -133,7 +136,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       </Tabs.Panel>
       <Tabs.Panel value="stories">
         <StoriesBoard
-          className="h-[calc(100vh-7.7rem)]"
+          className="h-[calc(100dvh-7.7rem)]"
           layout={layout}
           stories={filteredStories}
           viewOptions={viewOptions}

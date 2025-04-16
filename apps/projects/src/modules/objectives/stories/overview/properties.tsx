@@ -9,12 +9,14 @@ import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useMediaQuery } from "@/hooks";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
 
 export const Properties = () => {
   const { data: session } = useSession();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { data: statuses = [] } = useObjectiveStatuses();
@@ -35,7 +37,7 @@ export const Properties = () => {
 
   return (
     <Flex align="center" className="mt-6" gap={2} wrap>
-      <Text color="muted" fontWeight="semibold">
+      <Text className="hidden md:block" color="muted" fontWeight="semibold">
         Properties:
       </Text>
       <ObjectiveStatusesMenu>
@@ -46,7 +48,7 @@ export const Properties = () => {
             leftIcon={<ObjectiveStatusIcon statusId={objective?.statusId} />}
             size="sm"
             type="button"
-            variant="naked"
+            variant={isMobile ? "solid" : "naked"}
           >
             {status?.name ?? "Backlog"}
           </Button>
@@ -66,7 +68,7 @@ export const Properties = () => {
             leftIcon={<PriorityIcon priority={objective?.priority} />}
             size="sm"
             type="button"
-            variant="naked"
+            variant={isMobile ? "solid" : "naked"}
           >
             {objective?.priority ?? "No Priority"}
           </Button>
@@ -98,7 +100,7 @@ export const Properties = () => {
             }
             size="sm"
             type="button"
-            variant="naked"
+            variant={isMobile ? "solid" : "naked"}
           >
             {leadUser ? (
               leadUser.username
@@ -130,7 +132,7 @@ export const Properties = () => {
               />
             }
             size="sm"
-            variant="naked"
+            variant={isMobile ? "solid" : "naked"}
           >
             {objective?.startDate ? (
               format(new Date(objective.startDate), "MMM d, yyyy")
@@ -166,7 +168,7 @@ export const Properties = () => {
               />
             }
             size="sm"
-            variant="naked"
+            variant={isMobile ? "solid" : "naked"}
           >
             {objective?.endDate ? (
               format(new Date(objective.endDate), "MMM d, yy")

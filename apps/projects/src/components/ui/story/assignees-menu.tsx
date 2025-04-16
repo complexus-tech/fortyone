@@ -76,7 +76,7 @@ const Items = ({
         <Command.Empty className="py-2">
           <Text color="muted">No user found.</Text>
         </Command.Empty>
-        <Command.Group>
+        <Command.Group className="max-h-[20rem] overflow-y-auto md:max-h-[25rem]">
           {isPending ? (
             <Command.Loading className="p-2">
               <Text className="flex items-center gap-2" color="muted">

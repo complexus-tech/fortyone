@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
@@ -20,6 +20,7 @@ export const UpdateKeyResultDialog = ({
 }: UpdateKeyResultDialogProps) => {
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateKeyResultMutation();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [form, setForm] = useState({
     name: keyResult.name,
     startValue: keyResult.startValue,
@@ -133,7 +134,7 @@ export const UpdateKeyResultDialog = ({
                   <Box className="opacity-40 focus-within:opacity-80">
                     <Input
                       className="h-[2.7rem]"
-                      label="Starting Value"
+                      label={isMobile ? "Starting" : "Starting Value"}
                       onChange={(e) => {
                         setForm({
                           ...form,
@@ -148,7 +149,7 @@ export const UpdateKeyResultDialog = ({
                   </Box>
                   <Input
                     className="h-[2.7rem]"
-                    label="Current Value"
+                    label={isMobile ? "Current" : "Current Value"}
                     onChange={(e) => {
                       setForm({
                         ...form,
@@ -163,7 +164,7 @@ export const UpdateKeyResultDialog = ({
                   <Box className="opacity-40 focus-within:opacity-80">
                     <Input
                       className="h-[2.7rem]"
-                      label="Target Value"
+                      label={isMobile ? "Target" : "Target Value"}
                       onChange={(e) => {
                         setForm({
                           ...form,

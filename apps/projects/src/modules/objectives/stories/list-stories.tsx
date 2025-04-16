@@ -10,7 +10,7 @@ import { ObjectivePageSkeleton } from "./objective-page-skeleton";
 export const ListStories = ({ objectiveId }: { objectiveId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:objectives:stories:layout",
-    "kanban",
+    "list",
   );
   const { isPending } = useObjectiveStories(objectiveId);
 

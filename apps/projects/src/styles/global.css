@@ -26,8 +26,7 @@ body {
     input,
     textarea,
     select {
-      font-size: 16px; /* Prevent zoom on mobile */
-      transform: scale(0.8125); /* Makes it look like 13px */
+      font-size: 13px;
       transform-origin: top left;
       line-height: 1.2;
     }
