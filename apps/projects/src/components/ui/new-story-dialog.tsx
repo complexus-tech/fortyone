@@ -224,11 +224,11 @@ export const NewStoryDialog = ({
     if (!currentStatus && teamStatuses.length > 0) {
       setStoryForm((prev) => ({
         ...prev,
-        statusId: teamStatuses[0].id,
+        statusId: statusId || teamStatuses[0].id,
         teamId: currentTeamId,
       }));
     }
-  }, [currentTeamId, storyForm.statusId, teamStatuses]);
+  }, [currentTeamId, storyForm.statusId, teamStatuses, statusId]);
 
   useEffect(() => {
     if (!teams.find((team) => team.id === activeTeam?.id)) {
