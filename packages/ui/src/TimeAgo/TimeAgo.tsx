@@ -8,6 +8,7 @@ import {
   format,
   parseISO,
   parse,
+  isDate,
 } from "date-fns";
 import ReactTimeAgo from "react-time-ago";
 
@@ -67,6 +68,9 @@ export const TimeAgo = ({
   className?: string;
   forceOriginal?: boolean;
 }) => {
+  if (!isDate(new Date(timestamp))) {
+    return <span className={className}>{timestamp}</span>;
+  }
   return (
     <span className={className}>
       {isToday(new Date(timestamp)) || forceOriginal ? (

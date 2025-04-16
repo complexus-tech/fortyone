@@ -33,7 +33,7 @@ export const MyStoriesSkeleton = () => {
       </Flex>
 
       <Tabs defaultValue="inProgress">
-        <Tabs.List className="mx-0">
+        <Tabs.List className="mx-0 md:mx-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
           <Tabs.Tab value="due">Overdue</Tabs.Tab>
