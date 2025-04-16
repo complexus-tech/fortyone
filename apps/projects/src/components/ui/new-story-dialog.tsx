@@ -218,7 +218,9 @@ export const NewStoryDialog = ({
   }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
 
   useEffect(() => {
-    const currentStatus = teamStatuses.find((status) => status.id === statusId);
+    const currentStatus = teamStatuses.find(
+      (status) => status.id === storyForm.statusId,
+    );
     if (!currentStatus && teamStatuses.length > 0) {
       setStoryForm((prev) => ({
         ...prev,
@@ -226,7 +228,7 @@ export const NewStoryDialog = ({
         teamId: currentTeamId,
       }));
     }
-  }, [currentTeamId, statusId, teamStatuses]);
+  }, [currentTeamId, storyForm.statusId, teamStatuses]);
 
   useEffect(() => {
     if (!teams.find((team) => team.id === activeTeam?.id)) {
