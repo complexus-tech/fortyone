@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import nProgress from "nprogress";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import { slugify } from "@/utils";
@@ -145,7 +144,6 @@ export const useCreateStoryMutation = () => {
         action: {
           label: "View story",
           onClick: () => {
-            nProgress.start();
             router.push(
               `/story/${createdStory.id}/${slugify(createdStory.title)}`,
             );
