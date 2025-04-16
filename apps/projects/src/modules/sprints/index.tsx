@@ -24,7 +24,7 @@ export const SprintsList = () => {
       <SprintsHeader />
       <BodyContainer>
         {sprints.length === 0 && (
-          <Box className="flex h-[70vh] items-center justify-center">
+          <Box className="flex h-[70dvh] items-center justify-center">
             <Box className="flex flex-col items-center">
               <SprintsIcon className="h-20 w-auto" strokeWidth={1.3} />
               <Text className="mb-6 mt-8" fontSize="3xl">

@@ -3,13 +3,14 @@ import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
 import { PlusIcon, ObjectiveIcon } from "icons";
 import { useParams } from "next/navigation";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { NewObjectiveDialog, TeamColor } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useUserRole, useTerminology } from "@/hooks";
+import { useUserRole, useTerminology, useMediaQuery } from "@/hooks";
 
 export const TeamObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { data: teams = [] } = useTeams();
   const { name, color } = teams.find((team) => team.id === teamId)!;
   const [isOpen, setIsOpen] = useState(false);
@@ -19,10 +20,11 @@ export const TeamObjectivesHeader = () => {
   return (
     <HeaderContainer className="justify-between">
       <Flex gap={2}>
+        <MobileMenuButton />
         <BreadCrumbs
           breadCrumbs={[
             {
-              name,
+              name: isMobile ? "" : name,
               icon: <TeamColor color={color} />,
             },
             {

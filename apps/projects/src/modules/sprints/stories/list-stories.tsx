@@ -13,7 +13,7 @@ import { StoriesSkeleton } from "./skeleton";
 export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "objective:sprints:layout",
-    "kanban",
+    "list",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
     "objective:sprints:isExpanded",

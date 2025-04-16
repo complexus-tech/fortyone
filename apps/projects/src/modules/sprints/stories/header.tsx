@@ -52,7 +52,7 @@ export const Header = ({
   });
 
   return (
-    <HeaderContainer className="justify-between gap-3">
+    <HeaderContainer className="justify-between gap-4">
       <Flex align="center" gap={2}>
         <MobileMenuButton />
         <BreadCrumbs

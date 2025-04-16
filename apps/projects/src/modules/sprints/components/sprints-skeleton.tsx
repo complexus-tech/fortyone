@@ -25,18 +25,18 @@ export const SprintsSkeleton = () => {
                 <Flex className="items-center gap-1.5">
                   <Skeleton className="h-4 w-4" />
                   <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-3 w-3" />
-                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="hidden h-3 w-3 md:block" />
+                  <Skeleton className="hidden h-4 w-16 md:block" />
                 </Flex>
               </Box>
             </Flex>
             <Flex className="items-center" gap={4}>
-              <Skeleton className="h-5 w-24 rounded-full" />
-              <Flex align="center" className="w-36" gap={3}>
-                <Skeleton className="h-2 flex-1 rounded-full" />
-                <Skeleton className="h-5 w-10" />
+              <Skeleton className="hidden h-5 w-24 rounded-full md:block" />
+              <Flex align="center" className="md:w-36" gap={3}>
+                <Skeleton className="hidden h-2 flex-1 rounded-full md:block" />
+                <Skeleton className="h-5 w-20 md:w-10" />
               </Flex>
-              <Flex className="min-w-[300px]" gap={4}>
+              <Flex className="hidden min-w-[300px] md:flex" gap={4}>
                 <Flex align="center" className="min-w-[80px] gap-1.5">
                   <Skeleton className="h-4 w-4 rounded-full" />
                   <Skeleton className="h-5 w-16" />
