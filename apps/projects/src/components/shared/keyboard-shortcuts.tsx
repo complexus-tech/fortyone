@@ -240,14 +240,14 @@ export const KeyboardShortcuts = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="mb-auto mt-auto"
+        className="md:mb-auto md:mt-auto"
         overlayClassName="justify-end pr-[2vh]"
         size="sm"
       >
         <Dialog.Title className="px-6 py-4 text-lg">
           Keyboard Shortcuts
         </Dialog.Title>
-        <Dialog.Body className="h-[91vh] max-h-[91vh] pt-2">
+        <Dialog.Body className="h-[91dvh] max-h-[91dvh] pt-2">
           {shortcuts.map((shortcut) => (
             <Box className="mb-7" key={shortcut.name}>
               <Text className="mb-3" fontWeight="medium">

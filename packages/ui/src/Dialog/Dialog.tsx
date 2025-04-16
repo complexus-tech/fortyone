@@ -156,7 +156,7 @@ type BodyProps = ComponentProps<typeof Box>;
 const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
-      "max-h-[80vh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
+      "max-h-[80dvh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
       className
     )}
     {...props}
