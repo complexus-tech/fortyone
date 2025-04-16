@@ -9,8 +9,8 @@ export const OverviewSkeleton = () => {
       <Box>
         <Flex align="center" gap={6} justify="between">
           {/* Title skeleton */}
-          <Skeleton className="h-10 w-3/4 rounded" />
-          <Skeleton className="h-8 w-20 rounded" />
+          <Skeleton className="h-7 w-7/12 rounded md:h-10 md:w-3/4" />
+          <Skeleton className="h-7 w-20 rounded md:h-8" />
         </Flex>
 
         {/* Description skeleton */}
@@ -41,11 +41,11 @@ export const OverviewSkeleton = () => {
           <Skeleton className="h-6 w-24 rounded" />
         </Flex>
 
-        <Box className="mt-6 grid w-full grid-cols-3 gap-6">
+        <Box className="mt-6 grid w-full grid-cols-2 gap-6 md:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <Wrapper key={index}>
               <Skeleton className="h-5 w-32 rounded" />
-              <Skeleton className="mt-6 h-10 w-8 rounded" />
+              <Skeleton className="mt-2 h-8 w-8 rounded md:mt-6 md:h-10" />
             </Wrapper>
           ))}
         </Box>
@@ -53,7 +53,7 @@ export const OverviewSkeleton = () => {
 
       <Flex align="center" className="mb-4" justify="between">
         <Skeleton className="h-6 w-32 rounded" />
-        <Skeleton className="h-8 w-24 rounded" />
+        <Skeleton className="h-6 w-24 rounded md:h-8" />
       </Flex>
       <Divider className="mb-6" />
       {/* Key Results section */}

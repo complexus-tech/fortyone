@@ -26,7 +26,7 @@ export const ObjectivePageSkeleton = ({
     <>
       <HeaderSkeleton layout={layout} />
       <Tabs value={tab as string}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
           <Tabs.List className="h-min">
             <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
               Overview
@@ -38,22 +38,24 @@ export const ObjectivePageSkeleton = ({
               })}
             </Tabs.Tab>
           </Tabs.List>
-          <Box className="h-8 w-24">
-            {/* Placeholder for the ordering or copy button */}
-          </Box>
         </Box>
         <Tabs.Panel value="overview">
-          <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
-            <BoardDividedPanel.MainPanel>
-              <OverviewSkeleton />
-            </BoardDividedPanel.MainPanel>
-            <BoardDividedPanel.SideBar
-              className="h-[calc(100vh-7.7rem)]"
-              isExpanded
-            >
-              <SidebarSkeleton />
-            </BoardDividedPanel.SideBar>
-          </BoardDividedPanel>
+          <Box className="md:hidden">
+            <OverviewSkeleton />
+          </Box>
+          <Box className="hidden md:block">
+            <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
+              <BoardDividedPanel.MainPanel>
+                <OverviewSkeleton />
+              </BoardDividedPanel.MainPanel>
+              <BoardDividedPanel.SideBar
+                className="h-[calc(100dvh-7.7rem)]"
+                isExpanded
+              >
+                <SidebarSkeleton />
+              </BoardDividedPanel.SideBar>
+            </BoardDividedPanel>
+          </Box>
         </Tabs.Panel>
         <Tabs.Panel value="stories">
           <StoriesSkeleton layout={layout} />

@@ -1,4 +1,3 @@
-/* eslint-disable turbo/no-undeclared-env-vars -- this is a workaround for turbo */
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
@@ -8,6 +7,9 @@ module.exports = {
     staleTimes: {
       dynamic: 30,
       static: 180,
+    },
+    serverActions: {
+      bodySizeLimit: "10mb",
     },
   },
   compiler: {

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip, Avatar } from "ui";
-import { MinimizeIcon, PlusIcon, StoryIcon } from "icons";
+import { PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
@@ -92,24 +92,19 @@ export const StoriesKanbanHeader = ({
             {getTermDisplay("storyTerm", { variant: "plural" })}
           </Text>
         </Flex>
-        <span className="flex items-center gap-1">
-          <Button color="tertiary" size="sm" variant="naked">
-            <MinimizeIcon className="h-[1.2rem] w-auto" />
-          </Button>
-          <Button
-            color="tertiary"
-            disabled={userRole === "guest"}
-            onClick={() => {
-              if (userRole !== "guest") {
-                setIsOpen(true);
-              }
-            }}
-            size="sm"
-            variant="naked"
-          >
-            <PlusIcon className="h-[1.2rem] w-auto" />
-          </Button>
-        </span>
+        <Button
+          color="tertiary"
+          disabled={userRole === "guest"}
+          onClick={() => {
+            if (userRole !== "guest") {
+              setIsOpen(true);
+            }
+          }}
+          size="sm"
+          variant="naked"
+        >
+          <PlusIcon className="h-[1.2rem] w-auto" />
+        </Button>
       </Flex>
       <NewStoryDialog
         assigneeId={member?.id}

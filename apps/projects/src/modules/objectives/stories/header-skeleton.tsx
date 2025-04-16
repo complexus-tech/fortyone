@@ -14,22 +14,28 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
         <Flex align="center" gap={2}>
           <Skeleton className="size-6 rounded-full" />
           <Skeleton className="h-5 w-20 rounded" />
-          <span className="text-gray-300 dark:text-dark-100">/</span>
-          <Skeleton className="h-5 w-24 rounded" />
-          <span className="text-gray-300 dark:text-dark-100">/</span>
-          <Skeleton className="h-5 w-16 rounded" />
+          <span className="hidden text-gray-300 dark:text-dark-100 md:inline">
+            /
+          </span>
+          <Skeleton className="hidden h-5 w-24 rounded md:block" />
+          <span className="hidden text-gray-300 dark:text-dark-100 md:inline">
+            /
+          </span>
+          <Skeleton className="hidden h-5 w-16 rounded md:block" />
         </Flex>
       </Flex>
       <Flex align="center" gap={2}>
         {tab === "stories" && (
           <>
             <LayoutSwitcher layout={layout} setLayout={() => {}} />
-            <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-8 w-8 rounded" />
-            <span className="text-gray-200 dark:text-dark-100">|</span>
+            <Skeleton className="size-9 rounded md:size-8" />
+            <Skeleton className="size-9 rounded md:size-8" />
+            <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+              |
+            </span>
           </>
         )}
-        <NewStoryButton />
+        <NewStoryButton className="hidden md:flex" />
       </Flex>
     </HeaderContainer>
   );
