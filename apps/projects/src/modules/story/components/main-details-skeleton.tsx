@@ -11,7 +11,7 @@ export const MainDetailsSkeleton = () => {
     <BodyContainer className="h-screen overflow-y-auto pb-8">
       <Container className="pt-7">
         {/* Title skeleton */}
-        <Skeleton className="h-10 w-3/4 rounded" />
+        <Skeleton className="h-8 w-3/4 rounded md:h-10" />
 
         {/* Description skeleton */}
         <Box className="mt-12">
