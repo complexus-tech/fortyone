@@ -62,7 +62,7 @@ export const Header = ({
               icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
-          className="hidden md:block"
+          className="hidden md:flex"
         />
         <BreadCrumbs
           breadCrumbs={[
