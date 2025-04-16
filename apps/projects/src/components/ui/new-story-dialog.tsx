@@ -107,9 +107,9 @@ export const NewStoryDialog = ({
 
   const defaultStatus =
     teamStatuses.find((status) => status.id === statusId) ||
-    teamStatuses.length > 0
+    (teamStatuses.length > 0
       ? teamStatuses.find((status) => status.isDefault) || teamStatuses[0]
-      : null;
+      : null);
 
   const initialForm: NewStory = {
     title: "",
