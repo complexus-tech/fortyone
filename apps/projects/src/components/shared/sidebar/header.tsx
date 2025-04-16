@@ -146,6 +146,7 @@ export const Header = () => {
                   style={{
                     backgroundColor: workspace?.color,
                   }}
+                  suppressHydrationWarning
                 />
               }
               rightIcon={
