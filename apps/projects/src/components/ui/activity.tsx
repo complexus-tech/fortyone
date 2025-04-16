@@ -225,7 +225,7 @@ export const Activity = ({
             <>
               <Text
                 as="span"
-                className="text-sm text-black dark:text-white md:text-[0.95rem]"
+                className="shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
                 fontWeight="medium"
               >
                 {fieldMap[field].label}
