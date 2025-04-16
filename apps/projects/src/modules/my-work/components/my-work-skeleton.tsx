@@ -2,12 +2,12 @@
 import { Box, Tabs, BreadCrumbs, Flex } from "ui";
 import { parseAsString, useQueryState } from "nuqs";
 import { cn } from "lib";
-import { StoryIcon, UserIcon } from "icons";
+import { UserIcon } from "icons";
 import type { StoriesLayout } from "@/components/ui";
 import { LayoutSwitcher, NewStoryButton } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 
 export const MyWorkSkeleton = ({ layout }: { layout: StoriesLayout }) => {
   const [tab] = useQueryState("tab", parseAsString.withDefault("all"));
@@ -16,30 +16,25 @@ export const MyWorkSkeleton = ({ layout }: { layout: StoriesLayout }) => {
     <>
       <HeaderContainer className="justify-between">
         <Flex align="center" gap={2}>
+          <MobileMenuButton />
           <BreadCrumbs
             breadCrumbs={[
               {
                 name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
                 icon: <UserIcon />,
               },
-              {
-                name:
-                  tab === "all"
-                    ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
-                    : tab,
-                icon: <StoryIcon strokeWidth={2} />,
-                className: "capitalize",
-              },
             ]}
           />
         </Flex>
         <Flex align="center" gap={2}>
           <LayoutSwitcher layout={layout} setLayout={() => {}} />
-          <span className="text-gray-200 dark:text-dark-100">|</span>
-          <NewStoryButton />
+          <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+            |
+          </span>
+          <NewStoryButton className="hidden md:flex" />
         </Flex>
       </HeaderContainer>
-      <Box className="h-[calc(100vh-4rem)]">
+      <Box className="h-[calc(100dvh-4rem)]">
         <Tabs defaultValue={tab}>
           <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100/60 dark:border-dark-100">
             <Tabs.List>
@@ -53,7 +48,7 @@ export const MyWorkSkeleton = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs>
         <BoardSkeleton
           className={cn({
-            "h-[calc(100vh-7.7rem)]": layout === "kanban",
+            "h-[calc(100dvh-7.7rem)]": layout === "kanban",
           })}
           layout={layout}
         />

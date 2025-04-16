@@ -3,7 +3,7 @@
 import { Box, Flex, Skeleton, Wrapper } from "ui";
 
 const SkeletonCard = () => (
-  <Wrapper className="px-5">
+  <Wrapper>
     <Flex justify="between">
       <Skeleton className="mb-5 h-7 w-6 rounded" />
       <Skeleton className="h-5 w-5 rounded" />
@@ -14,7 +14,7 @@ const SkeletonCard = () => (
 
 export const OverviewSkeleton = () => {
   return (
-    <Box className="mb-4 mt-3 grid grid-cols-5 gap-4">
+    <Box className="mb-4 mt-3 grid grid-cols-2 gap-4 md:grid-cols-5">
       {Array.from({ length: 5 }).map((_, index) => (
         <SkeletonCard key={index} />
       ))}

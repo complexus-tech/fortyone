@@ -34,12 +34,12 @@ export const SummarySkeleton = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <OverviewSkeleton />
-          <Box className="my-4 grid grid-cols-3 gap-4">
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
             <PrioritySkeleton />
             <StatusSkeleton />
             <ContributionsSkeleton />
           </Box>
-          <Box className="my-4 grid grid-cols-2 gap-4">
+          <Box className="my-4 grid gap-4 md:grid-cols-2">
             <MyStoriesSkeleton />
             <ActivitiesSkeleton />
           </Box>

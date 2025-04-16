@@ -28,19 +28,19 @@ const ListLayoutSkeleton = () => {
           {/* Group items */}
           {Array.from({ length: 4 - groupIndex }).map((_, i) => (
             <RowWrapper className="pointer-events-none relative gap-4" key={i}>
-              <Checkbox className="absolute left-5 opacity-70" />
+              <Checkbox className="absolute left-5 hidden opacity-70 md:block" />
               <Flex align="center" className="relative shrink" gap={3}>
                 <Skeleton className="h-5 w-10" />
                 <Skeleton
-                  className={cn("h-5 w-32", {
-                    "w-56": i % 2 === 0,
+                  className={cn("h-5 w-24 md:w-32", {
+                    "w-40 md:w-56": i % 2 === 0,
                   })}
                 />
               </Flex>
               <Flex align="center" className="shrink-0" gap={4}>
                 <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-20" />
+                <Skeleton className="hidden h-5 w-16 md:block" />
+                <Skeleton className="hidden h-5 w-20 md:block" />
                 <Skeleton className="size-8 rounded-full" />
               </Flex>
             </RowWrapper>
