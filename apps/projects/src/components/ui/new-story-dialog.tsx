@@ -224,7 +224,7 @@ export const NewStoryDialog = ({
     if (!currentStatus && teamStatuses.length > 0) {
       setStoryForm((prev) => ({
         ...prev,
-        statusId: statusId || teamStatuses[0].id,
+        statusId: teamStatuses[0].id,
         teamId: currentTeamId,
       }));
     }
