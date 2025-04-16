@@ -39,6 +39,7 @@ export const WorkspaceLabelsSettings = () => {
         <SectionHeader
           action={
             <Button
+              className="shrink-0"
               onClick={() => {
                 setIsCreateOpen(true);
               }}

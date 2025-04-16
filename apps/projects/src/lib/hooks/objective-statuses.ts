@@ -7,6 +7,6 @@ export const useObjectiveStatuses = () => {
   return useQuery({
     queryKey: objectiveKeys.statuses(),
     queryFn: () => getObjectiveStatuses(),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
 };

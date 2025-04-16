@@ -148,7 +148,9 @@ export const TerminologyPreferences = () => {
                   </Flex>
                   <Box>
                     <Text className="font-medium">{entity.name}</Text>
-                    <Text color="muted">{entity.description}</Text>
+                    <Text className="line-clamp-2" color="muted">
+                      {entity.description}
+                    </Text>
                   </Box>
                 </Flex>
                 <Select
@@ -158,7 +160,7 @@ export const TerminologyPreferences = () => {
                   }}
                   value={settings[entity.key] as string}
                 >
-                  <Select.Trigger className="h-9 w-max min-w-36 text-base">
+                  <Select.Trigger className="h-9 w-max text-base md:min-w-36">
                     <Select.Input />
                   </Select.Trigger>
                   <Select.Content align="center">
@@ -210,7 +212,7 @@ export const TerminologyPreferences = () => {
             ) : null}
 
             {settings.keyResultEnabled ? (
-              <RowWrapper className="justify-start gap-2 border-b-0 py-3 md:px-6">
+              <RowWrapper className="justify-start gap-2 py-3 md:border-b-0 md:px-6">
                 <OKRIcon />
                 Track {getTermDisplay("keyResultTerm", { variant: "plural" })}
               </RowWrapper>

@@ -36,10 +36,10 @@ export const WorkspaceTeam = ({
         </Box>
       </Flex>
       <Flex align="center" gap={3}>
-        <Text className="w-32" color="muted">
+        <Text className="md:w-32" color="muted">
           {memberCount} Member{memberCount === 1 ? "" : "s"}
         </Text>
-        <Text as="span" className="w-32" color="muted">
+        <Text as="span" className="hidden w-32 md:inline" color="muted">
           <TimeAgo timestamp={createdAt} />
         </Text>
         <Menu>
@@ -55,7 +55,7 @@ export const WorkspaceTeam = ({
               <MoreHorizontalIcon className="h-5" />
             </Button>
           </Menu.Button>
-          <Menu.Items className="w-44">
+          <Menu.Items align="end" className="w-44">
             <Menu.Group>
               <Menu.Item className="p-0">
                 <Link

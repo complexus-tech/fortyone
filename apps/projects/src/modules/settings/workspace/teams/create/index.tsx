@@ -71,7 +71,7 @@ export const CreateTeam = () => {
           className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
           onSubmit={handleSubmit}
         >
-          <Flex align="center" className="px-6 py-4" justify="between">
+          <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
             <Box>
               <Text>Team name</Text>
               <Text color="muted" fontSize="sm">
@@ -79,7 +79,7 @@ export const CreateTeam = () => {
               </Text>
             </Box>
             <Input
-              className="h-[2.5rem] w-80"
+              className="h-[2.5rem] md:w-80"
               maxLength={24}
               minLength={3}
               name="name"
@@ -91,7 +91,7 @@ export const CreateTeam = () => {
               required
               value={form.name}
             />
-          </Flex>
+          </Box>
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
               <Text>Team code</Text>
@@ -126,7 +126,7 @@ export const CreateTeam = () => {
               />
             </Box>
           </Flex>
-          <Flex align="center" className="px-6 py-4" justify="between">
+          <Flex align="center" className="gap-3 px-6 py-4" justify="between">
             <Box>
               <Text>Private team</Text>
               <Text className="max-w-xl" color="muted" fontSize="sm">
@@ -136,6 +136,7 @@ export const CreateTeam = () => {
             </Box>
             <Switch
               checked={form.isPrivate}
+              className="shrink-0"
               name="isPrivate"
               onCheckedChange={(checked) => {
                 setForm({ ...form, isPrivate: checked });

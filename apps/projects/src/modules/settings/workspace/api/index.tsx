@@ -14,7 +14,7 @@ export const ApiSettings = () => {
         <SectionHeader
           action={
             <Button
-              className="bg-primary dark:bg-primary"
+              className="shrink-0 bg-primary dark:bg-primary"
               disabled
               variant="naked"
             >

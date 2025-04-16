@@ -41,6 +41,7 @@ export const TeamsList = () => {
         <SectionHeader
           action={
             <Button
+              className="shrink-0"
               color="tertiary"
               href="/settings/workspace/teams/create"
               leftIcon={
@@ -78,7 +79,7 @@ export const TeamsList = () => {
 
         <Flex
           align="center"
-          className="border-b-[0.5px] border-gray-100 px-6 py-5 dark:border-dark-100"
+          className="hidden border-b-[0.5px] border-gray-100 px-6 py-5 dark:border-dark-100 md:flex"
           justify="between"
         >
           <Text>Name</Text>
