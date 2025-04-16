@@ -27,32 +27,34 @@ export const TeamManagement = () => {
       </Text>
 
       <Tabs defaultValue="general">
-        <Tabs.List className="mx-0 md:mx-0">
-          <Tabs.Tab
-            leftIcon={<FilterIcon className="h-[1.1rem]" />}
-            value="general"
-          >
-            General
-          </Tabs.Tab>
-          <Tabs.Tab
-            leftIcon={<TeamIcon className="h-[1.1rem]" />}
-            value="members"
-          >
-            Members
-          </Tabs.Tab>
-          <Tabs.Tab
-            leftIcon={<WorkflowIcon className="h-[1.1rem]" />}
-            value="workflows"
-          >
-            Workflow
-          </Tabs.Tab>
-          <Tabs.Tab
-            leftIcon={<WarningIcon className="h-[1.1rem]" />}
-            value="delete"
-          >
-            Danger Zone
-          </Tabs.Tab>
-        </Tabs.List>
+        <Box className="overflow-x-auto">
+          <Tabs.List className="mx-0 md:mx-0">
+            <Tabs.Tab
+              leftIcon={<FilterIcon className="h-[1.1rem]" />}
+              value="general"
+            >
+              General
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<TeamIcon className="h-[1.1rem]" />}
+              value="members"
+            >
+              Members
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<WorkflowIcon className="h-[1.1rem]" />}
+              value="workflows"
+            >
+              Workflow
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<WarningIcon className="h-[1.1rem]" />}
+              value="delete"
+            >
+              Danger Zone
+            </Tabs.Tab>
+          </Tabs.List>
+        </Box>
 
         <Box className="mt-5">
           <Tabs.Panel value="general">

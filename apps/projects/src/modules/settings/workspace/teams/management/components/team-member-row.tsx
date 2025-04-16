@@ -33,7 +33,7 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
         <Box>
           <Text className="font-medium">
             {member.fullName}
-            <Text as="span" color="muted">
+            <Text as="span" className="hidden md:inline" color="muted">
               ({member.username})
             </Text>
           </Text>
@@ -42,7 +42,10 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
       </Flex>
 
       <Flex align="center" gap={3}>
-        <Text className="w-20 first-letter:uppercase" color="muted">
+        <Text
+          className="hidden w-20 first-letter:uppercase md:block"
+          color="muted"
+        >
           {member.role}
         </Text>
         <Menu>

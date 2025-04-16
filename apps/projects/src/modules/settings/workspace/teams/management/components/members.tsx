@@ -46,6 +46,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
             <AssigneesMenu>
               <AssigneesMenu.Trigger>
                 <Button
+                  className="shrink-0"
                   color="tertiary"
                   disabled={isAllMembersAdded}
                   leftIcon={<PlusIcon className="text-white dark:text-white" />}
