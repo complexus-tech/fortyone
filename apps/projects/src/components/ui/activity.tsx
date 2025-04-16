@@ -246,10 +246,18 @@ export const Activity = ({
               </Text>
             </>
           )}
-          <Text className="mx-0.5 text-sm md:text-[0.95rem]" color="muted">
+          <Text
+            as="span"
+            className="mx-0.5 text-sm md:text-[0.95rem]"
+            color="muted"
+          >
             ·
           </Text>
-          <Text className="shrink-0 text-sm md:text-[0.95rem]" color="muted">
+          <Text
+            as="span"
+            className="shrink-0 text-sm md:text-[0.95rem]"
+            color="muted"
+          >
             <TimeAgo timestamp={createdAt} />
           </Text>
         </Text>
