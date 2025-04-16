@@ -101,7 +101,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.List>
         {tab !== "overview" ? (
           <Text
-            className="ml-2 flex shrink-0 items-center gap-1.5 px-1 opacity-80"
+            className="ml-2 hidden shrink-0 items-center gap-1.5 px-1 opacity-80 md:flex"
             color="muted"
           >
             <ArrowUpDownIcon className="h-4 w-auto" />

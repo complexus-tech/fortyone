@@ -4,7 +4,7 @@ import { ObjectiveIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
-import { HeaderContainer } from "@/components/shared";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
@@ -51,7 +51,17 @@ export const Header = ({
   });
   return (
     <HeaderContainer className="justify-between">
-      <Flex gap={2}>
+      <Flex className="mr-2" gap={2}>
+        <MobileMenuButton />
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name: objectiveName,
+              icon: <ObjectiveIcon />,
+            },
+          ]}
+          className="md:hidden"
+        />
         <BreadCrumbs
           breadCrumbs={[
             {
@@ -78,6 +88,7 @@ export const Header = ({
                 ),
             },
           ]}
+          className="hidden md:flex"
         />
       </Flex>
       <Flex align="center" gap={2}>
@@ -94,10 +105,16 @@ export const Header = ({
               setViewOptions={setViewOptions}
               viewOptions={viewOptions}
             />
-            <span className="text-gray-200 dark:text-dark-100">|</span>
+            <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+              |
+            </span>
           </>
         )}
-        <NewStoryButton objectiveId={objectiveId} teamId={teamId} />
+        <NewStoryButton
+          className="hidden md:flex"
+          objectiveId={objectiveId}
+          teamId={teamId}
+        />
       </Flex>
     </HeaderContainer>
   );

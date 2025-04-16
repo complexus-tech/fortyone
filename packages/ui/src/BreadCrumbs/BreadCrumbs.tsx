@@ -35,7 +35,9 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
         >
           <>
             {icon && <span className="group-hover:text-primary">{icon}</span>}
-            <span className="group-hover:text-primary">{name}</span>
+            <span className="group-hover:text-primary line-clamp-1">
+              {name}
+            </span>
             <ArrowRightIcon
               className={cn("h-[0.8rem] w-auto opacity-80", {
                 hidden: idx + 1 === breadCrumbs.length,

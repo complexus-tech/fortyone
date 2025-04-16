@@ -228,7 +228,7 @@ export const ObjectiveCard = ({
           </DatePicker>
         </Box>
 
-        <Box className="hidden w-[120px] shrink-0 md:block">
+        <Box className="shrink-0 md:w-[120px]">
           <HealthMenu>
             <HealthMenu.Trigger>
               <Button
@@ -239,7 +239,9 @@ export const ObjectiveCard = ({
                 type="button"
                 variant="naked"
               >
-                {health ?? "No Health"}
+                <span className="hidden md:inline-block">
+                  {health ?? "No Health"}
+                </span>
               </Button>
             </HealthMenu.Trigger>
             <HealthMenu.Items

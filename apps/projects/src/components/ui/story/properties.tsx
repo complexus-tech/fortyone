@@ -211,7 +211,7 @@ export const StoryProperties = ({
                   className="gap-1 pr-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban || isMobile ? "md" : "xl"}
+                  rounded={asKanban ? "md" : "xl"}
                   size="xs"
                   type="button"
                   variant="outline"
@@ -284,7 +284,7 @@ export const StoryProperties = ({
               }
             }}
             role="button"
-            rounded={asKanban ? "md" : "xl"}
+            rounded={asKanban || isMobile ? "md" : "xl"}
             tabIndex={0}
           >
             <SubStoryIcon />

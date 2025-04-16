@@ -17,7 +17,7 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "mr-2 h-[2.26rem] items-center gap-1 rounded-lg bg-gray-50 dark:bg-dark-200/70",
+        "h-[2.26rem] items-center gap-1 rounded-lg bg-gray-50 dark:bg-dark-200/70 md:mr-2",
         {
           "opacity-50": disabled,
         },
