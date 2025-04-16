@@ -12,6 +12,7 @@ import { useProfile } from "@/lib/hooks/profile";
 import { slugify } from "@/utils";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { MobileMenuButton } from "@/components/shared";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 
@@ -96,14 +97,17 @@ export const OptionsHeader = ({
   });
   return (
     <>
-      <Container className="flex h-16 w-full items-center justify-between md:px-6">
-        <Text color="muted" fontWeight="semibold" transform="uppercase">
-          {code ? (
-            <>
-              {code}-{sequenceId}
-            </>
-          ) : null}
-        </Text>
+      <Container className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-gray-100 dark:border-dark-100 md:border-b-0 md:px-6">
+        <Flex align="center" gap={2}>
+          <MobileMenuButton />
+          <Text color="muted" fontWeight="semibold" transform="uppercase">
+            {code ? (
+              <>
+                {code}-{sequenceId}
+              </>
+            ) : null}
+          </Text>
+        </Flex>
         <Flex gap={2}>
           <Tooltip
             title={`Copy ${getTermDisplay("storyTerm", { capitalize: true })} link`}

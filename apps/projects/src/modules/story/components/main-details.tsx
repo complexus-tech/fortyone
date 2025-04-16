@@ -134,7 +134,7 @@ export const MainDetails = ({
           storyId={storyId}
         />
       </Box>
-      <Container className="pt-2 md:pt-7">
+      <Container className="pt-4 md:pt-7">
         <TextEditor
           asTitle
           className="relative -left-1 text-3xl font-medium md:text-4xl"
