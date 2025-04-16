@@ -14,13 +14,16 @@ export const Entry = ({
   onChange,
 }: EntryProps) => {
   return (
-    <Flex align="center" justify="between">
+    <Flex align="center" gap={2} justify="between">
       <Box>
         <Text className="font-medium">{title}</Text>
-        <Text color="muted">{description}</Text>
+        <Text className="line-clamp-2" color="muted">
+          {description}
+        </Text>
       </Box>
       <Switch
         checked={checked}
+        className="shrink-0"
         onCheckedChange={(value) => onChange?.(value)}
       />
     </Flex>

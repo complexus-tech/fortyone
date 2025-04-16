@@ -11,7 +11,6 @@ export const WorkspaceGeneralSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Settings
       </Text>
-
       <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={<Avatar name="Complexus Tech" />}
@@ -29,10 +28,10 @@ export const WorkspaceGeneralSettings = () => {
         <SectionHeader
           action={
             <Button
-              className="mt-4 bg-primary text-white dark:bg-primary"
+              className="mt-4 shrink-0 bg-primary text-white dark:bg-primary"
               variant="naked"
             >
-              Delete Workspace
+              Delete <span className="hidden md:inline">Workspace</span>
             </Button>
           }
           description="Permanently delete your workspace."

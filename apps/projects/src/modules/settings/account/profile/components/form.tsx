@@ -41,7 +41,7 @@ export const Form = () => {
         title="Personal Information"
       />
       <form className="p-6" onSubmit={handleUpdateProfile}>
-        <Box className="mb-4 grid grid-cols-2 gap-6">
+        <Box className="mb-4 grid gap-4 md:grid-cols-2 md:gap-6">
           <Input
             label="Full name"
             name="fullName"

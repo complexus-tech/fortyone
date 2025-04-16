@@ -22,14 +22,14 @@ export const SectionHeader = ({
         className,
       )}
     >
-      <Flex align="center" justify="between">
+      <Flex align="center" gap={2} justify="between">
         <Box>
           {title ? (
             <Text as="h3" className="font-medium">
               {title}
             </Text>
           ) : null}
-          <Text className="mt-1" color="muted">
+          <Text className="mt-1 line-clamp-2" color="muted">
             {description}
           </Text>
         </Box>

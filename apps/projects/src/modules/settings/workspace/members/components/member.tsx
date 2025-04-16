@@ -35,40 +35,44 @@ export const WorkspaceMember = ({
   };
 
   return (
-    <RowWrapper className="border-0 py-3 md:px-6">
+    <RowWrapper className="border-0 md:px-6 md:py-3">
       <Flex align="center" gap={3}>
         <Avatar name={fullName} src={avatarUrl} />
         <Box>
           <Text className="font-medium">
             {fullName}{" "}
-            <Text as="span" color="muted">
+            <Text as="span" className="hidden md:inline" color="muted">
               ({username})
             </Text>
           </Text>
-          <Text color="muted">{email}</Text>
+          <Text className="line-clamp-1" color="muted">
+            {email}
+          </Text>
         </Box>
       </Flex>
-      <Flex align="center" gap={3}>
-        <Select
-          disabled={isCurrentUser}
-          onValueChange={(value) => {
-            updateRole({ userId: id, role: value as UserRole });
-          }}
-          value={role}
-        >
-          <Select.Trigger
-            className={cn("w-32", {
-              "opacity-50": isCurrentUser,
-            })}
+      <Flex align="center" className="shrink-0" gap={3}>
+        <Box className="hidden md:block">
+          <Select
+            disabled={isCurrentUser}
+            onValueChange={(value) => {
+              updateRole({ userId: id, role: value as UserRole });
+            }}
+            value={role}
           >
-            <Select.Input />
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Option value="admin">Admin</Select.Option>
-            <Select.Option value="member">Member</Select.Option>
-            <Select.Option value="guest">Guest</Select.Option>
-          </Select.Content>
-        </Select>
+            <Select.Trigger
+              className={cn("w-32", {
+                "opacity-50": isCurrentUser,
+              })}
+            >
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Option value="admin">Admin</Select.Option>
+              <Select.Option value="member">Member</Select.Option>
+              <Select.Option value="guest">Guest</Select.Option>
+            </Select.Content>
+          </Select>
+        </Box>
 
         <Menu>
           <Menu.Button>

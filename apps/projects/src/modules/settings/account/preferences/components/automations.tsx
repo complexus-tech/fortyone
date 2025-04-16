@@ -22,10 +22,10 @@ export const Automations = () => {
       />
       <Box className="p-6">
         <Flex direction="column" gap={6}>
-          <Flex align="center" justify="between">
+          <Flex align="center" gap={2} justify="between">
             <Box>
               <Text className="font-medium">Auto-assign to self</Text>
-              <Text color="muted">
+              <Text className="line-clamp-2" color="muted">
                 When creating new{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })}, always
                 assign them to yourself by default
@@ -33,6 +33,7 @@ export const Automations = () => {
             </Box>
             <Switch
               checked={preferences?.autoAssignSelf}
+              className="shrink-0"
               name="autoAssignSelf"
               onCheckedChange={(checked) => {
                 handleToggle("autoAssignSelf", checked);
@@ -40,19 +41,20 @@ export const Automations = () => {
             />
           </Flex>
 
-          <Flex align="center" justify="between">
+          <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="font-medium">
+              <Text className="line-clamp-1 font-medium">
                 On git branch copy, move {getTermDisplay("storyTerm")} to
                 started status
               </Text>
-              <Text color="muted">
+              <Text className="line-clamp-2" color="muted">
                 After copying the git branch name, {getTermDisplay("storyTerm")}{" "}
                 is moved to the started workflow status
               </Text>
             </Box>
             <Switch
               checked={preferences?.moveStoryToStartedOnBranch}
+              className="shrink-0"
               name="autoBranchMoveStatus"
               onCheckedChange={(checked) => {
                 handleToggle("moveStoryToStartedOnBranch", checked);
@@ -60,18 +62,19 @@ export const Automations = () => {
             />
           </Flex>
 
-          <Flex align="center" justify="between">
+          <Flex align="center" gap={2} justify="between">
             <Box>
               <Text className="font-medium">
                 On git branch copy, assign to yourself
               </Text>
-              <Text color="muted">
+              <Text className="line-clamp-2" color="muted">
                 After copying the git branch name, {getTermDisplay("storyTerm")}{" "}
                 is assigned to yourself
               </Text>
             </Box>
             <Switch
               checked={preferences?.assignSelfOnBranchCopy}
+              className="shrink-0"
               name="autoBranchAssign"
               onCheckedChange={(checked) => {
                 handleToggle("assignSelfOnBranchCopy", checked);

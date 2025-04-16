@@ -28,7 +28,7 @@ const MembersTab = ({
             }}
             variant="outline"
           >
-            Invite Members
+            Invite <span className="hidden md:inline">Members</span>
           </Button>
         }
         description="Manage members of your workspace and their roles."
@@ -58,6 +58,7 @@ const PendingInvitationsTab = ({
       <SectionHeader
         action={
           <Button
+            className="shrink-0"
             color="tertiary"
             leftIcon={<InviteMembersIcon />}
             onClick={() => {

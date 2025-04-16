@@ -14,10 +14,12 @@ export const Theming = () => {
 
       <Box className="p-6">
         <Flex direction="column" gap={6}>
-          <Flex align="center" justify="between">
+          <Flex className="items-end gap-3 md:items-center" justify="between">
             <Box>
               <Text className="font-medium">Theme</Text>
-              <Text color="muted">Select your preferred theme</Text>
+              <Text className="line-clamp-1" color="muted">
+                Select your preferred theme
+              </Text>
             </Box>
             <Select
               defaultValue={theme}
@@ -26,26 +28,26 @@ export const Theming = () => {
               }}
               value={theme}
             >
-              <Select.Trigger className="h-9 w-max px-2 text-base">
+              <Select.Trigger className="h-9 w-max shrink-0 px-2 text-[0.9rem] md:text-base">
                 <Select.Input />
               </Select.Trigger>
               <Select.Content align="center">
                 <Select.Group>
                   <Select.Option className="text-base" value="light">
                     <Flex align="center" gap={2}>
-                      <SunIcon className="h-4" />
+                      <SunIcon className="hidden h-4 md:inline" />
                       Day Mode
                     </Flex>
                   </Select.Option>
                   <Select.Option className="text-base" value="dark">
                     <Flex align="center" gap={2}>
-                      <MoonIcon className="h-4" />
+                      <MoonIcon className="hidden h-4 md:inline" />
                       Night Mode
                     </Flex>
                   </Select.Option>
                   <Select.Option className="text-base" value="system">
                     <Flex align="center" gap={2}>
-                      <SystemIcon className="h-4" />
+                      <SystemIcon className="hidden h-4 md:inline" />
                       Sync with system
                     </Flex>
                   </Select.Option>
