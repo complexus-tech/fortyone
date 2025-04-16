@@ -65,6 +65,7 @@ export const Overview = () => {
     ],
     content: objective?.name || "",
     editable: isAdminOrOwner,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         name: editor.getText(),
@@ -85,6 +86,7 @@ export const Overview = () => {
     ],
     content: objective?.description || "",
     editable: isAdminOrOwner,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         description: editor.getHTML(),
