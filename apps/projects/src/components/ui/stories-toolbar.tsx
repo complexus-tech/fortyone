@@ -1,6 +1,6 @@
 "use client";
 import { Button, Flex, Text, Tooltip, Dialog, Command, Divider, Box } from "ui";
-import { CloseIcon, DeleteIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import { CloseIcon, DeleteIcon, SprintsIcon } from "icons";
 import { useState } from "react";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
@@ -48,7 +48,7 @@ export const StoriesToolbar = () => {
           </Tooltip>
           {selectedStories.length} selected
         </Text>
-        <Button
+        {/* <Button
           color="tertiary"
           disabled
           leftIcon={<SprintsIcon className="h-[1.15rem]" />}
@@ -71,7 +71,7 @@ export const StoriesToolbar = () => {
           variant="outline"
         >
           Add to objective
-        </Button>
+        </Button> */}
         <Button
           leftIcon={
             <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
