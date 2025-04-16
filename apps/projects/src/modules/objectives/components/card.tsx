@@ -96,7 +96,7 @@ export const ObjectiveCard = ({
       </Box>
       <Flex align="center" className="gap-2 md:gap-4">
         {!isInTeam ? (
-          <Box className="hidden w-[45px] shrink-0 items-center gap-1.5 md:flex">
+          <Box className="hidden w-[50px] shrink-0 items-center gap-1.5 md:flex">
             <TeamColor color={team?.color} />
             <Text className="truncate uppercase" color="muted">
               {team?.code}

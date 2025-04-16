@@ -12,7 +12,7 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
         <Flex gap={4}>
           {!isInTeam && (
             <Text
-              className="w-[45px] shrink-0"
+              className="w-[50px] shrink-0"
               color="muted"
               fontWeight="medium"
             >
