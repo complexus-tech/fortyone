@@ -30,6 +30,13 @@ body {
       transform-origin: top left;
       line-height: 1.2;
     }
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
   }
 }
 
