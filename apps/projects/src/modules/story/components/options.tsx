@@ -34,7 +34,7 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useFeatures, useUserRole } from "@/hooks";
+import { useFeatures, useMediaQuery, useUserRole } from "@/hooks";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
@@ -53,6 +53,10 @@ export const Option = ({
   className?: string;
   isNotifications: boolean;
 }) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  if (isMobile) {
+    return value;
+  }
   return (
     <Box
       className={cn(
@@ -97,6 +101,7 @@ export const Options = ({
     deletedAt,
   } = data!;
   const features = useFeatures();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { data: sprints = [] } = useSprints();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -205,7 +210,7 @@ export const Options = ({
         />
       </Box>
       <Container className="px-0.5 pt-4 text-gray-300/90 md:px-6">
-        <Box className="mb-6 grid grid-cols-[9rem_auto] items-center gap-3">
+        <Box className="mb-3 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
           {!isNotifications && <Text fontWeight="semibold">Properties</Text>}
           {isDeleted ? (
             <Badge
@@ -221,405 +226,411 @@ export const Options = ({
             </Badge>
           ) : null}
         </Box>
-        {!isNotifications && (
-          <Option
-            isNotifications={isNotifications}
-            label="Reporter"
-            value={
-              <Flex align="center" className="px-2.5" gap={2}>
-                <Avatar
-                  className={cn({
-                    "text-dark/80 dark:text-gray-200": !reporter?.fullName,
-                  })}
-                  name={reporter?.fullName}
-                  size="xs"
-                  src={reporter?.avatarUrl}
-                />
-                <Link
-                  className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
-                  href={`/profile/${reporter?.id}`}
-                >
-                  {reporter?.username}
-                </Link>
-              </Flex>
-            }
-          />
-        )}
-        <Option
-          isNotifications={isNotifications}
-          label="Status"
-          value={
-            <StatusesMenu>
-              <StatusesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={<StoryStatusIcon statusId={statusId} />}
-                  ref={statusButtonRef}
-                  type="button"
-                  variant="naked"
-                >
-                  {name}
-                </Button>
-              </StatusesMenu.Trigger>
-              <StatusesMenu.Items
-                setStatusId={(statusId) => {
-                  handleUpdate({ statusId });
-                }}
-                statusId={statusId}
-                teamId={teamId}
-              />
-            </StatusesMenu>
-          }
-        />
-        <Option
-          isNotifications={isNotifications}
-          label="Priority"
-          value={
-            <PrioritiesMenu>
-              <PrioritiesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={<PriorityIcon priority={priority} />}
-                  ref={priorityButtonRef}
-                  type="button"
-                  variant="naked"
-                >
-                  {priority}
-                </Button>
-              </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items
-                setPriority={(priority) => {
-                  handleUpdate({ priority });
-                }}
-              />
-            </PrioritiesMenu>
-          }
-        />
-        <Option
-          isNotifications={isNotifications}
-          label="Assignee"
-          value={
-            <AssigneesMenu>
-              <AssigneesMenu.Trigger>
-                <Button
-                  className={cn("font-medium", {
-                    "text-gray-200 dark:text-gray-300": !assigneeId,
-                  })}
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={
-                    <Avatar
-                      className={cn({
-                        "text-dark/80 dark:text-gray-200": !assignee?.fullName,
-                      })}
-                      name={assignee?.fullName}
-                      size="xs"
-                      src={assignee?.avatarUrl}
-                    />
-                  }
-                  ref={assigneeButtonRef}
-                  type="button"
-                  variant="naked"
-                >
-                  {assignee?.username || (
-                    <Text as="span" color="muted">
-                      Assign
-                    </Text>
-                  )}
-                </Button>
-              </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items
-                assigneeId={assigneeId}
-                onAssigneeSelected={(assigneeId) => {
-                  handleUpdate({ assigneeId });
-                }}
-                teamId={teamId}
-              />
-            </AssigneesMenu>
-          }
-        />
-        <Option
-          isNotifications={isNotifications}
-          label="Start date"
-          value={
-            <DatePicker>
-              <DatePicker.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={isDeleted || isGuest}
-                  leftIcon={
-                    <CalendarIcon
-                      className={cn("h-[1.15rem] w-auto", {
-                        "text-gray/80 dark:text-gray-300/80": !startDate,
-                      })}
-                    />
-                  }
-                  ref={startDateButtonRef}
-                  variant="naked"
-                >
-                  {startDate ? (
-                    format(new Date(startDate), "MMM d, yyyy")
-                  ) : (
-                    <Text color="muted">Add start date</Text>
-                  )}
-                </Button>
-              </DatePicker.Trigger>
-              <DatePicker.Calendar
-                onDayClick={(day) => {
-                  handleUpdate({
-                    startDate: formatISO(day),
-                  });
-                }}
-                selected={startDate ? new Date(startDate) : undefined}
-              />
-            </DatePicker>
-          }
-        />
-        <Option
-          isNotifications={isNotifications}
-          label="Deadline"
-          value={
-            <DatePicker>
-              <Tooltip
-                className="py-3"
-                hidden={!endDate}
-                title={
-                  <Flex align="start" gap={2}>
-                    <CalendarIcon
-                      className={cn("relative top-[2.5px] h-5 w-auto", {
-                        "text-primary dark:text-primary":
-                          new Date(endDate!) < new Date(),
-                        "text-warning dark:text-warning":
-                          new Date(endDate!) <= addDays(new Date(), 7) &&
-                          new Date(endDate!) >= new Date(),
-                      })}
-                    />
-                    <Box>{getDueDateMessage(new Date(endDate!))}</Box>
-                  </Flex>
-                }
-              >
-                <span>
-                  <DatePicker.Trigger>
-                    <Button
-                      className={cn({
-                        "text-primary dark:text-primary":
-                          endDate && new Date(endDate) < new Date(),
-                        "text-warning dark:text-warning":
-                          endDate &&
-                          new Date(endDate) <= addDays(new Date(), 7) &&
-                          new Date(endDate) >= new Date(),
-                        "text-gray/80 dark:text-gray-300/80": !endDate,
-                      })}
-                      color="tertiary"
-                      disabled={isDeleted || isGuest}
-                      leftIcon={<CalendarIcon className="h-[1.15rem] w-auto" />}
-                      ref={dueDateButtonRef}
-                      variant="naked"
-                    >
-                      {endDate ? (
-                        format(new Date(endDate), "MMM d, yyyy")
-                      ) : (
-                        <Text color="muted">Add deadline</Text>
-                      )}
-                    </Button>
-                  </DatePicker.Trigger>
-                </span>
-              </Tooltip>
-              <DatePicker.Calendar
-                onDayClick={(day) => {
-                  handleUpdate({
-                    endDate: formatISO(day),
-                  });
-                }}
-                selected={endDate ? new Date(endDate) : undefined}
-              />
-            </DatePicker>
-          }
-        />
-        {features.objectiveEnabled ? (
-          <Option
-            isNotifications={isNotifications}
-            label="Objective"
-            value={
-              <ObjectivesMenu>
-                <ObjectivesMenu.Trigger>
-                  <Button
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      objectiveId ? (
-                        <ObjectiveIcon className="h-[1.15rem] w-auto" />
-                      ) : (
-                        <PlusIcon className="h-5 w-auto" />
-                      )
-                    }
-                    ref={objectiveButtonRef}
-                    title={objectiveId ? objective?.name : undefined}
-                    type="button"
-                    variant="naked"
+        <Box className="flex flex-wrap gap-2 md:block">
+          {!isNotifications && !isMobile && (
+            <Option
+              isNotifications={isNotifications}
+              label="Reporter"
+              value={
+                <Flex align="center" className="px-2.5" gap={2}>
+                  <Avatar
+                    className={cn({
+                      "text-dark/80 dark:text-gray-200": !reporter?.fullName,
+                    })}
+                    name={reporter?.fullName}
+                    size="xs"
+                    src={reporter?.avatarUrl}
+                  />
+                  <Link
+                    className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
+                    href={`/profile/${reporter?.id}`}
                   >
-                    <span className="inline-block max-w-[16ch] truncate">
-                      {objective?.name || "Add objective"}
-                    </span>
-                  </Button>
-                </ObjectivesMenu.Trigger>
-                <ObjectivesMenu.Items
-                  align="end"
-                  objectiveId={objectiveId ?? undefined}
-                  setObjectiveId={(objectiveId) => {
-                    handleUpdate({ objectiveId });
-                  }}
-                  teamId={teamId}
-                />
-              </ObjectivesMenu>
-            }
-          />
-        ) : null}
-        {features.sprintEnabled ? (
-          <Option
-            isNotifications={isNotifications}
-            label="Sprint"
-            value={
-              <SprintsMenu>
-                <SprintsMenu.Trigger>
-                  <Button
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      sprintId ? (
-                        <SprintsIcon className="h-5 w-auto" />
-                      ) : (
-                        <PlusIcon className="h-5 w-auto" />
-                      )
-                    }
-                    ref={sprintButtonRef}
-                    type="button"
-                    variant="naked"
-                  >
-                    <span className="inline-block max-w-[16ch] truncate">
-                      {sprint?.name || "Add sprint"}
-                    </span>
-                  </Button>
-                </SprintsMenu.Trigger>
-                <SprintsMenu.Items
-                  align="end"
-                  setSprintId={(sprintId) => {
-                    handleUpdate({ sprintId });
-                  }}
-                  sprintId={sprintId ?? undefined}
-                  teamId={teamId}
-                />
-              </SprintsMenu>
-            }
-          />
-        ) : null}
-        <Option
-          className={cn("items-start pt-1", {
-            "items-center pt-0": labels.length === 0,
-          })}
-          isNotifications={isNotifications}
-          label="Labels"
-          value={
-            <>
-              {labels.length > 0 ? (
-                <Flex align="center" className="gap-1.5" wrap>
-                  {labels.slice(0, labels.length - 1).map((label) => (
-                    <LabelsMenu key={label.id}>
-                      <LabelsMenu.Trigger>
-                        <span
-                          className={cn({
-                            "pointer-events-none cursor-not-allowed":
-                              isDeleted || isGuest,
-                          })}
-                        >
-                          <StoryLabel {...label} />
-                        </span>
-                      </LabelsMenu.Trigger>
-                      <LabelsMenu.Items
-                        labelIds={storyLabels ?? []}
-                        setLabelIds={(labelIds) => {
-                          handleUpdateLabels(labelIds);
-                        }}
-                        teamId={teamId}
-                      />
-                    </LabelsMenu>
-                  ))}
-                  <Flex align="center" gap={1}>
-                    <LabelsMenu>
-                      <LabelsMenu.Trigger>
-                        <span
-                          className={cn({
-                            "pointer-events-none cursor-not-allowed":
-                              isDeleted || isGuest,
-                          })}
-                        >
-                          <StoryLabel {...labels.at(-1)!} />
-                        </span>
-                      </LabelsMenu.Trigger>
-                      <LabelsMenu.Items
-                        labelIds={storyLabels ?? []}
-                        setLabelIds={(labelIds) => {
-                          handleUpdateLabels(labelIds);
-                        }}
-                        teamId={teamId}
-                      />
-                    </LabelsMenu>
-                    <LabelsMenu>
-                      <LabelsMenu.Trigger>
-                        <Button
-                          asIcon
-                          className="m-0"
-                          color="tertiary"
-                          disabled={isDeleted || isGuest}
-                          leftIcon={<PlusIcon />}
-                          ref={labelsButtonRef}
-                          rounded="full"
-                          size="sm"
-                          title="Add labels"
-                          type="button"
-                          variant="naked"
-                        >
-                          <span className="sr-only">Add labels</span>
-                        </Button>
-                      </LabelsMenu.Trigger>
-                      <LabelsMenu.Items
-                        labelIds={storyLabels ?? []}
-                        setLabelIds={(labelIds) => {
-                          handleUpdateLabels(labelIds);
-                        }}
-                        teamId={teamId}
-                      />
-                    </LabelsMenu>
-                  </Flex>
+                    {reporter?.username}
+                  </Link>
                 </Flex>
-              ) : (
-                <LabelsMenu>
-                  <LabelsMenu.Trigger>
+              }
+            />
+          )}
+          <Option
+            isNotifications={isNotifications}
+            label="Status"
+            value={
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={<StoryStatusIcon statusId={statusId} />}
+                    ref={statusButtonRef}
+                    type="button"
+                    variant={isMobile ? "solid" : "naked"}
+                  >
+                    {name}
+                  </Button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items
+                  setStatusId={(statusId) => {
+                    handleUpdate({ statusId });
+                  }}
+                  statusId={statusId}
+                  teamId={teamId}
+                />
+              </StatusesMenu>
+            }
+          />
+          <Option
+            isNotifications={isNotifications}
+            label="Priority"
+            value={
+              <PrioritiesMenu>
+                <PrioritiesMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={<PriorityIcon priority={priority} />}
+                    ref={priorityButtonRef}
+                    type="button"
+                    variant={isMobile ? "solid" : "naked"}
+                  >
+                    {priority}
+                  </Button>
+                </PrioritiesMenu.Trigger>
+                <PrioritiesMenu.Items
+                  setPriority={(priority) => {
+                    handleUpdate({ priority });
+                  }}
+                />
+              </PrioritiesMenu>
+            }
+          />
+          <Option
+            isNotifications={isNotifications}
+            label="Assignee"
+            value={
+              <AssigneesMenu>
+                <AssigneesMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-gray-200 dark:text-gray-300": !assigneeId,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <Avatar
+                        className={cn({
+                          "text-dark/80 dark:text-gray-200":
+                            !assignee?.fullName,
+                        })}
+                        name={assignee?.fullName}
+                        size="xs"
+                        src={assignee?.avatarUrl}
+                      />
+                    }
+                    ref={assigneeButtonRef}
+                    type="button"
+                    variant={isMobile ? "solid" : "naked"}
+                  >
+                    {assignee?.username || (
+                      <Text as="span" color="muted">
+                        Assign
+                      </Text>
+                    )}
+                  </Button>
+                </AssigneesMenu.Trigger>
+                <AssigneesMenu.Items
+                  assigneeId={assigneeId}
+                  onAssigneeSelected={(assigneeId) => {
+                    handleUpdate({ assigneeId });
+                  }}
+                  teamId={teamId}
+                />
+              </AssigneesMenu>
+            }
+          />
+          <Option
+            isNotifications={isNotifications}
+            label="Start date"
+            value={
+              <DatePicker>
+                <DatePicker.Trigger>
+                  <Button
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <CalendarIcon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-gray/80 dark:text-gray-300/80": !startDate,
+                        })}
+                      />
+                    }
+                    ref={startDateButtonRef}
+                    variant={isMobile ? "solid" : "naked"}
+                  >
+                    {startDate ? (
+                      format(new Date(startDate), "MMM d, yyyy")
+                    ) : (
+                      <Text color="muted">Add start date</Text>
+                    )}
+                  </Button>
+                </DatePicker.Trigger>
+                <DatePicker.Calendar
+                  onDayClick={(day) => {
+                    handleUpdate({
+                      startDate: formatISO(day),
+                    });
+                  }}
+                  selected={startDate ? new Date(startDate) : undefined}
+                />
+              </DatePicker>
+            }
+          />
+          <Option
+            isNotifications={isNotifications}
+            label="Deadline"
+            value={
+              <DatePicker>
+                <Tooltip
+                  className="py-3"
+                  hidden={!endDate}
+                  title={
+                    <Flex align="start" gap={2}>
+                      <CalendarIcon
+                        className={cn("relative top-[2.5px] h-5 w-auto", {
+                          "text-primary dark:text-primary":
+                            new Date(endDate!) < new Date(),
+                          "text-warning dark:text-warning":
+                            new Date(endDate!) <= addDays(new Date(), 7) &&
+                            new Date(endDate!) >= new Date(),
+                        })}
+                      />
+                      <Box>{getDueDateMessage(new Date(endDate!))}</Box>
+                    </Flex>
+                  }
+                >
+                  <span>
+                    <DatePicker.Trigger>
+                      <Button
+                        className={cn({
+                          "text-primary dark:text-primary":
+                            endDate && new Date(endDate) < new Date(),
+                          "text-warning dark:text-warning":
+                            endDate &&
+                            new Date(endDate) <= addDays(new Date(), 7) &&
+                            new Date(endDate) >= new Date(),
+                          "text-gray/80 dark:text-gray-300/80": !endDate,
+                        })}
+                        color="tertiary"
+                        disabled={isDeleted || isGuest}
+                        leftIcon={
+                          <CalendarIcon className="h-[1.15rem] w-auto" />
+                        }
+                        ref={dueDateButtonRef}
+                        variant={isMobile ? "solid" : "naked"}
+                      >
+                        {endDate ? (
+                          format(new Date(endDate), "MMM d, yyyy")
+                        ) : (
+                          <Text color="muted">Add deadline</Text>
+                        )}
+                      </Button>
+                    </DatePicker.Trigger>
+                  </span>
+                </Tooltip>
+                <DatePicker.Calendar
+                  onDayClick={(day) => {
+                    handleUpdate({
+                      endDate: formatISO(day),
+                    });
+                  }}
+                  selected={endDate ? new Date(endDate) : undefined}
+                />
+              </DatePicker>
+            }
+          />
+          {features.objectiveEnabled ? (
+            <Option
+              isNotifications={isNotifications}
+              label="Objective"
+              value={
+                <ObjectivesMenu>
+                  <ObjectivesMenu.Trigger>
                     <Button
                       color="tertiary"
                       disabled={isDeleted || isGuest}
-                      leftIcon={<PlusIcon />}
-                      ref={emptyLabelsButtonRef}
+                      leftIcon={
+                        objectiveId ? (
+                          <ObjectiveIcon className="h-[1.15rem] w-auto" />
+                        ) : (
+                          <PlusIcon className="h-5 w-auto" />
+                        )
+                      }
+                      ref={objectiveButtonRef}
+                      title={objectiveId ? objective?.name : undefined}
                       type="button"
-                      variant="naked"
+                      variant={isMobile ? "solid" : "naked"}
                     >
-                      Add labels
+                      <span className="inline-block max-w-[16ch] truncate">
+                        {objective?.name || "Add objective"}
+                      </span>
                     </Button>
-                  </LabelsMenu.Trigger>
-                  <LabelsMenu.Items
-                    labelIds={storyLabels ?? []}
-                    setLabelIds={(labelIds) => {
-                      handleUpdateLabels(labelIds);
+                  </ObjectivesMenu.Trigger>
+                  <ObjectivesMenu.Items
+                    align="end"
+                    objectiveId={objectiveId ?? undefined}
+                    setObjectiveId={(objectiveId) => {
+                      handleUpdate({ objectiveId });
                     }}
                     teamId={teamId}
                   />
-                </LabelsMenu>
-              )}
-            </>
-          }
-        />
+                </ObjectivesMenu>
+              }
+            />
+          ) : null}
+          {features.sprintEnabled ? (
+            <Option
+              isNotifications={isNotifications}
+              label="Sprint"
+              value={
+                <SprintsMenu>
+                  <SprintsMenu.Trigger>
+                    <Button
+                      color="tertiary"
+                      disabled={isDeleted || isGuest}
+                      leftIcon={
+                        sprintId ? (
+                          <SprintsIcon className="h-5 w-auto" />
+                        ) : (
+                          <PlusIcon className="h-5 w-auto" />
+                        )
+                      }
+                      ref={sprintButtonRef}
+                      type="button"
+                      variant={isMobile ? "solid" : "naked"}
+                    >
+                      <span className="inline-block max-w-[16ch] truncate">
+                        {sprint?.name || "Add sprint"}
+                      </span>
+                    </Button>
+                  </SprintsMenu.Trigger>
+                  <SprintsMenu.Items
+                    align="end"
+                    setSprintId={(sprintId) => {
+                      handleUpdate({ sprintId });
+                    }}
+                    sprintId={sprintId ?? undefined}
+                    teamId={teamId}
+                  />
+                </SprintsMenu>
+              }
+            />
+          ) : null}
+          <Option
+            className={cn("items-start pt-1", {
+              "items-center pt-0": labels.length === 0,
+            })}
+            isNotifications={isNotifications}
+            label="Labels"
+            value={
+              <>
+                {labels.length > 0 ? (
+                  <Flex align="center" className="gap-1.5" wrap>
+                    {labels.slice(0, labels.length - 1).map((label) => (
+                      <LabelsMenu key={label.id}>
+                        <LabelsMenu.Trigger>
+                          <span
+                            className={cn({
+                              "pointer-events-none cursor-not-allowed":
+                                isDeleted || isGuest,
+                            })}
+                          >
+                            <StoryLabel {...label} />
+                          </span>
+                        </LabelsMenu.Trigger>
+                        <LabelsMenu.Items
+                          labelIds={storyLabels ?? []}
+                          setLabelIds={(labelIds) => {
+                            handleUpdateLabels(labelIds);
+                          }}
+                          teamId={teamId}
+                        />
+                      </LabelsMenu>
+                    ))}
+                    <Flex align="center" gap={1}>
+                      <LabelsMenu>
+                        <LabelsMenu.Trigger>
+                          <span
+                            className={cn({
+                              "pointer-events-none cursor-not-allowed":
+                                isDeleted || isGuest,
+                            })}
+                          >
+                            <StoryLabel {...labels.at(-1)!} />
+                          </span>
+                        </LabelsMenu.Trigger>
+                        <LabelsMenu.Items
+                          labelIds={storyLabels ?? []}
+                          setLabelIds={(labelIds) => {
+                            handleUpdateLabels(labelIds);
+                          }}
+                          teamId={teamId}
+                        />
+                      </LabelsMenu>
+                      <LabelsMenu>
+                        <LabelsMenu.Trigger>
+                          <Button
+                            asIcon
+                            className="m-0"
+                            color="tertiary"
+                            disabled={isDeleted || isGuest}
+                            leftIcon={<PlusIcon />}
+                            ref={labelsButtonRef}
+                            rounded="full"
+                            size="sm"
+                            title="Add labels"
+                            type="button"
+                            variant={isMobile ? "solid" : "naked"}
+                          >
+                            <span className="sr-only">Add labels</span>
+                          </Button>
+                        </LabelsMenu.Trigger>
+                        <LabelsMenu.Items
+                          labelIds={storyLabels ?? []}
+                          setLabelIds={(labelIds) => {
+                            handleUpdateLabels(labelIds);
+                          }}
+                          teamId={teamId}
+                        />
+                      </LabelsMenu>
+                    </Flex>
+                  </Flex>
+                ) : (
+                  <LabelsMenu>
+                    <LabelsMenu.Trigger>
+                      <Button
+                        color="tertiary"
+                        disabled={isDeleted || isGuest}
+                        leftIcon={<PlusIcon />}
+                        ref={emptyLabelsButtonRef}
+                        type="button"
+                        variant={isMobile ? "solid" : "naked"}
+                      >
+                        Add labels
+                      </Button>
+                    </LabelsMenu.Trigger>
+                    <LabelsMenu.Items
+                      labelIds={storyLabels ?? []}
+                      setLabelIds={(labelIds) => {
+                        handleUpdateLabels(labelIds);
+                      }}
+                      teamId={teamId}
+                    />
+                  </LabelsMenu>
+                )}
+              </>
+            }
+          />
+        </Box>
+
         {/* 
         <Option label="Module" value={<ModulesMenu />} />
         <Option
@@ -655,7 +666,7 @@ export const Options = ({
           }
         /> */}
 
-        <Divider className="my-4 hidden md:block" />
+        <Divider className="my-4" />
         <AddLinks storyId={storyId} />
       </Container>
     </Box>

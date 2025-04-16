@@ -10,7 +10,7 @@ export const AddLinks = ({ storyId }: { storyId: string }) => {
   const { userRole } = useUserRole();
   return (
     <>
-      <Flex align="center" className="md:justify-end">
+      <Flex align="center" className="justify-end">
         <Button
           color="tertiary"
           disabled={userRole === "guest"}
