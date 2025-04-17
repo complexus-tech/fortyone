@@ -144,6 +144,7 @@ export const NewStoryDialog = ({
     ],
     content: "",
     editable: true,
+    autofocus: true,
     immediatelyRender: false,
   });
 
@@ -290,8 +291,10 @@ export const NewStoryDialog = ({
                 </Menu.Group>
               </Menu.Items>
             </Menu>
-            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New {getTermDisplay("storyTerm")}</Text>
+            <ArrowRightIcon className="h-4 w-auto opacity-30" strokeWidth={3} />
+            <Text className="opacity-80" color="muted">
+              New {getTermDisplay("storyTerm")}
+            </Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
@@ -317,7 +320,7 @@ export const NewStoryDialog = ({
             <Dialog.Close />
           </Flex>
         </Dialog.Header>
-        <Dialog.Body className="max-h-[60vh] pt-0">
+        <Dialog.Body className="max-h-[60dvh] pt-0">
           <TextEditor
             asTitle
             className="text-2xl font-medium"

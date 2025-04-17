@@ -126,6 +126,7 @@ export const NewObjectiveDialog = ({
     content: "",
     editable: true,
     immediatelyRender: false,
+    autofocus: true,
   });
 
   const editor = useEditor({
@@ -252,8 +253,10 @@ export const NewObjectiveDialog = ({
                 </Menu.Group>
               </Menu.Items>
             </Menu>
-            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New {getTermDisplay("objectiveTerm")}</Text>
+            <ArrowRightIcon className="h-4 w-auto opacity-30" strokeWidth={3} />
+            <Text className="opacity-80" color="muted">
+              New {getTermDisplay("objectiveTerm")}
+            </Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button

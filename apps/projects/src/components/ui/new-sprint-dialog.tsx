@@ -76,6 +76,7 @@ export const NewSprintDialog = ({
     ],
     content: "",
     editable: true,
+    autofocus: true,
     immediatelyRender: false,
   });
 
@@ -196,8 +197,10 @@ export const NewSprintDialog = ({
                 </Menu.Group>
               </Menu.Items>
             </Menu>
-            <ArrowRightIcon className="h-4 w-auto opacity-40" strokeWidth={3} />
-            <Text color="muted">New {getTermDisplay("sprintTerm")}</Text>
+            <ArrowRightIcon className="h-4 w-auto opacity-30" strokeWidth={3} />
+            <Text className="opacity-80" color="muted">
+              New {getTermDisplay("sprintTerm")}
+            </Text>
           </Dialog.Title>
           <Flex gap={2}>
             <Button
