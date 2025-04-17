@@ -83,7 +83,7 @@ export const Activity = ({
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4" />
           {value
-            ? format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")
+            ? format(new Date(value.split(" ")[0]), "PP")
             : "No start date"}
         </span>
       ),
@@ -93,9 +93,7 @@ export const Activity = ({
       render: (value: string) => (
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4" />
-          {value
-            ? format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")
-            : "No deadline"}
+          {value ? format(new Date(value.split(" ")[0]), "PP") : "No deadline"}
         </span>
       ),
     },
@@ -249,12 +247,6 @@ export const Activity = ({
                     fontWeight="medium"
                   >
                     {fieldMap[field].render(currentValue)}
-                    <span>
-                      {JSON.stringify({
-                        currentValue,
-                        field,
-                      })}
-                    </span>
                   </Text>
                 </>
               ) : null}
