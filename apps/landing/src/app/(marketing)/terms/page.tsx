@@ -24,8 +24,8 @@ export default async function TermsPage() {
   const content = await getTerms();
 
   return (
-    <Container className="py-16 md:pb-24 md:pt-36">
-      <Box className="prose prose-lg prose-stone prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-dark-200 prose-pre:bg-gray-50 dark:prose-pre:text-gray-200 dark:prose-pre:bg-dark-200/80 prose-pre:text-[1.1rem] mx-auto max-w-3xl px-1 leading-7">
+    <Container className="py-24 md:pt-36">
+      <Box className="prose prose-lg prose-stone mx-auto max-w-3xl px-1 leading-7 dark:prose-invert prose-headings:font-medium prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200">
         <Markdown content={content} />
       </Box>
     </Container>
