@@ -82,7 +82,9 @@ export const Activity = ({
       render: (value: string) => (
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4" />
-          {format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}
+          {value
+            ? format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")
+            : "No start date"}
         </span>
       ),
     },
@@ -91,7 +93,9 @@ export const Activity = ({
       render: (value: string) => (
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4" />
-          {format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")}
+          {value
+            ? format(new Date(value.replace(/ [A-Z]+$/, "")), "PP")
+            : "No deadline"}
         </span>
       ),
     },
@@ -230,20 +234,24 @@ export const Activity = ({
               >
                 {fieldMap[field].label}
               </Text>
-              <Text
-                as="span"
-                className="text-sm md:text-[0.95rem]"
-                color="muted"
-              >
-                to
-              </Text>
-              <Text
-                as="span"
-                className="inline-block shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
-                fontWeight="medium"
-              >
-                {fieldMap[field].render(currentValue)}
-              </Text>
+              {currentValue ? (
+                <>
+                  <Text
+                    as="span"
+                    className="text-sm md:text-[0.95rem]"
+                    color="muted"
+                  >
+                    to
+                  </Text>
+                  <Text
+                    as="span"
+                    className="inline-block shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
+                    fontWeight="medium"
+                  >
+                    {fieldMap[field].render(currentValue)}
+                  </Text>
+                </>
+              ) : null}
             </>
           )}
           <Text
