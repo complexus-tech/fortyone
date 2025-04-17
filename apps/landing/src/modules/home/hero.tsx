@@ -51,13 +51,8 @@ export const Hero = () => {
             >
               <span className="text-stroke-white">Project</span> Management That
               Works the Way{" "}
-              <Text as="span" className="relative" color="gradient">
+              <Text as="span" color="gradient">
                 You Do
-                <img
-                  alt=""
-                  className="absolute -bottom-20 left-0 h-auto w-full -rotate-12 opacity-80 invert md:-bottom-28"
-                  src="/svgs/arrow.svg"
-                />
               </Text>
             </Text>
           </motion.span>
