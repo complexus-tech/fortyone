@@ -1,4 +1,5 @@
-import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu, BlurImage } from "ui";
+/* eslint-disable @next/next/no-img-element -- ok for metadata image */
+import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu } from "ui";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -28,7 +29,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
 
   return (
     <>
-      <RowWrapper className="gap-8 px-1 py-2" key={link.id}>
+      <RowWrapper className="gap-8 px-1 py-2 md:px-1" key={link.id}>
         <a
           className="flex-1 gap-2"
           href={link.url}
@@ -37,16 +38,16 @@ const StoryLink = ({ link }: { link: LinkType }) => {
         >
           <Flex align="center" gap={2}>
             {metadata?.image ? (
-              <BlurImage
+              <img
                 alt={metadata.title || link.title || link.url}
-                className="size-6 w-max rounded-full"
+                className="size-6 rounded-full object-cover"
                 src={metadata.image}
               />
             ) : (
               <NewTabIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
             )}
             <Text
-              className="max-w-[24ch] shrink-0 truncate font-medium"
+              className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
               title={link.title || metadata?.title}
             >
               {link.title || metadata?.title}
