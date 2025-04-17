@@ -42,15 +42,15 @@ export default async function RootLayout({
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
-      queryFn: getTeams,
+      queryFn: () => getTeams(),
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
-      queryFn: getStatuses,
+      queryFn: () => getStatuses(),
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
-      queryFn: getObjectiveStatuses,
+      queryFn: () => getObjectiveStatuses(),
     }),
   ]);
 
