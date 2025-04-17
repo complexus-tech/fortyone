@@ -249,6 +249,12 @@ export const Activity = ({
                     fontWeight="medium"
                   >
                     {fieldMap[field].render(currentValue)}
+                    <span>
+                      {JSON.stringify({
+                        currentValue,
+                        field,
+                      })}
+                    </span>
                   </Text>
                 </>
               ) : null}
