@@ -331,30 +331,17 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 
 	// Extract workspace ID for logging
 	var workspaceID *uuid.UUID
-	if event.Data != nil && event.Data.Object != nil {
-		// Try to find workspace_id in customer metadata
-		if customer, ok := event.Data.Object["customer"].(map[string]any); ok {
-			if metadata, ok := customer["metadata"].(map[string]any); ok {
-				if wsID, ok := metadata["workspace_id"].(string); ok {
-					if id, err := uuid.Parse(wsID); err == nil {
-						workspaceID = &id
-					}
-				}
-			}
-		}
-	}
-
 	// Process based on event type
 	var processingError error
 	switch event.Type {
 	case "checkout.session.completed":
-		processingError = s.handleCheckoutSessionCompleted(ctx, event)
+		workspaceID, processingError = s.handleCheckoutSessionCompleted(ctx, event)
 	case "customer.subscription.created", "customer.subscription.updated":
-		processingError = s.handleSubscriptionUpdated(ctx, event)
+		workspaceID, processingError = s.handleSubscriptionUpdated(ctx, event)
 	case "customer.subscription.deleted":
-		processingError = s.handleSubscriptionDeleted(ctx, event)
+		workspaceID, processingError = s.handleSubscriptionDeleted(ctx, event)
 	case "invoice.paid":
-		processingError = s.handleInvoicePaid(ctx, event)
+		workspaceID, processingError = s.handleInvoicePaid(ctx, event)
 	default:
 		s.log.Info(ctx, "Unhandled Stripe webhook event type", "event_type", event.Type)
 	}
