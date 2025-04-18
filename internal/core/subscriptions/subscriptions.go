@@ -2,7 +2,6 @@ package subscriptions
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -229,20 +228,71 @@ func (s *Service) AddSeatToSubscription(ctx context.Context, workspaceID uuid.UU
 	return nil
 }
 
+// CreateCustomerPortalSession generates a URL for the Stripe Customer Portal
+func (s *Service) CreateCustomerPortalSession(ctx context.Context, workspaceID uuid.UUID, returnURL string) (string, error) {
+	s.log.Info(ctx, "Creating customer portal session", "workspace_id", workspaceID)
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCustomerPortalSession")
+	defer span.End()
+
+	// Get subscription
+	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil || sub.StripeCustomerID == "" {
+		s.log.Error(ctx, "Failed to get Stripe customer ID", "error", err, "workspace_id", workspaceID)
+		return "", fmt.Errorf("customer not found: %w", err)
+	}
+
+	// Create portal session
+	params := &stripe.BillingPortalSessionParams{
+		Customer:  stripe.String(sub.StripeCustomerID),
+		ReturnURL: stripe.String(returnURL),
+	}
+
+	ps, err := s.stripeClient.BillingPortalSessions.New(params)
+	if err != nil {
+		s.log.Error(ctx, "Failed to create portal session", "error", err, "customer_id", sub.StripeCustomerID)
+		return "", fmt.Errorf("%w: creating portal session: %v", ErrStripeOperationFailed, err)
+	}
+
+	s.log.Info(ctx, "Portal session created", "customer_id", sub.StripeCustomerID)
+	return ps.URL, nil
+}
+
+// mapPriceToTier converts a Stripe Price to the internal SubscriptionTier
+func (s *Service) mapPriceToTier(ctx context.Context, price *stripe.Price) SubscriptionTier {
+	if price == nil {
+		return TierFree
+	}
+	switch price.LookupKey {
+	case "team_monthly", "team_yearly":
+		return TierTeam
+	case "business_monthly", "business_yearly":
+		return TierBusiness
+	case "enterprise_monthly", "enterprise_yearly":
+		return TierEnterprise
+	default:
+		s.log.Error(ctx, "Unknown price lookup key", "lookup_key", price.LookupKey, "price_id", price.ID)
+		return TierFree
+	}
+}
+
 // HandleWebhookEvent processes incoming Stripe webhook events
 func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signature string) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.HandleWebhookEvent")
+	defer span.End()
+
 	// Verify webhook signature
 	event, err := webhook.ConstructEvent(payload, signature, s.webhookSecret)
 	if err != nil {
+		span.RecordError(err)
 		s.log.Error(ctx, "Failed to verify webhook signature", "error", err)
 		return fmt.Errorf("invalid webhook signature: %w", err)
 	}
-
 	s.log.Info(ctx, "Handling Stripe webhook event", "event_id", event.ID, "event_type", event.Type)
 
 	// Check for idempotency
 	processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
 	if err != nil {
+		span.RecordError(err)
 		s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
 		return fmt.Errorf("failed to check event idempotency: %w", err)
 	}
@@ -287,327 +337,13 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	err = s.repo.MarkEventAsProcessed(ctx, event.ID, string(event.Type), workspaceID, payload)
 	if err != nil {
 		s.log.Error(ctx, "CRITICAL: Failed to mark event as processed", "error", err, "event_id", event.ID)
-		return fmt.Errorf("failed to mark event as processed: %w", err)
+		return nil
 	}
 
 	if processingError != nil {
 		s.log.Error(ctx, "Error processing webhook event", "error", processingError, "event_id", event.ID)
 		return processingError
 	}
-
 	s.log.Info(ctx, "Successfully processed webhook event", "event_id", event.ID, "event_type", event.Type)
 	return nil
-}
-
-// Private webhook event handlers
-
-func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) error {
-	var session stripe.CheckoutSession
-	if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-		return fmt.Errorf("failed to unmarshal checkout session: %w", err)
-	}
-
-	// Get subscription details
-	if session.Subscription == nil {
-		s.log.Warn(ctx, "Checkout session completed but no subscription ID found", "session_id", session.ID)
-		return nil
-	}
-
-	// Fetch full subscription to get item ID
-	subParams := &stripe.SubscriptionParams{}
-	subParams.AddExpand("items")
-	stripeSub, err := s.stripeClient.Subscriptions.Get(session.Subscription.ID, subParams)
-	if err != nil {
-		return fmt.Errorf("failed to fetch subscription: %w", err)
-	}
-
-	// Get workspace ID from metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return fmt.Errorf("missing workspace_id metadata on customer for subscription %s", stripeSub.ID)
-	}
-
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Get subscription item details
-	var subItemID string
-	var seatCount int
-	var tier SubscriptionTier = TierFree
-	if len(stripeSub.Items.Data) > 0 {
-		item := stripeSub.Items.Data[0]
-		subItemID = item.ID
-		seatCount = int(item.Quantity)
-		tier = s.mapPriceToTier(item.Price)
-	} else {
-		return fmt.Errorf("subscription %s created with no items", stripeSub.ID)
-	}
-
-	status := SubscriptionStatus(stripeSub.Status)
-	var trialEnd *time.Time
-	if stripeSub.TrialEnd > 0 {
-		t := time.Unix(stripeSub.TrialEnd, 0)
-		trialEnd = &t
-	}
-
-	// Update database
-	err = s.repo.UpdateSubscriptionDetails(
-		ctx, workspaceID, stripeSub.ID, subItemID, status,
-		seatCount, trialEnd, tier,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to update subscription details: %w", err)
-	}
-
-	s.log.Info(ctx, "Subscription details updated from checkout.session.completed",
-		"workspace_id", workspaceID, "subscription_id", stripeSub.ID)
-	return nil
-}
-
-func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
-	var stripeSub stripe.Subscription
-	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return fmt.Errorf("failed to unmarshal subscription: %w", err)
-	}
-
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return fmt.Errorf("missing workspace_id metadata on customer for subscription %s", stripeSub.ID)
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Extract relevant data
-	var subItemID string
-	var seatCount int
-	var tier SubscriptionTier = TierFree
-	if len(stripeSub.Items.Data) > 0 {
-		item := stripeSub.Items.Data[0]
-		subItemID = item.ID
-		seatCount = int(item.Quantity)
-		tier = s.mapPriceToTier(item.Price)
-	} else {
-		s.log.Warn(ctx, "Subscription update event received with no items", "subscription_id", stripeSub.ID)
-		seatCount = 0
-	}
-
-	status := SubscriptionStatus(stripeSub.Status)
-	var trialEnd *time.Time
-	if stripeSub.TrialEnd > 0 {
-		t := time.Unix(stripeSub.TrialEnd, 0)
-		trialEnd = &t
-	}
-
-	// Update database
-	err = s.repo.UpdateSubscriptionDetails(
-		ctx, workspaceID, stripeSub.ID, subItemID, status,
-		seatCount, trialEnd, tier,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to update subscription details: %w", err)
-	}
-
-	s.log.Info(ctx, "Subscription details updated from subscription event",
-		"workspace_id", workspaceID, "subscription_id", stripeSub.ID,
-		"status", status, "seat_count", seatCount)
-	return nil
-}
-
-func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) error {
-	var stripeSub stripe.Subscription
-	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return fmt.Errorf("failed to unmarshal subscription deletion: %w", err)
-	}
-
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return fmt.Errorf("missing workspace_id metadata on customer for deleted subscription %s", stripeSub.ID)
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Update status in DB to 'canceled'
-	err = s.repo.UpdateSubscriptionStatus(ctx, workspaceID, stripeSub.ID, StatusCanceled)
-	if err != nil {
-		s.log.Error(ctx, "Failed to update subscription status to canceled in DB", "error", err,
-			"workspace_id", workspaceID, "subscription_id", stripeSub.ID)
-	}
-
-	s.log.Info(ctx, "Subscription marked as canceled", "workspace_id", workspaceID, "subscription_id", stripeSub.ID)
-	return nil
-}
-
-func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
-	var invoice stripe.Invoice
-	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
-		return fmt.Errorf("failed to unmarshal invoice: %w", err)
-	}
-
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := invoice.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		// Try fetching customer
-		cust, err := s.stripeClient.Customers.Get(invoice.Customer.ID, nil)
-		if err != nil || cust.Metadata["workspace_id"] == "" {
-			return fmt.Errorf("missing workspace_id metadata for invoice %s", invoice.ID)
-		}
-		workspaceIDStr = cust.Metadata["workspace_id"]
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Extract invoice details
-	amountPaid := float64(invoice.AmountPaid) / 100.0
-	invoiceDate := time.Unix(invoice.Created, 0)
-	if invoice.StatusTransitions.PaidAt > 0 {
-		invoiceDate = time.Unix(invoice.StatusTransitions.PaidAt, 0)
-	}
-
-	seatCount := 0
-	if len(invoice.Lines.Data) > 0 && invoice.Lines.Data[0].Quantity > 0 {
-		seatCount = int(invoice.Lines.Data[0].Quantity)
-	}
-
-	coreInvoice := CoreSubscriptionInvoice{
-		WorkspaceID:     workspaceID,
-		StripeInvoiceID: invoice.ID,
-		AmountPaid:      amountPaid,
-		InvoiceDate:     invoiceDate,
-		Status:          string(invoice.Status),
-		SeatsCount:      seatCount,
-		CreatedAt:       time.Now(),
-	}
-
-	err = s.repo.CreateInvoice(ctx, coreInvoice)
-	if err != nil {
-		return fmt.Errorf("failed to save invoice record: %w", err)
-	}
-
-	// Get the subscription ID from the raw data
-	var rawInvoice map[string]any
-	if err := json.Unmarshal(event.Data.Raw, &rawInvoice); err != nil {
-		return fmt.Errorf("failed to unmarshal raw invoice: %w", err)
-	}
-
-	// Check if this invoice has an associated subscription
-	subscriptionID, ok := rawInvoice["subscription"].(string)
-	if ok && subscriptionID != "" {
-		// Fetch the subscription to confirm its current status
-		stripeSub, errSub := s.stripeClient.Subscriptions.Get(subscriptionID, nil)
-		if errSub == nil && stripeSub.Status == stripe.SubscriptionStatusActive {
-			errUpdate := s.repo.UpdateSubscriptionStatus(ctx, workspaceID, stripeSub.ID, StatusActive)
-			if errUpdate != nil {
-				s.log.Error(ctx, "Failed to update subscription status after payment", "error", errUpdate)
-			}
-		}
-	}
-
-	s.log.Info(ctx, "Paid invoice record saved", "workspace_id", workspaceID, "invoice_id", invoice.ID)
-	return nil
-}
-
-func (s *Service) handleInvoicePaymentFailed(ctx context.Context, event stripe.Event) error {
-	var invoice stripe.Invoice
-	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
-		return fmt.Errorf("failed to unmarshal invoice payment failure: %w", err)
-	}
-
-	// Extract workspace ID from customer metadata (similar to handleInvoicePaid)
-	workspaceIDStr, ok := invoice.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return fmt.Errorf("missing workspace_id metadata for failed invoice %s", invoice.ID)
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Get the subscription ID from the raw data
-	var rawInvoice map[string]any
-	if err := json.Unmarshal(event.Data.Raw, &rawInvoice); err != nil {
-		return fmt.Errorf("failed to unmarshal raw invoice: %w", err)
-	}
-
-	// Extract subscription ID if any
-	subscriptionID, ok := rawInvoice["subscription"].(string)
-
-	s.log.Warn(ctx, "Invoice payment failed", "workspace_id", workspaceID,
-		"invoice_id", invoice.ID, "subscription_id", subscriptionID)
-
-	// Update subscription status if applicable
-	if ok && subscriptionID != "" {
-		// Fetch the subscription to get its current status
-		stripeSub, errSub := s.stripeClient.Subscriptions.Get(subscriptionID, nil)
-		if errSub == nil {
-			newStatus := SubscriptionStatus(stripeSub.Status)
-			errUpdate := s.repo.UpdateSubscriptionStatus(ctx, workspaceID, stripeSub.ID, newStatus)
-			if errUpdate != nil {
-				s.log.Error(ctx, "Failed to update subscription status after payment failure",
-					"error", errUpdate, "new_status", newStatus)
-			} else {
-				s.log.Info(ctx, "Subscription status updated after payment failure",
-					"workspace_id", workspaceID, "new_status", newStatus)
-			}
-		}
-	}
-
-	return nil
-}
-
-// CreateCustomerPortalSession generates a URL for the Stripe Customer Portal
-func (s *Service) CreateCustomerPortalSession(ctx context.Context, workspaceID uuid.UUID, returnURL string) (string, error) {
-	s.log.Info(ctx, "Creating customer portal session", "workspace_id", workspaceID)
-
-	// Get subscription
-	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
-	if err != nil || sub.StripeCustomerID == "" {
-		s.log.Error(ctx, "Failed to get Stripe customer ID", "error", err, "workspace_id", workspaceID)
-		return "", fmt.Errorf("customer not found: %w", err)
-	}
-
-	// Create portal session
-	params := &stripe.BillingPortalSessionParams{
-		Customer:  stripe.String(sub.StripeCustomerID),
-		ReturnURL: stripe.String(returnURL),
-	}
-
-	ps, err := s.stripeClient.BillingPortalSessions.New(params)
-	if err != nil {
-		s.log.Error(ctx, "Failed to create portal session", "error", err, "customer_id", sub.StripeCustomerID)
-		return "", fmt.Errorf("%w: creating portal session: %v", ErrStripeOperationFailed, err)
-	}
-
-	s.log.Info(ctx, "Portal session created", "customer_id", sub.StripeCustomerID)
-	return ps.URL, nil
-}
-
-// mapPriceToTier converts a Stripe Price to the internal SubscriptionTier
-func (s *Service) mapPriceToTier(price *stripe.Price) SubscriptionTier {
-	if price == nil {
-		return TierFree
-	}
-
-	// Map based on lookup key
-	switch price.LookupKey {
-	case "starter_monthly", "starter_yearly":
-		return TierStarter
-	case "pro_monthly", "pro_yearly":
-		return TierPro
-	case "enterprise_monthly", "enterprise_yearly":
-		return TierEnterprise
-	default:
-		// Fallback to mapping by price ID if needed
-		s.log.Warn(context.Background(), "Unknown price lookup key", "lookup_key", price.LookupKey, "price_id", price.ID)
-		return TierFree
-	}
 }

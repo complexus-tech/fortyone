@@ -25,8 +25,8 @@ type SubscriptionTier string
 
 const (
 	TierFree       SubscriptionTier = "free"
-	TierStarter    SubscriptionTier = "starter"
-	TierPro        SubscriptionTier = "pro"
+	TierTeam       SubscriptionTier = "team"
+	TierBusiness   SubscriptionTier = "business"
 	TierEnterprise SubscriptionTier = "enterprise"
 )
 
