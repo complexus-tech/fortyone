@@ -11,13 +11,13 @@ type SubscriptionStatus string
 
 const (
 	StatusActive            SubscriptionStatus = "active"
-	StatusInactive          SubscriptionStatus = "inactive"
-	StatusTrialing          SubscriptionStatus = "trialing"
-	StatusPastDue           SubscriptionStatus = "past_due"
 	StatusIncomplete        SubscriptionStatus = "incomplete"
 	StatusIncompleteExpired SubscriptionStatus = "incomplete_expired"
+	StatusTrialing          SubscriptionStatus = "trialing"
+	StatusPastDue           SubscriptionStatus = "past_due"
 	StatusUnpaid            SubscriptionStatus = "unpaid"
 	StatusCanceled          SubscriptionStatus = "canceled"
+	StatusPaused            SubscriptionStatus = "paused"
 )
 
 // SubscriptionTier represents the tier of a subscription

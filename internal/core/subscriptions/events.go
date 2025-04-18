@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v82"
 )
 
+// handleCheckoutSessionCompleted handles the checkout.session.completed event triggered by the customer
+// when they complete the checkout process.
 func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleCheckoutSessionCompleted")
+	defer span.End()
+
 	var session stripe.CheckoutSession
 	if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
 		return fmt.Errorf("failed to unmarshal checkout session: %w", err)
@@ -18,7 +24,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 
 	// Get subscription details
 	if session.Subscription == nil {
-		s.log.Warn(ctx, "Checkout session completed but no subscription ID found", "session_id", session.ID)
+		s.log.Error(ctx, "Checkout session completed but no subscription ID found", "session_id", session.ID)
 		return nil
 	}
 
@@ -75,7 +81,12 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	return nil
 }
 
+// handleSubscriptionUpdated handles the subscription.updated event triggered by Stripe when the subscription
+// is updated. This includes changes to the status, items, or other subscription details.
 func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionUpdated")
+	defer span.End()
+
 	var stripeSub stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
 		return fmt.Errorf("failed to unmarshal subscription: %w", err)
@@ -101,7 +112,7 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
 	} else {
-		s.log.Warn(ctx, "Subscription update event received with no items", "subscription_id", stripeSub.ID)
+		s.log.Error(ctx, "Subscription update event received with no items", "subscription_id", stripeSub.ID)
 		seatCount = 0
 	}
 
@@ -128,6 +139,9 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 }
 
 func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionDeleted")
+	defer span.End()
+
 	var stripeSub stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
 		return fmt.Errorf("failed to unmarshal subscription deletion: %w", err)
@@ -155,6 +169,9 @@ func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Ev
 }
 
 func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleInvoicePaid")
+	defer span.End()
+
 	var invoice stripe.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
 		return fmt.Errorf("failed to unmarshal invoice: %w", err)
