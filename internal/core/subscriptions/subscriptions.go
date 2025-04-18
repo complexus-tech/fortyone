@@ -327,8 +327,6 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 		processingError = s.handleSubscriptionDeleted(ctx, event)
 	case "invoice.paid":
 		processingError = s.handleInvoicePaid(ctx, event)
-	case "invoice.payment_failed":
-		processingError = s.handleInvoicePaymentFailed(ctx, event)
 	default:
 		s.log.Info(ctx, "Unhandled Stripe webhook event type", "event_type", event.Type)
 	}
