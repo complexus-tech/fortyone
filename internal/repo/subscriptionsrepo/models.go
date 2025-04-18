@@ -13,7 +13,7 @@ type dbWorkspaceSubscription struct {
 	StripeSubscriptionID     *string    `db:"stripe_subscription_id"`
 	StripeSubscriptionItemID *string    `db:"stripe_subscription_item_id"`
 	SubscriptionStatus       *string    `db:"subscription_status"`
-	SubscriptionTier         string     `db:"subscription_tier"` // Enum type
+	SubscriptionTier         string     `db:"subscription_tier"`
 	SeatCount                int        `db:"seat_count"`
 	TrialEndDate             *time.Time `db:"trial_end_date"`
 	CreatedAt                time.Time  `db:"created_at"`
