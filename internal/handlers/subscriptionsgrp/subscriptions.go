@@ -75,7 +75,7 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Slug)
+	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Name)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -202,7 +202,8 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.HandleWebhook")
 	defer span.End()
 
-	// Read the entire request body
+	const MaxBodyBytes = int64(65536)
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		span.RecordError(err)

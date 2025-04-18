@@ -154,13 +154,30 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 
 	s.log.Info(ctx, "Setting initial seat count for subscription", "workspace_id", workspaceID, "seat_count", userCount)
 
+	// lookup the price
+	priceListParams := &stripe.PriceListParams{}
+	priceListParams.Filters.AddFilter("lookup_keys[]", "", lookupKey)
+	priceListParams.Filters.AddFilter("limit", "", "1")
+	i := s.stripeClient.Prices.List(priceListParams) // use your initialized Stripe client here
+	var priceID string
+	for i.Next() {
+		p := i.Price()
+		priceID = p.ID
+		break
+	}
+
+	if priceID == "" {
+		s.log.Error(ctx, "No price found for lookup key", "lookup_key", lookupKey)
+		return "", fmt.Errorf("no price found for lookup key: %s", lookupKey)
+	}
+
 	// 3. Create Stripe Checkout Session
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(customerID),
 		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(lookupKey),
+				Price:    stripe.String(priceID),
 				Quantity: stripe.Int64(int64(userCount)),
 			},
 		},
@@ -349,12 +366,12 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	// Mark as processed even if error occurred
 	err = s.repo.MarkEventAsProcessed(ctx, event.ID, string(event.Type), workspaceID, payload)
 	if err != nil {
-		s.log.Error(ctx, "CRITICAL: Failed to mark event as processed", "error", err, "event_id", event.ID)
+		s.log.Error(ctx, "CRITICAL: Failed to mark event as processed", "error", err, "event_id", event.ID, "event_type", event.Type)
 		return nil
 	}
 
 	if processingError != nil {
-		s.log.Error(ctx, "Error processing webhook event", "error", processingError, "event_id", event.ID)
+		s.log.Error(ctx, "Error processing webhook event", "error", processingError, "event_id", event.ID, "event_type", event.Type)
 		return processingError
 	}
 	s.log.Info(ctx, "Successfully processed webhook event", "event_id", event.ID, "event_type", event.Type)
