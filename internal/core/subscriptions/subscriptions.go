@@ -8,10 +8,13 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v82"
 	"github.com/stripe/stripe-go/v82/client"
 	"github.com/stripe/stripe-go/v82/webhook"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -29,7 +32,6 @@ type Repository interface {
 	GetSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSubscription, error)
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
-
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
 	UpdateSubscriptionDetails(ctx context.Context, workspaceID uuid.UUID, subID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
 	UpdateSubscriptionStatus(ctx context.Context, workspaceID uuid.UUID, subID string, status SubscriptionStatus) error
@@ -66,6 +68,8 @@ func New(log *logger.Logger, repo Repository, stripeClient *client.API, successU
 // CreateCheckoutSession initiates the Stripe Checkout process for a new subscription
 func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string) (string, error) {
 	s.log.Info(ctx, "Initiating checkout session", "workspace_id", workspaceID, "lookup_key", lookupKey)
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCheckoutSession")
+	defer span.End()
 
 	// 1. Get current subscription/customer info
 	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
@@ -76,12 +80,14 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 	}
 	if err == nil { // Subscription exists
 		customerID = sub.StripeCustomerID
+		span.SetAttributes(attribute.String("customer_id", customerID))
 		s.log.Info(ctx, "Existing Stripe customer found", "customer_id", customerID, "workspace_id", workspaceID)
 	}
 
 	// 2. Create Stripe Customer if needed
 	if customerID == "" {
 		s.log.Info(ctx, "Creating new Stripe customer", "workspace_id", workspaceID, "email", userEmail)
+		span.AddEvent("Creating new Stripe customer", trace.WithAttributes(attribute.String("workspace_id", workspaceID.String()), attribute.String("email", userEmail)))
 		custParams := &stripe.CustomerParams{
 			Email: stripe.String(userEmail),
 			Name:  stripe.String(workspaceName),
@@ -91,6 +97,7 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 		}
 		newCust, err := s.stripeClient.Customers.New(custParams)
 		if err != nil {
+			span.RecordError(err)
 			s.log.Error(ctx, "Failed to create Stripe customer", "error", err, "workspace_id", workspaceID)
 			return "", fmt.Errorf("%w: creating customer: %v", ErrStripeOperationFailed, err)
 		}
@@ -100,10 +107,25 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 		// Save the new customer ID
 		err = s.repo.SaveStripeCustomerID(ctx, workspaceID, customerID)
 		if err != nil {
+			span.RecordError(err)
 			s.log.Error(ctx, "Failed to save Stripe customer ID to DB", "error", err, "workspace_id", workspaceID)
 			// Log error but proceed with checkout creation
 		}
 	}
+
+	// Get current workspace user count for initial seat quantity
+	userCount, err := s.repo.GetWorkspaceUserCount(ctx, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Failed to get workspace user count", "error", err, "workspace_id", workspaceID)
+		userCount = 1
+	}
+	// Ensure we have at least 1 seat
+	if userCount < 1 {
+		userCount = 1
+	}
+
+	s.log.Info(ctx, "Setting initial seat count for subscription", "workspace_id", workspaceID, "seat_count", userCount)
 
 	// 3. Create Stripe Checkout Session
 	checkoutParams := &stripe.CheckoutSessionParams{
@@ -112,7 +134,7 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				Price:    stripe.String(lookupKey),
-				Quantity: stripe.Int64(1), // Start with 1 seat
+				Quantity: stripe.Int64(int64(userCount)),
 			},
 		},
 		SuccessURL: stripe.String(s.checkoutSuccessURL + "?session_id={CHECKOUT_SESSION_ID}"),
@@ -135,10 +157,13 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 // AddSeatToSubscription increases the seat count and triggers immediate prorated billing
 func (s *Service) AddSeatToSubscription(ctx context.Context, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "Attempting to add seat to subscription", "workspace_id", workspaceID)
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.AddSeatToSubscription")
+	defer span.End()
 
 	// 1. Get current subscription details from DB
 	subData, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
 	if err != nil {
+		span.RecordError(err)
 		s.log.Error(ctx, "Failed to get subscription for adding seat", "error", err, "workspace_id", workspaceID)
 		if errors.Is(err, ErrSubscriptionNotFound) {
 			return ErrSubscriptionNotFound
@@ -147,7 +172,7 @@ func (s *Service) AddSeatToSubscription(ctx context.Context, workspaceID uuid.UU
 	}
 
 	if subData.StripeSubscriptionID == nil || *subData.StripeSubscriptionID == "" {
-		s.log.Warn(ctx, "Cannot add seat: workspace has no active Stripe subscription ID", "workspace_id", workspaceID)
+		s.log.Error(ctx, "Cannot add seat: workspace has no active Stripe subscription ID", "workspace_id", workspaceID)
 		return fmt.Errorf("workspace %s does not have an active Stripe subscription", workspaceID)
 	}
 	if subData.StripeSubscriptionItemID == nil || *subData.StripeSubscriptionItemID == "" {
@@ -230,8 +255,8 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	var workspaceID *uuid.UUID
 	if event.Data != nil && event.Data.Object != nil {
 		// Try to find workspace_id in customer metadata
-		if customer, ok := event.Data.Object["customer"].(map[string]interface{}); ok {
-			if metadata, ok := customer["metadata"].(map[string]interface{}); ok {
+		if customer, ok := event.Data.Object["customer"].(map[string]any); ok {
+			if metadata, ok := customer["metadata"].(map[string]any); ok {
 				if wsID, ok := metadata["workspace_id"].(string); ok {
 					if id, err := uuid.Parse(wsID); err == nil {
 						workspaceID = &id
@@ -469,7 +494,7 @@ func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) err
 	}
 
 	// Get the subscription ID from the raw data
-	var rawInvoice map[string]interface{}
+	var rawInvoice map[string]any
 	if err := json.Unmarshal(event.Data.Raw, &rawInvoice); err != nil {
 		return fmt.Errorf("failed to unmarshal raw invoice: %w", err)
 	}
@@ -508,7 +533,7 @@ func (s *Service) handleInvoicePaymentFailed(ctx context.Context, event stripe.E
 	}
 
 	// Get the subscription ID from the raw data
-	var rawInvoice map[string]interface{}
+	var rawInvoice map[string]any
 	if err := json.Unmarshal(event.Data.Raw, &rawInvoice); err != nil {
 		return fmt.Errorf("failed to unmarshal raw invoice: %w", err)
 	}
