@@ -64,6 +64,34 @@ func New(log *logger.Logger, repo Repository, stripeClient *client.API, successU
 	}
 }
 
+// GetInvoices returns all invoices for a workspace
+func (s *Service) GetInvoices(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error) {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.GetInvoices")
+	defer span.End()
+
+	invoices, err := s.repo.GetInvoicesByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Failed to get invoices", "error", err, "workspace_id", workspaceID)
+		return nil, fmt.Errorf("failed to get invoices: %w", err)
+	}
+	return invoices, nil
+}
+
+// GetSubscription returns the subscription for a workspace
+func (s *Service) GetSubscription(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSubscription, error) {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.GetSubscription")
+	defer span.End()
+
+	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Failed to get subscription", "error", err, "workspace_id", workspaceID)
+		return CoreWorkspaceSubscription{}, fmt.Errorf("failed to get subscription: %w", err)
+	}
+	return sub, nil
+}
+
 // CreateCheckoutSession initiates the Stripe Checkout process for a new subscription
 func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string) (string, error) {
 	s.log.Info(ctx, "Initiating checkout session", "workspace_id", workspaceID, "lookup_key", lookupKey)
