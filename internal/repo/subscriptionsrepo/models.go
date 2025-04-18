@@ -8,15 +8,16 @@ import (
 )
 
 type dbWorkspaceSubscription struct {
-	WorkspaceID          uuid.UUID  `db:"workspace_id"`
-	StripeCustomerID     string     `db:"stripe_customer_id"`
-	StripeSubscriptionID *string    `db:"stripe_subscription_id"`
-	SubscriptionStatus   *string    `db:"subscription_status"`
-	SubscriptionTier     string     `db:"subscription_tier"` // Enum type
-	SeatCount            int        `db:"seat_count"`
-	TrialEndDate         *time.Time `db:"trial_end_date"`
-	CreatedAt            time.Time  `db:"created_at"`
-	UpdatedAt            time.Time  `db:"updated_at"`
+	WorkspaceID              uuid.UUID  `db:"workspace_id"`
+	StripeCustomerID         string     `db:"stripe_customer_id"`
+	StripeSubscriptionID     *string    `db:"stripe_subscription_id"`
+	StripeSubscriptionItemID *string    `db:"stripe_subscription_item_id"`
+	SubscriptionStatus       *string    `db:"subscription_status"`
+	SubscriptionTier         string     `db:"subscription_tier"` // Enum type
+	SeatCount                int        `db:"seat_count"`
+	TrialEndDate             *time.Time `db:"trial_end_date"`
+	CreatedAt                time.Time  `db:"created_at"`
+	UpdatedAt                time.Time  `db:"updated_at"`
 }
 
 type dbSubscriptionInvoice struct {
@@ -36,6 +37,7 @@ func toCoreSubscription(db dbWorkspaceSubscription) subscriptions.CoreWorkspaceS
 	subscription.WorkspaceID = db.WorkspaceID
 	subscription.StripeCustomerID = db.StripeCustomerID
 	subscription.StripeSubscriptionID = db.StripeSubscriptionID
+	subscription.StripeSubscriptionItemID = db.StripeSubscriptionItemID
 	subscription.SeatCount = db.SeatCount
 	subscription.TrialEndDate = db.TrialEndDate
 	subscription.CreatedAt = db.CreatedAt

@@ -10,9 +10,14 @@ import (
 type SubscriptionStatus string
 
 const (
-	StatusActive   SubscriptionStatus = "active"
-	StatusInactive SubscriptionStatus = "inactive"
-	StatusTrialing SubscriptionStatus = "trialing"
+	StatusActive            SubscriptionStatus = "active"
+	StatusInactive          SubscriptionStatus = "inactive"
+	StatusTrialing          SubscriptionStatus = "trialing"
+	StatusPastDue           SubscriptionStatus = "past_due"
+	StatusIncomplete        SubscriptionStatus = "incomplete"
+	StatusIncompleteExpired SubscriptionStatus = "incomplete_expired"
+	StatusUnpaid            SubscriptionStatus = "unpaid"
+	StatusCanceled          SubscriptionStatus = "canceled"
 )
 
 // SubscriptionTier represents the tier of a subscription
@@ -27,15 +32,16 @@ const (
 
 // CoreWorkspaceSubscription represents a workspace subscription
 type CoreWorkspaceSubscription struct {
-	WorkspaceID          uuid.UUID
-	StripeCustomerID     string
-	StripeSubscriptionID *string
-	SubscriptionStatus   *SubscriptionStatus
-	SubscriptionTier     SubscriptionTier
-	SeatCount            int
-	TrialEndDate         *time.Time
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	WorkspaceID              uuid.UUID
+	StripeCustomerID         string
+	StripeSubscriptionID     *string
+	StripeSubscriptionItemID *string
+	SubscriptionStatus       *SubscriptionStatus
+	SubscriptionTier         SubscriptionTier
+	SeatCount                int
+	TrialEndDate             *time.Time
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
 }
 
 // CoreSubscriptionInvoice represents a subscription invoice
