@@ -28,9 +28,9 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-// GetWorkspaceSubscription retrieves a workspace's subscription
-func (r *repo) GetWorkspaceSubscription(ctx context.Context, workspaceID uuid.UUID) (subscriptions.CoreWorkspaceSubscription, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.GetWorkspaceSubscription")
+// GetSubscriptionByWorkspaceID retrieves a workspace's subscription
+func (r *repo) GetSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (subscriptions.CoreWorkspaceSubscription, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.GetSubscriptionByWorkspaceID")
 	defer span.End()
 
 	query := `
@@ -50,7 +50,7 @@ func (r *repo) GetWorkspaceSubscription(ctx context.Context, workspaceID uuid.UU
             workspace_id = :workspace_id
     `
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
@@ -77,9 +77,9 @@ func (r *repo) GetWorkspaceSubscription(ctx context.Context, workspaceID uuid.UU
 	return toCoreSubscription(sub), nil
 }
 
-// CreateWorkspaceSubscription creates a new subscription record
-func (r *repo) CreateWorkspaceSubscription(ctx context.Context, sub subscriptions.CoreWorkspaceSubscription) (subscriptions.CoreWorkspaceSubscription, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.CreateWorkspaceSubscription")
+// CreateSubscription creates a new subscription record
+func (r *repo) CreateSubscription(ctx context.Context, sub subscriptions.CoreWorkspaceSubscription) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.CreateSubscription")
 	defer span.End()
 
 	query := `
@@ -104,16 +104,6 @@ func (r *repo) CreateWorkspaceSubscription(ctx context.Context, sub subscription
             :created_at,
             :updated_at
         )
-        RETURNING
-            workspace_id,
-            stripe_customer_id,
-            stripe_subscription_id,
-            subscription_status,
-            subscription_tier,
-            seat_count,
-            trial_end_date,
-            created_at,
-            updated_at
     `
 
 	// Convert subscription status from enum to string if present
@@ -123,7 +113,7 @@ func (r *repo) CreateWorkspaceSubscription(ctx context.Context, sub subscription
 		statusStr = &s
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id":           sub.WorkspaceID,
 		"stripe_customer_id":     sub.StripeCustomerID,
 		"stripe_subscription_id": sub.StripeSubscriptionID,
@@ -140,24 +130,23 @@ func (r *repo) CreateWorkspaceSubscription(ctx context.Context, sub subscription
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return subscriptions.CoreWorkspaceSubscription{}, err
+		return err
 	}
 	defer stmt.Close()
 
-	var dbSub dbWorkspaceSubscription
-	if err := stmt.GetContext(ctx, &dbSub, params); err != nil {
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
 		errMsg := fmt.Sprintf("failed to create subscription: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create subscription"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return subscriptions.CoreWorkspaceSubscription{}, err
+		return err
 	}
 
-	return toCoreSubscription(dbSub), nil
+	return nil
 }
 
-// UpdateWorkspaceSubscription updates an existing subscription
-func (r *repo) UpdateWorkspaceSubscription(ctx context.Context, sub subscriptions.CoreWorkspaceSubscription) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateWorkspaceSubscription")
+// UpdateSubscription updates an existing subscription
+func (r *repo) UpdateSubscription(ctx context.Context, sub subscriptions.CoreWorkspaceSubscription) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateSubscription")
 	defer span.End()
 
 	query := `
@@ -181,7 +170,7 @@ func (r *repo) UpdateWorkspaceSubscription(ctx context.Context, sub subscription
 		statusStr = &s
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id":           sub.WorkspaceID,
 		"stripe_customer_id":     sub.StripeCustomerID,
 		"stripe_subscription_id": sub.StripeSubscriptionID,
@@ -201,73 +190,32 @@ func (r *repo) UpdateWorkspaceSubscription(ctx context.Context, sub subscription
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		errMsg := fmt.Sprintf("failed to update subscription: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update subscription"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 
-	return nil
-}
-
-// CreateSubscriptionInvoice creates a record of an invoice
-func (r *repo) CreateSubscriptionInvoice(ctx context.Context, invoice subscriptions.CoreSubscriptionInvoice) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.CreateSubscriptionInvoice")
-	defer span.End()
-
-	query := `
-        INSERT INTO subscription_invoices (
-            workspace_id,
-            stripe_invoice_id,
-            amount_paid,
-            invoice_date,
-            status,
-            seats_count,
-            created_at
-        ) VALUES (
-            :workspace_id,
-            :stripe_invoice_id,
-            :amount_paid,
-            :invoice_date,
-            :status,
-            :seats_count,
-            :created_at
-        )
-    `
-
-	params := map[string]interface{}{
-		"workspace_id":      invoice.WorkspaceID,
-		"stripe_invoice_id": invoice.StripeInvoiceID,
-		"amount_paid":       invoice.AmountPaid,
-		"invoice_date":      invoice.InvoiceDate,
-		"status":            invoice.Status,
-		"seats_count":       invoice.SeatsCount,
-		"created_at":        invoice.CreatedAt,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to get rows affected: %s", err)
 		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		span.RecordError(errors.New("failed to get rows affected"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
-	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
-		errMsg := fmt.Sprintf("failed to create invoice record: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create invoice record"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+	if rowsAffected == 0 {
+		return subscriptions.ErrSubscriptionNotFound
 	}
 
 	return nil
 }
 
-// ListSubscriptionInvoices lists invoices for a workspace
-func (r *repo) ListSubscriptionInvoices(ctx context.Context, workspaceID uuid.UUID) ([]subscriptions.CoreSubscriptionInvoice, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.ListSubscriptionInvoices")
+// GetInvoicesByWorkspaceID retrieves invoices for a workspace
+func (r *repo) GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]subscriptions.CoreSubscriptionInvoice, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.GetInvoicesByWorkspaceID")
 	defer span.End()
 
 	query := `
@@ -288,7 +236,7 @@ func (r *repo) ListSubscriptionInvoices(ctx context.Context, workspaceID uuid.UU
             invoice_date DESC
     `
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
@@ -301,15 +249,15 @@ func (r *repo) ListSubscriptionInvoices(ctx context.Context, workspaceID uuid.UU
 	}
 	defer stmt.Close()
 
-	var dbInvoices []dbSubscriptionInvoice
-	if err := stmt.SelectContext(ctx, &dbInvoices, params); err != nil {
-		errMsg := fmt.Sprintf("failed to list invoices: %s", err)
+	var invoices []dbSubscriptionInvoice
+	if err := stmt.SelectContext(ctx, &invoices, params); err != nil {
+		errMsg := fmt.Sprintf("failed to get invoices: %s", err)
 		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to list invoices"), trace.WithAttributes(attribute.String("error", errMsg)))
+		span.RecordError(errors.New("failed to get invoices"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
 
-	return toCoreInvoices(dbInvoices), nil
+	return toCoreInvoices(invoices), nil
 }
 
 // GetWorkspaceUserCount counts the number of users in a workspace
@@ -323,7 +271,7 @@ func (r *repo) GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID)
         WHERE workspace_id = :workspace_id
     `
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
