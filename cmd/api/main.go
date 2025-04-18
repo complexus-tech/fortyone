@@ -36,6 +36,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
+	"github.com/stripe/stripe-go/v82/client"
 )
 
 var (
@@ -98,6 +99,12 @@ type Config struct {
 		ProfileImagesContainer  string `default:"profile-images" env:"APP_AZURE_CONTAINER_PROFILE_IMAGES"`
 		WorkspaceLogosContainer string `default:"workspace-logos" env:"APP_AZURE_CONTAINER_WORKSPACE_LOGOS"`
 		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
+	}
+	Stripe struct {
+		SecretKey          string `env:"STRIPE_SECRET_KEY"`
+		CheckoutSuccessURL string `env:"STRIPE_CHECKOUT_SUCCESS_URL"`
+		CheckoutCancelURL  string `env:"STRIPE_CHECKOUT_CANCEL_URL"`
+		WebhookSecret      string `env:"STRIPE_WEBHOOK_SECRET"`
 	}
 }
 
@@ -256,22 +263,29 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, "google auth service initialized")
 
+	// Initialize Stripe client
+	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
+
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:            db,
-		Redis:         rdb,
-		Publisher:     publisher,
-		Shutdown:      shutdown,
-		Log:           log,
-		Tracer:        tracer,
-		SecretKey:     cfg.Auth.SecretKey,
-		EmailService:  emailService,
-		GoogleService: googleService,
-		Validate:      validate,
-		AzureConfig:   azureConfig,
-		Cache:         cacheService,
+		DB:                 db,
+		Redis:              rdb,
+		Publisher:          publisher,
+		Shutdown:           shutdown,
+		Log:                log,
+		Tracer:             tracer,
+		SecretKey:          cfg.Auth.SecretKey,
+		EmailService:       emailService,
+		GoogleService:      googleService,
+		Validate:           validate,
+		AzureConfig:        azureConfig,
+		Cache:              cacheService,
+		StripeClient:       stripeClient,
+		CheckoutSuccessURL: cfg.Stripe.CheckoutSuccessURL,
+		CheckoutCancelURL:  cfg.Stripe.CheckoutCancelURL,
+		WebhookSecret:      cfg.Stripe.WebhookSecret,
 	}
 
 	// Create the mux
