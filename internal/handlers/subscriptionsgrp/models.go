@@ -10,8 +10,6 @@ import (
 // Request/response types
 type AppCheckoutRequest struct {
 	PriceLookupKey string `json:"priceLookupKey"`
-	UserEmail      string `json:"userEmail"`
-	WorkspaceName  string `json:"workspaceName"`
 }
 
 type AppCheckoutResponse struct {

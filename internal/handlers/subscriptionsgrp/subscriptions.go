@@ -7,6 +7,9 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
+	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/internal/core/workspaces"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -18,12 +21,16 @@ var (
 
 type Handlers struct {
 	subscriptions *subscriptions.Service
+	users         *users.Service
+	workspaces    *workspaces.Service
 	log           *logger.Logger
 }
 
-func New(subscriptions *subscriptions.Service, log *logger.Logger) *Handlers {
+func New(subscriptions *subscriptions.Service, users *users.Service, workspaces *workspaces.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		subscriptions: subscriptions,
+		users:         users,
+		workspaces:    workspaces,
 		log:           log,
 	}
 }
@@ -41,6 +48,26 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
+	userId, err := mid.GetUserID(ctx)
+	if err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+	user, err := h.users.GetUser(ctx, userId)
+	if err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	workspace, err := h.workspaces.Get(ctx, workspaceId, userId)
+	if err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
 	var req AppCheckoutRequest
 	if err := web.Decode(r, &req); err != nil {
 		span.RecordError(err)
@@ -48,7 +75,7 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, req.UserEmail, req.WorkspaceName)
+	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Slug)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)

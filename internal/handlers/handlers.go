@@ -192,6 +192,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		CheckoutSuccessURL: cfg.CheckoutSuccessURL,
 		CheckoutCancelURL:  cfg.CheckoutCancelURL,
 		WebhookSecret:      cfg.WebhookSecret,
+		Publisher:          cfg.Publisher,
 	}, app)
 
 }
