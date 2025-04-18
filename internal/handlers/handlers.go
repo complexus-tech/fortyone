@@ -18,6 +18,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/subscriptionsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/usersgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/workspacesgrp"
@@ -180,6 +181,17 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+	}, app)
+
+	// register the subscriptions routes
+	subscriptionsgrp.Routes(subscriptionsgrp.Config{
+		DB:                 cfg.DB,
+		Log:                cfg.Log,
+		SecretKey:          cfg.SecretKey,
+		StripeClient:       cfg.StripeClient,
+		CheckoutSuccessURL: cfg.CheckoutSuccessURL,
+		CheckoutCancelURL:  cfg.CheckoutCancelURL,
+		WebhookSecret:      cfg.WebhookSecret,
 	}, app)
 
 }
