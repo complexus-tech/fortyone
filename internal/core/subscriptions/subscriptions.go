@@ -313,7 +313,7 @@ func (s *Service) mapPriceToTier(ctx context.Context, price *stripe.Price) Subsc
 	}
 	switch price.LookupKey {
 	case "team_monthly", "team_yearly":
-		return TierTeam
+		return TierPro
 	case "business_monthly", "business_yearly":
 		return TierBusiness
 	case "enterprise_monthly", "enterprise_yearly":

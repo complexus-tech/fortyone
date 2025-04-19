@@ -29,8 +29,12 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	}
 
 	// Fetch full subscription to get item ID
-	subParams := &stripe.SubscriptionParams{}
-	subParams.AddExpand("items")
+	subParams := &stripe.SubscriptionParams{
+		Expand: []*string{
+			stripe.String("items"),
+			stripe.String("customer"),
+		},
+	}
 	stripeSub, err := s.stripeClient.Subscriptions.Get(session.Subscription.ID, subParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch subscription: %w", err)
