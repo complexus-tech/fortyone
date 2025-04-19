@@ -231,6 +231,10 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 		h.log.Error(ctx, "Failed to handle webhook event", "error", err)
 		// Still return 200 to prevent Stripe from retrying failed events with the same payload
 		// since we've already logged the error
+		if errors.Is(err, subscriptions.ErrFailedToCreateSubscription) {
+			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			return nil
+		}
 		web.Respond(ctx, w, nil, http.StatusOK)
 		return nil
 	}

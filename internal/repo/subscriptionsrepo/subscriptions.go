@@ -269,15 +269,15 @@ func (r *repo) SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, 
 }
 
 // UpdateSubscriptionDetails updates all subscription fields in one operation
-func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier) error {
+func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateSubscriptionDetails")
 	defer span.End()
 
 	query := `
         UPDATE workspace_subscriptions
         SET
-            stripe_subscription_id = :stripe_subscription_id,
             stripe_subscription_item_id = :stripe_subscription_item_id,
+            stripe_customer_id = :stripe_customer_id,
             subscription_status = :subscription_status,
             subscription_tier = :subscription_tier,
             seat_count = :seat_count,
@@ -297,6 +297,7 @@ func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, itemID stri
 		"subscription_tier":           string(tier),
 		"seat_count":                  seatCount,
 		"trial_end_date":              trialEnd,
+		"stripe_customer_id":          custID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -431,6 +432,80 @@ func (r *repo) CreateInvoice(ctx context.Context, invoice subscriptions.CoreSubs
 		errMsg := fmt.Sprintf("failed to create invoice: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create invoice"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	return nil
+}
+
+// CreateSubscription creates a new subscription record
+func (r *repo) CreateSubscription(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	stripeCustomerID string,
+	subscriptionID string,
+	subscriptionItemID string,
+	status subscriptions.SubscriptionStatus,
+	seatCount int,
+	trialEnd *time.Time,
+	tier subscriptions.SubscriptionTier,
+) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.CreateSubscription")
+	defer span.End()
+
+	query := `
+        INSERT INTO workspace_subscriptions (
+            stripe_customer_id,
+            workspace_id,
+            stripe_subscription_id,
+            stripe_subscription_item_id,
+            subscription_status,
+            subscription_tier,
+            seat_count,
+            trial_end_date,
+            created_at,
+            updated_at
+        ) VALUES (
+            :stripe_customer_id,
+            :workspace_id,
+            :stripe_subscription_id,
+            :stripe_subscription_item_id,
+            :subscription_status,
+            :subscription_tier,
+            :seat_count,
+            :trial_end_date,
+            NOW(),
+            NOW()
+        )
+    `
+
+	// Convert subscription status to string
+	statusStr := string(status)
+
+	params := map[string]any{
+		"workspace_id":                workspaceID,
+		"stripe_subscription_id":      subscriptionID,
+		"stripe_subscription_item_id": subscriptionItemID,
+		"subscription_status":         statusStr,
+		"subscription_tier":           string(tier),
+		"seat_count":                  seatCount,
+		"trial_end_date":              trialEnd,
+		"stripe_customer_id":          stripeCustomerID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		errMsg := fmt.Sprintf("failed to create subscription: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create subscription"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 

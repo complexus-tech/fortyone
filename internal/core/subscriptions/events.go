@@ -62,7 +62,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 
 	// Update database
 	err = s.repo.UpdateSubscriptionDetails(
-		ctx, stripeSub.ID, subItemID, status,
+		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
 		seatCount, trialEnd, tier,
 	)
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 
 	// Update database
 	if err := s.repo.UpdateSubscriptionDetails(
-		ctx, stripeSub.ID, subItemID, status,
+		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
 		seatCount, trialEnd, tier,
 	); err != nil {
 		return fmt.Errorf("failed to update subscription details: %w", err)
@@ -137,6 +137,64 @@ func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Ev
 	}
 
 	s.log.Info(ctx, "Subscription marked as canceled", "subscription_id", stripeSub.ID)
+	return nil
+}
+
+// handleSubscriptionCreated handles the customer.subscription.created event triggered by Stripe
+// when a subscription is first created, either through checkout or directly via the API.
+func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Event) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionCreated")
+	defer span.End()
+
+	var stripeSub stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
+		return fmt.Errorf("failed to unmarshal subscription: %w", err)
+	}
+
+	// Get customer details to retrieve workspace_id
+	cust, err := s.stripeClient.Customers.Get(stripeSub.Customer.ID, nil)
+	if err != nil || cust.Metadata["workspace_id"] == "" {
+		return fmt.Errorf("missing workspace_id metadata for subscription %s", stripeSub.ID)
+	}
+
+	workspaceIDStr := cust.Metadata["workspace_id"]
+	workspaceID, err := uuid.Parse(workspaceIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
+	}
+
+	// Extract relevant data
+	var subItemID string
+	var seatCount int
+	var tier SubscriptionTier = TierFree
+
+	if len(stripeSub.Items.Data) > 0 {
+		item := stripeSub.Items.Data[0]
+		subItemID = item.ID
+		seatCount = int(item.Quantity)
+		tier = s.mapPriceToTier(ctx, item.Price)
+	} else {
+		s.log.Error(ctx, "Subscription creation event received with no items", "subscription_id", stripeSub.ID)
+		seatCount = 0
+	}
+
+	status := SubscriptionStatus(stripeSub.Status)
+	var trialEnd *time.Time
+	if stripeSub.TrialEnd > 0 {
+		t := time.Unix(stripeSub.TrialEnd, 0)
+		trialEnd = &t
+	}
+
+	// Create subscription in database
+	if err := s.repo.CreateSubscription(ctx, workspaceID, cust.ID, stripeSub.ID, subItemID, status, seatCount, trialEnd, tier); err != nil {
+		return ErrFailedToCreateSubscription
+	}
+
+	s.log.Info(ctx, "New subscription created in database",
+		"subscription_id", stripeSub.ID,
+		"workspace_id", workspaceID,
+		"status", status,
+		"seat_count", seatCount)
 	return nil
 }
 

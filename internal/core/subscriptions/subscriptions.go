@@ -17,14 +17,15 @@ import (
 )
 
 var (
-	ErrSubscriptionNotFound     = errors.New("subscription not found")
-	ErrInvoiceNotFound          = errors.New("invoice not found")
-	ErrInvalidSubscription      = errors.New("invalid subscription data")
-	ErrInvalidInvoice           = errors.New("invalid invoice data")
-	ErrStripeOperationFailed    = errors.New("stripe operation failed")
-	ErrAlreadyProcessingEvent   = errors.New("already processing event")
-	ErrSubscriptionItemNotFound = errors.New("stripe subscription item ID not found for workspace")
-	ErrWorkspaceHasActiveSub    = errors.New("workspace already has an active subscription")
+	ErrSubscriptionNotFound       = errors.New("subscription not found")
+	ErrInvoiceNotFound            = errors.New("invoice not found")
+	ErrInvalidSubscription        = errors.New("invalid subscription data")
+	ErrInvalidInvoice             = errors.New("invalid invoice data")
+	ErrStripeOperationFailed      = errors.New("stripe operation failed")
+	ErrAlreadyProcessingEvent     = errors.New("already processing event")
+	ErrSubscriptionItemNotFound   = errors.New("stripe subscription item ID not found for workspace")
+	ErrWorkspaceHasActiveSub      = errors.New("workspace already has an active subscription")
+	ErrFailedToCreateSubscription = errors.New("failed to create subscription")
 )
 
 // Repository defines methods for accessing subscription data
@@ -34,9 +35,10 @@ type Repository interface {
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
-	UpdateSubscriptionDetails(ctx context.Context, subID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
+	UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
 	UpdateSubscriptionStatus(ctx context.Context, subID string, status SubscriptionStatus) error
 	CreateInvoice(ctx context.Context, invoice CoreSubscriptionInvoice) error
+	CreateSubscription(ctx context.Context, workspaceID uuid.UUID, stripeCustomerID string, subscriptionID string, subscriptionItemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
 	HasEventBeenProcessed(ctx context.Context, eventID string) (bool, error)
 	MarkEventAsProcessed(ctx context.Context, eventID string, eventType string, workspaceID *uuid.UUID, payload []byte) error
 }
@@ -138,14 +140,6 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 		}
 		customerID = newCust.ID
 		s.log.Info(ctx, "Stripe customer created successfully", "customer_id", customerID, "workspace_id", workspaceID)
-
-		// Save the new customer ID
-		err = s.repo.SaveStripeCustomerID(ctx, workspaceID, customerID)
-		if err != nil {
-			span.RecordError(err)
-			s.log.Error(ctx, "Failed to save Stripe customer ID to DB", "error", err, "workspace_id", workspaceID)
-			// Log error but proceed with checkout creation
-		}
 	}
 
 	// Get current workspace user count for initial seat quantity
@@ -292,25 +286,25 @@ func (s *Service) CreateCustomerPortalSession(ctx context.Context, workspaceID u
 	defer span.End()
 
 	// Get subscription
-	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
-	if err != nil || sub.StripeCustomerID == "" {
+	lastSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil || lastSub.StripeCustomerID == "" {
 		s.log.Error(ctx, "Failed to get Stripe customer ID", "error", err, "workspace_id", workspaceID)
 		return "", fmt.Errorf("customer not found: %w", err)
 	}
 
 	// Create portal session
 	params := &stripe.BillingPortalSessionParams{
-		Customer:  stripe.String(sub.StripeCustomerID),
+		Customer:  stripe.String(lastSub.StripeCustomerID),
 		ReturnURL: stripe.String(returnURL),
 	}
 
 	ps, err := s.stripeClient.BillingPortalSessions.New(params)
 	if err != nil {
-		s.log.Error(ctx, "Failed to create portal session", "error", err, "customer_id", sub.StripeCustomerID)
+		s.log.Error(ctx, "Failed to create portal session", "error", err, "customer_id", lastSub.StripeCustomerID)
 		return "", fmt.Errorf("%w: creating portal session: %v", ErrStripeOperationFailed, err)
 	}
 
-	s.log.Info(ctx, "Portal session created", "customer_id", sub.StripeCustomerID)
+	s.log.Info(ctx, "Portal session created", "customer_id", lastSub.StripeCustomerID)
 	return ps.URL, nil
 }
 
@@ -320,7 +314,7 @@ func (s *Service) mapPriceToTier(ctx context.Context, price *stripe.Price) Subsc
 		return TierFree
 	}
 	switch price.LookupKey {
-	case "team_monthly", "team_yearly":
+	case "pro_monthly", "pro_yearly":
 		return TierPro
 	case "business_monthly", "business_yearly":
 		return TierBusiness
@@ -347,16 +341,16 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	s.log.Info(ctx, "Handling Stripe webhook event", "event_id", event.ID, "event_type", event.Type)
 
 	// Check for idempotency
-	processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
-	if err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
-		return fmt.Errorf("failed to check event idempotency: %w", err)
-	}
-	if processed {
-		s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
-		return nil // Already processed
-	}
+	// processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
+	// if err != nil {
+	// 	span.RecordError(err)
+	// 	s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
+	// 	return fmt.Errorf("failed to check event idempotency: %w", err)
+	// }
+	// if processed {
+	// 	s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
+	// 	return nil // Already processed
+	// }
 
 	// Extract workspace ID for logging
 	var workspaceID *uuid.UUID
@@ -365,8 +359,10 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	switch event.Type {
 	case "checkout.session.completed":
 		processingError = s.handleCheckoutSessionCompleted(ctx, event)
-	case "customer.subscription.created", "customer.subscription.updated":
+	case "customer.subscription.updated":
 		processingError = s.handleSubscriptionUpdated(ctx, event)
+	case "customer.subscription.created":
+		processingError = s.handleSubscriptionCreated(ctx, event)
 	case "customer.subscription.deleted":
 		processingError = s.handleSubscriptionDeleted(ctx, event)
 	case "invoice.paid":
