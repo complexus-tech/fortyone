@@ -65,8 +65,7 @@ const Copyright = () => (
       </Link>
       |
       <Text fontSize="sm">
-        © {new Date().getFullYear()} Complexus Technologies &bull; All rights
-        reserved.
+        © {new Date().getFullYear()} Complexus LLC &bull; All rights reserved.
       </Text>
     </Box>
   </Box>
@@ -204,15 +203,7 @@ export const Footer = () => {
       <Container className="pb-8 md:pb-16">
         <Copyright />
         <Text className="mt-6" color="muted" fontSize="sm">
-          Complexus is a product of{" "}
-          <a
-            className="underline underline-offset-[3px] hover:text-primary"
-            href="http://complexus.tech"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Complexus Technologies.
-          </a>
+          Complexus is a product of Complexus LLC.
         </Text>
       </Container>
     </Box>
