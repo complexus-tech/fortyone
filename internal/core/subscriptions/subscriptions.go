@@ -32,8 +32,8 @@ type Repository interface {
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
-	UpdateSubscriptionDetails(ctx context.Context, workspaceID uuid.UUID, subID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
-	UpdateSubscriptionStatus(ctx context.Context, workspaceID uuid.UUID, subID string, status SubscriptionStatus) error
+	UpdateSubscriptionDetails(ctx context.Context, subID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
+	UpdateSubscriptionStatus(ctx context.Context, subID string, status SubscriptionStatus) error
 	CreateInvoice(ctx context.Context, invoice CoreSubscriptionInvoice) error
 	HasEventBeenProcessed(ctx context.Context, eventID string) (bool, error)
 	MarkEventAsProcessed(ctx context.Context, eventID string, eventType string, workspaceID *uuid.UUID, payload []byte) error
@@ -339,16 +339,16 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	s.log.Info(ctx, "Handling Stripe webhook event", "event_id", event.ID, "event_type", event.Type)
 
 	// Check for idempotency
-	processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
-	if err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
-		return fmt.Errorf("failed to check event idempotency: %w", err)
-	}
-	if processed {
-		s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
-		return nil // Already processed
-	}
+	// processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
+	// if err != nil {
+	// 	span.RecordError(err)
+	// 	s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
+	// 	return fmt.Errorf("failed to check event idempotency: %w", err)
+	// }
+	// if processed {
+	// 	s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
+	// 	return nil // Already processed
+	// }
 
 	// Extract workspace ID for logging
 	var workspaceID *uuid.UUID
@@ -356,13 +356,13 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	var processingError error
 	switch event.Type {
 	case "checkout.session.completed":
-		workspaceID, processingError = s.handleCheckoutSessionCompleted(ctx, event)
+		processingError = s.handleCheckoutSessionCompleted(ctx, event)
 	case "customer.subscription.created", "customer.subscription.updated":
-		workspaceID, processingError = s.handleSubscriptionUpdated(ctx, event)
+		processingError = s.handleSubscriptionUpdated(ctx, event)
 	case "customer.subscription.deleted":
-		workspaceID, processingError = s.handleSubscriptionDeleted(ctx, event)
+		processingError = s.handleSubscriptionDeleted(ctx, event)
 	case "invoice.paid":
-		workspaceID, processingError = s.handleInvoicePaid(ctx, event)
+		processingError = s.handleInvoicePaid(ctx, event)
 	default:
 		s.log.Info(ctx, "Unhandled Stripe webhook event type", "event_type", event.Type)
 	}

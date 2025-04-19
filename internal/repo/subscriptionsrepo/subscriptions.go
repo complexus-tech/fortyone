@@ -213,7 +213,7 @@ func (r *repo) SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, 
 }
 
 // UpdateSubscriptionDetails updates all subscription fields in one operation
-func (r *repo) UpdateSubscriptionDetails(ctx context.Context, workspaceID uuid.UUID, subID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier) error {
+func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateSubscriptionDetails")
 	defer span.End()
 
@@ -228,14 +228,13 @@ func (r *repo) UpdateSubscriptionDetails(ctx context.Context, workspaceID uuid.U
             trial_end_date = :trial_end_date,
             updated_at = NOW()
         WHERE
-            workspace_id = :workspace_id
+            stripe_subscription_id = :stripe_subscription_id
     `
 
 	// Convert subscription status from enum to string
 	statusStr := string(status)
 
 	params := map[string]any{
-		"workspace_id":                workspaceID,
 		"stripe_subscription_id":      subID,
 		"stripe_subscription_item_id": itemID,
 		"subscription_status":         statusStr,
@@ -277,7 +276,7 @@ func (r *repo) UpdateSubscriptionDetails(ctx context.Context, workspaceID uuid.U
 }
 
 // UpdateSubscriptionStatus updates only the subscription status
-func (r *repo) UpdateSubscriptionStatus(ctx context.Context, workspaceID uuid.UUID, subID string, status subscriptions.SubscriptionStatus) error {
+func (r *repo) UpdateSubscriptionStatus(ctx context.Context, subID string, status subscriptions.SubscriptionStatus) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateSubscriptionStatus")
 	defer span.End()
 
@@ -287,14 +286,12 @@ func (r *repo) UpdateSubscriptionStatus(ctx context.Context, workspaceID uuid.UU
             subscription_status = :subscription_status,
             updated_at = NOW()
         WHERE
-            workspace_id = :workspace_id
-            AND stripe_subscription_id = :stripe_subscription_id
+          stripe_subscription_id = :stripe_subscription_id
     `
 
 	statusStr := string(status)
 
 	params := map[string]any{
-		"workspace_id":           workspaceID,
 		"stripe_subscription_id": subID,
 		"subscription_status":    statusStr,
 	}

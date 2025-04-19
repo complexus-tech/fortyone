@@ -13,19 +13,19 @@ import (
 
 // handleCheckoutSessionCompleted handles the checkout.session.completed event triggered by the customer
 // when they complete the checkout process.
-func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) (*uuid.UUID, error) {
+func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) error {
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleCheckoutSessionCompleted")
 	defer span.End()
 
 	var session stripe.CheckoutSession
 	if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal checkout session: %w", err)
+		return fmt.Errorf("failed to unmarshal checkout session: %w", err)
 	}
 
 	// Get subscription details
 	if session.Subscription == nil {
 		s.log.Error(ctx, "Checkout session completed but no subscription ID found", "session_id", session.ID)
-		return nil, fmt.Errorf("checkout session completed but no subscription ID found")
+		return fmt.Errorf("checkout session completed but no subscription ID found")
 	}
 
 	// Fetch full subscription to get item ID
@@ -37,18 +37,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	}
 	stripeSub, err := s.stripeClient.Subscriptions.Get(session.Subscription.ID, subParams)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch subscription: %w", err)
-	}
-
-	// Get workspace ID from metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return nil, fmt.Errorf("missing workspace_id metadata on customer for subscription %s", stripeSub.ID)
-	}
-
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return &workspaceID, fmt.Errorf("invalid workspace_id format in metadata: %w", err)
+		return fmt.Errorf("failed to fetch subscription: %w", err)
 	}
 
 	// Get subscription item details
@@ -61,7 +50,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
 	} else {
-		return &workspaceID, fmt.Errorf("subscription %s created with no items", stripeSub.ID)
+		return fmt.Errorf("subscription %s created with no items", stripeSub.ID)
 	}
 
 	status := SubscriptionStatus(stripeSub.Status)
@@ -73,37 +62,27 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 
 	// Update database
 	err = s.repo.UpdateSubscriptionDetails(
-		ctx, workspaceID, stripeSub.ID, subItemID, status,
+		ctx, stripeSub.ID, subItemID, status,
 		seatCount, trialEnd, tier,
 	)
 	if err != nil {
-		return &workspaceID, fmt.Errorf("failed to update subscription details: %w", err)
+		return fmt.Errorf("failed to update subscription details: %w", err)
 	}
 
-	s.log.Info(ctx, "Subscription details updated from checkout.session.completed",
-		"workspace_id", workspaceID, "subscription_id", stripeSub.ID)
-	return &workspaceID, nil
+	s.log.Info(ctx, "Subscription details updated from event", "event_type", event.Type,
+		"subscription_id", stripeSub.ID)
+	return nil
 }
 
 // handleSubscriptionUpdated handles the subscription.updated event triggered by Stripe when the subscription
 // is updated. This includes changes to the status, items, or other subscription details.
-func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) (*uuid.UUID, error) {
+func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionUpdated")
 	defer span.End()
 
 	var stripeSub stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal subscription: %w", err)
-	}
-
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return nil, fmt.Errorf("missing workspace_id metadata on customer for subscription %s", stripeSub.ID)
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid workspace_id format in metadata: %w", err)
+		return fmt.Errorf("failed to unmarshal subscription: %w", err)
 	}
 
 	// Extract relevant data
@@ -128,74 +107,57 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 	}
 
 	// Update database
-	err = s.repo.UpdateSubscriptionDetails(
-		ctx, workspaceID, stripeSub.ID, subItemID, status,
+	if err := s.repo.UpdateSubscriptionDetails(
+		ctx, stripeSub.ID, subItemID, status,
 		seatCount, trialEnd, tier,
-	)
-	if err != nil {
-		return &workspaceID, fmt.Errorf("failed to update subscription details: %w", err)
+	); err != nil {
+		return fmt.Errorf("failed to update subscription details: %w", err)
 	}
 
 	s.log.Info(ctx, "Subscription details updated from subscription event",
-		"workspace_id", workspaceID, "subscription_id", stripeSub.ID,
+		"subscription_id", stripeSub.ID,
 		"status", status, "seat_count", seatCount)
-	return &workspaceID, nil
+	return nil
 }
 
-func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) (*uuid.UUID, error) {
+func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) error {
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionDeleted")
 	defer span.End()
 
 	var stripeSub stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal subscription deletion: %w", err)
+		return fmt.Errorf("failed to unmarshal subscription deletion: %w", err)
 	}
-
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := stripeSub.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		return nil, fmt.Errorf("missing workspace_id metadata on customer for deleted subscription %s", stripeSub.ID)
-	}
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
 	// Update status in DB to 'canceled'
-	err = s.repo.UpdateSubscriptionStatus(ctx, workspaceID, stripeSub.ID, StatusCanceled)
+	err := s.repo.UpdateSubscriptionStatus(ctx, stripeSub.ID, StatusCanceled)
 	if err != nil {
 		s.log.Error(ctx, "Failed to update subscription status to canceled in DB", "error", err,
-			"workspace_id", workspaceID, "subscription_id", stripeSub.ID)
+			"subscription_id", stripeSub.ID)
 	}
 
-	s.log.Info(ctx, "Subscription marked as canceled", "workspace_id", workspaceID, "subscription_id", stripeSub.ID)
-	return &workspaceID, nil
+	s.log.Info(ctx, "Subscription marked as canceled", "subscription_id", stripeSub.ID)
+	return nil
 }
 
-func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) (*uuid.UUID, error) {
+func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleInvoicePaid")
 	defer span.End()
 
 	var invoice stripe.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal invoice: %w", err)
+		return fmt.Errorf("failed to unmarshal invoice: %w", err)
 	}
 
-	// Extract workspace ID from customer metadata
-	workspaceIDStr, ok := invoice.Customer.Metadata["workspace_id"]
-	if !ok || workspaceIDStr == "" {
-		// Try fetching customer
-		cust, err := s.stripeClient.Customers.Get(invoice.Customer.ID, nil)
-		if err != nil || cust.Metadata["workspace_id"] == "" {
-			return nil, fmt.Errorf("missing workspace_id metadata for invoice %s", invoice.ID)
-		}
-		workspaceIDStr = cust.Metadata["workspace_id"]
+	cust, err := s.stripeClient.Customers.Get(invoice.Customer.ID, nil)
+	if err != nil || cust.Metadata["workspace_id"] == "" {
+		return fmt.Errorf("missing workspace_id metadata for invoice %s", invoice.ID)
 	}
+
+	workspaceIDStr := cust.Metadata["workspace_id"]
 	workspaceID, err := uuid.Parse(workspaceIDStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid workspace_id format in metadata: %w", err)
+		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
 	}
-
 	// Extract invoice details
 	amountPaid := float64(invoice.AmountPaid) / 100.0
 	invoiceDate := time.Unix(invoice.Created, 0)
@@ -220,9 +182,8 @@ func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) (*u
 
 	err = s.repo.CreateInvoice(ctx, coreInvoice)
 	if err != nil {
-		return &workspaceID, fmt.Errorf("failed to save invoice record: %w", err)
+		return fmt.Errorf("failed to save invoice record: %w", err)
 	}
-
-	s.log.Info(ctx, "Paid invoice record saved", "workspace_id", workspaceID, "invoice_id", invoice.ID)
-	return &workspaceID, nil
+	s.log.Info(ctx, "Paid invoice record saved", "invoice_id", invoice.ID)
+	return nil
 }
