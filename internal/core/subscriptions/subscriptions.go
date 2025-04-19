@@ -24,6 +24,7 @@ var (
 	ErrStripeOperationFailed    = errors.New("stripe operation failed")
 	ErrAlreadyProcessingEvent   = errors.New("already processing event")
 	ErrSubscriptionItemNotFound = errors.New("stripe subscription item ID not found for workspace")
+	ErrWorkspaceHasActiveSub    = errors.New("workspace already has an active subscription")
 )
 
 // Repository defines methods for accessing subscription data
@@ -102,7 +103,7 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 	hasActiveSub := s.repo.HasActiveSubscriptionByWorkspaceID(ctx, workspaceID)
 	if hasActiveSub {
 		s.log.Info(ctx, "Workspace already has an active subscription", "workspace_id", workspaceID)
-		return "", fmt.Errorf("workspace already has an active subscription")
+		return "", ErrWorkspaceHasActiveSub
 	}
 
 	// 1. Get current subscription/customer info
