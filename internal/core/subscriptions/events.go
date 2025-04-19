@@ -89,6 +89,7 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 	var subItemID string
 	var seatCount int
 	var tier SubscriptionTier = TierFree
+
 	if len(stripeSub.Items.Data) > 0 {
 		item := stripeSub.Items.Data[0]
 		subItemID = item.ID
