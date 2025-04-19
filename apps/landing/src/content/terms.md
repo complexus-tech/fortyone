@@ -2,7 +2,7 @@
 
 Effective date: {{date}}
 
-THESE TERMS OF SERVICE (the "Agreement") GOVERN CUSTOMER'S RECEIPT, ACCESS, TO AND USE OF THE SERVICE (AS DEFINED BELOW) PROVIDED BY COMPLEXUS TECHNOLOGIES ("Complexus"). IN ACCEPTING THIS AGREEMENT BY (A) PURCHASING ACCESS TO THE SERVICE THROUGH AN ONLINE ORDERING PROCESS THAT REFERENCES THIS AGREEMENT, (B) SIGNING UP FOR A FREE TRIAL OF THE SERVICE THROUGH A SCREEN THAT REFERENCES THIS AGREEMENT, OR (C) CLICKING A BOX INDICATING ACCEPTANCE, CUSTOMER AGREES TO BE BOUND BY ITS TERMS.
+THESE TERMS OF SERVICE (the "Agreement") GOVERN CUSTOMER'S RECEIPT, ACCESS, TO AND USE OF THE SERVICE (AS DEFINED BELOW) PROVIDED BY Complexus LLC ("Complexus"). IN ACCEPTING THIS AGREEMENT BY (A) PURCHASING ACCESS TO THE SERVICE THROUGH AN ONLINE ORDERING PROCESS THAT REFERENCES THIS AGREEMENT, (B) SIGNING UP FOR A FREE TRIAL OF THE SERVICE THROUGH A SCREEN THAT REFERENCES THIS AGREEMENT, OR (C) CLICKING A BOX INDICATING ACCEPTANCE, CUSTOMER AGREES TO BE BOUND BY ITS TERMS.
 
 THE INDIVIDUAL ACCEPTING THIS AGREEMENT DOES SO ON BEHALF OF A COMPANY OR OTHER LEGAL ENTITY ("Customer"); SUCH INDIVIDUAL REPRESENTS AND WARRANTS THAT THEY HAVE THE AUTHORITY TO BIND SUCH ENTITY TO THIS AGREEMENT. IF THE INDIVIDUAL ACCEPTING THIS AGREEMENT DOES NOT HAVE SUCH AUTHORITY, OR THE APPLICABLE ENTITY DOES NOT AGREE WITH THESE TERMS AND CONDITIONS, SUCH INDIVIDUAL MUST NOT ACCEPT THIS AGREEMENT AND MAY NOT USE OR RECEIVE THE SERVICE. CAPITALIZED TERMS HAVE THE DEFINITIONS SET FORTH HEREIN. THE PARTIES AGREE AS FOLLOWS:
 
@@ -120,11 +120,11 @@ Customer acknowledges that the Service is an on-line, subscription-based product
 
 ### 10.2. Email Communications
 
-Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although Complexus may instead choose to provide notice to Customer through the Service, (b) notices to Complexus must be sent to support@complexus.app, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
+Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although Complexus may instead choose to provide notice to Customer through the Service, (b) notices to Complexus must be sent to info@complexus.app, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
 
 ### 10.3. Governing Law and Venue
 
-This Agreement, and any disputes arising out of or related hereto, will be governed exclusively by the internal laws of the State of California, without regard to its conflicts of laws rules. The state and federal courts located in California will have exclusive jurisdiction to adjudicate any dispute arising out of or relating to this Agreement or its formation, interpretation or enforcement.
+This Agreement, and any disputes arising out of or related hereto, will be governed exclusively by the internal laws of the State of Delaware, without regard to its conflicts of laws rules. The state and federal courts located in Delaware will have exclusive jurisdiction to adjudicate any dispute arising out of or relating to this Agreement or its formation, interpretation or enforcement.
 
 ### 10.4. Entire Agreement
 
@@ -134,10 +134,10 @@ This Agreement, including all referenced pages and Orders, if applicable, consti
 
 For questions about these Terms, please contact us at:
 
-Legal Department: legal@complexus.app
+Legal Department: info@complexus.app
 
 For general inquiries:
-Support: support@complexus.app
+Support: info@complexus.app
 
 For billing questions:
-Billing: billing@complexus.app
+Billing: info@complexus.app

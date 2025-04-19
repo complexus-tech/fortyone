@@ -17,9 +17,9 @@ The words of which the initial letter is capitalized have meanings defined under
 For the purposes of this Privacy Policy:
 
 - **Account** means a unique account created for You to access our Service or parts of our Service.
-- **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Complexus, Inc.
+- **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Complexus LLC.
 - **Cookies** are small files that are placed on Your computer, mobile device or any other device by a website, containing the details of Your browsing history on that website among its many uses.
-- **Country** refers to: California, United States
+- **Country** refers to: Delaware, United States
 - **Device** means any device that can access the Service such as a computer, a cellphone or a digital tablet.
 - **Personal Data** is any information that relates to an identified or identifiable individual.
 - **Service** refers to the Complexus project management platform.
@@ -151,10 +151,10 @@ You are advised to review this Privacy Policy periodically for any changes. Chan
 
 If you have any questions about this Privacy Policy, You can contact us:
 
-By email: support@complexus.tech
+By email: info@complexus.app
 
 For data protection inquiries:
-Data Protection Officer: dpo@complexus.tech
+Data Protection Officer: info@complexus.app
 
 For general support:
-Support: support@complexus.tech
+Support: info@complexus.app
