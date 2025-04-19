@@ -29,6 +29,7 @@ var (
 // Repository defines methods for accessing subscription data
 type Repository interface {
 	GetSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspaceSubscription, error)
+	HasActiveSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) bool
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
@@ -97,6 +98,12 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 	s.log.Info(ctx, "Initiating checkout session", "workspace_id", workspaceID, "lookup_key", lookupKey)
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCheckoutSession")
 	defer span.End()
+
+	hasActiveSub := s.repo.HasActiveSubscriptionByWorkspaceID(ctx, workspaceID)
+	if hasActiveSub {
+		s.log.Info(ctx, "Workspace already has an active subscription", "workspace_id", workspaceID)
+		return "", fmt.Errorf("workspace already has an active subscription")
+	}
 
 	// 1. Get current subscription/customer info
 	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)

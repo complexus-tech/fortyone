@@ -50,6 +50,9 @@ func (r *repo) GetSubscriptionByWorkspaceID(ctx context.Context, workspaceID uui
             workspace_subscriptions
         WHERE
             workspace_id = :workspace_id
+        ORDER BY
+            created_at DESC
+        LIMIT 1
     `
 
 	params := map[string]any{
@@ -159,6 +162,59 @@ func (r *repo) GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID)
 	}
 
 	return count, nil
+}
+
+// HasActiveSubscriptionByWorkspaceID checks if a currently active (or trialing/past_due) subscription exists for a workspace.
+// It returns false if no active subscription exists or if an error occurs.
+func (r *repo) HasActiveSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) bool {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.HasActiveSubscriptionByWorkspaceID")
+	defer span.End()
+
+	query := `
+        SELECT
+            1
+        FROM
+            workspace_subscriptions
+        WHERE
+            workspace_id = :workspace_id
+        AND (
+            subscription_status = :status_active OR
+            subscription_status = :status_trialing OR
+            subscription_status = :status_past_due
+        )
+        LIMIT 1
+    `
+
+	params := map[string]any{
+		"workspace_id":    workspaceID,
+		"status_active":   string(subscriptions.StatusActive),
+		"status_trialing": string(subscriptions.StatusTrialing),
+		"status_past_due": string(subscriptions.StatusPastDue),
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement for active subscription check: %s", err)
+		r.log.Error(ctx, errMsg, "workspace_id", workspaceID)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return false
+	}
+	defer stmt.Close()
+
+	var exists int
+	if err := stmt.GetContext(ctx, &exists, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			span.SetAttributes(attribute.Bool("active_subscription_found", false))
+			return false
+		}
+		errMsg := fmt.Sprintf("failed to execute query for active subscription check: %s", err)
+		r.log.Error(ctx, errMsg, "workspace_id", workspaceID)
+		span.RecordError(errors.New("failed to get active subscription check"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return false
+	}
+
+	span.SetAttributes(attribute.Bool("active_subscription_found", true))
+	return true
 }
 
 // SaveStripeCustomerID stores or updates the Stripe customer ID for a workspace
