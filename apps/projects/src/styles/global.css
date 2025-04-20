@@ -8,7 +8,7 @@
 
 body,
 html {
-  @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[14px] font-medium text-dark dark:bg-dark dark:text-gray-200 md:text-[13px] 2xl:text-[14px];
+  @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13px] font-medium text-dark dark:bg-dark dark:text-gray-200 2xl:text-[14px];
 }
 
 body {
