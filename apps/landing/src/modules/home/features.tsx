@@ -109,7 +109,7 @@ const Card = ({
           </Box>
           <Text className="mt-4 opacity-80">{description}</Text>
         </Box>
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
+        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
       </Box>
     </motion.div>
   );

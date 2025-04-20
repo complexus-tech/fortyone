@@ -47,10 +47,10 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-7xl md:leading-[1.1]"
             >
               <span className="text-stroke-white">Project</span> Management That
-              Works the Way <Text as="span">You Do</Text>
+              Adapts To Your Workflow
             </Text>
           </motion.span>
 
@@ -63,10 +63,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="mt-8 max-w-[600px] text-lg opacity-80 md:text-2xl"
-              fontWeight="normal"
-            >
+            <Text className="mt-8 max-w-[600px] text-lg opacity-80 md:text-2xl">
               Track, align, and achieve team objectives with powerful insights
               that keep everyone moving forward.
             </Text>
@@ -120,9 +117,7 @@ export const Hero = () => {
               </Button>
             </motion.span>
           </Flex>
-          <Text className="mt-6" color="muted">
-            No credit card required.
-          </Text>
+          <Text className="mt-6 opacity-60">No credit card required.</Text>
         </Flex>
       </Container>
     </Box>

@@ -247,7 +247,7 @@ export const Testimonials = () => {
           </Box>
         </Box>
       </AnimatePresence>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
+      {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" /> */}
     </Container>
   );
 };

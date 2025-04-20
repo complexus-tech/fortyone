@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid border-y border-dark-300/60 bg-gradient-to-r from-dark-300 via-black to-black py-20 md:grid-cols-2 md:py-0">
+    <Box className="relative grid bg-gradient-to-b from-black via-black to-black py-20 md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
@@ -18,8 +18,9 @@ export const Transform = () => {
           quality={100}
           src="/images/login.webp"
         />
+        <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-25% " />
       </Box>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
+      {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       <Box className="z-[3] md:absolute md:inset-0">
         <Container className="grid-cols-2 gap-10 md:grid md:h-full">
           <Flex direction="column" justify="center">
@@ -46,19 +47,8 @@ export const Transform = () => {
               as="h2"
               className="mt-6 text-center text-5xl md:text-left md:text-7xl"
             >
-              <span className="text-stroke-white">Transform</span> how your{" "}
-              <Text as="span" color="gradient">
-                team
-              </Text>{" "}
-              works{" "}
-              <span className="text-stroke-white relative">
-                today
-                <img
-                  alt=""
-                  className="absolute -bottom-16 left-0 h-auto w-full -rotate-12 opacity-80 invert md:-bottom-24"
-                  src="/svgs/arrow.svg"
-                />
-              </span>
+              <span className="text-stroke-white">Transform</span> how your team
+              works <span className="text-stroke-white relative">today.</span>
             </Text>
             <Text
               className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl"

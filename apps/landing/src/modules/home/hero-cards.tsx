@@ -53,8 +53,6 @@ export const HeroCards = () => {
           cursor.removeText();
         }}
       >
-        {/* <Blur className="absolute -bottom-28 -left-36 isolate hidden h-[600px] w-[600px] bg-warning/15 dark:md:block" />
-        <Blur className="absolute -bottom-6 -right-20 hidden h-[500px] w-[500px] bg-warning/20 dark:md:block" /> */}
         <Swiper
           autoplay={{
             delay: 2000,
@@ -67,12 +65,12 @@ export const HeroCards = () => {
         >
           {cards.map((card) => (
             <SwiperSlide
-              className="relative rounded-lg border bg-gray-100/60 p-0.5 backdrop-blur dark:border-gray/60 dark:bg-dark-100/40 md:rounded-xl md:p-1.5"
+              className="relative rounded-lg border border-dark-100 bg-dark-100/40 p-0.5 backdrop-blur md:rounded-2xl md:p-1.5"
               key={card.id}
             >
               <Image
                 alt={card.title}
-                className="relative rounded border dark:border-dark-100 md:rounded-lg"
+                className="relative rounded border dark:border-dark-100 md:rounded-[0.8rem]"
                 placeholder="blur"
                 src={card.image.src}
               />
