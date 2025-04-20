@@ -3,7 +3,7 @@ import { Flex, Text, Box, Button, Badge } from "ui";
 import { motion } from "framer-motion";
 import { cn } from "lib";
 import { useState } from "react";
-import { CheckIcon } from "icons";
+import { SuccessIcon } from "icons";
 import { Container } from "./container";
 
 type Billing = "annual" | "monthly";
@@ -16,12 +16,11 @@ const packages = [
       "Start your Hobby projects with our free plan. No credit card required.",
     price: 0,
     features: [
-      "Use Kanban boards & lists",
-      "All Integrations & API",
-      "Google OAuth login",
-      "Import & Export",
-      "200 stories",
-      "Importers",
+      "1 team",
+      "Up to 5 members",
+      "Up to 50 stories",
+      "Single Sign-On (SSO)",
+      "Email support",
     ],
   },
   {
@@ -31,11 +30,12 @@ const packages = [
     overview: "Everything in Hobby, plus more features for small teams.",
     price: 7,
     features: [
-      "See product vision with Roadmaps",
+      "Up to 3 teams",
+      "Up to 5 objectives",
       "Track OKRs",
-      "Roadmaps",
-      "Analytics & Reporting",
-      "Custom fields",
+      "Unlimited stories",
+      "Unlimited guests",
+      "Custom workflows",
     ],
   },
   {
@@ -46,37 +46,34 @@ const packages = [
       "Everything in Professional, plus more features for mid-sized teams.",
     price: 10,
     features: [
-      "Unlimited everything",
-      "Unlimited custom workflows",
-      "Single Sign-On (SSO)",
+      "Unlimited teams",
+      "Unlimited objectives",
+      "Custom terminology",
       "Priority support",
-      "Discussions & Whiteboards",
-      "Advanced security",
     ],
     recommended: true,
   },
   {
     name: "Enterprise",
-    description: "For mid-sized teams",
-    cta: "Get started now",
-    overview:
-      "Everything in Professional, plus more features for mid-sized teams.",
-    price: 10,
+    description: "For large teams",
+    cta: "Contact sales",
+    overview: "Everything in Professional, plus more features for large teams.",
     features: [
       "Unlimited everything",
-      "Unlimited custom workflows",
-      "Single Sign-On (SSO)",
+      "Custom onboarding",
+      "On-premise/Private Cloud Option",
+      "Dedicated account manager",
       "Priority support",
-      "Discussions & Whiteboards",
-      "Advanced security",
+      "Volume discounts",
     ],
   },
 ];
 
 const Feature = ({ feature }: { feature: string }) => (
-  <Flex align="center" gap={3} key={feature}>
-    <Box className="flex aspect-square h-5 items-center justify-center rounded-full bg-gray-200">
-      <CheckIcon className="h-4 w-auto text-dark" strokeWidth={3.5} />
+  <Flex align="center" gap={2} key={feature}>
+    <Box className="relative">
+      <Box className="absolute left-1/2 top-1/2 z-0 h-1/2 w-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
+      <SuccessIcon className="relative z-[2] h-[1.35rem] dark:text-primary" />
     </Box>
     <Text className="opacity-90">{feature}</Text>
   </Flex>
@@ -96,14 +93,14 @@ const Package = ({
   description: string;
   overview: string;
   cta: string;
-  price: number;
+  price?: number;
   features: string[];
   recommended?: boolean;
   billing: Billing;
 }) => {
   // if billing is annual, apply 20% discount
-  let finalPrice = price;
-  if (billing === "annual") {
+  let finalPrice = price ?? 0;
+  if (billing === "annual" && price) {
     finalPrice = price * 0.8;
   }
   return (
@@ -117,12 +114,19 @@ const Package = ({
           {name} {recommended ? <Badge>Most Popular</Badge> : null}
         </Text>
         <Text className="text-center text-lg opacity-80">{description}</Text>
-        <Text align="center" className="mt-4" fontSize="4xl">
-          ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
-          <Text as="span" color="muted" fontSize="lg">
-            /mo
+        {name !== "Enterprise" ? (
+          <Text align="center" className="mt-4" fontSize="4xl">
+            ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
+            <Text as="span" color="muted" fontSize="lg">
+              /mo
+            </Text>
           </Text>
-        </Text>
+        ) : (
+          <Text align="center" className="mt-8" color="muted">
+            Talk to sales
+          </Text>
+        )}
+
         <Button
           align="center"
           className="mt-6 md:h-11"
@@ -147,14 +151,6 @@ const Package = ({
 
 export const Pricing = () => {
   const [billing, setBilling] = useState<Billing>("annual");
-  const enterprise = [
-    "Volume discounts",
-    "Dedicated support",
-    "Custom integrations",
-    "Onboarding assistance",
-    "Custom deployment",
-    "SLA",
-  ];
 
   return (
     <Box className="relative mb-20 md:mb-40">
@@ -183,7 +179,7 @@ export const Pricing = () => {
           >
             <Text
               as="h1"
-              className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
+              className="mt-6 h-max max-w-4xl pb-2 text-5xl md:text-7xl"
               color="gradient"
             >
               Simple pricing for ambitious teams
@@ -251,33 +247,6 @@ export const Pricing = () => {
               recommended={pkg.recommended}
             />
           ))}
-        </Box>
-        <Box className="relative mt-8 md:mt-20">
-          <Box className="mx-auto rounded-3xl border-2 border-gray-200 bg-gray-50 p-8 shadow-2xl shadow-warning/10 dark:border-dark-100 dark:bg-dark md:max-w-4xl">
-            <Text className="mb-3 text-2xl">
-              <span className="font-semibold text-primary">Complexus</span>{" "}
-              Enteprise
-            </Text>
-            <Text className="text-lg opacity-80">
-              Crafted for enterprises aiming for seamless expansion. Complexus
-              Enterprise provides state-of-the-art security measures, robust
-              administrative capabilities, and enhanced features.
-            </Text>
-
-            <Box className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {enterprise.map((feature) => (
-                <Feature feature={feature} key={feature} />
-              ))}
-            </Box>
-            <Button
-              className="mt-6"
-              href="https://forms.gle/NmG4XFS5GhvRjUxu6"
-              rounded="full"
-              size="lg"
-            >
-              Join the waitlist
-            </Button>
-          </Box>
         </Box>
       </Container>
     </Box>
