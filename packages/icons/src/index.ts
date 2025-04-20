@@ -15,6 +15,8 @@ export * from "./arrow-left";
 export * from "./arrow-right";
 export * from "./arrow-right2";
 export * from "./arrow-left2";
+export * from "./arrow-down2";
+export * from "./arrow-up2";
 export * from "./search";
 export * from "./drag";
 export * from "./star";

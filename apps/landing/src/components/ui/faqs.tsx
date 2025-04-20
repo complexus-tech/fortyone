@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text } from "ui";
-import { ArrowDownIcon } from "icons";
+import { ArrowRight2Icon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { Container } from "./container";
@@ -61,10 +61,10 @@ const AccordionItem = ({
       type="button"
     >
       {item.question}
-      <ArrowDownIcon
+      <ArrowRight2Icon
         className={cn(
           "mt-1 h-5 shrink-0 transition-transform duration-300",
-          isOpen && "rotate-180",
+          isOpen && "rotate-90",
         )}
       />
     </button>

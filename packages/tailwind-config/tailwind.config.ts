@@ -11,7 +11,7 @@ const config: Omit<Config, "content"> = {
     colors: {
       transparent: "transparent",
       current: "currentColor",
-      primary: "#EA6060",
+      primary: "#f43f5e",
       secondary: "#002F61",
       black: "#08090a",
       white: "#ffffff",
