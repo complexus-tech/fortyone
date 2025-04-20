@@ -97,7 +97,7 @@ export const CallToAction = () => {
           </Box>
         </Flex>
       </Container>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" />
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-60" />
     </Box>
   );
 };

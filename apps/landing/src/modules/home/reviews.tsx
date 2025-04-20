@@ -101,7 +101,8 @@ export const Testimonials = () => {
           </Text>
 
           <Text
-            className="3xl:mb-4 relative mb-2 text-2xl md:text-3xl"
+            as="span"
+            className="3xl:mb-4 relative mb-2 block text-2xl md:text-3xl"
             fontWeight="normal"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
@@ -132,7 +133,10 @@ export const Testimonials = () => {
               {slide.author}
             </motion.div>
           </Text>
-          <Text className="mb-1 text-gray-100 md:mb-2 md:text-xl">
+          <Text
+            as="span"
+            className="mb-1 block text-gray-100 md:mb-2 md:text-xl"
+          >
             <motion.div
               animate="animateState"
               exit="exitState"
@@ -160,7 +164,8 @@ export const Testimonials = () => {
             </motion.div>
           </Text>
           <Text
-            className="3xl:mb-20 mb-8 text-lg md:mb-12"
+            as="span"
+            className="3xl:mb-20 mb-8 block text-lg md:mb-12"
             color="muted"
             transform="uppercase"
           >

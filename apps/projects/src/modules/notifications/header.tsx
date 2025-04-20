@@ -48,11 +48,11 @@ export const NotificationsHeader = () => {
       className="h-16 border-b-[0.5px] border-gray-200/60 px-4 dark:border-dark-100"
       justify="between"
     >
-      <Text className="flex items-center gap-2">
+      <Flex align="center" className="gap-2">
         <MobileMenuButton />
         <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
-        Notifications
-      </Text>
+        <Text>Notifications</Text>
+      </Flex>
       <Flex align="center" gap={2}>
         <Menu>
           <Menu.Button>
