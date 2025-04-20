@@ -13,29 +13,33 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "Is there a free plan for individuals or small teams?",
-    answer:
-      "Yes! Complexus offers a free tier that's perfect for individuals or small teams getting started. It includes core features like projects, sprints, objectives, and team collaboration—no credit card required.",
+    question: "Can I use Complexus for free?",
+    answer: "Absolutely! Start with our free tier. No credit card required.",
   },
   {
-    question: "What happens when I reach the limits of the free plan?",
+    question: "How many team members can I add on the free plan?",
     answer:
-      "We'll give you a heads-up before you hit any usage limits. You'll have the option to upgrade to a paid plan, but we never block access without notice or hold your data hostage.",
+      "You can add up to 5 team members on our free plan, which is perfect just to get started.",
   },
   {
-    question: "Can I change or cancel my plan anytime?",
+    question: "How flexible are your pricing plans?",
     answer:
-      "Absolutely. You can upgrade, downgrade, or cancel your plan whenever you like—no long-term commitments or hidden fees.",
+      "Completely flexible. Upgrade when you need more features, downgrade when you don&apos;t, or cancel anytime with zero penalties or hidden fees. Your workspace, your terms.",
   },
   {
-    question: "Do you offer discounts for startups, students, or nonprofits?",
+    question: "Are there special pricing options for startups or nonprofits?",
     answer:
-      "Yes! We're startup-friendly and love supporting early-stage teams. Just reach out to us and we'll set you up with a discount if you qualify.",
+      "Yes! We&apos;re passionate about supporting emerging teams and impactful organizations. Startups, educational institutions, and nonprofits can qualify for special discounts - just reach out to our team.",
   },
   {
-    question: "What's the difference between free and paid plans?",
+    question: "What extra value do paid plans offer?",
     answer:
-      "Paid plans unlock advanced features like AI automation, OKR analytics, permission controls, and priority support. The free plan is great to start, and you can upgrade as your team grows.",
+      "Paid plans unlock our power features: Objectives, OKRs, Permission controls, Priority support, and Custom workflows. Scale up as your team grows and your needs evolve.",
+  },
+  {
+    question: "How quickly can my team get up and running?",
+    answer:
+      "Most teams are fully productive within minutes. Our intuitive interface requires minimal training, and we offer guided onboarding, templates, and documentation to accelerate your start.",
   },
 ];
 
@@ -93,9 +97,9 @@ export const Faqs = () => {
           <Text className="mb-6 text-4xl font-semibold leading-[1.1] md:text-[3.5rem]">
             Frequently Asked Questions
           </Text>
-          <Text className="text-lg opacity-60">
-            Here are the most common questions we receive, along with our
-            answers.
+          <Text className="w-11/12 text-lg opacity-60">
+            Everything you need to know about getting started with Complexus and
+            our pricing plans.
           </Text>
         </Box>
         <Flex className="gap-4 pb-4" direction="column">
