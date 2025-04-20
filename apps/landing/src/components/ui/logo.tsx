@@ -3,7 +3,7 @@ import { cn } from "lib";
 
 const Icon = ({
   className,
-  fill = "#EA6060",
+  fill = "#f43f5e",
 }: {
   className?: string;
   fill?: string;

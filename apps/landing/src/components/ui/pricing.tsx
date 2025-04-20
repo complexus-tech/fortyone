@@ -71,10 +71,7 @@ const packages = [
 
 const Feature = ({ feature }: { feature: string }) => (
   <Flex align="center" gap={2} key={feature}>
-    <Box className="relative">
-      <Box className="absolute left-1/2 top-1/2 z-0 h-1/2 w-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
-      <SuccessIcon className="relative z-[2] h-[1.35rem] dark:text-primary" />
-    </Box>
+    <SuccessIcon className="h-[1.35rem] dark:text-primary" />
     <Text className="opacity-90">{feature}</Text>
   </Flex>
 );
@@ -200,7 +197,7 @@ export const Pricing = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-[0.6rem] bg-dark-200 p-1">
+            <Box className="flex w-max gap-1 rounded-[0.7rem] border border-dark-100 bg-dark-300 p-1">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-2.5 capitalize", {
