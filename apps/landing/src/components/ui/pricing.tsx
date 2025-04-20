@@ -190,7 +190,7 @@ export const Pricing = () => {
           </Text>
         </Flex>
 
-        <Flex align="end" className="mb-6 mt-12" direction="column">
+        <Flex align="end" className="mb-4 mt-12" direction="column">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
