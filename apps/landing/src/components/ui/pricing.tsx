@@ -122,8 +122,8 @@ const Package = ({
             </Text>
           </Text>
         ) : (
-          <Text align="center" className="mt-8" color="muted">
-            Talk to sales
+          <Text align="center" className="mt-4" fontSize="4xl">
+            Custom Pricing
           </Text>
         )}
 

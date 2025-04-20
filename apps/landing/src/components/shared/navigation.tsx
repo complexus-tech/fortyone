@@ -146,7 +146,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-50/90 dark:bg-dark-300/80">
+          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={3}>
               <NavigationMenu>
@@ -162,7 +162,7 @@ export const Navigation = () => {
                     >
                       Product
                     </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="relative bg-warning/[0.02] pb-1">
+                    <NavigationMenu.Content className="dark:border-dark-50">
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
@@ -176,7 +176,6 @@ export const Navigation = () => {
                           ),
                         )}
                       </Box>
-                      <Blur className="absolute left-0 top-0 h-full w-full bg-warning/5" />
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>

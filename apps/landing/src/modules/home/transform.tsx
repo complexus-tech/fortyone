@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid bg-gradient-to-b from-black via-black to-black py-20 md:grid-cols-2 md:py-0">
+    <Box className="relative grid bg-gradient-to-r from-dark via-black to-black py-20 md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
@@ -45,7 +45,7 @@ export const Transform = () => {
             </motion.span>
             <Text
               as="h2"
-              className="mt-6 text-center text-5xl md:text-left md:text-7xl"
+              className="mt-6 text-center text-5xl font-semibold md:text-left md:text-7xl"
             >
               <span className="text-stroke-white">Transform</span> how your team
               works <span className="text-stroke-white relative">today.</span>
