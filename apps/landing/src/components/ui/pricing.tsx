@@ -26,7 +26,7 @@ const packages = [
   {
     name: "Professional",
     description: "For small teams",
-    cta: "Get started now",
+    cta: "Upgrade now",
     overview: "Everything in Hobby, plus more features for small teams.",
     price: 7,
     features: [
@@ -41,7 +41,7 @@ const packages = [
   {
     name: "Business",
     description: "For mid-sized teams",
-    cta: "Get started now",
+    cta: "Upgrade now",
     overview:
       "Everything in Professional, plus more features for mid-sized teams.",
     price: 10,
@@ -179,12 +179,15 @@ export const Pricing = () => {
           >
             <Text
               as="h1"
-              className="mt-6 h-max max-w-4xl pb-2 text-5xl md:text-7xl"
-              color="gradient"
+              className="mt-6 max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
               Simple pricing for ambitious teams
             </Text>
           </motion.div>
+          <Text className="mt-3 max-w-2xl text-center text-xl opacity-80">
+            Choose a plan that fits your needs with transparent pricing - no
+            hidden fees, no unexpected charges, just clear value.
+          </Text>
         </Flex>
 
         <Flex align="end" className="mb-6 mt-12" direction="column">

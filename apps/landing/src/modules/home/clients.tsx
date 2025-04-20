@@ -67,18 +67,8 @@ export const SampleClients = () => {
               objectives{" "}
             </Text>
             and drive{" "}
-            <Text
-              as="span"
-              className="relative"
-              color="gradient"
-              fontWeight="semibold"
-            >
-              growth
-              <img
-                alt=""
-                className="absolute -bottom-20 left-0 hidden h-auto w-full -rotate-12 opacity-80 invert md:-bottom-20 md:inline-block"
-                src="/svgs/arrow.svg"
-              />
+            <Text as="span" className="text-stroke-white" fontWeight="semibold">
+              growth.
             </Text>
           </Text>
         </motion.div>
