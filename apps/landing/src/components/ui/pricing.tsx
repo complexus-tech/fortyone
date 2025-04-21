@@ -21,6 +21,7 @@ const packages = [
       "Up to 5 members",
       "Up to 50 stories",
       "Single Sign-On (SSO)",
+      "Kanban & list views",
       "Email support",
     ],
   },
@@ -51,7 +52,9 @@ const packages = [
     features: [
       "Unlimited teams",
       "Unlimited objectives",
+      "Unlimited everything",
       "Custom terminology",
+      "Private teams",
       "Priority support",
     ],
     recommended: true,
@@ -63,11 +66,10 @@ const packages = [
     href: "mailto:info@complexus.app",
     overview: "Everything in Professional, plus more features for large teams.",
     features: [
-      "Unlimited everything",
       "Custom onboarding",
+      "Custom integrations",
       "On-premise/Private Cloud Option",
       "Dedicated account manager",
-      "Priority support",
       "Volume discounts",
     ],
   },
@@ -157,7 +159,7 @@ export const Pricing = () => {
   const [billing, setBilling] = useState<Billing>("annual");
 
   return (
-    <Box className="relative border-b border-dashed border-dark-100 pb-20 md:pb-32">
+    <Box className="relative">
       <Container className="md:pt-16">
         <Flex
           align="center"
@@ -240,7 +242,7 @@ export const Pricing = () => {
             </motion.p>
           </Box>
         </Flex>
-        <Box className="grid grid-cols-1 divide-x divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-dark md:grid-cols-4">
+        <Box className="grid grid-cols-1 divide-y divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-dark md:grid-cols-4 md:divide-x">
           {packages.map((pkg) => (
             <Package
               billing={billing}

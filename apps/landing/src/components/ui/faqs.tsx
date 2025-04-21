@@ -91,7 +91,7 @@ export const Faqs = () => {
   };
 
   return (
-    <Box className="bg-dark/50 p-16 md:pb-20 md:pt-24">
+    <Box className="bg-dark/80 py-16 md:bg-dark/50 md:pb-20 md:pt-24">
       <Container className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
         <Box className="mx-auto max-w-3xl">
           <Text className="mb-6 text-4xl font-semibold leading-[1.1] md:text-[3.5rem]">

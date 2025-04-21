@@ -10,7 +10,7 @@ import { useMyStories } from "./hooks/my-stories";
 export const ListMyStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
-    "kanban",
+    "list",
   );
   const { isPending } = useMyStories();
 
