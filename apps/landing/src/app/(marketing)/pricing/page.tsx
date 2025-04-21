@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Box } from "ui";
 import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
+import { ComparePlans } from "@/components/ui/compare";
 import { PricingJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function Page() {
       <PricingJsonLd />
       <Box className="pt-16 md:pt-0">
         <Pricing />
+        <ComparePlans />
         <Faqs />
       </Box>
     </>

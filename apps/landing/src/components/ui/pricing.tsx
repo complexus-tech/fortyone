@@ -12,6 +12,7 @@ const packages = [
     name: "Hobby",
     description: "Track your personal objectives",
     cta: "Start for free",
+    href: "/signup",
     overview:
       "Start your Hobby projects with our free plan. No credit card required.",
     price: 0,
@@ -27,6 +28,7 @@ const packages = [
     name: "Professional",
     description: "For small teams",
     cta: "Upgrade now",
+    href: "/signup",
     overview: "Everything in Hobby, plus more features for small teams.",
     price: 7,
     features: [
@@ -42,6 +44,7 @@ const packages = [
     name: "Business",
     description: "For mid-sized teams",
     cta: "Upgrade now",
+    href: "/signup",
     overview:
       "Everything in Professional, plus more features for mid-sized teams.",
     price: 10,
@@ -57,6 +60,7 @@ const packages = [
     name: "Enterprise",
     description: "For large teams",
     cta: "Contact sales",
+    href: "mailto:info@complexus.app",
     overview: "Everything in Professional, plus more features for large teams.",
     features: [
       "Unlimited everything",
@@ -85,6 +89,7 @@ const Package = ({
   recommended,
   billing,
   cta,
+  href,
 }: {
   name: string;
   description: string;
@@ -94,6 +99,7 @@ const Package = ({
   features: string[];
   recommended?: boolean;
   billing: Billing;
+  href: string;
 }) => {
   // if billing is annual, apply 20% discount
   let finalPrice = price ?? 0;
@@ -129,6 +135,7 @@ const Package = ({
           className="mt-6 md:h-11"
           color={recommended ? "primary" : "tertiary"}
           fullWidth
+          href={href}
           rounded="lg"
         >
           {cta}
@@ -150,7 +157,7 @@ export const Pricing = () => {
   const [billing, setBilling] = useState<Billing>("annual");
 
   return (
-    <Box className="relative mb-20 md:mb-40">
+    <Box className="relative border-b border-dashed border-dark-100 pb-20 md:pb-32">
       <Container className="md:pt-16">
         <Flex
           align="center"
@@ -240,6 +247,7 @@ export const Pricing = () => {
               cta={pkg.cta}
               description={pkg.description}
               features={pkg.features}
+              href={pkg.href}
               key={pkg.name}
               name={pkg.name}
               overview={pkg.overview}

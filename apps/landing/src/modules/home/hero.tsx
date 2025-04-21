@@ -25,7 +25,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button
+            {/* <Button
               className="px-3 text-sm md:text-base"
               color="tertiary"
               href="/signup"
@@ -33,7 +33,18 @@ export const Hero = () => {
               size="sm"
             >
               Join Our Exclusive Beta
-            </Button>
+            </Button> */}
+            <a
+              href="https://www.producthunt.com/posts/complexus?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-complexus"
+              rel="noopener"
+              target="_blank"
+            >
+              <img
+                alt="Complexus - Project&#0032;Management&#0032;&#0038;&#0032;OKR&#0032;Software&#0032;for&#0032;Teams | Product Hunt"
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=950302&theme=light&t=1745224088569"
+                style={{ width: "200px", height: "auto" }}
+              />
+            </a>
           </motion.span>
 
           <motion.span
