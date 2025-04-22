@@ -47,7 +47,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       ? [
           { title: "General", href: "/settings" },
           { title: "Members", href: "/settings/workspace/members" },
-          // { title: "Billing", href: "/settings/workspace/billing" },
+          { title: "Billing", href: "/settings/workspace/billing" },
           { title: "Terminology", href: "/settings/workspace/terminology" },
           { title: "API tokens", href: "/settings/workspace/api" },
         ]
@@ -200,8 +200,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           </ResizablePanel.Panel>
           <ResizablePanel.Handle />
           <ResizablePanel.Panel defaultSize={85}>
-            <Box className="h-screen overflow-y-auto">
-              <Container className="max-w-[54rem] py-12">{children}</Container>
+            <Box className="h-dvh overflow-y-auto">
+              <Container
+                className={cn("max-w-[54rem] py-12", {
+                  "max-w-7xl": pathname.includes("billing"),
+                })}
+              >
+                {children}
+              </Container>
             </Box>
           </ResizablePanel.Panel>
         </ResizablePanel>
