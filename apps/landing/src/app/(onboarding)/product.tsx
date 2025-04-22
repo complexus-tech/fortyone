@@ -12,7 +12,7 @@ export const ProductImage = () => {
 
   return (
     <Box className="relative hidden md:block">
-      <Blur className="absolute -top-96 left-1/2 right-1/2 z-[1] h-[300px] w-[300px] -translate-x-1/2 bg-info/[0.07] md:h-[700px] md:w-[90vw]" />
+      <Blur className="absolute -top-96 left-1/2 right-1/2 z-[1] h-[300px] w-[300px] -translate-x-1/2 bg-warning/[0.07] md:h-[700px] md:w-[90vw]" />
       <BlurImage
         alt="Login"
         className="h-full w-full object-cover opacity-80"
