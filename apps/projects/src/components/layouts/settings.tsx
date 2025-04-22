@@ -47,7 +47,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       ? [
           { title: "General", href: "/settings" },
           { title: "Members", href: "/settings/workspace/members" },
-          { title: "Billing", href: "/settings/workspace/billing" },
+          { title: "Billing & plans", href: "/settings/workspace/billing" },
           { title: "Terminology", href: "/settings/workspace/terminology" },
           { title: "API tokens", href: "/settings/workspace/api" },
         ]

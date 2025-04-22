@@ -1,6 +1,9 @@
+"use client";
 import { Flex, Text, Box, Button } from "ui";
 import { ErrorIcon, SuccessIcon } from "icons";
 import { cn } from "lib";
+import { motion } from "framer-motion";
+import { useState } from "react";
 import { plans, featureLabels } from "./plan-data";
 
 const FeatureCheck = ({ available }: { available: boolean }) => (
@@ -30,34 +33,86 @@ const FeatureValue = ({
   return <Text>{value}</Text>;
 };
 
+type Billing = "annual" | "monthly";
 export const Plans = () => {
+  const [billing, setBilling] = useState<Billing>("annual");
   return (
     <Box className="hidden overflow-x-auto md:block">
       <Box>
         <Flex className="border-b border-dark-100">
-          <Box className="w-1/5 p-6" />
-          <Box className="w-1/5 px-4 py-4">
+          <Box className="flex w-1/5 items-end px-3 py-6">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              transition={{
+                duration: 1,
+                delay: 0.3,
+              }}
+              viewport={{ once: true, amount: 0.5 }}
+              whileInView={{ y: 0, opacity: 1 }}
+            >
+              <Box className="flex w-full gap-1 rounded-[0.7rem] border border-dark-100 bg-dark-300 p-1">
+                {["annual", "monthly"].map((option) => (
+                  <Button
+                    className={cn("px-4 capitalize", {
+                      "opacity-80": option !== billing,
+                    })}
+                    color={option === billing ? "primary" : "tertiary"}
+                    key={option}
+                    onClick={() => {
+                      setBilling(option as Billing);
+                    }}
+                    size="sm"
+                    variant={option === billing ? "solid" : "naked"}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </Box>
+            </motion.div>
+          </Box>
+          <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Hobby</Text>
-            <Text className="mb-2 text-3xl font-semibold">$0</Text>
-            <Button align="center" color="tertiary" fullWidth href="/signup">
-              Start for free
+            <Text className="mb-2 text-3xl font-semibold">
+              $0
+              <Text as="span" color="muted" fontSize="lg">
+                /mo
+              </Text>
+            </Text>
+            <Button
+              align="center"
+              color="tertiary"
+              disabled
+              fullWidth
+              href="/signup"
+            >
+              Current plan
             </Button>
           </Box>
-          <Box className="w-1/5 px-4 py-4">
+          <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Pro</Text>
-            <Text className="mb-2 text-3xl font-semibold">$10</Text>
+            <Text className="mb-2 text-3xl font-semibold">
+              $10
+              <Text as="span" color="muted" fontSize="lg">
+                /mo
+              </Text>
+            </Text>
             <Button align="center" color="tertiary" fullWidth href="/signup">
-              Upgrade now
+              Upgrade
             </Button>
           </Box>
-          <Box className="w-1/5 rounded-t-2xl border border-b-0 border-dark-100 bg-dark-300 px-4 py-4">
+          <Box className="w-1/5 rounded-t-2xl border border-b-0 border-dark-100 bg-dark-300 px-4 py-6">
             <Text className="mb-2 text-2xl">Business</Text>
-            <Text className="mb-2 text-3xl font-semibold">$20</Text>
+            <Text className="mb-2 text-3xl font-semibold">
+              $20
+              <Text as="span" color="muted" fontSize="lg">
+                /mo
+              </Text>
+            </Text>
             <Button align="center" fullWidth href="/signup">
-              Upgrade now
+              Upgrade
             </Button>
           </Box>
-          <Box className="w-1/5 px-4 py-4">
+          <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Enterprise</Text>
             <Text className="mb-2 text-3xl font-semibold">Custom</Text>
             <Button align="center" color="tertiary" fullWidth href="/signup">
