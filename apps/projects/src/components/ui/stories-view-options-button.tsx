@@ -65,16 +65,19 @@ export const StoriesViewOptionsButton = ({
   disabled?: boolean;
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
-    ...(isDesktop ? (["ID", "Deadline", "Labels"] as DisplayColumn[]) : []),
+    "ID",
+    "Deadline",
+    "Labels",
     "Status",
     "Assignee",
     "Priority",
-    ...(layout !== "kanban" && isDesktop
+    ...(layout === "list" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
       : []),
     ...(features.sprintEnabled && isDesktop
@@ -95,7 +98,7 @@ export const StoriesViewOptionsButton = ({
       }
 
       // For mobile and not kanban, only keep Status, Assignee, Priority
-      if (!isDesktop && layout !== "kanban") {
+      if (isMobile && layout === "list") {
         filteredColumns = filteredColumns.filter((column) =>
           ["Status", "Assignee", "Priority"].includes(column),
         );
@@ -103,7 +106,7 @@ export const StoriesViewOptionsButton = ({
 
       return filteredColumns;
     },
-    [layout, isDesktop],
+    [layout, isMobile],
   );
 
   useEffect(() => {
