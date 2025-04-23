@@ -15,6 +15,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
+	"github.com/stripe/stripe-go/v82/client"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -25,18 +26,22 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB            *sqlx.DB
-	Redis         *redis.Client
-	Publisher     *publisher.Publisher
-	Shutdown      chan os.Signal
-	Log           *logger.Logger
-	Tracer        trace.Tracer
-	SecretKey     string
-	EmailService  email.Service
-	GoogleService *google.Service
-	Validate      *validator.Validate
-	AzureConfig   azure.Config
-	Cache         *cache.Service
+	DB                 *sqlx.DB
+	Redis              *redis.Client
+	Publisher          *publisher.Publisher
+	Shutdown           chan os.Signal
+	Log                *logger.Logger
+	Tracer             trace.Tracer
+	SecretKey          string
+	EmailService       email.Service
+	GoogleService      *google.Service
+	Validate           *validator.Validate
+	AzureConfig        azure.Config
+	Cache              *cache.Service
+	StripeClient       *client.API
+	CheckoutSuccessURL string
+	CheckoutCancelURL  string
+	WebhookSecret      string
 }
 
 // New returns a new HTTP handler that defines all the API routes.

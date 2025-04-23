@@ -21,6 +21,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/lib/pq v1.10.9
+	github.com/stripe/stripe-go/v82 v82.0.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
 	google.golang.org/api v0.221.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
