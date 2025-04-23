@@ -4,6 +4,9 @@ import { ErrorIcon, SuccessIcon } from "icons";
 import { cn } from "lib";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { toast } from "sonner";
+import type { Plan } from "@/lib/actions/billing/checkout";
+import { checkout } from "@/lib/actions/billing/checkout";
 import { plans, featureLabels } from "./plan-data";
 
 const FeatureCheck = ({ available }: { available: boolean }) => (
@@ -35,9 +38,29 @@ const FeatureValue = ({
 
 type Billing = "annual" | "monthly";
 export const Plans = () => {
+  const [isProLoading, setIsProLoading] = useState(false);
+  const [isBusinessLoading, setIsBusinessLoading] = useState(false);
   const [billing, setBilling] = useState<Billing>("annual");
   const proPrice = 7;
   const businessPrice = 10;
+
+  const handleUpgrade = async (plan: Plan) => {
+    if (plan.includes("pro")) {
+      setIsProLoading(true);
+    } else {
+      setIsBusinessLoading(true);
+    }
+    const res = await checkout(plan);
+    if (res.error?.message) {
+      toast.error("Failed to upgrade", {
+        description: res.error.message,
+      });
+      setIsProLoading(false);
+      setIsBusinessLoading(false);
+    }
+    window.location.href = res.data!.url;
+  };
+
   return (
     <Box className="hidden overflow-x-auto md:block">
       <Box>
@@ -75,13 +98,7 @@ export const Plans = () => {
           <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Hobby</Text>
             <Text className="mb-2 text-3xl font-semibold">$0</Text>
-            <Button
-              align="center"
-              color="tertiary"
-              disabled
-              fullWidth
-              href="/signup"
-            >
+            <Button align="center" color="tertiary" disabled fullWidth>
               Current plan
             </Button>
           </Box>
@@ -94,7 +111,19 @@ export const Plans = () => {
                 per user/month
               </Text>
             </Text>
-            <Button align="center" color="tertiary" fullWidth href="/signup">
+            <Button
+              align="center"
+              color="tertiary"
+              disabled={isProLoading}
+              fullWidth
+              onClick={() => {
+                if (billing === "annual") {
+                  handleUpgrade("pro_yearly");
+                } else {
+                  handleUpgrade("pro_monthly");
+                }
+              }}
+            >
               Upgrade
             </Button>
           </Box>
@@ -107,14 +136,31 @@ export const Plans = () => {
                 per user/month
               </Text>
             </Text>
-            <Button align="center" fullWidth href="/signup">
+            <Button
+              align="center"
+              color="tertiary"
+              disabled={isBusinessLoading}
+              fullWidth
+              onClick={() => {
+                if (billing === "annual") {
+                  handleUpgrade("business_yearly");
+                } else {
+                  handleUpgrade("business_monthly");
+                }
+              }}
+            >
               Upgrade
             </Button>
           </Box>
           <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Enterprise</Text>
             <Text className="mb-2 text-3xl font-semibold">Custom</Text>
-            <Button align="center" color="tertiary" fullWidth href="/signup">
+            <Button
+              align="center"
+              color="tertiary"
+              fullWidth
+              href="mailto:info@complexus.app"
+            >
               Contact sales
             </Button>
           </Box>

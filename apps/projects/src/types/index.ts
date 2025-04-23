@@ -115,3 +115,14 @@ export type AutomationPreferences = {
 export type UpdateAutomationPreferences = Partial<
   Omit<AutomationPreferences, "id">
 >;
+
+export type Subscription = {
+  workspaceId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  status: "active" | "canceled";
+  tier: "free" | "pro" | "business" | "enterprise";
+  seatCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
