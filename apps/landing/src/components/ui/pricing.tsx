@@ -123,7 +123,7 @@ const Package = ({
           <Text align="center" className="mt-4" fontSize="4xl">
             ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
             <Text as="span" color="muted" fontSize="lg">
-              /mo
+              per user/month
             </Text>
           </Text>
         ) : (
