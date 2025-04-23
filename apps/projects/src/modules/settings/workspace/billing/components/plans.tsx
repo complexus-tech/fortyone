@@ -36,6 +36,8 @@ const FeatureValue = ({
 type Billing = "annual" | "monthly";
 export const Plans = () => {
   const [billing, setBilling] = useState<Billing>("annual");
+  const proPrice = 7;
+  const businessPrice = 10;
   return (
     <Box className="hidden overflow-x-auto md:block">
       <Box>
@@ -72,12 +74,7 @@ export const Plans = () => {
           </Box>
           <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Hobby</Text>
-            <Text className="mb-2 text-3xl font-semibold">
-              $0
-              <Text as="span" color="muted" fontSize="lg">
-                /mo
-              </Text>
-            </Text>
+            <Text className="mb-2 text-3xl font-semibold">$0</Text>
             <Button
               align="center"
               color="tertiary"
@@ -91,9 +88,10 @@ export const Plans = () => {
           <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Pro</Text>
             <Text className="mb-2 text-3xl font-semibold">
-              $10
-              <Text as="span" color="muted" fontSize="lg">
-                /mo
+              ${billing === "annual" ? (proPrice * 0.8).toFixed(2) : proPrice}
+              <Text as="span" color="muted" fontSize="md" fontWeight="medium">
+                {" "}
+                per user/month
               </Text>
             </Text>
             <Button align="center" color="tertiary" fullWidth href="/signup">
@@ -103,9 +101,10 @@ export const Plans = () => {
           <Box className="w-1/5 rounded-t-2xl border border-b-0 border-gray-100 bg-gray-50 px-4 py-6 dark:border-dark-100 dark:bg-dark-300">
             <Text className="mb-2 text-2xl">Business</Text>
             <Text className="mb-2 text-3xl font-semibold">
-              $20
-              <Text as="span" color="muted" fontSize="lg">
-                /mo
+              ${billing === "annual" ? businessPrice * 0.8 : businessPrice}
+              <Text as="span" color="muted" fontSize="md" fontWeight="medium">
+                {" "}
+                per user/month
               </Text>
             </Text>
             <Button align="center" fullWidth href="/signup">
