@@ -70,7 +70,9 @@ export const StoriesViewOptionsButton = ({
   const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
-    ...(isDesktop ? (["ID", "Deadline", "Labels"] as DisplayColumn[]) : []),
+    "ID",
+    "Deadline",
+    "Labels",
     "Status",
     "Assignee",
     "Priority",
