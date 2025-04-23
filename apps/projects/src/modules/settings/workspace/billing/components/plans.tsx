@@ -9,7 +9,7 @@ import { plans, featureLabels } from "./plan-data";
 const FeatureCheck = ({ available }: { available: boolean }) => (
   <Box className="flex">
     {available ? (
-      <SuccessIcon className="dark:text-primary" />
+      <SuccessIcon className="text-primary dark:text-primary" />
     ) : (
       <ErrorIcon className="dark:text-white" />
     )}
@@ -39,7 +39,7 @@ export const Plans = () => {
   return (
     <Box className="hidden overflow-x-auto md:block">
       <Box>
-        <Flex className="border-b border-dark-100">
+        <Flex className="border-b border-gray-100 dark:border-dark-100">
           <Box className="flex w-1/5 items-end px-3 py-6">
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -50,7 +50,7 @@ export const Plans = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Box className="flex w-full gap-1 rounded-[0.7rem] border border-dark-100 bg-dark-300 p-1">
+              <Box className="flex w-full gap-1 rounded-[0.7rem] border border-gray-100 bg-gray-50 p-1 dark:border-dark-100 dark:bg-dark-300">
                 {["annual", "monthly"].map((option) => (
                   <Button
                     className={cn("px-4 capitalize", {
@@ -100,7 +100,7 @@ export const Plans = () => {
               Upgrade
             </Button>
           </Box>
-          <Box className="w-1/5 rounded-t-2xl border border-b-0 border-dark-100 bg-dark-300 px-4 py-6">
+          <Box className="w-1/5 rounded-t-2xl border border-b-0 border-gray-100 bg-gray-50 px-4 py-6 dark:border-dark-100 dark:bg-dark-300">
             <Text className="mb-2 text-2xl">Business</Text>
             <Text className="mb-2 text-3xl font-semibold">
               $20
@@ -123,21 +123,21 @@ export const Plans = () => {
 
         {/* Limits section */}
         <Box>
-          <Flex className="border-b border-dark-100 bg-dark-300/50">
+          <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
             <Box className="w-1/5 px-4 py-4">
-              <Text>Limits</Text>
+              <Text fontWeight="semibold">Limits</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-dark-100 bg-dark-300":
+                  "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                     plan.name === "Business",
                 })}
                 key={plan.name}
               />
             ))}
           </Flex>
-          <Flex className="border-b border-dark-100">
+          <Flex className="border-b border-gray-100 dark:border-dark-100">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">Members</Text>
             </Box>
@@ -145,7 +145,8 @@ export const Plans = () => {
               <Box
                 className={cn(
                   "w-1/5 px-4 py-4",
-                  plan.highlighted && "border-x border-dark-100 bg-dark-300",
+                  plan.highlighted &&
+                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300",
                 )}
                 key={`${plan.name}-members`}
               >
@@ -154,14 +155,15 @@ export const Plans = () => {
             ))}
           </Flex>
 
-          <Flex className="border-b border-dark-100">
+          <Flex className="border-b border-gray-100 dark:border-dark-100">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">File uploads</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-dark-100 bg-dark-300": plan.highlighted,
+                  "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    plan.highlighted,
                 })}
                 key={`${plan.name}-files`}
               >
@@ -170,14 +172,15 @@ export const Plans = () => {
             ))}
           </Flex>
 
-          <Flex className="border-b border-dark-100">
+          <Flex className="border-b border-gray-100 dark:border-dark-100">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">Stories</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-dark-100 bg-dark-300": plan.highlighted,
+                  "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    plan.highlighted,
                 })}
                 key={`${plan.name}stories`}
               >
@@ -189,14 +192,14 @@ export const Plans = () => {
 
         {/* Features section */}
         <Box>
-          <Flex className="border-b border-dark-100 bg-dark-300/50">
+          <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
             <Box className="w-1/5 px-4 py-4">
               <Text fontWeight="semibold">Features</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-dark-100 bg-dark-300":
+                  "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                     plan.name === "Business",
                 })}
                 key={plan.name}
@@ -214,7 +217,11 @@ export const Plans = () => {
 
               return (
                 <Flex
-                  className={!isLastItem ? "border-b border-dark-100" : ""}
+                  className={
+                    !isLastItem
+                      ? "border-b border-gray-100 dark:border-dark-100"
+                      : ""
+                  }
                   key={featureKey}
                 >
                   <Box className="w-1/5 px-4 py-4">
@@ -227,7 +234,8 @@ export const Plans = () => {
                     return (
                       <Box
                         className={cn("w-1/5 px-4 py-4", {
-                          "border-x border-dark-100 bg-dark-300": isHighlighted,
+                          "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                            isHighlighted,
                         })}
                         key={`${plan.name}-${featureKey}`}
                       >
