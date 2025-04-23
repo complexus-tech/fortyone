@@ -97,7 +97,7 @@ export const StoriesViewOptionsButton = ({
       }
 
       // For mobile and not kanban, only keep Status, Assignee, Priority
-      if (!isDesktop && layout !== "kanban") {
+      if (!isDesktop && layout === "list") {
         filteredColumns = filteredColumns.filter((column) =>
           ["Status", "Assignee", "Priority"].includes(column),
         );
