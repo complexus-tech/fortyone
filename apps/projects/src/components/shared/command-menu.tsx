@@ -17,7 +17,6 @@ import {
   MoonIcon,
   UsersAddIcon,
 } from "icons";
-import nProgress from "nprogress";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTerminology, useAnalytics } from "@/hooks";
@@ -80,33 +79,28 @@ export const CommandMenu = () => {
 
   useHotkeys("g+i", () => {
     if (pathname !== "/notifications") {
-      nProgress.start();
       router.push("/notifications");
     }
   });
   useHotkeys("g+m", () => {
     if (pathname !== "/my-work") {
-      nProgress.start();
       router.push("/my-work");
     }
   });
 
   useHotkeys("g+s", () => {
     if (pathname !== "/summary") {
-      nProgress.start();
       router.push("/summary");
     }
   });
   useHotkeys("g+o", () => {
     if (pathname !== "/objectives") {
-      nProgress.start();
       router.push("/objectives");
     }
   });
 
   useHotkeys("alt+shift+s", () => {
     if (pathname !== "/settings") {
-      nProgress.start();
       router.push("/settings");
     }
   });
@@ -123,7 +117,6 @@ export const CommandMenu = () => {
 
   useHotkeys("/", () => {
     if (pathname !== "search") {
-      nProgress.start();
       router.push("/search");
     }
   });
@@ -205,7 +198,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "/my-work") {
-              nProgress.start();
               router.push("/my-work");
             }
           },
@@ -222,7 +214,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "/notifications") {
-              nProgress.start();
               router.push("/notifications");
             }
           },
@@ -239,7 +230,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "/summary") {
-              nProgress.start();
               router.push("/summary");
             }
           },
@@ -259,7 +249,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "/objectives") {
-              nProgress.start();
               router.push("/objectives");
             }
           },
@@ -271,7 +260,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "search") {
-              nProgress.start();
               router.push("/search");
             }
           },
@@ -294,7 +282,6 @@ export const CommandMenu = () => {
           action: () => {
             setOpen(false);
             if (pathname !== "/settings") {
-              nProgress.start();
               router.push("/settings");
             }
           },
