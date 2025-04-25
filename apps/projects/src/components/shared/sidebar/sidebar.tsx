@@ -1,23 +1,19 @@
 "use client";
-import { Box, Button, Flex, Menu, Text } from "ui";
+import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
 import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
-import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { CommandMenu } from "../command-menu";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 
 export const Sidebar = () => {
-  const { data: subscription } = useSubscription();
-
-  const plan = subscription?.tier;
-  const status = subscription?.status;
-
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const { tier, trialDaysRemaining } = useSubscriptionFeatures();
 
   return (
     <Box className="flex h-dvh flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-[#000000]/45">
@@ -27,7 +23,7 @@ export const Sidebar = () => {
         <Teams />
       </Box>
       <Box>
-        {(plan === "free" || status !== "active") && (
+        {tier === "free" && (
           <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
             <Text fontWeight="medium">You&apos;re on the free plan</Text>
             <Text className="mt-2" color="muted">
@@ -45,16 +41,35 @@ export const Sidebar = () => {
         )}
 
         <Flex align="center" className="mt-3 gap-3" justify="between">
-          <button
-            className="flex items-center gap-2 px-1"
-            onClick={() => {
-              setIsOpen(true);
-            }}
-            type="button"
-          >
-            <PlusIcon />
-            Invite members
-          </button>
+          {tier === "trial" ? (
+            <Tooltip
+              className="ml-2 max-w-56"
+              title={`${trialDaysRemaining} days left in your trial. Upgrade to a paid plan to get more premium features.`}
+            >
+              <span>
+                <Button
+                  className="border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
+                  href="/settings/workspace/billing"
+                  rounded="full"
+                  size="sm"
+                >
+                  {trialDaysRemaining} days left in trial
+                </Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <button
+              className="flex items-center gap-2 px-1"
+              onClick={() => {
+                setIsOpen(true);
+              }}
+              type="button"
+            >
+              <PlusIcon />
+              Invite members
+            </button>
+          )}
+
           <Menu>
             <Menu.Button>
               <Button
