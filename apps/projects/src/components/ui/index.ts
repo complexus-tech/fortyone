@@ -38,3 +38,4 @@ export * from "./story/labels-menu";
 export * from "./story/card";
 
 export * from "./new-sprint-button";
+export * from "./feature-guard";
