@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary -- ok to nest ternary */
 import { differenceInDays, isAfter } from "date-fns";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
@@ -56,6 +57,8 @@ export const TIER_LIMITS = {
 
 export type SubscriptionTier = keyof typeof TIER_LIMITS;
 
+const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "past_due"];
+
 /**
  * Hook for managing subscription-based feature access
  *
@@ -83,11 +86,17 @@ export const useSubscriptionFeatures = () => {
     workspace?.trialEndsOn &&
     isAfter(new Date(workspace.trialEndsOn), new Date());
 
+  const isSubscriptionActive =
+    subscription?.status &&
+    ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
+
   const subscriptionTier = subscription?.tier || "free";
 
-  const effectiveTier: SubscriptionTier = isOnTrial
-    ? "trial"
-    : subscriptionTier;
+  const effectiveTier: SubscriptionTier = !isSubscriptionActive
+    ? "free"
+    : isOnTrial
+      ? "trial"
+      : subscriptionTier;
 
   // Get the limits for the current tier
   const limits = TIER_LIMITS[effectiveTier];
