@@ -90,6 +90,7 @@ export type Workspace = {
   slug: string;
   color: string;
   userRole: UserRole;
+  trialEndsAt: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -120,7 +121,15 @@ export type Subscription = {
   workspaceId: string;
   stripeCustomerId: string;
   stripeSubscriptionId: string;
-  status: "active" | "canceled";
+  status:
+    | "active"
+    | "incomplete"
+    | "incomplete_expired"
+    | "trialing"
+    | "past_due"
+    | "unpaid"
+    | "canceled"
+    | "paused";
   tier: "free" | "pro" | "business" | "enterprise";
   seatCount: number;
   createdAt: string;
