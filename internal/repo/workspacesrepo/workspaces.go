@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"math/rand"
 
@@ -73,7 +74,8 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			wm.role as user_role,
 			w.created_at,
 			w.color,
-			w.updated_at
+			w.updated_at,
+			w.trial_ends_on
 		FROM
 			workspaces w
 		INNER JOIN
@@ -106,19 +108,24 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Create")
 	defer span.End()
 
+	// Set trial_ends_on to 14 days from now
+	trialEndsOn := time.Now().AddDate(0, 0, 14)
+
 	var result dbWorkspace
 	query := `
 		INSERT INTO workspaces (
 			name,
 			slug,
 			color,
-			team_size
+			team_size,
+			trial_ends_on
 		)
 		VALUES (
 			:name,
 			:slug,
 			:color,
-			:team_size
+			:team_size,
+			:trial_ends_on
 		)
 		RETURNING
 			workspace_id,
@@ -126,14 +133,16 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 			slug,
 			color,
 			created_at,
-			updated_at
+			updated_at,
+			trial_ends_on
 	`
 
 	params := map[string]any{
-		"name":      workspace.Name,
-		"slug":      workspace.Slug,
-		"team_size": workspace.TeamSize,
-		"color":     generateRandomColor(),
+		"name":          workspace.Name,
+		"slug":          workspace.Slug,
+		"team_size":     workspace.TeamSize,
+		"color":         generateRandomColor(),
+		"trial_ends_on": trialEndsOn,
 	}
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -181,10 +190,11 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 			color,
 			slug,
 			created_at,
-			updated_at
+			updated_at,
+			trial_ends_on
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"name":         updates.Name,
 	}
@@ -360,11 +370,13 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 	defer span.End()
 
 	var workspace dbWorkspaceWithRole
+
 	query := `
-		SELECT 
+		SELECT
 			w.workspace_id,
-			w.slug,
 			w.name,
+			w.slug,
+			w.color,
 			CASE 
 				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
 				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (
@@ -378,16 +390,16 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 				ELSE FALSE
 			END as is_active,
 			wm.role as user_role,
-			w.color,
 			w.created_at,
-			w.updated_at
-		FROM 
+			w.updated_at,
+			w.trial_ends_on
+		FROM
 			workspaces w
 		INNER JOIN
 			workspace_members wm ON w.workspace_id = wm.workspace_id
 		INNER JOIN
 			users u ON wm.user_id = u.user_id
-		WHERE 
+		WHERE
 			w.workspace_id = :workspace_id
 			AND wm.user_id = :user_id
 	`

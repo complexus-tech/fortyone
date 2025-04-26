@@ -8,15 +8,16 @@ import (
 
 // CoreWorkspace represents a workspace in the application layer.
 type CoreWorkspace struct {
-	ID        uuid.UUID
-	Slug      string
-	Name      string
-	Color     string
-	TeamSize  string
-	IsActive  bool
-	UserRole  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          uuid.UUID
+	Slug        string
+	Name        string
+	Color       string
+	TeamSize    string
+	IsActive    bool
+	UserRole    string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	TrialEndsOn *time.Time
 }
 
 // DefaultStatus defines a default status that gets created with each workspace

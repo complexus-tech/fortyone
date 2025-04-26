@@ -8,26 +8,28 @@ import (
 )
 
 type AppWorkspace struct {
-	ID        uuid.UUID `json:"id"`
-	Slug      string    `json:"slug"`
-	Name      string    `json:"name"`
-	IsActive  bool      `json:"isActive"`
-	Color     string    `json:"color"`
-	UserRole  string    `json:"userRole"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID          uuid.UUID  `json:"id"`
+	Slug        string     `json:"slug"`
+	Name        string     `json:"name"`
+	IsActive    bool       `json:"isActive"`
+	Color       string     `json:"color"`
+	UserRole    string     `json:"userRole"`
+	TrialEndsOn *time.Time `json:"trialEndsOn"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
 func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 	return AppWorkspace{
-		ID:        workspace.ID,
-		Slug:      workspace.Slug,
-		Name:      workspace.Name,
-		IsActive:  workspace.IsActive,
-		Color:     workspace.Color,
-		UserRole:  workspace.UserRole,
-		CreatedAt: workspace.CreatedAt,
-		UpdatedAt: workspace.UpdatedAt,
+		ID:          workspace.ID,
+		Slug:        workspace.Slug,
+		Name:        workspace.Name,
+		IsActive:    workspace.IsActive,
+		Color:       workspace.Color,
+		UserRole:    workspace.UserRole,
+		TrialEndsOn: workspace.TrialEndsOn,
+		CreatedAt:   workspace.CreatedAt,
+		UpdatedAt:   workspace.UpdatedAt,
 	}
 }
 
