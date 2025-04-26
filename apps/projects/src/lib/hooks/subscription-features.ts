@@ -99,7 +99,9 @@ export const useSubscriptionFeatures = () => {
 
   if (isOnTrial) {
     effectiveTier = "trial";
-  } else if (
+  }
+
+  if (
     subscription &&
     ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)
   ) {
