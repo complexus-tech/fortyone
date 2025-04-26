@@ -14,6 +14,7 @@ import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
 import type { WorkspaceSettings } from "@/types";
 import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
 import { useTerminology } from "@/hooks/use-terminology-display";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 type TermOption = {
   label: string;
@@ -43,6 +44,7 @@ export const TerminologyPreferences = () => {
     },
   } = useWorkspaceSettings();
   const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
+  const { hasFeature } = useSubscriptionFeatures();
   const { getTermDisplay } = useTerminology();
 
   const entities: TermEntity[] = useMemo(
@@ -155,12 +157,13 @@ export const TerminologyPreferences = () => {
                 </Flex>
                 <Select
                   defaultValue={entity.defaultValue}
+                  disabled={!hasFeature("customTerminology")}
                   onValueChange={(value) => {
                     handleTerminologyChange(entity.key, value);
                   }}
                   value={settings[entity.key] as string}
                 >
-                  <Select.Trigger className="h-9 w-max text-base md:min-w-36">
+                  <Select.Trigger className="h-9 w-max text-base disabled:opacity-50 md:min-w-36">
                     <Select.Input />
                   </Select.Trigger>
                   <Select.Content align="center">

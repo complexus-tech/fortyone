@@ -16,6 +16,8 @@ export const TIER_LIMITS = {
     customTerminology: true,
     privateTeams: true,
     customWorkflows: true,
+    maxObjectives: 3,
+    objective: true,
   },
   free: {
     maxMembers: 5,
@@ -25,6 +27,8 @@ export const TIER_LIMITS = {
     customTerminology: false,
     privateTeams: false,
     customWorkflows: false,
+    maxObjectives: 0,
+    objective: false,
   },
   pro: {
     maxMembers: 50,
@@ -34,6 +38,8 @@ export const TIER_LIMITS = {
     customTerminology: false,
     privateTeams: false,
     customWorkflows: true,
+    maxObjectives: 3,
+    objective: true,
   },
   business: {
     maxMembers: Infinity,
@@ -43,6 +49,8 @@ export const TIER_LIMITS = {
     customTerminology: true,
     privateTeams: true,
     customWorkflows: true,
+    maxObjectives: Infinity,
+    objective: true,
   },
   enterprise: {
     maxMembers: Infinity,
@@ -52,6 +60,8 @@ export const TIER_LIMITS = {
     customTerminology: true,
     privateTeams: true,
     customWorkflows: true,
+    maxObjectives: Infinity,
+    objective: true,
   },
 } as const;
 

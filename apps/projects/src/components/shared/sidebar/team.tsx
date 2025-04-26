@@ -17,6 +17,7 @@ import { useLocalStorage, useTerminology, useFeatures } from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const Team = ({
   id,
@@ -29,6 +30,7 @@ export const Team = ({
 }) => {
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
+  const { hasFeature } = useSubscriptionFeatures();
   const { data: session } = useSession();
   const [isLeaving, setIsLeaving] = useState(false);
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
@@ -48,7 +50,7 @@ export const Team = ({
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon strokeWidth={2} />,
       href: `/teams/${id}/objectives`,
-      disabled: !features.objectiveEnabled,
+      disabled: !features.objectiveEnabled || !hasFeature("objective"),
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),

@@ -3,14 +3,26 @@
 import { Box, Button, Divider, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useMembers } from "@/lib/hooks/members";
 import { Plans } from "./components/plans";
 
 export const Billing = () => {
+  const pathname = usePathname();
+  const { data: members } = useMembers();
+  const { tier, displayTier } = useSubscriptionFeatures();
   const [isLoading, setIsLoading] = useState(false);
+  const totalValidMembers = members?.filter(
+    (member) => member.role !== "guest",
+  ).length;
+
   const handleManageBilling = async () => {
     setIsLoading(true);
-    const res = await manageBilling();
+    const host = `${window.location.protocol}//${window.location.host}`;
+    const returnUrl = `${host}${pathname}`;
+    const res = await manageBilling(returnUrl);
     if (res.error?.message) {
       toast.error("Failed to manage billing", {
         description: res.error.message,
@@ -26,22 +38,38 @@ export const Billing = () => {
         Billing and plans
       </Text>
       <Flex justify="between">
-        {/* <Text className="max-w-xl" color="muted">
-          Scale your workspace as your team grows. Currently on{" "}
-          <Text as="span" fontWeight="semibold">
-            Hobby
-          </Text>{" "}
-          - upgrade to unlock Objectives, OKRs, and more.
-        </Text> */}
+        {(tier === "free" || tier === "trial") && (
+          <Text className="max-w-xl" color="muted">
+            Scale your workspace as your team grows. Currently on{" "}
+            <Text as="span" fontWeight="semibold">
+              Hobby
+            </Text>{" "}
+            plan with {totalValidMembers} members - upgrade to unlock
+            Objectives, OKRs, Private teams, and more.
+          </Text>
+        )}
+        {tier === "pro" && (
+          <Text className="max-w-xl" color="muted">
+            You&apos;re on the{" "}
+            <Text as="span" fontWeight="semibold" transform="capitalize">
+              {displayTier}
+            </Text>{" "}
+            plan with {totalValidMembers} members. Need more? Upgrade to
+            Business for unlimited teams, private teams, custom terminology and
+            more.
+          </Text>
+        )}
+        {(tier === "business" || tier === "enterprise") && (
+          <Text className="max-w-xl" color="muted">
+            You&apos;re on the{" "}
+            <Text as="span" fontWeight="semibold" transform="capitalize">
+              {displayTier}
+            </Text>{" "}
+            plan. {totalValidMembers} members, unlimited objectives, private
+            teams, custom terminology, and more.
+          </Text>
+        )}
 
-        <Text className="max-w-xl" color="muted">
-          You&apos;re on the{" "}
-          <Text as="span" fontWeight="semibold">
-            Pro
-          </Text>{" "}
-          plan. Need more? Upgrade to Business for unlimited teams, private
-          teams, custom terminology and more.
-        </Text>
         <Button
           color="tertiary"
           disabled={isLoading}

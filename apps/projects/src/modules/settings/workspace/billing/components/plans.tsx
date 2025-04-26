@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary -- ok to nest ternary */
 "use client";
 import { Flex, Text, Box, Button } from "ui";
 import { ErrorIcon, SuccessIcon } from "icons";
@@ -7,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { Plan } from "@/lib/actions/billing/checkout";
 import { checkout } from "@/lib/actions/billing/checkout";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { plans, featureLabels } from "./plan-data";
 
 const FeatureCheck = ({ available }: { available: boolean }) => (
@@ -38,6 +40,7 @@ const FeatureValue = ({
 
 type Billing = "annual" | "monthly";
 export const Plans = () => {
+  const { tier } = useSubscriptionFeatures();
   const [isProLoading, setIsProLoading] = useState(false);
   const [isBusinessLoading, setIsBusinessLoading] = useState(false);
   const [billing, setBilling] = useState<Billing>("annual");
@@ -98,8 +101,15 @@ export const Plans = () => {
           <Box className="w-1/5 px-4 py-6">
             <Text className="mb-2 text-2xl">Hobby</Text>
             <Text className="mb-2 text-3xl font-semibold">$0</Text>
-            <Button align="center" color="tertiary" disabled fullWidth>
-              Current plan
+            <Button
+              align="center"
+              color="tertiary"
+              disabled={tier === "free" || tier === "trial"}
+              fullWidth
+            >
+              {tier === "free" || tier === "trial"
+                ? "Current plan"
+                : "Downgrade"}
             </Button>
           </Box>
           <Box className="w-1/5 px-4 py-6">
@@ -114,7 +124,7 @@ export const Plans = () => {
             <Button
               align="center"
               color="tertiary"
-              disabled={isProLoading}
+              disabled={isProLoading || tier === "pro"}
               fullWidth
               onClick={() => {
                 if (billing === "annual") {
@@ -124,7 +134,11 @@ export const Plans = () => {
                 }
               }}
             >
-              Upgrade
+              {tier === "pro"
+                ? "Current plan"
+                : tier === "trial" || tier === "free"
+                  ? "Upgrade"
+                  : "Downgrade"}
             </Button>
           </Box>
           <Box className="w-1/5 rounded-t-2xl border border-b-0 border-gray-100 bg-gray-50 px-4 py-6 dark:border-dark-100 dark:bg-dark-300">
@@ -139,7 +153,7 @@ export const Plans = () => {
             <Button
               align="center"
               color="tertiary"
-              disabled={isBusinessLoading}
+              disabled={isBusinessLoading || tier === "business"}
               fullWidth
               onClick={() => {
                 if (billing === "annual") {
@@ -149,7 +163,11 @@ export const Plans = () => {
                 }
               }}
             >
-              Upgrade
+              {tier === "business"
+                ? "Current plan"
+                : tier === "trial" || tier === "free" || tier === "pro"
+                  ? "Upgrade"
+                  : "Downgrade"}
             </Button>
           </Box>
           <Box className="w-1/5 px-4 py-6">
@@ -158,10 +176,11 @@ export const Plans = () => {
             <Button
               align="center"
               color="tertiary"
+              disabled={tier === "enterprise"}
               fullWidth
               href="mailto:info@complexus.app"
             >
-              Contact sales
+              {tier === "enterprise" ? "Current plan" : "Contact sales"}
             </Button>
           </Box>
         </Flex>
