@@ -185,14 +185,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the subscriptions routes
 	subscriptionsgrp.Routes(subscriptionsgrp.Config{
-		DB:                 cfg.DB,
-		Log:                cfg.Log,
-		SecretKey:          cfg.SecretKey,
-		StripeClient:       cfg.StripeClient,
-		CheckoutSuccessURL: cfg.CheckoutSuccessURL,
-		CheckoutCancelURL:  cfg.CheckoutCancelURL,
-		WebhookSecret:      cfg.WebhookSecret,
-		Publisher:          cfg.Publisher,
+		DB:            cfg.DB,
+		Log:           cfg.Log,
+		SecretKey:     cfg.SecretKey,
+		StripeClient:  cfg.StripeClient,
+		WebhookSecret: cfg.WebhookSecret,
+		Publisher:     cfg.Publisher,
 	}, app)
 
 }

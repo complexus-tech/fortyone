@@ -24,14 +24,12 @@ import (
 )
 
 type Config struct {
-	DB                 *sqlx.DB
-	Log                *logger.Logger
-	SecretKey          string
-	StripeClient       *client.API
-	CheckoutSuccessURL string
-	CheckoutCancelURL  string
-	WebhookSecret      string
-	Publisher          *publisher.Publisher
+	DB            *sqlx.DB
+	Log           *logger.Logger
+	SecretKey     string
+	StripeClient  *client.API
+	WebhookSecret string
+	Publisher     *publisher.Publisher
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -41,8 +39,6 @@ func Routes(cfg Config, app *web.App) {
 		cfg.Log,
 		subsRepo,
 		cfg.StripeClient,
-		cfg.CheckoutSuccessURL,
-		cfg.CheckoutCancelURL,
 		cfg.WebhookSecret,
 	)
 

@@ -75,7 +75,7 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Name)
+	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
 	if err != nil {
 		if errors.Is(err, subscriptions.ErrWorkspaceHasActiveSub) {
 			web.RespondError(ctx, w, err, http.StatusBadRequest)

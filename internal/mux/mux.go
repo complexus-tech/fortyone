@@ -26,22 +26,20 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB                 *sqlx.DB
-	Redis              *redis.Client
-	Publisher          *publisher.Publisher
-	Shutdown           chan os.Signal
-	Log                *logger.Logger
-	Tracer             trace.Tracer
-	SecretKey          string
-	EmailService       email.Service
-	GoogleService      *google.Service
-	Validate           *validator.Validate
-	AzureConfig        azure.Config
-	Cache              *cache.Service
-	StripeClient       *client.API
-	CheckoutSuccessURL string
-	CheckoutCancelURL  string
-	WebhookSecret      string
+	DB            *sqlx.DB
+	Redis         *redis.Client
+	Publisher     *publisher.Publisher
+	Shutdown      chan os.Signal
+	Log           *logger.Logger
+	Tracer        trace.Tracer
+	SecretKey     string
+	EmailService  email.Service
+	GoogleService *google.Service
+	Validate      *validator.Validate
+	AzureConfig   azure.Config
+	Cache         *cache.Service
+	StripeClient  *client.API
+	WebhookSecret string
 }
 
 // New returns a new HTTP handler that defines all the API routes.

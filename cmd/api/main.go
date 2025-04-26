@@ -102,10 +102,8 @@ type Config struct {
 		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
 	}
 	Stripe struct {
-		SecretKey          string `env:"STRIPE_SECRET_KEY"`
-		CheckoutSuccessURL string `env:"STRIPE_CHECKOUT_SUCCESS_URL"`
-		CheckoutCancelURL  string `env:"STRIPE_CHECKOUT_CANCEL_URL"`
-		WebhookSecret      string `env:"STRIPE_WEBHOOK_SECRET"`
+		SecretKey     string `env:"STRIPE_SECRET_KEY"`
+		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
 	}
 }
 
@@ -275,22 +273,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:                 db,
-		Redis:              rdb,
-		Publisher:          publisher,
-		Shutdown:           shutdown,
-		Log:                log,
-		Tracer:             tracer,
-		SecretKey:          cfg.Auth.SecretKey,
-		EmailService:       emailService,
-		GoogleService:      googleService,
-		Validate:           validate,
-		AzureConfig:        azureConfig,
-		Cache:              cacheService,
-		StripeClient:       stripeClient,
-		CheckoutSuccessURL: cfg.Stripe.CheckoutSuccessURL,
-		CheckoutCancelURL:  cfg.Stripe.CheckoutCancelURL,
-		WebhookSecret:      cfg.Stripe.WebhookSecret,
+		DB:            db,
+		Redis:         rdb,
+		Publisher:     publisher,
+		Shutdown:      shutdown,
+		Log:           log,
+		Tracer:        tracer,
+		SecretKey:     cfg.Auth.SecretKey,
+		EmailService:  emailService,
+		GoogleService: googleService,
+		Validate:      validate,
+		AzureConfig:   azureConfig,
+		Cache:         cacheService,
+		StripeClient:  stripeClient,
+		WebhookSecret: cfg.Stripe.WebhookSecret,
 	}
 
 	// Create the mux

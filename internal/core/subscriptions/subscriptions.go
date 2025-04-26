@@ -45,26 +45,22 @@ type Repository interface {
 
 // Service provides subscription operations, now including Stripe interactions
 type Service struct {
-	repo               Repository
-	log                *logger.Logger
-	stripeClient       *client.API
-	checkoutSuccessURL string
-	checkoutCancelURL  string
-	webhookSecret      string
+	repo          Repository
+	log           *logger.Logger
+	stripeClient  *client.API
+	webhookSecret string
 }
 
 // New creates a new subscription service with Stripe support
-func New(log *logger.Logger, repo Repository, stripeClient *client.API, successURL, cancelURL, webhookSecret string) *Service {
+func New(log *logger.Logger, repo Repository, stripeClient *client.API, webhookSecret string) *Service {
 	if stripeClient == nil {
 		panic("Stripe client cannot be nil")
 	}
 	return &Service{
-		repo:               repo,
-		log:                log,
-		stripeClient:       stripeClient,
-		checkoutSuccessURL: successURL,
-		checkoutCancelURL:  cancelURL,
-		webhookSecret:      webhookSecret,
+		repo:          repo,
+		log:           log,
+		stripeClient:  stripeClient,
+		webhookSecret: webhookSecret,
 	}
 }
 
@@ -97,7 +93,7 @@ func (s *Service) GetSubscription(ctx context.Context, workspaceID uuid.UUID) (C
 }
 
 // CreateCheckoutSession initiates the Stripe Checkout process for a new subscription
-func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string) (string, error) {
+func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string, successURL string, cancelURL string) (string, error) {
 	s.log.Info(ctx, "Initiating checkout session", "workspace_id", workspaceID, "lookup_key", lookupKey)
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCheckoutSession")
 	defer span.End()
@@ -183,8 +179,8 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 				Quantity: stripe.Int64(int64(userCount)),
 			},
 		},
-		SuccessURL:          stripe.String(s.checkoutSuccessURL + "?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:           stripe.String(s.checkoutCancelURL),
+		SuccessURL:          stripe.String(successURL + "?session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:           stripe.String(cancelURL),
 		AllowPromotionCodes: stripe.Bool(true),
 		Expand: []*string{
 			stripe.String("subscription"),
