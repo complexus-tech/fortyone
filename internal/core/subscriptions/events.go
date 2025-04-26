@@ -237,6 +237,8 @@ func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) err
 		Status:          string(invoice.Status),
 		SeatsCount:      seatCount,
 		CreatedAt:       time.Now(),
+		HostedURL:       &invoice.HostedInvoiceURL,
+		CustomerName:    &cust.Name,
 	}
 
 	err = s.repo.CreateInvoice(ctx, coreInvoice)

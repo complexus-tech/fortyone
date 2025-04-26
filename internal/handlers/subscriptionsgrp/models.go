@@ -53,6 +53,8 @@ type AppInvoice struct {
 	Status          string    `json:"status"`
 	SeatsCount      int       `json:"seatsCount"`
 	CreatedAt       time.Time `json:"createdAt"`
+	HostedURL       *string   `json:"hostedUrl"`
+	CustomerName    *string   `json:"customerName"`
 }
 
 // Conversion functions
@@ -92,6 +94,8 @@ func toAppInvoices(coreInvoices []subscriptions.CoreSubscriptionInvoice) []AppIn
 			Status:          invoice.Status,
 			SeatsCount:      invoice.SeatsCount,
 			CreatedAt:       invoice.CreatedAt,
+			HostedURL:       invoice.HostedURL,
+			CustomerName:    invoice.CustomerName,
 		}
 	}
 	return result

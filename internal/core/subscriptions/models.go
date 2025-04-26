@@ -54,4 +54,6 @@ type CoreSubscriptionInvoice struct {
 	Status          string
 	SeatsCount      int
 	CreatedAt       time.Time
+	HostedURL       *string
+	CustomerName    *string
 }

@@ -29,6 +29,8 @@ type dbSubscriptionInvoice struct {
 	Status          string    `db:"status"`
 	SeatsCount      int       `db:"seats_count"`
 	CreatedAt       time.Time `db:"created_at"`
+	HostedURL       *string   `db:"hosted_url"`
+	CustomerName    *string   `db:"customer_name"`
 }
 
 func toCoreSubscription(db dbWorkspaceSubscription) subscriptions.CoreWorkspaceSubscription {
@@ -64,6 +66,8 @@ func toCoreInvoice(db dbSubscriptionInvoice) subscriptions.CoreSubscriptionInvoi
 		Status:          db.Status,
 		SeatsCount:      db.SeatsCount,
 		CreatedAt:       db.CreatedAt,
+		HostedURL:       db.HostedURL,
+		CustomerName:    db.CustomerName,
 	}
 }
 

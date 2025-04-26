@@ -96,6 +96,8 @@ func (r *repo) GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UU
             invoice_date,
             status,
             seats_count,
+            hosted_url,
+            customer_name,
             created_at
         FROM
             subscription_invoices
@@ -398,6 +400,8 @@ func (r *repo) CreateInvoice(ctx context.Context, invoice subscriptions.CoreSubs
             invoice_date,
             status,
             seats_count,
+            hosted_url,
+            customer_name,
             created_at
         ) VALUES (
             :workspace_id,
@@ -406,6 +410,8 @@ func (r *repo) CreateInvoice(ctx context.Context, invoice subscriptions.CoreSubs
             :invoice_date,
             :status,
             :seats_count,
+            :hosted_url,
+            :customer_name,
             NOW()
         )
     `
@@ -417,6 +423,8 @@ func (r *repo) CreateInvoice(ctx context.Context, invoice subscriptions.CoreSubs
 		"invoice_date":      invoice.InvoiceDate,
 		"status":            invoice.Status,
 		"seats_count":       invoice.SeatsCount,
+		"hosted_url":        invoice.HostedURL,
+		"customer_name":     invoice.CustomerName,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
