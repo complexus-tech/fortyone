@@ -3,11 +3,13 @@ import { DeleteIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { cn } from "lib";
+import { toast } from "sonner";
 import type { Member, UserRole } from "@/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useUpdateRoleMutation } from "@/lib/hooks/update-role";
 import { useRemoveMemberMutation } from "@/lib/hooks/remove-member-mutation";
 import { useMembers } from "@/lib/hooks/members";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const WorkspaceMember = ({
   id,
@@ -21,6 +23,7 @@ export const WorkspaceMember = ({
   const { data: session } = useSession();
   const { mutate: updateRole } = useUpdateRoleMutation();
   const { mutate: removeMember } = useRemoveMemberMutation();
+  const { tier } = useSubscriptionFeatures();
   const [isOpen, setIsOpen] = useState(false);
   const isCurrentUser = session?.user?.id === id;
 
@@ -55,6 +58,15 @@ export const WorkspaceMember = ({
           <Select
             disabled={isCurrentUser}
             onValueChange={(value) => {
+              if (
+                (tier === "free" || tier === "trial") &&
+                ["guest", "member"].includes(value)
+              ) {
+                toast.warning("Upgrade to a higher plan to change role", {
+                  description: `Cannot change role for ${tier.replace("free", "hobby")} plan`,
+                });
+                return;
+              }
               updateRole({ userId: id, role: value as UserRole });
             }}
             value={role}

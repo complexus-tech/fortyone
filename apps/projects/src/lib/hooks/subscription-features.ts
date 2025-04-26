@@ -9,7 +9,7 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
  */
 export const TIER_LIMITS = {
   trial: {
-    maxMembers: Infinity,
+    maxMembers: 50,
     maxFileUploads: "Unlimited",
     maxStories: Infinity,
     maxTeams: Infinity,
@@ -42,7 +42,7 @@ export const TIER_LIMITS = {
     objective: true,
   },
   business: {
-    maxMembers: Infinity,
+    maxMembers: 3,
     maxFileUploads: "Unlimited",
     maxStories: Infinity,
     maxTeams: Infinity,

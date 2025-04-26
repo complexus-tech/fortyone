@@ -66,16 +66,16 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin || isMember
       ? [
-          {
-            title: getTermDisplay("objectiveTerm", {
-              variant: "plural",
-              capitalize: true,
-            }),
-            href: "/settings/workspace/objectives",
-          },
           { title: "Labels", href: "/settings/workspace/labels" },
           { title: "Teams", href: "/settings/workspace/teams" },
           { title: "Create a team", href: "/settings/workspace/teams/create" },
+          {
+            title: `${getTermDisplay("objectiveTerm", {
+              variant: "plural",
+              capitalize: true,
+            })} workflow`,
+            href: "/settings/workspace/objectives",
+          },
         ]
       : []),
   ];

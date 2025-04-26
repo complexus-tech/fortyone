@@ -11,6 +11,7 @@ import { inviteMembers } from "@/modules/invitations/actions/invite";
 import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
 import { invitationKeys } from "@/constants/keys";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 type InviteFormState = {
   emails: string;
@@ -32,6 +33,7 @@ export const InviteMembersDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const queryClient = useQueryClient();
+  const { remaining, tier } = useSubscriptionFeatures();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const [formState, setFormState] = useState<InviteFormState>({
@@ -67,6 +69,14 @@ export const InviteMembersDialog = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     const toastId = "invite-members";
+
+    if (remaining("maxMembers", members.length) === 0) {
+      toast.warning("Reached max members limit for your plan", {
+        description: "Upgrade to a higher plan to invite more members",
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
     const emailList = formState.emails
       .split(/[,\n]/)
@@ -203,6 +213,10 @@ export const InviteMembersDialog = ({
               {ROLE_OPTIONS.map((role) => (
                 <Select.Option
                   className="text-base"
+                  disabled={
+                    (tier === "free" || tier === "trial") &&
+                    ["guest", "member"].includes(role.id)
+                  }
                   key={role.id}
                   value={role.id}
                 >
