@@ -57,6 +57,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceId}/stories", h.BulkDelete, auth)
 	app.Get("/workspaces/{workspaceId}/stories/{id}/activities", h.GetActivities, auth)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/duplicate", h.DuplicateStory, auth)
+	app.Get("/workspaces/{workspaceId}/stories/count", h.CountInWorkspace, auth)
 
 	// Comments
 	app.Post("/workspaces/{workspaceId}/stories/{id}/comments", h.CreateComment, auth)

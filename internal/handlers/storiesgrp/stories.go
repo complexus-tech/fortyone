@@ -16,6 +16,8 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -502,4 +504,29 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 	}
 
 	return web.Respond(ctx, w, fileInfo, http.StatusCreated)
+}
+
+// CountInWorkspace returns the count of stories in a workspace.
+func (h *Handlers) CountInWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.stories.CountInWorkspace")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	count, err := h.stories.CountInWorkspace(ctx, workspaceId)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	span.AddEvent("stories count retrieved", trace.WithAttributes(
+		attribute.Int("stories.count", count),
+	))
+
+	return web.Respond(ctx, w, map[string]int{"count": count}, http.StatusOK)
 }

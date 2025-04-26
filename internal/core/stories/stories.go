@@ -43,6 +43,7 @@ type Repository interface {
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
+	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 }
 
 type CoreSingleStoryWithSubs struct {
@@ -384,4 +385,22 @@ func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID,
 	))
 
 	return duplicatedStory, nil
+}
+
+// CountInWorkspace returns the count of stories in a workspace.
+func (s *Service) CountInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error) {
+	s.log.Info(ctx, "business.core.stories.CountInWorkspace")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.CountInWorkspace")
+	defer span.End()
+
+	count, err := s.repo.CountStoriesInWorkspace(ctx, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return 0, err
+	}
+
+	span.AddEvent("stories counted.", trace.WithAttributes(
+		attribute.Int("story.count", count),
+	))
+	return count, nil
 }

@@ -1224,3 +1224,43 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 
 	return toCoreStory(newStory), nil
 }
+
+// CountStoriesInWorkspace returns the count of stories in a workspace.
+func (r *repo) CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.CountStoriesInWorkspace")
+	defer span.End()
+
+	query := `
+		SELECT COUNT(*)
+		FROM stories
+		WHERE workspace_id = :workspace_id
+		AND deleted_at IS NULL
+	`
+
+	params := map[string]any{
+		"workspace_id": workspaceId,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare count stories statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+	defer stmt.Close()
+
+	var count int
+	if err := stmt.GetContext(ctx, &count, params); err != nil {
+		errMsg := fmt.Sprintf("failed to count stories in workspace: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to count stories"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return 0, err
+	}
+
+	span.AddEvent("stories counted.", trace.WithAttributes(
+		attribute.Int("stories.count", count),
+	))
+
+	return count, nil
+}
