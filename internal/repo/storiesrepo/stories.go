@@ -1234,7 +1234,7 @@ func (r *repo) CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUI
 		SELECT COUNT(*)
 		FROM stories
 		WHERE workspace_id = :workspace_id
-		AND deleted_at IS NULL
+		AND deleted_at IS NULL AND archived_at IS NULL
 	`
 
 	params := map[string]any{
