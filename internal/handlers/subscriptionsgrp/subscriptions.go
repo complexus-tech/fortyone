@@ -169,6 +169,10 @@ func (h *Handlers) GetSubscription(ctx context.Context, w http.ResponseWriter, r
 	subscription, err := h.subscriptions.GetSubscription(ctx, workspaceId)
 	if err != nil {
 		span.RecordError(err)
+		if errors.Is(err, subscriptions.ErrSubscriptionNotFound) {
+			web.RespondError(ctx, w, err, http.StatusNotFound)
+			return nil
+		}
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
