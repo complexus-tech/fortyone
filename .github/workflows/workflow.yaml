@@ -1,45 +1,41 @@
-name: Build and Deploy to Azure Container Apps
+name: Trigger auto deployment for api
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - "**"
+      - ".github/workflows/workflow.yml"
+
+  # Allow manual trigger
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
 
-      - name: Login to Azure
-        uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.API_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.API_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.API_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Login to Azure Container Registry
-        uses: azure/docker-login@v2
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      # - name: Build Docker Image
-      #   run: |
-      #     docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest \
-      #                  -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }} .
-
-      # - name: Push Docker Images
-      #   run: |
-      #     docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest
-      #     docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
-
-      - name: Deploy to Azure Container Apps
+      - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          acrName: complexus
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: ./Dockerfile
+          registryUrl: complexus.azurecr.io
+          registryUsername: ${{ secrets.API_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.API_REGISTRY_PASSWORD }}
           containerAppName: projectsapi
           resourceGroup: production-rg
-          imageToDeploy: complexus.azurecr.io/projectsapi:${{ github.sha }}
+          imageToBuild: complexus.azurecr.io/projectsapi:${{ github.sha }}
