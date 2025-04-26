@@ -39,7 +39,7 @@ jobs:
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          acrName: myregistry
+          acrName: complexus
           containerAppName: projectsapi
           resourceGroup: production-rg
-          imageToDeploy: myregistry.azurecr.io/projectsapi:${{ github.sha }}
+          imageToDeploy: complexus.azurecr.io/projectsapi:${{ github.sha }}
