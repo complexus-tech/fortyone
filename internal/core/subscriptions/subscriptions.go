@@ -340,16 +340,16 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	s.log.Info(ctx, "Handling Stripe webhook event", "event_id", event.ID, "event_type", event.Type)
 
 	// Check for idempotency
-	// processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
-	// if err != nil {
-	// 	span.RecordError(err)
-	// 	s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
-	// 	return fmt.Errorf("failed to check event idempotency: %w", err)
-	// }
-	// if processed {
-	// 	s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
-	// 	return nil // Already processed
-	// }
+	processed, err := s.repo.HasEventBeenProcessed(ctx, event.ID)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Failed to check event processing status", "error", err, "event_id", event.ID)
+		return fmt.Errorf("failed to check event idempotency: %w", err)
+	}
+	if processed {
+		s.log.Warn(ctx, "Webhook event already processed", "event_id", event.ID, "event_type", event.Type)
+		return nil // Already processed
+	}
 
 	// Extract workspace ID for logging
 	var workspaceID *uuid.UUID
