@@ -185,7 +185,6 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 		},
 		SuccessURL:          stripe.String(s.checkoutSuccessURL + "?session_id={CHECKOUT_SESSION_ID}"),
 		CancelURL:           stripe.String(s.checkoutCancelURL),
-		CustomerEmail:       stripe.String(userEmail),
 		AllowPromotionCodes: stripe.Bool(true),
 		Expand: []*string{
 			stripe.String("subscription"),
