@@ -40,6 +40,6 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           acrName: myregistry
-          containerAppName: my-container-app
-          resourceGroup: my-rg
-          imageToDeploy: myregistry.azurecr.io/app:${{ github.sha }}
+          containerAppName: projectsapi
+          resourceGroup: production-rg
+          imageToDeploy: myregistry.azurecr.io/projectsapi:${{ github.sha }}
