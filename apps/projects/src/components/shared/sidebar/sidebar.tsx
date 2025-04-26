@@ -53,7 +53,8 @@ export const Sidebar = () => {
                   rounded="full"
                   size="sm"
                 >
-                  {trialDaysRemaining} days left in trial
+                  {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
+                  left in trial
                 </Button>
               </span>
             </Tooltip>
