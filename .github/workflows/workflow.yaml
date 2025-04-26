@@ -26,21 +26,20 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest \
-                       -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }} .
+      # - name: Build Docker Image
+      #   run: |
+      #     docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest \
+      #                  -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }} .
 
-      - name: Push Docker Images
-        run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
+      # - name: Push Docker Images
+      #   run: |
+      #     docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest
+      #     docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
 
       - name: Deploy to Azure Container Apps
-        uses: Azure/container-apps-deploy-action@v2
+        uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: .
-          registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
-          containerAppName: projectsapi
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
+          acrName: myregistry
+          containerAppName: my-container-app
+          resourceGroup: my-rg
+          imageToDeploy: myregistry.azurecr.io/app:${{ github.sha }}
