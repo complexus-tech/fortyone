@@ -41,6 +41,6 @@ jobs:
         with:
           appSourcePath: .
           registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
-          containerAppName: projects-api
+          containerAppName: projectsapi
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
