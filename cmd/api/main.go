@@ -68,10 +68,11 @@ type Config struct {
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Cache struct {
-		Host     string `default:"localhost" env:"APP_REDIS_HOST"`
-		Port     string `default:"6379" env:"APP_REDIS_PORT"`
-		Password string `default:"" env:"APP_REDIS_PASSWORD"`
-		Name     int    `default:"0" env:"APP_REDIS_DB"`
+		Host       string `default:"localhost" env:"APP_REDIS_HOST"`
+		Port       string `default:"6379" env:"APP_REDIS_PORT"`
+		Password   string `default:"" env:"APP_REDIS_PASSWORD"`
+		Name       int    `default:"0" env:"APP_REDIS_DB"`
+		DisableTLS bool   `default:"false" env:"APP_REDIS_DISABLE_TLS"`
 	}
 	Email struct {
 		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
@@ -167,11 +168,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}()
 
 	// Connect to redis client
+	var tlsConfig *tls.Config
+	if !cfg.Cache.DisableTLS {
+		tlsConfig = &tls.Config{}
+	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:      net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
 		Password:  cfg.Cache.Password,
 		DB:        cfg.Cache.Name,
-		TLSConfig: &tls.Config{},
+		TLSConfig: tlsConfig,
 	})
 
 	// Close the redis connection when the main function returns
