@@ -28,13 +28,13 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/projects-api:latest \
-                       -t ${{ secrets.ACR_LOGIN_SERVER }}/projects-api:${{ github.sha }} .
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest \
+                       -t ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }} .
 
       - name: Push Docker Images
         run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projects-api:latest
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projects-api:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:latest
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
 
       - name: Deploy to Azure Container Apps
         uses: Azure/container-apps-deploy-action@v2
@@ -43,4 +43,4 @@ jobs:
           registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
           containerAppName: projects-api
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/projects-api:${{ github.sha }}
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/projectsapi:${{ github.sha }}
