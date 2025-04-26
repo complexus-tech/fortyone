@@ -1,17 +1,19 @@
 "use client";
 
-import { Button, Dialog, Select, TextArea, Text, Flex } from "ui";
+import { Button, Dialog, Select, TextArea, Text, Flex, Wrapper } from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { InviteMembersIcon } from "icons";
+import { InviteMembersIcon, WarningIcon } from "icons";
+import { useRouter } from "next/navigation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { inviteMembers } from "@/modules/invitations/actions/invite";
 import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
 import { invitationKeys } from "@/constants/keys";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { FeatureGuard } from "../feature-guard";
 
 type InviteFormState = {
   emails: string;
@@ -33,7 +35,7 @@ export const InviteMembersDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const queryClient = useQueryClient();
-  const { remaining, tier } = useSubscriptionFeatures();
+  const { remaining, tier, getLimit } = useSubscriptionFeatures();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const [formState, setFormState] = useState<InviteFormState>({
@@ -42,7 +44,7 @@ export const InviteMembersDialog = ({
     teamIds: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const router = useRouter();
   const handleEmailsChange = (value: string) => {
     setFormState((prev) => ({ ...prev, emails: value }));
   };
@@ -70,14 +72,6 @@ export const InviteMembersDialog = ({
     setIsSubmitting(true);
     const toastId = "invite-members";
 
-    if (remaining("maxMembers", members.length) === 0) {
-      toast.warning("Reached max members limit for your plan", {
-        description: "Upgrade to a higher plan to invite more members",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
     const emailList = formState.emails
       .split(/[,\n]/)
       .map((email) => email.trim())
@@ -86,6 +80,20 @@ export const InviteMembersDialog = ({
     if (emailList.length === 0) {
       toast.warning("Validation error", {
         description: "Please enter at least one email address",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (remaining("maxMembers", members.length) === 0) {
+      toast.warning("Reached members limit", {
+        description: "Upgrade to a higher plan to invite more members",
+        action: {
+          label: "Upgrade",
+          onClick: () => {
+            router.push("/settings/workspace/billing");
+          },
+        },
       });
       setIsSubmitting(false);
       return;
@@ -189,88 +197,118 @@ export const InviteMembersDialog = ({
             Invite members to your workspace
           </Dialog.Title>
         </Dialog.Header>
-        <Dialog.Body className="pb-6">
-          <Text className="mb-2" color="muted">
-            Email addresses
-          </Text>
-          <TextArea
-            className="border py-4 leading-normal dark:bg-transparent"
-            onChange={(e) => {
-              handleEmailsChange(e.target.value);
-            }}
-            placeholder="e.g, member1@example.com, member2@example.com"
-            rows={4}
-            value={formState.emails}
-          />
-          <Text className="mb-2 mt-6" color="muted">
-            Role
-          </Text>
-          <Select onValueChange={handleRoleChange} value={formState.role}>
-            <Select.Trigger className="h-[2.8rem] border bg-transparent px-4 text-base dark:bg-transparent">
-              <Select.Input placeholder="Select role" />
-            </Select.Trigger>
-            <Select.Content>
-              {ROLE_OPTIONS.map((role) => (
-                <Select.Option
-                  className="text-base"
-                  disabled={
-                    (tier === "free" || tier === "trial") &&
-                    ["guest", "member"].includes(role.id)
-                  }
-                  key={role.id}
-                  value={role.id}
+        <Dialog.Description>
+          Adding members to your workspace will add more seats to your plan once
+          the member accepts the invitation.
+        </Dialog.Description>
+        <FeatureGuard
+          count={members.length}
+          fallback={
+            <Dialog.Body className="mt-2 pb-6">
+              <Wrapper className="flex items-center justify-between gap-3 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                <Flex align="center" gap={3}>
+                  <WarningIcon className="shrink-0 text-warning dark:text-warning" />
+                  <Text>
+                    You&apos;ve reached the limit of {getLimit("maxMembers")}{" "}
+                    members on your {tier.replace("free", "hobby")} plan.
+                    Upgrade to invite more members.
+                  </Text>
+                </Flex>
+                <Button
+                  className="shrink-0"
+                  color="warning"
+                  href="/settings/workspace/billing"
                 >
-                  {role.name}
-                </Select.Option>
-              ))}
-            </Select.Content>
-          </Select>
-          <Text className="mb-2 mt-6" color="muted">
-            Teams - members will be added to the selected teams
-          </Text>
-          <Flex gap={2} wrap>
-            {teams.map((team) => (
-              <Button
-                className={cn("dark:bg-transparent", {
-                  "ring-2": formState.teamIds.includes(team.id),
-                })}
-                color="tertiary"
-                key={team.id}
-                leftIcon={
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: team.color }}
-                  />
-                }
-                onClick={() => {
-                  handleTeamToggle(team.id);
-                }}
-                size="sm"
-                title={team.name}
-                variant="outline"
-              >
-                <span className="inline-block max-w-[12ch] truncate">
-                  {team.name}
-                </span>
-              </Button>
-            ))}
-          </Flex>
-          {formState.teamIds.length > 0 && (
-            <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
-              {formState.teamIds.length} team
-              {formState.teamIds.length > 1 ? "s" : ""} selected
+                  Upgrade now
+                </Button>
+              </Wrapper>
+            </Dialog.Body>
+          }
+          feature="maxMembers"
+        >
+          <Dialog.Body className="mt-2 pb-6">
+            <Text className="mb-2" color="muted">
+              Email addresses
             </Text>
-          )}
-        </Dialog.Body>
-        <Dialog.Footer className="justify-end">
-          <Button
-            loading={isSubmitting}
-            loadingText="Sending"
-            onClick={handleSubmit}
-          >
-            Send invites
-          </Button>
-        </Dialog.Footer>
+            <TextArea
+              className="border py-4 leading-normal dark:bg-transparent"
+              onChange={(e) => {
+                handleEmailsChange(e.target.value);
+              }}
+              placeholder="e.g, member1@example.com, member2@example.com"
+              rows={4}
+              value={formState.emails}
+            />
+            <Text className="mb-2 mt-6" color="muted">
+              Role
+            </Text>
+            <Select onValueChange={handleRoleChange} value={formState.role}>
+              <Select.Trigger className="h-[2.8rem] border bg-transparent px-4 text-base dark:bg-transparent">
+                <Select.Input placeholder="Select role" />
+              </Select.Trigger>
+              <Select.Content>
+                {ROLE_OPTIONS.map((role) => (
+                  <Select.Option
+                    className="text-base"
+                    disabled={
+                      (tier === "free" || tier === "trial") &&
+                      ["guest", "member"].includes(role.id)
+                    }
+                    key={role.id}
+                    value={role.id}
+                  >
+                    {role.name}
+                  </Select.Option>
+                ))}
+              </Select.Content>
+            </Select>
+            <Text className="mb-2 mt-6" color="muted">
+              Teams - members will be added to the selected teams
+            </Text>
+            <Flex gap={2} wrap>
+              {teams.map((team) => (
+                <Button
+                  className={cn("dark:bg-transparent", {
+                    "ring-2": formState.teamIds.includes(team.id),
+                  })}
+                  color="tertiary"
+                  key={team.id}
+                  leftIcon={
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: team.color }}
+                    />
+                  }
+                  onClick={() => {
+                    handleTeamToggle(team.id);
+                  }}
+                  size="sm"
+                  title={team.name}
+                  variant="outline"
+                >
+                  <span className="inline-block max-w-[12ch] truncate">
+                    {team.name}
+                  </span>
+                </Button>
+              ))}
+            </Flex>
+            {formState.teamIds.length > 0 && (
+              <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
+                {formState.teamIds.length} team
+                {formState.teamIds.length > 1 ? "s" : ""} selected
+              </Text>
+            )}
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end">
+            <Button
+              loading={isSubmitting}
+              loadingText="Sending"
+              onClick={handleSubmit}
+            >
+              Send invites
+            </Button>
+          </Dialog.Footer>
+        </FeatureGuard>
       </Dialog.Content>
     </Dialog>
   );

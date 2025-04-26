@@ -267,7 +267,12 @@ export const NewStoryDialog = ({
           <Dialog.Content hideClose>
             <Dialog.Header className="flex items-center gap-2 px-6 pt-6 text-xl">
               <CrownIcon className="relative -top-px h-6 text-warning" />
-              <Dialog.Title>Story Limit Reached</Dialog.Title>
+              <Dialog.Title>
+                {getTermDisplay("storyTerm", {
+                  capitalize: true,
+                })}{" "}
+                Limit Reached
+              </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <Text
@@ -276,7 +281,11 @@ export const NewStoryDialog = ({
                 fontSize="lg"
               >
                 You&apos;ve reached the limit of {getLimit("maxStories")}{" "}
-                stories on your free plan. Upgrade to create unlimited stories
+                {getTermDisplay("storyTerm", {
+                  variant: "plural",
+                })}{" "}
+                on your {tier.replace("free", "hobby")} plan. Upgrade to create
+                unlimited {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
                 and unlock premium features.
               </Text>
               <Wrapper className="dark:bg-dark-300/60">
@@ -291,7 +300,11 @@ export const NewStoryDialog = ({
                 <Divider className="my-3" />
                 <Flex align="center" gap={3} justify="between">
                   <Text color="muted" fontSize="lg">
-                    Stories:
+                    {getTermDisplay("storyTerm", {
+                      variant: "plural",
+                      capitalize: true,
+                    })}
+                    :
                   </Text>
                   <Text color="primary" fontSize="lg">
                     {storyCount}/{getLimit("maxStories")}
