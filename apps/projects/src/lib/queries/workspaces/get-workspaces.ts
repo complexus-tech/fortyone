@@ -9,5 +9,6 @@ export const getWorkspaces = async (token: string) => {
       headers: { Authorization: `Bearer ${token}` },
     })
     .json<ApiResponse<Workspace[]>>();
+
   return workspaces.data!;
 };

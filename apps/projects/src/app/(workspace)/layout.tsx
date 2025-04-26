@@ -5,12 +5,12 @@ import { redirect } from "next/navigation";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
-import { teamKeys, statusKeys, subscriptionKeys } from "@/constants/keys";
+import { teamKeys, statusKeys, workspaceKeys } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
-import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 
 export default async function RootLayout({
@@ -58,9 +58,9 @@ export default async function RootLayout({
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
-      queryKey: subscriptionKeys.details,
-      queryFn: () => getSubscription(),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+      queryKey: workspaceKeys.lists(),
+      queryFn: () => getWorkspaces(token),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
   ]);
 
