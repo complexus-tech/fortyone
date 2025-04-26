@@ -109,9 +109,13 @@ export const useSubscriptionFeatures = () => {
   // Get the limits for the current tier
   const limits = TIER_LIMITS[effectiveTier];
 
-  const trialDaysRemaining = workspace?.trialEndsOn
-    ? Math.max(0, differenceInDays(new Date(workspace.trialEndsOn), new Date()))
-    : 0;
+  const trialDaysRemaining =
+    (workspace?.trialEndsOn
+      ? Math.max(
+          0,
+          differenceInDays(new Date(workspace.trialEndsOn), new Date()),
+        )
+      : 0) + 1;
 
   const subscriptionTierName =
     subscription?.tier === "free" ? "hobby" : subscription?.tier || "hobby";
