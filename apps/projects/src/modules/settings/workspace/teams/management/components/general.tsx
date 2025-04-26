@@ -2,10 +2,21 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { Box, Input, Button, Text, Flex, Switch, ColorPicker } from "ui";
+import {
+  Box,
+  Input,
+  Button,
+  Text,
+  Flex,
+  Switch,
+  ColorPicker,
+  Wrapper,
+} from "ui";
+import { WarningIcon } from "icons";
 import type { Team } from "@/modules/teams/types";
 import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 import { SectionHeader } from "@/modules/settings/components/section-header";
+import { FeatureGuard } from "@/components/ui";
 
 export const GeneralSettings = ({ team }: { team: Team }) => {
   const [form, setForm] = useState({
@@ -106,14 +117,29 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               team leads can add members to private teams.
             </Text>
           </Box>
-          <Switch
-            checked={form.isPrivate}
-            className="shrink-0"
-            name="isPrivate"
-            onCheckedChange={(checked) => {
-              setForm({ ...form, isPrivate: checked });
-            }}
-          />
+          <FeatureGuard
+            fallback={
+              <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                <Flex align="center" gap={2}>
+                  <WarningIcon className="text-warning dark:text-warning" />
+                  <Text>Upgrade to a higher plan to create private teams</Text>
+                </Flex>
+                <Button color="warning" href="/settings/workspace/billing">
+                  Upgrade now
+                </Button>
+              </Wrapper>
+            }
+            feature="privateTeams"
+          >
+            <Switch
+              checked={form.isPrivate}
+              className="shrink-0"
+              name="isPrivate"
+              onCheckedChange={(checked) => {
+                setForm({ ...form, isPrivate: checked });
+              }}
+            />
+          </FeatureGuard>
         </Flex>
         {hasChanged ? (
           <Box className="px-6 py-4">

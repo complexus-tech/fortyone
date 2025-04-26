@@ -65,13 +65,13 @@ export const buttonVariants = cva(
       // Solid variant
       {
         variant: "solid",
-        color: ["primary", "secondary", "warning", "danger", "info"],
+        color: ["primary", "secondary", "danger", "info"],
         className: "text-white",
       },
       {
         variant: "solid",
         color: "warning",
-        className: "text-dark",
+        className: "text-dark dark:text-dark",
       },
       // Outline variant
       {

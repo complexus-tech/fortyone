@@ -8,11 +8,13 @@ import Link from "next/link";
 import { cn } from "lib";
 import { useLocalStorage, useUserRole, useTerminology } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { BodyContainer, MobileMenuButton } from "../shared";
 import { NavLink } from "../ui";
 
 export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { userRole } = useUserRole();
+  const { hasFeature } = useSubscriptionFeatures();
   const [prevPage, setPrevPage] = useLocalStorage("pathBeforeSettings", "");
   const router = useRouter();
   const pathname = usePathname();
@@ -47,8 +49,15 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       ? [
           { title: "General", href: "/settings" },
           { title: "Members", href: "/settings/workspace/members" },
-          // { title: "Billing", href: "/settings/workspace/billing" },
-          { title: "Terminology", href: "/settings/workspace/terminology" },
+          { title: "Billing & plans", href: "/settings/workspace/billing" },
+          ...(hasFeature("customTerminology")
+            ? [
+                {
+                  title: "Terminology",
+                  href: "/settings/workspace/terminology",
+                },
+              ]
+            : []),
           { title: "API tokens", href: "/settings/workspace/api" },
         ]
       : []),
@@ -57,16 +66,16 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin || isMember
       ? [
-          {
-            title: getTermDisplay("objectiveTerm", {
-              variant: "plural",
-              capitalize: true,
-            }),
-            href: "/settings/workspace/objectives",
-          },
           { title: "Labels", href: "/settings/workspace/labels" },
           { title: "Teams", href: "/settings/workspace/teams" },
           { title: "Create a team", href: "/settings/workspace/teams/create" },
+          {
+            title: `${getTermDisplay("objectiveTerm", {
+              variant: "plural",
+              capitalize: true,
+            })} workflow`,
+            href: "/settings/workspace/objectives",
+          },
         ]
       : []),
   ];
@@ -200,8 +209,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           </ResizablePanel.Panel>
           <ResizablePanel.Handle />
           <ResizablePanel.Panel defaultSize={85}>
-            <Box className="h-screen overflow-y-auto">
-              <Container className="max-w-[54rem] py-12">{children}</Container>
+            <Box className="h-dvh overflow-y-auto">
+              <Container
+                className={cn("max-w-[54rem] py-12", {
+                  "max-w-7xl": pathname.includes("billing"),
+                })}
+              >
+                {children}
+              </Container>
             </Box>
           </ResizablePanel.Panel>
         </ResizablePanel>

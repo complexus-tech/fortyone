@@ -1,19 +1,21 @@
-import { Box, Flex, Text, Select, Button } from "ui";
+import { Box, Flex, Text, Select, Button, Wrapper } from "ui";
 import {
   ObjectiveIcon,
   OKRIcon,
   PlusIcon,
   SprintsIcon,
   StoryIcon,
+  WarningIcon,
 } from "icons";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { SectionHeader } from "@/modules/settings/components";
-import { RowWrapper } from "@/components/ui";
+import { FeatureGuard, RowWrapper } from "@/components/ui";
 import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
 import type { WorkspaceSettings } from "@/types";
 import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
 import { useTerminology } from "@/hooks/use-terminology-display";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 type TermOption = {
   label: string;
@@ -43,6 +45,7 @@ export const TerminologyPreferences = () => {
     },
   } = useWorkspaceSettings();
   const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
+  const { hasFeature } = useSubscriptionFeatures();
   const { getTermDisplay } = useTerminology();
 
   const entities: TermEntity[] = useMemo(
@@ -124,65 +127,83 @@ export const TerminologyPreferences = () => {
 
   return (
     <>
-      {/* Terminology Selection Section */}
-      <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
-        <SectionHeader
-          description="Customize the terminology used throughout your workspace."
-          title="Terminology Preferences"
-        />
-        <Box>
-          {entities
-            .filter((entity) => !entity.disabled)
-            .map((entity) => (
-              <RowWrapper
-                className="last-of-type:border-b-0 md:px-6"
-                key={entity.name}
-              >
-                <Flex align="center" gap={2}>
-                  <Flex
-                    align="center"
-                    className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
-                    justify="center"
-                  >
-                    {entity.icon}
-                  </Flex>
-                  <Box>
-                    <Text className="font-medium">{entity.name}</Text>
-                    <Text className="line-clamp-2" color="muted">
-                      {entity.description}
-                    </Text>
-                  </Box>
-                </Flex>
-                <Select
-                  defaultValue={entity.defaultValue}
-                  onValueChange={(value) => {
-                    handleTerminologyChange(entity.key, value);
-                  }}
-                  value={settings[entity.key] as string}
+      <FeatureGuard
+        fallback={
+          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+            <Flex align="center" gap={2}>
+              <WarningIcon className="text-warning dark:text-warning" />
+              <Text>
+                Upgrade to a business or enterprise plan to customize
+                terminology
+              </Text>
+            </Flex>
+            <Button color="warning" href="/settings/workspace/billing">
+              Upgrade now
+            </Button>
+          </Wrapper>
+        }
+        feature="customTerminology"
+      >
+        <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+          <SectionHeader
+            description="Customize the terminology used throughout your workspace."
+            title="Terminology Preferences"
+          />
+          <Box>
+            {entities
+              .filter((entity) => !entity.disabled)
+              .map((entity) => (
+                <RowWrapper
+                  className="last-of-type:border-b-0 md:px-6"
+                  key={entity.name}
                 >
-                  <Select.Trigger className="h-9 w-max text-base md:min-w-36">
-                    <Select.Input />
-                  </Select.Trigger>
-                  <Select.Content align="center">
-                    <Select.Group>
-                      {entity.options.map((option) => (
-                        <Select.Option
-                          className="text-base"
-                          key={option.value}
-                          value={option.value}
-                        >
-                          <Flex align="center" gap={2}>
-                            {option.label}
-                          </Flex>
-                        </Select.Option>
-                      ))}
-                    </Select.Group>
-                  </Select.Content>
-                </Select>
-              </RowWrapper>
-            ))}
+                  <Flex align="center" gap={2}>
+                    <Flex
+                      align="center"
+                      className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+                      justify="center"
+                    >
+                      {entity.icon}
+                    </Flex>
+                    <Box>
+                      <Text className="font-medium">{entity.name}</Text>
+                      <Text className="line-clamp-2" color="muted">
+                        {entity.description}
+                      </Text>
+                    </Box>
+                  </Flex>
+                  <Select
+                    defaultValue={entity.defaultValue}
+                    disabled={!hasFeature("customTerminology")}
+                    onValueChange={(value) => {
+                      handleTerminologyChange(entity.key, value);
+                    }}
+                    value={settings[entity.key] as string}
+                  >
+                    <Select.Trigger className="h-9 w-max text-base disabled:opacity-50 md:min-w-36">
+                      <Select.Input />
+                    </Select.Trigger>
+                    <Select.Content align="center">
+                      <Select.Group>
+                        {entity.options.map((option) => (
+                          <Select.Option
+                            className="text-base"
+                            key={option.value}
+                            value={option.value}
+                          >
+                            <Flex align="center" gap={2}>
+                              {option.label}
+                            </Flex>
+                          </Select.Option>
+                        ))}
+                      </Select.Group>
+                    </Select.Content>
+                  </Select>
+                </RowWrapper>
+              ))}
+          </Box>
         </Box>
-      </Box>
+      </FeatureGuard>
 
       {/* Preview Section */}
       <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">

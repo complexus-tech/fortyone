@@ -10,6 +10,7 @@ import {
   notificationKeys,
   workspaceKeys,
   memberKeys,
+  subscriptionKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
@@ -23,6 +24,8 @@ import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
+import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
@@ -79,6 +82,11 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: notificationKeys.preferences(),
     queryFn: () => getNotificationPreferences(),
+  });
+  queryClient.prefetchQuery({
+    queryKey: subscriptionKeys.details,
+    queryFn: () => getSubscription(),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;
 };

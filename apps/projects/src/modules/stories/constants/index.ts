@@ -16,6 +16,7 @@ export const storyKeys = {
   comments: (id: string) => [...storyKeys.detail(id), "comments"] as const,
   attachments: (id: string) =>
     [...storyKeys.detail(id), "attachments"] as const,
+  total: () => ["totalSories"] as const,
 };
 
 export const storyTags = {

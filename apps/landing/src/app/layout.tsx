@@ -31,6 +31,10 @@ export const metadata: Metadata = {
     "goal tracking",
     "project roadmap",
     "team objectives",
+    "project tracking",
+    "project software",
+    "project management software",
+    "project management software for teams",
   ],
   openGraph: {
     type: "website",

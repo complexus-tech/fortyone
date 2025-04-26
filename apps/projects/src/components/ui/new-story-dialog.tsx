@@ -11,6 +11,8 @@ import {
   Menu,
   Tooltip,
   Avatar,
+  Wrapper,
+  Divider,
 } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -32,12 +34,14 @@ import {
   PlusIcon,
   ObjectiveIcon,
   SprintsIcon,
+  CrownIcon,
 } from "icons";
 import { toast } from "sonner";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
@@ -50,6 +54,9 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useTotalStories } from "@/modules/stories/hooks/total-stories";
+import { storyKeys } from "@/modules/stories/constants";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -57,6 +64,7 @@ import { StatusesMenu } from "./story/statuses-menu";
 import { TeamColor } from "./team-color";
 import { ObjectivesMenu } from "./story/objectives-menu";
 import { SprintsMenu } from "./story/sprints-menu";
+import { FeatureGuard } from "./feature-guard";
 
 export const NewStoryDialog = ({
   isOpen,
@@ -78,6 +86,7 @@ export const NewStoryDialog = ({
   assigneeId?: string | null;
 }) => {
   const session = useSession();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const features = useFeatures();
   const { data: teams = [] } = useTeams();
@@ -100,6 +109,8 @@ export const NewStoryDialog = ({
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
   const { data: automationPreferences } = useAutomationPreferences();
+  const { tier, getLimit } = useSubscriptionFeatures();
+  const { data: totalStories = 0 } = useTotalStories();
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
@@ -201,6 +212,9 @@ export const NewStoryDialog = ({
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
       setStoryForm(initialForm);
+      if (tier === "free") {
+        queryClient.invalidateQueries({ queryKey: storyKeys.total() });
+      }
     } finally {
       setLoading(false);
     }
@@ -253,321 +267,412 @@ export const NewStoryDialog = ({
   }, [isOpen, teams, setIsOpen, router]);
 
   return (
-    <Dialog onOpenChange={setIsOpen} open={isOpen}>
-      <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
-        <Dialog.Header className="flex items-center justify-between px-6 pt-6">
-          <Dialog.Title className="flex items-center gap-1 text-lg">
-            <Menu>
-              <Menu.Button>
-                <Button
-                  className="gap-1.5 font-semibold tracking-wide"
-                  color="tertiary"
-                  leftIcon={<TeamColor color={currentTeam?.color} />}
-                  size="xs"
-                >
-                  {currentTeam?.code}
-                </Button>
-              </Menu.Button>
-              <Menu.Items align="start" className="w-52">
-                <Menu.Group>
-                  {teams.map((team) => (
-                    <Menu.Item
-                      active={team.id === activeTeam?.id}
-                      className="justify-between gap-3"
-                      key={team.id}
-                      onClick={() => {
-                        setActiveTeam(team);
-                      }}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <TeamColor className="shrink-0" color={team.color} />
-                        <span className="block truncate">{team.name}</span>
-                      </span>
-                      {team.id === activeTeam?.id && (
-                        <CheckIcon className="h-[1.1rem] w-auto" />
-                      )}
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-            <ArrowRightIcon className="h-4 w-auto opacity-30" strokeWidth={3} />
-            <Text className="opacity-80" color="muted">
-              New {getTermDisplay("storyTerm")}
-            </Text>
-          </Dialog.Title>
-          <Flex gap={2}>
-            <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
-              <Button
-                className="px-[0.35rem] dark:hover:bg-dark-100"
-                color="tertiary"
-                onClick={() => {
-                  setIsExpanded((prev) => !prev);
-                }}
-                size="xs"
-                variant="naked"
+    <FeatureGuard
+      count={totalStories}
+      fallback={
+        <Dialog open={isOpen}>
+          <Dialog.Content hideClose>
+            <Dialog.Header className="flex items-center gap-2 px-6 pt-6 text-xl">
+              <CrownIcon className="relative -top-px h-6 text-warning" />
+              <Dialog.Title>
+                {getTermDisplay("storyTerm", {
+                  capitalize: true,
+                })}{" "}
+                Limit Reached
+              </Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>
+              <Text
+                className="mb-4 dark:font-normal"
+                color="muted"
+                fontSize="lg"
               >
-                {isExpanded ? (
-                  <MinimizeIcon className="h-[1.2rem] w-auto" />
-                ) : (
-                  <MaximizeIcon className="h-[1.2rem] w-auto" />
-                )}
-                <span className="sr-only">
-                  {isExpanded ? "Minimize" : "Expand"} dialog
-                </span>
+                You&apos;ve reached the limit of {getLimit("maxStories")}{" "}
+                {getTermDisplay("storyTerm", {
+                  variant: "plural",
+                })}{" "}
+                on your {tier.replace("free", "hobby")} plan. Upgrade to create
+                unlimited {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
+                and unlock premium features.
+              </Text>
+              <Wrapper className="dark:bg-dark-300/60">
+                <Flex align="center" gap={3} justify="between">
+                  <Text color="muted" fontSize="lg">
+                    Current plan:
+                  </Text>
+                  <Text fontSize="lg" transform="capitalize">
+                    {tier.replace("free", "hobby")}
+                  </Text>
+                </Flex>
+                <Divider className="my-3" />
+                <Flex align="center" gap={3} justify="between">
+                  <Text color="muted" fontSize="lg">
+                    {getTermDisplay("storyTerm", {
+                      variant: "plural",
+                      capitalize: true,
+                    })}
+                    :
+                  </Text>
+                  <Text color="primary" fontSize="lg">
+                    {totalStories}/{getLimit("maxStories")}
+                  </Text>
+                </Flex>
+              </Wrapper>
+              <Button
+                align="center"
+                className="mt-4 border-0"
+                fullWidth
+                href="/settings/workspace/billing"
+                rounded="lg"
+                size="lg"
+              >
+                Upgrade now
               </Button>
-            </Tooltip>
-            <Dialog.Close />
-          </Flex>
-        </Dialog.Header>
-        <Dialog.Body className="max-h-[60dvh] pt-0">
-          <TextEditor
-            asTitle
-            className="text-2xl font-medium"
-            editor={titleEditor}
-          />
-          <TextEditor
-            className={cn({
-              "min-h-96": isExpanded,
-            })}
-            editor={editor}
-          />
-          <Flex align="center" className="mt-4 gap-1.5" wrap>
-            <StatusesMenu>
-              <StatusesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  leftIcon={
-                    <StoryStatusIcon
-                      className="h-4"
-                      statusId={storyForm.statusId}
-                    />
-                  }
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {
-                    teamStatuses.find(
-                      (state) => state.id === storyForm.statusId,
-                    )?.name
-                  }
-                </Button>
-              </StatusesMenu.Trigger>
-              <StatusesMenu.Items
-                setStatusId={(statusId) => {
-                  setStoryForm((prev) => ({ ...prev, statusId }));
+              <Button
+                align="center"
+                className="mb-2 mt-3 border-[0.5px]"
+                color="tertiary"
+                fullWidth
+                onClick={() => {
+                  setIsOpen(false);
                 }}
-                statusId={storyForm.statusId}
-                teamId={currentTeamId ?? ""}
-              />
-            </StatusesMenu>
-            <PrioritiesMenu>
-              <PrioritiesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  leftIcon={
-                    <PriorityIcon
-                      className="h-4"
-                      priority={storyForm.priority}
-                    />
-                  }
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {storyForm.priority}
-                </Button>
-              </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items
-                priority={storyForm.priority}
-                setPriority={(priority) => {
-                  setStoryForm((prev) => ({ ...prev, priority }));
-                }}
-              />
-            </PrioritiesMenu>
-            <DatePicker>
-              <DatePicker.Trigger>
-                <Button
-                  className="px-2 text-sm"
-                  color="tertiary"
-                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
-                  rightIcon={
-                    storyForm.startDate ? (
-                      <CloseIcon
-                        aria-label="Remove date"
-                        className="h-4 w-auto"
+                rounded="lg"
+                size="lg"
+              >
+                Maybe later
+              </Button>
+            </Dialog.Body>
+          </Dialog.Content>
+        </Dialog>
+      }
+      feature="maxStories"
+    >
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+        <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
+          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+            <Dialog.Title className="flex items-center gap-1 text-lg">
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    className="gap-1.5 font-semibold tracking-wide"
+                    color="tertiary"
+                    leftIcon={<TeamColor color={currentTeam?.color} />}
+                    size="xs"
+                  >
+                    {currentTeam?.code}
+                  </Button>
+                </Menu.Button>
+                <Menu.Items align="start" className="w-52">
+                  <Menu.Group>
+                    {teams.map((team) => (
+                      <Menu.Item
+                        active={team.id === activeTeam?.id}
+                        className="justify-between gap-3"
+                        key={team.id}
                         onClick={() => {
-                          setStoryForm((prev) => ({
-                            ...prev,
-                            startDate: null,
-                          }));
+                          setActiveTeam(team);
                         }}
-                        role="button"
-                      />
-                    ) : null
-                  }
-                  size="sm"
-                  variant="outline"
-                >
-                  {storyForm.startDate
-                    ? format(new Date(storyForm.startDate), "MMM d, yyyy")
-                    : "Start date"}
-                </Button>
-              </DatePicker.Trigger>
-              <DatePicker.Calendar
-                onDayClick={(date) => {
-                  setStoryForm({ ...storyForm, startDate: date.toISOString() });
-                }}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <TeamColor className="shrink-0" color={team.color} />
+                          <span className="block truncate">{team.name}</span>
+                        </span>
+                        {team.id === activeTeam?.id && (
+                          <CheckIcon className="h-[1.1rem] w-auto" />
+                        )}
+                      </Menu.Item>
+                    ))}
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+              <ArrowRightIcon
+                className="h-4 w-auto opacity-30"
+                strokeWidth={3}
               />
-            </DatePicker>
-            <DatePicker>
-              <DatePicker.Trigger>
+              <Text className="opacity-80" color="muted">
+                New {getTermDisplay("storyTerm")}
+              </Text>
+            </Dialog.Title>
+            <Flex gap={2}>
+              <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
                 <Button
-                  className={cn("px-2 text-sm", {
-                    "text-primary dark:text-primary": storyForm.endDate
-                      ? new Date(storyForm.endDate) < new Date()
-                      : false,
-                    "text-warning dark:text-warning": storyForm.endDate
-                      ? new Date(storyForm.endDate) <= addDays(new Date(), 7) &&
-                        new Date(storyForm.endDate) >= new Date()
-                      : false,
-                  })}
+                  className="px-[0.35rem] dark:hover:bg-dark-100"
                   color="tertiary"
-                  leftIcon={<CalendarIcon className="h-4 w-auto" />}
-                  rightIcon={
-                    storyForm.endDate ? (
-                      <CloseIcon
-                        aria-label="Remove date"
-                        className="h-4 w-auto"
-                        onClick={() => {
-                          setStoryForm((prev) => ({ ...prev, endDate: null }));
-                        }}
-                        role="button"
-                      />
-                    ) : null
-                  }
-                  size="sm"
-                  variant="outline"
+                  onClick={() => {
+                    setIsExpanded((prev) => !prev);
+                  }}
+                  size="xs"
+                  variant="naked"
                 >
-                  {storyForm.endDate
-                    ? format(new Date(storyForm.endDate), "MMM d, yyyy")
-                    : "Deadline"}
-                </Button>
-              </DatePicker.Trigger>
-              <DatePicker.Calendar
-                fromDate={
-                  storyForm.startDate
-                    ? new Date(storyForm.startDate)
-                    : undefined
-                }
-                onDayClick={(date) => {
-                  setStoryForm({ ...storyForm, endDate: date.toISOString() });
-                }}
-              />
-            </DatePicker>
-            <AssigneesMenu>
-              <AssigneesMenu.Trigger>
-                <Button
-                  className="gap-1.5 px-2 text-sm"
-                  color="tertiary"
-                  leftIcon={
-                    <Avatar
-                      color="tertiary"
-                      name={member?.fullName}
-                      size="xs"
-                      src={member?.avatarUrl}
-                    />
-                  }
-                  size="sm"
-                  variant="outline"
-                >
-                  <span className="relative -top-px inline-block max-w-[12ch] truncate">
-                    {member?.username || "Assignee"}
+                  {isExpanded ? (
+                    <MinimizeIcon className="h-[1.2rem] w-auto" />
+                  ) : (
+                    <MaximizeIcon className="h-[1.2rem] w-auto" />
+                  )}
+                  <span className="sr-only">
+                    {isExpanded ? "Minimize" : "Expand"} dialog
                   </span>
                 </Button>
-              </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items
-                assigneeId={storyForm.assigneeId}
-                onAssigneeSelected={(assigneeId) => {
-                  setStoryForm({ ...storyForm, assigneeId });
-                }}
-              />
-            </AssigneesMenu>
-            {features.objectiveEnabled && objectives.length > 0 ? (
-              <ObjectivesMenu>
-                <ObjectivesMenu.Trigger>
+              </Tooltip>
+              <Dialog.Close />
+            </Flex>
+          </Dialog.Header>
+          <Dialog.Body className="max-h-[60dvh] pt-0">
+            <TextEditor
+              asTitle
+              className="text-2xl font-medium"
+              editor={titleEditor}
+            />
+            <TextEditor
+              className={cn({
+                "min-h-96": isExpanded,
+              })}
+              editor={editor}
+            />
+            <Flex align="center" className="mt-4 gap-1.5" wrap>
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
                   <Button
-                    className="gap-1 px-2 text-sm"
                     color="tertiary"
-                    leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                    leftIcon={
+                      <StoryStatusIcon
+                        className="h-4"
+                        statusId={storyForm.statusId}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {
+                      teamStatuses.find(
+                        (state) => state.id === storyForm.statusId,
+                      )?.name
+                    }
+                  </Button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items
+                  setStatusId={(statusId) => {
+                    setStoryForm((prev) => ({ ...prev, statusId }));
+                  }}
+                  statusId={storyForm.statusId}
+                  teamId={currentTeamId ?? ""}
+                />
+              </StatusesMenu>
+              <PrioritiesMenu>
+                <PrioritiesMenu.Trigger>
+                  <Button
+                    color="tertiary"
+                    leftIcon={
+                      <PriorityIcon
+                        className="h-4"
+                        priority={storyForm.priority}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {storyForm.priority}
+                  </Button>
+                </PrioritiesMenu.Trigger>
+                <PrioritiesMenu.Items
+                  priority={storyForm.priority}
+                  setPriority={(priority) => {
+                    setStoryForm((prev) => ({ ...prev, priority }));
+                  }}
+                />
+              </PrioritiesMenu>
+              <DatePicker>
+                <DatePicker.Trigger>
+                  <Button
+                    className="px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                    rightIcon={
+                      storyForm.startDate ? (
+                        <CloseIcon
+                          aria-label="Remove date"
+                          className="h-4 w-auto"
+                          onClick={() => {
+                            setStoryForm((prev) => ({
+                              ...prev,
+                              startDate: null,
+                            }));
+                          }}
+                          role="button"
+                        />
+                      ) : null
+                    }
                     size="sm"
                     variant="outline"
                   >
-                    <span className="inline-block max-w-[12ch] truncate">
-                      {objective?.name ||
-                        getTermDisplay("objectiveTerm", { capitalize: true })}
-                    </span>
+                    {storyForm.startDate
+                      ? format(new Date(storyForm.startDate), "MMM d, yyyy")
+                      : "Start date"}
                   </Button>
-                </ObjectivesMenu.Trigger>
-                <ObjectivesMenu.Items
-                  objectiveId={storyForm.objectiveId ?? undefined}
-                  setObjectiveId={(objectiveId) => {
-                    setStoryForm({ ...storyForm, objectiveId });
+                </DatePicker.Trigger>
+                <DatePicker.Calendar
+                  onDayClick={(date) => {
+                    setStoryForm({
+                      ...storyForm,
+                      startDate: date.toISOString(),
+                    });
                   }}
-                  teamId={currentTeamId}
                 />
-              </ObjectivesMenu>
-            ) : null}
-            {features.sprintEnabled && sprints.length > 0 ? (
-              <SprintsMenu>
-                <SprintsMenu.Trigger>
+              </DatePicker>
+              <DatePicker>
+                <DatePicker.Trigger>
                   <Button
-                    className="gap-1 px-2 text-sm"
+                    className={cn("px-2 text-sm", {
+                      "text-primary dark:text-primary": storyForm.endDate
+                        ? new Date(storyForm.endDate) < new Date()
+                        : false,
+                      "text-warning dark:text-warning": storyForm.endDate
+                        ? new Date(storyForm.endDate) <=
+                            addDays(new Date(), 7) &&
+                          new Date(storyForm.endDate) >= new Date()
+                        : false,
+                    })}
                     color="tertiary"
-                    leftIcon={<SprintsIcon className="h-4 w-auto" />}
+                    leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                    rightIcon={
+                      storyForm.endDate ? (
+                        <CloseIcon
+                          aria-label="Remove date"
+                          className="h-4 w-auto"
+                          onClick={() => {
+                            setStoryForm((prev) => ({
+                              ...prev,
+                              endDate: null,
+                            }));
+                          }}
+                          role="button"
+                        />
+                      ) : null
+                    }
                     size="sm"
                     variant="outline"
                   >
-                    <span className="inline-block max-w-[12ch] truncate">
-                      {sprint?.name ||
-                        getTermDisplay("sprintTerm", { capitalize: true })}
+                    {storyForm.endDate
+                      ? format(new Date(storyForm.endDate), "MMM d, yyyy")
+                      : "Deadline"}
+                  </Button>
+                </DatePicker.Trigger>
+                <DatePicker.Calendar
+                  fromDate={
+                    storyForm.startDate
+                      ? new Date(storyForm.startDate)
+                      : undefined
+                  }
+                  onDayClick={(date) => {
+                    setStoryForm({ ...storyForm, endDate: date.toISOString() });
+                  }}
+                />
+              </DatePicker>
+              <AssigneesMenu>
+                <AssigneesMenu.Trigger>
+                  <Button
+                    className="gap-1.5 px-2 text-sm"
+                    color="tertiary"
+                    leftIcon={
+                      <Avatar
+                        color="tertiary"
+                        name={member?.fullName}
+                        size="xs"
+                        src={member?.avatarUrl}
+                      />
+                    }
+                    size="sm"
+                    variant="outline"
+                  >
+                    <span className="relative -top-px inline-block max-w-[12ch] truncate">
+                      {member?.username || "Assignee"}
                     </span>
                   </Button>
-                </SprintsMenu.Trigger>
-                <SprintsMenu.Items
-                  setSprintId={(sprintId) => {
-                    setStoryForm({ ...storyForm, sprintId });
+                </AssigneesMenu.Trigger>
+                <AssigneesMenu.Items
+                  assigneeId={storyForm.assigneeId}
+                  onAssigneeSelected={(assigneeId) => {
+                    setStoryForm({ ...storyForm, assigneeId });
                   }}
-                  sprintId={storyForm.sprintId ?? undefined}
-                  teamId={currentTeamId}
                 />
-              </SprintsMenu>
-            ) : null}
-          </Flex>
-        </Dialog.Body>
-        <Dialog.Footer className="flex items-center justify-between gap-2">
-          <Text color="muted">
-            <label className="flex items-center gap-2" htmlFor="more">
-              Create more
-              <Switch
-                checked={createMore}
-                id="more"
-                onCheckedChange={setCreateMore}
-              />
-            </label>
-          </Text>
-          <Button
-            leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
-            loading={loading}
-            loadingText="Creating story..."
-            onClick={handleCreateStory}
-            size="md"
-          >
-            Create story
-          </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog>
+              </AssigneesMenu>
+              {features.objectiveEnabled && objectives.length > 0 ? (
+                <ObjectivesMenu>
+                  <ObjectivesMenu.Trigger>
+                    <Button
+                      className="gap-1 px-2 text-sm"
+                      color="tertiary"
+                      leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <span className="inline-block max-w-[12ch] truncate">
+                        {objective?.name ||
+                          getTermDisplay("objectiveTerm", { capitalize: true })}
+                      </span>
+                    </Button>
+                  </ObjectivesMenu.Trigger>
+                  <ObjectivesMenu.Items
+                    objectiveId={storyForm.objectiveId ?? undefined}
+                    setObjectiveId={(objectiveId) => {
+                      setStoryForm({ ...storyForm, objectiveId });
+                    }}
+                    teamId={currentTeamId}
+                  />
+                </ObjectivesMenu>
+              ) : null}
+              {features.sprintEnabled && sprints.length > 0 ? (
+                <SprintsMenu>
+                  <SprintsMenu.Trigger>
+                    <Button
+                      className="gap-1 px-2 text-sm"
+                      color="tertiary"
+                      leftIcon={<SprintsIcon className="h-4 w-auto" />}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <span className="inline-block max-w-[12ch] truncate">
+                        {sprint?.name ||
+                          getTermDisplay("sprintTerm", { capitalize: true })}
+                      </span>
+                    </Button>
+                  </SprintsMenu.Trigger>
+                  <SprintsMenu.Items
+                    setSprintId={(sprintId) => {
+                      setStoryForm({ ...storyForm, sprintId });
+                    }}
+                    sprintId={storyForm.sprintId ?? undefined}
+                    teamId={currentTeamId}
+                  />
+                </SprintsMenu>
+              ) : null}
+            </Flex>
+          </Dialog.Body>
+          <Dialog.Footer className="flex items-center justify-between gap-2">
+            <Text color="muted">
+              <label className="flex items-center gap-2" htmlFor="more">
+                Create more
+                <Switch
+                  checked={createMore}
+                  id="more"
+                  onCheckedChange={setCreateMore}
+                />
+              </label>
+            </Text>
+            <Button
+              leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+              loading={loading}
+              loadingText="Creating story..."
+              onClick={handleCreateStory}
+              size="md"
+            >
+              Create story
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+    </FeatureGuard>
   );
 };

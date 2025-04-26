@@ -72,3 +72,7 @@ export const notificationKeys = {
   unread: () => [...notificationKeys.all, "unread"] as const,
   preferences: () => [...notificationKeys.all, "preferences"] as const,
 };
+
+export const subscriptionKeys = {
+  details: ["subscriptions"] as const,
+};

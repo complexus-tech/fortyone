@@ -1,0 +1,21 @@
+"use server";
+
+import { post } from "@/lib/http";
+import type { ApiResponse } from "@/types";
+import { getApiError } from "@/utils";
+
+export const manageBilling = async (
+  returnUrl = "https://www.complexus.app/login",
+) => {
+  try {
+    const res = await post<{ returnUrl: string }, ApiResponse<{ url: string }>>(
+      "subscriptions/portal",
+      {
+        returnUrl,
+      },
+    );
+    return res;
+  } catch (error) {
+    return getApiError(error);
+  }
+};
