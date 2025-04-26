@@ -41,6 +41,7 @@ import { addDays, format } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
@@ -54,6 +55,8 @@ import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useTotalStories } from "@/modules/stories/hooks/total-stories";
+import { storyKeys } from "@/modules/stories/constants";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -83,6 +86,7 @@ export const NewStoryDialog = ({
   assigneeId?: string | null;
 }) => {
   const session = useSession();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const features = useFeatures();
   const { data: teams = [] } = useTeams();
@@ -104,9 +108,9 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
-  const storyCount = 50;
   const { data: automationPreferences } = useAutomationPreferences();
   const { tier, getLimit } = useSubscriptionFeatures();
+  const { data: totalStories = 0 } = useTotalStories();
 
   const teamStatuses = statuses.filter(
     (status) => status.teamId === currentTeamId,
@@ -208,6 +212,9 @@ export const NewStoryDialog = ({
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
       setStoryForm(initialForm);
+      if (tier === "free") {
+        queryClient.invalidateQueries({ queryKey: storyKeys.total() });
+      }
     } finally {
       setLoading(false);
     }
@@ -261,7 +268,7 @@ export const NewStoryDialog = ({
 
   return (
     <FeatureGuard
-      count={storyCount}
+      count={totalStories}
       fallback={
         <Dialog open={isOpen}>
           <Dialog.Content hideClose>
@@ -307,7 +314,7 @@ export const NewStoryDialog = ({
                     :
                   </Text>
                   <Text color="primary" fontSize="lg">
-                    {storyCount}/{getLimit("maxStories")}
+                    {totalStories}/{getLimit("maxStories")}
                   </Text>
                 </Flex>
               </Wrapper>
