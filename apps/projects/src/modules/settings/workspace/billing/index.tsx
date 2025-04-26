@@ -12,7 +12,7 @@ import { Plans } from "./components/plans";
 export const Billing = () => {
   const pathname = usePathname();
   const { data: members } = useMembers();
-  const { tier, displayTier } = useSubscriptionFeatures();
+  const { tier } = useSubscriptionFeatures();
   const [isLoading, setIsLoading] = useState(false);
   const totalValidMembers = members?.filter(
     (member) => member.role !== "guest",
@@ -41,8 +41,8 @@ export const Billing = () => {
         {(tier === "free" || tier === "trial") && (
           <Text className="max-w-xl" color="muted">
             Scale your workspace as your team grows. Currently on{" "}
-            <Text as="span" fontWeight="semibold">
-              Hobby
+            <Text as="span" fontWeight="semibold" transform="capitalize">
+              {tier}
             </Text>{" "}
             plan with {totalValidMembers} members - upgrade to unlock
             Objectives, OKRs, Private teams, and more.
@@ -52,7 +52,7 @@ export const Billing = () => {
           <Text className="max-w-xl" color="muted">
             You&apos;re on the{" "}
             <Text as="span" fontWeight="semibold" transform="capitalize">
-              {displayTier}
+              {tier}
             </Text>{" "}
             plan with {totalValidMembers} members. Need more? Upgrade to
             Business for unlimited teams, private teams, custom terminology and
@@ -63,7 +63,7 @@ export const Billing = () => {
           <Text className="max-w-xl" color="muted">
             You&apos;re on the{" "}
             <Text as="span" fontWeight="semibold" transform="capitalize">
-              {displayTier}
+              {tier}
             </Text>{" "}
             plan. {totalValidMembers} members, unlimited objectives, private
             teams, custom terminology, and more.
@@ -72,7 +72,7 @@ export const Billing = () => {
 
         <Button
           color="tertiary"
-          disabled={isLoading}
+          disabled={isLoading || ["trial", "free"].includes(tier)}
           onClick={handleManageBilling}
         >
           Manage subscription

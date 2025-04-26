@@ -108,7 +108,7 @@ export const Plans = () => {
               fullWidth
             >
               {tier === "free" || tier === "trial"
-                ? "Current plan"
+                ? "Continue free"
                 : "Downgrade"}
             </Button>
           </Box>
