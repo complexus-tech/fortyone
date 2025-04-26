@@ -9,13 +9,23 @@ export type Plan =
   | "pro_yearly"
   | "business_monthly"
   | "business_yearly";
-export const checkout = async (plan: Plan) => {
+export const checkout = async ({
+  plan,
+  successUrl,
+  cancelUrl,
+}: {
+  plan: Plan;
+  successUrl: string;
+  cancelUrl: string;
+}) => {
   try {
     const res = await post<
-      { priceLookupKey: Plan },
+      { priceLookupKey: Plan; successUrl?: string; cancelUrl?: string },
       ApiResponse<{ url: string }>
     >("subscriptions/checkout", {
       priceLookupKey: plan,
+      successUrl,
+      cancelUrl,
     });
     return res;
   } catch (error) {

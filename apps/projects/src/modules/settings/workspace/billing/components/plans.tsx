@@ -6,6 +6,7 @@ import { cn } from "lib";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 import type { Plan } from "@/lib/actions/billing/checkout";
 import { checkout } from "@/lib/actions/billing/checkout";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -41,6 +42,7 @@ const FeatureValue = ({
 type Billing = "annual" | "monthly";
 export const Plans = () => {
   const { tier } = useSubscriptionFeatures();
+  const pathname = usePathname();
   const [isProLoading, setIsProLoading] = useState(false);
   const [isBusinessLoading, setIsBusinessLoading] = useState(false);
   const [billing, setBilling] = useState<Billing>("annual");
@@ -48,12 +50,15 @@ export const Plans = () => {
   const businessPrice = 10;
 
   const handleUpgrade = async (plan: Plan) => {
+    const host = `${window.location.protocol}//${window.location.host}`;
+    const cancelUrl = `${host}${pathname}`;
+    const successUrl = `${host}/my-work`;
     if (plan.includes("pro")) {
       setIsProLoading(true);
     } else {
       setIsBusinessLoading(true);
     }
-    const res = await checkout(plan);
+    const res = await checkout({ plan, successUrl, cancelUrl });
     if (res.error?.message) {
       toast.error("Failed to upgrade", {
         description: res.error.message,

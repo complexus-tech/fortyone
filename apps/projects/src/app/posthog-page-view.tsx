@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { usePostHog } from "posthog-js/react";
+import { toast } from "sonner";
 
 function PostHogPageView(): null {
   const pathname = usePathname();
@@ -19,6 +20,16 @@ function PostHogPageView(): null {
       posthog.capture("$pageview", {
         $current_url: url,
       });
+    }
+    if (
+      pathname === "/my-work" &&
+      searchParams.get("session_id") &&
+      !sessionStorage.getItem("stripeSession")
+    ) {
+      toast.success("Payment successful", {
+        description: "Payment for your subscription has been successful",
+      });
+      sessionStorage.setItem("stripeSession", searchParams.get("session_id")!);
     }
   }, [pathname, searchParams, posthog]);
 
