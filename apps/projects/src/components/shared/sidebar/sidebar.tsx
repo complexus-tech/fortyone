@@ -16,7 +16,7 @@ export const Sidebar = () => {
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
 
   return (
-    <Box className="flex h-dvh flex-col justify-between bg-gray-50/60 px-4 pb-6 dark:bg-[#000000]/45">
+    <Box className="flex h-dvh flex-col justify-between bg-gray-50/70 px-4 pb-6 dark:bg-[#000000]/45">
       <Box>
         <Header />
         <Navigation />

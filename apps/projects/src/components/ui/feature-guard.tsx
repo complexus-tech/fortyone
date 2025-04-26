@@ -31,11 +31,14 @@ export const FeatureGuard = ({
 }) => {
   const { hasFeature, isTierAtLeast, withinLimit } = useSubscriptionFeatures();
 
+  if (feature && count !== undefined && !withinLimit(feature, count)) {
+    return <>{fallback}</>;
+  }
+
   // Check if the feature is available based on the provided criteria
   const isFeatureAvailable =
     (feature && hasFeature(feature)) ||
-    (minimumTier && isTierAtLeast(minimumTier)) ||
-    (feature && count !== undefined && withinLimit(feature, count));
+    (minimumTier && isTierAtLeast(minimumTier));
 
   // If no criteria provided, show children
   if (!feature && !minimumTier && count === undefined) {

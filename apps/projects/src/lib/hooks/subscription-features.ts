@@ -44,7 +44,7 @@ export const TIER_LIMITS = {
   business: {
     maxMembers: 3,
     maxFileUploads: "Unlimited",
-    maxStories: Infinity,
+    maxStories: 49,
     maxTeams: Infinity,
     customTerminology: true,
     privateTeams: true,
