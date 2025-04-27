@@ -35,6 +35,7 @@ func New(service, version, environ, host string) *config {
 // StartTracing starts the tracing provider and returns the tracer provider.
 func (c *config) StartTracing() (*sdktrace.TracerProvider, error) {
 	exporter, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithInsecure(),
 		otlptracehttp.WithEndpoint(c.host),
 	)
 	if err != nil {
