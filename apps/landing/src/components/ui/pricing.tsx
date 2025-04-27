@@ -111,8 +111,9 @@ const Package = ({
   return (
     <Box className="min-h-[65vh]">
       <Box
-        className={cn("h-full bg-dark px-6 py-8 shadow-2xl", {
-          "border-2 border-primary bg-dark-300 shadow-primary/20": recommended,
+        className={cn("h-full px-6 py-8 shadow-2xl dark:bg-dark", {
+          "border-2 border-primary bg-gray-50 shadow-primary/20 dark:bg-dark-300":
+            recommended,
         })}
       >
         <Text className="mb-2 flex items-center justify-center gap-1.5 text-2xl">
@@ -207,7 +208,7 @@ export const Pricing = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-[0.7rem] border border-dark-100 bg-dark-300 p-1">
+            <Box className="flex w-max gap-1 rounded-[0.7rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-2.5 capitalize", {
@@ -243,7 +244,7 @@ export const Pricing = () => {
             </motion.p>
           </Box>
         </Flex>
-        <Box className="grid grid-cols-1 divide-y divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-dark md:grid-cols-4 md:divide-x">
+        <Box className="grid grid-cols-1 divide-y divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-white dark:bg-dark md:grid-cols-4 md:divide-x">
           {packages.map((pkg) => (
             <Package
               billing={billing}

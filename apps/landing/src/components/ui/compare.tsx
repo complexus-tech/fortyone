@@ -36,7 +36,7 @@ export const ComparePlans = () => {
     <Container className="md:py-24">
       <Box className="hidden overflow-x-auto md:block">
         <Box>
-          <Flex className="border-b border-dark-100">
+          <Flex className="border-b border-gray-100 dark:border-dark-100">
             <Box className="w-1/3 p-6" />
             {plans.map((plan) => (
               <Box

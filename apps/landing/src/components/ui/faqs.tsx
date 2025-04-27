@@ -52,7 +52,7 @@ const AccordionItem = ({
   isOpen: boolean;
   onToggle: () => void;
 }) => (
-  <Box className="rounded-2xl border border-gray-300 bg-white px-5 py-6 shadow-lg shadow-gray-200 dark:border-dark-200 dark:bg-dark/60 dark:shadow-none">
+  <Box className="rounded-2xl border border-gray-200/60 bg-white px-5 py-6 shadow-lg shadow-gray-100 dark:border-dark-200 dark:bg-dark/60 dark:shadow-none">
     <button
       className={cn(
         "group flex w-full justify-between text-left text-xl outline-none transition-all",
@@ -91,7 +91,7 @@ export const Faqs = () => {
   };
 
   return (
-    <Box className="bg-dark/80 py-16 md:bg-dark/50 md:pb-20 md:pt-24">
+    <Box className="bg-gray-50 py-16 dark:bg-dark/80 md:pb-20 md:pt-24 md:dark:bg-dark/50">
       <Container className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
         <Box className="mx-auto max-w-3xl">
           <Text className="mb-6 text-4xl font-semibold leading-[1.1] md:text-[3.5rem]">

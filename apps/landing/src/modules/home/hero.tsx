@@ -97,7 +97,9 @@ export const Hero = () => {
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
                 href="/signup"
-                rightIcon={<ArrowRight2Icon className="dark:text-gray-200" />}
+                rightIcon={
+                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
+                }
                 rounded="full"
                 size="lg"
               >
