@@ -156,7 +156,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80 md:gap-8">
+          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80 md:gap-6">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
