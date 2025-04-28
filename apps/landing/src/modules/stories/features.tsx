@@ -95,30 +95,30 @@ export const Features = () => {
   const features = [
     {
       id: 1,
-      name: "User Story Creation",
+      name: "Story Creation",
       description:
-        "Create detailed user stories with acceptance criteria, story points, and priority levels. Organize stories into epics and sprints for better project structure.",
+        "Create stories with clear criteria. Organize them into sprints and objectives for better flow.",
       icon: <StoryIcon className="h-6" />,
     },
     {
       id: 2,
-      name: "Task Management",
+      name: "Story Management",
       description:
-        "Break down stories into manageable tasks. Assign tasks to team members, set due dates, and track progress in real-time.",
+        "Assign stories to team members and track progress in real-time. Keep everyone aligned.",
       icon: <ObjectiveIcon className="h-6" />,
     },
     {
       id: 3,
       name: "Workflow Automation",
       description:
-        "Automate repetitive tasks and streamline your workflow with customizable status transitions, notifications, and reminders.",
+        "Automate routine tasks with custom workflows. Set up smart notifications and reminders.",
       icon: <OKRIcon className="h-6" />,
     },
     {
       id: 4,
       name: "Progress Tracking",
       description:
-        "Monitor story progress with burndown charts, velocity metrics, and team performance analytics. Make data-driven decisions to improve productivity.",
+        "Track progress with burndown charts and velocity metrics. Make data-driven decisions.",
       icon: <SprintsIcon className="h-6" />,
     },
   ];
