@@ -84,7 +84,7 @@ const product: WithContext<Product> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "12",
+    highPrice: "8",
     offerCount: "3",
     offers: [
       {
@@ -96,13 +96,13 @@ const product: WithContext<Product> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "9",
+        price: "5.60",
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "12",
+        price: "8",
         priceCurrency: "USD",
       },
     ],
