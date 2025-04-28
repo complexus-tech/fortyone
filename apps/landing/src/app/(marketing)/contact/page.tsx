@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hero, Support } from "@/modules/contact";
+import { CallToAction } from "@/components/shared";
 import { ContactJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function Page() {
       <ContactJsonLd />
       <Hero />
       <Support />
+      <CallToAction />
     </>
   );
 }

@@ -5,7 +5,7 @@ export const Hero = () => {
   return (
     <Container className="relative max-w-4xl pb-10 pt-36 md:pt-40">
       <Button
-        className="mx-auto px-3 text-sm md:text-base"
+        className="mx-auto cursor-text px-3 text-sm md:text-base"
         color="tertiary"
         rounded="full"
         size="sm"
@@ -15,13 +15,16 @@ export const Hero = () => {
       <Text
         align="center"
         as="h1"
-        className="my-8 pb-2 text-5xl font-semibold leading-none md:text-7xl"
-        color="gradient"
+        className="mx-auto my-8 max-w-2xl pb-2 text-5xl font-semibold leading-none md:text-7xl"
       >
-        How Can We Help You Today?
+        How Can We Help You{" "}
+        <Text as="span" className="text-stroke-white">
+          Today?
+        </Text>
       </Text>
       <Text
         align="center"
+        as="h2"
         className="text-lg leading-snug opacity-80 md:mb-16 md:text-2xl"
         fontWeight="normal"
       >
