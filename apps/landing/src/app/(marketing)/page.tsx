@@ -1,4 +1,6 @@
+import { Box } from "ui";
 import { CallToAction } from "@/components/shared";
+import { Pricing } from "@/components/ui";
 import {
   Hero,
   HeroCards,
@@ -18,6 +20,9 @@ export default function Page() {
       <Testimonials />
       <Features />
       <Transform />
+      <Box className="pb-16 md:pb-28">
+        <Pricing />
+      </Box>
       <Integrations />
       <CallToAction />
     </>
