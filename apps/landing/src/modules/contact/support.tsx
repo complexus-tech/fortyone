@@ -30,7 +30,7 @@ export const Support = () => {
                 {description}
               </Text>
               <a
-                className="my-1 block text-center text-primary opacity-90 transition hover:underline"
+                className="my-1 block text-center text-primary underline underline-offset-4 opacity-90 transition"
                 href={`mailto:${email}`}
               >
                 {email}

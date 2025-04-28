@@ -1,22 +1,13 @@
 "use client";
 
-import {
-  Blur,
-  Box,
-  Button,
-  Flex,
-  Menu,
-  NavLink,
-  NavigationMenu,
-  Text,
-} from "ui";
+import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
 import {
   DocsIcon,
   SprintsIcon,
   ObjectiveIcon,
   StoryIcon,
-  CodeIcon,
   OKRIcon,
+  HelpIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,7 +31,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-lg p-2 hover:bg-dark-100/40"
+    className="flex w-[17rem] gap-2 rounded-lg p-2 hover:bg-dark-200"
     href={href}
   >
     {icon}
@@ -60,6 +51,7 @@ export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
+    { title: "Blog", href: "/blog" },
   ];
 
   const product = [
@@ -106,17 +98,17 @@ export const Navigation = () => {
       id: 2,
       href: "/blog",
       name: "Blog",
-      description: "Read the latest articles",
+      description: "Our latest articles and updates",
       icon: (
         <DocsIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
       ),
     },
     {
       id: 3,
-      href: "/developers",
-      name: "Developers",
-      description: "Explore API documentation",
-      icon: <CodeIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
+      href: "https://docs.complexus.app",
+      name: "Documentation",
+      description: "Learn how to use complexus app",
+      icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
     },
   ];
 
@@ -146,23 +138,23 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80">
+          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80 md:gap-8">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
-            <Flex align="center" className="hidden md:flex" gap={3}>
+            <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-3xl px-2.5 py-1.5 transition hover:bg-dark-300/80",
+                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
                         {
-                          "bg-dark-300/80": pathname?.startsWith("/product"),
+                          "bg-dark-200": pathname?.startsWith("/product"),
                         },
                       )}
                     >
                       Product
                     </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="dark:border-dark-50">
+                    <NavigationMenu.Content>
                       <Box className="grid w-max grid-cols-2 gap-2 p-2">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
@@ -183,9 +175,9 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-50",
+                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-200",
                     {
-                      "bg-dark-300/80": pathname === href,
+                      "bg-dark-200": pathname === href,
                     },
                   )}
                   href={href}
@@ -197,8 +189,17 @@ export const Navigation = () => {
               <NavigationMenu align="end">
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
-                    <NavigationMenu.Trigger>Resources</NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="relative bg-warning/[0.02] pb-1">
+                    <NavigationMenu.Trigger
+                      className={cn(
+                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
+                        {
+                          "bg-dark-200": pathname?.startsWith("/product"),
+                        },
+                      )}
+                    >
+                      Resources
+                    </NavigationMenu.Trigger>
+                    <NavigationMenu.Content className="relative pb-1">
                       <Box className="grid w-max grid-cols-1 gap-2 p-2">
                         {resources.map(
                           ({ id, name, description, icon, href }) => (
@@ -212,7 +213,6 @@ export const Navigation = () => {
                           ),
                         )}
                       </Box>
-                      <Blur className="absolute left-0 top-0 h-full w-full bg-warning/5" />
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
                 </NavigationMenu.List>

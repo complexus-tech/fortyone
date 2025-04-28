@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { cn } from "lib";
 import { useState } from "react";
 import { SuccessIcon } from "icons";
+import { usePathname } from "next/navigation";
 import { Container } from "./container";
 
 type Billing = "annual" | "monthly";
@@ -158,6 +159,7 @@ const Package = ({
 };
 
 export const Pricing = () => {
+  const pathname = usePathname();
   const [billing, setBilling] = useState<Billing>("annual");
 
   return (
@@ -165,17 +167,22 @@ export const Pricing = () => {
       <Container className="md:pt-16">
         <Flex
           align="center"
-          className="my-12 text-center md:mt-20"
+          className={cn("my-12 text-center", {
+            "md:mt-20": pathname === "/pricing",
+          })}
           direction="column"
         >
-          <Button
-            className="px-3 text-sm md:text-base"
-            color="tertiary"
-            rounded="full"
-            size="sm"
-          >
-            Pricing
-          </Button>
+          {pathname === "/pricing" && (
+            <Button
+              className="cursor-text px-3 text-sm md:text-base"
+              color="tertiary"
+              rounded="full"
+              size="sm"
+            >
+              Pricing
+            </Button>
+          )}
+
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -198,7 +205,7 @@ export const Pricing = () => {
           </Text>
         </Flex>
 
-        <Flex align="end" className="mb-4 mt-12" direction="column">
+        <Flex align="center" className="mb-6 mt-12" direction="column">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{

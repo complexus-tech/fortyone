@@ -12,7 +12,7 @@ const NavigationMenuViewport = forwardRef<
   <div className={cn("absolute top-full flex justify-center", className)}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative mt-3 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-xl dark:bg-dark bg-white backdrop-blur border border-gray-100 dark:border-dark-200 shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-xl dark:bg-dark-300 bg-white backdrop-blur border border-gray-100 dark:border-dark-50 shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
         className
       )}
       ref={ref}
@@ -96,7 +96,7 @@ const NavigationMenuContent = forwardRef<
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.Content
     ref={ref}
-    className={cn("left-0 top-0 w-full md:absolute md:w-auto ", className)}
+    className={cn("left-0 top-0 w-full md:absolute md:w-auto", className)}
     {...props}
   />
 ));
