@@ -106,7 +106,7 @@ export const Navigation = () => {
     },
     {
       id: 3,
-      href: "https://docs.complexus.app",
+      href: "/blog",
       name: "Documentation",
       description: "Learn how to use complexus app",
       icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
@@ -266,7 +266,7 @@ export const Navigation = () => {
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
               <Button
-                className={cn("hidden px-4 text-[0.93rem] md:flex", {
+                className={cn("hidden px-5 text-[0.93rem] md:flex", {
                   "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:focus:bg-white":
                     session,
                 })}
@@ -291,7 +291,7 @@ export const Navigation = () => {
               </Button>
               {!session && (
                 <Button
-                  className="px-4 text-[0.93rem]"
+                  className="px-5 text-[0.93rem]"
                   href="/signup"
                   rounded="full"
                 >
