@@ -1,4 +1,6 @@
+"use client";
 import { Text, Button } from "ui";
+import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
 
 export const Hero = () => {
@@ -12,20 +14,30 @@ export const Hero = () => {
       >
         Get in Touch
       </Button>
-      <Text
-        align="center"
-        as="h1"
-        className="mx-auto my-8 max-w-2xl pb-2 text-5xl font-semibold leading-none md:text-7xl"
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        transition={{
+          duration: 1,
+          delay: 0,
+        }}
+        viewport={{ once: true, amount: 0.5 }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        How Can We Help You{" "}
-        <Text as="span" className="text-stroke-white">
-          Today?
+        <Text
+          align="center"
+          as="h1"
+          className="mx-auto my-8 max-w-2xl pb-2 text-5xl font-semibold md:text-7xl"
+        >
+          How Can We Help You{" "}
+          <Text as="span" className="text-stroke-white">
+            Today?
+          </Text>
         </Text>
-      </Text>
+      </motion.div>
       <Text
         align="center"
         as="h2"
-        className="text-lg leading-snug opacity-80 md:mb-16 md:text-2xl"
+        className="mb-4 text-lg leading-snug opacity-80 md:text-2xl"
         fontWeight="normal"
       >
         Connect with our team for product demos, implementation support, or any

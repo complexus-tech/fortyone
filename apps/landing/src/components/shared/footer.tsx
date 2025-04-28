@@ -39,7 +39,7 @@ const Copyright = () => (
       </Link>
       <Link
         className="hover:text-primary"
-        href="https://www.linkedin.com/company/complexus-tech/"
+        href="https://www.linkedin.com/company/complexus-app/"
         target="_blank"
       >
         <LinkedinIcon className="h-5 w-auto" />
@@ -92,10 +92,6 @@ export const Footer = () => {
     },
   ];
   const company = [
-    {
-      title: "About us",
-      href: "/about",
-    },
     {
       title: "Pricing",
       href: "/pricing",

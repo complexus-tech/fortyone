@@ -8,6 +8,8 @@ import {
   StoryIcon,
   OKRIcon,
   HelpIcon,
+  TwitterIcon,
+  LinkedinIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,7 +53,6 @@ export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
-    { title: "Blog", href: "/blog" },
   ];
 
   const product = [
@@ -109,6 +110,23 @@ export const Navigation = () => {
       name: "Documentation",
       description: "Learn how to use complexus app",
       icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
+    },
+  ];
+
+  const company = [
+    {
+      id: 1,
+      href: "https://x.com/complexus_app",
+      name: "X (Formerly Twitter)",
+      description: "Follow us on X",
+      icon: <TwitterIcon className="relative h-[1.15rem] shrink-0 md:top-1" />,
+    },
+    {
+      id: 2,
+      href: "https://linkedin.com/company/complexus-app",
+      name: "LinkedIn",
+      description: "Follow us on LinkedIn",
+      icon: <LinkedinIcon className="relative shrink-0 md:top-1" />,
     },
   ];
 
@@ -193,7 +211,7 @@ export const Navigation = () => {
                       className={cn(
                         "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
                         {
-                          "bg-dark-200": pathname?.startsWith("/product"),
+                          "bg-dark-200": pathname?.startsWith("/resources"),
                         },
                       )}
                     >
@@ -202,6 +220,34 @@ export const Navigation = () => {
                     <NavigationMenu.Content className="relative pb-1">
                       <Box className="grid w-max grid-cols-1 gap-2 p-2">
                         {resources.map(
+                          ({ id, name, description, icon, href }) => (
+                            <MenuItem
+                              description={description}
+                              href={href}
+                              icon={icon}
+                              key={id}
+                              name={name}
+                            />
+                          ),
+                        )}
+                      </Box>
+                    </NavigationMenu.Content>
+                  </NavigationMenu.Item>
+                </NavigationMenu.List>
+              </NavigationMenu>
+              <NavigationMenu align="end">
+                <NavigationMenu.List>
+                  <NavigationMenu.Item>
+                    <NavigationMenu.Trigger
+                      className={cn(
+                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
+                      )}
+                    >
+                      Company
+                    </NavigationMenu.Trigger>
+                    <NavigationMenu.Content className="relative pb-1">
+                      <Box className="grid w-max grid-cols-1 gap-2 p-2">
+                        {company.map(
                           ({ id, name, description, icon, href }) => (
                             <MenuItem
                               description={description}
@@ -240,7 +286,7 @@ export const Navigation = () => {
                     )}
                   </>
                 ) : (
-                  "Log in"
+                  "Sign in"
                 )}
               </Button>
               {!session && (
