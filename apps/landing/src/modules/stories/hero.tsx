@@ -1,10 +1,13 @@
 "use client";
-import { Button, Flex, Text, Box } from "ui";
+
+import { Box, Container, Flex, Text, Button } from "ui";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import { ArrowRight2Icon } from "icons";
-import { Container, GoogleIcon } from "@/components/ui";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
+import kanbanImg from "../../../public/images/product/kanban.webp";
 
 export const Hero = () => {
   const { data: session } = useSession();
@@ -26,13 +29,12 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="px-3 text-sm md:text-base"
+              className="cursor-text px-3 text-sm md:text-base"
               color="tertiary"
-              href="/signup"
               rounded="full"
               size="sm"
             >
-              Get Started For Free
+              Stories
             </Button>
           </motion.span>
           <motion.span
@@ -46,10 +48,10 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-7xl md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Project</span> Management That
-              Adapts To Your Workflow
+              <span className="text-stroke-white">Manage</span> Tasks with User
+              Stories
             </Text>
           </motion.span>
 
@@ -62,9 +64,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[600px] text-lg opacity-80 md:text-2xl">
-              Track, align, and achieve team objectives with powerful insights
-              that keep everyone moving forward.
+            <Text className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl">
+              Transform your project management with our intuitive story-based
+              workflow system. Create, track, and manage tasks efficiently while
+              keeping your team aligned and productive.
             </Text>
           </motion.span>
 
@@ -118,8 +121,16 @@ export const Hero = () => {
               </Button>
             </motion.span>
           </Flex>
-          <Text className="mt-6 opacity-60">No credit card required.</Text>
         </Flex>
+        <Box className="relative mx-auto mt-16 max-w-6xl">
+          <Image
+            alt="Kanban"
+            className="rounded border-[6px] dark:border-dark-100 md:rounded-2xl"
+            placeholder="blur"
+            src={kanbanImg}
+          />
+          <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-20%" />
+        </Box>
       </Container>
     </Box>
   );
