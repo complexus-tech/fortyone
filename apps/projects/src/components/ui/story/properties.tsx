@@ -253,7 +253,7 @@ export const StoryProperties = ({
                   href={`/story/${subStory.id}/${slugify(subStory.title)}`}
                   key={subStory.id}
                 >
-                  <RowWrapper className="group max-w-72 gap-4 truncate px-0 py-2 last-of-type:border-b-0 dark:border-dark-50">
+                  <RowWrapper className="group max-w-72 gap-4 truncate px-0 py-2 last-of-type:border-b-0 dark:border-dark-50 md:px-0">
                     <Flex align="center" gap={2}>
                       <Text color="muted">
                         {teamCode}-{subStory.sequenceId}
