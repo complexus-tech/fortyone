@@ -21,7 +21,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useSession } from "next-auth/react";
-import nProgress from "nprogress";
 import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import {
@@ -98,6 +97,8 @@ export const Header = () => {
     try {
       await logOut();
       analytics.logout(true);
+      clearAllStorage();
+      window.location.href = "https://www.complexus.app?signedOut=true";
     } finally {
       clearAllStorage();
       window.location.href = "https://www.complexus.app?signedOut=true";
@@ -106,7 +107,6 @@ export const Header = () => {
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
     try {
-      nProgress.start();
       await changeWorkspace(workspaceId);
       if (domain.includes("localhost")) {
         window.location.href = `http://${slug}.${domain}/my-work`;

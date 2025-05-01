@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import nProgress from "nprogress";
 import { useAnalytics } from "@/hooks";
 import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
@@ -144,7 +143,6 @@ export const useDuplicateStoryMutation = () => {
         action: {
           label: "View story",
           onClick: () => {
-            nProgress.start();
             router.push(
               `/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`,
             );
