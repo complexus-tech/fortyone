@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import { TeamIcon, PlusIcon } from "icons";
 import { useRouter } from "next/navigation";
-import nProgress from "nprogress";
 import { useTeams, usePublicTeams } from "@/modules/teams/hooks/teams";
 
 type TeamContextType = {
@@ -128,7 +127,6 @@ const Items = ({
             <Command.Group>
               <Command.Item
                 onSelect={() => {
-                  nProgress.start();
                   router.push("/settings/workspace/teams");
                   setOpen(false);
                 }}
@@ -140,7 +138,6 @@ const Items = ({
               </Command.Item>
               <Command.Item
                 onSelect={() => {
-                  nProgress.start();
                   router.push("/settings/workspace/teams/create");
                   setOpen(false);
                 }}
