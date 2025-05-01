@@ -10,21 +10,21 @@ const features = [
     id: 1,
     title: "Create Stories Effortlessly",
     description:
-      "Start by creating user stories that capture your requirements. Add acceptance criteria, story points, and priority levels to ensure clarity.",
+      "Start by creating user stories that capture your requirements. Add acceptance criteria, and priority levels to ensure clarity.",
     image: "/objective.webp",
   },
   {
     id: 2,
     title: "Organize & Plan Visually",
     description:
-      "Organize stories into epics and sprints. Use our planning tools to estimate effort and create a realistic project timeline.",
+      "Organize stories in objectives and sprints. Use our planning tools to estimate effort and create a realistic project timeline.",
     image: "/objective.webp",
   },
   {
     id: 3,
     title: "Track Progress in Real-time",
     description:
-      "Monitor story progress with our intuitive dashboard. Get real-time updates on story status, team velocity, and project health.",
+      "Monitor story progress with our intuitive dashboard. Get real-time updates on story status, team velocity, and objective health.",
     image: "/objective.webp",
   },
   {
@@ -38,7 +38,7 @@ const features = [
 
 export const HowItWorks = () => {
   return (
-    <Box className="relative bg-gradient-to-r from-dark via-black to-black">
+    <Box className="relative">
       <Container className="py-20">
         <Flex align="center" className="mb-16" direction="column">
           <motion.div
@@ -50,10 +50,7 @@ export const HowItWorks = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              as="h2"
-              className="text-center text-5xl font-semibold md:text-7xl"
-            >
+            <Text as="h2" className="text-5xl font-semibold md:text-7xl">
               How <span className="text-stroke-white">Stories</span> Work
             </Text>
           </motion.div>
@@ -91,28 +88,29 @@ export const HowItWorks = () => {
             >
               <Box
                 className={cn(
-                  "flex h-full flex-col border-b border-dark-100 p-12",
+                  "flex h-full flex-col border-b border-dark-200 p-12",
                   {
                     "border-r pl-0": idx % 2 === 0,
                     "pr-0": idx % 2 === 1,
                   },
                 )}
               >
-                <Text as="h3" className="mb-3 text-2xl font-semibold">
+                <Text as="h3" className="mb-3 text-3xl font-semibold">
                   {feature.title}
                 </Text>
 
-                <Text className="mb-6 text-base opacity-80">
-                  {feature.description}
-                </Text>
+                <Text className="mb-6 opacity-80">{feature.description}</Text>
 
-                <BlurImage
-                  alt={feature.title}
-                  className="aspect-[5/3]"
-                  imageClassName="object-cover"
-                  quality={100}
-                  src={feature.image}
-                />
+                <Box className="relative">
+                  <BlurImage
+                    alt={feature.title}
+                    className="aspect-[5/3.5]"
+                    imageClassName="object-cover"
+                    quality={100}
+                    src={feature.image}
+                  />
+                  <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/90 to-black" />
+                </Box>
               </Box>
             </motion.div>
           ))}
