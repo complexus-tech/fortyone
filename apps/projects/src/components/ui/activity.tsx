@@ -219,7 +219,7 @@ export const Activity = ({
             </Text>
           </Flex>
         </Tooltip>
-        <Text className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
+        <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
             {type === "create" ? "created the story" : "changed"}
           </Text>
@@ -266,7 +266,7 @@ export const Activity = ({
           >
             <TimeAgo timestamp={createdAt} />
           </Text>
-        </Text>
+        </Box>
       </Flex>
     </Box>
   );

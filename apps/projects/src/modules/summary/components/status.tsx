@@ -110,7 +110,7 @@ export const Status = () => {
         </Box>
         <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
           {chartData.map((entry, index) => (
-            <Flex align="center" gap={1} key={entry.name}>
+            <Flex align="center" gap={1} key={`${entry.name}-${index}`}>
               <Box
                 className="size-4 rounded"
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
