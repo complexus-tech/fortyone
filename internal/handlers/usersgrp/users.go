@@ -20,6 +20,7 @@ import (
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
+	SessionDuration       = time.Hour * 24 * 40
 )
 
 type Handlers struct {
@@ -208,7 +209,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 30)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 	}
@@ -339,7 +340,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 30)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 	}
