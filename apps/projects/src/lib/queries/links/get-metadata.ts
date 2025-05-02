@@ -9,13 +9,21 @@ export type LinkMetadata = {
 };
 
 export const getLinkMetadata = async (url: string) => {
-  const metadata = await ky
-    .get(`https://api.dub.co/metatags?url=${url}`, {
-      next: {
-        revalidate: DURATION_FROM_SECONDS.DAY * 10,
-        tags: [linkTags.metadata(url)],
-      },
-    })
-    .json<LinkMetadata>();
-  return metadata;
+  try {
+    const metadata = await ky
+      .get(`https://api.dub.co/metatags?url=${url}`, {
+        next: {
+          revalidate: DURATION_FROM_SECONDS.DAY * 10,
+          tags: [linkTags.metadata(url)],
+        },
+      })
+      .json<LinkMetadata>();
+    return metadata;
+  } catch {
+    return {
+      title: "",
+      description: "",
+      image: "",
+    };
+  }
 };
