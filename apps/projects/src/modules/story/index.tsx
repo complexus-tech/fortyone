@@ -33,7 +33,7 @@ export const StoryPage = ({
           }
           direction="horizontal"
         >
-          <ResizablePanel.Panel defaultSize={72}>
+          <ResizablePanel.Panel defaultSize={isNotifications ? 75 : 72}>
             <MainDetails
               isNotifications={Boolean(isNotifications)}
               storyId={storyId}
@@ -43,7 +43,7 @@ export const StoryPage = ({
           <ResizablePanel.Panel
             defaultSize={isNotifications ? 25 : 28}
             maxSize={isNotifications ? 28 : 35}
-            minSize={isNotifications ? 24 : 25}
+            minSize={isNotifications ? 22 : 25}
           >
             <Options
               isNotifications={Boolean(isNotifications)}
