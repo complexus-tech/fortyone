@@ -3,10 +3,12 @@ package teamsgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -20,13 +22,15 @@ var (
 
 type Handlers struct {
 	teams *teams.Service
+	cache *cache.Service
 	// audit  *audit.Service
 }
 
 // New constructs a new teams handlers instance.
-func New(teams *teams.Service) *Handlers {
+func New(teams *teams.Service, cacheService *cache.Service) *Handlers {
 	return &Handlers{
 		teams: teams,
+		cache: cacheService,
 	}
 }
 
@@ -231,6 +235,13 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// Invalidate the my-stories cache for this user
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String())
+	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
+		// Just log the error but don't fail the request
+		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
+	}
+
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("workspace_id", workspaceID.String()),
@@ -275,6 +286,13 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Invalidate the my-stories cache for this user
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String())
+	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
+		// Just log the error but don't fail the request
+		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
 	}
 
 	span.AddEvent("team member removed.", trace.WithAttributes(

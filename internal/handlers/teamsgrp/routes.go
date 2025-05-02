@@ -4,6 +4,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
@@ -13,13 +14,14 @@ type Config struct {
 	DB        *sqlx.DB
 	Log       *logger.Logger
 	SecretKey string
+	Cache     *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	h := New(teamsService)
+	h := New(teamsService, cfg.Cache)
 
 	app.Get("/workspaces/{workspaceId}/teams", h.List, auth)
 	app.Get("/workspaces/{workspaceId}/teams/public", h.ListPublicTeams, auth)
