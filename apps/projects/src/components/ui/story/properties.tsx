@@ -162,9 +162,10 @@ export const StoryProperties = ({
                   <Text className="mb-1.5" fontSize="md">
                     {selectedObjective.name}
                   </Text>
-                  <Text className="line-clamp-4" color="muted" fontSize="md">
-                    {selectedObjective.description}
-                  </Text>
+                  <Box
+                    className="mt-1 line-clamp-4 text-gray dark:text-gray-300/80"
+                    html={selectedObjective.description}
+                  />
                 </Box>
               </Flex>
             }
