@@ -34,7 +34,7 @@ export const useCreateKeyResultMutation = () => {
 
       queryClient.setQueryData<KeyResult[]>(
         objectiveKeys.keyResults(newKeyResult.objectiveId),
-        (old = []) => [...old, optimisticKeyResult],
+        (old = []) => [optimisticKeyResult, ...old],
       );
       toast.success("Success", {
         description: "Key result created successfully",
