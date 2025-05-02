@@ -31,7 +31,7 @@ import { LinksSkeleton } from "./links-skeleton";
 import { ActivitiesSkeleton } from "./activities-skeleton";
 import { Options } from "./options";
 
-const DEBOUNCE_DELAY = 1000; // 500ms delay
+const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
 export const MainDetails = ({
   storyId,
@@ -95,7 +95,7 @@ export const MainDetails = ({
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Story description" }),
+      Placeholder.configure({ placeholder: "Enter description..." }),
     ],
     content: descriptionHTML || description,
     editable: !isDeleted && userRole !== "guest",

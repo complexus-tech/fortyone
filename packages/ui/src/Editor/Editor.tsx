@@ -50,6 +50,7 @@ export const TextEditor = ({
           className
         )}
         editor={editor}
+        {...rest}
       />
     </>
   );
