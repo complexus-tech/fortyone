@@ -4,16 +4,18 @@ import { ObjectivesList } from "@/modules/objectives";
 import { getQueryClient } from "@/app/get-query-client";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { objectiveKeys } from "@/modules/objectives/constants";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Objectives",
 };
 
-export default function Page() {
+export default async function Page() {
   const queryClient = getQueryClient();
+  const session = await auth();
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.all,
-    queryFn: () => getObjectives(),
+    queryFn: () => getObjectives(session!),
   });
 
   return (

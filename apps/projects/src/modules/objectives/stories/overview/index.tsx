@@ -1,15 +1,14 @@
 import { Container, Box, Divider, TextEditor, Menu, Button, Flex } from "ui";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import Document from "@tiptap/extension-document";
-import Paragraph from "@tiptap/extension-paragraph";
-import TextExtension from "@tiptap/extension-text";
 import { DeleteIcon, ArrowDownIcon } from "icons";
+import { useState } from "react";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
 import { useDebounce, useFeatures, useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -24,7 +23,7 @@ import { Activity } from "./activity";
 import { Properties } from "./properties";
 import { KeyResults } from "./key-results";
 
-const DEBOUNCE_DELAY = 700; // 700ms delay
+const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
 export const Overview = () => {
   const { objectiveId } = useParams<{
@@ -56,16 +55,22 @@ export const Overview = () => {
 
   const nameEditor = useEditor({
     extensions: [
-      Document,
-      Paragraph,
-      TextExtension,
+      StarterKit,
+      Underline,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Link.configure({
+        autolink: true,
+      }),
       Placeholder.configure({
         placeholder: `${getTermDisplay("objectiveTerm", { capitalize: true })} name...`,
       }),
     ],
     content: objective?.name || "",
     editable: isAdminOrOwner,
-    immediatelyRender: false,
+    immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         name: editor.getText(),
@@ -86,20 +91,13 @@ export const Overview = () => {
     ],
     content: objective?.description || "",
     editable: isAdminOrOwner,
-    immediatelyRender: false,
+    immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         description: editor.getHTML(),
       });
     },
   });
-
-  useEffect(() => {
-    if (objective) {
-      nameEditor?.commands.setContent(objective.name);
-      descriptionEditor?.commands.setContent(objective.description);
-    }
-  }, [objective, nameEditor, descriptionEditor]);
 
   return (
     <>

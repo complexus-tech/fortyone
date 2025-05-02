@@ -12,9 +12,9 @@ import { useMyWork } from "./provider";
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const { getTermDisplay } = useTerminology();
   const { viewOptions } = useMyWork();
-  const { data } = useSession();
+  const { data: session } = useSession();
 
-  const user = data?.user;
+  const user = session?.user;
   const { data: stories = [] } = useMyStories();
   const tabs = ["all", "assigned", "created"] as const;
   const [tab, setTab] = useQueryState(

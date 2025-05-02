@@ -1,15 +1,13 @@
-"use server";
 import ky from "ky";
+import type { Session } from "next-auth";
 import type { ApiResponse, User } from "@/types";
-import { auth } from "@/auth";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function getProfile() {
-  const session = await auth();
+export async function getProfile(session: Session) {
   const res = await ky.get(`${apiURL}/users/profile`, {
     headers: {
-      Authorization: `Bearer ${session?.token}`,
+      Authorization: `Bearer ${session.token}`,
     },
   });
   const data = await res.json<ApiResponse<User>>();

@@ -47,7 +47,6 @@ export async function authenticateWithToken({
       error: null,
     };
   } catch (error) {
-    const data = getApiError(error);
-    return data;
+    return getApiError(error);
   }
 }

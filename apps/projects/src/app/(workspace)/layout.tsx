@@ -39,22 +39,25 @@ export default async function RootLayout({
     redirect("/unauthorized");
   }
   // kick off non-critical important queries without waiting for them
-  const queryClient = fetchNonCriticalImportantQueries(getQueryClient(), token);
+  const queryClient = fetchNonCriticalImportantQueries(
+    getQueryClient(),
+    session!,
+  );
   // await critical queries
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
-      queryFn: () => getTeams(),
+      queryFn: () => getTeams(session!),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
-      queryFn: () => getStatuses(),
+      queryFn: () => getStatuses(session!),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
-      queryFn: () => getObjectiveStatuses(),
+      queryFn: () => getObjectiveStatuses(session!),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({

@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { Session } from "next-auth";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import {
@@ -29,63 +30,76 @@ import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
-  token: string,
+  session: Session,
 ) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
-    queryFn: () => getAutomationPreferences(),
+    queryFn: () => getAutomationPreferences(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
-    queryFn: () => getPublicTeams(),
+    queryFn: () => getPublicTeams(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: sprintKeys.lists(),
-    queryFn: () => getSprints(),
+    queryFn: () => getSprints(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
-    queryFn: () => getObjectives(),
+    queryFn: () => getObjectives(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
-    queryFn: () => getLabels(),
+    queryFn: () => getLabels(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
-    queryFn: () => getMyInvitations(),
+    queryFn: () => getMyInvitations(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(),
-    queryFn: () => getUnreadNotifications(),
+    queryFn: () => getUnreadNotifications(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
-    queryFn: () => getWorkspaceSettings(),
+    queryFn: () => getWorkspaceSettings(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: userKeys.profile(),
-    queryFn: () => getProfile(),
+    queryFn: () => getProfile(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
-    queryFn: () => getMembers(),
+    queryFn: () => getMembers(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: () => getWorkspaces(token),
+    queryFn: () => getWorkspaces(session.token),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.pending,
-    queryFn: () => getPendingInvitations(),
+    queryFn: () => getPendingInvitations(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.preferences(),
-    queryFn: () => getNotificationPreferences(),
+    queryFn: () => getNotificationPreferences(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details,
-    queryFn: () => getSubscription(),
+    queryFn: () => getSubscription(session),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;

@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/auth";
 import { remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
@@ -10,7 +11,8 @@ type Payload = {
 
 export const bulkDeleteAction = async (storyIds: string[]) => {
   try {
-    const stories = await remove<ApiResponse<Payload>>("stories", {
+    const session = await auth();
+    const stories = await remove<ApiResponse<Payload>>("stories", session!, {
       json: { storyIds },
     });
     return stories;

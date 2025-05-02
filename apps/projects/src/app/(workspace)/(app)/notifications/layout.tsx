@@ -7,16 +7,18 @@ import { ListNotifications } from "@/modules/notifications/list";
 import { getQueryClient } from "@/app/get-query-client";
 import { getNotifications } from "@/modules/notifications/queries/get-notifications";
 import { notificationKeys } from "@/constants/keys";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Notifications",
 };
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default async function Layout({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
+  const session = await auth();
   queryClient.prefetchQuery({
     queryKey: notificationKeys.all,
-    queryFn: () => getNotifications(),
+    queryFn: () => getNotifications(session!),
   });
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

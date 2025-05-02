@@ -1,21 +1,24 @@
-"use server";
 import type { Options } from "ky";
 import ky from "ky";
-import { headers } from "next/headers";
 import { cache } from "react";
-import { auth } from "@/auth";
+import type { Session } from "next-auth";
 import { ApiError } from "./error";
+import { getHeaders } from "./header";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const isServer = typeof window === "undefined";
 
 // Cache client creation with workspace context using React's cache function
-const getClientContext = cache(async () => {
-  const headersList = await headers();
-  const host = headersList.get("host");
-  const subdomain = host ? host.split(".")[0] : "";
-  const session = await auth();
+const getClientContext = cache(async (session: Session) => {
+  let subdomain = "";
+  if (isServer) {
+    const headersList = await getHeaders();
+    subdomain = headersList.get("host")?.split(".")[0] || "";
+  } else {
+    subdomain = window.location.hostname.split(".")[0];
+  }
 
-  const workspaces = session?.workspaces || [];
+  const workspaces = session.workspaces;
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );
@@ -38,17 +41,19 @@ const getClientContext = cache(async () => {
     },
   });
 
-  const authHeaders = session
-    ? {
-        Authorization: `Bearer ${session.token}`,
-      }
-    : {};
+  const authHeaders = {
+    Authorization: `Bearer ${session.token}`,
+  };
 
   return { client, authHeaders };
 });
 
-export const get = async <T>(url: string, options?: Options) => {
-  const { client, authHeaders } = await getClientContext();
+export const get = async <T>(
+  url: string,
+  session: Session,
+  options?: Options,
+) => {
+  const { client, authHeaders } = await getClientContext(session);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -56,11 +61,17 @@ export const get = async <T>(url: string, options?: Options) => {
     },
     ...options,
   };
+
   return client.get(url, mergedOptions).json<T>();
 };
 
-export const post = async <T, U>(url: string, json: T, options?: Options) => {
-  const { client, authHeaders } = await getClientContext();
+export const post = async <T, U>(
+  url: string,
+  json: T,
+  session: Session,
+  options?: Options,
+) => {
+  const { client, authHeaders } = await getClientContext(session);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -76,8 +87,13 @@ export const post = async <T, U>(url: string, json: T, options?: Options) => {
   return client.post(url, { json, ...mergedOptions }).json<U>();
 };
 
-export const put = async <T, U>(url: string, json: T, options?: Options) => {
-  const { client, authHeaders } = await getClientContext();
+export const put = async <T, U>(
+  url: string,
+  json: T,
+  session: Session,
+  options?: Options,
+) => {
+  const { client, authHeaders } = await getClientContext(session);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -91,8 +107,13 @@ export const put = async <T, U>(url: string, json: T, options?: Options) => {
   return client.put(url, { json, ...mergedOptions }).json<U>();
 };
 
-export const patch = async <T, U>(url: string, json: T, options?: Options) => {
-  const { client, authHeaders } = await getClientContext();
+export const patch = async <T, U>(
+  url: string,
+  json: T,
+  session: Session,
+  options?: Options,
+) => {
+  const { client, authHeaders } = await getClientContext(session);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -106,8 +127,12 @@ export const patch = async <T, U>(url: string, json: T, options?: Options) => {
   return client.patch(url, { json, ...mergedOptions }).json<U>();
 };
 
-export const remove = async <T>(url: string, options?: Options) => {
-  const { client, authHeaders } = await getClientContext();
+export const remove = async <T>(
+  url: string,
+  session: Session,
+  options?: Options,
+) => {
+  const { client, authHeaders } = await getClientContext(session);
   const mergedOptions = {
     headers: {
       ...authHeaders,

@@ -2,6 +2,7 @@
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
+import { useObjective } from "../hooks";
 import { ObjectiveOptionsProvider } from "./provider";
 import { AllStories } from "./all-stories";
 import { Header } from "./header";
@@ -12,9 +13,10 @@ export const ListStories = ({ objectiveId }: { objectiveId: string }) => {
     "teams:objectives:stories:layout",
     "list",
   );
-  const { isPending } = useObjectiveStories(objectiveId);
+  const { isPending: isObjectivePending } = useObjective(objectiveId);
+  const { isPending: isStoriesPending } = useObjectiveStories(objectiveId);
 
-  if (isPending) {
+  if (isObjectivePending || isStoriesPending) {
     return <ObjectivePageSkeleton layout={layout} />;
   }
 
