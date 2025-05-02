@@ -26,6 +26,7 @@ const (
 	StoryDetailKey     = "stories:detail:%s:%s"    // workspaceID, storyID
 	WorkspaceDetailKey = "workspaces:detail:%s"    // workspaceID
 	UserDetailKey      = "users:detail:%s"         // userID
+	MyStoriesKey       = "stories:my-stories:%s"   // workspaceID
 )
 
 // ObjectiveListCacheKey generates a cache key for a list of objectives

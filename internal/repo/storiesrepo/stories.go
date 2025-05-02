@@ -1161,7 +1161,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			:reporter_id,
 			NOW(),
 			NOW()
-		) RETURNING stories.*;
+		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 	`
 
 	// Prepare parameters for the new story

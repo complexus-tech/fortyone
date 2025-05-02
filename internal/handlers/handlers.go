@@ -50,6 +50,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Publisher:   cfg.Publisher,
 		AzureConfig: cfg.AzureConfig,
 		Validate:    cfg.Validate,
+		Cache:       cfg.Cache,
 	}, app)
 
 	// register the objectives routes

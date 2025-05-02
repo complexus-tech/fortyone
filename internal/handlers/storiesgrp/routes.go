@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -27,6 +28,7 @@ type Config struct {
 	Publisher   *publisher.Publisher
 	Validate    *validator.Validate
 	AzureConfig azure.Config
+	Cache       *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -44,7 +46,7 @@ func Routes(cfg Config, app *web.App) {
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	h := New(storiesService, commentsService, linksService, attachmentsService, cfg.Log)
+	h := New(storiesService, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
 	app.Get("/workspaces/{workspaceId}/stories", h.List, auth)
