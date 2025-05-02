@@ -29,7 +29,6 @@ type App struct {
 
 // New creates an application struct that will handle all requests to the application.
 func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
-	// mux := mux.NewRouter()
 	mux := http.NewServeMux()
 	return &App{
 		mux:         mux,
