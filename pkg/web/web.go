@@ -45,9 +45,15 @@ func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// extract this into a confiurable middleware
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Max-Age", "86400")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
 	if !a.strictSlash {
 		path := a.stripSlash(r.URL.Path)
