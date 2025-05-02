@@ -35,54 +35,67 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
     queryFn: () => getAutomationPreferences(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
     queryFn: () => getPublicTeams(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: sprintKeys.lists(),
     queryFn: () => getSprints(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: objectiveKeys.list(),
     queryFn: () => getObjectives(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
     queryFn: () => getLabels(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
     queryFn: () => getMyInvitations(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(),
     queryFn: () => getUnreadNotifications(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
     queryFn: () => getWorkspaceSettings(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: userKeys.profile(),
     queryFn: () => getProfile(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
     queryFn: () => getMembers(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
     queryFn: () => getWorkspaces(session.token),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.pending,
     queryFn: () => getPendingInvitations(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: notificationKeys.preferences(),
     queryFn: () => getNotificationPreferences(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details,
