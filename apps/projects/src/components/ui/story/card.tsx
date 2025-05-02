@@ -5,6 +5,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -30,6 +31,7 @@ export const StoryCard = ({
   className?: string;
 }) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { userRole } = useUserRole();
@@ -60,15 +62,15 @@ export const StoryCard = ({
       onMouseEnter={() => {
         queryClient.prefetchQuery({
           queryKey: storyKeys.detail(story.id),
-          queryFn: () => getStory(story.id),
+          queryFn: () => getStory(story.id, session!),
         });
         queryClient.prefetchQuery({
           queryKey: storyKeys.attachments(story.id),
-          queryFn: () => getStoryAttachments(story.id),
+          queryFn: () => getStoryAttachments(story.id, session!),
         });
         queryClient.prefetchQuery({
           queryKey: linkKeys.story(story.id),
-          queryFn: () => getLinks(story.id),
+          queryFn: () => getLinks(story.id, session!),
         });
         router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
       }}
@@ -84,12 +86,6 @@ export const StoryCard = ({
             },
             className,
           )}
-          onMouseEnter={() => {
-            queryClient.prefetchQuery({
-              queryKey: storyKeys.detail(story.id),
-              queryFn: () => getStory(story.id),
-            });
-          }}
         >
           <div
             className={cn("cursor-pointer pb-2 pt-3", {

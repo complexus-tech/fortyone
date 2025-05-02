@@ -5,6 +5,7 @@ import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { QueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
 import { StoryStatusIcon } from "@/components/ui";
@@ -28,6 +29,7 @@ export const SprintRow = ({
   endDate,
   stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
+  const { data: session } = useSession();
   const queryClient = new QueryClient();
   const { teamId } = useParams<{ teamId: string }>();
   const { data: statuses = [] } = useTeamStatuses(teamId);
@@ -60,7 +62,7 @@ export const SprintRow = ({
         onMouseEnter={() => {
           queryClient.prefetchQuery({
             queryKey: storyKeys.sprint(id),
-            queryFn: () => getStories({ sprintId: id }),
+            queryFn: () => getStories(session!, { sprintId: id }),
             staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
           });
         }}

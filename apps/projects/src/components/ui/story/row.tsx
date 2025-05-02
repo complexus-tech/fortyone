@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRightIcon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
@@ -36,6 +37,7 @@ export const StoryRow = ({
   isInSearch?: boolean;
 }) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { data: teams = [] } = useTeams();
@@ -66,15 +68,15 @@ export const StoryRow = ({
       onMouseEnter={() => {
         queryClient.prefetchQuery({
           queryKey: storyKeys.detail(story.id),
-          queryFn: () => getStory(story.id),
+          queryFn: () => getStory(story.id, session!),
         });
         queryClient.prefetchQuery({
           queryKey: storyKeys.attachments(story.id),
-          queryFn: () => getStoryAttachments(story.id),
+          queryFn: () => getStoryAttachments(story.id, session!),
         });
         queryClient.prefetchQuery({
           queryKey: linkKeys.story(story.id),
-          queryFn: () => getLinks(story.id),
+          queryFn: () => getLinks(story.id, session!),
         });
         router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
       }}
