@@ -50,7 +50,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
               className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
               title={link.title || metadata?.title}
             >
-              {link.title || metadata?.title}
+              {link.title || metadata?.title || link.url}
             </Text>
             {metadata?.description ? (
               <Text
