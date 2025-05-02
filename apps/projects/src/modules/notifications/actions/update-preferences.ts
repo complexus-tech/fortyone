@@ -2,6 +2,7 @@
 
 import { put } from "@/lib/http";
 import { getApiError } from "@/utils";
+import { auth } from "@/auth";
 import type { UpdateNotificationPreferences } from "../types";
 
 export const updateNotificationPreferences = async (
@@ -15,7 +16,8 @@ export const updateNotificationPreferences = async (
     | "story_comment",
 ) => {
   try {
-    await put(`notification-preferences/${type}`, preferences);
+    const session = await auth();
+    await put(`notification-preferences/${type}`, preferences, session!);
   } catch (error) {
     return getApiError(error);
   }

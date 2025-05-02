@@ -4,6 +4,7 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { State, StateCategory } from "@/types/states";
 import { getApiError } from "@/utils";
+import { auth } from "@/auth";
 
 export type NewState = {
   name: string;
@@ -13,7 +14,12 @@ export type NewState = {
 
 export const createStateAction = async (payload: NewState) => {
   try {
-    const state = await post<NewState, ApiResponse<State>>("states", payload);
+    const session = await auth();
+    const state = await post<NewState, ApiResponse<State>>(
+      "states",
+      payload,
+      session!,
+    );
     return state;
   } catch (error) {
     return getApiError(error);

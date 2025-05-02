@@ -3,6 +3,7 @@
 import { put } from "@/lib/http";
 import type { ApiResponse, UserRole } from "@/types";
 import { getApiError } from "@/utils";
+import { auth } from "@/auth";
 
 export const updateUserRoleAction = async ({
   userId,
@@ -12,9 +13,14 @@ export const updateUserRoleAction = async ({
   role: UserRole;
 }) => {
   try {
-    await put<{ role: UserRole }, ApiResponse<null>>(`members/${userId}/role`, {
-      role,
-    });
+    const session = await auth();
+    await put<{ role: UserRole }, ApiResponse<null>>(
+      `members/${userId}/role`,
+      {
+        role,
+      },
+      session!,
+    );
   } catch (error) {
     return getApiError(error);
   }

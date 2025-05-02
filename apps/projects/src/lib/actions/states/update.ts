@@ -3,6 +3,7 @@ import { put } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { State } from "@/types/states";
 import { getApiError } from "@/utils";
+import { auth } from "@/auth";
 
 export type UpdateState = {
   name?: string;
@@ -15,9 +16,11 @@ export const updateStateAction = async (
   payload: UpdateState,
 ) => {
   try {
+    const session = await auth();
     const res = await put<UpdateState, ApiResponse<State>>(
       `states/${stateId}`,
       payload,
+      session!,
     );
     return res;
   } catch (error) {
