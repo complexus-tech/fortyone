@@ -7,7 +7,7 @@ export const getMembers = async (session: Session) => {
   return members.data!;
 };
 
-export const getTeamMembers = async (session: Session, teamId: string) => {
+export const getTeamMembers = async (teamId: string, session: Session) => {
   const members = await get<ApiResponse<Member[]>>(
     `members?teamId=${teamId}`,
     session,
