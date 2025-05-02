@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key -- ok for skeleton */
 "use client";
 import { Box, Container, Divider, Flex, Skeleton, Wrapper } from "ui";
 import { BodyContainer } from "@/components/shared";

@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key -- ok for skeletons */
 "use client";
 import { Box, Flex, Skeleton, Wrapper } from "ui";
 

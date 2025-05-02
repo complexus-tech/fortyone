@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key -- ok for skeleton screens */
 import { cn } from "lib";
 import { Box, Checkbox, Flex, Skeleton } from "ui";
 import { BodyContainer } from "@/components/shared/body";

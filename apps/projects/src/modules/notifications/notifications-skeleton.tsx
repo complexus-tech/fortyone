@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key -- ok for skeleton */
 import { Box, Flex, Skeleton } from "ui";
 
 export const NotificationsSkeleton = () => {

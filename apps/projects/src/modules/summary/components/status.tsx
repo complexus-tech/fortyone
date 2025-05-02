@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key -- ok for this use case */
 "use client";
 import { Flex, Text, Wrapper, Box } from "ui";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
