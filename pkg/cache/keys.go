@@ -19,14 +19,17 @@ const (
 
 // Key formats for different types of cache entries
 const (
-	ObjectiveListKey   = "objectives:list:%s"      // workspaceID
-	ObjectiveDetailKey = "objectives:detail:%s:%s" // workspaceID, objectiveID
-	KeyResultsListKey  = "key-results:list:%s:%s"  // workspaceID, objectiveID
-	StoryListKey       = "stories:list:%s"         // workspaceID
-	StoryDetailKey     = "stories:detail:%s:%s"    // workspaceID, storyID
-	WorkspaceDetailKey = "workspaces:detail:%s"    // workspaceID
-	UserDetailKey      = "users:detail:%s"         // userID
-	MyStoriesKey       = "stories:my-stories:%s"   // workspaceID
+	ObjectiveListKey    = "objectives:list:%s"        // workspaceID
+	ObjectiveDetailKey  = "objectives:detail:%s:%s"   // workspaceID, objectiveID
+	KeyResultsListKey   = "key-results:list:%s:%s"    // workspaceID, objectiveID
+	StoryListKey        = "stories:list:%s"           // workspaceID
+	StoryDetailKey      = "stories:detail:%s:%s"      // workspaceID, storyID
+	WorkspaceDetailKey  = "workspaces:detail:%s"      // workspaceID
+	UserDetailKey       = "users:detail:%s"           // userID
+	MyStoriesKey        = "stories:my-stories:%s"     // workspaceID
+	StoryCommentsKey    = "stories:comments:%s:%s"    // workspaceID, storyID
+	StoryActivitiesKey  = "stories:activities:%s:%s"  // workspaceID, storyID
+	StoryAttachmentsKey = "stories:attachments:%s:%s" // workspaceID, storyID
 )
 
 // ObjectiveListCacheKey generates a cache key for a list of objectives
@@ -70,6 +73,21 @@ func UserDetailCacheKey(userID uuid.UUID) string {
 	return fmt.Sprintf(UserDetailKey, userID.String())
 }
 
+// StoryCommentsCacheKey generates a cache key for comments of a story
+func StoryCommentsCacheKey(workspaceID, storyID uuid.UUID) string {
+	return fmt.Sprintf(StoryCommentsKey, workspaceID.String(), storyID.String())
+}
+
+// StoryActivitiesCacheKey generates a cache key for activities of a story
+func StoryActivitiesCacheKey(workspaceID, storyID uuid.UUID) string {
+	return fmt.Sprintf(StoryActivitiesKey, workspaceID.String(), storyID.String())
+}
+
+// StoryAttachmentsCacheKey generates a cache key for attachments of a story
+func StoryAttachmentsCacheKey(workspaceID, storyID uuid.UUID) string {
+	return fmt.Sprintf(StoryAttachmentsKey, workspaceID.String(), storyID.String())
+}
+
 // InvalidateObjectiveKeys invalidates all cache keys related to an objective
 func InvalidateObjectiveKeys(workspaceID, objectiveID uuid.UUID) []string {
 	return []string{
@@ -84,6 +102,9 @@ func InvalidateStoryKeys(workspaceID, storyID uuid.UUID) []string {
 	return []string{
 		StoryDetailCacheKey(workspaceID, storyID),
 		fmt.Sprintf(StoryListKey+"*", workspaceID.String()), // Wildcard to match all list variations
+		StoryCommentsCacheKey(workspaceID, storyID),
+		StoryActivitiesCacheKey(workspaceID, storyID),
+		StoryAttachmentsCacheKey(workspaceID, storyID),
 	}
 }
 

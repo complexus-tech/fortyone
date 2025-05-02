@@ -549,28 +549,71 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 // GetActivities returns the activities for a story.
 func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetActivities")
+	defer span.End()
+
 	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
-	activities, err := h.stories.GetActivities(ctx, storyId)
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Try to get from cache first
+	cacheKey := cache.StoryActivitiesCacheKey(workspaceId, storyId)
+	var cachedActivities []stories.CoreActivity
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedActivities); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppActivities(cachedActivities), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	activitiesList, err := h.stories.GetActivities(ctx, storyId)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	web.Respond(ctx, w, toAppActivities(activities), http.StatusOK)
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, activitiesList, cache.ListTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
+	web.Respond(ctx, w, toAppActivities(activitiesList), http.StatusOK)
 	return nil
 }
 
 // CreateComment creates a comment for a story.
 func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.CreateComment")
+	defer span.End()
+
 	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
@@ -598,6 +641,14 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
+
+	// Invalidate the comments cache for this story
+	cacheKey := cache.StoryCommentsCacheKey(workspaceId, storyId)
+	if err := h.cache.Delete(ctx, cacheKey); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to delete cache", "key", cacheKey, "error", err)
+	}
+
 	web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
 
 	return nil
@@ -605,7 +656,11 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 
 // GetComments returns the comments for a story.
 func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetComments")
+	defer span.End()
+
 	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		h.log.Error(ctx, "invalid story id", "error", err)
@@ -613,15 +668,41 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		return nil
 	}
 
-	comments, err := h.stories.GetComments(ctx, storyId)
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Try to get from cache first
+	cacheKey := cache.StoryCommentsCacheKey(workspaceId, storyId)
+	var cachedComments []comments.CoreComment
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedComments); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppComments(cachedComments), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	commentsList, err := h.stories.GetComments(ctx, storyId)
 	if err != nil {
 		h.log.Error(ctx, "failed to get comments", "error", err)
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	web.Respond(ctx, w, toAppComments(comments), http.StatusOK)
-	return nil
 
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, commentsList, cache.DetailTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
+	web.Respond(ctx, w, toAppComments(commentsList), http.StatusOK)
+	return nil
 }
 
 // DuplicateStory creates a copy of an existing story.
@@ -656,16 +737,46 @@ func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r 
 
 // GetAttachmentsForStory returns the attachments for a story.
 func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetAttachmentsForStory")
+	defer span.End()
+
 	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Try to get from cache first
+	cacheKey := cache.StoryAttachmentsCacheKey(workspaceId, storyId)
+	var cachedAttachments []attachments.FileInfo
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedAttachments); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		return web.Respond(ctx, w, cachedAttachments, http.StatusOK)
+	}
+
+	// Cache miss, get from database
 	fileInfos, err := h.attachments.GetAttachmentsForStory(ctx, storyId)
 	if err != nil {
 		return fmt.Errorf("error getting attachments for story: %w", err)
+	}
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, fileInfos, cache.DetailTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	return web.Respond(ctx, w, fileInfos, http.StatusOK)
@@ -673,12 +784,23 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 
 // DeleteAttachment deletes an attachment from a story.
 func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	// storyIdParam := web.Params(r, "id")
-	// storyId, err := uuid.Parse(storyIdParam)
-	// if err != nil {
-	// 	web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
-	// 	return nil
-	// }
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.DeleteAttachment")
+	defer span.End()
+
+	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
+
+	storyId, err := uuid.Parse(storyIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
 
 	userID, _ := mid.GetUserID(ctx)
 
@@ -692,6 +814,13 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 	err = h.attachments.DeleteAttachment(ctx, attachmentID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("error deleting attachment: %w", err), http.StatusBadRequest)
+	}
+
+	// Invalidate the attachments cache for this story
+	cacheKey := cache.StoryAttachmentsCacheKey(workspaceId, storyId)
+	if err := h.cache.Delete(ctx, cacheKey); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to delete cache", "key", cacheKey, "error", err)
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -736,6 +865,13 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 		default:
 			return fmt.Errorf("error uploading attachment: %w", err)
 		}
+	}
+
+	// Invalidate the attachments cache for this story
+	cacheKey := cache.StoryAttachmentsCacheKey(workspaceId, storyId)
+	if err := h.cache.Delete(ctx, cacheKey); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to delete cache", "key", cacheKey, "error", err)
 	}
 
 	return web.Respond(ctx, w, fileInfo, http.StatusCreated)
