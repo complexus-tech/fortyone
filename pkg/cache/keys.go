@@ -9,27 +9,31 @@ import (
 
 const (
 	// TTLs
-	DefaultTTL    = 5 * time.Minute
-	ListTTL       = 2 * time.Minute
-	DetailTTL     = 5 * time.Minute
-	ShortTermTTL  = 1 * time.Minute
-	MediumTermTTL = 15 * time.Minute
-	LongTermTTL   = 1 * time.Hour
+	DefaultTTL    = 10 * time.Minute
+	ListTTL       = 10 * time.Minute
+	DetailTTL     = 15 * time.Minute
+	ShortTermTTL  = 3 * time.Minute
+	MediumTermTTL = 30 * time.Minute
+	LongTermTTL   = 2 * time.Hour
 )
 
 // Key formats for different types of cache entries
 const (
-	ObjectiveListKey    = "objectives:list:%s"        // workspaceID
-	ObjectiveDetailKey  = "objectives:detail:%s:%s"   // workspaceID, objectiveID
-	KeyResultsListKey   = "key-results:list:%s:%s"    // workspaceID, objectiveID
-	StoryListKey        = "stories:list:%s"           // workspaceID
-	StoryDetailKey      = "stories:detail:%s:%s"      // workspaceID, storyID
-	WorkspaceDetailKey  = "workspaces:detail:%s"      // workspaceID
-	UserDetailKey       = "users:detail:%s"           // userID
-	MyStoriesKey        = "stories:my-stories:%s"     // workspaceID
-	StoryCommentsKey    = "stories:comments:%s:%s"    // workspaceID, storyID
-	StoryActivitiesKey  = "stories:activities:%s:%s"  // workspaceID, storyID
-	StoryAttachmentsKey = "stories:attachments:%s:%s" // workspaceID, storyID
+	ObjectiveListKey     = "objectives:list:%s"        // workspaceID
+	ObjectiveDetailKey   = "objectives:detail:%s:%s"   // workspaceID, objectiveID
+	KeyResultsListKey    = "key-results:list:%s:%s"    // workspaceID, objectiveID
+	StoryListKey         = "stories:list:%s"           // workspaceID
+	StoryDetailKey       = "stories:detail:%s:%s"      // workspaceID, storyID
+	WorkspaceDetailKey   = "workspaces:detail:%s"      // workspaceID
+	UserDetailKey        = "users:detail:%s"           // userID
+	MyStoriesKey         = "stories:my-stories:%s"     // workspaceID
+	StoryCommentsKey     = "stories:comments:%s:%s"    // workspaceID, storyID
+	StoryActivitiesKey   = "stories:activities:%s:%s"  // workspaceID, storyID
+	StoryAttachmentsKey  = "stories:attachments:%s:%s" // workspaceID, storyID
+	WorkspacesListKey    = "workspaces:list:%s"        // userID (list of workspaces for a user)
+	WorkspaceMembersKey  = "workspaces:members:%s"     // workspaceID (members of a workspace)
+	WorkspaceTeamsKey    = "workspaces:teams:%s"       // workspaceID (teams in a workspace)
+	WorkspaceSettingsKey = "workspaces:settings:%s"    // workspaceID
 )
 
 // ObjectiveListCacheKey generates a cache key for a list of objectives
@@ -88,6 +92,26 @@ func StoryAttachmentsCacheKey(workspaceID, storyID uuid.UUID) string {
 	return fmt.Sprintf(StoryAttachmentsKey, workspaceID.String(), storyID.String())
 }
 
+// WorkspacesListCacheKey generates a cache key for a user's list of workspaces
+func WorkspacesListCacheKey(userID uuid.UUID) string {
+	return fmt.Sprintf(WorkspacesListKey, userID.String())
+}
+
+// WorkspaceMembersCacheKey generates a cache key for members of a workspace
+func WorkspaceMembersCacheKey(workspaceID uuid.UUID) string {
+	return fmt.Sprintf(WorkspaceMembersKey, workspaceID.String())
+}
+
+// WorkspaceTeamsCacheKey generates a cache key for teams in a workspace
+func WorkspaceTeamsCacheKey(workspaceID uuid.UUID) string {
+	return fmt.Sprintf(WorkspaceTeamsKey, workspaceID.String())
+}
+
+// WorkspaceSettingsCacheKey generates a cache key for workspace settings
+func WorkspaceSettingsCacheKey(workspaceID uuid.UUID) string {
+	return fmt.Sprintf(WorkspaceSettingsKey, workspaceID.String())
+}
+
 // InvalidateObjectiveKeys invalidates all cache keys related to an objective
 func InvalidateObjectiveKeys(workspaceID, objectiveID uuid.UUID) []string {
 	return []string{
@@ -112,7 +136,17 @@ func InvalidateStoryKeys(workspaceID, storyID uuid.UUID) []string {
 func InvalidateWorkspaceKeys(workspaceID uuid.UUID) []string {
 	return []string{
 		WorkspaceDetailCacheKey(workspaceID),
+		WorkspaceMembersCacheKey(workspaceID),
+		WorkspaceTeamsCacheKey(workspaceID),
+		WorkspaceSettingsCacheKey(workspaceID),
 		fmt.Sprintf(ObjectiveListKey+"*", workspaceID.String()),
 		fmt.Sprintf(StoryListKey+"*", workspaceID.String()),
+	}
+}
+
+// InvalidateUserWorkspacesKeys invalidates cache keys for a user's workspace list
+func InvalidateUserWorkspacesKeys(userID uuid.UUID) []string {
+	return []string{
+		WorkspacesListCacheKey(userID),
 	}
 }

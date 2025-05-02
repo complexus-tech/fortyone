@@ -132,6 +132,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Publisher: cfg.Publisher,
+		Cache:     cfg.Cache,
 	}, app)
 
 	// register the comments routes

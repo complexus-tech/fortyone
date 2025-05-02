@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -25,6 +26,7 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Publisher *publisher.Publisher
+	Cache     *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -40,7 +42,7 @@ func Routes(cfg Config, app *web.App) {
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService,
-		cfg.SecretKey)
+		cfg.Cache, cfg.Log, cfg.SecretKey)
 
 	app.Get("/workspaces/{workspaceId}", h.Get, auth)
 	app.Put("/workspaces/{workspaceId}", h.Update, auth)

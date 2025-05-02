@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -13,6 +14,8 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,30 +29,57 @@ var (
 
 type Handlers struct {
 	workspaces *workspaces.Service
+	cache      *cache.Service
+	log        *logger.Logger
 	secretKey  string
-	// audit  *audit.Service
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, cacheService *cache.Service, log *logger.Logger, secretKey string) *Handlers {
 	return &Handlers{
 		workspaces: workspaces,
+		cache:      cacheService,
+		log:        log,
 		secretKey:  secretKey,
 	}
 }
 
 // List returns a list of workspaces for a user.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.List")
+	defer span.End()
+
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaces, err := h.workspaces.List(ctx, userID)
+	// Try to get from cache first
+	cacheKey := cache.WorkspacesListCacheKey(userID)
+	var cachedWorkspaces []workspaces.CoreWorkspace
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedWorkspaces); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppWorkspaces(cachedWorkspaces), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	workspacesList, err := h.workspaces.List(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	web.Respond(ctx, w, toAppWorkspaces(workspaces), http.StatusOK)
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, workspacesList, cache.ListTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
+	web.Respond(ctx, w, toAppWorkspaces(workspacesList), http.StatusOK)
 	return nil
 }
 
@@ -83,6 +113,13 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	workspace, err := h.workspaces.Create(ctx, cw, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Invalidate the user's workspaces list cache
+	cacheKey := cache.WorkspacesListCacheKey(userID)
+	if err := h.cache.Delete(ctx, cacheKey); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to delete cache", "key", cacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace created.", trace.WithAttributes(
@@ -120,6 +157,22 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// Invalidate the workspace caches
+	cacheKeys := cache.InvalidateWorkspaceKeys(workspaceID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+			}
+		} else {
+			// Handle exact key deletion
+			if err := h.cache.Delete(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
+			}
+		}
+	}
+
 	span.AddEvent("workspace updated.", trace.WithAttributes(
 		attribute.String("workspaceId", workspaceID.String()),
 	))
@@ -135,6 +188,34 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	// Get the user ID before deleting the workspace
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Invalidate the workspace caches before deleting
+	cacheKeys := cache.InvalidateWorkspaceKeys(workspaceID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+			}
+		} else {
+			// Handle exact key deletion
+			if err := h.cache.Delete(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
+			}
+		}
+	}
+
+	// Also invalidate the user's workspaces list cache
+	userCacheKey := cache.WorkspacesListCacheKey(userID)
+	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
 	if err := h.workspaces.Delete(ctx, workspaceID); err != nil {
@@ -176,6 +257,18 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// Invalidate workspace members cache
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
+	}
+
+	// Invalidate user's workspaces list cache
+	userCacheKey := cache.WorkspacesListCacheKey(input.UserID)
+	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
+	}
+
 	span.AddEvent("workspace member added.", trace.WithAttributes(
 		attribute.String("workspaceId", workspaceID.String()),
 		attribute.String("userId", input.UserID.String()),
@@ -185,7 +278,11 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+// Get returns a workspace by ID
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.Get")
+	defer span.End()
+
 	workspaceIDParam := web.Params(r, "workspaceId")
 	workspaceID, err := uuid.Parse(workspaceIDParam)
 	if err != nil {
@@ -205,7 +302,8 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+	web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+	return nil
 }
 
 func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -229,6 +327,18 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Invalidate workspace members cache
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
+	}
+
+	// Invalidate user's workspaces list cache
+	userCacheKey := cache.WorkspacesListCacheKey(userID)
+	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace member removed.", trace.WithAttributes(
@@ -265,6 +375,12 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Invalidate workspace members cache
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace member role updated.", trace.WithAttributes(
@@ -326,10 +442,29 @@ func (h *Handlers) GetWorkspaceSettings(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	// Get or create the settings
+	// Try to get from cache first
+	cacheKey := cache.WorkspaceSettingsCacheKey(workspaceID)
+	var cachedSettings workspaces.CoreWorkspaceSettings
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedSettings); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppWorkspaceSettings(cachedSettings), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
 	settings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, settings, cache.DetailTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	return web.Respond(ctx, w, toAppWorkspaceSettings(settings), http.StatusOK)
@@ -384,6 +519,12 @@ func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseW
 	updatedSettings, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspaceID, coreSettings)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Invalidate the workspace settings cache
+	settingsCacheKey := cache.WorkspaceSettingsCacheKey(workspaceID)
+	if err := h.cache.Delete(ctx, settingsCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", settingsCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace settings updated.", trace.WithAttributes(
