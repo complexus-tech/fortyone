@@ -14,7 +14,7 @@ export default async function Page() {
   const host = headersList.get("host");
 
   if (host?.includes("complexus.app")) {
-    redirect("https://complexus.app");
+    redirect("https://www.complexus.app/login");
   }
 
   // If user is already logged in, redirect to my work on localhost
