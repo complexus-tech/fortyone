@@ -3,49 +3,49 @@ import type { MetadataRoute } from "next";
 // List all static routes with their priorities and change frequencies
 const routes: MetadataRoute.Sitemap = [
   {
-    url: "/",
+    url: "https://www.complexus.tech/",
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 1,
   },
   {
-    url: "/product",
+    url: "https://www.complexus.tech/product",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
   },
   {
-    url: "/pricing",
+    url: "https://www.complexus.tech/pricing",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
   },
   {
-    url: "/blog",
+    url: "https://www.complexus.tech/blog",
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.8,
   },
   {
-    url: "/developers",
+    url: "https://www.complexus.tech/developers",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.7,
   },
   {
-    url: "/contact",
+    url: "https://www.complexus.tech/contact",
     lastModified: new Date(),
     changeFrequency: "yearly",
     priority: 0.5,
   },
   {
-    url: "/terms",
+    url: "https://www.complexus.tech/terms",
     lastModified: new Date(),
     changeFrequency: "yearly",
     priority: 0.3,
   },
   {
-    url: "/privacy",
+    url: "https://www.complexus.tech/privacy",
     lastModified: new Date(),
     changeFrequency: "yearly",
     priority: 0.3,
