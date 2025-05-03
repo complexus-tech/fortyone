@@ -2,12 +2,11 @@
 
 import { Box, Container, Flex, Text, Button } from "ui";
 import { motion } from "framer-motion";
-import { ArrowRight2Icon } from "icons";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
-import okrsImg from "../../../../public/images/product/kanban.webp"; // Using existing image; ideally replace with OKR-specific image
+import okrsImg from "../../../../public/images/product/kanban.webp";
 
 export const Hero = () => {
   const { data: session } = useSession();
@@ -91,9 +90,6 @@ export const Hero = () => {
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
                 href="/signup"
-                rightIcon={
-                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
-                }
                 rounded="full"
                 size="lg"
               >

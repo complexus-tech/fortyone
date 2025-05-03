@@ -78,20 +78,20 @@ const Copyright = () => (
 export const Footer = () => {
   const product = [
     {
-      href: "/product#stories",
+      href: "/product/stories",
       title: "Stories",
     },
     {
       title: "Objectives",
-      href: "/product#objectives",
+      href: "/product/objectives",
     },
     {
-      href: "/product#okrs",
+      href: "/product/okrs",
       title: "OKRs",
     },
 
     {
-      href: "/product#sprints",
+      href: "/product/sprints",
       title: "Sprints",
     },
   ];

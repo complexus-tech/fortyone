@@ -2,7 +2,6 @@
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
-import { ArrowRight2Icon } from "icons";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
@@ -88,9 +87,6 @@ export const Hero = () => {
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
                 href="/signup"
-                rightIcon={
-                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
-                }
                 rounded="full"
                 size="lg"
               >

@@ -2,7 +2,6 @@
 
 import { Box, Container, Flex, Text, Button } from "ui";
 import { motion } from "framer-motion";
-import { ArrowRight2Icon } from "icons";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
@@ -91,13 +90,12 @@ export const Hero = () => {
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
                 href="/signup"
-                rightIcon={
-                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
-                }
                 rounded="full"
                 size="lg"
               >
-                <span className="hidden md:inline">Manage in 3 minutes</span>
+                <span className="hidden md:inline">
+                  Create Your First Story
+                </span>
                 <span className="md:hidden">Get Started</span>
               </Button>
             </motion.span>

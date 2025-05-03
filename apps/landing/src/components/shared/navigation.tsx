@@ -97,6 +97,13 @@ export const Navigation = () => {
 
   const resources = [
     {
+      id: 1,
+      href: "/blog",
+      name: "Documentation",
+      description: "Learn how to use complexus app",
+      icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
+    },
+    {
       id: 2,
       href: "/blog",
       name: "Blog",
@@ -104,13 +111,6 @@ export const Navigation = () => {
       icon: (
         <DocsIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
       ),
-    },
-    {
-      id: 3,
-      href: "/blog",
-      name: "Documentation",
-      description: "Learn how to use complexus app",
-      icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
     },
   ];
 
@@ -174,7 +174,7 @@ export const Navigation = () => {
                       Product
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content>
-                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-3 pr-2.5">
+                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-2.5 pr-2.5">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
                             <MenuItem
