@@ -60,7 +60,7 @@ export const Navigation = () => {
     {
       id: 1,
       name: "Stories",
-      href: "/product#stories",
+      href: "/product/stories",
       description: "Manage and Track Tasks",
       icon: (
         <StoryIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -69,7 +69,7 @@ export const Navigation = () => {
     {
       id: 2,
       name: "Objectives",
-      href: "/product#objectives",
+      href: "/product/objectives",
       description: "Set and Achieve Goals",
       icon: (
         <ObjectiveIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -78,7 +78,7 @@ export const Navigation = () => {
     {
       id: 3,
       name: "OKRs",
-      href: "/product#okrs",
+      href: "/product/okrs",
       description: "Align and Achieve",
       icon: (
         <OKRIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -87,7 +87,7 @@ export const Navigation = () => {
     {
       id: 4,
       name: "Sprints",
-      href: "/product#sprints",
+      href: "/product/sprints",
       description: "Iterate and Deliver",
       icon: (
         <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
