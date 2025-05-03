@@ -48,7 +48,7 @@ export const SampleClients = () => {
           whileInView={{ y: 0, opacity: 1 }}
         >
           <Text
-            as="h3"
+            as="h2"
             className="mx-auto max-w-4xl text-center text-3xl md:text-5xl md:leading-tight"
           >
             <Text

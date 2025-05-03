@@ -95,6 +95,7 @@ export const Logo = ({
       ) : (
         <MainLogo className={className} />
       )}
+      <span className="sr-only">Logo</span>
     </Link>
   );
 };
