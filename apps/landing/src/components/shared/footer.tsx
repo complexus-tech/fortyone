@@ -35,6 +35,7 @@ const Copyright = () => (
         href="https://x.com/complexus_app"
         target="_blank"
       >
+        <span className="sr-only">Twitter</span>
         <TwitterIcon className="h-5 w-auto" />
       </Link>
       <Link
@@ -42,6 +43,7 @@ const Copyright = () => (
         href="https://www.linkedin.com/company/complexus-app/"
         target="_blank"
       >
+        <span className="sr-only">LinkedIn</span>
         <LinkedinIcon className="h-5 w-auto" />
       </Link>
       <Link
@@ -49,6 +51,7 @@ const Copyright = () => (
         href="https://www.instagram.com/complexus_tech/"
         target="_blank"
       >
+        <span className="sr-only">Instagram</span>
         <InstagramIcon className="h-5 w-auto" />
       </Link>
       <Link
@@ -56,6 +59,7 @@ const Copyright = () => (
         href="https://www.facebook.com/complexus.tech"
         target="_blank"
       >
+        <span className="sr-only">Facebook</span>
         <FacebookIcon className="h-5 w-auto" />
       </Link>
     </Box>
