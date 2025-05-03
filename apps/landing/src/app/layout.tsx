@@ -14,44 +14,41 @@ import GoogleOneTap from "./one-tap";
 export const metadata: Metadata = {
   title: "Project Management & OKR Software for Teams | Complexus",
   description:
-    "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
+    "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
+  metadataBase: new URL("https://www.complexus.app"),
   keywords: [
-    "OKR management",
     "project management",
+    "OKR software",
     "team collaboration",
     "sprint planning",
-    "objective tracking",
     "task management",
     "agile project management",
-    "team productivity",
-    "strategic planning",
-    "project tracking",
-    "kanban boards",
-    "team alignment",
     "goal tracking",
+    "kanban boards",
+    "strategic planning",
     "project roadmap",
     "team objectives",
-    "project tracking",
-    "project software",
-    "project management software",
-    "project management software for teams",
+    "productivity tools",
+    "work management",
+    "team performance",
+    "collaboration platform",
   ],
   openGraph: {
     type: "website",
     locale: "en_US",
     title: "Project Management & OKR Software for Teams | Complexus",
     description:
-      "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
+      "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
     siteName: "Complexus",
-    url: "https://www.complexus.app",
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",
     site: "@complexus_app",
     creator: "@complexus_app",
-    title: "Project Management Software with OKR Framework | Complexus",
+    title: "Project Management & OKR Software for Teams | Complexus",
     description:
-      "Streamline project delivery with Complexus - the all-in-one platform combining powerful OKR tracking, sprint planning, and team collaboration tools. Drive measurable results and team alignment.",
+      "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
   },
   robots: {
     index: true,
@@ -65,7 +62,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://www.complexus.app",
+    canonical: "/",
   },
 };
 

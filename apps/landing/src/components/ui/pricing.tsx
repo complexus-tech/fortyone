@@ -193,7 +193,7 @@ export const Pricing = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              as="h1"
+              as={pathname === "/pricing" ? "h1" : "h2"}
               className="mt-6 max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
               Simple pricing for ambitious teams

@@ -25,7 +25,7 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              as="h1"
+              as="h2"
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
               Set <span className="text-stroke-white">Objectives</span>. Drive{" "}

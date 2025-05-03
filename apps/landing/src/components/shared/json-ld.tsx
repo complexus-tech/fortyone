@@ -73,7 +73,7 @@ const product: WithContext<Product> = {
   "@type": "Product",
   name: "Project Management & OKR Software for Teams",
   description:
-    "An integrated project management solution that combines OKR frameworks, sprint planning, and collaborative tools to help teams set clear objectives, execute efficiently, and deliver measurable outcomes.",
+    "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus",
   category: "Software",
   brand: {
     "@type": "Brand",
