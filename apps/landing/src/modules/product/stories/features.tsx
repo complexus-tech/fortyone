@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text } from "ui";
-import { StoryIcon, ObjectiveIcon, OKRIcon, SprintsIcon } from "icons";
+import { StoryIcon, UserIcon, WorkflowIcon, DashboardIcon } from "icons";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { cn } from "lib";
@@ -130,10 +130,10 @@ export const Features = () => {
     },
     {
       id: 2,
-      name: "Story Management",
+      name: "Story Assignment",
       description:
         "Assign stories to team members and track progress in real-time. Keep everyone aligned.",
-      icon: <ObjectiveIcon className="h-6" />,
+      icon: <UserIcon className="h-6" />,
       image: {
         src: assignImg,
         alt: "Story assignment",
@@ -144,7 +144,7 @@ export const Features = () => {
       name: "Workflow Automation",
       description:
         "Automate routine tasks with custom workflows. Set up smart notifications and reminders.",
-      icon: <OKRIcon className="h-6" />,
+      icon: <WorkflowIcon className="h-6" />,
       image: {
         src: automateImg,
         alt: "Workflow automation",
@@ -155,7 +155,7 @@ export const Features = () => {
       name: "Progress Tracking",
       description:
         "Track progress with burndown charts and velocity metrics. Make data-driven decisions.",
-      icon: <SprintsIcon className="h-6" />,
+      icon: <DashboardIcon className="h-6" />,
       image: {
         src: progressImg,
         alt: "Progress tracking",
