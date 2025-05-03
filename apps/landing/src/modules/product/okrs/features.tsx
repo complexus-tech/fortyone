@@ -23,8 +23,8 @@ const Intro = () => (
           as="h2"
           className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
         >
-          Powerful OKR management{" "}
-          <span className="text-stroke-white">tools</span>
+          Strategic goal-setting{" "}
+          <span className="text-stroke-white">framework</span>
         </Text>
       </motion.div>
       <motion.div

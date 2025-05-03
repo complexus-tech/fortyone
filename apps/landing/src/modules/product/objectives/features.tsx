@@ -23,8 +23,8 @@ const Intro = () => (
           as="h2"
           className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
         >
-          Powerful objective management{" "}
-          <span className="text-stroke-white">tools</span>
+          Define and achieve{" "}
+          <span className="text-stroke-white">strategic goals</span>
         </Text>
       </motion.div>
       <motion.div

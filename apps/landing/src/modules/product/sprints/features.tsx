@@ -23,8 +23,8 @@ const Intro = () => (
           as="h2"
           className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
         >
-          Powerful sprint management{" "}
-          <span className="text-stroke-white">tools</span>
+          Accelerate delivery with{" "}
+          <span className="text-stroke-white">agile sprints</span>
         </Text>
       </motion.div>
       <motion.div
