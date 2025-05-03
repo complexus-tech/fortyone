@@ -174,7 +174,7 @@ export const Navigation = () => {
                       Product
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content>
-                      <Box className="grid w-max grid-cols-2 gap-2 p-2">
+                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-3 pr-2.5">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
                             <MenuItem

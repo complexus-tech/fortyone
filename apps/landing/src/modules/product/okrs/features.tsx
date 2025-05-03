@@ -9,7 +9,7 @@ import { Container } from "@/components/ui";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="flex flex-col py-12 md:flex-row md:items-end md:py-32">
+    <Box className="flex flex-col py-12 md:flex-row md:items-end md:justify-between md:py-32">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -21,9 +21,9 @@ const Intro = () => (
       >
         <Text
           as="h2"
-          className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
+          className="text-5xl font-semibold md:max-w-2xl md:text-7xl"
         >
-          Strategic goal-setting{" "}
+          Strategic goal setting{" "}
           <span className="text-stroke-white">framework</span>
         </Text>
       </motion.div>
