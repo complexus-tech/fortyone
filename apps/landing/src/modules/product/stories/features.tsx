@@ -5,7 +5,13 @@ import { StoryIcon, ObjectiveIcon, OKRIcon, SprintsIcon } from "icons";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { cn } from "lib";
+import type { StaticImageData } from "next/image";
+import Image from "next/image";
 import { Container } from "@/components/ui";
+import createImg from "../../../../public/product/stories/create.png";
+import assignImg from "../../../../public/product/stories/assign.png";
+import automateImg from "../../../../public/product/stories/automate.png";
+import progressImg from "../../../../public/product/stories/progress.png";
 
 const Intro = () => (
   <Box className="relative">
@@ -53,10 +59,12 @@ const Card = ({
   name,
   icon,
   description,
+  image: { src, alt },
 }: {
   name: string;
   icon: ReactNode;
   description: string;
+  image: { src: StaticImageData; alt: string };
 }) => {
   const [isActive, setIsActive] = useState(false);
   return (
@@ -83,6 +91,22 @@ const Card = ({
           {icon}
         </Flex>
         <Box>
+          <Box className="relative">
+            <Image
+              alt={alt}
+              className={cn(
+                "pointer-events-none mx-auto block aspect-square rounded-xl object-contain",
+                {
+                  "aspect-[6/4]": name.toLowerCase().includes("keyboard"),
+                  "object-bottom": name.toLowerCase().includes("analytics"),
+                },
+              )}
+              placeholder="blur"
+              quality={100}
+              src={src}
+            />
+            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-dark/90 via-50% to-dark" />
+          </Box>
           <Text className="mt-4 opacity-80">{description}</Text>
         </Box>
         <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
@@ -99,6 +123,10 @@ export const Features = () => {
       description:
         "Create stories with clear criteria. Organize them into sprints and objectives for better flow.",
       icon: <StoryIcon className="h-6" />,
+      image: {
+        src: createImg,
+        alt: "Story Creation",
+      },
     },
     {
       id: 2,
@@ -106,6 +134,10 @@ export const Features = () => {
       description:
         "Assign stories to team members and track progress in real-time. Keep everyone aligned.",
       icon: <ObjectiveIcon className="h-6" />,
+      image: {
+        src: assignImg,
+        alt: "Story assignment",
+      },
     },
     {
       id: 3,
@@ -113,6 +145,10 @@ export const Features = () => {
       description:
         "Automate routine tasks with custom workflows. Set up smart notifications and reminders.",
       icon: <OKRIcon className="h-6" />,
+      image: {
+        src: automateImg,
+        alt: "Workflow automation",
+      },
     },
     {
       id: 4,
@@ -120,6 +156,10 @@ export const Features = () => {
       description:
         "Track progress with burndown charts and velocity metrics. Make data-driven decisions.",
       icon: <SprintsIcon className="h-6" />,
+      image: {
+        src: progressImg,
+        alt: "Progress tracking",
+      },
     },
   ];
 
