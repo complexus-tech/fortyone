@@ -50,17 +50,6 @@ export const metadata: Metadata = {
     description:
       "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
   alternates: {
     canonical: "/",
   },
