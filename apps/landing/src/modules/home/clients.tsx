@@ -28,12 +28,12 @@ export const SampleClients = () => {
   return (
     <Container className="relative md:mt-16">
       <img
-        alt=""
+        alt="Arrow pointing to the right"
         className="absolute left-0 top-0 hidden h-20 w-auto -rotate-12 opacity-20 invert md:-bottom-28 md:inline-block"
         src="/svgs/xx.svg"
       />
       <img
-        alt=""
+        alt="Arrow pointing to the left"
         className="absolute right-0 top-0 hidden h-24 w-auto -rotate-[40deg] opacity-20 invert md:-bottom-28 md:inline-block"
         src="/svgs/arrow-2.svg"
       />
