@@ -52,6 +52,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/",
+    languages: {
+      "en-US": "https://www.complexus.app",
+      "x-default": "https://www.complexus.app",
+    },
   },
 };
 
