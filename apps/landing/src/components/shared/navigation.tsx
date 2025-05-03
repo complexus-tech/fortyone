@@ -52,7 +52,7 @@ export const Navigation = () => {
   const { data: session } = useSession();
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
-    { title: "Integrations", href: "/integrations" },
+    // { title: "Integrations", href: "/integrations" },
     { title: "Contact", href: "/contact" },
   ];
 

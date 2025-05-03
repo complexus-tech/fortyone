@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
-import objectivesImg from "../../../../public/images/product/kanban.webp";
+import objectivesImg from "../../../../public/images/product/objective.webp";
 
 export const Hero = () => {
   const { data: session } = useSession();

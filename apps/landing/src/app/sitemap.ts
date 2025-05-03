@@ -9,7 +9,25 @@ const routes: MetadataRoute.Sitemap = [
     priority: 1,
   },
   {
-    url: "https://www.complexus.tech/product",
+    url: "https://www.complexus.tech/product/stories",
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
+    url: "https://www.complexus.tech/product/objectives",
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
+    url: "https://www.complexus.tech/product/okrs",
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
+    url: "https://www.complexus.tech/product/sprints",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
