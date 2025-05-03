@@ -64,7 +64,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl">
+            <Text
+              className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl"
+              fontWeight="normal"
+            >
               Transform your project management with our intuitive story-based
               workflow system. Create, track, and manage tasks efficiently while
               keeping your team aligned and productive.
