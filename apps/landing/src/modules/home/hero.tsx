@@ -62,9 +62,12 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[600px] text-lg opacity-80 md:text-2xl">
-              Track, align, and achieve team objectives with powerful insights
-              that keep everyone moving forward.
+            <Text
+              className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl"
+              fontWeight="normal"
+            >
+              Connect strategy with execution. Align engineering, product, and
+              business goals to track and achieve team objectives.
             </Text>
           </motion.span>
 

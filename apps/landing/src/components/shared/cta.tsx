@@ -44,9 +44,10 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[600px] md:mt-16"
+              className="mt-4 max-w-[650px] md:mt-16"
               color="muted"
-              fontSize="xl"
+              fontSize="2xl"
+              fontWeight="normal"
             >
               Bring your objectives, OKRs, and sprints together. The modern way
               to align teams and deliver meaningful outcomes.

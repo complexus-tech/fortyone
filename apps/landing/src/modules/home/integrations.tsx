@@ -81,12 +81,11 @@ export const Integrations = () => {
             <Text
               className="my-10 max-w-[600px]"
               color="muted"
-              fontSize="xl"
+              fontSize="2xl"
               fontWeight="normal"
             >
-              Complexus seamlessly integrates with popular tools like GitHub,
-              Intercom, Figma, Notion, Slack, and Gitlab, empowering teams to
-              achieve their objectives with greater efficiency.
+              Connect your entire stack with GitHub, GitLab, Figma, Slack, and
+              more. Keep development, design, and communication unified.
             </Text>
           </motion.div>
           <motion.div
