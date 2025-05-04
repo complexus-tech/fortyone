@@ -28,9 +28,9 @@ export const Hero = () => {
           as="h1"
           className="mx-auto my-8 max-w-2xl pb-2 text-5xl font-semibold md:text-7xl"
         >
-          How Can We Help You{" "}
+          How can we help you{" "}
           <Text as="span" className="text-stroke-white">
-            Today?
+            today?
           </Text>
         </Text>
       </motion.div>
