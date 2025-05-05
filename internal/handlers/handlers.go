@@ -161,6 +161,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
 	// register the notifications routes

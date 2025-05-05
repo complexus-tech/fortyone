@@ -144,6 +144,14 @@ func InvalidateWorkspaceKeys(workspaceID uuid.UUID) []string {
 	}
 }
 
+// InvalidateKeyResultKeys invalidates all cache keys related to key results and their parent objectives
+func InvalidateKeyResultKeys(workspaceID uuid.UUID) []string {
+	return []string{
+		fmt.Sprintf(KeyResultsListKey+"*", workspaceID.String(), "*"), // Wildcard to match all key results lists for any objective
+		fmt.Sprintf(ObjectiveListKey+"*", workspaceID.String()),       // Objective lists may show key result data
+	}
+}
+
 // InvalidateUserWorkspacesKeys invalidates cache keys for a user's workspace list
 func InvalidateUserWorkspacesKeys(userID uuid.UUID) []string {
 	return []string{

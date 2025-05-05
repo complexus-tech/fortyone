@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -23,13 +25,33 @@ var (
 type Handlers struct {
 	keyResults *keyresults.Service
 	log        *logger.Logger
+	cache      *cache.Service
 }
 
 // New creates a new key results handlers
-func New(keyResults *keyresults.Service, log *logger.Logger) *Handlers {
+func New(keyResults *keyresults.Service, cache *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		keyResults: keyResults,
 		log:        log,
+		cache:      cache,
+	}
+}
+
+// invalidateCache invalidates all relevant caches for a key result operation
+func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
+	cacheKeys := cache.InvalidateKeyResultKeys(workspaceID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+			}
+		} else {
+			// Handle exact key deletion
+			if err := h.cache.Delete(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
+			}
+		}
 	}
 }
 
@@ -38,6 +60,13 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceID := web.Params(r, "workspaceId")
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
 	}
 
 	var nkr AppNewKeyResult
@@ -55,6 +84,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
+
+	// Invalidate cache after successful creation
+	h.invalidateCache(ctx, wsID)
 
 	web.Respond(ctx, w, toAppKeyResult(kr), http.StatusCreated)
 	return nil
@@ -114,6 +146,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
+	// Invalidate cache after successful update
+	h.invalidateCache(ctx, wsID)
+
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
@@ -143,6 +178,9 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
+
+	// Invalidate cache after successful deletion
+	h.invalidateCache(ctx, wsID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
