@@ -13,6 +13,15 @@ module.exports = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/product",
+        destination: "/product/stories",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
