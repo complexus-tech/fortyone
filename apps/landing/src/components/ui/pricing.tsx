@@ -160,7 +160,7 @@ const Package = ({
 
 export const Pricing = () => {
   const pathname = usePathname();
-  const [billing, setBilling] = useState<Billing>("annual");
+  const [billing, setBilling] = useState<Billing>("monthly");
 
   return (
     <Box className="relative">
