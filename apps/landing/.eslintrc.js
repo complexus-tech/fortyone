@@ -14,5 +14,6 @@ module.exports = {
     "@typescript-eslint/no-unnecessary-condition": "off",
     "@typescript-eslint/no-misused-promises": "off",
     "@next/next/no-img-element": "off",
+    "react/no-array-index-key": "off",
   },
 };

@@ -12,6 +12,6 @@
     },
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../projects/src/app/posthog-server.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../projects/src/app/posthog-server.ts", "next.config.mjs"],
   "exclude": ["node_modules"]
 }

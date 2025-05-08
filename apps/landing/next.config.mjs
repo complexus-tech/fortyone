@@ -1,6 +1,14 @@
-module.exports = {
+import createMDX from "@next/mdx";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["ui", "icons"],
+  transpilePackages: ["ui", "icons", "next-mdx-remote"],
+  pageExtensions: ["tsx", "ts", "mdx"],
+  experimental: {
+    mdxRs: true,
+    viewTransition: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -39,3 +47,7 @@ module.exports = {
     ];
   },
 };
+
+const withMDX = createMDX({});
+
+export default withMDX(nextConfig);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Box } from "ui";
-import { ComingSoon } from "@/components/ui";
+import Link from "next/link";
+import Image from "next/image";
+import { getAllPosts } from "@/lib/posts";
 import { BlogJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
@@ -30,12 +31,29 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
+  const posts = getAllPosts();
   return (
     <>
       <BlogJsonLd />
-      <Box className="pt-16 md:pt-0">
-        <ComingSoon />
-      </Box>
+      <h1>Blog</h1>
+      <ul>
+        {posts.map(
+          ({ slug, metadata: { title, description, featuredImage } }) => (
+            <li key={slug}>
+              <Link href={`/blog/${slug}`}>
+                <Image
+                  alt={title}
+                  height={250}
+                  src={featuredImage}
+                  width={400}
+                />
+                <h2>{title}</h2>
+                <p>{description}</p>
+              </Link>
+            </li>
+          ),
+        )}
+      </ul>
     </>
   );
 }
