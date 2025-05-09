@@ -4,48 +4,9 @@ import Link from "next/link";
 import { highlight } from "sugar-high";
 import type { MDXComponents } from "mdx/types";
 
-type HeadingProps = ComponentPropsWithoutRef<"h1">;
-type ParagraphProps = ComponentPropsWithoutRef<"p">;
-type ListProps = ComponentPropsWithoutRef<"ul">;
-type ListItemProps = ComponentPropsWithoutRef<"li">;
 type AnchorProps = ComponentPropsWithoutRef<"a">;
-type BlockquoteProps = ComponentPropsWithoutRef<"blockquote">;
 
 export const mdxComponents: MDXComponents = {
-  h1: ({ children, ...props }: HeadingProps) => (
-    <h1 className="mb-0 pt-12 text-6xl font-medium" {...props}>
-      {children}
-    </h1>
-  ),
-  h2: ({ children, ...props }: HeadingProps) => (
-    <h2 className="mb-3 mt-8 font-medium" {...props}>
-      {children}
-    </h2>
-  ),
-  h3: ({ children, ...props }: HeadingProps) => (
-    <h3 className="mb-3 mt-8 font-medium" {...props}>
-      {children}
-    </h3>
-  ),
-  h4: ({ children, ...props }: HeadingProps) => (
-    <h4 className="font-medium" {...props}>
-      {children}
-    </h4>
-  ),
-  p: (props: ParagraphProps) => <p className="leading-snug" {...props} />,
-  ol: (props: ListProps) => (
-    <ol className="list-decimal space-y-2 pl-5" {...props} />
-  ),
-  ul: (props: ListProps) => (
-    <ul className="list-disc space-y-1 pl-5" {...props} />
-  ),
-  li: (props: ListItemProps) => <li className="pl-1" {...props} />,
-  em: (props: ComponentPropsWithoutRef<"em">) => (
-    <em className="font-medium" {...props} />
-  ),
-  strong: (props: ComponentPropsWithoutRef<"strong">) => (
-    <strong className="font-medium" {...props} />
-  ),
   a: ({ href, children, ...props }: AnchorProps) => {
     const className = "text-primary";
     if (href?.startsWith("/")) {
@@ -98,10 +59,8 @@ export const mdxComponents: MDXComponents = {
       </tbody>
     </table>
   ),
-  blockquote: (props: BlockquoteProps) => (
-    <blockquote
-      className="border-l-3 ml-[0.075em] border-gray-300 pl-4"
-      {...props}
-    />
-  ),
+};
+
+export const useMDXComponents = () => {
+  return mdxComponents;
 };

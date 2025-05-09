@@ -2,7 +2,7 @@
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
 import { cva } from "cva";
 import { cn } from "lib";
-import { ArrowDownIcon } from "icons";
+import { ArrowDown2Icon, ArrowDownIcon } from "icons";
 import { forwardRef, ElementRef, ComponentPropsWithoutRef } from "react";
 
 const NavigationMenuViewport = forwardRef<
@@ -82,7 +82,8 @@ const NavigationMenuTrigger = forwardRef<
     {...props}
   >
     {children}
-    <ArrowDownIcon
+    <ArrowDown2Icon
+      strokeWidth={3}
       className="h-3 w-auto ease-linear transition duration-200 group-data-[state=open]:rotate-180"
       aria-hidden="true"
     />

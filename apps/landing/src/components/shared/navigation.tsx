@@ -7,9 +7,9 @@ import {
   ObjectiveIcon,
   StoryIcon,
   OKRIcon,
-  HelpIcon,
   TwitterIcon,
   LinkedinIcon,
+  BlogIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,7 +33,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-lg p-2 hover:bg-dark-200"
+    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-dark-200"
     href={href}
   >
     {icon}
@@ -52,7 +52,6 @@ export const Navigation = () => {
   const { data: session } = useSession();
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
-    // { title: "Integrations", href: "/integrations" },
     { title: "Contact", href: "/contact" },
   ];
 
@@ -99,15 +98,17 @@ export const Navigation = () => {
     {
       id: 1,
       href: "/blog",
-      name: "Documentation",
-      description: "Learn how to use complexus app",
-      icon: <HelpIcon className="relative h-5 w-auto shrink-0 md:top-1" />,
+      name: "Blog",
+      description: "Our latest articles and updates",
+      icon: (
+        <BlogIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
+      ),
     },
     {
       id: 2,
-      href: "/blog",
-      name: "Blog",
-      description: "Our latest articles and updates",
+      href: "https://docs.complexus.app",
+      name: "Documentation",
+      description: "Learn how to use complexus app",
       icon: (
         <DocsIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
       ),
@@ -157,7 +158,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.6rem] items-center justify-between rounded-full border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/80 md:gap-6">
+          <Box className="z-10 flex h-[3.75rem] items-center justify-between gap-12 rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
@@ -165,7 +166,7 @@ export const Navigation = () => {
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
+                        "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
                         {
                           "bg-dark-200": pathname?.startsWith("/product"),
                         },
@@ -194,7 +195,7 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-3xl px-3 py-1.5 transition hover:bg-dark-200",
+                    "rounded-lg px-3 py-1.5 transition hover:bg-dark-200",
                     {
                       "bg-dark-200": pathname === href,
                     },
@@ -210,7 +211,7 @@ export const Navigation = () => {
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
+                        "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
                         {
                           "bg-dark-200": pathname?.startsWith("/resources"),
                         },
@@ -241,7 +242,7 @@ export const Navigation = () => {
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-3xl py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
+                        "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
                       )}
                     >
                       Company
@@ -273,7 +274,7 @@ export const Navigation = () => {
                 })}
                 color="tertiary"
                 href={getNextUrl()}
-                rounded="full"
+                rounded="lg"
               >
                 {session ? (
                   <>
@@ -293,8 +294,9 @@ export const Navigation = () => {
               {!session && (
                 <Button
                   className="px-5 text-[0.93rem]"
+                  color="white"
                   href="/signup"
-                  rounded="full"
+                  rounded="lg"
                 >
                   Sign up
                 </Button>

@@ -32,6 +32,7 @@ export const buttonVariants = cva(
           "dark:border-dark-50 dark:bg-dark-100/70 bg-gray-50 border-gray-100 focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
+        white: "text-black dark:text-dark border-white bg-white ring-white",
       },
       size: {
         xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",

@@ -1,8 +1,13 @@
 import { MDXRemote } from "next-mdx-remote/rsc";
-import Image from "next/image";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { BlurImage, Box, Flex, Text } from "ui";
+import { ArrowLeft2Icon } from "icons";
+import Link from "next/link";
 import { getPostBySlug, getAllPosts } from "@/lib/posts";
 import { mdxComponents } from "@/mdx-components";
+import { CallToAction } from "@/components/shared";
+import { Container } from "@/components/ui";
 
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
@@ -31,17 +36,54 @@ export default async function BlogPost({
 }) {
   const { slug } = await params;
   const post = getPostBySlug(slug);
+  if (!post) {
+    return notFound();
+  }
 
   return (
-    <article>
-      <h1>{post?.metadata.title}</h1>
-      <Image
-        alt={post?.metadata.title}
-        height={450}
-        src={post?.metadata.featuredImage}
-        width={800}
-      />
-      <MDXRemote components={mdxComponents} source={post?.content} />
-    </article>
+    <>
+      <Container
+        as="article"
+        className="grid grid-cols-[1fr_4fr_1fr] items-start gap-10 py-32"
+      >
+        <Link className="flex items-center gap-1 pt-4" href="/blog">
+          <ArrowLeft2Icon className="dark:text-white" />
+          <span className="opacity-80">All blogs</span>
+        </Link>
+        <Box className="mx-auto max-w-3xl">
+          <Flex gap={2}>
+            <Text className="opacity-80">
+              {new Date(post.metadata.date as string).toLocaleDateString(
+                "en-US",
+                {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                },
+              )}
+            </Text>
+            &bull;
+            <Text className="opacity-80">6 min read</Text>
+          </Flex>
+          <Text
+            as="h1"
+            className="mb-8 mt-4 text-5xl font-semibold leading-tight"
+          >
+            {post.metadata.title}
+          </Text>
+          <Box className="mb-6 rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-2">
+            <BlurImage
+              alt={post.metadata.title}
+              className="aspect-[16/8] rounded-[0.6rem]"
+              src={post.metadata.featuredImage}
+            />
+          </Box>
+          <Box className="prose prose-lg prose-stone max-w-full leading-7 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200">
+            <MDXRemote components={mdxComponents} source={post.content} />
+          </Box>
+        </Box>
+      </Container>
+      <CallToAction />
+    </>
   );
 }

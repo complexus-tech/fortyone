@@ -158,12 +158,12 @@ const Package = ({
   );
 };
 
-export const Pricing = () => {
+export const Pricing = ({ className }: { className?: string }) => {
   const pathname = usePathname();
   const [billing, setBilling] = useState<Billing>("monthly");
 
   return (
-    <Box className="relative">
+    <Box className={cn("relative", className)}>
       <Container className="md:pt-16">
         <Flex
           align="center"
