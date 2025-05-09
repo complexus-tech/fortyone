@@ -20,7 +20,7 @@ export default function Page() {
       <Transform />
       <Integrations />
       <Testimonials />
-      <Pricing className="pb-16 md:pb-28" />
+      <Pricing className="pb-16 md:pb-28 md:pt-0" />
       <CallToAction />
     </>
   );

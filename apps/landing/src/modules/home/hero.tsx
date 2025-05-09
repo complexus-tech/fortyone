@@ -7,6 +7,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
   const { data: session } = useSession();
+
   return (
     <Box>
       <Container className="pt-12 md:pt-16">

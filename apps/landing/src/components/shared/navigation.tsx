@@ -20,6 +20,7 @@ import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
 import { MenuButton } from "./menu-button";
+import { RequestDemo } from "./request-demo";
 
 const MenuItem = ({
   name,
@@ -53,6 +54,7 @@ export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
+    // { title: "About", href: "/about" },
   ];
 
   const product = [
@@ -158,7 +160,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.75rem] items-center justify-between gap-12 rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
+          <Box className="z-10 flex h-[3.75rem] items-center justify-between gap-6 rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
@@ -267,6 +269,7 @@ export const Navigation = () => {
               </NavigationMenu>
             </Flex>
             <Flex align="center" className="ml-6 gap-3">
+              <RequestDemo />
               <Button
                 className={cn("hidden px-5 text-[0.93rem] md:flex", {
                   "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:focus:bg-white":

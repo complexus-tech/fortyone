@@ -163,8 +163,8 @@ export const Pricing = ({ className }: { className?: string }) => {
   const [billing, setBilling] = useState<Billing>("monthly");
 
   return (
-    <Box className={cn("relative", className)}>
-      <Container className="md:pt-16">
+    <Box className={cn("relative md:pt-16", className)}>
+      <Container>
         <Flex
           align="center"
           className={cn("my-12 text-center", {
