@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
-import { instrumentSans, satoshi } from "@/styles/fonts";
+import { instrumentSans } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
 import { JsonLd } from "@/components/shared";
@@ -66,7 +66,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <JsonLd />
       </head>
-      <body className={cn(satoshi.variable, instrumentSans.variable)}>
+      <body className={cn(instrumentSans.variable)}>
         <SessionProvider>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>

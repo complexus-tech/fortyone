@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BlurImage, Box, Flex, Text, buttonVariants } from "ui";
+import {
+  BlurImage,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Text,
+  buttonVariants,
+} from "ui";
 import { cn } from "lib";
+import { ArrowRight2Icon } from "icons";
 import { getAllPosts } from "@/lib/posts";
 import { Container } from "@/components/ui";
 import { CallToAction } from "@/components/shared";
@@ -59,10 +68,10 @@ export default function Page() {
           className="group grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]"
           href={`/blog/${firstPost.slug}`}
         >
-          <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
+          <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-2">
             <BlurImage
               alt={firstPost.metadata.title}
-              className="aspect-video rounded-[0.6rem]"
+              className="aspect-[16/9.5] rounded-[0.6rem]"
               src={firstPost.metadata.featuredImage}
             />
           </Box>
@@ -81,20 +90,28 @@ export default function Page() {
             </Text>
             <Text
               as="h3"
-              className="mb-4 text-4xl font-semibold group-hover:underline"
+              className="mb-3 text-4xl font-semibold group-hover:underline"
             >
               {firstPost.metadata.title}
             </Text>
-            <Text className="line-clamp-4 text-lg" color="muted">
+            <Text className="mb-4 line-clamp-4 text-lg" color="muted">
               {firstPost.metadata.description}
             </Text>
+            <Button
+              className="gap-1"
+              color="white"
+              rightIcon={<ArrowRight2Icon className="dark:text-dark" />}
+            >
+              Read More
+            </Button>
           </Box>
         </Link>
-        <Box className="mb-20 mt-12 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
+        <Divider className="my-10" />
+        <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
           {remainingPosts.map(
             ({ slug, metadata: { title, description, featuredImage } }) => (
               <Link className="group" href={`/blog/${slug}`} key={slug}>
-                <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1">
+                <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
                   <BlurImage
                     alt={title}
                     className="aspect-video rounded-[0.6rem]"
