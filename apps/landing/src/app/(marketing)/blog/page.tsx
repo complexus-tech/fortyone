@@ -46,7 +46,7 @@ export default function Page() {
             className={cn(
               buttonVariants({
                 color: "tertiary",
-                rounded: "full",
+                rounded: "lg",
                 size: "sm",
               }),
               "px-3 text-sm md:text-base",
@@ -55,7 +55,10 @@ export default function Page() {
             Blog
           </span>
         </Flex>
-        <Box className="group mb-12 grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]">
+        <Link
+          className="group grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]"
+          href={`/blog/${firstPost.slug}`}
+        >
           <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
             <BlurImage
               alt={firstPost.metadata.title}
@@ -86,8 +89,8 @@ export default function Page() {
               {firstPost.metadata.description}
             </Text>
           </Box>
-        </Box>
-        <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
+        </Link>
+        <Box className="mb-20 mt-12 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
           {remainingPosts.map(
             ({ slug, metadata: { title, description, featuredImage } }) => (
               <Link className="group" href={`/blog/${slug}`} key={slug}>

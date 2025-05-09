@@ -66,8 +66,9 @@ export const CallToAction = () => {
             >
               <Button
                 className="md:px-4"
+                color="white"
                 href="/signup"
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 Manage Projects Free
@@ -89,7 +90,7 @@ export const CallToAction = () => {
                 onClick={async () => {
                   await signInWithGoogle();
                 }}
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 {session ? "Continue with Google" : "Sign up with Google"}

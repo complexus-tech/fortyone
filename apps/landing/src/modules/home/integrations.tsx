@@ -97,7 +97,13 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button color="tertiary" href="/product" rounded="full" size="lg">
+            <Button
+              className="font-semibold"
+              color="white"
+              href="/product"
+              rounded="lg"
+              size="lg"
+            >
               View all integrations
             </Button>
           </motion.div>

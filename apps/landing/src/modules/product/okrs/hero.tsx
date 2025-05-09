@@ -30,7 +30,7 @@ export const Hero = () => {
             <Button
               className="cursor-text px-3 text-sm md:text-base"
               color="tertiary"
-              rounded="full"
+              rounded="lg"
               size="sm"
             >
               OKRs
@@ -89,8 +89,9 @@ export const Hero = () => {
             >
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
+                color="white"
                 href="/signup"
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 <span className="hidden md:inline">Set Goals in Minutes</span>
@@ -113,7 +114,7 @@ export const Hero = () => {
                 onClick={async () => {
                   await signInWithGoogle();
                 }}
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 {session ? "Continue with Google" : "Sign up with Google"}

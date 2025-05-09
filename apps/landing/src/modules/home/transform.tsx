@@ -37,7 +37,7 @@ export const Transform = () => {
                 className="mx-auto px-3 text-sm md:mx-0 md:text-base"
                 color="tertiary"
                 href="/signup"
-                rounded="full"
+                rounded="lg"
                 size="sm"
               >
                 Ready to get started?
@@ -73,8 +73,9 @@ export const Transform = () => {
               >
                 <Button
                   className="px-3 font-semibold md:px-5"
+                  color="white"
                   href="/signup"
-                  rounded="full"
+                  rounded="lg"
                   size="lg"
                 >
                   Get Started Free
@@ -96,7 +97,7 @@ export const Transform = () => {
                   onClick={async () => {
                     await signInWithGoogle();
                   }}
-                  rounded="full"
+                  rounded="lg"
                   size="lg"
                 >
                   {session ? "Continue with Google" : "Sign up with Google"}

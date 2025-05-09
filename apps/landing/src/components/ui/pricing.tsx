@@ -176,7 +176,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             <Button
               className="cursor-text px-3 text-sm md:text-base"
               color="tertiary"
-              rounded="full"
+              rounded="lg"
               size="sm"
             >
               Pricing

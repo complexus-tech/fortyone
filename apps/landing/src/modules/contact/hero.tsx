@@ -9,7 +9,7 @@ export const Hero = () => {
       <Button
         className="mx-auto cursor-text px-3 text-sm md:text-base"
         color="tertiary"
-        rounded="full"
+        rounded="lg"
         size="sm"
       >
         Get in Touch

@@ -29,7 +29,7 @@ export const Hero = () => {
               className="px-3 text-sm md:text-base"
               color="tertiary"
               href="/signup"
-              rounded="full"
+              rounded="lg"
               size="sm"
             >
               Get Started For Free
@@ -87,8 +87,9 @@ export const Hero = () => {
             >
               <Button
                 className="px-3 font-semibold md:pl-5 md:pr-4"
+                color="white"
                 href="/signup"
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 <span className="hidden md:inline">Manage in 3 minutes</span>
@@ -111,7 +112,7 @@ export const Hero = () => {
                 onClick={async () => {
                   await signInWithGoogle();
                 }}
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
                 {session ? "Continue with Google" : "Sign up with Google"}
