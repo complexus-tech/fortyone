@@ -78,7 +78,7 @@ export default async function BlogPost({
               src={post.metadata.featuredImage}
             />
           </Box>
-          <Box className="prose prose-lg prose-stone max-w-full leading-7 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200">
+          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200">
             <MDXRemote components={mdxComponents} source={post.content} />
           </Box>
         </Box>

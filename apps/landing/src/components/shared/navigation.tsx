@@ -2,14 +2,12 @@
 
 import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
 import {
-  DocsIcon,
   SprintsIcon,
   ObjectiveIcon,
   StoryIcon,
   OKRIcon,
   TwitterIcon,
   LinkedinIcon,
-  BlogIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -54,7 +52,8 @@ export const Navigation = () => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
-    // { title: "About", href: "/about" },
+    { title: "Blog", href: "/blog" },
+    { title: "Docs", href: "https://docs.complexus.app" },
   ];
 
   const product = [
@@ -92,27 +91,6 @@ export const Navigation = () => {
       description: "Iterate and Deliver",
       icon: (
         <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
-      ),
-    },
-  ];
-
-  const resources = [
-    {
-      id: 1,
-      href: "/blog",
-      name: "Blog",
-      description: "Our latest articles and updates",
-      icon: (
-        <BlogIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
-      ),
-    },
-    {
-      id: 2,
-      href: "https://docs.complexus.app",
-      name: "Documentation",
-      description: "Learn how to use complexus app",
-      icon: (
-        <DocsIcon className="relative h-[1.15rem] w-auto shrink-0 md:top-1" />
       ),
     },
   ];
@@ -160,7 +138,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.75rem] items-center justify-between gap-6 rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
+          <Box className="z-10 flex h-[3.75rem] items-center justify-between rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
             <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-secondary dark:text-gray-50 md:h-[1.6rem]" />
             <Flex align="center" className="hidden md:flex" gap={2}>
               <NavigationMenu>
@@ -173,11 +151,12 @@ export const Navigation = () => {
                           "bg-dark-200": pathname?.startsWith("/product"),
                         },
                       )}
+                      hideArrow
                     >
                       Product
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content>
-                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-2.5 pr-2.5">
+                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-3 pr-2.5">
                         {product.map(
                           ({ id, name, description, icon, href }) => (
                             <MenuItem
@@ -214,38 +193,8 @@ export const Navigation = () => {
                     <NavigationMenu.Trigger
                       className={cn(
                         "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
-                        {
-                          "bg-dark-200": pathname?.startsWith("/resources"),
-                        },
                       )}
-                    >
-                      Resources
-                    </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="relative pb-1">
-                      <Box className="grid w-max grid-cols-1 gap-2 p-2">
-                        {resources.map(
-                          ({ id, name, description, icon, href }) => (
-                            <MenuItem
-                              description={description}
-                              href={href}
-                              icon={icon}
-                              key={id}
-                              name={name}
-                            />
-                          ),
-                        )}
-                      </Box>
-                    </NavigationMenu.Content>
-                  </NavigationMenu.Item>
-                </NavigationMenu.List>
-              </NavigationMenu>
-              <NavigationMenu align="end">
-                <NavigationMenu.List>
-                  <NavigationMenu.Item>
-                    <NavigationMenu.Trigger
-                      className={cn(
-                        "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-dark-200",
-                      )}
+                      hideArrow
                     >
                       Company
                     </NavigationMenu.Trigger>
@@ -291,7 +240,7 @@ export const Navigation = () => {
                     )}
                   </>
                 ) : (
-                  "Sign in"
+                  "Login"
                 )}
               </Button>
               {!session && (
@@ -334,7 +283,6 @@ export const Navigation = () => {
                         </Menu.Item>
                       ))}
                     </Menu.Group>
-
                     <Menu.Separator />
                     <Menu.Group className="px-4 py-2.5">
                       <Text color="muted">Features</Text>

@@ -2,7 +2,7 @@
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
 import { cva } from "cva";
 import { cn } from "lib";
-import { ArrowDown2Icon, ArrowDownIcon } from "icons";
+import { ArrowDown2Icon } from "icons";
 import { forwardRef, ElementRef, ComponentPropsWithoutRef } from "react";
 
 const NavigationMenuViewport = forwardRef<
@@ -74,19 +74,23 @@ const navigationMenuTriggerStyle = cva(
 
 const NavigationMenuTrigger = forwardRef<
   ElementRef<typeof NavigationMenuPrimitive.Trigger>,
-  ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger> & {
+    hideArrow?: boolean;
+  }
+>(({ className, children, hideArrow, ...props }, ref) => (
   <NavigationMenuPrimitive.Trigger
     ref={ref}
     className={cn(navigationMenuTriggerStyle(), "group", className)}
     {...props}
   >
     {children}
-    <ArrowDown2Icon
-      strokeWidth={3}
-      className="h-3 w-auto ease-linear transition duration-200 group-data-[state=open]:rotate-180"
-      aria-hidden="true"
-    />
+    {!hideArrow && (
+      <ArrowDown2Icon
+        strokeWidth={3}
+        className="h-3 w-auto ease-linear transition duration-200 group-data-[state=open]:rotate-180"
+        aria-hidden="true"
+      />
+    )}
   </NavigationMenuPrimitive.Trigger>
 ));
 NavigationMenuTrigger.displayName = NavigationMenuPrimitive.Trigger.displayName;

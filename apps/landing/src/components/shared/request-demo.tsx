@@ -22,7 +22,7 @@ export const RequestDemo = () => {
       data-cal-namespace="30min"
       type="button"
     >
-      Request a demo
+      Book a demo
     </button>
   );
 };

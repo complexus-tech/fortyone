@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  BlurImage,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Text,
-  buttonVariants,
-} from "ui";
-import { cn } from "lib";
+import { BlurImage, Box, Button, Divider, Text } from "ui";
 import { ArrowRight2Icon } from "icons";
 import { getAllPosts } from "@/lib/posts";
 import { Container } from "@/components/ui";
@@ -48,22 +39,8 @@ export default function Page() {
   const remainingPosts = posts.slice(1);
   return (
     <>
-      <Container className="max-w-7xl pt-12 md:pt-16">
+      <Container className="mt-16 max-w-7xl pt-12 md:pt-16">
         <BlogJsonLd />
-        <Flex className="mb-8 mt-16 text-center" justify="center">
-          <span
-            className={cn(
-              buttonVariants({
-                color: "tertiary",
-                rounded: "lg",
-                size: "sm",
-              }),
-              "px-3 text-sm md:text-base",
-            )}
-          >
-            Blog
-          </span>
-        </Flex>
         <Link
           className="group grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]"
           href={`/blog/${firstPost.slug}`}
