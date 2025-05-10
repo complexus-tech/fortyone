@@ -135,7 +135,7 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 top-2 z-10 w-screen md:top-6">
+    <Box className="fixed left-0 top-2 z-10 w-screen md:top-4">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
           <Box className="z-10 flex h-[3.75rem] items-center justify-between rounded-2xl border border-gray-100/60 bg-white/60 px-2.5 backdrop-blur-lg dark:border-dark-100/50 dark:bg-dark-300/80">
