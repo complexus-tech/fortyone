@@ -387,7 +387,7 @@ func (r *repo) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
 		)
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id": teamID,
 		"user_id": userID,
 	}
@@ -431,7 +431,7 @@ func (r *repo) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, works
 			AND t.workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"user_id":      userID,
 		"workspace_id": workspaceID,
@@ -539,7 +539,7 @@ func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid
 		)
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id": teamID,
 		"user_id": userID,
 	}

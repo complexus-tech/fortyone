@@ -4,10 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/redis/go-redis/v9"
+)
+
+const (
+	eventStreamKey = "events-stream"
 )
 
 type Publisher struct {
@@ -30,8 +35,21 @@ func (p *Publisher) Publish(ctx context.Context, event events.Event) error {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	if err := p.redis.Publish(ctx, string(event.Type), payload).Err(); err != nil {
-		return fmt.Errorf("failed to publish event: %w", err)
+	// Add to stream
+	fields := map[string]interface{}{
+		"type":      string(event.Type),
+		"payload":   string(payload),
+		"timestamp": event.Timestamp.Format(time.RFC3339),
+		"actor_id":  event.ActorID.String(),
+	}
+
+	_, err = p.redis.XAdd(ctx, &redis.XAddArgs{
+		Stream: eventStreamKey,
+		Values: fields,
+	}).Result()
+
+	if err != nil {
+		return fmt.Errorf("failed to add event to stream: %w", err)
 	}
 
 	return nil

@@ -69,14 +69,23 @@ func (s *Service) Delete(ctx context.Context, key string) error {
 }
 
 // DeleteByPattern removes values from cache matching a pattern
+// It uses SCAN to iterate over keys, which is safer for production than KEYS.
 func (s *Service) DeleteByPattern(ctx context.Context, pattern string) error {
-	keys, err := s.redis.Keys(ctx, pattern).Result()
-	if err != nil {
+	var allKeys []string
+	iter := s.redis.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		allKeys = append(allKeys, iter.Val())
+	}
+	if err := iter.Err(); err != nil {
+		s.log.Error(ctx, "failed to scan keys for pattern", "pattern", pattern, "error", err)
 		return err
 	}
 
-	if len(keys) > 0 {
-		return s.redis.Del(ctx, keys...).Err()
+	if len(allKeys) > 0 {
+		if err := s.redis.Del(ctx, allKeys...).Err(); err != nil {
+			s.log.Error(ctx, "failed to delete keys by pattern", "pattern", pattern, "keys_count", len(allKeys), "error", err)
+			return err
+		}
 	}
 
 	return nil

@@ -227,12 +227,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
 	usersService := users.New(log, usersrepo.New(log, db))
 	statusesService := states.New(log, statesrepo.New(log, db))
-	// Create consumer
+
+	// Create consumer using Redis Streams
 	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService, usersService, statusesService)
 
 	// Start consumer in a goroutine
 	go func() {
-		log.Info(ctx, "starting redis pub/sub consumer")
+		log.Info(ctx, "starting redis stream consumer")
 		if err := consumer.Start(ctx); err != nil {
 			log.Error(ctx, "failed to start consumer", "error", err)
 		}

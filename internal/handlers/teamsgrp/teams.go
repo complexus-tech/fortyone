@@ -287,7 +287,6 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-
 	// Invalidate the my-stories cache for this user
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String())
 	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {

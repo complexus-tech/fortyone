@@ -44,7 +44,7 @@ type Config struct {
 
 // New returns a new HTTP handler that defines all the API routes.
 func New(cfg Config, ra RouteAdder) http.Handler {
-	app := web.New(cfg.Shutdown, cfg.Tracer, mid.Logger(cfg.Log), mid.Gzip(cfg.Log))
+	app := web.New(cfg.Shutdown, cfg.Tracer, mid.Logger(cfg.Log))
 	app.StrictSlash(false)
 
 	ra.BuildAllRoutes(app, cfg)
