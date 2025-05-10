@@ -50,11 +50,11 @@ export default async function RootLayout({
           dark: "#0d0e10",
           light: "#ffffff",
         }}
-        color={{
-          lightness: 65,
-          saturation: 77,
-          hue: 0,
-        }}
+        // color={{
+        //   lightness: 65,
+        //   saturation: 77,
+        //   hue: 0,
+        // }}
 
         // ... Your additional head options
       >
