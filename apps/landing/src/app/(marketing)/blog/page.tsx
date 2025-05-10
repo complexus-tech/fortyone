@@ -87,9 +87,17 @@ export default function Page() {
         <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
           {[
             ...remainingPosts,
+            firstPost,
             ...remainingPosts,
+            firstPost,
             ...remainingPosts,
+            firstPost,
             ...remainingPosts,
+            firstPost,
+            ...remainingPosts,
+            firstPost,
+            ...remainingPosts,
+            firstPost,
             ...remainingPosts,
           ].map(({ slug, metadata: { title, featuredImage, date } }, idx) => (
             <Link
