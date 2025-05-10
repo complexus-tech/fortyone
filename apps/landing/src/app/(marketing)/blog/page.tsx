@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BlurImage, Box, Button, Divider, Text } from "ui";
+import { BlurImage, Box, Button, Divider, Flex, Text } from "ui";
 import { ArrowRight2Icon } from "icons";
 import { getAllPosts } from "@/lib/posts";
 import { Container } from "@/components/ui";
@@ -71,7 +71,7 @@ export default function Page() {
             >
               {firstPost.metadata.title}
             </Text>
-            <Text className="mb-4 line-clamp-4 text-lg" color="muted">
+            <Text className="mb-4 line-clamp-4 text-lg opacity-80">
               {firstPost.metadata.description}
             </Text>
             <Button
@@ -85,28 +85,45 @@ export default function Page() {
         </Link>
         <Divider className="my-10" />
         <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
-          {remainingPosts.map(
-            ({ slug, metadata: { title, description, featuredImage } }) => (
-              <Link className="group" href={`/blog/${slug}`} key={slug}>
-                <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
-                  <BlurImage
-                    alt={title}
-                    className="aspect-video rounded-[0.6rem]"
-                    src={featuredImage}
-                  />
-                </Box>
-                <Text
-                  as="h3"
-                  className="mb-3 mt-5 text-2xl group-hover:underline"
-                >
-                  {title}
+          {[
+            ...remainingPosts,
+            ...remainingPosts,
+            ...remainingPosts,
+            ...remainingPosts,
+            ...remainingPosts,
+          ].map(({ slug, metadata: { title, featuredImage, date } }, idx) => (
+            <Link
+              className="group"
+              href={`/blog/${slug}`}
+              key={`${slug}-${idx}`}
+            >
+              <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
+                <BlurImage
+                  alt={title}
+                  className="aspect-video rounded-[0.6rem]"
+                  src={featuredImage}
+                />
+              </Box>
+              <Flex align="center" className="my-3" justify="between">
+                <Text className="opacity-80">
+                  {date
+                    ? new Date(date).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : null}
                 </Text>
-                <Text className="line-clamp-4" color="muted">
-                  {description}
-                </Text>
-              </Link>
-            ),
-          )}
+                <Text className="opacity-80">6 min read</Text>
+              </Flex>
+              <Text
+                as="h3"
+                className="text-2xl font-semibold group-hover:underline"
+              >
+                {title}
+              </Text>
+            </Link>
+          ))}
         </Box>
       </Container>
       <CallToAction />
