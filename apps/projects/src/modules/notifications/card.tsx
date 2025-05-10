@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
-import { Dot, RowWrapper } from "@/components/ui";
+import { Dot } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
@@ -57,10 +57,13 @@ export const NotificationCard = ({
             href={`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`}
             prefetch={index <= 10 ? true : null}
           >
-            <RowWrapper
-              className={cn("block cursor-pointer px-5 md:px-4", {
-                "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
-              })}
+            <Box
+              className={cn(
+                "block cursor-pointer border-b-[0.5px] border-gray-100 px-5 py-[0.655rem] dark:border-dark-100/80 md:px-4",
+                {
+                  "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
+                },
+              )}
             >
               <Flex align="center" className="mb-2" gap={2} justify="between">
                 <Text className="line-clamp-1 flex-1 font-medium">
@@ -91,7 +94,7 @@ export const NotificationCard = ({
                   <ObjectiveIcon className="shrink-0" />
                 )}
               </Flex>
-            </RowWrapper>
+            </Box>
           </Link>
         </Box>
       </ContextMenu.Trigger>
