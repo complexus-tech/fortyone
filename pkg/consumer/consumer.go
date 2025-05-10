@@ -633,7 +633,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 
 	// Prepare template data
 	templateData := map[string]any{
-		"VerificationURL": fmt.Sprintf("%s/verify-email?token=%s", c.websiteURL, payload.Token),
+		"VerificationURL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
 		"ExpiresIn":       "10 minutes", // Consider making this dynamic or aligning with actual token expiry
 		"Subject":         subject,
 		"Email":           payload.Email, // Make email available to the template
@@ -701,7 +701,7 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 	// Send templated email
 	templateEmail := email.TemplatedEmail{
 		To:       []string{payload.Email},
-		Template: "invites/invitation", // Assuming template exists at templates/invites/invitation.html
+		Template: "invites/invitation",
 		Data:     templateData,
 	}
 
