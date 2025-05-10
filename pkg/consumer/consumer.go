@@ -385,16 +385,145 @@ func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event events.Even
 }
 
 func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Event) error {
-	// Implement email verification handling
+	var payload events.EmailVerificationPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event.Payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal EmailVerificationPayload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email, "token_type", payload.TokenType)
+
+	subject := "Verify your email for Complexus"
+	if payload.TokenType == string(users.TokenTypeLogin) {
+		subject = "Confirm your Complexus Login"
+	} else if payload.TokenType == string(users.TokenTypeRegistration) {
+		subject = "Complete your Complexus Registration"
+	}
+
+	// Prepare template data
+	templateData := map[string]any{
+		"VerificationURL": fmt.Sprintf("%s/verify-email?token=%s", c.websiteURL, payload.Token),
+		"ExpiresIn":       "10 minutes", // Consider making this dynamic or aligning with actual token expiry
+		"Subject":         subject,
+		"Email":           payload.Email, // Make email available to the template
+		"TokenType":       payload.TokenType,
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "auth/verification", // Assuming template exists at templates/auth/verification.html
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send verification email", "error", err, "recipient", payload.Email)
+		return fmt.Errorf("failed to send verification email: %w", err)
+	}
+	c.log.Info(ctx, "Verification email sent", "recipient", payload.Email)
 	return nil
 }
 
 func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event) error {
-	// Implement invitation email handling
+	var payload events.InvitationEmailPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event.Payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal InvitationEmailPayload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleInvitationEmail",
+		"email", payload.Email,
+		"workspace_id", payload.WorkspaceID,
+		"inviter_name", payload.InviterName)
+
+	// Calculate expiration duration
+	expiresIn := "soon" // Default fallback
+	if !payload.ExpiresAt.IsZero() {
+		duration := time.Until(payload.ExpiresAt)
+		if duration > 0 {
+			hours := int(duration.Hours())
+			if hours > 0 {
+				expiresIn = fmt.Sprintf("%d hour(s)", hours)
+			} else {
+				minutes := int(duration.Minutes())
+				expiresIn = fmt.Sprintf("%d minute(s)", minutes)
+			}
+		} else {
+			expiresIn = "now expired"
+		}
+	}
+
+	// Prepare template data
+	templateData := map[string]any{
+		"InviterName":     payload.InviterName,
+		"WorkspaceName":   payload.WorkspaceName,
+		"Role":            payload.Role,
+		"ExpiresAt":       payload.ExpiresAt,
+		"ExpiresIn":       expiresIn,
+		"Subject":         fmt.Sprintf("%s has invited you to join %s on Complexus", payload.InviterName, payload.WorkspaceName),
+		"VerificationURL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "invites/invitation", // Assuming template exists at templates/invites/invitation.html
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send invitation email", "error", err, "recipient", payload.Email)
+		return fmt.Errorf("failed to send invitation email: %w", err)
+	}
+	c.log.Info(ctx, "Invitation email sent", "recipient", payload.Email)
 	return nil
 }
 
 func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Event) error {
-	// Implement invitation accepted handling
+	var payload events.InvitationAcceptedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event.Payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal InvitationAcceptedPayload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleInvitationAccepted",
+		"inviter_email", payload.InviterEmail,
+		"invitee_email", payload.InviteeEmail,
+		"workspace_id", payload.WorkspaceID)
+
+	// Prepare template data for notifying the inviter
+	templateData := map[string]any{
+		"InviterName":   payload.InviterName,
+		"InviteeName":   payload.InviteeName,
+		"InviteeEmail":  payload.InviteeEmail,
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceSlug": payload.WorkspaceSlug,
+		"Role":          payload.Role,
+		"Subject":       fmt.Sprintf("%s (%s) has accepted your invitation to %s", payload.InviteeName, payload.InviteeEmail, payload.WorkspaceName),
+		"LoginURL":      fmt.Sprintf("%s/login", c.websiteURL), // Or a direct link to the workspace: fmt.Sprintf("%s/workspaces/%s", c.websiteURL, payload.WorkspaceSlug)
+		"WorkspaceURL":  fmt.Sprintf("%s/workspaces/%s", c.websiteURL, payload.WorkspaceSlug),
+	}
+
+	// Send templated email
+	templateEmail := email.TemplatedEmail{
+		To:       []string{payload.InviterEmail}, // Send to the person who made the invitation
+		Template: "invites/acceptance",           // Assuming template exists at templates/invites/acceptance.html
+		Data:     templateData,
+	}
+
+	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
+		c.log.Error(ctx, "failed to send invitation accepted email", "error", err, "recipient", payload.InviterEmail)
+		return fmt.Errorf("failed to send invitation accepted email: %w", err)
+	}
+	c.log.Info(ctx, "Invitation accepted email sent", "recipient", payload.InviterEmail)
 	return nil
 }

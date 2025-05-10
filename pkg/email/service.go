@@ -48,8 +48,8 @@ type Attachment struct {
 
 type TemplatedEmail struct {
 	To       []string
-	Template string      // Path to template relative to BaseDir
-	Data     interface{} // Data to be passed to the template
+	Template string // Path to template relative to BaseDir
+	Data     any    // Data to be passed to the template
 	ReplyTo  string
 }
 
@@ -175,7 +175,7 @@ func (s *service) SendEmail(ctx context.Context, email Email) error {
 
 func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail TemplatedEmail) error {
 	// Add default data that all templates need
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Year":        time.Now().Year(),
 		"LogoURL":     "https://complexus.app/images/logo.png",
 		"CompanyName": "Complexus",
@@ -184,7 +184,7 @@ func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail Template
 	// If templateEmail.Data is provided, merge it with our default data
 	if templateEmail.Data != nil {
 		switch d := templateEmail.Data.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			for k, v := range d {
 				data[k] = v
 			}
