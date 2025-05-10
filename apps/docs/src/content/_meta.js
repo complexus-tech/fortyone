@@ -20,7 +20,7 @@ const meta = {
       },
       contact: {
         title: "Contact Us",
-        href: "mailto:joseph@complexus.app",
+        href: "mailto:info@complexus.app",
       },
     },
   },
