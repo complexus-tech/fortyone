@@ -10,6 +10,7 @@ import { MainLogo } from "@/components/logo";
 import { InternetIcon, SupportIcon } from "icons";
 
 const font = InstrumentSans({
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
   weight: ["500", "600", "700"],
