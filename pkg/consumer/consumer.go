@@ -350,37 +350,265 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	// In a production implementation, you would use these variables
-	// to create notifications, send emails, etc.
-	_, err = c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
+	var title string
+
+	story, err := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
 	if err != nil {
-		c.log.Error(ctx, "failed to get story", "error", err)
+		c.log.Error(ctx, "failed to get story", "error", err, "story_id", payload.StoryID)
+		title = "Story updated" // Fallback title
+	} else {
+		title = story.Title
 	}
 
-	// Get actor's user info
-	_, err = c.users.GetUser(ctx, event.ActorID)
+	// Get actor's username
+	var actorUsername string
+	actorUser, err := c.users.GetUser(ctx, event.ActorID)
 	if err != nil {
-		c.log.Error(ctx, "failed to get actor user", "error", err)
+		c.log.Error(ctx, "failed to get actor user", "error", err, "actor_id", event.ActorID)
+		actorUsername = "Someone" // Fallback if we can't get the username
+	} else {
+		actorUsername = actorUser.Username
 	}
 
-	// Implement the rest of your story updated handler
-	// This would typically include creating notifications, sending emails, etc.
+	// Handle assignee change - if payload.Updates contains an assignee_id key
+	if newAssigneeValue, isAssigneeUpdated := payload.Updates["assignee_id"]; isAssigneeUpdated {
+		var newAssigneeID *uuid.UUID
+
+		// Convert the assignee value to UUID if possible
+		if newAssigneeValueStr, ok := newAssigneeValue.(string); ok {
+			if parsedUUID, err := uuid.Parse(newAssigneeValueStr); err == nil {
+				newAssigneeID = &parsedUUID
+			}
+		} else if newAssigneeUUID, ok := newAssigneeValue.(uuid.UUID); ok {
+			newAssigneeID = &newAssigneeUUID
+		}
+
+		// Create notification for original assignee if exists
+		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
+			// Skip if the original assignee and new assignee are the same
+			if newAssigneeID == nil || *payload.AssigneeID != *newAssigneeID {
+				originalAssigneeDescription := c.generateStoryUpdateDescription(
+					actorUsername,
+					payload.Updates,
+					*payload.AssigneeID,
+					payload.AssigneeID, // old assignee
+					newAssigneeID,      // new assignee
+					payload.WorkspaceID,
+				)
+
+				notification := notifications.CoreNewNotification{
+					RecipientID: *payload.AssigneeID,
+					WorkspaceID: payload.WorkspaceID,
+					Type:        "story_update",
+					EntityType:  "story",
+					EntityID:    payload.StoryID,
+					ActorID:     event.ActorID,
+					Description: originalAssigneeDescription,
+					Title:       title,
+				}
+
+				if _, err := c.notifications.Create(ctx, notification); err != nil {
+					c.log.Error(ctx, "failed to create notification for original assignee", "error", err)
+				}
+			}
+		}
+
+		// Create notification for new assignee if exists
+		if newAssigneeID != nil && *newAssigneeID != event.ActorID {
+			// Skip if the original assignee and new assignee are the same
+			if payload.AssigneeID == nil || *payload.AssigneeID != *newAssigneeID {
+				newAssigneeDescription := c.generateStoryUpdateDescription(
+					actorUsername,
+					payload.Updates,
+					*newAssigneeID,
+					payload.AssigneeID, // old assignee
+					newAssigneeID,      // new assignee
+					payload.WorkspaceID,
+				)
+
+				notification := notifications.CoreNewNotification{
+					RecipientID: *newAssigneeID,
+					WorkspaceID: payload.WorkspaceID,
+					Type:        "story_update",
+					EntityType:  "story",
+					EntityID:    payload.StoryID,
+					ActorID:     event.ActorID,
+					Description: newAssigneeDescription,
+					Title:       title,
+				}
+
+				if _, err := c.notifications.Create(ctx, notification); err != nil {
+					c.log.Error(ctx, "failed to create notification for new assignee", "error", err)
+				}
+			}
+		}
+	} else {
+		// Handle other updates (status, priority, due date)
+		// Only create notification if there's an assignee to notify and they're not the actor
+		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
+			description := c.generateStoryUpdateDescription(
+				actorUsername,
+				payload.Updates,
+				*payload.AssigneeID,
+				payload.AssigneeID, // old assignee (current assignee in this context)
+				nil,                // no new assignee for non-assignee updates
+				payload.WorkspaceID,
+			)
+
+			notification := notifications.CoreNewNotification{
+				RecipientID: *payload.AssigneeID,
+				WorkspaceID: payload.WorkspaceID,
+				Type:        "story_update",
+				EntityType:  "story",
+				EntityID:    payload.StoryID,
+				ActorID:     event.ActorID,
+				Description: description,
+				Title:       title,
+			}
+
+			if _, err := c.notifications.Create(ctx, notification); err != nil {
+				c.log.Error(ctx, "failed to create notification for story update", "error", err)
+			}
+		}
+	}
 
 	return nil
 }
 
 func (c *Consumer) handleStoryCommented(ctx context.Context, event events.Event) error {
-	// Implement story comment handling
+	c.log.Info(ctx, "consumer.handleStoryCommented", "event_type", event.Type)
+	var payload events.StoryCommentedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// TODO: Get story details to determine who to notify (e.g., story assignee, other participants)
+	// For now, we'll just notify the parent comment author if it exists and is not the current actor.
+	// This assumes payload.ParentID is the *author* of the parent comment.
+	// A more robust solution would be to fetch the parent comment and get its author's ID.
+
+	if payload.ParentID != nil && *payload.ParentID != event.ActorID {
+		// Attempt to get parent comment author. This is a placeholder logic.
+		// In a real scenario, you would fetch the parent comment and then its author.
+		// For now, we directly use ParentID as RecipientID, assuming it's a user ID.
+		parentCommentAuthorID := *payload.ParentID
+
+		// Fetch story for context if needed for the title or other details
+		story, err := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
+		var storyTitle string
+		if err != nil {
+			c.log.Error(ctx, "failed to get story for comment notification", "error", err, "story_id", payload.StoryID)
+			storyTitle = "New reply to your comment"
+		} else {
+			storyTitle = fmt.Sprintf("Reply in: %s", story.Title)
+		}
+
+		actor, err := c.users.GetUser(ctx, event.ActorID)
+		actorName := "Someone"
+		if err == nil {
+			actorName = actor.Username
+		}
+
+		notification := notifications.CoreNewNotification{
+			RecipientID: parentCommentAuthorID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "story_comment_reply", // More specific type
+			EntityType:  "comment",
+			EntityID:    payload.CommentID, // The ID of the new comment (the reply)
+			ActorID:     event.ActorID,
+			Title:       storyTitle,
+			Description: fmt.Sprintf("%s replied to your comment", actorName),
+		}
+
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification for comment reply", "error", err)
+			// Decide if this error should be returned or just logged.
+			// For now, logging and continuing.
+		}
+	}
+
+	// Additional notifications could be added here, e.g., for story followers or @mentions
+
 	return nil
 }
 
 func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Event) error {
-	// Implement objective update handling
+	var payload events.ObjectiveUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleObjectiveUpdated", "objective_id", payload.ObjectiveID, "lead_id", payload.LeadID)
+
+	// Create notification for the lead if assigned/changed and is not the actor
+	if payload.LeadID != nil && *payload.LeadID != event.ActorID {
+		objective, err := c.objectives.Get(ctx, payload.ObjectiveID, payload.WorkspaceID)
+		objectiveName := "an objective"
+		if err == nil {
+			objectiveName = objective.Name
+		} else {
+			c.log.Error(ctx, "failed to get objective details for notification", "error", err, "objective_id", payload.ObjectiveID)
+		}
+
+		actor, err := c.users.GetUser(ctx, event.ActorID)
+		actorName := "Someone"
+		if err == nil {
+			actorName = actor.Username
+		}
+
+		notification := notifications.CoreNewNotification{
+			RecipientID: *payload.LeadID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "objective_assigned", // Or objective_lead_changed
+			EntityType:  "objective",
+			EntityID:    payload.ObjectiveID,
+			ActorID:     event.ActorID,
+			Title:       fmt.Sprintf("You are now leading: %s", objectiveName),
+			Description: fmt.Sprintf("%s assigned you as lead for the objective: %s", actorName, objectiveName),
+		}
+
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification for objective lead assignment", "error", err)
+			// Decide if this error should be returned or just logged.
+		}
+	}
+
+	// TODO: Handle other objective updates if necessary (e.g., status change, due date)
+
 	return nil
 }
 
 func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event events.Event) error {
-	// Implement key result update handling
+	var payload events.KeyResultUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleKeyResultUpdated", "key_result_id", payload.KeyResultID)
+
+	// TODO: Get objective lead to notify them of key result updates.
+	// This requires fetching the Objective to which this Key Result belongs, then fetching the Lead of that Objective.
+	// Example steps:
+	// 1. Fetch KeyResult: kr, err := c.keyResults.Get(ctx, payload.KeyResultID, payload.WorkspaceID) (assuming a keyResults service)
+	// 2. Fetch Objective: obj, err := c.objectives.Get(ctx, kr.ObjectiveID, payload.WorkspaceID)
+	// 3. If obj.LeadID is not nil and not the event.ActorID, then create and send notification.
+
+	c.log.Warn(ctx, "Key result update notification not yet implemented", "key_result_id", payload.KeyResultID)
 	return nil
 }
 
