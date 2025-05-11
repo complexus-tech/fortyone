@@ -124,6 +124,7 @@ export const useSubscriptionFeatures = () => {
 
   return {
     tier: effectiveTier,
+    billingInterval: subscription?.billingInterval,
     displayTier: subscriptionTierName,
     isOnTrial,
     trialDaysRemaining,

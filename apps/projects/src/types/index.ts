@@ -132,6 +132,8 @@ export type Subscription = {
     | "paused";
   tier: "free" | "pro" | "business" | "enterprise";
   seatCount: number;
+  billingInterval: "month" | "year" | "week" | "day";
+  billingEndsAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
