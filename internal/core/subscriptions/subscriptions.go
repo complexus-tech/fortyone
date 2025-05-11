@@ -199,8 +199,8 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UU
 	return sessionStripe.URL, nil
 }
 
-// AddSeatToSubscription increases the seat count and triggers immediate prorated billing
-func (s *Service) AddSeatToSubscription(ctx context.Context, workspaceID uuid.UUID) error {
+// UpdateSubscriptionSeats increases the seat count and triggers immediate prorated billing
+func (s *Service) UpdateSubscriptionSeats(ctx context.Context, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "Attempting to add seat to subscription", "workspace_id", workspaceID)
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.AddSeatToSubscription")
 	defer span.End()

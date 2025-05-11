@@ -7,9 +7,12 @@ import (
 	"regexp"
 	"strings"
 
+	"slices"
+
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
@@ -28,19 +31,34 @@ var (
 )
 
 type Handlers struct {
-	workspaces *workspaces.Service
-	cache      *cache.Service
-	log        *logger.Logger
-	secretKey  string
+	workspaces    *workspaces.Service
+	cache         *cache.Service
+	log           *logger.Logger
+	secretKey     string
+	subscriptions *subscriptions.Service
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, cacheService *cache.Service, log *logger.Logger, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, cacheService *cache.Service, log *logger.Logger, secretKey string) *Handlers {
 	return &Handlers{
-		workspaces: workspaces,
-		cache:      cacheService,
-		log:        log,
-		secretKey:  secretKey,
+		workspaces:    workspaces,
+		cache:         cacheService,
+		log:           log,
+		secretKey:     secretKey,
+		subscriptions: subscriptions,
+	}
+}
+
+func (h *Handlers) updateSubscriptionSeats(ctx context.Context, workspaceID uuid.UUID) {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateSubscriptionSeats")
+	defer span.End()
+	err := h.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID)
+	if err != nil {
+		h.log.Error(ctx, "failed to update subscription seats", "workspaceId", workspaceID.String(), "error", err)
+		span.AddEvent("failed to update subscription seats", trace.WithAttributes(
+			attribute.String("workspaceId", workspaceID.String()),
+			attribute.String("error", err.Error()),
+		))
 	}
 }
 
@@ -93,10 +111,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Add validation for restricted slugs
-	for _, restrictedSlug := range restrictedSlugs {
-		if input.Slug == restrictedSlug {
-			return web.RespondError(ctx, w, errors.New("this workspace slug is restricted"), http.StatusBadRequest)
-		}
+	if slices.Contains(restrictedSlugs, input.Slug) {
+		return web.RespondError(ctx, w, errors.New("this workspace slug is restricted"), http.StatusBadRequest)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -257,6 +273,9 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// update subscription seats
+	h.updateSubscriptionSeats(ctx, workspaceID)
+
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
@@ -329,6 +348,9 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	// update subscription seats
+	h.updateSubscriptionSeats(ctx, workspaceID)
+
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
@@ -376,6 +398,9 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
+
+	// update subscription seats
+	h.updateSubscriptionSeats(ctx, workspaceID)
 
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)

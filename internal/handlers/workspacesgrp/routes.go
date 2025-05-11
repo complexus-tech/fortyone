@@ -4,12 +4,14 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/subscriptionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
@@ -36,12 +38,13 @@ func Routes(cfg Config, app *web.App) {
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
+	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), nil, "")
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService)
 
 	h := New(workspacesService, teamsService,
-		storiesService, statusesService, usersService, objectivestatusService,
+		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,
 		cfg.Cache, cfg.Log, cfg.SecretKey)
 
 	app.Get("/workspaces/{workspaceId}", h.Get, auth)

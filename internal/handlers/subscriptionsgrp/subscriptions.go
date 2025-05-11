@@ -107,7 +107,7 @@ func (h *Handlers) AddSeat(ctx context.Context, w http.ResponseWriter, r *http.R
 		return nil
 	}
 
-	err = h.subscriptions.AddSeatToSubscription(ctx, workspaceId)
+	err = h.subscriptions.UpdateSubscriptionSeats(ctx, workspaceId)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
