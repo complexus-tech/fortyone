@@ -129,11 +129,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the workspaces routes
 	workspacesgrp.Routes(workspacesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Publisher: cfg.Publisher,
-		Cache:     cfg.Cache,
+		DB:            cfg.DB,
+		Log:           cfg.Log,
+		SecretKey:     cfg.SecretKey,
+		Publisher:     cfg.Publisher,
+		Cache:         cfg.Cache,
+		StripeClient:  cfg.StripeClient,
+		WebhookSecret: cfg.WebhookSecret,
 	}, app)
 
 	// register the comments routes

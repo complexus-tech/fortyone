@@ -27,6 +27,7 @@ var (
 	ErrFailedToCreateSubscription   = errors.New("failed to create subscription")
 	ErrAlreadySubscribedToThisPlan  = errors.New("already subscribed to this specific plan")
 	ErrNoActiveSubscriptionToChange = errors.New("no active subscription found to change")
+	ErrSubscriptionAlreadyCanceled  = errors.New("subscription is already canceled or pending cancellation")
 )
 
 // Repository defines methods for accessing subscription data
@@ -382,29 +383,6 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 	return nil
 }
 
-// mapStripeStatus maps a Stripe subscription status to the internal SubscriptionStatus type.
-// This function is pure and does not log or require context.
-func (s *Service) mapStripeStatus(status stripe.SubscriptionStatus) SubscriptionStatus {
-	switch status {
-	case stripe.SubscriptionStatusActive:
-		return StatusActive
-	case stripe.SubscriptionStatusTrialing:
-		return StatusTrialing
-	case stripe.SubscriptionStatusPastDue:
-		return StatusPastDue
-	case stripe.SubscriptionStatusCanceled:
-		return StatusCanceled
-	case stripe.SubscriptionStatusUnpaid:
-		return StatusUnpaid
-	case stripe.SubscriptionStatusIncomplete:
-		return StatusIncomplete
-	case stripe.SubscriptionStatusIncompleteExpired:
-		return StatusIncompleteExpired
-	default:
-		return StatusActive
-	}
-}
-
 // ChangeSubscriptionPlan allows a workspace to change their active subscription to a new plan or billing frequency.
 func (s *Service) ChangeSubscriptionPlan(ctx context.Context, workspaceID uuid.UUID, newLookupKey string) error {
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.ChangeSubscriptionPlan")
@@ -493,5 +471,70 @@ func (s *Service) ChangeSubscriptionPlan(ctx context.Context, workspaceID uuid.U
 	}
 
 	s.log.Info(ctx, "Successfully initiated subscription plan change via Stripe API. Webhooks will update DB.", "workspace_id", workspaceID, "stripe_subscription_id", currentStripeSubscriptionID, "new_price_id", newPriceID)
+	return nil
+}
+
+// CancelSubscription schedules an active subscription to be canceled at the end of the current billing period.
+func (s *Service) CancelSubscription(ctx context.Context, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.CancelSubscription")
+	defer span.End()
+	s.log.Info(ctx, "Attempting to cancel subscription at period end", "workspace_id", workspaceID)
+
+	// 1. Get current subscription from DB
+	currentInternalSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		if errors.Is(err, ErrSubscriptionNotFound) {
+			s.log.Warn(ctx, "No subscription found for workspace to cancel", "workspace_id", workspaceID)
+			return ErrNoActiveSubscriptionToChange // No active subscription to cancel
+		}
+		s.log.Error(ctx, "Failed to get current subscription from DB for cancellation", "workspace_id", workspaceID, "error", err)
+		span.RecordError(err)
+		return fmt.Errorf("failed to retrieve current subscription: %w", err)
+	}
+
+	// 2. Check if StripeSubscriptionID exists
+	if currentInternalSub.StripeSubscriptionID == nil || *currentInternalSub.StripeSubscriptionID == "" {
+		s.log.Warn(ctx, "Subscription found but has no StripeSubscriptionID, cannot cancel via Stripe", "workspace_id", workspaceID)
+		// This case might indicate an orphaned local record or a subscription not fully set up.
+		// Depending on business logic, you might want a different error or handling here.
+		return ErrNoActiveSubscriptionToChange // Or a more specific error like ErrInvalidSubscription
+	}
+	currentStripeSubscriptionID := *currentInternalSub.StripeSubscriptionID
+
+	// 3. Fetch the subscription directly from Stripe to get its current state, especially CancelAtPeriodEnd
+	stripeSub, stripeErr := s.stripeClient.Subscriptions.Get(currentStripeSubscriptionID, nil)
+	if stripeErr != nil {
+		s.log.Error(ctx, "Failed to fetch current Stripe subscription for cancellation check", "stripe_subscription_id", currentStripeSubscriptionID, "workspace_id", workspaceID, "error", stripeErr)
+		span.RecordError(stripeErr)
+		return fmt.Errorf("%w: fetching stripe subscription: %v", ErrStripeOperationFailed, stripeErr)
+	}
+
+	// 4. Check if already set to cancel at period end in Stripe
+	if stripeSub.CancelAtPeriodEnd {
+		s.log.Info(ctx, "Subscription is already scheduled for cancellation at period end in Stripe", "workspace_id", workspaceID, "stripe_subscription_id", stripeSub.ID)
+		return ErrSubscriptionAlreadyCanceled
+	}
+
+	// 5. (Optional) Check internal status for consistency, though Stripe is the source of truth for CancelAtPeriodEnd
+	if currentInternalSub.SubscriptionStatus != nil && *currentInternalSub.SubscriptionStatus == StatusCanceled {
+		s.log.Warn(ctx, "Internal DB status is Canceled, but Stripe subscription is not (CancelAtPeriodEnd is false). This might indicate a sync issue.", "workspace_id", workspaceID, "stripe_subscription_id", currentStripeSubscriptionID)
+		// Proceeding based on Stripe's state (CancelAtPeriodEnd=false)
+	}
+
+	// 6. Construct SubscriptionParams to set CancelAtPeriodEnd to true
+	params := &stripe.SubscriptionParams{
+		CancelAtPeriodEnd: stripe.Bool(true),
+	}
+
+	s.log.Info(ctx, "Requesting Stripe to cancel subscription at period end", "workspace_id", workspaceID, "stripe_subscription_id", currentStripeSubscriptionID)
+	updatedStripeSub, err := s.stripeClient.Subscriptions.Update(currentStripeSubscriptionID, params)
+	if err != nil {
+		s.log.Error(ctx, "Stripe API failed to update subscription for cancellation (CancelAtPeriodEnd=true)", "stripe_subscription_id", currentStripeSubscriptionID, "workspace_id", workspaceID, "error", err)
+		span.RecordError(err)
+		return fmt.Errorf("%w: updating subscription for cancellation: %v", ErrStripeOperationFailed, err)
+	}
+
+	s.log.Info(ctx, "Successfully requested Stripe to cancel subscription at period end.", "workspace_id", workspaceID, "stripe_subscription_id", updatedStripeSub.ID, "cancels_at", time.Unix(updatedStripeSub.CancelAt, 0).Format(time.RFC3339))
+	// The local database will be updated via the customer.subscription.updated webhook.
 	return nil
 }

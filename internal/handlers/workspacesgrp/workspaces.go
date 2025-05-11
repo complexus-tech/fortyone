@@ -234,6 +234,12 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
+	err = h.subscriptions.CancelSubscription(ctx, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		h.log.Error(ctx, "failed to cancel subscription", "workspaceId", workspaceID.String(), "error", err)
+	}
+
 	if err := h.workspaces.Delete(ctx, workspaceID); err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)

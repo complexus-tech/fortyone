@@ -21,14 +21,17 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
+	"github.com/stripe/stripe-go/v82/client"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Publisher *publisher.Publisher
-	Cache     *cache.Service
+	DB            *sqlx.DB
+	Log           *logger.Logger
+	SecretKey     string
+	Publisher     *publisher.Publisher
+	Cache         *cache.Service
+	StripeClient  *client.API
+	WebhookSecret string
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -38,7 +41,7 @@ func Routes(cfg Config, app *web.App) {
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
-	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), nil, "")
+	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.WebhookSecret)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService)
