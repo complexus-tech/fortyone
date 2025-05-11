@@ -72,6 +72,7 @@ export const HeroCards = () => {
                 alt={card.title}
                 className="relative rounded border dark:border-dark-100 md:rounded-[0.8rem]"
                 placeholder="blur"
+                priority
                 src={card.image.src}
               />
             </SwiperSlide>
