@@ -37,10 +37,10 @@ type Repository interface {
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
-	UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
+	UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier, billingInterval *BillingInterval, billingEndsAt *time.Time) error
 	UpdateSubscriptionStatus(ctx context.Context, subID string, status SubscriptionStatus) error
 	CreateInvoice(ctx context.Context, invoice CoreSubscriptionInvoice) error
-	CreateSubscription(ctx context.Context, workspaceID uuid.UUID, stripeCustomerID string, subscriptionID string, subscriptionItemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier) error
+	CreateSubscription(ctx context.Context, workspaceID uuid.UUID, stripeCustomerID string, subscriptionID string, subscriptionItemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier, billingInterval *BillingInterval, billingEndsAt *time.Time) error
 	HasEventBeenProcessed(ctx context.Context, eventID string) (bool, error)
 	MarkEventAsProcessed(ctx context.Context, eventID string, eventType string, workspaceID *uuid.UUID, payload []byte) error
 }

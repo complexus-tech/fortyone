@@ -31,7 +31,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	// Fetch full subscription to get item ID
 	subParams := &stripe.SubscriptionParams{
 		Expand: []*string{
-			stripe.String("items"),
+			stripe.String("items.data.price"),
 			stripe.String("customer"),
 		},
 	}
@@ -39,16 +39,30 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	if err != nil {
 		return fmt.Errorf("failed to fetch subscription: %w", err)
 	}
+	if stripeSub == nil {
+		return fmt.Errorf("fetched subscription is nil for session %s", session.ID)
+	}
 
 	// Get subscription item details
 	var subItemID string
 	var seatCount int
 	var tier SubscriptionTier = TierFree
+	var billingEndsAt *time.Time
+	var billingInterval *BillingInterval
+
 	if len(stripeSub.Items.Data) > 0 {
 		item := stripeSub.Items.Data[0]
 		subItemID = item.ID
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
+		if item.Price != nil && item.Price.Recurring != nil {
+			intervalStr := BillingInterval(item.Price.Recurring.Interval)
+			billingInterval = &intervalStr
+		}
+		if int64(int64(item.CurrentPeriodEnd)) > 0 {
+			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
+			billingEndsAt = &tempBillingEndsAt
+		}
 	} else {
 		return fmt.Errorf("subscription %s created with no items", stripeSub.ID)
 	}
@@ -63,7 +77,7 @@ func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stri
 	// Update database
 	err = s.repo.UpdateSubscriptionDetails(
 		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
-		seatCount, trialEnd, tier,
+		seatCount, trialEnd, tier, billingInterval, billingEndsAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update subscription details: %w", err)
@@ -80,21 +94,35 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionUpdated")
 	defer span.End()
 
-	var stripeSub stripe.Subscription
+	var stripeSub *stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
 		return fmt.Errorf("failed to unmarshal subscription: %w", err)
+	}
+
+	if stripeSub == nil {
+		return fmt.Errorf("unmarshalled subscription is nil")
 	}
 
 	// Extract relevant data
 	var subItemID string
 	var seatCount int
 	var tier SubscriptionTier = TierFree
+	var billingEndsAt *time.Time
+	var billingInterval *BillingInterval
 
 	if len(stripeSub.Items.Data) > 0 {
 		item := stripeSub.Items.Data[0]
 		subItemID = item.ID
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
+		if item.Price != nil && item.Price.Recurring != nil {
+			intervalStr := BillingInterval(item.Price.Recurring.Interval)
+			billingInterval = &intervalStr
+		}
+		if int64(int64(item.CurrentPeriodEnd)) > 0 {
+			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
+			billingEndsAt = &tempBillingEndsAt
+		}
 	} else {
 		s.log.Error(ctx, "Subscription update event received with no items", "subscription_id", stripeSub.ID)
 		seatCount = 0
@@ -110,7 +138,7 @@ func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Ev
 	// Update database
 	if err := s.repo.UpdateSubscriptionDetails(
 		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
-		seatCount, trialEnd, tier,
+		seatCount, trialEnd, tier, billingInterval, billingEndsAt,
 	); err != nil {
 		return fmt.Errorf("failed to update subscription details: %w", err)
 	}
@@ -146,9 +174,13 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionCreated")
 	defer span.End()
 
-	var stripeSub stripe.Subscription
+	var stripeSub *stripe.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
 		return fmt.Errorf("failed to unmarshal subscription: %w", err)
+	}
+
+	if stripeSub == nil {
+		return fmt.Errorf("unmarshalled subscription is nil")
 	}
 
 	// Get customer details to retrieve workspace_id
@@ -167,16 +199,22 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 	var subItemID string
 	var seatCount int
 	var tier SubscriptionTier = TierFree
-	// var billingEndsAt time.Time
-	// var billingInterval string
+	var billingEndsAt *time.Time
+	var billingInterval *BillingInterval
 
 	if len(stripeSub.Items.Data) > 0 {
 		item := stripeSub.Items.Data[0]
 		subItemID = item.ID
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
-		// billingEndsAt = time.Unix(int64(item.CurrentPeriodEnd), 0)
-		// billingInterval = string(item.Plan.Interval)
+		if item.Price != nil && item.Price.Recurring != nil {
+			intervalStr := BillingInterval(item.Price.Recurring.Interval)
+			billingInterval = &intervalStr
+		}
+		if int64(int64(item.CurrentPeriodEnd)) > 0 {
+			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
+			billingEndsAt = &tempBillingEndsAt
+		}
 	} else {
 		s.log.Error(ctx, "Subscription creation event received with no items", "subscription_id", stripeSub.ID)
 		seatCount = 0
@@ -190,7 +228,7 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 	}
 
 	// Create subscription in database
-	if err := s.repo.CreateSubscription(ctx, workspaceID, cust.ID, stripeSub.ID, subItemID, status, seatCount, trialEnd, tier); err != nil {
+	if err := s.repo.CreateSubscription(ctx, workspaceID, cust.ID, stripeSub.ID, subItemID, status, seatCount, trialEnd, tier, billingInterval, billingEndsAt); err != nil {
 		return ErrFailedToCreateSubscription
 	}
 

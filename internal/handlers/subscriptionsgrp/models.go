@@ -38,11 +38,13 @@ type AppChangeSubscriptionPlanRequest struct {
 type AppSubscription struct {
 	WorkspaceID          uuid.UUID  `json:"workspaceId"`
 	StripeCustomerID     string     `json:"stripeCustomerId"`
-	StripeSubscriptionID *string    `json:"stripeSubscriptionId,omitempty"`
-	Status               *string    `json:"status,omitempty"`
+	StripeSubscriptionID *string    `json:"stripeSubscriptionId"`
+	Status               *string    `json:"status"`
 	Tier                 string     `json:"tier"`
 	SeatCount            int        `json:"seatCount"`
-	TrialEndDate         *time.Time `json:"trialEndDate,omitempty"`
+	TrialEndDate         *time.Time `json:"trialEndDate"`
+	BillingInterval      *string    `json:"billingInterval"`
+	BillingEndsAt        *time.Time `json:"billingEndsAt"`
 	CreatedAt            time.Time  `json:"createdAt"`
 	UpdatedAt            time.Time  `json:"updatedAt"`
 }
@@ -63,23 +65,29 @@ type AppInvoice struct {
 
 // Conversion functions
 func toAppSubscription(core subscriptions.CoreWorkspaceSubscription) AppSubscription {
-	var status *string
-	if core.SubscriptionStatus != nil {
-		s := string(*core.SubscriptionStatus)
-		status = &s
-	}
-
-	return AppSubscription{
+	appSub := AppSubscription{
 		WorkspaceID:          core.WorkspaceID,
 		StripeCustomerID:     core.StripeCustomerID,
 		StripeSubscriptionID: core.StripeSubscriptionID,
-		Status:               status,
 		Tier:                 string(core.SubscriptionTier),
 		SeatCount:            core.SeatCount,
 		TrialEndDate:         core.TrialEndDate,
 		CreatedAt:            core.CreatedAt,
 		UpdatedAt:            core.UpdatedAt,
+		BillingEndsAt:        core.BillingEndsAt,
 	}
+
+	if core.SubscriptionStatus != nil {
+		statusStr := string(*core.SubscriptionStatus)
+		appSub.Status = &statusStr
+	}
+
+	if core.BillingInterval != nil {
+		intervalStr := string(*core.BillingInterval)
+		appSub.BillingInterval = &intervalStr
+	}
+
+	return appSub
 }
 
 func toAppInvoices(coreInvoices []subscriptions.CoreSubscriptionInvoice) []AppInvoice {

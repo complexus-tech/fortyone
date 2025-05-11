@@ -45,7 +45,9 @@ func (r *repo) GetSubscriptionByWorkspaceID(ctx context.Context, workspaceID uui
             seat_count,
             trial_end_date,
             created_at,
-            updated_at
+            updated_at,
+            billing_interval,
+            billing_ends_at
         FROM
             workspace_subscriptions
         WHERE
@@ -271,7 +273,7 @@ func (r *repo) SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, 
 }
 
 // UpdateSubscriptionDetails updates all subscription fields in one operation
-func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier) error {
+func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status subscriptions.SubscriptionStatus, seatCount int, trialEnd *time.Time, tier subscriptions.SubscriptionTier, billingInterval *subscriptions.BillingInterval, billingEndsAt *time.Time) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.UpdateSubscriptionDetails")
 	defer span.End()
 
@@ -284,6 +286,8 @@ func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, custID, ite
             subscription_tier = :subscription_tier,
             seat_count = :seat_count,
             trial_end_date = :trial_end_date,
+            billing_interval = :billing_interval,
+            billing_ends_at = :billing_ends_at,
             updated_at = NOW()
         WHERE
             stripe_subscription_id = :stripe_subscription_id
@@ -300,6 +304,14 @@ func (r *repo) UpdateSubscriptionDetails(ctx context.Context, subID, custID, ite
 		"seat_count":                  seatCount,
 		"trial_end_date":              trialEnd,
 		"stripe_customer_id":          custID,
+		"billing_interval":            nil,
+		"billing_ends_at":             billingEndsAt,
+	}
+
+	if billingInterval != nil {
+		params["billing_interval"] = string(*billingInterval)
+	} else {
+		params["billing_interval"] = nil
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -457,6 +469,8 @@ func (r *repo) CreateSubscription(
 	seatCount int,
 	trialEnd *time.Time,
 	tier subscriptions.SubscriptionTier,
+	billingInterval *subscriptions.BillingInterval,
+	billingEndsAt *time.Time,
 ) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.CreateSubscription")
 	defer span.End()
@@ -472,7 +486,9 @@ func (r *repo) CreateSubscription(
             seat_count,
             trial_end_date,
             created_at,
-            updated_at
+            updated_at,
+            billing_interval,
+            billing_ends_at
         ) VALUES (
             :stripe_customer_id,
             :workspace_id,
@@ -483,7 +499,9 @@ func (r *repo) CreateSubscription(
             :seat_count,
             :trial_end_date,
             NOW(),
-            NOW()
+            NOW(),
+            :billing_interval,
+            :billing_ends_at
         )
     `
 
@@ -499,6 +517,14 @@ func (r *repo) CreateSubscription(
 		"seat_count":                  seatCount,
 		"trial_end_date":              trialEnd,
 		"stripe_customer_id":          stripeCustomerID,
+		"billing_interval":            nil,
+		"billing_ends_at":             billingEndsAt,
+	}
+
+	if billingInterval != nil {
+		params["billing_interval"] = string(*billingInterval)
+	} else {
+		params["billing_interval"] = nil
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

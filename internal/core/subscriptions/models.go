@@ -20,6 +20,16 @@ const (
 	StatusPaused            SubscriptionStatus = "paused"
 )
 
+// BillingInterval represents the billing interval of a subscription
+type BillingInterval string
+
+const (
+	IntervalDay   BillingInterval = "day"
+	IntervalWeek  BillingInterval = "week"
+	IntervalMonth BillingInterval = "month"
+	IntervalYear  BillingInterval = "year"
+)
+
 // SubscriptionTier represents the tier of a subscription
 type SubscriptionTier string
 
@@ -40,6 +50,8 @@ type CoreWorkspaceSubscription struct {
 	SubscriptionTier         SubscriptionTier
 	SeatCount                int
 	TrialEndDate             *time.Time
+	BillingInterval          *BillingInterval
+	BillingEndsAt            *time.Time
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }

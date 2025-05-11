@@ -16,6 +16,8 @@ type dbWorkspaceSubscription struct {
 	SubscriptionTier         string     `db:"subscription_tier"`
 	SeatCount                int        `db:"seat_count"`
 	TrialEndDate             *time.Time `db:"trial_end_date"`
+	BillingInterval          *string    `db:"billing_interval"`
+	BillingEndsAt            *time.Time `db:"billing_ends_at"`
 	CreatedAt                time.Time  `db:"created_at"`
 	UpdatedAt                time.Time  `db:"updated_at"`
 }
@@ -44,6 +46,15 @@ func toCoreSubscription(db dbWorkspaceSubscription) subscriptions.CoreWorkspaceS
 	subscription.TrialEndDate = db.TrialEndDate
 	subscription.CreatedAt = db.CreatedAt
 	subscription.UpdatedAt = db.UpdatedAt
+
+	// Convert billing interval string from DB to BillingInterval type if present
+	if db.BillingInterval != nil {
+		billingInterval := subscriptions.BillingInterval(*db.BillingInterval)
+		subscription.BillingInterval = &billingInterval
+	}
+
+	// Assign BillingEndsAt
+	subscription.BillingEndsAt = db.BillingEndsAt
 
 	// Convert status string to enum if present
 	if db.SubscriptionStatus != nil {
