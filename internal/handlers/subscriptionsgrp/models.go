@@ -30,6 +30,10 @@ type AppCustomerPortalResponse struct {
 	URL string `json:"url"`
 }
 
+type AppChangeSubscriptionPlanRequest struct {
+	NewLookupKey string `json:"newLookupKey" validate:"required"`
+}
+
 // App representation of a subscription
 type AppSubscription struct {
 	WorkspaceID          uuid.UUID  `json:"workspaceId"`
@@ -154,4 +158,26 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 	}
 
 	return parts[0] // Return the JSON tag name
+}
+
+func (a AppChangeSubscriptionPlanRequest) Validate() error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	err := validate.Struct(a)
+	if err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			var errorMessages []string
+			for _, e := range validationErrors {
+				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
+				switch e.Tag() {
+				case "required":
+					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
+				default:
+					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
+				}
+			}
+			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
+		}
+	}
+	return err
 }

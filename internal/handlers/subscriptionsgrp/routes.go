@@ -57,6 +57,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/subscription", h.GetSubscription, auth)
 	app.Get("/workspaces/{workspaceId}/invoices", h.GetInvoices, auth)
 	app.Post("/workspaces/{workspaceId}/subscriptions/add-seat", h.AddSeat, auth)
+	app.Post("/workspaces/{workspaceId}/subscriptions/change-plan", h.ChangeSubscriptionPlan, auth)
 
 	// Public webhook endpoint
 	app.Post("/webhooks/stripe", h.HandleWebhook)

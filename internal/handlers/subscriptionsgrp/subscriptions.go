@@ -246,3 +246,46 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 	web.Respond(ctx, w, nil, http.StatusOK)
 	return nil
 }
+
+// ChangeSubscriptionPlan changes the subscription plan for a workspace
+func (h *Handlers) ChangeSubscriptionPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.ChangeSubscriptionPlan")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var req AppChangeSubscriptionPlanRequest
+	if err := web.Decode(r, &req); err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	if err := req.Validate(); err != nil {
+		span.RecordError(err)
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	err = h.subscriptions.ChangeSubscriptionPlan(ctx, workspaceId, req.NewLookupKey)
+	if err != nil {
+		switch {
+		case errors.Is(err, subscriptions.ErrNoActiveSubscriptionToChange),
+			errors.Is(err, subscriptions.ErrAlreadySubscribedToThisPlan):
+			web.RespondError(ctx, w, err, http.StatusBadRequest)
+		default:
+			span.RecordError(err)
+			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+		return nil
+	}
+
+	web.Respond(ctx, w, nil, http.StatusOK)
+	return nil
+}

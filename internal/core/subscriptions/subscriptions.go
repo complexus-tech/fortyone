@@ -13,19 +13,20 @@ import (
 	"github.com/stripe/stripe-go/v82/client"
 	"github.com/stripe/stripe-go/v82/webhook"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
-	ErrSubscriptionNotFound       = errors.New("subscription not found")
-	ErrInvoiceNotFound            = errors.New("invoice not found")
-	ErrInvalidSubscription        = errors.New("invalid subscription data")
-	ErrInvalidInvoice             = errors.New("invalid invoice data")
-	ErrStripeOperationFailed      = errors.New("stripe operation failed")
-	ErrAlreadyProcessingEvent     = errors.New("already processing event")
-	ErrSubscriptionItemNotFound   = errors.New("stripe subscription item ID not found for workspace")
-	ErrWorkspaceHasActiveSub      = errors.New("workspace already has an active subscription")
-	ErrFailedToCreateSubscription = errors.New("failed to create subscription")
+	ErrSubscriptionNotFound         = errors.New("subscription not found")
+	ErrInvoiceNotFound              = errors.New("invoice not found")
+	ErrInvalidSubscription          = errors.New("invalid subscription data")
+	ErrInvalidInvoice               = errors.New("invalid invoice data")
+	ErrStripeOperationFailed        = errors.New("stripe operation failed")
+	ErrAlreadyProcessingEvent       = errors.New("already processing event")
+	ErrSubscriptionItemNotFound     = errors.New("stripe subscription item ID not found for workspace")
+	ErrWorkspaceHasActiveSub        = errors.New("workspace already has an active subscription, use change plan flow")
+	ErrFailedToCreateSubscription   = errors.New("failed to create subscription")
+	ErrAlreadySubscribedToThisPlan  = errors.New("already subscribed to this specific plan")
+	ErrNoActiveSubscriptionToChange = errors.New("no active subscription found to change")
 )
 
 // Repository defines methods for accessing subscription data
@@ -92,111 +93,110 @@ func (s *Service) GetSubscription(ctx context.Context, workspaceID uuid.UUID) (C
 	return sub, nil
 }
 
-// CreateCheckoutSession initiates the Stripe Checkout process for a new subscription
+// CreateCheckoutSession initiates a Stripe Checkout process for a NEW subscription.
+// If the workspace already has an active subscription, it returns an error.
 func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string, successURL string, cancelURL string) (string, error) {
-	s.log.Info(ctx, "Initiating checkout session", "workspace_id", workspaceID, "lookup_key", lookupKey)
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCheckoutSession")
+	s.log.Info(ctx, "Initiating NEW checkout session request", "workspace_id", workspaceID, "lookup_key", lookupKey)
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.CreateCheckoutSession_NewOnly")
 	defer span.End()
 
-	hasActiveSub := s.repo.HasActiveSubscriptionByWorkspaceID(ctx, workspaceID)
-	if hasActiveSub {
-		s.log.Info(ctx, "Workspace already has an active subscription", "workspace_id", workspaceID)
-		return "", ErrWorkspaceHasActiveSub
+	// 1. Check if workspace already has an active subscription in our DB.
+	// We use HasActiveSubscriptionByWorkspaceID for a quick check.
+	if s.repo.HasActiveSubscriptionByWorkspaceID(ctx, workspaceID) {
+		s.log.Info(ctx, "Workspace already has an active subscription. New checkout session denied.", "workspace_id", workspaceID)
+		return "", ErrWorkspaceHasActiveSub // Instruct user to use change plan flow
 	}
 
-	// 1. Get current subscription/customer info
-	sub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
-	customerID := ""
-	if err != nil && !errors.Is(err, ErrSubscriptionNotFound) {
-		s.log.Error(ctx, "Failed to get subscription info", "error", err, "workspace_id", workspaceID)
-		return "", fmt.Errorf("failed to retrieve workspace data: %w", err)
-	}
-	if err == nil { // Subscription exists
-		customerID = sub.StripeCustomerID
-		span.SetAttributes(attribute.String("customer_id", customerID))
-		s.log.Info(ctx, "Existing Stripe customer found", "customer_id", customerID, "workspace_id", workspaceID)
-	}
-
-	// 2. Create Stripe Customer if needed
-	if customerID == "" {
-		s.log.Info(ctx, "Creating new Stripe customer", "workspace_id", workspaceID, "email", userEmail)
-		span.AddEvent("Creating new Stripe customer", trace.WithAttributes(attribute.String("workspace_id", workspaceID.String()), attribute.String("email", userEmail)))
-		custParams := &stripe.CustomerParams{
-			Email: stripe.String(userEmail),
-			Name:  stripe.String(workspaceName),
-			Metadata: map[string]string{
-				"workspace_id": workspaceID.String(),
-			},
-		}
-		newCust, err := s.stripeClient.Customers.New(custParams)
-		if err != nil {
-			span.RecordError(err)
-			s.log.Error(ctx, "Failed to create Stripe customer", "error", err, "workspace_id", workspaceID)
-			return "", fmt.Errorf("%w: creating customer: %v", ErrStripeOperationFailed, err)
-		}
-		customerID = newCust.ID
-		s.log.Info(ctx, "Stripe customer created successfully", "customer_id", customerID, "workspace_id", workspaceID)
-	}
-
-	// Get current workspace user count for initial seat quantity
-	userCount, err := s.repo.GetWorkspaceUserCount(ctx, workspaceID)
-	if err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "Failed to get workspace user count", "error", err, "workspace_id", workspaceID)
-		userCount = 1
-	}
-	// Ensure we have at least 1 seat
-	if userCount < 1 {
-		userCount = 1
-	}
-
-	s.log.Info(ctx, "Setting initial seat count for subscription", "workspace_id", workspaceID, "seat_count", userCount)
-
-	// lookup the price
+	// 2. Determine Price ID for the requested lookupKey (since it's a new sub, no need to compare with existing plan)
+	requestedPriceID := ""
 	priceListParams := &stripe.PriceListParams{}
 	priceListParams.Filters.AddFilter("lookup_keys[]", "", lookupKey)
 	priceListParams.Filters.AddFilter("limit", "", "1")
-	i := s.stripeClient.Prices.List(priceListParams) // use your initialized Stripe client here
-	var priceID string
-	for i.Next() {
-		p := i.Price()
-		priceID = p.ID
+	iPrices := s.stripeClient.Prices.List(priceListParams)
+	for iPrices.Next() {
+		p := iPrices.Price()
+		requestedPriceID = p.ID
 		break
 	}
-
-	if priceID == "" {
-		s.log.Error(ctx, "No price found for lookup key", "lookup_key", lookupKey)
+	if requestedPriceID == "" {
+		s.log.Error(ctx, "No Stripe price found for lookup key for new subscription", "lookup_key", lookupKey, "workspace_id", workspaceID)
 		return "", fmt.Errorf("no price found for lookup key: %s", lookupKey)
 	}
+	span.SetAttributes(attribute.String("stripe.requested_price_id", requestedPriceID))
 
-	// 3. Create Stripe Checkout Session
+	// 3. Determine Stripe Customer ID
+	// For a strictly new subscription flow, we expect no existing internal sub record,
+	// or if one exists (e.g. a past cancelled one), we might still want to use its customer ID.
+	customerID := ""
+	currentInternalSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID) // Check if any record exists
+	if err == nil && currentInternalSub.StripeCustomerID != "" {
+		// A record exists (even if not active sub, could be cancelled) and has a customer ID
+		customerID = currentInternalSub.StripeCustomerID
+		s.log.Info(ctx, "Using existing Stripe Customer ID from DB record for new subscription flow", "customer_id", customerID, "workspace_id", workspaceID)
+	} else if err != nil && !errors.Is(err, ErrSubscriptionNotFound) {
+		// An actual error occurred trying to fetch from DB (not just 'not found')
+		s.log.Error(ctx, "DB error when checking for existing customer ID for new subscription", "error", err, "workspace_id", workspaceID)
+		return "", fmt.Errorf("failed to retrieve workspace data for new subscription: %w", err)
+	}
+
+	if customerID == "" { // No existing customer ID found, create a new Stripe Customer
+		s.log.Info(ctx, "Creating new Stripe customer for new subscription.", "workspace_id", workspaceID, "email", userEmail)
+		custParams := &stripe.CustomerParams{
+			Email:    stripe.String(userEmail),
+			Name:     stripe.String(workspaceName),
+			Metadata: map[string]string{"workspace_id": workspaceID.String()},
+		}
+		newCust, stripeErr := s.stripeClient.Customers.New(custParams)
+		if stripeErr != nil {
+			s.log.Error(ctx, "Failed to create Stripe customer for new subscription", "error", stripeErr, "workspace_id", workspaceID)
+			return "", fmt.Errorf("%w: creating customer: %v", ErrStripeOperationFailed, stripeErr)
+		}
+		customerID = newCust.ID
+		s.log.Info(ctx, "Stripe customer created successfully for new subscription", "customer_id", customerID, "workspace_id", workspaceID)
+	}
+
+	// 4. Get current workspace user count for initial seat quantity
+	userCount, countErr := s.repo.GetWorkspaceUserCount(ctx, workspaceID)
+	if countErr != nil {
+		s.log.Error(ctx, "Failed to get workspace user count for new subscription", "error", countErr, "workspace_id", workspaceID)
+		userCount = 1
+	}
+	if userCount < 1 {
+		userCount = 1
+	}
+	s.log.Info(ctx, "Setting seat count for new subscription checkout", "workspace_id", workspaceID, "seat_count", userCount)
+
+	// 5. Create Stripe Checkout Session
 	checkoutParams := &stripe.CheckoutSessionParams{
-		Customer: stripe.String(customerID),
-		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		Customer:          stripe.String(customerID),
+		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		ClientReferenceID: stripe.String(workspaceID.String()),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(priceID),
+				Price:    stripe.String(requestedPriceID),
 				Quantity: stripe.Int64(int64(userCount)),
 			},
 		},
-		SuccessURL:          stripe.String(successURL + "?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:           stripe.String(cancelURL),
-		AllowPromotionCodes: stripe.Bool(true),
+		SuccessURL: stripe.String(successURL + "?session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:  stripe.String(cancelURL),
 		Expand: []*string{
 			stripe.String("subscription"),
 			stripe.String("customer"),
 		},
 	}
+	if customerID != "" {
+		checkoutParams.AllowPromotionCodes = stripe.Bool(true)
+	}
 
-	s.log.Info(ctx, "Creating Stripe checkout session", "customer_id", customerID, "lookup_key", lookupKey)
-	session, err := s.stripeClient.CheckoutSessions.New(checkoutParams)
+	s.log.Info(ctx, "Creating Stripe checkout session for new subscription", "customer_id", customerID, "requested_price_id", requestedPriceID, "workspace_id", workspaceID)
+	sessionStripe, err := s.stripeClient.CheckoutSessions.New(checkoutParams)
 	if err != nil {
-		s.log.Error(ctx, "Failed to create Stripe checkout session", "error", err, "customer_id", customerID)
+		s.log.Error(ctx, "Failed to create Stripe checkout session for new subscription", "error", err, "customer_id", customerID, "workspace_id", workspaceID)
 		return "", fmt.Errorf("%w: creating checkout session: %v", ErrStripeOperationFailed, err)
 	}
 
-	s.log.Info(ctx, "Stripe checkout session created successfully", "session_id", session.ID, "customer_id", customerID)
-	return session.URL, nil
+	s.log.Info(ctx, "Stripe checkout session for new subscription created successfully", "session_url", sessionStripe.URL, "session_id", sessionStripe.ID, "workspace_id", workspaceID)
+	return sessionStripe.URL, nil
 }
 
 // AddSeatToSubscription increases the seat count and triggers immediate prorated billing
@@ -255,8 +255,9 @@ func (s *Service) AddSeatToSubscription(ctx context.Context, workspaceID uuid.UU
 				Quantity: stripe.Int64(newQuantity),
 			},
 		},
-		// Trigger immediate prorated invoice
 		ProrationBehavior: stripe.String("always_invoice"),
+		CancelAtPeriodEnd: stripe.Bool(false), // Ensure the subscription doesn't get marked for cancellation
+		// PaymentBehavior: stripe.String("error_if_incomplete"), // Optional: how to handle SCA failures
 	}
 
 	// Use idempotency key
@@ -316,7 +317,7 @@ func (s *Service) mapPriceToTier(ctx context.Context, price *stripe.Price) Subsc
 	case "enterprise_monthly", "enterprise_yearly":
 		return TierEnterprise
 	default:
-		s.log.Error(ctx, "Unknown price lookup key", "lookup_key", price.LookupKey, "price_id", price.ID)
+		s.log.Error(ctx, "Unknown price lookup key for tier mapping", "lookup_key", price.LookupKey, "price_id", price.ID)
 		return TierFree
 	}
 }
@@ -378,5 +379,119 @@ func (s *Service) HandleWebhookEvent(ctx context.Context, payload []byte, signat
 		return processingError
 	}
 	s.log.Info(ctx, "Successfully processed webhook event", "event_id", event.ID, "event_type", event.Type)
+	return nil
+}
+
+// mapStripeStatus maps a Stripe subscription status to the internal SubscriptionStatus type.
+// This function is pure and does not log or require context.
+func (s *Service) mapStripeStatus(status stripe.SubscriptionStatus) SubscriptionStatus {
+	switch status {
+	case stripe.SubscriptionStatusActive:
+		return StatusActive
+	case stripe.SubscriptionStatusTrialing:
+		return StatusTrialing
+	case stripe.SubscriptionStatusPastDue:
+		return StatusPastDue
+	case stripe.SubscriptionStatusCanceled:
+		return StatusCanceled
+	case stripe.SubscriptionStatusUnpaid:
+		return StatusUnpaid
+	case stripe.SubscriptionStatusIncomplete:
+		return StatusIncomplete
+	case stripe.SubscriptionStatusIncompleteExpired:
+		return StatusIncompleteExpired
+	default:
+		return StatusActive
+	}
+}
+
+// ChangeSubscriptionPlan allows a workspace to change their active subscription to a new plan or billing frequency.
+func (s *Service) ChangeSubscriptionPlan(ctx context.Context, workspaceID uuid.UUID, newLookupKey string) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.ChangeSubscriptionPlan")
+	defer span.End()
+	s.log.Info(ctx, "Attempting to change subscription plan", "workspace_id", workspaceID, "new_lookup_key", newLookupKey)
+
+	// 1. Get current active subscription from DB
+	currentInternalSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		if errors.Is(err, ErrSubscriptionNotFound) {
+			s.log.Warn(ctx, "No subscription found for workspace to change plan", "workspace_id", workspaceID)
+			return ErrNoActiveSubscriptionToChange
+		}
+		s.log.Error(ctx, "Failed to get current subscription from DB for plan change", "workspace_id", workspaceID, "error", err)
+		return fmt.Errorf("failed to retrieve current subscription: %w", err)
+	}
+
+	// Check if the subscription is active or trialing
+	if currentInternalSub.SubscriptionStatus == nil ||
+		!(*currentInternalSub.SubscriptionStatus == StatusActive || *currentInternalSub.SubscriptionStatus == StatusTrialing) ||
+		currentInternalSub.StripeSubscriptionID == nil || *currentInternalSub.StripeSubscriptionID == "" {
+		s.log.Warn(ctx, "Subscription found but not in an active/trialing state or StripeSubscriptionID missing", "workspace_id", workspaceID, "status", currentInternalSub.SubscriptionStatus, "stripe_id_present", currentInternalSub.StripeSubscriptionID != nil)
+		return ErrNoActiveSubscriptionToChange
+	}
+	currentStripeSubscriptionID := *currentInternalSub.StripeSubscriptionID
+
+	// 2. Determine Price ID for the newLookupKey
+	newPriceID := ""
+	priceListParams := &stripe.PriceListParams{}
+	priceListParams.Filters.AddFilter("lookup_keys[]", "", newLookupKey)
+	priceListParams.Filters.AddFilter("limit", "", "1")
+	iPrices := s.stripeClient.Prices.List(priceListParams)
+	for iPrices.Next() {
+		p := iPrices.Price()
+		newPriceID = p.ID
+		break
+	}
+	if newPriceID == "" {
+		s.log.Error(ctx, "No Stripe price found for new lookup key during plan change", "new_lookup_key", newLookupKey, "workspace_id", workspaceID)
+		return fmt.Errorf("no price found for new lookup key: %s", newLookupKey)
+	}
+
+	// 3. Fetch the current Stripe subscription to get its active price ID and item ID
+	stripeSubParams := &stripe.SubscriptionParams{}
+	stripeSubParams.AddExpand("items.data.price")
+	currentStripeSub, stripeErr := s.stripeClient.Subscriptions.Get(currentStripeSubscriptionID, stripeSubParams)
+	if stripeErr != nil {
+		s.log.Error(ctx, "Failed to fetch current Stripe subscription for plan change", "stripe_subscription_id", currentStripeSubscriptionID, "workspace_id", workspaceID, "error", stripeErr)
+		return fmt.Errorf("%w: fetching current stripe subscription: %v", ErrStripeOperationFailed, stripeErr)
+	}
+
+	if len(currentStripeSub.Items.Data) == 0 || currentStripeSub.Items.Data[0] == nil || currentStripeSub.Items.Data[0].Price == nil {
+		s.log.Error(ctx, "Current Stripe subscription has no items or price data", "stripe_subscription_id", currentStripeSubscriptionID, "workspace_id", workspaceID)
+		return ErrSubscriptionItemNotFound // Or a more general error
+	}
+	currentSubscriptionItemID := currentStripeSub.Items.Data[0].ID
+	currentActivePriceID := currentStripeSub.Items.Data[0].Price.ID
+
+	// 4. Check if already subscribed to this exact plan
+	if currentActivePriceID == newPriceID {
+		s.log.Info(ctx, "Workspace already subscribed to this exact plan (change plan request).", "workspace_id", workspaceID, "price_id", newPriceID, "new_lookup_key", newLookupKey)
+		return ErrAlreadySubscribedToThisPlan
+	}
+
+	// 5. Construct SubscriptionParams for the update
+	updateParams := &stripe.SubscriptionParams{
+		Items: []*stripe.SubscriptionItemsParams{
+			{
+				ID:    stripe.String(currentSubscriptionItemID), // ID of the subscription item to update
+				Price: stripe.String(newPriceID),                // ID of the new price to switch to
+				// Quantity will be inherited from the existing item unless specified.
+				// If you need to change quantity (seats) simultaneously, set it here:
+				Quantity: stripe.Int64(int64(currentInternalSub.SeatCount)), // Explicitly set seat count
+			},
+		},
+		ProrationBehavior: stripe.String("always_invoice"),
+		CancelAtPeriodEnd: stripe.Bool(false), // Ensure the subscription doesn't get marked for cancellation
+		// PaymentBehavior: stripe.String("error_if_incomplete"), // Optional: how to handle SCA failures
+	}
+
+	s.log.Info(ctx, "Updating Stripe subscription via API for plan change", "workspace_id", workspaceID, "stripe_subscription_id", currentStripeSubscriptionID, "new_price_id", newPriceID)
+	_, err = s.stripeClient.Subscriptions.Update(currentStripeSubscriptionID, updateParams)
+	if err != nil {
+		s.log.Error(ctx, "Stripe API failed to update subscription for plan change", "stripe_subscription_id", currentStripeSubscriptionID, "workspace_id", workspaceID, "error", err)
+		return fmt.Errorf("%w: updating subscription: %v", ErrStripeOperationFailed, err)
+	}
+
+	s.log.Info(ctx, "Successfully initiated subscription plan change via Stripe API. Webhooks will update DB.", "workspace_id", workspaceID, "stripe_subscription_id", currentStripeSubscriptionID, "new_price_id", newPriceID)
 	return nil
 }
