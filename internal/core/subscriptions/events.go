@@ -167,12 +167,16 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 	var subItemID string
 	var seatCount int
 	var tier SubscriptionTier = TierFree
+	// var nextBillingDate time.Time
+	// var billingInterval string
 
 	if len(stripeSub.Items.Data) > 0 {
 		item := stripeSub.Items.Data[0]
 		subItemID = item.ID
 		seatCount = int(item.Quantity)
 		tier = s.mapPriceToTier(ctx, item.Price)
+		// nextBillingDate = time.Unix(int64(item.CurrentPeriodEnd), 0)
+		// billingInterval = string(item.Plan.Interval)
 	} else {
 		s.log.Error(ctx, "Subscription creation event received with no items", "subscription_id", stripeSub.ID)
 		seatCount = 0
