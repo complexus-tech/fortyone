@@ -41,11 +41,13 @@ const FeatureValue = ({
 
 type Billing = "annual" | "monthly";
 export const Plans = () => {
-  const { tier } = useSubscriptionFeatures();
+  const { tier, billingInterval } = useSubscriptionFeatures();
   const pathname = usePathname();
   const [isProLoading, setIsProLoading] = useState(false);
   const [isBusinessLoading, setIsBusinessLoading] = useState(false);
-  const [billing, setBilling] = useState<Billing>("annual");
+  const [billing, setBilling] = useState<Billing>(
+    billingInterval === "year" ? "annual" : "monthly",
+  );
   const proPrice = 7;
   const businessPrice = 10;
 
