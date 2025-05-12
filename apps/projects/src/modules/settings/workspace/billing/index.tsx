@@ -245,7 +245,10 @@ export const Billing = () => {
           <>
             {invoices.map(
               ({ stripeInvoiceId, hostedUrl, invoiceDate, amountPaid }) => (
-                <RowWrapper className="px-4 md:px-6" key={stripeInvoiceId}>
+                <RowWrapper
+                  className="px-4 last-of-type:border-b-0 md:px-6"
+                  key={stripeInvoiceId}
+                >
                   <Text>{formatDate(invoiceDate)}</Text>
                   <Text className="font-semibold" color="muted">
                     {new Intl.NumberFormat("en-US", {
