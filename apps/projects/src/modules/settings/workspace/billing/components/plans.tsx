@@ -10,6 +10,7 @@ import { checkout } from "@/lib/actions/billing/checkout";
 import { changePlan } from "@/lib/actions/billing/change-plan";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { Plan } from "@/lib/actions/billing/types";
+import { ConfirmDialog } from "@/components/ui";
 import { plans, featureLabels } from "./plan-data";
 
 const FeatureCheck = ({ available }: { available: boolean }) => (
@@ -117,11 +118,18 @@ export const Plans = () => {
   const { tier, billingInterval } = useSubscriptionFeatures();
   const router = useRouter();
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
   const [isProLoading, setIsProLoading] = useState(false);
   const [isBusinessLoading, setIsBusinessLoading] = useState(false);
   const [billing, setBilling] = useState<Billing>(
     billingInterval === "year" ? "annual" : "monthly",
   );
+  const [pendingAction, setPendingAction] = useState<{
+    plan: Plan;
+    type: "upgrade" | "downgrade" | "switch";
+    from: string;
+    to: string;
+  } | null>(null);
   const proPrice = 7;
   const businessPrice = 10;
 
@@ -168,6 +176,56 @@ export const Plans = () => {
     } finally {
       setIsProLoading(false);
       setIsBusinessLoading(false);
+    }
+  };
+
+  const getTierLabel = (tierName: Tier): string => {
+    const labels: Record<Tier, string> = {
+      free: "Hobby",
+      trial: "Trial",
+      pro: "Pro",
+      business: "Business",
+      enterprise: "Enterprise",
+    };
+    return labels[tierName];
+  };
+
+  const getActionType = (
+    currentTier: Tier,
+    targetTier: string,
+  ): "upgrade" | "downgrade" | "switch" => {
+    if (currentTier === "free" || currentTier === "trial") return "upgrade";
+
+    const tierOrder = { free: 0, trial: 0, pro: 1, business: 2, enterprise: 3 };
+    const currentTierValue = tierOrder[currentTier];
+    const targetTierValue = tierOrder[targetTier as Tier] || 0;
+
+    if (currentTier === targetTier.toLowerCase()) {
+      return "switch";
+    }
+
+    return currentTierValue > targetTierValue ? "downgrade" : "upgrade";
+  };
+
+  const getDialogProps = () => {
+    if (!pendingAction) return { title: "", description: "" };
+
+    switch (pendingAction.type) {
+      case "upgrade":
+        return {
+          title: `Upgrade to ${pendingAction.to}`,
+          description: `Your current ${pendingAction.from} plan will be upgraded to ${pendingAction.to}, and we will charge you the price difference to your current payment method.`,
+        };
+      case "downgrade":
+        return {
+          title: `Downgrade to ${pendingAction.to}`,
+          description: `Your current ${pendingAction.from} plan will be downgraded to ${pendingAction.to}. You will lose access to all ${pendingAction.from} features.`,
+        };
+      case "switch":
+        return {
+          title: `Switch to ${pendingAction.to}`,
+          description: `Your current ${pendingAction.from} plan will be switched to ${pendingAction.to}. Your billing cycle will be updated accordingly.`,
+        };
     }
   };
 
@@ -219,6 +277,17 @@ export const Plans = () => {
               color="tertiary"
               disabled={tier === "free" || tier === "trial"}
               fullWidth
+              onClick={() => {
+                if (tier !== "free" && tier !== "trial") {
+                  setPendingAction({
+                    plan: "free" as Plan,
+                    type: "downgrade",
+                    from: getTierLabel(tier),
+                    to: "Hobby",
+                  });
+                  setIsOpen(true);
+                }
+              }}
             >
               {tier === "free" || tier === "trial"
                 ? "Continue free"
@@ -240,9 +309,17 @@ export const Plans = () => {
               disabled={isProButtonDisabled}
               fullWidth
               onClick={() => {
-                handlePlanAction(
-                  billing === "annual" ? "pro_yearly" : "pro_monthly",
-                );
+                const planId =
+                  billing === "annual" ? "pro_yearly" : "pro_monthly";
+                const actionType = getActionType(tier, "pro");
+
+                setPendingAction({
+                  plan: planId,
+                  type: actionType,
+                  from: getTierLabel(tier),
+                  to: `Pro ${billing === "annual" ? "yearly" : "monthly"}`,
+                });
+                setIsOpen(true);
               }}
             >
               {proButtonText}
@@ -263,9 +340,17 @@ export const Plans = () => {
               disabled={isBusinessButtonDisabled}
               fullWidth
               onClick={() => {
-                handlePlanAction(
-                  billing === "annual" ? "business_yearly" : "business_monthly",
-                );
+                const planId =
+                  billing === "annual" ? "business_yearly" : "business_monthly";
+                const actionType = getActionType(tier, "business");
+
+                setPendingAction({
+                  plan: planId,
+                  type: actionType,
+                  from: getTierLabel(tier),
+                  to: `Business ${billing === "annual" ? "yearly" : "monthly"}`,
+                });
+                setIsOpen(true);
               }}
             >
               {businessButtonText}
@@ -414,6 +499,21 @@ export const Plans = () => {
           )}
         </Box>
       </Box>
+      <ConfirmDialog
+        {...getDialogProps()}
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            handlePlanAction(pendingAction.plan);
+          }
+          setIsOpen(false);
+          setPendingAction(null);
+        }}
+      />
     </Box>
   );
 };
