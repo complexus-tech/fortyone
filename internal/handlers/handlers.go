@@ -176,10 +176,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the invitations routes
 	invitationsgrp.Routes(invitationsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Publisher: cfg.Publisher,
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		Publisher:    cfg.Publisher,
+		StripeClient: cfg.StripeClient,
+		StripeSecret: cfg.WebhookSecret,
 	}, app)
 
 	// register the search routes

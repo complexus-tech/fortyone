@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -60,10 +61,11 @@ type Service struct {
 	statuses        *states.Service
 	users           *users.Service
 	objectivestatus *objectivestatus.Service
+	subscriptions   *subscriptions.Service
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -73,6 +75,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		statuses:        statuses,
 		users:           users,
 		objectivestatus: objectivestatus,
+		subscriptions:   subscriptions,
 	}
 }
 
@@ -222,6 +225,12 @@ func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, 
 	// switch the user's the last workspace to the new workspace
 	if err := s.users.UpdateUserWorkspace(ctx, userID, workspaceID); err != nil {
 		s.log.Error(ctx, "failed to update user workspace", err)
+		// no need to return error this is not a critical operation
+	}
+
+	// update subscription seats
+	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
+		s.log.Error(ctx, "failed to update subscription seats", err)
 		// no need to return error this is not a critical operation
 	}
 

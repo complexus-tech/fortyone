@@ -279,9 +279,6 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// update subscription seats
-	h.updateSubscriptionSeats(ctx, workspaceID)
-
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {

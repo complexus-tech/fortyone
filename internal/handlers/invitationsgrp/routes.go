@@ -2,10 +2,12 @@ package invitationsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/invitations"
+	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/repo/invitationsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/subscriptionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
@@ -14,19 +16,23 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
+	"github.com/stripe/stripe-go/v82/client"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Publisher *publisher.Publisher
+	DB           *sqlx.DB
+	Log          *logger.Logger
+	SecretKey    string
+	Publisher    *publisher.Publisher
+	StripeClient *client.API
+	StripeSecret string
 }
 
 func Routes(cfg Config, app *web.App) {
 	repo := invitationsrepo.New(cfg.Log, cfg.DB)
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil)
+	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.StripeSecret)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil, subscriptionsService)
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService, workspacesService, teamsService)
 	h := New(invitationsService, usersService)
