@@ -136,29 +136,30 @@ export const Plans = () => {
       setIsBusinessLoading(true);
     }
 
-    let response;
     try {
       if (tier === "free" || tier === "trial") {
-        response = await checkout({
+        const response = await checkout({
           plan,
           successUrl,
           cancelUrl,
         });
-        if (response.data?.url) {
-          window.location.href = response.data.url;
+        if (response.error?.message) {
+          toast.error("Failed to upgrade plan", {
+            description: response.error.message,
+          });
+          return;
         }
+        window.location.href = response.data?.url ?? "";
       } else {
-        response = await changePlan(plan as Plan);
-        if (!response.error) {
-          toast.success("Plan change initiated successfully!");
-          router.refresh();
+        const response = await changePlan(plan);
+        if (response.error?.message) {
+          toast.error("Failed to process plan change", {
+            description: response.error.message,
+          });
+          return;
         }
-      }
-
-      if (response.error?.message) {
-        toast.error("Failed to process plan change", {
-          description: response.error.message,
-        });
+        toast.success("Plan change initiated successfully!");
+        router.refresh();
       }
     } catch (error) {
       toast.error("An unexpected error occurred.", {
