@@ -285,7 +285,7 @@ export const Plans = () => {
               onClick={() => {
                 if (tier !== "free" && tier !== "trial") {
                   setPendingAction({
-                    plan: "free" as Plan,
+                    plan: "free",
                     type: "downgrade",
                     from: getTierLabel(tier),
                     to: "Hobby",
