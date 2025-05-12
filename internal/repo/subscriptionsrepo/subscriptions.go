@@ -107,6 +107,7 @@ func (r *repo) GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UU
             workspace_id = :workspace_id
         ORDER BY
             invoice_date DESC
+				LIMIT 5
     `
 
 	params := map[string]any{
