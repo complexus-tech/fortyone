@@ -1,22 +1,20 @@
 "use client";
 
-import { Box, Button, Divider, Flex, Text } from "ui";
+import { Badge, Box, Button, Divider, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { format } from "date-fns";
+import { ArrowRight2Icon, NewTabIcon } from "icons";
+import { cn } from "lib";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMembers } from "@/lib/hooks/members";
 import { useInvoices } from "@/lib/hooks/billing/invoices";
+import { RowWrapper } from "@/components/ui";
+import { SectionHeader } from "../../components";
 import { Plans } from "./components/plans";
-
-// Define interface for invoice data based on the useInvoices hook return type
-interface Invoice {
-  id?: string;
-  date?: string;
-  amount?: string;
-}
+import { plans, getPlanFeaturesList } from "./components/plan-data";
 
 export const Billing = () => {
   const pathname = usePathname();
@@ -74,15 +72,19 @@ export const Billing = () => {
   if (tier === "free" || showPlans) {
     return (
       <Box>
-        <Text as="h1" className="mb-3 text-2xl font-medium">
+        <Text as="h1" className="mb-4 text-2xl font-medium">
           Billing
         </Text>
-        <Flex className="mb-6" justify="between">
+        <Flex align="center" className="mb-6" justify="between">
           <Text color="muted">
             For questions about billing,{" "}
-            <Button className="p-0" size={null} variant="outline">
-              contact us
-            </Button>
+            <a
+              className="text-dark dark:text-white"
+              href="mailto:info@complexus.app"
+            >
+              contact us.
+            </a>{" "}
+            Your workspace has {totalValidMembers} users.
           </Text>
           {tier !== "free" && (
             <Button
@@ -101,170 +103,173 @@ export const Billing = () => {
     );
   }
 
-  // Get plan display name
-  const getPlanName = () => {
-    if (tier === "business") return "Business";
-    if (tier === "enterprise") return "Enterprise";
-    return "Pro";
+  // Map tier to the name displayed in plans
+  const getTierName = () => {
+    const tierNameMap: Record<string, string> = {
+      pro: "Basic",
+      business: "Business",
+      enterprise: "Enterprise",
+      free: "Hobby",
+      trial: "Trial",
+    };
+    return tierNameMap[tier] || "Basic";
   };
 
-  // Get plan price
+  // Find current plan based on tier name
+  const currentPlan = plans.find((plan) => plan.name === getTierName());
+
+  // Get pricing
   const getPlanPrice = () => {
     const isYearly = billingInterval === "year";
+
     if (tier === "business") {
-      return isYearly ? "10" : "16";
+      return isYearly ? "8" : "10";
     }
-    return isYearly ? "7" : "12";
+    if (tier === "pro") {
+      return isYearly ? "5.6" : "7";
+    }
+    return "0";
   };
 
-  // Show paid tier users the subscription info and invoices
+  // Get features from the current plan
+  const planFeatures = currentPlan ? getPlanFeaturesList(currentPlan) : [];
+  const halfFeatureLength = Math.ceil(planFeatures.length / 2);
+  const firstColumnFeatures = planFeatures.slice(0, halfFeatureLength);
+  const secondColumnFeatures = planFeatures.slice(halfFeatureLength);
+
   return (
-    <Box>
-      <Text as="h1" className="mb-3 text-2xl font-medium">
+    <Box
+      className={cn("mx-auto max-w-[54rem]", {
+        "max-w-7xl": showPlans,
+      })}
+    >
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         Billing
       </Text>
-      <Flex className="mb-6" justify="between">
+      <Flex align="center" className="mb-4" justify="between">
         <Text color="muted">
           For questions about billing,{" "}
-          <Button className="p-0" size={null} variant="outline">
-            contact us
-          </Button>
+          <a
+            className="text-dark dark:text-white"
+            href="mailto:info@complexus.app"
+          >
+            contact us.
+          </a>{" "}
+          Your plan has {totalValidMembers} users.
         </Text>
         <Button
           color="tertiary"
           onClick={() => {
             setShowPlans(true);
           }}
-          variant="outline"
+          rightIcon={<ArrowRight2Icon />}
+          variant="naked"
         >
-          All plans →
+          <span className="opacity-80">All plans</span>
         </Button>
       </Flex>
 
-      <Flex direction="column" gap={6}>
-        {/* Current Subscription Info Card */}
-        <Box className="rounded-lg border p-6">
-          <Flex direction="column" gap={4}>
-            <Flex align="start" justify="between">
-              <Box>
-                <Text as="h2" className="text-lg font-medium">
-                  {getPlanName()}{" "}
-                  {billingInterval === "year" ? "Yearly" : "Monthly"}
-                  <Text
-                    as="span"
-                    className="text-muted-foreground bg-muted ml-2 rounded-full px-2 py-1 text-xs"
-                  >
-                    Current plan
-                  </Text>
-                </Text>
-                <Text className="text-muted-foreground">
-                  ${getPlanPrice()} per user/mo
-                </Text>
-              </Box>
-              <Flex align="end" direction="column">
-                <Flex align="center" gap={2}>
-                  <Text className="text-muted-foreground">Users</Text>
-                  <Text className="font-medium">{totalValidMembers}</Text>
-                </Flex>
-                <Flex align="center" gap={2}>
-                  <Text className="text-muted-foreground">Next renewal</Text>
-                  <Text className="font-medium">
-                    <Text
-                      as="span"
-                      className="text-muted-foreground line-through"
-                    >
-                      $80
-                    </Text>{" "}
-                    $0 on May 25
-                  </Text>
-                </Flex>
-              </Flex>
-            </Flex>
-
-            <Box className="bg-muted rounded-md p-4">
-              <Flex align="center" gap={2}>
-                <Box className="text-muted-foreground">
-                  <svg
-                    fill="none"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    width="20"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </Box>
-                <Text className="text-muted-foreground">Free of charge</Text>
-                <Text className="ml-auto">Valid through Oct 23</Text>
-              </Flex>
-            </Box>
-
-            <Divider />
-
-            <Flex className="flex-wrap gap-y-4">
-              <Box className="w-1/2 pr-4">
-                <Flex direction="column" gap={1}>
-                  {renderFeatureItem("SAML authentication")}
-                  {renderFeatureItem("Audit log")}
-                  {renderFeatureItem("Third-party app management")}
-                  {renderFeatureItem("Linear Asks")}
-                </Flex>
-              </Box>
-              <Box className="w-1/2 pl-4">
-                <Flex direction="column" gap={1}>
-                  {renderFeatureItem("Domain claiming")}
-                  {renderFeatureItem("Data warehouse sync")}
-                  {renderFeatureItem("Issue SLAs")}
-                  {renderFeatureItem("Priority support")}
-                </Flex>
-              </Box>
-            </Flex>
-
+      <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <SectionHeader
+          action={
             <Button
-              className="mt-2 self-start"
               color="tertiary"
               disabled={isLoading}
               onClick={handleManageBilling}
+              variant="outline"
             >
               Manage subscription
             </Button>
+          }
+          description="Details about your current plan and subscription."
+          title="Current Subscription"
+        />
+        <Box className="p-6">
+          <Flex direction="column" gap={4}>
+            <Flex align="start" justify="between">
+              <Box>
+                <Text
+                  as="h3"
+                  className="mb-0.5 flex items-center gap-2 font-medium"
+                >
+                  {getTierName()}{" "}
+                  {billingInterval === "year" ? "Yearly" : "Monthly"}
+                  <Badge
+                    className="h-7 px-1.5 text-base"
+                    color="tertiary"
+                    size="lg"
+                    variant="outline"
+                  >
+                    Current plan
+                  </Badge>
+                </Text>
+                <Text color="muted">${getPlanPrice()} per user/mo</Text>
+              </Box>
+              <Box>
+                <Text className="mb-0.5">Next renewal</Text>
+                <Text color="muted">May 25</Text>
+              </Box>
+            </Flex>
+            <Divider />
+            <Flex className="flex-wrap gap-y-4">
+              <Box className="w-1/2 pr-4">
+                <Flex direction="column" gap={2}>
+                  {firstColumnFeatures.map((feature) =>
+                    renderFeatureItem(feature),
+                  )}
+                </Flex>
+              </Box>
+              <Box className="w-1/2 pl-4">
+                <Flex direction="column" gap={2}>
+                  {secondColumnFeatures.map((feature) =>
+                    renderFeatureItem(feature),
+                  )}
+                </Flex>
+              </Box>
+            </Flex>
           </Flex>
         </Box>
+      </Box>
 
-        {/* Recent Invoices Card */}
-        <Box className="rounded-lg border p-6">
-          <Text as="h2" className="mb-6 text-lg font-medium">
-            Recent invoices
-          </Text>
-
-          {invoices.length === 0 ? (
+      {/* Recent Invoices Card */}
+      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <SectionHeader
+          description="Your recent billing history and invoices."
+          title="Recent Invoices"
+        />
+        {invoices.length !== 0 ? (
+          <Flex className="px-4 py-5 md:px-6">
             <Text color="muted">No invoices available</Text>
-          ) : (
-            <Flex direction="column" gap={4}>
-              {invoices.slice(0, 5).map((invoice, index) => {
-                const invoiceItem = invoice as Invoice;
-                return (
-                  <Flex
-                    align="center"
-                    className="py-2"
-                    justify="between"
-                    key={invoiceItem.id || index}
-                  >
-                    <Text>{formatDate(invoiceItem.date)}</Text>
-                    <Text>${invoiceItem.amount || "0.00"}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
-          )}
-        </Box>
-      </Flex>
+          </Flex>
+        ) : (
+          <>
+            {invoices.map(
+              ({ stripeInvoiceId, hostedUrl, invoiceDate, amountPaid }) => (
+                <RowWrapper className="px-4 md:px-6" key={stripeInvoiceId}>
+                  <Text>{formatDate(invoiceDate)}</Text>
+                  <Text className="font-semibold" color="muted">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(amountPaid || 0)}
+                  </Text>
+                  {hostedUrl ? (
+                    <Button
+                      color="tertiary"
+                      href={hostedUrl}
+                      rightIcon={<NewTabIcon className="h-[1.125rem]" />}
+                      target="_blank"
+                      variant="naked"
+                    >
+                      View
+                    </Button>
+                  ) : null}
+                </RowWrapper>
+              ),
+            )}
+          </>
+        )}
+      </Box>
     </Box>
   );
 };
