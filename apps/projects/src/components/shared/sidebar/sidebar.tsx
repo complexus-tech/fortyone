@@ -85,18 +85,26 @@ export const Sidebar = () => {
             <Menu.Items align="end">
               <Menu.Group>
                 <Menu.Item
-                  onClick={() => {
+                  onSelect={() => {
                     setIsKeyboardShortcutsOpen(true);
                   }}
                 >
                   <CommandIcon />
                   Keyboard shortcuts
                 </Menu.Item>
-                <Menu.Item disabled>
+                <Menu.Item
+                  onSelect={() => {
+                    window.open("mailto:support@complexus.app", "_blank");
+                  }}
+                >
                   <EmailIcon />
                   Contact support
                 </Menu.Item>
-                <Menu.Item disabled>
+                <Menu.Item
+                  onSelect={() => {
+                    window.open("https://docs.complexus.app", "_blank");
+                  }}
+                >
                   <DocsIcon />
                   Documentation
                 </Menu.Item>
