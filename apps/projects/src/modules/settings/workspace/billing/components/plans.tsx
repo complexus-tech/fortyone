@@ -6,13 +6,10 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
-import type { Plan as CheckoutPlan } from "@/lib/actions/billing/checkout"; // Renaming to avoid conflict
 import { checkout } from "@/lib/actions/billing/checkout";
-import {
-  changePlan,
-  type Plan as ChangePlanPlan,
-} from "@/lib/actions/billing/change-plan"; // Correct import and type
+import { changePlan } from "@/lib/actions/billing/change-plan";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import type { Plan } from "@/lib/actions/billing/types";
 import { plans, featureLabels } from "./plan-data";
 
 const FeatureCheck = ({ available }: { available: boolean }) => (
@@ -25,7 +22,6 @@ const FeatureCheck = ({ available }: { available: boolean }) => (
   </Box>
 );
 
-// Helper to render a feature value
 const FeatureValue = ({
   value,
 }: {
@@ -44,13 +40,83 @@ const FeatureValue = ({
 
 type Billing = "annual" | "monthly";
 
-// Combined Plan type for handlePlanAction
-type ActionPlan = CheckoutPlan | ChangePlanPlan;
+type Tier = ReturnType<typeof useSubscriptionFeatures>["tier"];
+type BillingIntervalApi = ReturnType<
+  typeof useSubscriptionFeatures
+>["billingInterval"];
+
+const getProButtonState = (
+  currentTier: Tier,
+  currentIntervalApi: BillingIntervalApi,
+  selectedIntervalUi: Billing,
+  isLoading: boolean,
+): { text: string; disabled: boolean } => {
+  let text = "Upgrade";
+  let disabled = isLoading;
+
+  if (currentTier === "pro") {
+    const currentProIntervalIsYear = currentIntervalApi === "year";
+    const targetIntervalIsAnnual = selectedIntervalUi === "annual";
+
+    if (targetIntervalIsAnnual && !currentProIntervalIsYear) {
+      text = "Switch to yearly";
+      disabled = isLoading;
+    } else if (!targetIntervalIsAnnual && currentProIntervalIsYear) {
+      text = "Switch to monthly";
+      disabled = isLoading;
+    } else {
+      text = "Current plan";
+      disabled = true;
+    }
+  } else if (currentTier === "business" || currentTier === "enterprise") {
+    text = "Downgrade";
+    disabled = isLoading;
+  }
+
+  if (isLoading) {
+    disabled = true;
+  }
+  return { text, disabled };
+};
+
+const getBusinessButtonState = (
+  currentTier: Tier,
+  currentIntervalApi: BillingIntervalApi,
+  selectedIntervalUi: Billing,
+  isLoading: boolean,
+): { text: string; disabled: boolean } => {
+  let text = "Upgrade";
+  let disabled = isLoading;
+
+  if (currentTier === "business") {
+    const currentBusinessIntervalIsYear = currentIntervalApi === "year";
+    const targetIntervalIsAnnual = selectedIntervalUi === "annual";
+
+    if (targetIntervalIsAnnual && !currentBusinessIntervalIsYear) {
+      text = "Switch to yearly";
+      disabled = isLoading;
+    } else if (!targetIntervalIsAnnual && currentBusinessIntervalIsYear) {
+      text = "Switch to monthly";
+      disabled = isLoading;
+    } else {
+      text = "Current plan";
+      disabled = true;
+    }
+  } else if (currentTier === "enterprise") {
+    text = "Downgrade";
+    disabled = isLoading;
+  }
+
+  if (isLoading) {
+    disabled = true;
+  }
+  return { text, disabled };
+};
 
 export const Plans = () => {
   const { tier, billingInterval } = useSubscriptionFeatures();
   const router = useRouter();
-  const pathname = usePathname(); // Used for checkout's cancelUrl
+  const pathname = usePathname();
   const [isProLoading, setIsProLoading] = useState(false);
   const [isBusinessLoading, setIsBusinessLoading] = useState(false);
   const [billing, setBilling] = useState<Billing>(
@@ -59,10 +125,10 @@ export const Plans = () => {
   const proPrice = 7;
   const businessPrice = 10;
 
-  const handlePlanAction = async (plan: ActionPlan) => {
+  const handlePlanAction = async (plan: Plan) => {
     const host = `${window.location.protocol}//${window.location.host}`;
-    const cancelUrl = `${host}${pathname}`; // For checkout
-    const successUrl = `${host}/my-work`; // For checkout
+    const cancelUrl = `${host}${pathname}`;
+    const successUrl = `${host}/my-work`;
 
     if (plan.startsWith("pro")) {
       setIsProLoading(true);
@@ -73,9 +139,8 @@ export const Plans = () => {
     let response;
     try {
       if (tier === "free" || tier === "trial") {
-        // Checkout requires successUrl and cancelUrl
         response = await checkout({
-          plan: plan as CheckoutPlan,
+          plan,
           successUrl,
           cancelUrl,
         });
@@ -83,15 +148,10 @@ export const Plans = () => {
           window.location.href = response.data.url;
         }
       } else {
-        // changePlan only takes the plan type
-        response = await changePlan(plan as ChangePlanPlan);
-        // After changePlan, we might need to refresh or show a success message
-        // Assuming changePlan's response will guide this or it's handled by a page refresh/global state update
+        response = await changePlan(plan as Plan);
         if (!response.error) {
           toast.success("Plan change initiated successfully!");
-          // Potentially refresh data or rely on Stripe webhook to update UI
-          // For now, a toast message will confirm initiation.
-          router.refresh(); // Or navigate to a confirmation page, or update state
+          router.refresh();
         }
       }
 
@@ -100,8 +160,6 @@ export const Plans = () => {
           description: response.error.message,
         });
       }
-      // Success for checkout is handled by redirect.
-      // Success for changePlan is handled above with a toast and potential reload.
     } catch (error) {
       toast.error("An unexpected error occurred.", {
         description: error instanceof Error ? error.message : String(error),
@@ -112,53 +170,11 @@ export const Plans = () => {
     }
   };
 
-  // Determine Pro Button Text and Disabled State
-  let proButtonText = "Upgrade";
-  let isProButtonDisabled = isProLoading;
+  const { text: proButtonText, disabled: isProButtonDisabled } =
+    getProButtonState(tier, billingInterval, billing, isProLoading);
 
-  if (tier === "pro") {
-    const currentProIntervalIsYear = billingInterval === "year";
-    const targetIntervalIsAnnual = billing === "annual";
-
-    if (targetIntervalIsAnnual && !currentProIntervalIsYear) {
-      proButtonText = "Switch to yearly";
-      isProButtonDisabled = isProLoading;
-    } else if (!targetIntervalIsAnnual && currentProIntervalIsYear) {
-      proButtonText = "Switch to monthly";
-      isProButtonDisabled = isProLoading;
-    } else {
-      proButtonText = "Current plan";
-      isProButtonDisabled = true;
-    }
-  } else if (tier === "business" || tier === "enterprise") {
-    proButtonText = "Downgrade"; // To Pro
-    isProButtonDisabled = isProLoading;
-  }
-  if (isProLoading) isProButtonDisabled = true;
-
-  // Determine Business Button Text and Disabled State
-  let businessButtonText = "Upgrade";
-  let isBusinessButtonDisabled = isBusinessLoading;
-
-  if (tier === "business") {
-    const currentBusinessIntervalIsYear = billingInterval === "year";
-    const targetIntervalIsAnnual = billing === "annual";
-
-    if (targetIntervalIsAnnual && !currentBusinessIntervalIsYear) {
-      businessButtonText = "Switch to yearly";
-      isBusinessButtonDisabled = isBusinessLoading;
-    } else if (!targetIntervalIsAnnual && currentBusinessIntervalIsYear) {
-      businessButtonText = "Switch to monthly";
-      isBusinessButtonDisabled = isBusinessLoading;
-    } else {
-      businessButtonText = "Current plan";
-      isBusinessButtonDisabled = true;
-    }
-  } else if (tier === "enterprise") {
-    businessButtonText = "Downgrade"; // To Business
-    isBusinessButtonDisabled = isBusinessLoading;
-  }
-  if (isBusinessLoading) isBusinessButtonDisabled = true;
+  const { text: businessButtonText, disabled: isBusinessButtonDisabled } =
+    getBusinessButtonState(tier, billingInterval, billing, isBusinessLoading);
 
   return (
     <Box className="hidden overflow-x-auto md:block">
@@ -223,9 +239,9 @@ export const Plans = () => {
               disabled={isProButtonDisabled}
               fullWidth
               onClick={() => {
-                const planToSubmit: ActionPlan =
-                  billing === "annual" ? "pro_yearly" : "pro_monthly";
-                handlePlanAction(planToSubmit);
+                handlePlanAction(
+                  billing === "annual" ? "pro_yearly" : "pro_monthly",
+                );
               }}
             >
               {proButtonText}
@@ -246,9 +262,9 @@ export const Plans = () => {
               disabled={isBusinessButtonDisabled}
               fullWidth
               onClick={() => {
-                const planToSubmit: ActionPlan =
-                  billing === "annual" ? "business_yearly" : "business_monthly";
-                handlePlanAction(planToSubmit);
+                handlePlanAction(
+                  billing === "annual" ? "business_yearly" : "business_monthly",
+                );
               }}
             >
               {businessButtonText}

@@ -4,12 +4,7 @@ import { auth } from "@/auth";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
-
-export type Plan =
-  | "pro_monthly"
-  | "pro_yearly"
-  | "business_monthly"
-  | "business_yearly";
+import type { Plan } from "./types";
 
 export const changePlan = async (plan: Plan) => {
   try {
