@@ -8,7 +8,7 @@ import {
 } from "react-day-picker";
 
 import { cn } from "lib";
-import { ArrowLeftIcon, ArrowRightIcon } from "icons";
+import { ArrowLeft2Icon, ArrowRight2Icon } from "icons";
 
 export type CalendarProps =
   | DayPickerDefaultProps
@@ -63,8 +63,8 @@ export const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ArrowLeftIcon className="h-4 w-auto" />,
-        IconRight: () => <ArrowRightIcon className="h-4 w-auto" />,
+        IconLeft: () => <ArrowLeft2Icon className="h-4 w-auto" />,
+        IconRight: () => <ArrowRight2Icon className="h-4 w-auto" />,
       }}
       {...props}
     />
