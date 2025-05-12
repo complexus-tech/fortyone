@@ -316,15 +316,18 @@ export const Plans = () => {
               onClick={() => {
                 const planId =
                   billing === "annual" ? "pro_yearly" : "pro_monthly";
-                const actionType = getActionType(tier, "pro");
-
-                setPendingAction({
-                  plan: planId,
-                  type: actionType,
-                  from: getTierLabel(tier),
-                  to: `Pro ${billing === "annual" ? "yearly" : "monthly"}`,
-                });
-                setIsOpen(true);
+                if (tier === "free" || tier === "trial") {
+                  handlePlanAction(planId);
+                } else {
+                  const actionType = getActionType(tier, "pro");
+                  setPendingAction({
+                    plan: planId,
+                    type: actionType,
+                    from: getTierLabel(tier),
+                    to: `Pro ${billing === "annual" ? "yearly" : "monthly"}`,
+                  });
+                  setIsOpen(true);
+                }
               }}
             >
               {proButtonText}
@@ -347,15 +350,18 @@ export const Plans = () => {
               onClick={() => {
                 const planId =
                   billing === "annual" ? "business_yearly" : "business_monthly";
-                const actionType = getActionType(tier, "business");
-
-                setPendingAction({
-                  plan: planId,
-                  type: actionType,
-                  from: getTierLabel(tier),
-                  to: `Business ${billing === "annual" ? "yearly" : "monthly"}`,
-                });
-                setIsOpen(true);
+                if (tier === "free" || tier === "trial") {
+                  handlePlanAction(planId);
+                } else {
+                  const actionType = getActionType(tier, "business");
+                  setPendingAction({
+                    plan: planId,
+                    type: actionType,
+                    from: getTierLabel(tier),
+                    to: `Business ${billing === "annual" ? "yearly" : "monthly"}`,
+                  });
+                  setIsOpen(true);
+                }
               }}
             >
               {businessButtonText}
