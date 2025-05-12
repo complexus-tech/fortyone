@@ -7,11 +7,13 @@ import { usePathname } from "next/navigation";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMembers } from "@/lib/hooks/members";
+import { useInvoices } from "@/lib/hooks/billing/invoices";
 import { Plans } from "./components/plans";
 
 export const Billing = () => {
   const pathname = usePathname();
   const { data: members } = useMembers();
+  const { data: invoices = [] } = useInvoices();
   const { tier } = useSubscriptionFeatures();
   const [isLoading, setIsLoading] = useState(false);
   const totalValidMembers = members?.filter(
