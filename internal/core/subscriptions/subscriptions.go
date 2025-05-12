@@ -389,6 +389,10 @@ func (s *Service) ChangeSubscriptionPlan(ctx context.Context, workspaceID uuid.U
 	defer span.End()
 	s.log.Info(ctx, "Attempting to change subscription plan", "workspace_id", workspaceID, "new_lookup_key", newLookupKey)
 
+	if newLookupKey == "free" {
+		return s.CancelSubscription(ctx, workspaceID)
+	}
+
 	// 1. Get current active subscription from DB
 	currentInternalSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
 	if err != nil {
