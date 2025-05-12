@@ -41,7 +41,10 @@ export const useUpdateRoleMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res?.error?.message) {
+        throw new Error(res.error.message);
+      }
       queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
     },
   });

@@ -33,7 +33,10 @@ export const useRemoveMemberMutation = () => {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
       queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
       queryClient.invalidateQueries({ queryKey: memberKeys.all });
     },
