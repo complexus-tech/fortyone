@@ -27,6 +27,7 @@ import { getPendingInvitations } from "@/modules/invitations/queries/pending-inv
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { getInvoices } from "@/lib/queries/billing/invoices";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
@@ -100,6 +101,11 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details,
     queryFn: () => getSubscription(session),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+  });
+  queryClient.prefetchQuery({
+    queryKey: ["invoices"],
+    queryFn: () => getInvoices(session),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;
