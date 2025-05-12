@@ -5,7 +5,7 @@ import { cn } from "lib";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { checkout } from "@/lib/actions/billing/checkout";
 import { changePlan } from "@/lib/actions/billing/change-plan";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -116,7 +116,6 @@ const getBusinessButtonState = (
 
 export const Plans = () => {
   const { tier, billingInterval } = useSubscriptionFeatures();
-  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isProLoading, setIsProLoading] = useState(false);
@@ -159,6 +158,9 @@ export const Plans = () => {
         }
         window.location.href = response.data?.url ?? "";
       } else {
+        const toastId = toast.loading("Processing plan change...", {
+          description: "Please wait while we process your request.",
+        });
         const response = await changePlan(plan);
         if (response.error?.message) {
           toast.error("Failed to process plan change", {
@@ -166,8 +168,11 @@ export const Plans = () => {
           });
           return;
         }
-        toast.success("Plan change initiated successfully!");
-        router.refresh();
+        toast.success("Plan change initiated!", {
+          description:
+            "You will receive an email when the plan change is complete.",
+          id: toastId,
+        });
       }
     } catch (error) {
       toast.error("An unexpected error occurred.", {
