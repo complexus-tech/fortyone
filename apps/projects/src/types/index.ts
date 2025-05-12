@@ -137,3 +137,14 @@ export type Subscription = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Invoice = {
+  invoiceId: number;
+  stripeInvoiceId: string;
+  amountPaid: number;
+  invoiceDate: string;
+  seatsCount: number;
+  customerName: string;
+  hostedUrl: string;
+  createdAt: string;
+};
