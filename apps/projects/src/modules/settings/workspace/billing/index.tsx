@@ -237,7 +237,7 @@ export const Billing = () => {
           description="Your recent billing history and invoices."
           title="Recent Invoices"
         />
-        {invoices.length !== 0 ? (
+        {invoices.length === 0 ? (
           <Flex className="px-4 py-5 md:px-6">
             <Text color="muted">No invoices available</Text>
           </Flex>
