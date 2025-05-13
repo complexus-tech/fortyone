@@ -20,7 +20,7 @@ export const Billing = () => {
   const pathname = usePathname();
   const { data: members } = useMembers();
   const { data: invoices = [] } = useInvoices();
-  const { tier, billingInterval } = useSubscriptionFeatures();
+  const { tier, billingInterval, billingEndsAt } = useSubscriptionFeatures();
   const [isLoading, setIsLoading] = useState(false);
   const [showPlans, setShowPlans] = useState(tier === "free");
   const totalValidMembers =
@@ -207,7 +207,11 @@ export const Billing = () => {
               </Box>
               <Box>
                 <Text className="mb-0.5">Next renewal</Text>
-                <Text color="muted">May 25</Text>
+                <Text color="muted">
+                  {billingEndsAt
+                    ? format(new Date(billingEndsAt), "MMM dd")
+                    : "N/A"}
+                </Text>
               </Box>
             </Flex>
             <Divider />
