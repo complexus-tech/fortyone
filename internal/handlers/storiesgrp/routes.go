@@ -45,28 +45,29 @@ func Routes(cfg Config, app *web.App) {
 	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	gzip := mid.Gzip(cfg.Log)
 
 	h := New(storiesService, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
-	app.Get("/workspaces/{workspaceId}/stories", h.List, auth)
-	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth)
+	app.Get("/workspaces/{workspaceId}/stories", h.List, auth, gzip)
+	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth, gzip)
 	app.Post("/workspaces/{workspaceId}/stories", h.Create, auth)
 	app.Put("/workspaces/{workspaceId}/stories/{id}", h.Update, auth)
 	app.Delete("/workspaces/{workspaceId}/stories/{id}", h.Delete, auth)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/restore", h.Restore, auth)
 	app.Post("/workspaces/{workspaceId}/stories/restore", h.BulkRestore, auth)
 	app.Delete("/workspaces/{workspaceId}/stories", h.BulkDelete, auth)
-	app.Get("/workspaces/{workspaceId}/stories/{id}/activities", h.GetActivities, auth)
+	app.Get("/workspaces/{workspaceId}/stories/{id}/activities", h.GetActivities, auth, gzip)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/duplicate", h.DuplicateStory, auth)
 	app.Get("/workspaces/{workspaceId}/stories/count", h.CountInWorkspace, auth)
 
 	// Comments
 	app.Post("/workspaces/{workspaceId}/stories/{id}/comments", h.CreateComment, auth)
-	app.Get("/workspaces/{workspaceId}/stories/{id}/comments", h.GetComments, auth)
+	app.Get("/workspaces/{workspaceId}/stories/{id}/comments", h.GetComments, auth, gzip)
 	app.Put("/workspaces/{workspaceId}/stories/{id}/labels", h.UpdateLabels, auth)
-	app.Get("/workspaces/{workspaceId}/stories/{id}/links", h.GetStoryLinks, auth)
-	app.Get("/workspaces/{workspaceId}/my-stories", h.MyStories, auth)
+	app.Get("/workspaces/{workspaceId}/stories/{id}/links", h.GetStoryLinks, auth, gzip)
+	app.Get("/workspaces/{workspaceId}/my-stories", h.MyStories, auth, gzip)
 
 	// Attachments
 	app.Post("/workspaces/{workspaceId}/stories/{id}/attachments", h.UploadStoryAttachment, auth)

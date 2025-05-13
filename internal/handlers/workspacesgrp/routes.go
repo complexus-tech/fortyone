@@ -43,7 +43,6 @@ func Routes(cfg Config, app *web.App) {
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
 	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.WebhookSecret)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService)
 
 	h := New(workspacesService, teamsService,

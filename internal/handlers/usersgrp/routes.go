@@ -24,14 +24,14 @@ func Routes(cfg Config, app *web.App) {
 	usersService := users.New(cfg.Log, usersRepo)
 	h := New(usersService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-
+	gzip := mid.Gzip(cfg.Log)
 	// Public endpoints
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)
 
 	// Protected endpoints
-	app.Get("/workspaces/{workspaceId}/members", h.List, auth)
+	app.Get("/workspaces/{workspaceId}/members", h.List, auth, gzip)
 	app.Get("/users/profile", h.GetProfile, auth)
 	app.Put("/users/profile", h.UpdateProfile, auth)
 	app.Delete("/users/profile", h.DeleteProfile, auth)
