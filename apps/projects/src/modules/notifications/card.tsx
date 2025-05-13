@@ -59,9 +59,9 @@ export const NotificationCard = ({
           >
             <Box
               className={cn(
-                "block cursor-pointer border-b-[0.5px] border-gray-100 px-5 py-[0.655rem] dark:border-dark-100/80 md:px-4",
+                "block cursor-pointer border-b-[0.5px] border-gray-100 px-5 py-[0.655rem] transition hover:bg-gray-50/60 dark:border-dark-100/80 dark:hover:bg-dark-300 md:px-4",
                 {
-                  "bg-gray-100/60 dark:bg-dark-100": pathname.includes(id),
+                  "bg-gray-100/70 dark:bg-dark-200": pathname.includes(id),
                 },
               )}
             >

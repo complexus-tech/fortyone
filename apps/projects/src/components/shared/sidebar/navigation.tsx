@@ -64,6 +64,11 @@ export const Navigation = () => {
       href: "/objectives",
       disabled: !features.objectiveEnabled,
     },
+    // {
+    //   name: "Running sprints",
+    //   icon: <SprintsIcon />,
+    //   href: "/sprints",
+    // },
   ];
 
   return (
