@@ -5,6 +5,7 @@ import { useState } from "react";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useUserRole } from "@/hooks";
 import { CommandMenu } from "../command-menu";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
@@ -14,6 +15,7 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
+  const { userRole } = useUserRole();
 
   return (
     <Box className="flex h-dvh flex-col justify-between bg-gray-50/70 px-4 pb-6 dark:bg-[#000000]/45">
@@ -41,7 +43,7 @@ export const Sidebar = () => {
         )}
 
         <Flex align="center" className="mt-3 gap-3" justify="between">
-          {tier === "trial" ? (
+          {tier === "trial" || userRole === "admin" ? (
             <Tooltip
               className="ml-2 max-w-56"
               title={`${trialDaysRemaining} days left in your trial. Upgrade to a paid plan to get more premium features.`}
