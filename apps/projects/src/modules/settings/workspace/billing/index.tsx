@@ -69,7 +69,7 @@ export const Billing = () => {
   };
 
   // Show free tier users only the plans component
-  if (tier === "free" || showPlans) {
+  if (tier === "free" || tier === "trial" || showPlans) {
     return (
       <Box>
         <Text as="h1" className="mb-4 text-2xl font-medium">
