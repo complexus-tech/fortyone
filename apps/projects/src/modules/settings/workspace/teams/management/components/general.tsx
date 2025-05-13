@@ -110,35 +110,35 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
             />
           </Box>
         </Flex>
-        <Flex align="center" className="gap-3 px-6 py-4" justify="between">
-          <Box>
-            <Text>Private team</Text>
-            <Text className="max-w-xl" color="muted" fontSize="sm">
-              Private teams are only visible to members of the team. Admin and
-              team leads can add members to private teams.
-            </Text>
-          </Box>
-          <FeatureGuard
-            fallback={
-              <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
-                <Flex align="center" gap={2}>
-                  <WarningIcon className="text-warning dark:text-warning" />
-                  <Text>
-                    {userRole === "admin"
-                      ? "Upgrade"
-                      : "Ask your admin to upgrade"}{" "}
-                    to a higher plan to create private teams
-                  </Text>
-                </Flex>
-                {userRole === "admin" && (
-                  <Button color="warning" href="/settings/workspace/billing">
-                    Upgrade now
-                  </Button>
-                )}
-              </Wrapper>
-            }
-            feature="privateTeams"
-          >
+        <FeatureGuard
+          fallback={
+            <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Flex align="center" gap={2}>
+                <WarningIcon className="text-warning dark:text-warning" />
+                <Text>
+                  {userRole === "admin"
+                    ? "Upgrade"
+                    : "Ask your admin to upgrade"}{" "}
+                  to a higher plan to create private teams
+                </Text>
+              </Flex>
+              {userRole === "admin" && (
+                <Button color="warning" href="/settings/workspace/billing">
+                  Upgrade now
+                </Button>
+              )}
+            </Wrapper>
+          }
+          feature="privateTeams"
+        >
+          <Flex align="center" className="gap-3 px-6 py-4" justify="between">
+            <Box>
+              <Text>Private team</Text>
+              <Text className="max-w-xl" color="muted" fontSize="sm">
+                Private teams are only visible to members of the team. Admin and
+                team leads can add members to private teams.
+              </Text>
+            </Box>
             <Switch
               checked={form.isPrivate}
               className="shrink-0"
@@ -147,8 +147,8 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
                 setForm({ ...form, isPrivate: checked });
               }}
             />
-          </FeatureGuard>
-        </Flex>
+          </Flex>
+        </FeatureGuard>
         {hasChanged ? (
           <Box className="px-6 py-4">
             <Button loading={updateTeam.isPending} type="submit">
