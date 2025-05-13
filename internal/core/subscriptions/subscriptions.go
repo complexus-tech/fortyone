@@ -206,6 +206,12 @@ func (s *Service) UpdateSubscriptionSeats(ctx context.Context, workspaceID uuid.
 	ctx, span := web.AddSpan(ctx, "business.subscriptions.AddSeatToSubscription")
 	defer span.End()
 
+	hasActiveSub := s.repo.HasActiveSubscriptionByWorkspaceID(ctx, workspaceID)
+	if !hasActiveSub {
+		s.log.Error(ctx, "Cannot add seat: workspace has no active subscription", "workspace_id", workspaceID)
+		return ErrNoActiveSubscriptionToChange
+	}
+
 	// 1. Get current subscription details from DB
 	subData, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
 	if err != nil {
