@@ -19,6 +19,7 @@ import { SectionHeader } from "@/modules/settings/components";
 import type { CreateTeamInput } from "@/modules/teams/types";
 import { useCreateTeamMutation } from "@/modules/teams/hooks/use-create-team";
 import { FeatureGuard } from "@/components/ui";
+import { useUserRole } from "@/hooks";
 
 const formatCode = (name: string) => {
   return name
@@ -36,6 +37,7 @@ const initialForm = {
 
 export const CreateTeam = () => {
   const { data: teams = [] } = useTeams();
+  const { userRole } = useUserRole();
   const [form, setForm] = useState<CreateTeamInput>(initialForm);
   const [hasCodeBlurred, setHasCodeBlurred] = useState(false);
   const createTeam = useCreateTeamMutation();
@@ -79,11 +81,16 @@ export const CreateTeam = () => {
           <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
-              <Text>Upgrade to a higher plan to create more teams</Text>
+              <Text>
+                {userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"}{" "}
+                to a higher plan to create more teams
+              </Text>
             </Flex>
-            <Button color="warning" href="/settings/workspace/billing">
-              Upgrade now
-            </Button>
+            {userRole === "admin" && (
+              <Button color="warning" href="/settings/workspace/billing">
+                Upgrade now
+              </Button>
+            )}
           </Wrapper>
         }
         feature="maxTeams"
@@ -166,12 +173,20 @@ export const CreateTeam = () => {
                     <Flex align="center" gap={2}>
                       <WarningIcon className="text-warning dark:text-warning" />
                       <Text>
-                        Upgrade to a higher plan to create private teams
+                        {userRole === "admin"
+                          ? "Upgrade"
+                          : "Ask your admin to upgrade"}
+                        to a higher plan to create private teams
                       </Text>
                     </Flex>
-                    <Button color="warning" href="/settings/workspace/billing">
-                      Upgrade now
-                    </Button>
+                    {userRole === "admin" && (
+                      <Button
+                        color="warning"
+                        href="/settings/workspace/billing"
+                      >
+                        Upgrade now
+                      </Button>
+                    )}
                   </Wrapper>
                 }
                 feature="privateTeams"

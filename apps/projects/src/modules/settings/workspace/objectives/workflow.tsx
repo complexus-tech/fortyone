@@ -13,7 +13,7 @@ import {
   useDeleteObjectiveStatusMutation,
 } from "@/modules/objectives/hooks/statuses";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import { StateRow } from "./components/state-row";
 
 const categories: { label: string; value: StateCategory }[] = [
@@ -35,6 +35,7 @@ export const WorkflowSettings = () => {
     null,
   );
   const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
 
   const handleDeleteState = (status: ObjectiveStatus) => {
     const categoryStatuses = statuses.filter(
@@ -89,13 +90,15 @@ export const WorkflowSettings = () => {
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
-                Upgrade to a business or enterprise plan to customize workflow
-                states
+                {userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"}{" "}
+                to a business or enterprise plan to customize workflow states
               </Text>
             </Flex>
-            <Button color="warning" href="/settings/workspace/billing">
-              Upgrade now
-            </Button>
+            {userRole === "admin" && (
+              <Button color="warning" href="/settings/workspace/billing">
+                Upgrade now
+              </Button>
+            )}
           </Wrapper>
         }
         feature="customWorkflows"

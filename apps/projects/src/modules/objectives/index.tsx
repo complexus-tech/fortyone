@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { Text, Button, Box } from "ui";
 import { CrownIcon } from "icons";
 import { FeatureGuard } from "@/components/ui";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
 import { TeamObjectivesHeader } from "./components/team-header";
@@ -12,6 +12,7 @@ import { useObjectives, useTeamObjectives } from "./hooks/use-objectives";
 import { ObjectivesSkeleton } from "./components/objectives-skeleton";
 
 const Guard = () => {
+  const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
   return (
     <Box className="flex h-[80%] items-center justify-center">
@@ -21,7 +22,8 @@ const Guard = () => {
           Upgrade your plan
         </Text>
         <Text className="mb-6 max-w-md text-center" color="muted">
-          Upgrade your plan to create{" "}
+          {userRole === "admin" ? "Upgrade " : "Ask your admin to upgrade "}
+          your plan to create{" "}
           {getTermDisplay("objectiveTerm", {
             variant: "plural",
           })}
@@ -31,9 +33,11 @@ const Guard = () => {
           })}
           , and unlock more premium features.
         </Text>
-        <Button color="warning" href="/settings/workspace/billing">
-          Upgrade now
-        </Button>
+        {userRole === "admin" && (
+          <Button color="warning" href="/settings/workspace/billing">
+            Upgrade now
+          </Button>
+        )}
       </Box>
     </Box>
   );

@@ -35,7 +35,12 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "lib";
 import { useRouter } from "next/navigation";
-import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
+import {
+  useFeatures,
+  useLocalStorage,
+  useTerminology,
+  useUserRole,
+} from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useMembers } from "@/lib/hooks/members";
@@ -71,6 +76,7 @@ export const NewObjectiveDialog = ({
   teamId?: string;
 }) => {
   const router = useRouter();
+  const { userRole } = useUserRole();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
@@ -252,8 +258,11 @@ export const NewObjectiveDialog = ({
                   variant:
                     getLimit("maxObjectives") !== 1 ? "plural" : "singular",
                 })}{" "}
-                on your {tier.replace("free", "hobby")} plan. Upgrade to create
-                unlimited{" "}
+                on your {tier.replace("free", "hobby")} plan.{" "}
+                {userRole === "admin"
+                  ? "Upgrade "
+                  : "Ask your admin to upgrade "}
+                to create unlimited{" "}
                 {getTermDisplay("objectiveTerm", {
                   variant: "plural",
                 })}{" "}
@@ -282,16 +291,18 @@ export const NewObjectiveDialog = ({
                   </Text>
                 </Flex>
               </Wrapper>
-              <Button
-                align="center"
-                className="mt-4 border-0"
-                fullWidth
-                href="/settings/workspace/billing"
-                rounded="lg"
-                size="lg"
-              >
-                Upgrade now
-              </Button>
+              {userRole === "admin" && (
+                <Button
+                  align="center"
+                  className="mt-4 border-0"
+                  fullWidth
+                  href="/settings/workspace/billing"
+                  rounded="lg"
+                  size="lg"
+                >
+                  Upgrade now
+                </Button>
+              )}
               <Button
                 align="center"
                 className="mb-2 mt-3 border-[0.5px]"

@@ -13,6 +13,7 @@ import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
 import { invitationKeys } from "@/constants/keys";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useUserRole } from "@/hooks";
 import { FeatureGuard } from "../feature-guard";
 
 type InviteFormState = {
@@ -35,6 +36,7 @@ export const InviteMembersDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   const queryClient = useQueryClient();
+  const { userRole } = useUserRole();
   const { remaining, tier, getLimit } = useSubscriptionFeatures();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
@@ -211,16 +213,20 @@ export const InviteMembersDialog = ({
                   <Text>
                     You&apos;ve reached the limit of {getLimit("maxMembers")}{" "}
                     members on your {tier.replace("free", "hobby")} plan.
-                    Upgrade to invite more members.
+                    {userRole === "admin"
+                      ? "Upgrade to invite more members."
+                      : "Ask your admin to upgrade to invite more members."}
                   </Text>
                 </Flex>
-                <Button
-                  className="shrink-0"
-                  color="warning"
-                  href="/settings/workspace/billing"
-                >
-                  Upgrade now
-                </Button>
+                {userRole === "admin" && (
+                  <Button
+                    className="shrink-0"
+                    color="warning"
+                    href="/settings/workspace/billing"
+                  >
+                    Upgrade now
+                  </Button>
+                )}
               </Wrapper>
             </Dialog.Body>
           }

@@ -17,6 +17,7 @@ import type { Team } from "@/modules/teams/types";
 import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { FeatureGuard } from "@/components/ui";
+import { useUserRole } from "@/hooks";
 
 export const GeneralSettings = ({ team }: { team: Team }) => {
   const [form, setForm] = useState({
@@ -25,7 +26,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
     color: team.color,
     isPrivate: team.isPrivate,
   });
-
+  const { userRole } = useUserRole();
   const updateTeam = useUpdateTeamMutation(team.id);
 
   const hasChanged = useMemo(() => {
@@ -122,11 +123,18 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
                 <Flex align="center" gap={2}>
                   <WarningIcon className="text-warning dark:text-warning" />
-                  <Text>Upgrade to a higher plan to create private teams</Text>
+                  <Text>
+                    {userRole === "admin"
+                      ? "Upgrade"
+                      : "Ask your admin to upgrade"}{" "}
+                    to a higher plan to create private teams
+                  </Text>
                 </Flex>
-                <Button color="warning" href="/settings/workspace/billing">
-                  Upgrade now
-                </Button>
+                {userRole === "admin" && (
+                  <Button color="warning" href="/settings/workspace/billing">
+                    Upgrade now
+                  </Button>
+                )}
               </Wrapper>
             }
             feature="privateTeams"

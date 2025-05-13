@@ -42,7 +42,12 @@ import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
+import {
+  useFeatures,
+  useLocalStorage,
+  useTerminology,
+  useUserRole,
+} from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -86,6 +91,7 @@ export const NewStoryDialog = ({
   assigneeId?: string | null;
 }) => {
   const session = useSession();
+  const { userRole } = useUserRole();
   const queryClient = useQueryClient();
   const router = useRouter();
   const features = useFeatures();
@@ -282,52 +288,49 @@ export const NewStoryDialog = ({
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
-              <Text
-                className="mb-4 dark:font-normal"
-                color="muted"
-                fontSize="lg"
-              >
+              <Text className="mb-4 dark:font-normal" color="muted">
                 You&apos;ve reached the limit of {getLimit("maxStories")}{" "}
                 {getTermDisplay("storyTerm", {
                   variant: "plural",
                 })}{" "}
-                on your {tier.replace("free", "hobby")} plan. Upgrade to create
+                on your {tier.replace("free", "hobby")} plan.{" "}
+                {userRole === "admin" ? "Upgrade" : "Ask your admin"} to create
                 unlimited {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
                 and unlock premium features.
               </Text>
               <Wrapper className="dark:bg-dark-300/60">
                 <Flex align="center" gap={3} justify="between">
-                  <Text color="muted" fontSize="lg">
-                    Current plan:
-                  </Text>
-                  <Text fontSize="lg" transform="capitalize">
+                  <Text color="muted">Current plan:</Text>
+                  <Text transform="capitalize">
                     {tier.replace("free", "hobby")}
                   </Text>
                 </Flex>
                 <Divider className="my-3" />
                 <Flex align="center" gap={3} justify="between">
-                  <Text color="muted" fontSize="lg">
+                  <Text color="muted">
                     {getTermDisplay("storyTerm", {
                       variant: "plural",
                       capitalize: true,
                     })}
                     :
                   </Text>
-                  <Text color="primary" fontSize="lg">
+                  <Text color="primary">
                     {totalStories}/{getLimit("maxStories")}
                   </Text>
                 </Flex>
               </Wrapper>
-              <Button
-                align="center"
-                className="mt-4 border-0"
-                fullWidth
-                href="/settings/workspace/billing"
-                rounded="lg"
-                size="lg"
-              >
-                Upgrade now
-              </Button>
+              {userRole === "admin" && (
+                <Button
+                  align="center"
+                  className="mt-4 border-0"
+                  fullWidth
+                  href="/settings/workspace/billing"
+                  rounded="lg"
+                  size="lg"
+                >
+                  Upgrade now
+                </Button>
+              )}
               <Button
                 align="center"
                 className="mb-2 mt-3 border-[0.5px]"

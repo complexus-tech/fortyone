@@ -12,6 +12,7 @@ import { useCreateStateMutation } from "@/lib/hooks/states/create-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { useUserRole } from "@/hooks";
 import { StateRow } from "./state-row";
 
 const categories: { label: string; value: StateCategory }[] = [
@@ -25,6 +26,7 @@ const categories: { label: string; value: StateCategory }[] = [
 
 export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
+  const { userRole } = useUserRole();
   const { data: states = [] } = useTeamStatuses(teamId);
   const { data: stories = [] } = useTeamStories(teamId);
   const deleteMutation = useDeleteStateMutation();
@@ -76,11 +78,16 @@ export const WorkflowSettings = () => {
         <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
           <Flex align="center" gap={2}>
             <WarningIcon className="text-warning dark:text-warning" />
-            <Text>Upgrade plan to create custom team workflows</Text>
+            <Text>
+              {userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"}{" "}
+              to create custom team workflows
+            </Text>
           </Flex>
-          <Button color="warning" href="/settings/workspace/billing">
-            Upgrade now
-          </Button>
+          {userRole === "admin" && (
+            <Button color="warning" href="/settings/workspace/billing">
+              Upgrade now
+            </Button>
+          )}
         </Wrapper>
       }
       feature="customWorkflows"
