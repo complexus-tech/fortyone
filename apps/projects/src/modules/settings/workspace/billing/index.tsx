@@ -139,7 +139,7 @@ export const Billing = () => {
 
   return (
     <Box
-      className={cn("mx-auto max-w-[54rem]", {
+      className={cn("mx-auto max-w-[52rem]", {
         "max-w-7xl": showPlans,
       })}
     >
