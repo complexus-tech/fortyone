@@ -112,22 +112,24 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
         </Flex>
         <FeatureGuard
           fallback={
-            <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
-              <Flex align="center" gap={2}>
-                <WarningIcon className="text-warning dark:text-warning" />
-                <Text>
-                  {userRole === "admin"
-                    ? "Upgrade"
-                    : "Ask your admin to upgrade"}{" "}
-                  to a higher plan to create private teams
-                </Text>
-              </Flex>
-              {userRole === "admin" && (
-                <Button color="warning" href="/settings/workspace/billing">
-                  Upgrade now
-                </Button>
-              )}
-            </Wrapper>
+            <Box className="px-6">
+              <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                <Flex align="center" gap={2}>
+                  <WarningIcon className="text-warning dark:text-warning" />
+                  <Text>
+                    {userRole === "admin"
+                      ? "Upgrade"
+                      : "Ask your admin to upgrade"}{" "}
+                    to a higher plan to create private teams
+                  </Text>
+                </Flex>
+                {userRole === "admin" && (
+                  <Button color="warning" href="/settings/workspace/billing">
+                    Upgrade now
+                  </Button>
+                )}
+              </Wrapper>
+            </Box>
           }
           feature="privateTeams"
         >
