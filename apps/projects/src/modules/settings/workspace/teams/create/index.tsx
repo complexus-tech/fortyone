@@ -161,8 +161,8 @@ export const CreateTeam = () => {
             </Flex>
             <FeatureGuard
               fallback={
-                <Box className="px-6">
-                  <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                <Box className="px-6 py-4">
+                  <Wrapper className="flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
                     <Flex align="center" gap={2}>
                       <WarningIcon className="text-warning dark:text-warning" />
                       <Text>
