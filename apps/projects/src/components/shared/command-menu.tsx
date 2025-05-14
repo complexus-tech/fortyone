@@ -112,8 +112,10 @@ export const CommandMenu = () => {
     setIsKeyboardShortcutsOpen((prev) => !prev);
   });
   useHotkeys("mod+i", () => {
-    setIsInviteMembersOpen((prev) => !prev);
-    setOpen(false);
+    if (userRole === "admin") {
+      setIsInviteMembersOpen((prev) => !prev);
+      setOpen(false);
+    }
   });
 
   useHotkeys("/", () => {
@@ -168,20 +170,24 @@ export const CommandMenu = () => {
             setOpen(false);
           },
         },
-        {
-          label: "Invite Members",
-          icon: <UsersAddIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>⌘</Kbd>
-              <Kbd>i</Kbd>
-            </Flex>
-          ),
-          action: () => {
-            setIsInviteMembersOpen(true);
-            setOpen(false);
-          },
-        },
+        ...(userRole === "admin"
+          ? [
+              {
+                label: "Invite Members",
+                icon: <UsersAddIcon />,
+                shortcut: (
+                  <Flex align="center" gap={1}>
+                    <Kbd>⌘</Kbd>
+                    <Kbd>i</Kbd>
+                  </Flex>
+                ),
+                action: () => {
+                  setIsInviteMembersOpen(true);
+                  setOpen(false);
+                },
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -404,10 +410,12 @@ export const CommandMenu = () => {
         isOpen={isObjectivesOpen}
         setIsOpen={setIsObjectivesOpen}
       />
-      <InviteMembersDialog
-        isOpen={isInviteMembersOpen}
-        setIsOpen={setIsInviteMembersOpen}
-      />
+      {userRole === "admin" && (
+        <InviteMembersDialog
+          isOpen={isInviteMembersOpen}
+          setIsOpen={setIsInviteMembersOpen}
+        />
+      )}
     </>
   );
 };
