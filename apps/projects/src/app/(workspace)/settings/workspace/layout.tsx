@@ -17,7 +17,7 @@ export default async function RootLayout({
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );
 
-  if (!workspace || workspace.userRole === "guest") {
+  if (workspace?.userRole !== "admin") {
     redirect("/settings/account");
   }
 
