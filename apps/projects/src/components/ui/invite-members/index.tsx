@@ -1,9 +1,17 @@
 "use client";
 
-import { Button, Dialog, Select, TextArea, Text, Flex, Wrapper } from "ui";
+import {
+  Button,
+  Dialog,
+  Select,
+  TextArea,
+  Text,
+  Flex,
+  Wrapper,
+  Checkbox,
+} from "ui";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
-import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { InviteMembersIcon, WarningIcon } from "icons";
 import { useRouter } from "next/navigation";
@@ -43,7 +51,7 @@ export const InviteMembersDialog = ({
   const [formState, setFormState] = useState<InviteFormState>({
     emails: "",
     role: "admin",
-    teamIds: [],
+    teamIds: teams.length > 0 ? [teams[0].id] : [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -277,21 +285,15 @@ export const InviteMembersDialog = ({
             <Flex gap={2} wrap>
               {teams.map((team) => (
                 <Button
-                  className={cn("dark:bg-transparent", {
-                    "ring-2": formState.teamIds.includes(team.id),
-                  })}
+                  className="gap-2 dark:bg-transparent"
                   color="tertiary"
                   key={team.id}
                   leftIcon={
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: team.color }}
-                    />
+                    <Checkbox checked={formState.teamIds.includes(team.id)} />
                   }
                   onClick={() => {
                     handleTeamToggle(team.id);
                   }}
-                  size="sm"
                   title={team.name}
                   variant="outline"
                 >
@@ -301,12 +303,6 @@ export const InviteMembersDialog = ({
                 </Button>
               ))}
             </Flex>
-            {formState.teamIds.length > 0 && (
-              <Text className="mt-1 pl-0.5" color="muted" fontSize="sm">
-                {formState.teamIds.length} team
-                {formState.teamIds.length > 1 ? "s" : ""} selected
-              </Text>
-            )}
           </Dialog.Body>
           <Dialog.Footer className="justify-end">
             <Button
