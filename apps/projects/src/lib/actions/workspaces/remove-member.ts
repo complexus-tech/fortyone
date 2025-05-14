@@ -8,8 +8,9 @@ import { auth } from "@/auth";
 export const removeMemberAction = async (memberId: string) => {
   try {
     const session = await auth();
+
     const res = await remove<ApiResponse<null>>(
-      `/members/${memberId}`,
+      `members/${memberId}`,
       session!,
     );
     return res;
