@@ -65,16 +65,20 @@ export const Sidebar = () => {
               </span>
             </Tooltip>
           ) : (
-            <button
-              className="flex items-center gap-2 px-1"
-              onClick={() => {
-                setIsOpen(true);
-              }}
-              type="button"
-            >
-              <PlusIcon />
-              Invite members
-            </button>
+            <>
+              {userRole === "admin" ? (
+                <button
+                  className="flex items-center gap-2 px-1"
+                  onClick={() => {
+                    setIsOpen(true);
+                  }}
+                  type="button"
+                >
+                  <PlusIcon />
+                  Invite members
+                </button>
+              ) : null}
+            </>
           )}
 
           <Menu>
