@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Input, Button } from "ui";
-import { DeleteIcon } from "icons";
+import { CloseIcon } from "icons";
 
 type MemberRowProps = {
   email: string;
@@ -17,10 +17,10 @@ export const MemberRow = ({
   isRemovable = true,
 }: MemberRowProps) => {
   return (
-    <Box className="flex items-start gap-2 px-1">
+    <Box className="flex items-start px-1">
       <Box className="flex-1">
         <Input
-          className="bg-gray-50/30 dark:bg-dark-100/30"
+          className="h-[2.7rem] rounded-r-none"
           onChange={(e) => {
             onEmailChange(e.target.value);
           }}
@@ -32,11 +32,12 @@ export const MemberRow = ({
       {isRemovable ? (
         <Button
           asIcon
-          className="md:h-[2.8rem]"
+          className="rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.7rem]"
           color="tertiary"
           onClick={onRemove}
         >
-          <DeleteIcon className="h-[1.1rem]" />
+          <CloseIcon className="h-[1.1rem]" />
+          <span className="sr-only">Remove</span>
         </Button>
       ) : null}
     </Box>

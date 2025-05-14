@@ -1,8 +1,8 @@
 "use client";
 
-import { Box, Button } from "ui";
+import { Box, Text } from "ui";
 import { useState, useEffect } from "react";
-import { PlusIcon } from "icons";
+import { InfoIcon, PlusIcon } from "icons";
 import { MemberRow } from "./member-row";
 
 type Member = {
@@ -62,16 +62,21 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
         ))}
       </Box>
 
-      <Button
-        align="center"
-        className="mt-3 px-0 dark:hover:bg-transparent"
-        color="tertiary"
-        leftIcon={<PlusIcon />}
-        onClick={addMember}
-        variant="naked"
-      >
-        Add another colleague
-      </Button>
+      {members.length < 5 ? (
+        <button
+          className="mt-3 flex items-center gap-1 pl-1 opacity-70 transition hover:opacity-85"
+          onClick={addMember}
+          type="button"
+        >
+          <PlusIcon className="h-[1.1rem]" />
+          Add another colleague
+        </button>
+      ) : (
+        <Text className="mt-3 flex items-center gap-1 pl-1" color="muted">
+          <InfoIcon className="h-[1.1rem] " />
+          You can invite more colleagues later
+        </Text>
+      )}
     </Box>
   );
 };
