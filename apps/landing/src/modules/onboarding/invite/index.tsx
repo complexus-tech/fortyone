@@ -10,7 +10,6 @@ type Member = {
   email: string;
 };
 
-// Simple email validation regex
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return email.trim() !== "" && emailRegex.test(email);
@@ -18,8 +17,6 @@ const isValidEmail = (email: string) => {
 
 export const InviteTeam = () => {
   const [members, setMembers] = useState<Member[]>([]);
-
-  // Check if at least one valid email has been entered
   const isValid = members.some((m) => isValidEmail(m.email));
 
   const handleContinue = () => {
@@ -31,11 +28,10 @@ export const InviteTeam = () => {
         description: "Please enter valid email addresses",
       });
     }
-    // Add API call to invite members here
   };
 
   return (
-    <Box className="max-h-dvh max-w-lg overflow-y-auto">
+    <Box className="max-h-dvh max-w-[30rem] overflow-y-auto">
       <Logo asIcon className="relative -left-1 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Build With Your Team
