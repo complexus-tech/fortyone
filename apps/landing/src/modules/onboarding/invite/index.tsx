@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Box, Button, Text } from "ui";
+import { toast } from "sonner";
 import { Logo } from "@/components/ui";
 import { InviteForm } from "./components/invite-form";
 
@@ -22,8 +23,14 @@ export const InviteTeam = () => {
   const isValid = members.some((m) => isValidEmail(m.email));
 
   const handleContinue = () => {
-    // Filter out members with empty emails before submitting
-    const _validMembers = members.filter((m) => isValidEmail(m.email));
+    const validMembers = members
+      .filter((m) => isValidEmail(m.email))
+      .map((m) => m.email.toLowerCase());
+    if (validMembers.length === 0) {
+      toast.warning("Invalid email addresses", {
+        description: "Please enter valid email addresses",
+      });
+    }
     // Add API call to invite members here
   };
 
