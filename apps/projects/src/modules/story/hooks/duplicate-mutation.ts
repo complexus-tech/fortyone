@@ -46,6 +46,7 @@ export const useDuplicateStoryMutation = () => {
                           updatedAt: new Date().toISOString(),
                           createdAt: new Date().toISOString(),
                           labels: [],
+                          subStories: [],
                         },
                       ],
                     };
@@ -66,6 +67,7 @@ export const useDuplicateStoryMutation = () => {
                     sequenceId: data.length + 1,
                     updatedAt: new Date().toISOString(),
                     createdAt: new Date().toISOString(),
+                    subStories: [],
                     labels: [],
                   },
                 ];
