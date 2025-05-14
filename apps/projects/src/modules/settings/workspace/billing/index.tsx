@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowRight2Icon, NewTabIcon } from "icons";
+import { ArrowRight2Icon, CheckIcon, NewTabIcon } from "icons";
 import { cn } from "lib";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -48,21 +48,7 @@ export const Billing = () => {
   const renderFeatureItem = (text: string) => {
     return (
       <Flex align="center" gap={2}>
-        <svg
-          fill="none"
-          height="16"
-          viewBox="0 0 24 24"
-          width="16"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M5 13L9 17L19 7"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-          />
-        </svg>
+        <CheckIcon />
         <Text>{text}</Text>
       </Flex>
     );
