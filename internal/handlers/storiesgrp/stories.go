@@ -731,6 +731,22 @@ func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r 
 		return nil
 	}
 
+	// Invalidate cache after successful copy
+	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			// Handle pattern deletion
+			h.cache.DeleteByPattern(ctx, key)
+		} else {
+			// Handle exact key deletion
+			h.cache.Delete(ctx, key)
+		}
+	}
+
+	// Also invalidate my-stories cache pattern
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
+
 	web.Respond(ctx, w, toAppStory(duplicatedStory), http.StatusCreated)
 	return nil
 }
