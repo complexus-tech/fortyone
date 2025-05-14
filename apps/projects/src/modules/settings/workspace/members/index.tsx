@@ -96,7 +96,7 @@ export const WorkspaceMembersSettings = () => {
       </Text>
       {pendingInvitations.length > 0 ? (
         <Tabs defaultValue="members">
-          <Tabs.List className="mx-0 mb-4">
+          <Tabs.List className="mx-0 mb-4 md:mx-0">
             <Tabs.Tab leftIcon={<TeamIcon />} value="members">
               Members
             </Tabs.Tab>
