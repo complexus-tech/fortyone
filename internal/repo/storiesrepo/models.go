@@ -102,6 +102,8 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			if err != nil {
 				log.Printf("Failed to unmarshal labels: %s", err)
 			}
+		} else {
+			labels = []uuid.UUID{}
 		}
 
 		if story.SubStories != nil {
