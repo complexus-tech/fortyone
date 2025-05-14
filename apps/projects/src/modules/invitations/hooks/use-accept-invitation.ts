@@ -86,6 +86,8 @@ export const useAcceptInvitationMutation = () => {
           id: toastId,
         });
       }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: invitationKeys.mine });
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.lists(),
