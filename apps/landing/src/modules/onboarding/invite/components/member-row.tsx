@@ -17,10 +17,10 @@ export const MemberRow = ({
   isRemovable = true,
 }: MemberRowProps) => {
   return (
-    <Box className="flex items-start px-1">
+    <Box className="flex items-start">
       <Box className="flex-1">
         <Input
-          className="h-[2.7rem] rounded-r-none"
+          className="h-[2.7rem] rounded-r-none focus:ring-0"
           onChange={(e) => {
             onEmailChange(e.target.value);
           }}

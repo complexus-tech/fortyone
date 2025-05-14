@@ -40,22 +40,19 @@ export const InviteTeam = () => {
       <InviteForm onFormChange={setMembers} />
       <Button
         align="center"
-        className="mt-4"
+        className="mt-4 md:h-[2.7rem]"
         disabled={!isValid}
         fullWidth
         onClick={handleContinue}
-        rounded="lg"
-        size="lg"
       >
         Continue
       </Button>
       <Button
         align="center"
-        className="mt-2 dark:hover:bg-transparent"
+        className="mt-2 opacity-80 dark:hover:bg-transparent"
         color="tertiary"
         fullWidth
         href="/onboarding/welcome"
-        rounded="lg"
         variant="naked"
       >
         I&apos;ll do this later
