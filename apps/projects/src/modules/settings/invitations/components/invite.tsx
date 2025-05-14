@@ -29,7 +29,7 @@ export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
 
   return (
     <RowWrapper
-      className="w-full px-6 py-4 last-of-type:border-b-0"
+      className="w-full px-6 py-4 last-of-type:border-b-0 md:px-6"
       key={invitation.id}
     >
       <Flex align="center" gap={2}>
