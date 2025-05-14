@@ -9,7 +9,7 @@ type ActionCardProps = {
 
 export const ActionCard = ({ icon, title, description }: ActionCardProps) => {
   return (
-    <Wrapper className="py-2.5">
+    <Wrapper className="border-opacity-40 py-2.5 dark:border-opacity-40">
       <Flex gap={3}>
         <Box className="mt-1">{icon}</Box>
         <Box>

@@ -55,10 +55,11 @@ export const Welcome = async () => {
             <>
               Boost your productivity with keyboard shortcuts (press{" "}
               <Badge
-                className="inline-flex rounded-[0.4rem] font-semibold"
+                className="inline-flex gap-0 rounded-[0.4rem] font-semibold text-gray dark:text-gray-300"
                 color="tertiary"
               >
-                ?
+                <CommandIcon className="h-3" strokeWidth={3} />
+                +k
               </Badge>{" "}
               for help)
             </>
