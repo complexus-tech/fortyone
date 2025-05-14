@@ -1,13 +1,12 @@
 "use client";
 
 import { Box, Button } from "ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlusIcon } from "icons";
 import { MemberRow } from "./member-row";
 
 type Member = {
   email: string;
-  role: string;
 };
 
 type InviteFormProps = {
@@ -16,12 +15,19 @@ type InviteFormProps = {
 
 export const InviteForm = ({ onFormChange }: InviteFormProps) => {
   const [members, setMembers] = useState<Member[]>([
-    { email: "", role: "member" },
-    { email: "", role: "member" },
+    { email: "" },
+    { email: "" },
   ]);
 
+  // Initialize parent state when component mounts
+  useEffect(() => {
+    onFormChange(members);
+  }, [members, onFormChange]);
+
   const addMember = () => {
-    setMembers([...members, { email: "", role: "member" }]);
+    const newMembers = [...members, { email: "" }];
+    setMembers(newMembers);
+    onFormChange(newMembers);
   };
 
   const removeMember = (index: number) => {
@@ -30,9 +36,9 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
     onFormChange(newMembers);
   };
 
-  const updateMember = (index: number, field: keyof Member, value: string) => {
+  const updateMember = (index: number, email: string) => {
     const newMembers = members.map((member, i) =>
-      i === index ? { ...member, [field]: value } : member,
+      i === index ? { email } : member,
     );
     setMembers(newMembers);
     onFormChange(newMembers);
@@ -45,17 +51,13 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           <MemberRow
             email={member.email}
             isRemovable={members.length > 1}
-            key={`${member.email}-${index}`}
+            key={`member-${index}`}
             onEmailChange={(email) => {
-              updateMember(index, "email", email);
+              updateMember(index, email);
             }}
             onRemove={() => {
               removeMember(index);
             }}
-            onRoleChange={(role) => {
-              updateMember(index, "role", role);
-            }}
-            role={member.role}
           />
         ))}
       </Box>

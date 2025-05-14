@@ -1,22 +1,18 @@
 "use client";
 
-import { Box, Input, Select, Button } from "ui";
+import { Box, Input, Button } from "ui";
 import { DeleteIcon } from "icons";
 
 type MemberRowProps = {
   email: string;
-  role: string;
   onEmailChange: (email: string) => void;
-  onRoleChange: (role: string) => void;
   onRemove: () => void;
   isRemovable?: boolean;
 };
 
 export const MemberRow = ({
   email,
-  role,
   onEmailChange,
-  onRoleChange,
   onRemove,
   isRemovable = true,
 }: MemberRowProps) => {
@@ -33,18 +29,6 @@ export const MemberRow = ({
           value={email}
         />
       </Box>
-      <Select onValueChange={onRoleChange} value={role}>
-        <Select.Trigger className="h-[2.8rem] w-28 text-base">
-          <Select.Input />
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Group>
-            <Select.Option value="member">Member</Select.Option>
-            <Select.Option value="admin">Admin</Select.Option>
-            <Select.Option value="viewer">Viewer</Select.Option>
-          </Select.Group>
-        </Select.Content>
-      </Select>
       {isRemovable ? (
         <Button
           asIcon

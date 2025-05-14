@@ -7,13 +7,25 @@ import { InviteForm } from "./components/invite-form";
 
 type Member = {
   email: string;
-  role: string;
+};
+
+// Simple email validation regex
+const isValidEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return email.trim() !== "" && emailRegex.test(email);
 };
 
 export const InviteTeam = () => {
   const [members, setMembers] = useState<Member[]>([]);
 
-  const isValid = members.some((m) => m.email.trim() !== "");
+  // Check if at least one valid email has been entered
+  const isValid = members.some((m) => isValidEmail(m.email));
+
+  const handleContinue = () => {
+    // Filter out members with empty emails before submitting
+    const _validMembers = members.filter((m) => isValidEmail(m.email));
+    // Add API call to invite members here
+  };
 
   return (
     <Box className="max-h-dvh max-w-lg overflow-y-auto">
@@ -31,6 +43,7 @@ export const InviteTeam = () => {
         className="mt-4"
         disabled={!isValid}
         fullWidth
+        onClick={handleContinue}
         rounded="lg"
         size="lg"
       >
