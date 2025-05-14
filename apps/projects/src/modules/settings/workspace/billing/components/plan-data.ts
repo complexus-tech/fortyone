@@ -41,7 +41,7 @@ export const plans: Plan[] = [
     },
   },
   {
-    name: "Basic",
+    name: "Professional",
     limits: {
       members: "Up to 50 members",
       fileUploads: "Unlimited",

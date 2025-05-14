@@ -106,13 +106,13 @@ export const Billing = () => {
   // Map tier to the name displayed in plans
   const getTierName = () => {
     const tierNameMap: Record<string, string> = {
-      pro: "Pro",
+      pro: "Professional",
       business: "Business",
       enterprise: "Enterprise",
       free: "Hobby",
       trial: "Trial",
     };
-    return tierNameMap[tier] || "Pro";
+    return tierNameMap[tier] || "Professional";
   };
 
   // Find current plan based on tier name
