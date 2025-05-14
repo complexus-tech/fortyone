@@ -24,7 +24,7 @@ export const Welcome = async () => {
   const redirectUrl = await getRedirectUrl(session!);
 
   return (
-    <Box className="max-w-sm">
+    <Box className="max-w-md">
       <Logo asIcon className="relative -left-2 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Welcome to Complexus👋

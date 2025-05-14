@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Box, Button, Text } from "ui";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui";
+import type { Workspace, Team } from "@/types";
+import { inviteMembers } from "@/lib/actions/invite-members";
 import { InviteForm } from "./components/invite-form";
 
 type Member = {
@@ -15,19 +18,45 @@ const isValidEmail = (email: string) => {
   return email.trim() !== "" && emailRegex.test(email);
 };
 
-export const InviteTeam = () => {
+export const InviteTeam = ({
+  activeWorkspace,
+  teams,
+}: {
+  activeWorkspace: Workspace;
+  teams: Team[];
+}) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const isValid = members.some((m) => isValidEmail(m.email));
 
-  const handleContinue = () => {
-    const validMembers = members
+  const handleContinue = async () => {
+    const validEmails = members
       .filter((m) => isValidEmail(m.email))
       .map((m) => m.email.toLowerCase());
-    if (validMembers.length === 0) {
+    if (validEmails.length === 0) {
       toast.warning("Invalid email addresses", {
         description: "Please enter valid email addresses",
       });
     }
+
+    setIsLoading(true);
+    const res = await inviteMembers(
+      validEmails,
+      teams.map((t) => t.id),
+      activeWorkspace.id,
+    );
+    if (res?.error?.message) {
+      setIsLoading(false);
+      toast.error("Failed to invite members", {
+        description:
+          res.error.message ||
+          "But don't worry, you can add them later after you've signed in.",
+      });
+      return;
+    }
+    setIsLoading(false);
+    router.push("/onboarding/welcome");
   };
 
   return (
@@ -46,6 +75,8 @@ export const InviteTeam = () => {
         className="mt-4 md:h-[2.7rem]"
         disabled={!isValid}
         fullWidth
+        loading={isLoading}
+        loadingText="Inviting members..."
         onClick={handleContinue}
       >
         Continue
