@@ -65,6 +65,13 @@ export const InviteMembersDialog = ({
 
   const handleTeamToggle = (teamId: string) => {
     setFormState((prev) => {
+      if (prev.teamIds.includes(teamId) && prev.teamIds.length === 1) {
+        toast.warning("At least one team is required", {
+          description: "Members should be added to at least one team",
+        });
+        return prev;
+      }
+
       const teamIds = prev.teamIds.includes(teamId)
         ? prev.teamIds.filter((id) => id !== teamId)
         : [...prev.teamIds, teamId];
@@ -79,7 +86,6 @@ export const InviteMembersDialog = ({
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     const toastId = "invite-members";
 
     const emailList = formState.emails
@@ -91,21 +97,22 @@ export const InviteMembersDialog = ({
       toast.warning("Validation error", {
         description: "Please enter at least one email address",
       });
-      setIsSubmitting(false);
       return;
     }
 
     if (remaining("maxMembers", members.length) === 0) {
       toast.warning("Reached members limit", {
         description: "Upgrade to a higher plan to invite more members",
-        action: {
-          label: "Upgrade",
-          onClick: () => {
-            router.push("/settings/workspace/billing");
-          },
-        },
+        action:
+          userRole === "admin"
+            ? {
+                label: "Upgrade",
+                onClick: () => {
+                  router.push("/settings/workspace/billing");
+                },
+              }
+            : undefined,
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -114,7 +121,6 @@ export const InviteMembersDialog = ({
       toast.warning("Invalid emails", {
         description: `Invalid email format: ${invalidEmails.join(", ")}`,
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -138,7 +144,6 @@ export const InviteMembersDialog = ({
               : "All entered email addresses already belong to the workspace",
         },
       );
-      setIsSubmitting(false);
       return;
     }
 
@@ -146,23 +151,14 @@ export const InviteMembersDialog = ({
       toast.warning("Role is required", {
         description: "Please select a role",
       });
-      setIsSubmitting(false);
       return;
     }
 
-    if (formState.teamIds.length === 0) {
-      toast.warning("At least one team is required", {
-        description:
-          "Members should be added to a team to be able to work together",
-      });
-      setIsSubmitting(false);
-      return;
-    }
+    setIsSubmitting(true);
     toast.loading("Sending invites", {
       id: toastId,
       description: "Please wait...",
     });
-
     // Create invitation objects only for new emails
     const invites: NewInvitation[] = newEmails.map((email) => ({
       email,
@@ -193,7 +189,6 @@ export const InviteMembersDialog = ({
         id: toastId,
       });
     }
-
     setIsOpen(false);
     setIsSubmitting(false);
   };
