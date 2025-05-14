@@ -3,7 +3,6 @@ package storiesrepo
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -1190,20 +1189,6 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 	var newStory dbStory
 	if err := stmt.GetContext(ctx, &newStory, params); err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to create duplicate story: %w", err)
-	}
-
-	// Copy labels if any exist
-	if originalStory.Labels != nil {
-		var labels []uuid.UUID
-		if err := json.Unmarshal(*originalStory.Labels, &labels); err != nil {
-			return stories.CoreSingleStory{}, fmt.Errorf("failed to unmarshal labels: %w", err)
-		}
-
-		if len(labels) > 0 {
-			if err := r.UpdateLabels(ctx, newStory.ID, workspaceId, labels); err != nil {
-				return stories.CoreSingleStory{}, fmt.Errorf("failed to copy labels: %w", err)
-			}
-		}
 	}
 
 	// Commit the sequence ID transaction
