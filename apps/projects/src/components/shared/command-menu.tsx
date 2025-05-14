@@ -19,7 +19,7 @@ import {
 } from "icons";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useTerminology, useAnalytics } from "@/hooks";
+import { useTerminology, useAnalytics, useUserRole } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
   NewObjectiveDialog,
@@ -46,6 +46,7 @@ const clearAllStorage = () => {
 };
 
 export const CommandMenu = () => {
+  const { userRole } = useUserRole();
   const { analytics } = useAnalytics();
   const { getTermDisplay } = useTerminology();
   const [isStoryOpen, setIsStoryOpen] = useState(false);

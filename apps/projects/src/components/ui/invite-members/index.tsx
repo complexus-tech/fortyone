@@ -42,7 +42,7 @@ export const InviteMembersDialog = ({
   const { data: members = [] } = useMembers();
   const [formState, setFormState] = useState<InviteFormState>({
     emails: "",
-    role: "member",
+    role: "admin",
     teamIds: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -191,7 +191,10 @@ export const InviteMembersDialog = ({
   };
 
   return (
-    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+    <Dialog
+      onOpenChange={setIsOpen}
+      open={userRole !== "admin" ? false : isOpen}
+    >
       <Dialog.Content className="max-w-2xl">
         <Dialog.Header>
           <Dialog.Title className="flex items-center gap-2 px-6 pt-0.5 text-lg">
