@@ -6,7 +6,7 @@ import {
   CheckIcon,
   CloseIcon,
   DeleteIcon,
-  DragIcon,
+  // DragIcon,
   EditIcon,
   MoreHorizontalIcon,
   SuccessIcon,
@@ -84,8 +84,8 @@ export const StateRow = ({
       onSubmit={handleSubmit}
     >
       <Flex align="center" gap={2}>
-        <DragIcon strokeWidth={4} />
-        <Box className="rounded-[0.4rem] bg-gray-100 p-2 dark:bg-dark-50">
+        {/* <DragIcon strokeWidth={4} /> */}
+        <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
           <StoryStatusIcon category={state.category} />
         </Box>
         <Box>
