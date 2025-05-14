@@ -45,7 +45,6 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           <MemberRow
             email={member.email}
             isRemovable={members.length > 1}
-            // eslint-disable-next-line react/no-array-index-key -- we need a unique key for each member
             key={`${member.email}-${index}`}
             onEmailChange={(email) => {
               updateMember(index, "email", email);
