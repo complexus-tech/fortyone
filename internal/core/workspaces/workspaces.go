@@ -21,6 +21,7 @@ import (
 // Service errors
 var (
 	ErrNotFound               = errors.New("workspace not found")
+	ErrMemberNotFound         = errors.New("member not found")
 	ErrSlugTaken              = errors.New("workspace with this url already exists")
 	ErrTx                     = errors.New("failed to create a workspace")
 	ErrAlreadyWorkspaceMember = errors.New("user is already a member of this workspace")

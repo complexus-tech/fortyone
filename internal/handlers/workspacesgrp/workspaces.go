@@ -345,7 +345,7 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	if err := h.workspaces.RemoveMember(ctx, workspaceID, userID); err != nil {
-		if err.Error() == "member not found" {
+		if errors.Is(err, workspaces.ErrMemberNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)

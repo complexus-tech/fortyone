@@ -470,7 +470,7 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 	}
 
 	if rowsAffected == 0 {
-		return workspaces.ErrNotFound
+		return workspaces.ErrMemberNotFound
 	}
 
 	return nil
