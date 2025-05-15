@@ -1,11 +1,15 @@
 import "./global.css";
 import { RootProvider } from "fumadocs-ui/provider";
-import { Instrument_Sans } from "next/font/google";
+import { Inter, Instrument_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+
+const inter = Inter({
+  subsets: ["latin"],
+});
 
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
 });
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -15,7 +19,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       className={instrumentSans.className}
       suppressHydrationWarning
     >
-      <body className="flex flex-col min-h-screen">
+      <body className="flex flex-col min-h-screen antialiased">
         <RootProvider>{children}</RootProvider>
       </body>
     </html>
