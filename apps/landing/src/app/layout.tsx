@@ -59,6 +59,7 @@ export const metadata: Metadata = {
     },
   },
 };
+const isProduction = process.env.NODE_ENV === "production";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -72,18 +73,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <CursorProvider>{children}</CursorProvider>
           </PostHogProvider>
           <Suspense>
-            <GoogleOneTap />
-          </Suspense>
-          <Suspense>
-            <PostHogPageView />
+            {isProduction ? (
+              <>
+                <GoogleOneTap />
+                <PostHogPageView />
+              </>
+            ) : null}
           </Suspense>
         </SessionProvider>
         <Toaster />
       </body>
-      {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID &&
-      process.env.NODE_ENV === "production" ? (
+      {isProduction ? (
         <>
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          <GoogleAnalytics
+            gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID!}
+          />
           <GoogleTagManager gtmId="AW-684738787" />
         </>
       ) : null}
