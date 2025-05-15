@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/go-co-op/gocron/v2"
@@ -45,7 +46,8 @@ func (s *Scheduler) Shutdown() error {
 
 // registerDeleteStoriesJob sets up the job to purge stories deleted for 30+ days
 func (s *Scheduler) registerDeleteStoriesJob() {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	task := func() {
 		s.log.Info(ctx, "Running job: Purge deleted stories")
 		if err := s.purgeDeletedStories(ctx); err != nil {
