@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
 import { instrumentSans } from "@/styles/fonts";
@@ -82,7 +82,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </body>
       {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID &&
       process.env.NODE_ENV === "production" ? (
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+        <>
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          <GoogleTagManager gtmId="AW-684738787" />
+        </>
       ) : null}
     </html>
   );
