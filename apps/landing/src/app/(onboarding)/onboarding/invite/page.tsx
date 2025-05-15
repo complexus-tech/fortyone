@@ -16,6 +16,6 @@ export default async function InvitePage() {
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
   const activeWorkspace = sortedWorkspaces[0];
-  const teams = await getTeams(activeWorkspace.id);
+  const teams = await getTeams(activeWorkspace?.id);
   return <InviteTeam activeWorkspace={activeWorkspace} teams={teams} />;
 }
