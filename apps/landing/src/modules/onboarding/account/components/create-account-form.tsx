@@ -28,7 +28,7 @@ export const CreateAccountForm = () => {
     } catch (error) {
       setIsLoading(false);
     } finally {
-      router.push("/onboarding/welcome");
+      router.push("/onboarding/invite");
     }
   };
 
