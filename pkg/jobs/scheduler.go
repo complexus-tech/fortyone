@@ -10,14 +10,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Scheduler manages all background jobs
 type Scheduler struct {
 	scheduler gocron.Scheduler
 	db        *sqlx.DB
 	log       *logger.Logger
 }
 
-// NewScheduler creates a new job scheduler
 func NewScheduler(db *sqlx.DB, log *logger.Logger) (*Scheduler, error) {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
@@ -34,7 +32,12 @@ func NewScheduler(db *sqlx.DB, log *logger.Logger) (*Scheduler, error) {
 // Start initializes and starts all jobs
 func (s *Scheduler) Start() {
 	s.log.Info(context.Background(), "Starting background job scheduler")
+
+	// Register all jobs
 	s.registerDeleteStoriesJob()
+	s.registerTokenCleanupJob()
+	s.registerWebhookCleanupJob()
+
 	s.scheduler.Start()
 }
 
@@ -46,8 +49,7 @@ func (s *Scheduler) Shutdown() error {
 
 // registerDeleteStoriesJob sets up the job to purge stories deleted for 30+ days
 func (s *Scheduler) registerDeleteStoriesJob() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx := context.Background()
 	task := func() {
 		s.log.Info(ctx, "Running job: Purge deleted stories")
 		if err := s.purgeDeletedStories(ctx); err != nil {
@@ -69,4 +71,60 @@ func (s *Scheduler) registerDeleteStoriesJob() {
 	}
 
 	s.log.Info(ctx, "Registered purge deleted stories job", "jobID", job.ID())
+}
+
+// registerTokenCleanupJob sets up the job to purge verification tokens older than 7 days
+func (s *Scheduler) registerTokenCleanupJob() {
+	ctx := context.Background()
+	task := func() {
+		s.log.Info(ctx, "Running job: Purge expired verification tokens")
+		if err := s.purgeExpiredTokens(ctx); err != nil {
+			s.log.Error(ctx, "Failed to purge expired verification tokens", "error", err)
+		}
+	}
+
+	// Run weekly at 12:00 AM on Sunday
+	job, err := s.scheduler.NewJob(
+		gocron.WeeklyJob(
+			1,
+			gocron.NewWeekdays(time.Sunday),
+			gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0)),
+		),
+		gocron.NewTask(task),
+	)
+
+	if err != nil {
+		s.log.Error(ctx, "Failed to register token cleanup job", "error", err)
+		return
+	}
+
+	s.log.Info(ctx, "Registered token cleanup job", "jobID", job.ID())
+}
+
+// registerWebhookCleanupJob sets up the job to purge old webhook events
+func (s *Scheduler) registerWebhookCleanupJob() {
+	ctx := context.Background()
+	task := func() {
+		s.log.Info(ctx, "Running job: Purge old webhook events")
+		if err := s.purgeOldStripeWebhookEvents(ctx); err != nil {
+			s.log.Error(ctx, "Failed to purge old webhook events", "error", err)
+		}
+	}
+
+	// Run weekly at 12:30 AM on Sunday
+	job, err := s.scheduler.NewJob(
+		gocron.WeeklyJob(
+			1,
+			gocron.NewWeekdays(time.Sunday),
+			gocron.NewAtTimes(gocron.NewAtTime(0, 30, 0)),
+		),
+		gocron.NewTask(task),
+	)
+
+	if err != nil {
+		s.log.Error(ctx, "Failed to register webhook cleanup job", "error", err)
+		return
+	}
+
+	s.log.Info(ctx, "Registered webhook cleanup job", "jobID", job.ID())
 }
