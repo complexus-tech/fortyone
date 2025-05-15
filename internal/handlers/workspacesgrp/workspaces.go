@@ -72,29 +72,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Try to get from cache first
-	cacheKey := cache.WorkspacesListCacheKey(userID)
-	var cachedWorkspaces []workspaces.CoreWorkspace
-
-	if err := h.cache.Get(ctx, cacheKey, &cachedWorkspaces); err == nil {
-		// Cache hit
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppWorkspaces(cachedWorkspaces), http.StatusOK)
-		return nil
-	}
-
-	// Cache miss, get from database
 	workspacesList, err := h.workspaces.List(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Store in cache
-	if err := h.cache.Set(ctx, cacheKey, workspacesList, cache.ListTTL); err != nil {
-		// Log error but continue
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppWorkspaces(workspacesList), http.StatusOK)
