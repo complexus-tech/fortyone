@@ -30,6 +30,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
+	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
@@ -236,6 +237,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 		log.Info(ctx, "starting redis stream consumer")
 		if err := consumer.Start(ctx); err != nil {
 			log.Error(ctx, "failed to start consumer", "error", err)
+		}
+	}()
+
+	// Initialize job scheduler
+	jobScheduler, err := jobs.NewScheduler(db, log)
+	if err != nil {
+		return fmt.Errorf("error initializing job scheduler: %w", err)
+	}
+
+	// Start scheduler in a goroutine
+	go func() {
+		log.Info(ctx, "starting background job scheduler")
+		jobScheduler.Start()
+	}()
+
+	// Register for shutdown in defer cleanup
+	defer func() {
+		log.Info(ctx, "shutting down job scheduler")
+		if err := jobScheduler.Shutdown(); err != nil {
+			log.Error(ctx, "error shutting down job scheduler", "error", err)
 		}
 	}()
 
