@@ -1,4 +1,4 @@
 {
   "title": "Administration",
-  "pages": ["account-settings", "workspace-settings"]
+  "pages": ["account", "workspace", "features"]
 }
