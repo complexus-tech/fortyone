@@ -60,7 +60,7 @@ func (s *Scheduler) registerDeleteStoriesJob() {
 	// Run daily at 12:00 AM
 	job, err := s.scheduler.NewJob(
 		gocron.DailyJob(1, gocron.NewAtTimes(
-			gocron.NewAtTime(0, 0, 0),
+			gocron.NewAtTime(1, 0, 0),
 		)),
 		gocron.NewTask(task),
 	)
@@ -88,7 +88,7 @@ func (s *Scheduler) registerTokenCleanupJob() {
 		gocron.WeeklyJob(
 			1,
 			gocron.NewWeekdays(time.Sunday),
-			gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0)),
+			gocron.NewAtTimes(gocron.NewAtTime(1, 0, 0)),
 		),
 		gocron.NewTask(task),
 	)
@@ -116,7 +116,7 @@ func (s *Scheduler) registerWebhookCleanupJob() {
 		gocron.WeeklyJob(
 			1,
 			gocron.NewWeekdays(time.Sunday),
-			gocron.NewAtTimes(gocron.NewAtTime(0, 30, 0)),
+			gocron.NewAtTimes(gocron.NewAtTime(1, 30, 0)),
 		),
 		gocron.NewTask(task),
 	)
