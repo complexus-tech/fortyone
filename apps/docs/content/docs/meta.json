@@ -2,14 +2,15 @@
   "title": "Complexus Documentation",
   "pages": [
     "index",
-    "core-concepts",
+    "concepts",
     "---Getting Started---",
-    "...getting-started",
-    "---Workflows---",
-    "...workflows",
-    "---Collaboration---",
-    "...collaboration",
-    "---FAQ and Help---",
-    "...faq-and-help"
+    "...start-here",
+    "---Workflows & Collaboration---",
+    "core-workflows",
+    "team-and-collaboration",
+    "productivity-tools",
+    "---Help & Administration---",
+    "administration",
+    "help-and-support"
   ]
 }
