@@ -13,5 +13,22 @@ export const baseOptions: BaseLayoutProps = {
     title: <MainLogo className="h-6 relative -left-3.5" />,
   },
   // see https://fumadocs.dev/docs/ui/navigation/links
-  links: [],
+  links: [
+    {
+      type: "menu",
+      text: "Getting Started",
+      items: [
+        {
+          text: "Introduction",
+          description: "Learn to use Complexus",
+          url: "/",
+        },
+        {
+          text: "Concepts",
+          description: "Learn the core concepts of Complexus",
+          url: "/concepts",
+        },
+      ],
+    },
+  ],
 };
