@@ -31,9 +31,11 @@
     "cmdk": "^0.2.1",
     "cva": "npm:class-variance-authority@^0.7.0",
     "date-fns": "^2.30.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "icons": "workspace:*",
     "lib": "workspace:*",
-    "next": "15.1.4",
+    "next": "15.3.2",
     "react-day-picker": "^8.10.1",
     "react-dropzone": "^14.2.3",
     "react-resizable-panels": "^2.0.16",
@@ -44,14 +46,18 @@
     "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
-    "@types/react": "19.0.1",
-    "@types/react-dom": "19.0.2",
+    "@types/react": "19.1.4",
+    "@types/react-dom": "19.1.5",
     "eslint-config-custom": "workspace:*",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
     "tailwind-config": "workspace:*",
     "tailwindcss": "^3.4.3",
     "tsconfig": "workspace:*",
     "typescript": "^5.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.4",
+      "@types/react-dom": "19.1.5"
+    }
   }
 }
