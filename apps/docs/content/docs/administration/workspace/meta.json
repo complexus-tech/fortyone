@@ -1,10 +1,4 @@
 {
   "title": "Workspace Settings",
-  "pages": [
-    "general",
-    "members",
-    "billing-and-plans",
-    "terminology",
-    "api-tokens"
-  ]
+  "pages": ["general", "members", "terminology"]
 }
