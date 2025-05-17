@@ -5,3 +5,7 @@
 .max-w-fd-container {
   @apply max-w-6xl mx-auto;
 }
+
+img {
+  @apply rounded-xl;
+}
