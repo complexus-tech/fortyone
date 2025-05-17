@@ -1,0 +1,40 @@
+---
+title: General Workspace Settings
+description: Configure fundamental settings for your Complexus workspace, including its name, URL, feature availability, and workspace deletion.
+---
+
+## Workspace Identity
+
+These settings define the basic information and operational parameters for your entire Complexus workspace.
+
+### Name and URL
+
+- **Name**: This is the primary display name for your workspace. It appears in the UI, notifications, and browser tabs, helping users identify the workspace they are currently in. You can typically change this at any time.
+  - _As seen in screenshot: Input field for workspace name._
+- **URL (read-only)**: This is the unique web address for your workspace (e.g., `your-company.complexus.app`). It is generally set during the initial workspace creation and cannot be changed afterwards from this panel.
+  - _As seen in screenshot: Displayed as read-only, showing `payments.complexus.app` which is likely the URL for the current workspace or a related specific-purpose URL._
+
+### Payments Link / Subdomain
+
+- This field typically indicates the URL or subdomain used for accessing your workspace's billing and subscription management portal. For example, if set to `payments`, your billing portal might be accessed via `payments.complexus.app` or a similar structure specific to your Complexus setup.
+  - _As seen in screenshot: An input field labeled "Payments" with the value `payments.complexus.app`. This suggests it might be configurable if your workspace uses a custom payments portal subdomain or is a reference to it._
+
+## Workspace Features
+
+You can enable or disable core Complexus modules for your workspace to tailor the platform to your team's needs. Disabling a feature will typically hide it from the workspace UI for all users. Existing data for disabled features is usually preserved but becomes inaccessible until the feature is re-enabled.
+
+| Feature     | Description                                                                  | Control       |
+| :---------- | :--------------------------------------------------------------------------- | :------------ |
+| Objectives  | Track high-level goals and align your team's work towards desired outcomes.  | Toggle On/Off |
+| Sprints     | Organize work into time-boxed periods, commonly used in Agile methodologies. | Toggle On/Off |
+| Key Results | Define and measure progress towards your Objectives with specific metrics.   | Toggle On/Off |
+
+## Danger Zone
+
+### Delete Workspace
+
+This section contains operations that can have significant and irreversible consequences for your workspace.
+
+- **Permanently Delete Workspace**: This action will permanently delete your entire Complexus workspace. **All data will be lost**, including all stories, objectives, teams, member information, settings, and any other associated content. This action cannot be undone.
+  - _As seen in screenshot: "Delete Workspace" button._
+  - **Confirmation**: You will likely be required to confirm this action, often by typing the workspace name or a specific phrase, to prevent accidental deletion.
