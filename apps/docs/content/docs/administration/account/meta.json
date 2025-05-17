@@ -1,10 +1,4 @@
 {
   "title": "Account Settings",
-  "pages": [
-    "profile",
-    "preferences",
-    "notifications",
-    "security",
-    "delete-account"
-  ]
+  "pages": ["profile", "preferences", "notifications"]
 }
