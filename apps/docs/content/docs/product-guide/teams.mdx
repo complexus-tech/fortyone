@@ -1,0 +1,105 @@
+---
+title: Teams
+description: Learn how to use teams to organize work, collaborate effectively, and manage projects in Complexus.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Understanding Teams in Complexus
+
+Teams in Complexus are groups of workspace members. They help organize work, structure projects, and provide focused views for different groups within your organization.
+
+### What are Teams?
+
+Teams serve several key purposes:
+
+- **Organization**: Group users who work together on specific projects or functional areas (e.g., "Frontend Developers," "Marketing Q3 Campaign").
+- **Work Structuring**: Stories, Objectives, and other work items are assigned to specific teams, making it clear who is responsible.
+- **Focused Views**: Team members access views that show only the work relevant to their team, reducing noise and improving focus.
+- **Access Control**: Admins can make teams "Private," limiting access to members and administrators. Public teams and their work are visible to everyone in the workspace. For details on privacy settings, see [Team Administration](/administration/features/teams).
+
+Each team has a name, a unique code (used as a prefix for team-specific items), and an identifying color. You can also see how many members are part of a team.
+
+### Benefits of Using Teams
+
+Leveraging teams in Complexus offers several advantages:
+
+- **Improved Clarity**: Clearly defined team responsibilities mean everyone knows who owns what.
+- **Enhanced Focus**: Team-specific views allow members to concentrate on their tasks without distractions from other projects.
+- **Streamlined Collaboration**: Centralized team views and the ability to assign work to teams make collaboration smoother.
+- **Better Project Tracking**: See progress at a team level, helping to manage resources and timelines more effectively.
+
+## Accessing Team Information and Views
+
+Team-related information and work items are accessible through various parts of the application.
+
+### Team-Specific Work Item Views
+
+The primary way to interact with teams is by viewing work items (Stories, Objectives, Sprints) in the context of a specific team.
+
+You navigate to a team's dedicated page for these items through the application's navigation, by selecting a team and then choosing to view its stories or objectives.
+
+These views display:
+
+- A list or board of work items assigned to that team.
+- Options to filter, sort, and change layouts (e.g., list view, Kanban board) specific to the team's items.
+
+![Placeholder](/placeholder.png)
+
+## Assigning Stories to a Team
+
+You assign a story to a team:
+
+- **During Creation**: When creating a new story, there is a field or dropdown to select the team.
+
+## Assigning Objectives to a Team
+
+Similarly, objectives are associated with a team:
+
+- **During Creation**: The new objective form allows you to specify the responsible team.
+
+<Callout title="Impact of Team Assignment">
+  Assigning an item to a team makes it visible in that team's specific views and
+  can influence who receives notifications about updates to that item.
+</Callout>
+
+## Team Communication
+
+- **Mentions**: You mention individual team members (`@username`) in comments on stories or objectives to draw their attention.
+- **Notifications**: Notifications are primarily based on individual assignment to, or participation in, specific work items, rather than broad team-based alerts.
+
+### Shared Context
+
+By organizing work under teams, Complexus ensures that all team members have a shared understanding of:
+
+- Current tasks and their statuses.
+- Team objectives and their progress.
+- Relevant discussions and decisions captured in comments.
+
+## Managing Team Membership and Settings (User Perspective)
+
+As a general user, your interaction with team settings is limited, with most administrative tasks handled by workspace admins.
+
+- **Joining or Leaving a Team**:
+  - **Public Teams**: Users can join public teams directly.
+  - **Private Teams**: To join a private team, an administrator must invite the user.
+    Leaving any team is done through context menu under "Your Teams".
+
+<Callout title="Administrative Team Management">
+For creating new teams, configuring team properties (name, code, color, privacy), managing team workflows, and adding/removing members definitively, workspace administrators should navigate to **Settings > Teams** (under Features).
+
+[Read more about Team Administration](/administration/features/teams).
+
+</Callout>
+
+## Best Practices for Team Collaboration in Complexus
+
+- **Clearly Define Teams**: Ensure each team has a clear purpose and a well-understood scope of work.
+- **Consistent Assignment**: Make sure all relevant work items are assigned to the correct team.
+- **Utilize Team Views**: Encourage team members to use their team-specific views to stay focused.
+- **Regularly Review Team Workloads**: Use team views to monitor progress and identify potential bottlenecks.
+- **Leverage Comments for Discussion**: Keep conversations about specific work items within those items for easy reference by the team.
+
+---
+
+_This page provides an overview of using Teams for collaboration. For details on configuring teams, please see the [Team Administration documentation](/administration/features/teams)._

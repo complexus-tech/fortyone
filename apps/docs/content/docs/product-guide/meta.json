@@ -1,4 +1,11 @@
 {
   "title": "Product Guide",
-  "pages": ["stories", "objectives", "key-results", "sprints"]
+  "pages": [
+    "stories",
+    "objectives",
+    "key-results",
+    "sprints",
+    "teams",
+    "search-and-filters"
+  ]
 }

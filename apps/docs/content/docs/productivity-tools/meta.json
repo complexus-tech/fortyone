@@ -1,4 +1,8 @@
 {
   "title": "Productivity Tools",
-  "pages": ["search-and-filters", "custom-terminology", "views-and-favorites"]
+  "pages": [
+    "search-and-filters",
+    "views-and-favorites",
+    "roles-and-permissions"
+  ]
 }
