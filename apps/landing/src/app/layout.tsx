@@ -13,9 +13,9 @@ import PostHogPageView from "./posthog-page-view";
 import GoogleOneTap from "./one-tap";
 
 export const metadata: Metadata = {
-  title: "Project Management & OKR Software for Teams | Complexus",
+  title: "Complexus: Project Management & OKR Software for Teams",
   description:
-    "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
+    "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
   metadataBase: new URL("https://www.complexus.app"),
   keywords: [
     "project management",
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Project Management & OKR Software for Teams | Complexus",
+    title: "Complexus: Project Management & OKR Software for Teams",
     description:
-      "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
+      "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
     siteName: "Complexus",
     url: "/",
   },
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@complexus_app",
     creator: "@complexus_app",
-    title: "Project Management & OKR Software for Teams | Complexus",
+    title: "Complexus: Project Management & OKR Software for Teams",
     description:
-      "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus.",
+      "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
   },
   alternates: {
     canonical: "/",

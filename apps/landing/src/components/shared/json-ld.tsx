@@ -16,7 +16,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "12",
+    highPrice: "8",
     offerCount: "3",
     offers: [
       {
@@ -28,13 +28,13 @@ const softwareApplication: WithContext<WebApplication> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "9",
+        price: "5.60",
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "12",
+        price: "8",
         priceCurrency: "USD",
       },
     ],
@@ -71,9 +71,9 @@ const organization: WithContext<Organization> = {
 const product: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Project Management & OKR Software for Teams",
+  name: "Complexus: Project Management & OKR Software for Teams",
   description:
-    "All-in-one project management & OKR software for teams: streamline sprint planning, task management, and team collaboration with Complexus",
+    "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
   category: "Software",
   brand: {
     "@type": "Brand",
