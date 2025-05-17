@@ -1,6 +1,112 @@
 ---
-title: Roles & Permissions
-description: Managing user roles and access permissions in Complexus
+title: Roles and Permissions
+description: Understand user roles and their permissions within Complexus to manage your workspace effectively.
 ---
 
-## Coming soon
+import { Callout } from "fumadocs-ui/components/callout";
+import { Cards, Card } from "fumadocs-ui/components/card";
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+
+## Overview of Roles in Complexus
+
+Complexus uses a role-based access control system to ensure that users have appropriate access to workspace features and data. Assigning roles helps maintain security, streamline workflows, and manage collaboration effectively.
+
+There are three primary roles available:
+
+- **Admin**
+- **Member**
+- **Guest**
+
+## Role Definitions and Permissions
+
+Below is a detailed breakdown of each role and its associated permissions within Complexus.
+
+### Admin
+
+Admins have the highest level of access and control over the workspace. They are typically responsible for overall workspace management, billing, and user administration.
+
+**Key Permissions for Admins:**
+
+- Full access to all workspace data, settings, and features.
+- Manage billing, subscriptions, and payment information.
+- Configure global workspace settings (e.g., custom terminology, integrations, security policies).
+- Invite new users to the workspace.
+- Assign and change roles for any user (including promoting Members to Admins or demoting users).
+- Remove users from the workspace.
+- Manage team creation.
+- Access and manage API tokens.
+- Delete the entire workspace.
+
+### Member
+
+Members are standard users within the workspace who can actively create, edit, and collaborate on work items. This is the most common role for team members contributing to objectives.
+
+**Key Permissions for Members:**
+
+- Create, edit, delete, and manage stories, objectives, key results, and other work items.
+- Comment on items and collaborate with other users.
+- Join public teams and view information relevant to their assigned work and teams.
+- Cannot access workspace-level administrative settings such as billing, global workspace configuration, or manage other users' roles.
+
+### Guest
+
+Guests have limited, read-only access to the workspace. This role is designed for external collaborators, clients, or stakeholders who need to view progress or specific information without having editing capabilities.
+
+**Key Characteristics of Guests:**
+
+- **Read-Only Access**: Guests can view specific items or sections of the workspace they have been explicitly invited to or granted access to. They cannot create, edit, or delete work items.
+- **Collaboration**: They are able to leave comments on specific items.
+- **Cost**: Inviting Guests to your workspace is free of charge.
+- **Plan Availability**: The Guest role is exclusively available on **paid subscription plans** (e.g., Pro, Business, Enterprise). Workspaces on a free plan cannot invite or utilize Guest users.
+
+## Permissions Comparison Table
+
+| Feature / Action                     | Admin | Member | Guest     |
+| :----------------------------------- | :---- | :----- | :-------- |
+| **Workspace Management**             |       |        |           |
+| Access Billing & Subscription        | Yes   | No     | No        |
+| Configure Workspace Settings         | Yes   | No     | No        |
+| Invite New Users                     | Yes   | No     | No        |
+| Manage User Roles                    | Yes   | No     | No        |
+| Remove Users from Workspace          | Yes   | No     | No        |
+| Delete Workspace                     | Yes   | No     | No        |
+| **Work Item Management**             |       |        |           |
+| Create Stories/Objectives            | Yes   | Yes    | No        |
+| Edit Stories/Objectives              | Yes   | Yes    | No        |
+| Delete Stories/Objectives            | Yes   | Yes    | No        |
+| Comment on Items                     | Yes   | Yes    | Yes       |
+| **Collaboration & Access**           |       |        |           |
+| View All Public Project Data         | Yes   | Yes    | Limited\* |
+| Join Public Teams                    | Yes   | Yes    | No        |
+| Access Private Team Data (if member) | Yes   | Yes    | Limited\* |
+
+- `*` _Members require admin invitation as they count towards workspace billing._
+- `*` _Guest comment and data visibility are strictly limited to what they are explicitly granted access to by an Admin._
+
+## Frequently Asked Questions (FAQ)
+
+<Accordions type="single">
+  <Accordion title="How do I change a user's role?">
+    An Admin can change a user's role from the user management or workspace
+    settings section.
+  </Accordion>
+  <Accordion title="Can Guests see all the information that Members can?">
+    No. Guests have read-only access and can only see items or areas they have
+    been specifically invited to or granted permission to view.
+  </Accordion>
+  <Accordion title="How many Admins can a workspace have?">
+    A workspace can have multiple Admins. It is recommended to have at least two
+    Admins for continuity.
+  </Accordion>
+  <Accordion title="What happens if our paid plan is downgraded to a free plan regarding Guest access?">
+    If a workspace on a paid plan with Guest users is downgraded to a free plan,
+    existing Guest users will likely lose access, or their access will become
+    highly restricted, as the Guest role is a feature of paid plans. New Guests
+    cannot be invited on a free plan.
+  </Accordion>
+  <Accordion title="Can Members invite Guests?">
+    This depends on the workspace settings configured by an Admin. In some
+    setups, Admins may allow Members to invite Guests to specific projects or
+    items they manage.
+  </Accordion>
+</Accordions>
