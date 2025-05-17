@@ -22,6 +22,7 @@ const FooterLink = ({
       className,
     )}
     href={href}
+    target={href.startsWith("http") ? "_blank" : undefined}
   >
     {children}
   </Link>
@@ -118,8 +119,8 @@ export const Footer = () => {
 
   const resources = [
     {
-      title: "Developers",
-      href: "/developers",
+      title: "Documentation",
+      href: "https://docs.complexus.app",
     },
     {
       title: "Blog",
