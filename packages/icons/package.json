@@ -9,15 +9,15 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "lib": "workspace:*"
+    "lib": "workspace:*",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "eslint-config-custom": "workspace:*",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "tsconfig": "workspace:*",
     "typescript": "^5.5.4"
   }
