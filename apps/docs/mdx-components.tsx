@@ -6,7 +6,12 @@ import type { MDXComponents } from "mdx/types";
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
-    img: (props) => <ImageZoom {...(props as any)} />,
+    img: (props) => (
+      <div className="relative">
+        <ImageZoom {...(props as any)} />
+        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
+      </div>
+    ),
     ...components,
   };
 }
