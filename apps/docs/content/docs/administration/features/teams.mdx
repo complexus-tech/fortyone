@@ -7,110 +7,59 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 ## Teams Management
 
-This page allows workspace administrators to create and oversee the list of teams within the workspace. Teams help organize members and their work (like Stories and Objectives) into logical groups.
+To configure a specific team:
 
-### Viewing Teams
+1.  Navigate to **Settings > Teams** (under Features).
+2.  Click on the name of the team you wish to manage.
 
-A list of existing teams is displayed, showing key information for each team:
-
-- **Name**: The display name of the team (e.g., "Engineering", "Product").
-- **Identifier/Code**: A short code for the team (e.g., "ENG").
-- **Color**: The team's assigned color for visual distinction.
-- **Members**: The number of members in that team.
-- **Created Date**: When the team was created.
-
-### Creating a New Team
-
-To add a new team to the workspace from the settings area:
-
-1.  Click the **`Create a team`** link.
-2.  You will be taken to a page to define the new team's properties:
-    - **Team Name**: Choose a descriptive name for your team (e.g., Growth, Product, Operations).
-    - **Team Code**: A short prefix for the team's stories or other items (e.g., ENG-123). This helps in quick identification.
-    - **Team Color**: Select a color to visually identify the team within the workspace.
-    - **Private Team (Toggle)**:
-      - **Enabled**: The team is private and only visible to its members. Admins can add members to private teams.
-      - **Disabled**: The team is public and visible to everyone in the workspace.
-3.  Click **`Create Team`** to finalize.
-
-This will take you to the detailed settings page for that individual team, which is typically organized into several tabs.
+This opens the detailed settings for that team, organized into the following tabs:
 
 ## Team Configuration Tabs
 
-Below are the tabs available for configuring an individual team and the settings you can manage within each.
-
 <Tabs items={['General', 'Members', 'Workflow', 'Danger Zone']}>
   <Tab value="General">
-    The **General** tab allows you to manage basic information and identity for the team.
+    Manage basic information for the team.
 
-    *As seen in the "Engineering - General" screenshot:*
-
-    -   **Team Name**:
-        -   **Purpose**: A descriptive name for your team (e.g., Engineering, Product, Growth).
-        -   **Configuration**: Editable text field.
-    -   **Team Code**:
-        -   **Purpose**: A short prefix for this team's stories or other items (e.g., ENG-123). This helps in quick identification across the workspace.
-        -   **Configuration**: Editable text field, often limited to a few characters.
-    -   **Team Color**:
-        -   **Purpose**: Used to visually identify the team within the workspace (e.g., in lists, on cards).
-        -   **Configuration**: Color picker or a selection of predefined colors.
+    -   **Team Name**: The display name for the team (e.g., Engineering).
+    -   **Team Code**: A short prefix for team items (e.g., ENG).
+    -   **Team Color**: Visual identifier for the team.
     -   **Private Team (Toggle)**:
-        -   **Purpose**: Controls the visibility and accessibility of the team.
-        -   **Configuration**:
-            -   **Enabled**: The team is private. Only its members and workspace admins can see the team and its contents. Team leads or admins can add members to private teams.
-            -   **Disabled**: The team is public and visible to everyone in the workspace.
+        -   **On**: Team is private, visible only to its members and admins.
+        -   **Off**: Team is public, visible to everyone in the workspace.
 
-    Ensure you save any changes made in this tab if a "Save" button is present.
+    Save changes if prompted.
 
   </Tab>
   <Tab value="Members">
-    The **Members** tab is where you manage who belongs to this specific team and their roles within it.
+    Manage team membership.
 
-    *As seen in the "Engineering - Members" screenshot:*
-
-    -   **Team Members List**: Displays all current members of this team, typically showing their name, avatar, email, and their role within the team (e.g., Admin, Member).
-    -   **Add Member Button**:
-        -   **Purpose**: To invite or add existing workspace members to this specific team.
-        -   **Action**: Clicking this usually opens a dialog to search for and select workspace members to add to the team.
-    -   **Managing Individual Members (Context Menu)**:
-        -   **Purpose**: For each member in the list, options are usually available via a context menu (e.g., "..." icon).
-        -   **Actions**:
-            -   **Change Role (within the team)**: Modify the member's role specific to this team, if team-specific roles are supported beyond workspace roles.
-            -   **Remove from Team**: Remove the member from this specific team. They will remain a workspace member unless removed from the workspace entirely.
+    -   **Team Members List**: View current team members (name, email, role).
+    -   **Add Member Button**: Add existing workspace members to this team.
+    -   **Manage Individual Members**:
+        -   Remove member from the team.
 
   </Tab>
   <Tab value="Workflow">
-    The **Workflow** tab allows you to configure the unique set of statuses that stories or tasks for this specific team will move through.
+    Configure the team-specific workflow for stories/tasks.
 
-    *As seen in the "Engineering - Workflow" screenshot:*
-
-    -   **Workflow Categories**: Workflows are organized into categories like "Backlog," "Unstarted," "Started," "Completed," "Paused," and "Cancelled."
-    -   **Workflow States**: Within each category, you can define specific states (e.g., under "Unstarted," you might have "To Do"; under "Started," you might have "In Progress"). The screenshot shows states like `Backlog`, `To Do` (with 2 stories), `In Progress`, `Done`, `Blocked`.
+    -   **Workflow Categories**: Organized stages (e.g., Backlog, Unstarted, Started, Completed, Paused, Cancelled).
+    -   **Workflow States**: Specific statuses within categories (e.g., `To Do`, `In Progress`). Story counts per state may be visible.
     -   **Customization**:
-        -   **Add State**: Each category usually has a `+` icon or "Add state" button to create new custom states.
-        -   **Edit/Delete State**: Existing states often have a `...` (ellipsis) menu for renaming, deleting, or setting a state as default for its category.
-        -   **Story Counts**: The workflow view may show the number of stories currently in each state (e.g., "To Do - 2 stories").
+        -   **Add State (`+` icon)**: Create new states within categories.
+        -   **Edit/Delete State**: Rename, delete, or set a state as default for its category.
 
-    This team-specific workflow overrides any workspace-default story workflow for items assigned to this team, allowing different teams to have different processes.
+    This workflow aapplies to all stories in the team.
 
   </Tab>
   <Tab value="Danger Zone">
-    The **Danger Zone** tab contains critical operations that can have significant and often irreversible consequences for the team.
-
-    *Based on standard application patterns for a "Danger Zone" within team settings (no direct "Engineering - Danger Zone" screenshot provided, but its existence is implied by the tab structure shown for the Engineering team):*
+    Critical operations for the team.
 
     -   **Delete Team**:
-        -   **Purpose**: To permanently delete the team from the workspace.
-        -   **Consequences**:
-            -   All team-specific configurations (like its workflow) will be lost.
-            -   Stories and objectives previously associated with the team might become unassigned or be handled according to workspace retention policies.
-            -   Members will be removed from the team roster.
-        -   **Action**: This will typically involve a confirmation step, such as typing the team name, to prevent accidental deletion. This action is usually irreversible.
-    -   **Archive Team (If Available)**:
-        -   **Purpose**: To make the team inactive without permanently deleting its data. Archived teams are often hidden from active lists but can be restored.
-        -   **Consequences**: Team members may lose access, and the team won't be assignable to new items.
+        -   Permanently removes the team and its configurations.
+        -   Associated items will be deleted
+        -   Requires confirmation (e.g., typing team name). Irreversible.
 
-    Always exercise extreme caution when using options in the Danger Zone.
+    Use with caution.
 
   </Tab>
 </Tabs>
