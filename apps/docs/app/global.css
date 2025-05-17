@@ -7,5 +7,5 @@
 }
 
 img {
-  @apply rounded-xl;
+  @apply rounded-xl border-4;
 }
