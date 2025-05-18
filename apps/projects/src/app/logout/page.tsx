@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { signOut } from "@/auth";
+import { logOut } from "@/components/shared/sidebar/actions";
 
 export const metadata: Metadata = {
   title: "Login",
 };
 
 export default async function Page() {
-  await signOut({ redirectTo: "https://www.complexus.app/login" });
+  await logOut();
   return redirect("https://www.complexus.app/login");
 }
