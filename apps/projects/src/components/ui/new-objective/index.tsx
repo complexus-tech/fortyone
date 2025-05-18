@@ -644,7 +644,10 @@ export const NewObjectiveDialog = ({
                             ...prev,
                             keyResults: [
                               ...(prev.keyResults || []),
-                              editingKeyResult!,
+                              {
+                                ...editingKeyResult!,
+                                currentValue: editingKeyResult!.startValue,
+                              },
                             ],
                           }));
                         } else if (editingIndex !== null) {
