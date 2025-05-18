@@ -1,5 +1,4 @@
 "use client";
-import type { Metadata } from "next";
 import { Box, Flex, Text } from "ui";
 import { useEffect } from "react";
 import { logOut } from "@/components/shared/sidebar/actions";
@@ -19,10 +18,6 @@ const clearClientStorage = () => {
       });
     });
   }
-};
-
-export const metadata: Metadata = {
-  title: "Logout",
 };
 
 export default function Page() {
