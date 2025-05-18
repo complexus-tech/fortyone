@@ -9,7 +9,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     img: (props) => (
       <div className="relative">
         <ImageZoom {...(props as any)} />
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
+        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50 rounded-xl" />
       </div>
     ),
     ...components,
