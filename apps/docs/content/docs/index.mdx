@@ -4,6 +4,8 @@ icon: Hash # Consider an icon like 'Sparkle' or 'Rocket' for a more dynamic feel
 description: Discover how Complexus helps your team build better products, faster.
 ---
 
+import MediaThemeSutro from "player.style/sutro/react";
+
 ## Welcome to Complexus
 
 Complexus is a modern project management platform designed for high-performing teams. We help you streamline your workflows, track issues with precision, and collaborate seamlessly to build outstanding products.
@@ -27,7 +29,15 @@ Complexus is built for speed and efficiency, allowing your team to focus on ship
 
 For a quick tour of Complexus, watch our introductory video:
 
-![Complexus platform interface](/placeholder.png)
+<MediaThemeSutro className="rounded-xl overflow-hidden">
+  <video
+    slot="media"
+    src="/intro.mp4"
+    playsInline
+    className="h-full w-full rounded-xl"
+    crossOrigin="anonymous"
+  ></video>
+</MediaThemeSutro>
 
 ## Get Started Quickly
 
