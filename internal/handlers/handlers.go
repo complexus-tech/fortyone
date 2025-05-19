@@ -16,6 +16,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/reportsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/searchgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/sprintsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/ssegrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/subscriptionsgrp"
@@ -199,6 +200,14 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient:  cfg.StripeClient,
 		WebhookSecret: cfg.WebhookSecret,
 		Publisher:     cfg.Publisher,
+	}, app)
+
+	// register the sse routes
+	ssegrp.Routes(ssegrp.Config{
+		Log:        cfg.Log,
+		SecretKey:  cfg.SecretKey,
+		SSEHub:     cfg.SSEHub,
+		CorsOrigin: cfg.CorsOrigin,
 	}, app)
 
 }

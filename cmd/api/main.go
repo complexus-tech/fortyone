@@ -24,6 +24,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
+	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
@@ -291,7 +292,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Initialize Stripe client
 	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
 
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+	// Initialize SSE Hub
+	sseHub := sse.NewHub(ctx, log, rdb)
+	go sseHub.Run()
+	log.Info(ctx, "SSE Hub initialized and started")
 
 	// Update mux configuration
 	muxConfig := mux.Config{
@@ -309,6 +313,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Cache:         cacheService,
 		StripeClient:  stripeClient,
 		WebhookSecret: cfg.Stripe.WebhookSecret,
+		SSEHub:        sseHub,
+		CorsOrigin:    "*",
 	}
 
 	// Create the mux
