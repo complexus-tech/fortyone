@@ -54,8 +54,8 @@ type Config struct {
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
 		ReadTimeout     time.Duration `default:"120s" env:"APP_API_READ_TIMEOUT"`
-		WriteTimeout    time.Duration `default:"10s" env:"APP_API_WRITE_TIMEOUT"`
-		IdleTimeout     time.Duration `default:"10s" env:"APP_API_IDLE_TIMEOUT"`
+		WriteTimeout    time.Duration `default:"60s" env:"APP_API_WRITE_TIMEOUT"`
+		IdleTimeout     time.Duration `default:"30s" env:"APP_API_IDLE_TIMEOUT"`
 		ShutdownTimeout time.Duration `default:"30s" env:"APP_API_SHUTDOWN_TIMEOUT"`
 		DebugHost       string        `default:"localhost:9000" env:"APP_API_DEBUG_HOST"`
 	}
