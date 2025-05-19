@@ -22,11 +22,7 @@ func Routes(cfg Config, app *web.App) {
 		CorsOrigin: cfg.CorsOrigin,
 	}
 
-	// Define the authentication middleware instance.
-	// This uses the mid.Auth function from your existing middleware package.
 	authMiddleware := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	// Register the SSE endpoint. Choose a suitable path, e.g., "/api/v1/notifications/subscribe".
-	// The handler.StreamNotifications method will handle the SSE logic.
 	app.Get("/notifications/subscribe", handler.StreamNotifications, authMiddleware)
 }
