@@ -36,7 +36,7 @@ func (p *Publisher) Publish(ctx context.Context, event events.Event) error {
 	}
 
 	// Add to stream
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"type":      string(event.Type),
 		"payload":   string(payload),
 		"timestamp": event.Timestamp.Format(time.RFC3339),
