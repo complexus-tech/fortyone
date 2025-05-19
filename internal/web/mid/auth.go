@@ -27,11 +27,21 @@ func GetUserID(ctx context.Context) (uuid.UUID, error) {
 func Auth(log *logger.Logger, secretKey string) web.Middleware {
 	m := func(next web.Handler) web.Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				return web.RespondError(ctx, w, errors.New("unauthorized"), http.StatusUnauthorized)
+			tokenString := ""
+			queryToken := r.URL.Query().Get("token")
+			if queryToken != "" {
+				tokenString = queryToken
+			} else {
+				authHeader := r.Header.Get("Authorization")
+				if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+					tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+				}
 			}
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+			if tokenString == "" {
+				return web.RespondError(ctx, w, errors.New("unauthorized: token not found"), http.StatusUnauthorized)
+			}
+
 			claims := &jwt.RegisteredClaims{}
 			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 				return []byte(secretKey), nil
