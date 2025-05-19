@@ -7,16 +7,18 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 )
 
 type Config struct {
 	DB        *sqlx.DB
 	Log       *logger.Logger
+	Redis     *redis.Client
 	SecretKey string
 }
 
 func Routes(cfg Config, app *web.App) {
-	notificationsService := notifications.New(cfg.Log, notificationsrepo.New(cfg.Log, cfg.DB))
+	notificationsService := notifications.New(cfg.Log, notificationsrepo.New(cfg.Log, cfg.DB), cfg.Redis)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	h := New(notificationsService)

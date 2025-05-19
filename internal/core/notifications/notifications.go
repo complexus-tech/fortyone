@@ -2,10 +2,13 @@ package notifications
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -27,19 +30,52 @@ type Repository interface {
 
 // Service provides notification-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo        Repository
+	log         *logger.Logger
+	redisClient *redis.Client
 }
 
-// New constructs a new notifications service instance with the provided repository.
-func New(log *logger.Logger, repo Repository) *Service {
+// New constructs a new notifications service instance with the provided repository and Redis client.
+func New(log *logger.Logger, repo Repository, redisClient *redis.Client) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:        repo,
+		log:         log,
+		redisClient: redisClient,
 	}
 }
 
-// Create creates a new notification and sends an email if enabled.
+func (s *Service) publishNotification(ctx context.Context, notification CoreNotification) error {
+	ctx, span := web.AddSpan(ctx, "business.core.notifications.publishNotification")
+	defer span.End()
+
+	if s.redisClient == nil {
+		s.log.Warn(ctx, "notifications.Service.Create: Redis client not configured, skipping publish.", "notificationID", notification.ID)
+		span.AddEvent("redis publish skipped", trace.WithAttributes(
+			attribute.String("reason", "redis client not configured"),
+			attribute.String("notification.id", notification.ID.String()),
+		))
+		return nil
+	}
+	jsonData, marshalErr := json.Marshal(notification)
+	if marshalErr != nil {
+		s.log.Error(ctx, "notifications.Service.Create: failed to marshal notification for Redis", "error", marshalErr, "notificationID", notification.ID)
+	} else {
+		channelName := fmt.Sprintf("user-notifications:%s", notification.RecipientID.String())
+		if pubErr := s.redisClient.Publish(ctx, channelName, jsonData).Err(); pubErr != nil {
+			s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", pubErr, "channel", channelName, "notificationID", notification.ID)
+		} else {
+			s.log.Info(ctx, "notifications.Service.Create: notification published to Redis", "channel", channelName, "notificationID", notification.ID)
+			span.AddEvent("notification published to Redis", trace.WithAttributes(
+				attribute.String("redis.channel", channelName),
+				attribute.String("notification.id", notification.ID.String()),
+			))
+		}
+	}
+
+	return nil
+}
+
+// Create creates a new notification, saves it to the database, and publishes it to Redis for SSE.
 func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error) {
 	s.log.Info(ctx, "business.core.notifications.Create")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.Create")
@@ -51,9 +87,12 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 		return CoreNotification{}, err
 	}
 
-	span.AddEvent("notification created", trace.WithAttributes(
+	span.AddEvent("notification created in DB", trace.WithAttributes(
 		attribute.String("notification.id", notification.ID.String()),
 	))
+
+	// Publish notification to Redis Pub/Sub
+	s.publishNotification(ctx, notification)
 
 	return notification, nil
 }

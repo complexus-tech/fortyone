@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -40,6 +41,8 @@ type Config struct {
 	Cache         *cache.Service
 	StripeClient  *client.API
 	WebhookSecret string
+	SSEHub        *sse.Hub
+	CorsOrigin    string
 }
 
 // New returns a new HTTP handler that defines all the API routes.
