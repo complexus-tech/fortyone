@@ -173,6 +173,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Redis:     cfg.Redis,
 	}, app)
 
 	// register the invitations routes
