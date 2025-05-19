@@ -466,12 +466,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 				Title:       title,
 			}
 
-			cnn, err := c.notifications.Create(ctx, notification)
-			if err != nil {
+			if _, err := c.notifications.Create(ctx, notification); err != nil {
 				c.log.Error(ctx, "failed to create notification for story update", "error", err)
-			} else {
-				// this where sse sends the notification
-				fmt.Println("notification created", cnn)
 			}
 		}
 	}
