@@ -30,8 +30,6 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 	} else {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
-	// Consider if credentials (cookies, auth headers) are sent by the frontend and if this header is needed.
-	// w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

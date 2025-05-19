@@ -7,17 +7,17 @@ import (
 )
 
 type CoreNotification struct {
-	ID          uuid.UUID
-	RecipientID uuid.UUID
-	WorkspaceID uuid.UUID
-	Type        string
-	EntityType  string
-	EntityID    uuid.UUID
-	ActorID     uuid.UUID
-	Title       string
-	Description string
-	CreatedAt   time.Time
-	ReadAt      *time.Time
+	ID          uuid.UUID  `json:"id"`
+	RecipientID uuid.UUID  `json:"recipientId"`
+	WorkspaceID uuid.UUID  `json:"workspaceId"`
+	Type        string     `json:"type"`
+	EntityType  string     `json:"entityType"`
+	EntityID    uuid.UUID  `json:"entityId"`
+	ActorID     uuid.UUID  `json:"actorId"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	ReadAt      *time.Time `json:"readAt"`
 }
 
 // CoreNotificationPreference represents a single notification preference
