@@ -380,11 +380,11 @@ export const Header = () => {
       </Flex>
       <Flex className="mb-4" gap={2}>
         <Button
-          className="rounded-[0.6rem] md:h-[2.5rem]"
+          className="truncate rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
           disabled={userRole === "guest"}
           fullWidth
-          leftIcon={<NewStoryIcon />}
+          leftIcon={<NewStoryIcon className="shrink-0" />}
           onClick={() => {
             if (userRole !== "guest") {
               setIsOpen(!isOpen);
