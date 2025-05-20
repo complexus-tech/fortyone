@@ -16,7 +16,7 @@ export const ServerSentEvents = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const SSE_ENDPOINT = `${apiURL.replace("https", "http")}:8001/notifications/subscribe?token=${session?.token}`;
+    const SSE_ENDPOINT = `${apiURL}/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
     eventSource.onmessage = (event) => {
