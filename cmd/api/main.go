@@ -417,7 +417,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 			wg.Wait()
 			close(shutdownComplete)
 		}()
-
 		select {
 		case <-shutdownComplete:
 			log.Info(ctx, "all servers shut down gracefully")
