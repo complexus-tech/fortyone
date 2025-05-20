@@ -192,9 +192,6 @@ export const NewObjectiveDialog = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      titleEditor?.commands.focus();
-    }
     if (initialTeamId) {
       const team = teams.find((team) => team.id === initialTeamId);
       if (team) {
@@ -202,6 +199,12 @@ export const NewObjectiveDialog = ({
       }
     }
   }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
+
+  useEffect(() => {
+    if (isOpen && titleEditor) {
+      titleEditor.commands.focus();
+    }
+  }, [isOpen, titleEditor]);
 
   const lead = members.find((member) => member.id === objectiveForm.leadUser);
 
