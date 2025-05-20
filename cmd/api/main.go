@@ -19,7 +19,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/handlers"
-	"github.com/complexus-tech/projects-api/internal/handlers/ssegrp"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
@@ -27,7 +26,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/sse"
-	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
@@ -38,7 +36,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
-	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/go-playground/validator/v10"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
@@ -57,7 +54,6 @@ type Config struct {
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
-		SSEHost         string        `default:"localhost:8001" env:"APP_SSE_HOST"`
 		ReadTimeout     time.Duration `default:"120s" env:"APP_API_READ_TIMEOUT"`
 		WriteTimeout    time.Duration `default:"60s" env:"APP_API_WRITE_TIMEOUT"`
 		IdleTimeout     time.Duration `default:"30s" env:"APP_API_IDLE_TIMEOUT"`
@@ -115,7 +111,6 @@ type Config struct {
 }
 
 func main() {
-
 	var logLevel slog.Level
 
 	switch environ {
@@ -134,7 +129,6 @@ func main() {
 		log.Error(ctx, fmt.Sprintf("error shutting down: %s", err))
 		os.Exit(1)
 	}
-
 }
 
 // run starts the HTTP server, tracing and listens for OS signals to gracefully shutdown.
@@ -324,49 +318,22 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Create the mux
 	routeAdder := handlers.New()
-	mainAppMux := mux.New(muxConfig, routeAdder)
+	handler := mux.New(muxConfig, routeAdder)
 
-	mainAPIServer := http.Server{
+	server := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      mainAppMux,
+		Handler:      handler,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,
 	}
 
-	serverErrors := make(chan error, 2)
+	serverErrors := make(chan error, 1)
 	go func() {
-		log.Info(ctx, "starting main API server", "address", mainAPIServer.Addr)
-		if err := mainAPIServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Info(ctx, "starting main API server", "address", server.Addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Error(ctx, "main API server ListenAndServe error", "error", err)
 			serverErrors <- fmt.Errorf("main API server error: %w", err)
-		}
-	}()
-
-	sseApp := web.New(shutdown, tracer, mid.Logger(log))
-	sseApp.StrictSlash(false)
-
-	sseHandlerConfig := ssegrp.Config{
-		Log:        log,
-		SecretKey:  cfg.Auth.SecretKey,
-		SSEHub:     sseHub,
-		CorsOrigin: "*",
-	}
-	ssegrp.Routes(sseHandlerConfig, sseApp)
-
-	sseServer := http.Server{
-		Addr:         cfg.Web.SSEHost,
-		Handler:      sseApp,
-		ReadTimeout:  cfg.Web.ReadTimeout,
-		WriteTimeout: 0,
-		IdleTimeout:  0,
-	}
-
-	go func() {
-		log.Info(ctx, "starting SSE server", "address", sseServer.Addr)
-		if err := sseServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error(ctx, "SSE server ListenAndServe error", "error", err)
-			serverErrors <- fmt.Errorf("SSE server error: %w", err)
 		}
 	}()
 
@@ -384,31 +351,18 @@ func run(ctx context.Context, log *logger.Logger) error {
 		defer cancel()
 
 		var wg sync.WaitGroup
-		wg.Add(2)
+		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 			log.Info(shutdownCtx, "attempting to shut down main API server")
-			if err := mainAPIServer.Shutdown(shutdownCtx); err != nil {
+			if err := server.Shutdown(shutdownCtx); err != nil {
 				log.Warn(shutdownCtx, "main API server shutdown error", "error", err)
-				if errClose := mainAPIServer.Close(); errClose != nil {
+				if errClose := server.Close(); errClose != nil {
 					log.Error(shutdownCtx, "main API server close error", "error", errClose)
 				}
 			} else {
 				log.Info(shutdownCtx, "main API server shut down successfully")
-			}
-		}()
-
-		go func() {
-			defer wg.Done()
-			log.Info(shutdownCtx, "attempting to shut down SSE server")
-			if err := sseServer.Shutdown(shutdownCtx); err != nil {
-				log.Warn(shutdownCtx, "SSE server shutdown error", "error", err)
-				if errClose := sseServer.Close(); errClose != nil {
-					log.Error(shutdownCtx, "SSE server close error", "error", errClose)
-				}
-			} else {
-				log.Info(shutdownCtx, "SSE server shut down successfully")
 			}
 		}()
 

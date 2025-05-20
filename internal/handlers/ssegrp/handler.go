@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/sse"
@@ -20,78 +21,105 @@ type Handler struct {
 
 func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, _ := mid.GetUserID(ctx)
-	h.Log.Info(ctx, "SSE connection attempt", "userID", userID)
+	h.Log.Info(ctx, "SSE connection attempt (hijack) for userID", "userID", userID)
 
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	if h.CorsOrigin != "" {
-		w.Header().Set("Access-Control-Allow-Origin", h.CorsOrigin)
-	} else {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		h.Log.Error(ctx, "sse (hijack): ResponseWriter does not support hijacking", "userID", userID)
+		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
+		return fmt.Errorf("hijacking unsupported: ResponseWriter does not implement http.Hijacker")
 	}
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		h.Log.Error(ctx, "sse: ResponseWriter does not support flushing", "userID", userID)
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Streaming unsupported!")
-		return fmt.Errorf("streaming unsupported: ResponseWriter does not implement http.Flusher")
+	conn, bufRW, err := hijacker.Hijack()
+	if err != nil {
+		h.Log.Error(ctx, "sse (hijack): Failed to hijack connection", "userID", userID, "error", err)
+		return fmt.Errorf("failed to hijack connection: %w", err)
+	}
+	defer func() {
+		h.Log.Info(ctx, "SSE (hijack): Closing hijacked connection for userID", "userID", userID)
+		conn.Close()
+	}()
+
+	var headers strings.Builder
+	headers.WriteString("HTTP/1.1 200 OK\r\n")
+	headers.WriteString("Content-Type: text/event-stream\r\n")
+	headers.WriteString("Cache-Control: no-cache\r\n")
+	headers.WriteString("Connection: keep-alive\r\n")
+	if h.CorsOrigin != "" {
+		headers.WriteString(fmt.Sprintf("Access-Control-Allow-Origin: %s\r\n", h.CorsOrigin))
+	} else {
+		headers.WriteString("Access-Control-Allow-Origin: *\r\n")
+	}
+	headers.WriteString("X-Accel-Buffering: no\r\n")
+	headers.WriteString("\r\n")
+
+	_, err = bufRW.WriteString(headers.String())
+	if err == nil {
+		err = bufRW.Flush()
+	}
+	if err != nil {
+		h.Log.Error(ctx, "sse (hijack): Failed to write initial headers for userID", "userID", userID, "error", err)
+		return nil
 	}
 
 	sseClient := h.SSEHub.RegisterNewClient(userID)
-	h.Log.Info(ctx, "SSE client registered with hub", "userID", userID)
-
+	h.Log.Info(ctx, "SSE (hijack): Client registered with hub for userID", "userID", userID)
 	defer func() {
 		h.SSEHub.UnregisterClient(sseClient)
-		h.Log.Info(ctx, "SSE client unregistered from hub", "userID", userID)
+		h.Log.Info(ctx, "SSE (hijack): Client unregistered from hub for userID", "userID", userID)
 	}()
 
-	// 6. Initial Connection Confirmation (Optional but good practice)
-	_, err := fmt.Fprintf(w, "event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\"}\n\n", userID.String())
-	if err != nil {
-		h.Log.Warn(ctx, "sse: error writing initial connected event", "userID", userID, "error", err)
-		// Client likely disconnected, no need to return error to framework as we've already started streaming.
-		// The loop below will handle the disconnect.
-		return nil // Or return err if we want to signal this specific failure more strongly upstream before loop
+	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\"}\n\n", userID.String())
+	_, err = bufRW.WriteString(initialEvent)
+	if err == nil {
+		err = bufRW.Flush()
 	}
-	flusher.Flush()
+	if err != nil {
+		h.Log.Warn(ctx, "sse (hijack): Error writing initial connected event for userID", "userID", userID, "error", err)
+		return nil
+	}
 
 	keepAliveTicker := time.NewTicker(25 * time.Second)
 	defer keepAliveTicker.Stop()
 
-	h.Log.Info(ctx, "SSE event loop starting", "userID", userID)
+	h.Log.Info(ctx, "SSE (hijack): Event loop starting for userID", "userID", userID)
+
 	for {
 		select {
-		case <-r.Context().Done(): // HTTP client disconnected (browser tab closed, etc.)
-			h.Log.Info(ctx, "SSE client disconnected (request context done)", "userID", userID)
+		case <-r.Context().Done():
+			h.Log.Info(ctx, "SSE (hijack): Request context done for userID", "userID", userID, "error", r.Context().Err())
 			return nil
 
-		case <-sseClient.Ctx().Done(): // SSE Hub/Client context explicitly cancelled (e.g. server shutdown, or hub logic)
-			h.Log.Info(ctx, "SSE client disconnected (hub client context done)", "userID", userID)
+		case <-sseClient.Ctx().Done():
+			h.Log.Info(ctx, "SSE (hijack): Hub client context done for userID", "userID", userID)
 			return nil
 
-		case messageData, ok := <-sseClient.Send:
-			if !ok { // Channel closed, client was likely unregistered by the hub
-				h.Log.Info(ctx, "SSE client send channel closed, assuming client unregistered", "userID", userID)
+		case messageData, ok_chan := <-sseClient.Send:
+			if !ok_chan {
+				h.Log.Info(ctx, "SSE (hijack): Hub send channel closed for userID", "userID", userID)
 				return nil
 			}
-			_, err = fmt.Fprintf(w, "data: %s\n\n", messageData)
+			dataLine := fmt.Sprintf("data: %s\n\n", messageData)
+			_, err = bufRW.WriteString(dataLine)
+			if err == nil {
+				err = bufRW.Flush()
+			}
 			if err != nil {
-				h.Log.Warn(ctx, "sse: error writing data event to client", "userID", userID, "error", err)
+				h.Log.Warn(ctx, "SSE (hijack): Error writing data event to client for userID", "userID", userID, "error", err)
 				return nil
 			}
-			flusher.Flush()
-			h.Log.Debug(ctx, "SSE message sent to client", "userID", userID, "sizeBytes", len(messageData))
+			// h.Log.Debug(ctx, "SSE (hijack): Message sent to client for userID", "userID", userID, "sizeBytes", len(dataLine)) // Optional: Can be noisy
 
 		case <-keepAliveTicker.C:
-			_, err = fmt.Fprintf(w, ":keep-alive\n\n") // SSE spec: comments start with a colon
-			if err != nil {
-				h.Log.Warn(ctx, "sse: error writing keep-alive to client", "userID", userID, "error", err)
-				return nil // Client likely disconnected
+			pingData := ":keep-alive\n\n"
+			_, err = bufRW.WriteString(pingData)
+			if err == nil {
+				err = bufRW.Flush()
 			}
-			flusher.Flush()
-			// h.Log.Debug(ctx, "SSE keep-alive sent", "userID", userID)
+			if err != nil {
+				h.Log.Warn(ctx, "SSE (hijack): Error writing keep-alive to client for userID", "userID", userID, "error", err)
+				return nil
+			}
 		}
 	}
 }
