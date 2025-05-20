@@ -1,25 +1,21 @@
 "use client";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { StoryPage } from "@/modules/story";
-import { notificationKeys } from "@/constants/keys";
+import { useReadNotificationMutation } from "@/modules/notifications/hooks/read-mutation";
 
 export const NotificationDetails = ({
   entityId,
+  notificationId,
 }: {
   notificationId: string;
   entityId: string;
   entityType: "story" | "objective";
 }) => {
-  const queryClient = useQueryClient();
+  const { mutate: readNotification } = useReadNotificationMutation();
+
   useEffect(() => {
-    queryClient.invalidateQueries({
-      queryKey: notificationKeys.unread(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: notificationKeys.all,
-    });
-  }, [queryClient]);
+    readNotification(notificationId);
+  }, [notificationId, readNotification]);
 
   return <StoryPage isNotifications storyId={entityId} />;
 };
