@@ -8,7 +8,7 @@ import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { notificationKeys } from "@/constants/keys";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = process.env.NEXT_PUBLIC_API_URL!;
 
 export const ServerSentEvents = () => {
   const posthog = usePostHog();
@@ -16,7 +16,7 @@ export const ServerSentEvents = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const SSE_ENDPOINT = `${apiURL}/notifications/subscribe?token=${session?.token}`;
+    const SSE_ENDPOINT = `${apiURL.replace("https", "http")}:8001/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
     eventSource.onmessage = (event) => {
