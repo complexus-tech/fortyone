@@ -164,7 +164,7 @@ export const StoriesHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        assigneeId={assignee?.id || null}
+        assigneeId={assignee?.id}
         isOpen={isOpen}
         priority={priority}
         setIsOpen={setIsOpen}
