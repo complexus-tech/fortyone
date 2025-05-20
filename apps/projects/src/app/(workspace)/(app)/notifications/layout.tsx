@@ -22,7 +22,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
   });
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <BodyContainer className="grid h-dvh md:grid-cols-[320px_auto]">
+      <BodyContainer className="grid h-dvh md:grid-cols-[340px_auto]">
         <ListNotifications />
         <Box className="hidden md:block">{children}</Box>
       </BodyContainer>
