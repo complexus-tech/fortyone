@@ -19,6 +19,12 @@ export const ServerSentEvents = () => {
     const SSE_ENDPOINT = `${apiURL}/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
+    eventSource.onopen = () => {
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all,
+      });
+    };
+
     eventSource.onmessage = (event) => {
       try {
         const notification = JSON.parse(`${event.data}`) as AppNotification;
