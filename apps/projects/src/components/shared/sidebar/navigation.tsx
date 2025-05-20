@@ -27,22 +27,16 @@ export const Navigation = () => {
   const features = useFeatures();
   const links: MenuItem[] = [
     {
-      name: "Inbox",
-      icon: <NotificationsIcon className="h-[1.3rem]" />,
-      href: "/notifications",
-      messages: unreadNotifications,
+      name: "Summary",
+      icon: <DashboardIcon />,
+      href: "/summary",
     },
-
     {
       name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
       icon: <UserIcon />,
       href: "/my-work",
     },
-    {
-      name: "Summary",
-      icon: <DashboardIcon />,
-      href: "/summary",
-    },
+
     // {
     //   name: "Analytics",
     //   icon: (
@@ -63,6 +57,12 @@ export const Navigation = () => {
       icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
       href: "/objectives",
       disabled: !features.objectiveEnabled,
+    },
+    {
+      name: "Notifications",
+      icon: <NotificationsIcon className="h-[1.3rem]" />,
+      href: "/notifications",
+      messages: unreadNotifications,
     },
     // {
     //   name: "Running sprints",
