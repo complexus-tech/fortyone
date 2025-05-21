@@ -12,7 +12,7 @@ export const NotificationDetails = ({
   entityType: "story" | "objective";
 }) => {
   const hasMounted = useRef(false);
-  const { mutate: readNotification } = useReadNotificationMutation();
+  const { mutate: readNotification } = useReadNotificationMutation(false);
 
   useEffect(() => {
     if (!hasMounted.current) {
