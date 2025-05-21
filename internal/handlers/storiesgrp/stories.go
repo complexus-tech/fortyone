@@ -305,7 +305,21 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// After successful creation, invalidate list cache
+	// invalidate parent story cache if it exists parent_id is not nil
+	if story.Parent != nil {
+		cacheKeys := cache.InvalidateStoryKeys(workspaceId, *story.Parent)
+		for _, key := range cacheKeys {
+			if strings.Contains(key, "*") {
+				// Handle pattern deletion
+				h.cache.DeleteByPattern(ctx, key)
+			} else {
+				// Handle exact key deletion
+				h.cache.Delete(ctx, key)
+			}
+		}
+	}
+
+	// invalidate list cache
 	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
