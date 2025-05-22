@@ -93,6 +93,12 @@ The Company may use Personal Data for the following purposes:
 - For business transfers
 - For other purposes: We may use Your information for other purposes, such as data analysis, identifying usage trends, determining the effectiveness of our promotional campaigns and to evaluate and improve our Service.
 
+## Email Communication
+
+After signing up, we may send you onboarding and support emails to help you get started and use Complexus. These emails are necessary for providing our service and do not require additional consent.
+
+You may also choose to receive product updates, newsletters, and promotional offers by opting in during signup or via our website popup. We will only send marketing or promotional emails to users who have provided explicit consent. You can unsubscribe from marketing emails at any time by following the link in the email or contacting us.
+
 ## Retention of Your Personal Data
 
 The Company will retain Your Personal Data only for as long as is necessary for the purposes set out in this Privacy Policy. We will retain and use Your Personal Data to the extent necessary to comply with our legal obligations, resolve disputes, and enforce our legal agreements and policies.
