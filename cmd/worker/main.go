@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
+	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 
@@ -22,13 +23,23 @@ var (
 )
 
 type WorkerConfig struct {
+	DB struct {
+		Host         string `default:"localhost" env:"APP_DB_HOST"`
+		Port         string `default:"5432" env:"APP_DB_PORT"`
+		User         string `default:"postgres" env:"APP_DB_USER"`
+		Password     string `default:"password" env:"APP_DB_PASSWORD"`
+		Name         string `default:"complexus" env:"APP_DB_NAME"`
+		MaxIdleConns int    `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
+		MaxOpenConns int    `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
+		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
+	}
 	Redis struct {
 		Host     string `default:"localhost" env:"APP_REDIS_HOST"`
 		Port     string `default:"6379" env:"APP_REDIS_PORT"`
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
-	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5"`
+	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2"`
 	// MailerLite struct {
 	//  APIKey  string `env:"APP_MAILERLITE_API_KEY"`
 	//  GroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID"`
@@ -52,13 +63,72 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing worker configuration: %w", err)
 	}
 	if cfg.Queues == nil {
-		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5}
+		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2}
 	}
+
+	// Initialize database connection
+	dbConfig := database.Config{
+		Host:         cfg.DB.Host,
+		Port:         cfg.DB.Port,
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Name:         cfg.DB.Name,
+		MaxIdleConns: cfg.DB.MaxIdleConns,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		DisableTLS:   cfg.DB.DisableTLS,
+	}
+
+	db, err := database.Open(dbConfig)
+	if err != nil {
+		return fmt.Errorf("error connecting to database: %w", err)
+	}
+	defer func() {
+		log.Info(ctx, "closing database connection")
+		db.Close()
+	}()
+
+	log.Info(ctx, "database connection established")
+
 	rdbConn := asynq.RedisClientOpt{
 		Addr:     net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
 		Password: cfg.Redis.Password,
 		DB:       cfg.Redis.Name,
 	}
+
+	// Set up scheduler for periodic cleanup tasks
+	scheduler := asynq.NewScheduler(rdbConn, nil)
+
+	// Register periodic cleanup tasks
+	// Weekly on Sunday at 20:45 (token cleanup)
+	_, err = scheduler.Register(
+		"45 20 * * 0", // Sunday at 20:45 (5-field cron format: min hour day month dow)
+		asynq.NewTask(tasks.TypeTokenCleanup, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register token cleanup task: %w", err)
+	}
+
+	// Daily at 20:40 (delete stories)
+	_, err = scheduler.Register(
+		"40 20 * * *", // Daily at 20:40 (5-field cron format)
+		asynq.NewTask(tasks.TypeDeleteStories, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register delete stories task: %w", err)
+	}
+
+	// Weekly on Sunday at 20:50 (webhook cleanup)
+	_, err = scheduler.Register(
+		"50 20 * * 0", // Sunday at 20:50 (5-field cron format)
+		asynq.NewTask(tasks.TypeWebhookCleanup, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register webhook cleanup task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -67,14 +137,22 @@ func run(ctx context.Context, log *logger.Logger) error {
 		},
 	)
 
+	// Set up task handlers
 	workerTaskService := taskhandlers.NewWorkerHandlers(log)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
 
 	mux := asynq.NewServeMux()
+	// Register existing handlers
 	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
+
+	// Register cleanup handlers
+	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
+	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
+	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",
-		RedisConnOpt: asynq.RedisClientOpt{Addr: ":6379"},
+		RedisConnOpt: rdbConn,
 	})
 	http.Handle(h.RootPath()+"/", h)
 
@@ -83,6 +161,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 		if err := http.ListenAndServe(":8080", nil); err != nil {
 			log.Error(ctx, "Failed to start HTTP server", "error", err)
 		}
+	}()
+
+	// Start scheduler
+	go func() {
+		log.Info(ctx, "Starting cleanup scheduler...")
+		if err := scheduler.Run(); err != nil {
+			log.Error(ctx, "Failed to start scheduler", "error", err)
+		}
+	}()
+
+	// Graceful shutdown for scheduler
+	defer func() {
+		log.Info(ctx, "shutting down scheduler")
+		scheduler.Shutdown()
 	}()
 
 	log.Info(ctx, "Starting Asynq worker server...")
