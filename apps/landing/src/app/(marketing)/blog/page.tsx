@@ -85,53 +85,41 @@ export default function Page() {
         </Link>
         <Divider className="my-10" />
         <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
-          {[
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-            firstPost,
-            ...remainingPosts,
-          ].map(({ slug, metadata: { title, featuredImage, date } }, idx) => (
-            <Link
-              className="group"
-              href={`/blog/${slug}`}
-              key={`${slug}-${idx}`}
-            >
-              <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
-                <BlurImage
-                  alt={title}
-                  className="aspect-video rounded-[0.6rem]"
-                  src={featuredImage}
-                />
-              </Box>
-              <Flex align="center" className="my-3" justify="between">
-                <Text className="opacity-80">
-                  {date
-                    ? new Date(date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : null}
-                </Text>
-                <Text className="opacity-80">6 min read</Text>
-              </Flex>
-              <Text
-                as="h3"
-                className="text-2xl font-semibold group-hover:underline"
+          {remainingPosts.map(
+            ({ slug, metadata: { title, featuredImage, date } }, idx) => (
+              <Link
+                className="group"
+                href={`/blog/${slug}`}
+                key={`${slug}-${idx}`}
               >
-                {title}
-              </Text>
-            </Link>
-          ))}
+                <Box className="rounded-[0.9rem] border border-dark-50 bg-dark-100/60 p-1.5">
+                  <BlurImage
+                    alt={title}
+                    className="aspect-video rounded-[0.6rem]"
+                    src={featuredImage}
+                  />
+                </Box>
+                <Flex align="center" className="my-3" justify="between">
+                  <Text className="opacity-80">
+                    {date
+                      ? new Date(date).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : null}
+                  </Text>
+                  <Text className="opacity-80">6 min read</Text>
+                </Flex>
+                <Text
+                  as="h3"
+                  className="text-2xl font-semibold group-hover:underline"
+                >
+                  {title}
+                </Text>
+              </Link>
+            ),
+          )}
         </Box>
       </Container>
       <CallToAction />
