@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
@@ -12,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 
 	"github.com/hibiken/asynq"
+	"github.com/hibiken/asynqmon"
 	"github.com/josemukorivo/config"
 )
 
@@ -69,6 +71,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
+
+	h := asynqmon.New(asynqmon.Options{
+		RootPath:     "/",
+		RedisConnOpt: asynq.RedisClientOpt{Addr: ":6379"},
+	})
+	http.Handle(h.RootPath()+"/", h)
+
+	go func() {
+		log.Info(ctx, "Starting Asynqmon monitoring server...")
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Error(ctx, "Failed to start HTTP server", "error", err)
+		}
+	}()
+
 	log.Info(ctx, "Starting Asynq worker server...")
 	if err := srv.Run(mux); err != nil {
 		log.Error(ctx, "Asynq server Run() failed", "error", err)
