@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
 	"os"
 
+	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 
@@ -64,32 +64,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 			Queues:      cfg.Queues,
 		},
 	)
+
+	workerTaskService := taskhandlers.NewWorkerHandlers(log)
+
 	mux := asynq.NewServeMux()
-
-	onboardingHandler := func(handlerCtx context.Context, t *asynq.Task) error {
-		var p tasks.UserOnboardingStartPayload
-		if err := json.Unmarshal(t.Payload(), &p); err != nil {
-			log.Error(handlerCtx, "Failed to unmarshal UserOnboardingStartPayload", "error", err, "task_id", t.ResultWriter().TaskID())
-			return fmt.Errorf("unmarshal payload failed: %w: %w", err, asynq.SkipRetry)
-		}
-
-		log.Info(handlerCtx, "WORKER: Processing UserOnboardingStart task",
-			"user_id", p.UserID, "email", p.Email, "full_name", p.FullName, "task_id", t.ResultWriter().TaskID(),
-		)
-
-		// TODO: Implement MailerLite integration here
-		// 1. Get MailerLite APIKey and GroupID from cfg.MailerLite (add to WorkerConfig)
-		// 2. Initialize MailerLite client
-		// 3. Add user to MailerLite group
-
-		log.Info(handlerCtx, "WORKER: Successfully processed UserOnboardingStart task (simulation)", "user_id", p.UserID)
-		return nil
-	}
-	mux.HandleFunc(tasks.TypeUserOnboardingStart, onboardingHandler)
+	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
 	log.Info(ctx, "Starting Asynq worker server...")
 	if err := srv.Run(mux); err != nil {
-		log.Error(ctx, "could not run server", "error", err)
-		return err
+		log.Error(ctx, "Asynq server Run() failed", "error", err)
+		return fmt.Errorf("asynq server run error: %w", err)
 	}
 	return nil
 }
