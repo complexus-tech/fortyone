@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	// "context" // No longer needed here if logging is minimal in New/Close
 	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -9,8 +8,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Service is the main struct for interacting with task enqueuing.
-// It holds the Asynq client and the application logger.
 type Service struct {
 	asynqClient *asynq.Client
 	log         *logger.Logger
@@ -45,6 +42,3 @@ func (s *Service) Close() error {
 	}
 	return nil
 }
-
-// Task type constants and payload structs will be in their respective task files (e.g., onboarding_task.go)
-// Enqueue methods for specific tasks will also be in their respective task files.
