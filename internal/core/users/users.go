@@ -144,6 +144,16 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		return CoreUser{}, err
 	}
 
+	// Enqueue onboarding task
+	_, err = s.tasksService.EnqueueUserOnboardingStart(tasks.UserOnboardingStartPayload{
+		UserID:   user.ID.String(),
+		Email:    user.Email,
+		FullName: user.FullName,
+	})
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
+	}
 	return user, nil
 }
 
