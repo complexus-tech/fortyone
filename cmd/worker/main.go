@@ -98,20 +98,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Set up scheduler for periodic cleanup tasks
 	scheduler := asynq.NewScheduler(rdbConn, nil)
 
-	// Register periodic cleanup tasks
-	// Weekly on Sunday at 20:45 (token cleanup)
 	_, err = scheduler.Register(
-		"45 20 * * 0", // Sunday at 20:45 (5-field cron format: min hour day month dow)
-		asynq.NewTask(tasks.TypeTokenCleanup, nil),
-		asynq.Queue("cleanup"),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register token cleanup task: %w", err)
-	}
-
-	// Daily at 20:40 (delete stories)
-	_, err = scheduler.Register(
-		"40 20 * * *", // Daily at 20:40 (5-field cron format)
+		"@daily",
 		asynq.NewTask(tasks.TypeDeleteStories, nil),
 		asynq.Queue("cleanup"),
 	)
@@ -119,9 +107,17 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register delete stories task: %w", err)
 	}
 
-	// Weekly on Sunday at 20:50 (webhook cleanup)
 	_, err = scheduler.Register(
-		"50 20 * * 0", // Sunday at 20:50 (5-field cron format)
+		"@weekly",
+		asynq.NewTask(tasks.TypeTokenCleanup, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register token cleanup task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"@weekly",
 		asynq.NewTask(tasks.TypeWebhookCleanup, nil),
 		asynq.Queue("cleanup"),
 	)
@@ -144,7 +140,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux := asynq.NewServeMux()
 	// Register existing handlers
 	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
-
 	// Register cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
