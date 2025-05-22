@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 )
@@ -17,11 +18,12 @@ type Config struct {
 	SecretKey     string
 	GoogleService *google.Service
 	Publisher     *publisher.Publisher
+	TasksService  *tasks.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	usersRepo := usersrepo.New(cfg.Log, cfg.DB)
-	usersService := users.New(cfg.Log, usersRepo)
+	usersService := users.New(cfg.Log, usersRepo, cfg.TasksService)
 	h := New(usersService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)

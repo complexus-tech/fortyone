@@ -1,8 +1,7 @@
 package tasks
 
 import (
-	"context"
-	"encoding/json"
+	// "context" // No longer needed here if logging is minimal in New/Close
 	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -10,6 +9,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Service is the main struct for interacting with task enqueuing.
+// It holds the Asynq client and the application logger.
 type Service struct {
 	asynqClient *asynq.Client
 	log         *logger.Logger
@@ -17,11 +18,19 @@ type Service struct {
 
 // New creates a new tasks Service instance.
 func New(existingRdb redis.UniversalClient, log *logger.Logger) (*Service, error) {
+	if existingRdb == nil {
+		return nil, fmt.Errorf("tasks: existing Redis client (redis.UniversalClient) cannot be nil")
+	}
+	if log == nil {
+		return nil, fmt.Errorf("tasks: logger cannot be nil")
+	}
+
 	client := asynq.NewClientFromRedisClient(existingRdb)
 
-	if client == nil { // Should not happen if existingRdb is valid, but good to check.
+	if client == nil {
 		return nil, fmt.Errorf("tasks: failed to create Asynq client using NewClientFromRedisClient (returned nil)")
 	}
+
 	s := &Service{
 		asynqClient: client,
 		log:         log,
@@ -29,6 +38,7 @@ func New(existingRdb redis.UniversalClient, log *logger.Logger) (*Service, error
 	return s, nil
 }
 
+// Close allows the application to close the underlying Asynq client during shutdown.
 func (s *Service) Close() error {
 	if s.asynqClient != nil {
 		return s.asynqClient.Close()
@@ -36,39 +46,5 @@ func (s *Service) Close() error {
 	return nil
 }
 
-// --- User Onboarding Task ---
-const TypeUserOnboardingStart = "user:onboarding:start"
-
-// UserOnboardingStartPayload defines the data for starting a user's onboarding process.
-type UserOnboardingStartPayload struct {
-	UserID   string `json:"userId"`
-	Email    string `json:"email"`
-	FullName string `json:"fullName"`
-}
-
-// EnqueueUserOnboardingStart enqueues a task to initiate the user onboarding process.
-func (s *Service) EnqueueUserOnboardingStart(payload UserOnboardingStartPayload, opts ...asynq.Option) (*asynq.TaskInfo, error) {
-	ctx := context.Background()
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		s.log.Error(ctx, "Failed to marshal UserOnboardingStartPayload", "error", err, "user_id", payload.UserID)
-		return nil, fmt.Errorf("tasks: failed to marshal %s payload: %w", TypeUserOnboardingStart, err)
-	}
-
-	defaultOpts := []asynq.Option{
-		asynq.Queue("onboarding"),
-		// asynq.MaxRetry(3), // Example: set default retry for this task type
-	}
-
-	finalOpts := append(defaultOpts, opts...)
-	task := asynq.NewTask(TypeUserOnboardingStart, payloadBytes, finalOpts...)
-
-	// Pass a context if you have one available, otherwise nil is acceptable for Enqueue
-	// but EnqueueContext is preferred if a context (e.g. from an HTTP request) is available.
-	info, err := s.asynqClient.Enqueue(task)
-	if err != nil {
-		s.log.Error(ctx, "Failed to enqueue UserOnboardingStart task", "error", err, "user_id", payload.UserID)
-		return nil, fmt.Errorf("tasks: failed to enqueue %s task: %w", TypeUserOnboardingStart, err)
-	}
-	return info, nil
-}
+// Task type constants and payload structs will be in their respective task files (e.g., onboarding_task.go)
+// Enqueue methods for specific tasks will also be in their respective task files.

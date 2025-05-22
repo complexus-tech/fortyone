@@ -35,6 +35,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
 	"github.com/josemukorivo/config"
@@ -222,11 +223,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Create publisher
 	publisher := publisher.New(rdb, log)
 
+	// Initialize tasks service for Asynq
+	tasksService, err := tasks.New(rdb, log)
+	if err != nil {
+		log.Error(ctx, "failed to initialize tasks service", "error", err)
+		return fmt.Errorf("error initializing tasks service: %w", err)
+	}
+	log.Info(ctx, "tasks service initialized")
+
+	defer func() {
+		log.Info(ctx, "closing tasks service Asynq client")
+		if err := tasksService.Close(); err != nil {
+			log.Error(ctx, "error closing tasks service Asynq client", "error", err)
+		}
+	}()
+
 	// Create services
 	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb)
 	storiesService := stories.New(log, storiesrepo.New(log, db), publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
-	usersService := users.New(log, usersrepo.New(log, db))
+	usersService := users.New(log, usersrepo.New(log, db), tasksService)
 	statusesService := states.New(log, statesrepo.New(log, db))
 
 	// Create consumer using Redis Streams
@@ -310,6 +326,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Validate:      validate,
 		AzureConfig:   azureConfig,
 		Cache:         cacheService,
+		TasksService:  tasksService,
 		StripeClient:  stripeClient,
 		WebhookSecret: cfg.Stripe.WebhookSecret,
 		SSEHub:        sseHub,

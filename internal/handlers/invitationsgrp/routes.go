@@ -14,6 +14,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 	"github.com/stripe/stripe-go/v82/client"
@@ -26,11 +27,12 @@ type Config struct {
 	Publisher    *publisher.Publisher
 	StripeClient *client.API
 	StripeSecret string
+	TasksService *tasks.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	repo := invitationsrepo.New(cfg.Log, cfg.DB)
-	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB))
+	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
 	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.StripeSecret)
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil, subscriptionsService)
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
