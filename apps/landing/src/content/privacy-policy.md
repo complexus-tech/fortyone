@@ -97,7 +97,7 @@ The Company may use Personal Data for the following purposes:
 
 After signing up, we may send you onboarding and support emails to help you get started and use Complexus. These emails are necessary for providing our service and do not require additional consent.
 
-You may also choose to receive product updates, newsletters, and promotional offers by opting in during signup or via our website popup. We will only send marketing or promotional emails to users who have provided explicit consent. You can unsubscribe from marketing emails at any time by following the link in the email or contacting us.
+You may also choose to receive product updates, newsletters, and promotional offers by opting in during signup. We will only send marketing or promotional emails to users who have provided explicit consent. You can unsubscribe from marketing emails at any time by following the link in the email or contacting us.
 
 ## Retention of Your Personal Data
 
