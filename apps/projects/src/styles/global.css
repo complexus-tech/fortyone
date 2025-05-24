@@ -11,9 +11,9 @@ html {
   @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13px] font-medium text-dark dark:bg-dark dark:text-gray-200 2xl:text-[14px];
 }
 
-body {
+/* body {
   @apply border-t-[0.5px] border-gray-100 dark:border-dark-100;
-}
+} */
 
 @layer base {
   input,
