@@ -68,29 +68,11 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	cacheKey := cache.StoryDetailCacheKey(workspaceId, storyId)
-	var cachedStory stories.CoreSingleStory
-
-	if err := h.cache.Get(ctx, cacheKey, &cachedStory); err == nil {
-		// Cache hit
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppStory(cachedStory), http.StatusOK)
-		return nil
-	}
-
 	// Cache miss, get from database
 	story, err := h.stories.Get(ctx, storyId, workspaceId)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
-	}
-
-	// Store in cache
-	if err := h.cache.Set(ctx, cacheKey, story, cache.DetailTTL); err != nil {
-		// Log error but continue
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppStory(story), http.StatusOK)

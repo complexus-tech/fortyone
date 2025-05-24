@@ -12,6 +12,9 @@ stop-otel:
 dev:
 	~/go/bin/air    
 
+worker:
+	go run cmd/worker/main.go
+
 develop:
 	go run cmd/api/main.go 
 

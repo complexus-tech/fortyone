@@ -32,9 +32,9 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
-	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
 	"github.com/josemukorivo/config"
@@ -122,7 +122,7 @@ func main() {
 		logLevel = slog.LevelInfo
 	}
 
-	log := logger.NewWithText(os.Stdout, logLevel, service)
+	log := logger.NewWithJSON(os.Stdout, logLevel, service)
 	ctx := context.Background()
 
 	if err := run(ctx, log); err != nil {
@@ -222,11 +222,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Create publisher
 	publisher := publisher.New(rdb, log)
 
+	// Initialize tasks service for Asynq
+	tasksService, err := tasks.New(rdb, log)
+	if err != nil {
+		log.Error(ctx, "failed to initialize tasks service", "error", err)
+		return fmt.Errorf("error initializing tasks service: %w", err)
+	}
+	log.Info(ctx, "tasks service initialized")
+
+	defer func() {
+		log.Info(ctx, "closing tasks service Asynq client")
+		if err := tasksService.Close(); err != nil {
+			log.Error(ctx, "error closing tasks service Asynq client", "error", err)
+		}
+	}()
+
 	// Create services
 	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb)
 	storiesService := stories.New(log, storiesrepo.New(log, db), publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
-	usersService := users.New(log, usersrepo.New(log, db))
+	usersService := users.New(log, usersrepo.New(log, db), tasksService)
 	statusesService := states.New(log, statesrepo.New(log, db))
 
 	// Create consumer using Redis Streams
@@ -237,26 +252,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		log.Info(ctx, "starting redis stream consumer")
 		if err := consumer.Start(ctx); err != nil {
 			log.Error(ctx, "failed to start consumer", "error", err)
-		}
-	}()
-
-	// Initialize job scheduler
-	jobScheduler, err := jobs.NewScheduler(db, log)
-	if err != nil {
-		return fmt.Errorf("error initializing job scheduler: %w", err)
-	}
-
-	// Start scheduler in a goroutine
-	go func() {
-		log.Info(ctx, "starting background job scheduler")
-		jobScheduler.Start()
-	}()
-
-	// Register for shutdown in defer cleanup
-	defer func() {
-		log.Info(ctx, "shutting down job scheduler")
-		if err := jobScheduler.Shutdown(); err != nil {
-			log.Error(ctx, "error shutting down job scheduler", "error", err)
 		}
 	}()
 
@@ -310,6 +305,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Validate:      validate,
 		AzureConfig:   azureConfig,
 		Cache:         cacheService,
+		TasksService:  tasksService,
 		StripeClient:  stripeClient,
 		WebhookSecret: cfg.Stripe.WebhookSecret,
 		SSEHub:        sseHub,

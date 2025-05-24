@@ -126,6 +126,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:     cfg.SecretKey,
 		GoogleService: cfg.GoogleService,
 		Publisher:     cfg.Publisher,
+		TasksService:  cfg.TasksService,
 	}, app)
 
 	// register the workspaces routes
@@ -137,6 +138,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:         cfg.Cache,
 		StripeClient:  cfg.StripeClient,
 		WebhookSecret: cfg.WebhookSecret,
+		TasksService:  cfg.TasksService,
 	}, app)
 
 	// register the comments routes
@@ -184,6 +186,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Publisher:    cfg.Publisher,
 		StripeClient: cfg.StripeClient,
 		StripeSecret: cfg.WebhookSecret,
+		TasksService: cfg.TasksService,
 	}, app)
 
 	// register the search routes
@@ -201,6 +204,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient:  cfg.StripeClient,
 		WebhookSecret: cfg.WebhookSecret,
 		Publisher:     cfg.Publisher,
+		TasksService:  cfg.TasksService,
 	}, app)
 
 	// register the sse routes

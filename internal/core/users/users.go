@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -23,19 +24,25 @@ const (
 
 // Service errors
 var (
-	ErrNotFound        = errors.New("we couldn't find your account")
-	ErrEmailTaken      = errors.New("the email address is already registered")
-	ErrTokenExpired    = errors.New("the sign-in link has expired - please request a new one")
-	ErrTokenUsed       = errors.New("the sign-in link has already been used")
-	ErrTooManyAttempts = errors.New("too many sign-in attempts - please wait a few minutes and try again")
-	ErrInvalidToken    = errors.New("the sign-in link is invalid - please request a new one")
+	ErrNotFound              = errors.New("we couldn't find your account")
+	ErrEmailTaken            = errors.New("the email address is already registered")
+	ErrTokenExpired          = errors.New("the sign-in link has expired - please request a new one")
+	ErrTokenUsed             = errors.New("the sign-in link has already been used")
+	ErrTooManyAttempts       = errors.New("too many sign-in attempts - please wait a few minutes and try again")
+	ErrInvalidToken          = errors.New("the sign-in link is invalid - please request a new one")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrInvalidCredentials    = errors.New("invalid credentials")
+	ErrEmailAlreadyExists    = errors.New("email already exists")
+	ErrUsernameAlreadyExists = errors.New("username already exists")
+	ErrTokenNotFound         = errors.New("token not found")
+	ErrWorkspaceNotFound     = errors.New("workspace not found")
 )
 
 // Repository provides access to the users storage.
 type Repository interface {
 	GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
-	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) error
+	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) (CoreUser, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
 	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
@@ -54,15 +61,17 @@ type Repository interface {
 
 // Service provides user-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo         Repository
+	log          *logger.Logger
+	tasksService *tasks.Service
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository) *Service {
+func New(log *logger.Logger, repo Repository, tasksService *tasks.Service) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:         repo,
+		log:          log,
+		tasksService: tasksService,
 	}
 }
 
@@ -135,6 +144,16 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		return CoreUser{}, err
 	}
 
+	// Enqueue onboarding task
+	_, err = s.tasksService.EnqueueUserOnboardingStart(tasks.UserOnboardingStartPayload{
+		UserID:   user.ID.String(),
+		Email:    user.Email,
+		FullName: user.FullName,
+	})
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
+	}
 	return user, nil
 }
 
@@ -146,9 +165,20 @@ func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates Core
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
 
-	if err := s.repo.UpdateUser(ctx, userID, updates); err != nil {
+	user, err := s.repo.UpdateUser(ctx, userID, updates)
+	if err != nil {
 		span.RecordError(err)
 		return err
+	}
+
+	// Enqueue subscriber update task
+	_, err = s.tasksService.EnqueueSubscriberUpdate(tasks.SubscriberUpdatePayload{
+		Email:    user.Email,
+		FullName: user.FullName,
+	})
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Error enqueuing subscriber update task: %v", err)
 	}
 
 	return nil

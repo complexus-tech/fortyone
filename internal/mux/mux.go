@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
@@ -39,6 +40,7 @@ type Config struct {
 	Validate      *validator.Validate
 	AzureConfig   azure.Config
 	Cache         *cache.Service
+	TasksService  *tasks.Service
 	StripeClient  *client.API
 	WebhookSecret string
 	SSEHub        *sse.Hub
