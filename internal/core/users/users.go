@@ -42,7 +42,7 @@ var (
 type Repository interface {
 	GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
-	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) error
+	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) (CoreUser, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
 	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
@@ -165,9 +165,20 @@ func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates Core
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
 
-	if err := s.repo.UpdateUser(ctx, userID, updates); err != nil {
+	user, err := s.repo.UpdateUser(ctx, userID, updates)
+	if err != nil {
 		span.RecordError(err)
 		return err
+	}
+
+	// Enqueue subscriber update task
+	_, err = s.tasksService.EnqueueSubscriberUpdate(tasks.SubscriberUpdatePayload{
+		Email:    user.Email,
+		FullName: user.FullName,
+	})
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Error enqueuing subscriber update task: %v", err)
 	}
 
 	return nil

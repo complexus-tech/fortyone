@@ -139,7 +139,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 }
 
 // UpdateUser updates user profile information
-func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.CoreUpdateUser) error {
+func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.CoreUpdateUser) (users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUser")
 	defer span.End()
 
@@ -153,7 +153,17 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		WHERE 
 			user_id = :user_id
 			AND is_active = true
-		RETURNING user_id
+		RETURNING
+			user_id,
+			username,
+			email,
+			full_name,
+			avatar_url,
+			is_active,
+			last_login_at,
+			last_used_workspace_id,
+			created_at,
+			updated_at
 	`
 
 	params := map[string]any{
@@ -168,22 +178,22 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return users.CoreUser{}, err
 	}
 	defer stmt.Close()
 
-	var returnedID uuid.UUID
-	if err := stmt.GetContext(ctx, &returnedID, params); err != nil {
+	var dbUser dbUser
+	if err := stmt.GetContext(ctx, &dbUser, params); err != nil {
 		if err == sql.ErrNoRows {
-			return ErrNotFound
+			return users.CoreUser{}, ErrNotFound
 		}
 		errMsg := fmt.Sprintf("failed to update user: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update user"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return users.CoreUser{}, err
 	}
 
-	return nil
+	return toCoreUser(dbUser), nil
 }
 
 // DeleteUser marks a user as inactive
