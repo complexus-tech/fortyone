@@ -4,19 +4,18 @@ name: Trigger auto deployment for api
 on:
   # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
+    branches: [main]
     paths:
-    - '**'
-    - '.github/workflows/api-AutoDeployTrigger-767a2be7-b66f-4b69-9253-3a999ee06f63.yml'
+      - "**"
+      - ".github/workflows/api-AutoDeployTrigger-767a2be7-b66f-4b69-9253-3a999ee06f63.yml"
 
-  # Allow manual trigger 
-  workflow_dispatch:      
+  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       id-token: write #This is required for requesting the OIDC JWT Token
       contents: read #Required when GH token is used to authenticate with private repo
 
@@ -35,7 +34,8 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
+          # _dockerfilePathKey_: _dockerfilePath_
+          dockerfilePath: Dockerfile
           registryUrl: complexus.azurecr.io
           registryUsername: ${{ secrets.API_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.API_REGISTRY_PASSWORD }}
@@ -44,5 +44,3 @@ jobs:
           imageToBuild: complexus.azurecr.io/api:${{ github.sha }}
           _buildArgumentsKey_: |
             _buildArgumentsValues_
-
-
