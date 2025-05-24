@@ -5,7 +5,6 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import type { Workspace, UserRole } from "@/types";
 import { authenticateWithToken } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
-import { DURATION_FROM_SECONDS } from "./constants/time";
 
 const domain =
   process.env.NODE_ENV === "production" ? ".complexus.app" : "localhost";
@@ -114,9 +113,6 @@ export const {
     },
   },
   trustHost: true,
-  session: {
-    maxAge: DURATION_FROM_SECONDS.DAY * 14,
-  },
   pages: {
     signIn: "/logout",
     signOut: "/logout",
