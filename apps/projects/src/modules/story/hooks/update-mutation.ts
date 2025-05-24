@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useParams } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Story } from "@/modules/stories/types";
@@ -10,7 +9,6 @@ import { updateStoryAction } from "../actions/update-story";
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
   const { analytics } = useAnalytics();
-  const params = useParams<{ storyId: string }>();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -29,31 +27,26 @@ export const useUpdateStoryMutation = () => {
 
       const activeQueries = queryClient.getQueryCache().getAll();
 
-      // update parent story if it exists
-      if (params.storyId !== storyId) {
-        const parentStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(params.storyId),
-        );
-        if (parentStory?.subStories) {
-          queryClient.setQueryData<DetailedStory>(
-            storyKeys.detail(params.storyId),
-            {
-              ...parentStory,
-              subStories: parentStory.subStories.map((subStory) =>
-                subStory.id === storyId
-                  ? { ...subStory, ...payload }
-                  : subStory,
-              ),
-            },
-          );
-        }
-      }
-
       activeQueries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
         if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
           queryClient.cancelQueries({ queryKey: query.queryKey });
-          if (!queryKey.toLowerCase().includes("detail")) {
+          if (queryKey.toLowerCase().includes("detail")) {
+            // try to update sub stories if they exist
+            const parentStory = queryClient.getQueryData<DetailedStory>(
+              query.queryKey,
+            );
+            if (parentStory?.subStories) {
+              queryClient.setQueryData<DetailedStory>(query.queryKey, {
+                ...parentStory,
+                subStories: parentStory.subStories.map((subStory) =>
+                  subStory.id === storyId
+                    ? { ...subStory, ...payload }
+                    : subStory,
+                ),
+              });
+            }
+          } else {
             queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
               stories?.map((story) =>
                 story.id === storyId ? { ...story, ...payload } : story,
@@ -97,12 +90,6 @@ export const useUpdateStoryMutation = () => {
         storyId,
         ...payload,
       });
-
-      if (params.storyId !== storyId) {
-        queryClient.invalidateQueries({
-          queryKey: storyKeys.detail(params.storyId),
-        });
-      }
       const activeQueries = queryClient.getQueryCache().getAll();
       activeQueries.forEach((query) => {
         const queryKey = JSON.stringify(query.queryKey);
