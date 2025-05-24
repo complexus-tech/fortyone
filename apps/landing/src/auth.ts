@@ -160,6 +160,9 @@ export const {
     maxAge: DURATION_FROM_SECONDS.MINUTE * 2,
     updateAge: 0,
   },
+  jwt: {
+    maxAge: DURATION_FROM_SECONDS.MINUTE * 2,
+  },
   pages: {
     signIn: "/login",
     signOut: "/",
