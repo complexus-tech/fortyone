@@ -43,7 +43,7 @@ type WorkerConfig struct {
 	Queues     map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2"`
 	MailerLite struct {
 		APIKey            string `env:"APP_MAILERLITE_API_KEY"`
-		OnboardingGroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID"`
+		OnboardingGroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID" default:"155224971194402532"`
 	}
 }
 
@@ -135,19 +135,19 @@ func run(ctx context.Context, log *logger.Logger) error {
 	)
 
 	// Initialize MailerLite service
-	mailerLiteService := mailerlite.NewService(log, mailerlite.Config{
-		APIKey:            cfg.MailerLite.APIKey,
-		OnboardingGroupID: cfg.MailerLite.OnboardingGroupID,
+	mailerLiteService, err := mailerlite.NewService(log, mailerlite.Config{
+		APIKey: cfg.MailerLite.APIKey,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize MailerLite service: %w", err)
+	}
 
-	if mailerLiteService != nil {
-		log.Info(ctx, "MailerLite service initialized")
-	} else {
-		log.Warn(ctx, "MailerLite service not initialized - API key not provided")
+	if cfg.MailerLite.OnboardingGroupID == "" {
+		return fmt.Errorf("mailerlite onboarding group ID is not configured")
 	}
 
 	// Set up task handlers
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, mailerLiteService)
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, mailerLiteService, cfg.MailerLite.OnboardingGroupID)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
 
 	mux := asynq.NewServeMux()

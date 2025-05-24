@@ -25,6 +25,15 @@ APP_MAILERLITE_ONBOARDING_GROUP_ID=your_onboarding_group_id_here
 
 1. When a user registers via Google Auth, the `EnqueueUserOnboardingStart` task is created
 2. The worker processes this task after a 30-minute delay
-3. The handler creates/updates the subscriber in MailerLite using their email and full name
-4. The subscriber is then added to the configured onboarding group
-5. If MailerLite integration fails, it's logged but doesn't fail the entire onboarding process
+3. The onboarding handler uses the MailerLite service to:
+   - Create/update the subscriber in MailerLite using their email and full name
+   - Add the subscriber to the configured onboarding group
+4. If MailerLite integration fails, it's logged but doesn't fail the entire onboarding process
+
+### Architecture
+
+The MailerLite integration follows a clean separation of concerns:
+
+- **MailerLite Service** (`pkg/mailerlite`): Provides generic methods for subscriber management and group assignment
+- **Onboarding Handler** (`internal/taskhandlers/onboarding.go`): Contains business logic for adding users to the onboarding group
+- **Worker Configuration**: Manages API credentials and group IDs through environment variables

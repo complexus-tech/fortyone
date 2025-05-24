@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -30,7 +29,6 @@ func (s *Service) EnqueueUserOnboardingStart(payload UserOnboardingStartPayload,
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("onboarding"),
-		asynq.ProcessIn(time.Minute * 30), // wait 30 minutes before processing
 		asynq.MaxRetry(2),
 	}
 

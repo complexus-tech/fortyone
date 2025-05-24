@@ -10,32 +10,35 @@ import (
 
 // Service wraps the MailerLite client with additional functionality
 type Service struct {
-	client            *mailerlite.Client
-	log               *logger.Logger
-	onboardingGroupID string
+	client *mailerlite.Client
+	log    *logger.Logger
 }
 
 // Config holds the configuration for MailerLite service
 type Config struct {
-	APIKey            string
-	OnboardingGroupID string
+	APIKey string
 }
 
 // NewService creates a new MailerLite service instance
-func NewService(log *logger.Logger, config Config) *Service {
+func NewService(log *logger.Logger, config Config) (*Service, error) {
 	if config.APIKey == "" {
-		return nil
+		return nil, fmt.Errorf("API key is required")
 	}
+
 	client := mailerlite.NewClient(config.APIKey)
+
 	return &Service{
-		client:            client,
-		log:               log,
-		onboardingGroupID: config.OnboardingGroupID,
-	}
+		client: client,
+		log:    log,
+	}, nil
 }
 
-// AddToOnboardingGroup creates/updates a subscriber and adds them to the onboarding group
-func (s *Service) AddToOnboardingGroup(ctx context.Context, email, fullName string) error {
+// CreateOrUpdateSubscriber creates/updates a subscriber and returns the subscriber ID
+func (s *Service) CreateOrUpdateSubscriber(ctx context.Context, email, fullName string) (string, error) {
+	if s.client == nil {
+		return "", fmt.Errorf("MailerLite client not initialized")
+	}
+
 	// Create/Upsert subscriber
 	subscriber := &mailerlite.UpsertSubscriber{
 		Email: email,
@@ -49,7 +52,7 @@ func (s *Service) AddToOnboardingGroup(ctx context.Context, email, fullName stri
 	newSubscriber, _, err := s.client.Subscriber.Upsert(ctx, subscriber)
 	if err != nil {
 		s.log.Error(ctx, "Failed to create/update MailerLite subscriber", "error", err, "email", email)
-		return fmt.Errorf("failed to create/update MailerLite subscriber: %w", err)
+		return "", fmt.Errorf("failed to create/update MailerLite subscriber: %w", err)
 	}
 
 	s.log.Info(ctx, "MailerLite subscriber created/updated",
@@ -57,31 +60,38 @@ func (s *Service) AddToOnboardingGroup(ctx context.Context, email, fullName stri
 		"email", newSubscriber.Data.Email,
 	)
 
-	// Add subscriber to onboarding group
-	s.log.Info(ctx, "Adding subscriber to MailerLite onboarding group",
-		"subscriber_id", newSubscriber.Data.ID,
-		"group_id", s.onboardingGroupID,
+	return newSubscriber.Data.ID, nil
+}
+
+// AddSubscriberToGroup adds a subscriber to a specific group
+func (s *Service) AddSubscriberToGroup(ctx context.Context, subscriberID, groupID string) error {
+	if s.client == nil {
+		return fmt.Errorf("MailerLite client not initialized")
+	}
+
+	if groupID == "" {
+		return fmt.Errorf("group ID is required")
+	}
+
+	s.log.Info(ctx, "Adding subscriber to MailerLite group",
+		"subscriber_id", subscriberID,
+		"group_id", groupID,
 	)
 
-	_, _, err = s.client.Group.Assign(ctx, s.onboardingGroupID, newSubscriber.Data.ID)
+	_, _, err := s.client.Group.Assign(ctx, groupID, subscriberID)
 	if err != nil {
 		s.log.Error(ctx, "Failed to assign subscriber to MailerLite group",
 			"error", err,
-			"subscriber_id", newSubscriber.Data.ID,
-			"group_id", s.onboardingGroupID,
+			"subscriber_id", subscriberID,
+			"group_id", groupID,
 		)
 		return fmt.Errorf("failed to assign subscriber to MailerLite group: %w", err)
 	}
 
-	s.log.Info(ctx, "Successfully assigned subscriber to MailerLite onboarding group",
-		"subscriber_id", newSubscriber.Data.ID,
-		"group_id", s.onboardingGroupID,
+	s.log.Info(ctx, "Successfully assigned subscriber to MailerLite group",
+		"subscriber_id", subscriberID,
+		"group_id", groupID,
 	)
 
 	return nil
-}
-
-// IsConfigured returns true if the MailerLite service is properly configured
-func (s *Service) IsConfigured() bool {
-	return s != nil && s.client != nil && s.onboardingGroupID != ""
 }
