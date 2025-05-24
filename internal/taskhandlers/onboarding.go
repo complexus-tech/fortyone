@@ -24,18 +24,22 @@ func (h *handlers) HandleUserOnboardingStart(ctx context.Context, t *asynq.Task)
 		"task_id", t.ResultWriter().TaskID(),
 	)
 
-	// TODO: Implement MailerLite integration here.
-	// When the mailerliteClient is added to the Handlers struct and initialized:
-	// 1. Use h.mailerliteClient to interact with the MailerLite API.
-	// 2. Add user (p.Email, p.FullName) to the appropriate MailerLite group/workflow.
-	//    Example (conceptual, actual SDK calls will vary):
-	//    subscriberData := mailerlite.Subscriber{ Email: p.Email, Fields: map[string]string{"name": p.FullName} }
-	//    _, err := h.mailerliteClient.Subscribers.Create(ctx, subscriberData)
-	//    if err != nil {
-	//        h.log.Error(ctx, "MailerLite subscriber creation failed", "error", err, "email", p.Email)
-	//        return err // Potentially retryable
-	//    }
+	// MailerLite integration
+	if err := h.mailerLiteService.AddToOnboardingGroup(ctx, p.Email, p.FullName); err != nil {
+		h.log.Error(ctx, "MailerLite integration failed",
+			"error", err,
+			"email", p.Email,
+			"user_id", p.UserID,
+			"task_id", t.ResultWriter().TaskID(),
+		)
+	} else {
+		h.log.Info(ctx, "Successfully added user to MailerLite onboarding group",
+			"email", p.Email,
+			"user_id", p.UserID,
+			"task_id", t.ResultWriter().TaskID(),
+		)
+	}
 
-	h.log.Info(ctx, "HANDLER: Successfully processed UserOnboardingStart task (simulation)", "user_id", p.UserID)
+	h.log.Info(ctx, "HANDLER: Successfully processed UserOnboardingStart task", "user_id", p.UserID)
 	return nil
 }

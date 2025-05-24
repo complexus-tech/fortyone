@@ -11,6 +11,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailerlite"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 
 	"github.com/hibiken/asynq"
@@ -39,11 +40,11 @@ type WorkerConfig struct {
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
-	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2"`
-	// MailerLite struct {
-	//  APIKey  string `env:"APP_MAILERLITE_API_KEY"`
-	//  GroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID"`
-	// }
+	Queues     map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2"`
+	MailerLite struct {
+		APIKey            string `env:"APP_MAILERLITE_API_KEY"`
+		OnboardingGroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID"`
+	}
 }
 
 func main() {
@@ -133,8 +134,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 		},
 	)
 
+	// Initialize MailerLite service
+	mailerLiteService := mailerlite.NewService(log, mailerlite.Config{
+		APIKey:            cfg.MailerLite.APIKey,
+		OnboardingGroupID: cfg.MailerLite.OnboardingGroupID,
+	})
+
+	if mailerLiteService != nil {
+		log.Info(ctx, "MailerLite service initialized")
+	} else {
+		log.Warn(ctx, "MailerLite service not initialized - API key not provided")
+	}
+
 	// Set up task handlers
-	workerTaskService := taskhandlers.NewWorkerHandlers(log)
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, mailerLiteService)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
 
 	mux := asynq.NewServeMux()
