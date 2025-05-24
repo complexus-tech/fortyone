@@ -141,9 +141,6 @@ export const NewSprintDialog = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      titleEditor?.commands.focus();
-    }
     if (initialTeamId) {
       const team = teams.find((team) => team.id === initialTeamId);
       if (team) {
@@ -151,6 +148,12 @@ export const NewSprintDialog = ({
       }
     }
   }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
+
+  useEffect(() => {
+    if (isOpen && titleEditor) {
+      titleEditor.commands.focus();
+    }
+  }, [isOpen, titleEditor]);
 
   const objective = objectives.find((o) => o.id === sprintForm.objectiveId);
 

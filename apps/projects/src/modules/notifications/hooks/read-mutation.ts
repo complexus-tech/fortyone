@@ -4,7 +4,14 @@ import { notificationKeys } from "@/constants/keys";
 import { readNotification } from "../actions/read";
 import type { AppNotification } from "../types";
 
-export const useReadNotificationMutation = () => {
+/**
+ * This hook is used to read a notification.
+ * It is optimistic by default, meaning it will update the notification as read even if the server request fails.
+ * @param isOptimistic - Whether to use optimistic updates.
+ * @returns A mutation object.
+ */
+
+export const useReadNotificationMutation = (isOptimistic = true) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -23,7 +30,7 @@ export const useReadNotificationMutation = () => {
         notificationKeys.unread(),
       );
 
-      if (previousUnreadCount) {
+      if (previousUnreadCount && isOptimistic) {
         queryClient.setQueryData<number>(
           notificationKeys.unread(),
           previousUnreadCount - 1,
@@ -31,7 +38,7 @@ export const useReadNotificationMutation = () => {
       }
 
       // Optimistically update the notifications
-      if (previousNotifications) {
+      if (previousNotifications && isOptimistic) {
         queryClient.setQueryData<AppNotification[]>(
           notificationKeys.all,
           previousNotifications.map((notification) =>

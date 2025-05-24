@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { NotificationDetails } from "@/modules/notifications/details";
-import { readNotification } from "@/modules/notifications/actions/read";
 
 export default async function Page({
   params,
@@ -18,7 +17,6 @@ export default async function Page({
   if (!entityId || !entityType) {
     return redirect("/notifications");
   }
-  readNotification(notificationId);
 
   return (
     <NotificationDetails

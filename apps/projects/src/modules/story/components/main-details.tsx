@@ -179,7 +179,11 @@ export const MainDetails = ({
         {isActivitiesLoading ? (
           <ActivitiesSkeleton />
         ) : (
-          <Activities activities={allActivities} storyId={storyId} />
+          <Activities
+            activities={allActivities}
+            isNotifications={isNotifications}
+            storyId={storyId}
+          />
         )}
       </Container>
     </BodyContainer>

@@ -227,8 +227,18 @@ export const NewStoryDialog = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      titleEditor?.commands.focus();
+    if (isOpen && teams.length === 0) {
+      toast.warning("Join or create a team", {
+        description: "You need to be part of a team to create a story",
+        action: {
+          label: "Join a team",
+          onClick: () => {
+            router.push("/settings/workspace/teams");
+          },
+        },
+      });
+      setIsOpen(false);
+      return;
     }
     if (teamId) {
       const team = teams.find((team) => team.id === teamId);
@@ -236,7 +246,7 @@ export const NewStoryDialog = ({
         setActiveTeam(team);
       }
     }
-  }, [isOpen, teamId, teams, setActiveTeam, titleEditor]);
+  }, [isOpen, teamId, teams, setActiveTeam, titleEditor, router, setIsOpen]);
 
   useEffect(() => {
     const currentStatus = teamStatuses.find(
@@ -271,6 +281,12 @@ export const NewStoryDialog = ({
       setIsOpen(false);
     }
   }, [isOpen, teams, setIsOpen, router]);
+
+  useEffect(() => {
+    if (isOpen && titleEditor) {
+      titleEditor.commands.focus();
+    }
+  }, [isOpen, titleEditor]);
 
   return (
     <FeatureGuard
