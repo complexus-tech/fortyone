@@ -115,11 +115,11 @@ export const {
   },
   trustHost: true,
   session: {
-    maxAge: DURATION_FROM_SECONDS.MINUTE * 2,
+    maxAge: DURATION_FROM_SECONDS.DAY * 30,
     updateAge: 0,
   },
   jwt: {
-    maxAge: DURATION_FROM_SECONDS.MINUTE * 2,
+    maxAge: DURATION_FROM_SECONDS.DAY * 30,
   },
   pages: {
     signIn: "/logout",
