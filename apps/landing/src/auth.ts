@@ -158,6 +158,7 @@ export const {
   trustHost: true,
   session: {
     maxAge: DURATION_FROM_SECONDS.MINUTE * 2,
+    updateAge: 0,
   },
   pages: {
     signIn: "/login",
