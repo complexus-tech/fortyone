@@ -89,16 +89,6 @@ func (s *Service) GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, erro
 		return CoreUser{}, err
 	}
 
-	// Enqueue onboarding task
-	_, err = s.tasksService.EnqueueUserOnboardingStart(tasks.UserOnboardingStartPayload{
-		UserID:   user.ID.String(),
-		Email:    user.Email,
-		FullName: user.FullName,
-	})
-	if err != nil {
-		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
-	}
-
 	return user, nil
 }
 
