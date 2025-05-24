@@ -53,11 +53,13 @@ export const useUpdateStoryMutation = () => {
         const queryKey = JSON.stringify(query.queryKey);
         if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
           queryClient.cancelQueries({ queryKey: query.queryKey });
-          queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-            stories?.map((story) =>
-              story.id === storyId ? { ...story, ...payload } : story,
-            ),
-          );
+          if (!queryKey.toLowerCase().includes("detail")) {
+            queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
+              stories?.map((story) =>
+                story.id === storyId ? { ...story, ...payload } : story,
+              ),
+            );
+          }
         }
       });
 
