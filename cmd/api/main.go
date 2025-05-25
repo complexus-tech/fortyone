@@ -20,6 +20,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/handlers"
 	"github.com/complexus-tech/projects-api/internal/mux"
+	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
@@ -239,7 +240,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Create services
 	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb)
-	storiesService := stories.New(log, storiesrepo.New(log, db), publisher)
+	mentionsRepo := mentionsrepo.New(log, db)
+	storiesService := stories.New(log, storiesrepo.New(log, db), mentionsRepo, publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
 	usersService := users.New(log, usersrepo.New(log, db), tasksService)
 	statusesService := states.New(log, statesrepo.New(log, db))

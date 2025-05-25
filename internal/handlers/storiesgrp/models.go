@@ -210,8 +210,9 @@ type AppUpdateStory struct {
 }
 
 type AppNewComment struct {
-	Comment string     `json:"comment" validate:"required"`
-	Parent  *uuid.UUID `json:"parentId"`
+	Comment  string      `json:"comment" validate:"required"`
+	Parent   *uuid.UUID  `json:"parentId"`
+	Mentions []uuid.UUID `json:"mentions"`
 }
 
 type AppComment struct {

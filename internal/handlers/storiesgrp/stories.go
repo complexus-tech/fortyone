@@ -619,10 +619,11 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	ca := stories.CoreNewComment{
-		StoryID: storyId,
-		Parent:  requestData.Parent,
-		UserID:  userID,
-		Comment: requestData.Comment,
+		StoryID:  storyId,
+		Parent:   requestData.Parent,
+		UserID:   userID,
+		Comment:  requestData.Comment,
+		Mentions: requestData.Mentions,
 	}
 
 	comment, err := h.stories.CreateComment(ctx, ca)

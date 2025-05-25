@@ -144,8 +144,9 @@ type CoreActivity struct {
 }
 
 type CoreNewComment struct {
-	StoryID uuid.UUID
-	Parent  *uuid.UUID
-	UserID  uuid.UUID
-	Comment string
+	StoryID  uuid.UUID
+	Parent   *uuid.UUID
+	UserID   uuid.UUID
+	Comment  string
+	Mentions []uuid.UUID
 }

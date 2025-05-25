@@ -3,6 +3,7 @@ package commentsgrp
 import (
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/repo/commentsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -16,7 +17,8 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-	commentsService := comments.New(cfg.Log, commentsrepo.New(cfg.Log, cfg.DB))
+	mentionsRepo := mentionsrepo.New(cfg.Log, cfg.DB)
+	commentsService := comments.New(cfg.Log, commentsrepo.New(cfg.Log, cfg.DB), mentionsRepo)
 	h := New(cfg.Log, commentsService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 

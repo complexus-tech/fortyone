@@ -246,9 +246,10 @@ func toCoreComments(is []commentsrepo.DbComment) []comments.CoreComment {
 
 func toDBNewComment(i stories.CoreNewComment) commentsrepo.DbNewComment {
 	return commentsrepo.DbNewComment{
-		StoryID: i.StoryID,
-		Parent:  i.Parent,
-		UserID:  i.UserID,
-		Comment: i.Comment,
+		StoryID:  i.StoryID,
+		Parent:   i.Parent,
+		UserID:   i.UserID,
+		Comment:  i.Comment,
+		Mentions: i.Mentions,
 	}
 }

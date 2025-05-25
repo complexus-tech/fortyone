@@ -36,7 +36,7 @@ func (h *Handlers) UpdateComment(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	if err := h.comments.UpdateComment(ctx, commentID, uc.Content); err != nil {
+	if err := h.comments.UpdateComment(ctx, commentID, uc.Content, uc.Mentions); err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}

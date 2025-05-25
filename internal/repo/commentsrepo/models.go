@@ -20,8 +20,9 @@ type DbComment struct {
 }
 
 type DbNewComment struct {
-	StoryID uuid.UUID  `db:"story_id"`
-	Parent  *uuid.UUID `db:"parent_id"`
-	UserID  uuid.UUID  `db:"commenter_id"`
-	Comment string     `db:"content"`
+	StoryID  uuid.UUID   `db:"story_id"`
+	Parent   *uuid.UUID  `db:"parent_id"`
+	UserID   uuid.UUID   `db:"commenter_id"`
+	Comment  string      `db:"content"`
+	Mentions []uuid.UUID // New field (not mapped to DB, handled separately)
 }

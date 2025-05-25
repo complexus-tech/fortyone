@@ -46,6 +46,13 @@ type Repository interface {
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 }
 
+// MentionsRepository provides access to comment mentions storage.
+type MentionsRepository interface {
+	SaveMentions(ctx context.Context, commentID uuid.UUID, userIDs []uuid.UUID) error
+	DeleteMentions(ctx context.Context, commentID uuid.UUID) error
+	GetMentions(ctx context.Context, commentID uuid.UUID) ([]uuid.UUID, error)
+}
+
 type CoreSingleStoryWithSubs struct {
 	CoreSingleStory
 	SubStories []CoreStoryList `json:"subStories"`
@@ -53,17 +60,19 @@ type CoreSingleStoryWithSubs struct {
 
 // Service provides story-related operations.
 type Service struct {
-	repo      Repository
-	log       *logger.Logger
-	publisher *publisher.Publisher
+	repo         Repository
+	mentionsRepo MentionsRepository
+	log          *logger.Logger
+	publisher    *publisher.Publisher
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, publisher *publisher.Publisher) *Service {
+func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher) *Service {
 	return &Service{
-		repo:      repo,
-		log:       log,
-		publisher: publisher,
+		repo:         repo,
+		mentionsRepo: mentionsRepo,
+		log:          log,
+		publisher:    publisher,
 	}
 }
 
@@ -340,8 +349,16 @@ func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (commen
 		return comments.CoreComment{}, err
 	}
 
+	if len(cnc.Mentions) > 0 {
+		if err := s.mentionsRepo.SaveMentions(ctx, comment.ID, cnc.Mentions); err != nil {
+			s.log.Error(ctx, "failed to save mentions", "error", err, "commentId", comment.ID)
+			// Note: We don't return error here to avoid failing comment creation if mentions fail
+		}
+	}
+
 	span.AddEvent("comment created.", trace.WithAttributes(
 		attribute.String("comment.comment", comment.Comment),
+		attribute.Int("mentions.count", len(cnc.Mentions)),
 	))
 
 	return comment, nil

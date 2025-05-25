@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
+	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
@@ -39,7 +40,8 @@ type Config struct {
 func Routes(cfg Config, app *web.App) {
 
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
-	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher)
+	mentionsRepo := mentionsrepo.New(cfg.Log, cfg.DB)
+	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)

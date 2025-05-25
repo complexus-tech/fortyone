@@ -10,6 +10,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/attachmentsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/commentsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/linksrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
@@ -32,8 +33,9 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), cfg.Publisher)
-	commentsService := comments.New(cfg.Log, commentsrepo.New(cfg.Log, cfg.DB))
+	mentionsRepo := mentionsrepo.New(cfg.Log, cfg.DB)
+	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
+	commentsService := comments.New(cfg.Log, commentsrepo.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepo.New(cfg.Log, cfg.DB))
 
 	attachmentsRepo := attachmentsrepo.New(cfg.Log, cfg.DB)
