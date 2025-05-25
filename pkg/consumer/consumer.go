@@ -307,7 +307,12 @@ func (c *Consumer) handleStoryCommented(ctx context.Context, event events.Event)
 			EntityID:    payload.CommentID, // The ID of the new comment (the reply)
 			ActorID:     event.ActorID,
 			Title:       storyTitle,
-			Description: fmt.Sprintf("%s replied to your comment", actorName),
+			Message: notifications.NotificationMessage{
+				Template: "{actor} replied to your comment",
+				Variables: map[string]notifications.Variable{
+					"actor": {Value: actorName, Type: "actor"},
+				},
+			},
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -359,7 +364,13 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 			EntityID:    payload.ObjectiveID,
 			ActorID:     event.ActorID,
 			Title:       fmt.Sprintf("You are now leading: %s", objectiveName),
-			Description: fmt.Sprintf("%s assigned you as lead for the objective: %s", actorName, objectiveName),
+			Message: notifications.NotificationMessage{
+				Template: "{actor} assigned you as lead for the objective: {objective}",
+				Variables: map[string]notifications.Variable{
+					"actor":     {Value: actorName, Type: "actor"},
+					"objective": {Value: objectiveName, Type: "value"},
+				},
+			},
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {

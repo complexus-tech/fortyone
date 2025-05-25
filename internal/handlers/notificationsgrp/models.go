@@ -8,17 +8,17 @@ import (
 )
 
 type AppNotification struct {
-	ID          uuid.UUID  `json:"id"`
-	RecipientID uuid.UUID  `json:"recipientId"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	Type        string     `json:"type"`
-	EntityType  string     `json:"entityType"`
-	EntityID    uuid.UUID  `json:"entityId"`
-	ActorID     uuid.UUID  `json:"actorId"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	ReadAt      *time.Time `json:"readAt"`
+	ID          uuid.UUID                         `json:"id"`
+	RecipientID uuid.UUID                         `json:"recipientId"`
+	WorkspaceID uuid.UUID                         `json:"workspaceId"`
+	Type        string                            `json:"type"`
+	EntityType  string                            `json:"entityType"`
+	EntityID    uuid.UUID                         `json:"entityId"`
+	ActorID     uuid.UUID                         `json:"actorId"`
+	Title       string                            `json:"title"`
+	Message     notifications.NotificationMessage `json:"message"`
+	CreatedAt   time.Time                         `json:"createdAt"`
+	ReadAt      *time.Time                        `json:"readAt"`
 }
 
 type NotificationChannel struct {
@@ -51,7 +51,7 @@ func toAppNotification(n notifications.CoreNotification) AppNotification {
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
+		Message:     n.Message,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
 	}
@@ -78,9 +78,27 @@ func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) A
 
 	// Convert between internal and API representations
 	for key, channels := range p.Preferences {
-		appPrefs.Preferences[key] = NotificationChannel{
-			Email: channels.Email,
-			InApp: channels.InApp,
+		// Handle the interface{} type from the database
+		if channelMap, ok := channels.(map[string]interface{}); ok {
+			email := false
+			inApp := false
+
+			if emailVal, exists := channelMap["email"]; exists {
+				if emailBool, ok := emailVal.(bool); ok {
+					email = emailBool
+				}
+			}
+
+			if inAppVal, exists := channelMap["in_app"]; exists {
+				if inAppBool, ok := inAppVal.(bool); ok {
+					inApp = inAppBool
+				}
+			}
+
+			appPrefs.Preferences[key] = NotificationChannel{
+				Email: email,
+				InApp: inApp,
+			}
 		}
 	}
 
