@@ -15,11 +15,13 @@ const MainComment = ({
   comment: { id, userId, createdAt, comment, subComments },
   isSubComment = false,
   className,
+  teamId,
 }: {
   comment: Comment;
   isSubComment?: boolean;
   className?: string;
   storyId: string;
+  teamId: string;
 }) => {
   const { data: members = [] } = useMembers();
   const { data: session } = useSession();
@@ -159,6 +161,7 @@ const MainComment = ({
               isSubComment
               key={subComment.id}
               storyId={storyId}
+              teamId={teamId}
             />
           ))}
         </Box>
@@ -183,6 +186,7 @@ const MainComment = ({
             onCancel={handleCancel}
             parentId={id}
             storyId={storyId}
+            teamId={teamId}
           />
         </Box>
       ) : null}
@@ -195,6 +199,7 @@ const MainComment = ({
             initialComment={comment}
             onCancel={handleCancel}
             storyId={storyId}
+            teamId={teamId}
           />
         </Box>
       ) : null}
@@ -237,13 +242,24 @@ const MainComment = ({
   );
 };
 
-export const Comments = ({ storyId }: { storyId: string }) => {
+export const Comments = ({
+  storyId,
+  teamId,
+}: {
+  storyId: string;
+  teamId: string;
+}) => {
   const { data: comments = [] } = useStoryComments(storyId);
 
   return (
     <Box>
       {comments.map((comment) => (
-        <MainComment comment={comment} key={comment.id} storyId={storyId} />
+        <MainComment
+          comment={comment}
+          key={comment.id}
+          storyId={storyId}
+          teamId={teamId}
+        />
       ))}
     </Box>
   );

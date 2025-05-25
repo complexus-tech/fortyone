@@ -11,10 +11,12 @@ export const Activities = ({
   className,
   storyId,
   isNotifications,
+  teamId,
 }: {
   activities: StoryActivity[];
   className?: string;
   storyId: string;
+  teamId: string;
   isNotifications?: boolean;
 }) => {
   const { data: session } = useSession();
@@ -61,7 +63,7 @@ export const Activities = ({
           </Flex>
         </Tabs.Panel>
         <Tabs.Panel value="comments">
-          <Comments storyId={storyId} />
+          <Comments storyId={storyId} teamId={teamId} />
           <Flex align="start">
             <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
@@ -70,7 +72,7 @@ export const Activities = ({
                 src={session?.user?.image ?? undefined}
               />
             </Box>
-            <CommentInput storyId={storyId} />
+            <CommentInput storyId={storyId} teamId={teamId} />
           </Flex>
         </Tabs.Panel>
       </Tabs>

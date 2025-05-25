@@ -183,6 +183,7 @@ export const MainDetails = ({
             activities={allActivities}
             isNotifications={isNotifications}
             storyId={storyId}
+            teamId={teamId}
           />
         )}
       </Container>

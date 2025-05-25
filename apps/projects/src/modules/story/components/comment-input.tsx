@@ -1,4 +1,4 @@
-import { useEditor } from "@tiptap/react";
+import { useEditor, ReactRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TaskItem from "@tiptap/extension-task-item";
@@ -6,53 +6,19 @@ import TaskList from "@tiptap/extension-task-list";
 import Mention from "@tiptap/extension-mention";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { ReactRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
 import { cn } from "lib";
 import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
+import { useTeamMembers } from "@/lib/hooks/team-members";
+import type { Member } from "@/types";
 import {
   MentionList,
   type MentionItem,
   type MentionListRef,
 } from "./mentions/list";
-
-// Static user data for now
-const STATIC_USERS: MentionItem[] = [
-  {
-    id: "1",
-    label: "John Doe",
-    username: "johndoe",
-    avatar:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    id: "2",
-    label: "Jane Smith",
-    username: "janesmith",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    id: "3",
-    label: "Mike Johnson",
-    username: "mikejohnson",
-  },
-  {
-    id: "4",
-    label: "Sarah Wilson",
-    username: "sarahwilson",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    id: "5",
-    label: "Tom Brown",
-    username: "tombrown",
-  },
-];
 
 export const CommentInput = ({
   storyId,
@@ -61,16 +27,27 @@ export const CommentInput = ({
   className,
   initialComment,
   onCancel,
+  teamId,
 }: {
   storyId: string;
   parentId?: string;
   commentId?: string;
   className?: string;
   initialComment?: string;
+  teamId: string;
   onCancel?: () => void;
 }) => {
+  const { data: members = [] } = useTeamMembers(teamId);
   const { mutate } = useCommentStoryMutation();
   const { mutate: updateComment } = useUpdateCommentMutation();
+
+  // Transform team members to mention items
+  const mentionUsers: MentionItem[] = members.map((member: Member) => ({
+    id: member.id,
+    label: member.fullName,
+    username: member.username,
+    avatar: member.avatarUrl,
+  }));
 
   const getPlaceHolder = () => {
     if (commentId) {
@@ -106,18 +83,18 @@ export const CommentInput = ({
       Mention.configure({
         HTMLAttributes: {
           class:
-            "mention bg-info/10 text-info border border-info/20 px-2 py-0.5 rounded-md text-sm font-medium dark:bg-info/20 dark:text-info dark:border-info/30",
+            "mention bg-gray-50 text-[0.95rem] px-1.5 py-1 rounded-md font-semibold dark:bg-dark-200",
         },
         renderText({ options, node }) {
           return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
         },
         suggestion: {
           items: ({ query }: { query: string }) => {
-            return STATIC_USERS.filter(
+            return mentionUsers.filter(
               (user) =>
                 user.label.toLowerCase().includes(query.toLowerCase()) ||
                 user.username.toLowerCase().includes(query.toLowerCase()),
-            ).slice(0, 5);
+            );
           },
           render: () => {
             let component: ReactRenderer<MentionListRef>;
