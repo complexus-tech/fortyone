@@ -35,12 +35,12 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 	query := `
 		INSERT INTO notifications (
 			recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, description
+			entity_id, actor_id, title, message
 		) VALUES (
 			:recipient_id, :workspace_id, :type, :entity_type,
-			:entity_id, :actor_id, :title, :description	
+			:entity_id, :actor_id, :title, :message	
 		) RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, description, created_at, read_at;
+			entity_id, actor_id, title, message, created_at, read_at;
 	`
 
 	var notification dbNotification
@@ -53,7 +53,15 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &notification, toDBNewNotification(n)); err != nil {
+	dbNotif, err := toDBNewNotification(n)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to convert notification: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to convert notification"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return notifications.CoreNotification{}, err
+	}
+
+	if err := stmt.GetContext(ctx, &notification, dbNotif); err != nil {
 		errMsg := fmt.Sprintf("failed to create notification: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create notification"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -64,7 +72,15 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 		attribute.String("notification.id", notification.ID.String()),
 	))
 
-	return toCoreNotification(notification), nil
+	coreNotif, err := toCoreNotification(notification)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to convert notification: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to convert notification"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return notifications.CoreNotification{}, err
+	}
+
+	return coreNotif, nil
 }
 
 func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]notifications.CoreNotification, error) {
@@ -73,7 +89,7 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, o
 
 	query := `
 		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, description, created_at, read_at
+			entity_id, actor_id, title, message, created_at, read_at
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
@@ -109,7 +125,15 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, o
 		attribute.Int("notifications.count", len(dbNotifications)),
 	))
 
-	return toCoreNotifications(dbNotifications), nil
+	coreNotifications, err := toCoreNotifications(dbNotifications)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to convert notifications: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to convert notifications"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	return coreNotifications, nil
 }
 
 func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error) {
@@ -233,7 +257,14 @@ func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID
 	}
 
 	span.AddEvent("preferences retrieved")
-	return toCoreNotificationPreferences(dbPreferences), nil
+	corePrefs, err := toCoreNotificationPreferences(dbPreferences)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to convert preferences: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to convert preferences"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return notifications.CoreNotificationPreferences{}, err
+	}
+	return corePrefs, nil
 }
 
 func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UUID, notificationType string, updates map[string]any) error {
@@ -359,7 +390,12 @@ func (r *repo) createDefaultPreferences(ctx context.Context, userID, workspaceID
 		return notifications.CoreNotificationPreferences{}, err
 	}
 
-	return toCoreNotificationPreferences(result), nil
+	corePrefs, err := toCoreNotificationPreferences(result)
+	if err != nil {
+		return notifications.CoreNotificationPreferences{}, err
+	}
+
+	return corePrefs, nil
 }
 
 func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID) error {

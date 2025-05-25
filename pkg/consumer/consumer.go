@@ -28,28 +28,32 @@ const (
 )
 
 type Consumer struct {
-	redis         *redis.Client
-	log           *logger.Logger
-	notifications *notifications.Service
-	emailService  email.Service
-	stories       *stories.Service
-	objectives    *objectives.Service
-	users         *users.Service
-	statuses      *states.Service
-	websiteURL    string
+	redis             *redis.Client
+	log               *logger.Logger
+	notifications     *notifications.Service
+	notificationRules *notifications.Rules
+	emailService      email.Service
+	stories           *stories.Service
+	objectives        *objectives.Service
+	users             *users.Service
+	statuses          *states.Service
+	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notifications *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
+	notificationRules := notifications.NewRules(log, stories, users)
+
 	return &Consumer{
-		redis:         redis,
-		log:           log,
-		notifications: notifications,
-		emailService:  emailService,
-		stories:       stories,
-		objectives:    objectives,
-		users:         users,
-		statuses:      statuses,
-		websiteURL:    websiteURL,
+		redis:             redis,
+		log:               log,
+		notifications:     notificationsService,
+		notificationRules: notificationRules,
+		emailService:      emailService,
+		stories:           stories,
+		objectives:        objectives,
+		users:             users,
+		statuses:          statuses,
+		websiteURL:        websiteURL,
 	}
 }
 
@@ -226,119 +230,7 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 	}
 }
 
-// getStatusName attempts to get the name of a status using the states service
-func (c *Consumer) getStatusName(ctx context.Context, workspaceID uuid.UUID, statusID uuid.UUID) string {
-	if c.statuses == nil {
-		return "new status"
-	}
-	// Now we can use the direct Get method on the states service
-	state, err := c.statuses.Get(ctx, workspaceID, statusID)
-	if err != nil {
-		c.log.Error(ctx, "failed to get status", "error", err, "status_id", statusID)
-		return "new status"
-	}
-
-	return state.Name
-}
-
-// generateStoryUpdateDescription creates a human-readable description of a story update
-func (c *Consumer) generateStoryUpdateDescription(actorUsername string, updates map[string]any, recipientID uuid.UUID, originalAssigneeID *uuid.UUID, newAssigneeID *uuid.UUID, workspaceID uuid.UUID) string {
-	// For assignee changes - handle different messages for original and new assignee
-	if newAssigneeValue, exists := updates["assignee_id"]; exists {
-		newAssigneeUUID, ok := newAssigneeValue.(uuid.UUID)
-
-		if originalAssigneeID != nil && recipientID == *originalAssigneeID {
-			// Message for the original assignee
-			if newAssigneeValue == nil {
-				return fmt.Sprintf("%s unassigned your story", actorUsername)
-			} else if ok {
-				// Try to get new assignee's username
-				newAssignee, err := c.users.GetUser(context.Background(), newAssigneeUUID)
-				if err == nil {
-					return fmt.Sprintf("%s assigned your story to %s", actorUsername, newAssignee.Username)
-				}
-				return fmt.Sprintf("%s assigned your story to someone else", actorUsername)
-			}
-		} else if newAssigneeID != nil && recipientID == *newAssigneeID {
-			// Message for the new assignee
-			return fmt.Sprintf("%s assigned you a story", actorUsername)
-		}
-	}
-
-	// Handle other update types
-	if statusValue, exists := updates["status_id"]; exists {
-		// Try to get status name from states service
-		statusUUID, err := uuid.Parse(statusValue.(string))
-		if err == nil {
-			statusName := c.getStatusName(context.Background(), workspaceID, statusUUID)
-			return fmt.Sprintf("%s changed the status to %s", actorUsername, statusName)
-		}
-		return fmt.Sprintf("%s changed the story status", actorUsername)
-	}
-
-	if priorityValue, exists := updates["priority"]; exists {
-		// Format priority nicely
-		return fmt.Sprintf("%s changed the priority to %v", actorUsername, priorityValue)
-	}
-
-	if dueDateValue, exists := updates["end_date"]; exists {
-		if dueDateValue == nil {
-			return fmt.Sprintf("%s removed due date", actorUsername)
-		} else {
-			// Format date nicely
-			dateStr := "new date"
-
-			// Since dates are always strings, prioritize string handling
-			if strDate, ok := dueDateValue.(string); ok {
-				// Handle string date format
-				c.log.Info(context.Background(), "due date is string", "date_string", strDate)
-
-				// Try to parse the date string in various formats
-				var parsedTime time.Time
-				var err error
-
-				// Try common formats
-				formats := []string{
-					"2006-01-02",           // YYYY-MM-DD
-					"2006-01-02T15:04:05Z", // ISO8601
-					time.RFC3339,
-				}
-
-				for _, format := range formats {
-					parsedTime, err = time.Parse(format, strDate)
-					if err == nil {
-						dateStr = parsedTime.Format("2 Jan")
-						break
-					}
-				}
-
-				if err != nil {
-					c.log.Error(context.Background(), "failed to parse date string",
-						"error", err,
-						"date_string", strDate)
-				}
-			} else if dateTimePtr, ok := dueDateValue.(*time.Time); ok && dateTimePtr != nil {
-				// Fallback for *time.Time
-				dateStr = dateTimePtr.Format("2 Jan")
-			} else if dateTime, ok := dueDateValue.(time.Time); ok {
-				// Fallback for direct time.Time
-				dateStr = dateTime.Format("2 Jan")
-			} else {
-				// Log if it's an unexpected type
-				c.log.Info(context.Background(), "due date is unexpected type",
-					"type", fmt.Sprintf("%T", dueDateValue),
-					"raw_value", fmt.Sprintf("%v", dueDateValue))
-			}
-
-			return fmt.Sprintf("%s changed due date to %s", actorUsername, dateStr)
-		}
-	}
-
-	// Default case
-	return fmt.Sprintf("%s updated a story", actorUsername)
-}
-
-// Include all the necessary handlers for the different event types
+// handleStoryUpdated processes story update events using the new notification rules
 func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) error {
 	var payload events.StoryUpdatedPayload
 	payloadBytes, err := json.Marshal(event.Payload)
@@ -350,125 +242,18 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	var title string
-
-	story, err := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
+	// Use notification rules to process the story update
+	notifications, err := c.notificationRules.ProcessStoryUpdate(ctx, payload, event.ActorID)
 	if err != nil {
-		c.log.Error(ctx, "failed to get story", "error", err, "story_id", payload.StoryID)
-		title = "Story updated" // Fallback title
-	} else {
-		title = story.Title
+		c.log.Error(ctx, "failed to process story update notifications", "error", err)
+		return err
 	}
 
-	// Get actor's username
-	var actorUsername string
-	actorUser, err := c.users.GetUser(ctx, event.ActorID)
-	if err != nil {
-		c.log.Error(ctx, "failed to get actor user", "error", err, "actor_id", event.ActorID)
-		actorUsername = "Someone" // Fallback if we can't get the username
-	} else {
-		actorUsername = actorUser.Username
-	}
-
-	// Handle assignee change - if payload.Updates contains an assignee_id key
-	if newAssigneeValue, isAssigneeUpdated := payload.Updates["assignee_id"]; isAssigneeUpdated {
-		var newAssigneeID *uuid.UUID
-
-		// Convert the assignee value to UUID if possible
-		if newAssigneeValueStr, ok := newAssigneeValue.(string); ok {
-			if parsedUUID, err := uuid.Parse(newAssigneeValueStr); err == nil {
-				newAssigneeID = &parsedUUID
-			}
-		} else if newAssigneeUUID, ok := newAssigneeValue.(uuid.UUID); ok {
-			newAssigneeID = &newAssigneeUUID
-		}
-
-		// Create notification for original assignee if exists
-		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
-			// Skip if the original assignee and new assignee are the same
-			if newAssigneeID == nil || *payload.AssigneeID != *newAssigneeID {
-				originalAssigneeDescription := c.generateStoryUpdateDescription(
-					actorUsername,
-					payload.Updates,
-					*payload.AssigneeID,
-					payload.AssigneeID, // old assignee
-					newAssigneeID,      // new assignee
-					payload.WorkspaceID,
-				)
-
-				notification := notifications.CoreNewNotification{
-					RecipientID: *payload.AssigneeID,
-					WorkspaceID: payload.WorkspaceID,
-					Type:        "story_update",
-					EntityType:  "story",
-					EntityID:    payload.StoryID,
-					ActorID:     event.ActorID,
-					Description: originalAssigneeDescription,
-					Title:       title,
-				}
-
-				if _, err := c.notifications.Create(ctx, notification); err != nil {
-					c.log.Error(ctx, "failed to create notification for original assignee", "error", err)
-				}
-			}
-		}
-
-		// Create notification for new assignee if exists
-		if newAssigneeID != nil && *newAssigneeID != event.ActorID {
-			// Skip if the original assignee and new assignee are the same
-			if payload.AssigneeID == nil || *payload.AssigneeID != *newAssigneeID {
-				newAssigneeDescription := c.generateStoryUpdateDescription(
-					actorUsername,
-					payload.Updates,
-					*newAssigneeID,
-					payload.AssigneeID, // old assignee
-					newAssigneeID,      // new assignee
-					payload.WorkspaceID,
-				)
-
-				notification := notifications.CoreNewNotification{
-					RecipientID: *newAssigneeID,
-					WorkspaceID: payload.WorkspaceID,
-					Type:        "story_update",
-					EntityType:  "story",
-					EntityID:    payload.StoryID,
-					ActorID:     event.ActorID,
-					Description: newAssigneeDescription,
-					Title:       title,
-				}
-
-				if _, err := c.notifications.Create(ctx, notification); err != nil {
-					c.log.Error(ctx, "failed to create notification for new assignee", "error", err)
-				}
-			}
-		}
-	} else {
-		// Handle other updates (status, priority, due date)
-		// Only create notification if there's an assignee to notify and they're not the actor
-		if payload.AssigneeID != nil && *payload.AssigneeID != event.ActorID {
-			description := c.generateStoryUpdateDescription(
-				actorUsername,
-				payload.Updates,
-				*payload.AssigneeID,
-				payload.AssigneeID, // old assignee (current assignee in this context)
-				nil,                // no new assignee for non-assignee updates
-				payload.WorkspaceID,
-			)
-
-			notification := notifications.CoreNewNotification{
-				RecipientID: *payload.AssigneeID,
-				WorkspaceID: payload.WorkspaceID,
-				Type:        "story_update",
-				EntityType:  "story",
-				EntityID:    payload.StoryID,
-				ActorID:     event.ActorID,
-				Description: description,
-				Title:       title,
-			}
-
-			if _, err := c.notifications.Create(ctx, notification); err != nil {
-				c.log.Error(ctx, "failed to create notification for story update", "error", err)
-			}
+	// Create all notifications
+	for _, notification := range notifications {
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
+			// Continue with other notifications even if one fails
 		}
 	}
 
@@ -522,7 +307,12 @@ func (c *Consumer) handleStoryCommented(ctx context.Context, event events.Event)
 			EntityID:    payload.CommentID, // The ID of the new comment (the reply)
 			ActorID:     event.ActorID,
 			Title:       storyTitle,
-			Description: fmt.Sprintf("%s replied to your comment", actorName),
+			Message: notifications.NotificationMessage{
+				Template: "{actor} replied to your comment",
+				Variables: map[string]notifications.Variable{
+					"actor": {Value: actorName, Type: "actor"},
+				},
+			},
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
@@ -574,7 +364,13 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 			EntityID:    payload.ObjectiveID,
 			ActorID:     event.ActorID,
 			Title:       fmt.Sprintf("You are now leading: %s", objectiveName),
-			Description: fmt.Sprintf("%s assigned you as lead for the objective: %s", actorName, objectiveName),
+			Message: notifications.NotificationMessage{
+				Template: "{actor} assigned you as lead for the objective: {objective}",
+				Variables: map[string]notifications.Variable{
+					"actor":     {Value: actorName, Type: "actor"},
+					"objective": {Value: objectiveName, Type: "value"},
+				},
+			},
 		}
 
 		if _, err := c.notifications.Create(ctx, notification); err != nil {

@@ -36,7 +36,7 @@ type dbNotification struct {
 	EntityID    uuid.UUID        `db:"entity_id"`
 	ActorID     uuid.UUID        `db:"actor_id"`
 	Title       string           `db:"title"`
-	Description string           `db:"description"`
+	Message     json.RawMessage  `db:"message"` // JSONB field for structured message
 	CreatedAt   time.Time        `db:"created_at"`
 	ReadAt      *time.Time       `db:"read_at"`
 }
@@ -59,11 +59,16 @@ type dbNewNotification struct {
 	EntityID    uuid.UUID        `db:"entity_id"`
 	ActorID     uuid.UUID        `db:"actor_id"`
 	Title       string           `db:"title"`
-	Description string           `db:"description"`
+	Message     json.RawMessage  `db:"message"` // JSONB field for structured message
 }
 
 // Conversion functions
-func toDBNewNotification(n notifications.CoreNewNotification) dbNewNotification {
+func toDBNewNotification(n notifications.CoreNewNotification) (dbNewNotification, error) {
+	messageBytes, err := json.Marshal(n.Message)
+	if err != nil {
+		return dbNewNotification{}, err
+	}
+
 	return dbNewNotification{
 		RecipientID: n.RecipientID,
 		WorkspaceID: n.WorkspaceID,
@@ -72,11 +77,16 @@ func toDBNewNotification(n notifications.CoreNewNotification) dbNewNotification 
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
-	}
+		Message:     messageBytes,
+	}, nil
 }
 
-func toCoreNotification(n dbNotification) notifications.CoreNotification {
+func toCoreNotification(n dbNotification) (notifications.CoreNotification, error) {
+	var message notifications.NotificationMessage
+	if err := json.Unmarshal(n.Message, &message); err != nil {
+		return notifications.CoreNotification{}, err
+	}
+
 	return notifications.CoreNotification{
 		ID:          n.ID,
 		RecipientID: n.RecipientID,
@@ -86,25 +96,30 @@ func toCoreNotification(n dbNotification) notifications.CoreNotification {
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Title:       n.Title,
-		Description: n.Description,
+		Message:     message,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
-	}
+	}, nil
 }
 
-func toCoreNotifications(ns []dbNotification) []notifications.CoreNotification {
+func toCoreNotifications(ns []dbNotification) ([]notifications.CoreNotification, error) {
 	result := make([]notifications.CoreNotification, len(ns))
 	for i, n := range ns {
-		result[i] = toCoreNotification(n)
+		coreNotif, err := toCoreNotification(n)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = coreNotif
 	}
-	return result
+	return result, nil
 }
 
 // Convert database notification preferences to core model
-func toCoreNotificationPreferences(db dbNotificationPreferences) notifications.CoreNotificationPreferences {
-	var prefs map[string]notifications.NotificationChannels
-	// Parse the JSON preferences
-	json.Unmarshal(db.Preferences, &prefs)
+func toCoreNotificationPreferences(db dbNotificationPreferences) (notifications.CoreNotificationPreferences, error) {
+	var prefs map[string]interface{}
+	if err := json.Unmarshal(db.Preferences, &prefs); err != nil {
+		return notifications.CoreNotificationPreferences{}, err
+	}
 
 	return notifications.CoreNotificationPreferences{
 		ID:          db.ID,
@@ -113,5 +128,5 @@ func toCoreNotificationPreferences(db dbNotificationPreferences) notifications.C
 		Preferences: prefs,
 		CreatedAt:   db.CreatedAt,
 		UpdatedAt:   db.UpdatedAt,
-	}
+	}, nil
 }
