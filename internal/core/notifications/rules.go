@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
@@ -45,7 +46,15 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	// Rule 1: New assignment notification
 	if newAssigneeID := getNewAssignee(payload.Updates); newAssigneeID != nil {
 		if shouldNotify(*newAssigneeID, actorID) {
-			notification := createAssignmentNotification(*newAssigneeID, payload, actorID, storyTitle, actorUsername)
+			// Check if actor is assigning to themselves
+			var description string
+			if *newAssigneeID == actorID {
+				description = fmt.Sprintf("%s reassigned story to themselves", actorUsername)
+			} else {
+				description = fmt.Sprintf("%s assigned you a story", actorUsername)
+			}
+
+			notification := createAssignmentNotification(*newAssigneeID, payload, actorID, storyTitle, description)
 			notifications = append(notifications, notification)
 		}
 	}
@@ -53,7 +62,8 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	// Rule 2: Story update notification (status, priority, due_date)
 	if hasRelevantUpdates(payload.Updates) && payload.AssigneeID != nil {
 		if shouldNotify(*payload.AssigneeID, actorID) {
-			notification := createUpdateNotification(*payload.AssigneeID, payload, actorID, storyTitle, actorUsername)
+			description := generateUpdateDescription(actorUsername, payload.Updates, ctx, r)
+			notification := createUpdateNotification(*payload.AssigneeID, payload, actorID, storyTitle, description)
 			notifications = append(notifications, notification)
 		}
 	}
@@ -61,12 +71,80 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	// Rule 3: Unassignment notification
 	if isUnassignment(payload.Updates) && payload.AssigneeID != nil {
 		if shouldNotify(*payload.AssigneeID, actorID) {
-			notification := createUnassignmentNotification(*payload.AssigneeID, payload, actorID, storyTitle, actorUsername)
-			notifications = append(notifications, notification)
+			// Check if someone else is being assigned
+			if newAssigneeID := getNewAssignee(payload.Updates); newAssigneeID != nil {
+				// Get new assignee's name
+				newAssigneeName := "someone else"
+				if newAssignee, err := r.users.GetUser(ctx, *newAssigneeID); err == nil {
+					newAssigneeName = newAssignee.Username
+				}
+				description := fmt.Sprintf("%s reassigned story to %s", actorUsername, newAssigneeName)
+				notification := createUnassignmentNotification(*payload.AssigneeID, payload, actorID, storyTitle, description)
+				notifications = append(notifications, notification)
+			}
 		}
 	}
 
 	return notifications, nil
+}
+
+// generateUpdateDescription creates specific messages for different update types
+func generateUpdateDescription(actorUsername string, updates map[string]any, ctx context.Context, r *Rules) string {
+	// Priority update
+	if priorityValue, exists := updates["priority"]; exists {
+		priority := "Unknown"
+		if priorityStr, ok := priorityValue.(string); ok {
+			priority = priorityStr
+		}
+		return fmt.Sprintf("%s set the priority to %s", actorUsername, priority)
+	}
+
+	// Status update
+	if statusValue, exists := updates["status_id"]; exists {
+		statusName := "Unknown"
+		if _, ok := statusValue.(string); ok {
+			// Note: You'll need to add a status service to Rules struct to fetch actual status names
+			// For now, using a placeholder
+			statusName = "In Progress"
+		}
+		return fmt.Sprintf("%s changed the status to %s", actorUsername, statusName)
+	}
+
+	// Due date update
+	if dueDateValue, exists := updates["end_date"]; exists {
+		if dueDateValue == nil {
+			return fmt.Sprintf("%s removed the deadline", actorUsername)
+		}
+
+		dateStr := "Unknown date"
+		if strDate, ok := dueDateValue.(string); ok {
+			// Parse and format the date
+			if parsedTime, err := parseDate(strDate); err == nil {
+				dateStr = parsedTime.Format("2 Jan")
+			}
+		}
+		return fmt.Sprintf("%s set the deadline to %s", actorUsername, dateStr)
+	}
+
+	// Default case
+	return fmt.Sprintf("%s updated the story", actorUsername)
+}
+
+// parseDate tries to parse date strings in various formats
+func parseDate(dateStr string) (time.Time, error) {
+	formats := []string{
+		"2006-01-02",           // YYYY-MM-DD
+		"2006-01-02T15:04:05Z", // ISO8601
+		time.RFC3339,
+	}
+
+	for _, format := range formats {
+		if parsedTime, err := time.Parse(format, dateStr); err == nil {
+			return parsedTime, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
 }
 
 // Rule 4: Never notify the actor
@@ -115,7 +193,7 @@ func isUnassignment(updates map[string]any) bool {
 }
 
 // Create assignment notification
-func createAssignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, actorUsername string) CoreNewNotification {
+func createAssignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, description string) CoreNewNotification {
 	return CoreNewNotification{
 		RecipientID: recipientID,
 		WorkspaceID: payload.WorkspaceID,
@@ -124,13 +202,12 @@ func createAssignmentNotification(recipientID uuid.UUID, payload events.StoryUpd
 		EntityID:    payload.StoryID,
 		ActorID:     actorID,
 		Title:       storyTitle,
-		Description: fmt.Sprintf("%s assigned you a story", actorUsername),
+		Description: description,
 	}
 }
 
 // Create update notification
-func createUpdateNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, actorUsername string) CoreNewNotification {
-	updateType := getUpdateType(payload.Updates)
+func createUpdateNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, description string) CoreNewNotification {
 	return CoreNewNotification{
 		RecipientID: recipientID,
 		WorkspaceID: payload.WorkspaceID,
@@ -139,12 +216,12 @@ func createUpdateNotification(recipientID uuid.UUID, payload events.StoryUpdated
 		EntityID:    payload.StoryID,
 		ActorID:     actorID,
 		Title:       storyTitle,
-		Description: fmt.Sprintf("%s updated the %s", actorUsername, updateType),
+		Description: description,
 	}
 }
 
 // Create unassignment notification
-func createUnassignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, actorUsername string) CoreNewNotification {
+func createUnassignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle, description string) CoreNewNotification {
 	return CoreNewNotification{
 		RecipientID: recipientID,
 		WorkspaceID: payload.WorkspaceID,
@@ -153,20 +230,6 @@ func createUnassignmentNotification(recipientID uuid.UUID, payload events.StoryU
 		EntityID:    payload.StoryID,
 		ActorID:     actorID,
 		Title:       storyTitle,
-		Description: fmt.Sprintf("%s unassigned your story", actorUsername),
+		Description: description,
 	}
-}
-
-// Get human-readable update type
-func getUpdateType(updates map[string]any) string {
-	if _, exists := updates["status_id"]; exists {
-		return "status"
-	}
-	if _, exists := updates["priority"]; exists {
-		return "priority"
-	}
-	if _, exists := updates["end_date"]; exists {
-		return "due date"
-	}
-	return "story"
 }

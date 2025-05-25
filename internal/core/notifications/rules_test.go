@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"context"
 	"testing"
 
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -135,28 +136,28 @@ func TestNotificationTypes(t *testing.T) {
 		events.StoryUpdatedPayload{StoryID: storyID, WorkspaceID: workspaceID},
 		actorID,
 		"Test Story",
-		"testuser",
+		"testuser assigned you a story",
 	)
 
 	assert.Equal(t, "story_assignment", assignmentNotif.Type)
 	assert.Equal(t, "testuser assigned you a story", assignmentNotif.Description)
 	assert.Equal(t, "Test Story", assignmentNotif.Title)
 
-	// Test update notification
+	// Test update notification with priority
 	updateNotif := createUpdateNotification(
 		assigneeID,
 		events.StoryUpdatedPayload{
 			StoryID:     storyID,
 			WorkspaceID: workspaceID,
-			Updates:     map[string]any{"status_id": uuid.New()},
+			Updates:     map[string]any{"priority": "High"},
 		},
 		actorID,
 		"Test Story",
-		"testuser",
+		"testuser set the priority to High",
 	)
 
 	assert.Equal(t, "story_update", updateNotif.Type)
-	assert.Equal(t, "testuser updated the status", updateNotif.Description)
+	assert.Equal(t, "testuser set the priority to High", updateNotif.Description)
 
 	// Test unassignment notification
 	unassignNotif := createUnassignmentNotification(
@@ -164,9 +165,59 @@ func TestNotificationTypes(t *testing.T) {
 		events.StoryUpdatedPayload{StoryID: storyID, WorkspaceID: workspaceID},
 		actorID,
 		"Test Story",
-		"testuser",
+		"testuser reassigned story to tom",
 	)
 
 	assert.Equal(t, "story_unassignment", unassignNotif.Type)
-	assert.Equal(t, "testuser unassigned your story", unassignNotif.Description)
+	assert.Equal(t, "testuser reassigned story to tom", unassignNotif.Description)
+}
+
+func TestGenerateUpdateDescription(t *testing.T) {
+	tests := []struct {
+		name        string
+		updates     map[string]any
+		expected    string
+		description string
+	}{
+		{
+			name:        "Priority update",
+			updates:     map[string]any{"priority": "High"},
+			expected:    "jack set the priority to High",
+			description: "Should generate priority update message",
+		},
+		{
+			name:        "Status update",
+			updates:     map[string]any{"status_id": uuid.New().String()},
+			expected:    "jack changed the status to In Progress",
+			description: "Should generate status update message",
+		},
+		{
+			name:        "Due date update",
+			updates:     map[string]any{"end_date": "2024-06-03"},
+			expected:    "jack set the deadline to 3 Jun",
+			description: "Should generate due date update message",
+		},
+		{
+			name:        "Due date removal",
+			updates:     map[string]any{"end_date": nil},
+			expected:    "jack removed the deadline",
+			description: "Should generate due date removal message",
+		},
+		{
+			name:        "Unknown update",
+			updates:     map[string]any{"description": "Updated description"},
+			expected:    "jack updated the story",
+			description: "Should generate default update message",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a mock rules instance
+			rules := &Rules{}
+
+			result := generateUpdateDescription("jack", tt.updates, context.Background(), rules)
+			assert.Equal(t, tt.expected, result, tt.description)
+		})
+	}
 }
