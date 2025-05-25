@@ -1,5 +1,5 @@
 "use client";
-import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
+import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import {
   DeleteIcon,
   NotificationsCheckIcon,
@@ -19,7 +19,7 @@ import { useDeleteMutation } from "./hooks/delete-mutation";
 export const NotificationCard = ({
   id,
   title,
-  description,
+  // message,
   entityType,
   entityId,
   readAt,
@@ -86,11 +86,12 @@ export const NotificationCard = ({
                     size="xs"
                     src={actor?.avatarUrl}
                   />
-                  <Tooltip className="max-w-[200px]" title={description}>
+                  message here
+                  {/* <Tooltip className="max-w-[200px]" title={description}>
                     <Text className="line-clamp-1" color="muted">
                       {description}
                     </Text>
-                  </Tooltip>
+                  </Tooltip> */}
                 </Flex>
                 {entityType === "story" && <StoryIcon className="shrink-0" />}
                 {entityType === "objective" && (

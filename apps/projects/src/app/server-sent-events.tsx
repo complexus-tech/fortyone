@@ -39,24 +39,6 @@ export const ServerSentEvents = () => {
             queryKey: storyKeys.mine(),
           });
         }
-
-        if (document.hidden) {
-          if (Notification.permission === "granted") {
-            const _ = new Notification(notification.title, {
-              body: notification.description,
-              icon: "/icon-192x192.png",
-            });
-          } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then((permission) => {
-              if (permission === "granted") {
-                const _ = new Notification(notification.title, {
-                  body: notification.description,
-                  icon: "/icon-192x192.png",
-                });
-              }
-            });
-          }
-        }
       } catch (error) {
         posthog.captureException(error);
       }

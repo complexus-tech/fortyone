@@ -7,7 +7,20 @@ export type AppNotification = {
   entityId: string;
   actorId: string;
   title: string;
-  description: string;
+  message: {
+    template: string;
+    variables: {
+      actor: {
+        value: string;
+      };
+      field: {
+        value: string;
+      };
+      value: {
+        value: string;
+      };
+    };
+  };
   createdAt: string;
   readAt: string | null;
 };
