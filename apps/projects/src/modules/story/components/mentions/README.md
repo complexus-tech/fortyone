@@ -9,26 +9,130 @@ This directory contains the implementation of the mentions feature for the comme
 3. **Navigation**: Use arrow keys (up/down) to navigate through suggestions
 4. **Selection**: Press Enter or click on a team member to select them
 5. **Styling**: Mentions appear with custom info color styling that matches the design system
+6. **Extraction**: Extract mentioned users from saved comments for notifications/analytics
 
 ## Components
 
 ### `list.tsx`
 
-- Main suggestion list component that displays filtered team members
+- **Uses Command component**: Built with the same `Command` component from your UI library (consistent with assignees menu)
 - Handles keyboard navigation (arrow keys, enter, escape)
-- Shows user avatars (or initials if no avatar) and usernames
+- Shows user avatars and usernames with proper Typography components
 - Implements proper TypeScript types for the suggestion system
-- Uses custom color palette from Tailwind config
+- **Design system consistency**: Matches the styling of other Command-based components
 
 ## Current Implementation
 
 - **Dynamic data**: Fetches real team members using `useTeamMembers(teamId)` hook
 - **Type-safe**: Uses proper `Member` type from `@/types` for data mapping
+- **Design system integration**: Uses `Command`, `Avatar`, `Text`, and `Flex` components from UI library
 - Integrates with TipTap editor via the Mention extension
 - Uses Tippy.js for proper popup positioning
 - Supports both light and dark themes
 - **Custom styling**: Uses the project's color palette (info color as primary accent)
 - **Enhanced UX**: Smooth transitions, border indicators, and improved contrast
+- **Data attributes**: Mentions include `data-id` and `data-label` for extraction
+
+## Extracting Mentioned Users
+
+### Using the `useMentions` Hook
+
+```typescript
+import { useMentions } from "@/lib/hooks/use-mentions";
+
+const MyComponent = ({ comment }: { comment: Comment }) => {
+  const {
+    mentions,           // Array of { id, label } objects
+    mentionedUserIds,   // Array of user IDs
+    hasMentions,        // Boolean - true if any mentions exist
+    mentionCount,       // Number of mentions
+    isUserMentioned     // Function to check if specific user is mentioned
+  } = useMentions(comment.content);
+
+  // Check if current user is mentioned
+  const currentUserMentioned = isUserMentioned(session?.user?.id);
+
+  // Get all mentioned user IDs for notifications
+  const userIdsToNotify = mentionedUserIds;
+
+  return (
+    <div>
+      {hasMentions && (
+        <p>This comment mentions {mentionCount} users</p>
+      )}
+      {currentUserMentioned && (
+        <Badge>You were mentioned</Badge>
+      )}
+    </div>
+  );
+};
+```
+
+### Using Utility Functions Directly
+
+```typescript
+import {
+  extractMentionsFromHTML,
+  extractMentionedUserIds,
+  isUserMentioned,
+} from "@/lib/utils/mentions";
+
+// Extract all mention data
+const mentions = extractMentionsFromHTML(comment.content);
+// [{ id: "user123", label: "John Doe" }, { id: "user456", label: "Jane Smith" }]
+
+// Extract just user IDs
+const userIds = extractMentionedUserIds(comment.content);
+// ["user123", "user456"]
+
+// Check if specific user is mentioned
+const mentioned = isUserMentioned(comment.content, "user123");
+// true
+```
+
+## Use Cases
+
+### 1. **Notifications**
+
+```typescript
+const handleCommentSubmit = async (commentContent: string) => {
+  // Save comment
+  const comment = await saveComment(commentContent);
+
+  // Extract mentioned users
+  const mentionedUserIds = extractMentionedUserIds(commentContent);
+
+  // Send notifications
+  if (mentionedUserIds.length > 0) {
+    await sendMentionNotifications(mentionedUserIds, comment.id);
+  }
+};
+```
+
+### 2. **Comment Analytics**
+
+```typescript
+const CommentStats = ({ comment }: { comment: Comment }) => {
+  const { mentionCount, mentions } = useMentions(comment.content);
+
+  return (
+    <div>
+      <Text>Mentions: {mentionCount}</Text>
+      {mentions.map(mention => (
+        <Badge key={mention.id}>{mention.label}</Badge>
+      ))}
+    </div>
+  );
+};
+```
+
+### 3. **User Mention History**
+
+```typescript
+const getUserMentions = (comments: Comment[], userId: string) => {
+  return comments.filter((comment) => isUserMentioned(comment.content, userId));
+};
+```
 
 ## Data Mapping
 
@@ -63,19 +167,20 @@ type Member = {
 
 ## Styling Features
 
-- **Mentions in editor**: Subtle info color background with border and proper contrast
+- **Mentions in editor**: Subtle background with border and proper contrast using design system colors
 - **Suggestion dropdown**:
-  - Selected items have left border indicator in info color
-  - Hover states with subtle info color backgrounds
-  - Avatar rings for better visual hierarchy
-  - Fallback initials use info color theme
+  - Uses `Command.List` with proper styling from design system
+  - `Command.Item` with active states and hover effects
+  - `Avatar` component with consistent sizing
+  - `Text` components with proper color variants
+  - Matches the look and feel of assignees menu and other Command-based components
 
 ## Future Enhancements
 
 - [ ] Add user roles/titles in the dropdown
 - [ ] Implement user search debouncing for better performance
-- [ ] Add notification system when users are mentioned
-- [ ] Store mention data in comments for proper serialization
+- [x] Add notification system when users are mentioned
+- [x] Store mention data in comments for proper serialization
 - [ ] Add user status indicators (online/offline)
 - [ ] Support for team-based filtering
 - [ ] Mention analytics and tracking
