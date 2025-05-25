@@ -6,11 +6,53 @@ import TaskList from "@tiptap/extension-task-list";
 import Mention from "@tiptap/extension-mention";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { ReactRenderer } from "@tiptap/react";
+import tippy from "tippy.js";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
 import { cn } from "lib";
 import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
+import {
+  MentionList,
+  type MentionItem,
+  type MentionListRef,
+} from "./mentions/list";
+
+// Static user data for now
+const STATIC_USERS: MentionItem[] = [
+  {
+    id: "1",
+    label: "John Doe",
+    username: "johndoe",
+    avatar:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    id: "2",
+    label: "Jane Smith",
+    username: "janesmith",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    id: "3",
+    label: "Mike Johnson",
+    username: "mikejohnson",
+  },
+  {
+    id: "4",
+    label: "Sarah Wilson",
+    username: "sarahwilson",
+    avatar:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    id: "5",
+    label: "Tom Brown",
+    username: "tombrown",
+  },
+];
 
 export const CommentInput = ({
   storyId,
@@ -60,6 +102,84 @@ export const CommentInput = ({
       }),
       Link.configure({
         autolink: true,
+      }),
+      Mention.configure({
+        HTMLAttributes: {
+          class:
+            "mention bg-info/10 text-info border border-info/20 px-2 py-0.5 rounded-md text-sm font-medium dark:bg-info/20 dark:text-info dark:border-info/30",
+        },
+        renderText({ options, node }) {
+          return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
+        },
+        suggestion: {
+          items: ({ query }: { query: string }) => {
+            return STATIC_USERS.filter(
+              (user) =>
+                user.label.toLowerCase().includes(query.toLowerCase()) ||
+                user.username.toLowerCase().includes(query.toLowerCase()),
+            ).slice(0, 5);
+          },
+          render: () => {
+            let component: ReactRenderer<MentionListRef>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tippy.js instance type is complex
+            let popup: any;
+
+            return {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
+              onStart: (props: any) => {
+                component = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                });
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup = tippy("body", {
+                  getReferenceClientRect: props.clientRect,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: "manual",
+                  placement: "bottom-start",
+                });
+              },
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
+              onUpdate(props: any) {
+                component.updateProps(props as Record<string, unknown>);
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup?.[0]?.setProps({
+                  getReferenceClientRect: props.clientRect,
+                });
+              },
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
+              onKeyDown(props: any) {
+                if (props.event.key === "Escape") {
+                  popup?.[0]?.hide();
+                  return true;
+                }
+
+                return (
+                  component.ref?.onKeyDown(props.event as KeyboardEvent) ??
+                  false
+                );
+              },
+
+              onExit() {
+                popup?.[0]?.destroy();
+                component.destroy();
+              },
+            };
+          },
+        },
       }),
       Placeholder.configure({
         placeholder: getPlaceHolder(),

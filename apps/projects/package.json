@@ -31,6 +31,7 @@
     "@tiptap/pm": "^2.11.5",
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
+    "@tiptap/suggestion": "^2.12.0",
     "@types/qs": "^6.9.15",
     "@uiw/react-heat-map": "^2.2.2",
     "babel-plugin-react-compiler": "19.0.0-beta-21e868a-20250216",
@@ -60,6 +61,7 @@
     "server-only": "^0.0.1",
     "sonner": "^1.5.0",
     "tailwind-config": "workspace:*",
+    "tippy.js": "^6.3.7",
     "ui": "workspace:*"
   },
   "devDependencies": {
