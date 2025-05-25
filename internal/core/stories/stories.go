@@ -238,29 +238,12 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		attribute.String("story.id", storyID.String()),
 	))
 
-	// Create event payload
-	var assigneeID *uuid.UUID
-	if assigneeIDRaw, ok := updates["assignee_id"]; ok {
-		if id, ok := assigneeIDRaw.(uuid.UUID); ok {
-			assigneeID = &id
-		}
-	}
-
-	// ignore if there in no assignee
-	if story.Assignee == nil && assigneeID == nil {
-		return nil
-	}
-
-	// ignore if assignee is the actor
-	if story.Assignee != nil && assigneeID != nil && *story.Assignee == *assigneeID {
-		return nil
-	}
-
+	// Always publish event - let notification rules decide what to do
 	payload := events.StoryUpdatedPayload{
 		StoryID:     storyID,
 		WorkspaceID: workspaceID,
 		Updates:     updates,
-		AssigneeID:  story.Assignee,
+		AssigneeID:  story.Assignee, // Current assignee before update
 	}
 
 	// Publish event
