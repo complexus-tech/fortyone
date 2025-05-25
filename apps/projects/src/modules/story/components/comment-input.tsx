@@ -14,6 +14,7 @@ import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation"
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { Member } from "@/types";
+import { extractMentionsFromHTML } from "@/lib/utils/mentions";
 import {
   MentionList,
   type MentionItem,
@@ -179,12 +180,14 @@ export const CommentInput = ({
       return;
     }
 
+    const mentions = extractMentionsFromHTML(comment).map((m) => m.id);
+
     if (commentId) {
       // update comment
       updateComment(
         {
           commentId,
-          payload: { content: comment },
+          payload: { content: comment, mentions },
           storyId,
         },
         {
@@ -198,7 +201,11 @@ export const CommentInput = ({
       mutate(
         {
           storyId,
-          payload: { comment, parentId: parentId ?? null },
+          payload: {
+            comment,
+            parentId: parentId ?? null,
+            mentions,
+          },
         },
         {
           onSuccess: () => {

@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 
 export type UpdateComment = {
   content: string;
+  mentions: string[];
 };
 
 export const updateCommentAction = async (

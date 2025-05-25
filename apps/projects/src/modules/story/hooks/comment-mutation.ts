@@ -16,10 +16,12 @@ export const useCommentStoryMutation = () => {
       payload: {
         comment: string;
         parentId?: string | null;
+        mentions: string[];
       };
     }) =>
       commentStoryAction(storyId, {
         comment: payload.comment,
+        mentions: payload.mentions,
         parentId: payload.parentId,
       }),
     onError: (error, variables) => {

@@ -8,6 +8,7 @@ import { getApiError } from "@/utils";
 type CommentPayload = {
   comment: string;
   parentId?: string | null;
+  mentions: string[];
 };
 
 export const commentStoryAction = async (
