@@ -1,3 +1,4 @@
+import { useSession } from "next-auth/react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { Avatar, Box, Text } from "ui";
 
@@ -20,6 +21,7 @@ export type MentionListRef = {
 export const MentionList = forwardRef<MentionListRef, MentionListProps>(
   (props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const { data: session } = useSession();
 
     const selectItem = (index: number) => {
       const item = props.items[index];
@@ -74,10 +76,10 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
     }
 
     return (
-      <Box className="z-50 mt-1 w-max rounded-lg border border-gray-50 bg-white py-1.5 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
+      <Box className="z-50 w-max min-w-64 space-y-1 rounded-lg border border-gray-50 bg-white p-2 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
         {props.items.map((item, index) => (
           <button
-            className="flex w-full cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
+            className="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1 outline-none hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
             key={item.id}
             onClick={() => {
               selectItem(index);
@@ -89,10 +91,12 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
           >
             <Avatar name={item.label} size="sm" src={item.avatar} />
             <Text className="max-w-[12rem] truncate">
-              {item.label}{" "}
-              {/* <Text as="span" color="muted">
-                (You)
-              </Text> */}
+              {item.label}
+              {item.id === session?.user?.id && (
+                <Text as="span" color="muted">
+                  (You)
+                </Text>
+              )}
             </Text>
           </button>
         ))}

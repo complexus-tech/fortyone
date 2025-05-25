@@ -90,11 +90,18 @@ export const CommentInput = ({
         },
         suggestion: {
           items: ({ query }: { query: string }) => {
-            return mentionUsers.filter(
+            // If no query, show all users (when user just types @)
+            if (!query || query.trim() === "") {
+              return mentionUsers.slice(0, 6);
+            }
+
+            const filtered = mentionUsers.filter(
               (user) =>
                 user.label.toLowerCase().includes(query.toLowerCase()) ||
                 user.username.toLowerCase().includes(query.toLowerCase()),
             );
+
+            return filtered.slice(0, 6);
           },
           render: () => {
             let component: ReactRenderer<MentionListRef>;

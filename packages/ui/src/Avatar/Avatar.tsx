@@ -23,8 +23,8 @@ const avatar = cva(
         naked: "bg-transparent",
       },
       size: {
-        xs: "h-5 text-xs leading-6",
-        sm: "h-7 text-sm leading-7",
+        xs: "h-5 text-[0.6rem] leading-6",
+        sm: "h-7 text-[0.8rem] leading-7",
         md: "h-8 text-sm leading-8",
         lg: "h-12 text-lg leading-[3rem]",
       },
