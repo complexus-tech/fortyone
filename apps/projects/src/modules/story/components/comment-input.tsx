@@ -40,8 +40,6 @@ export const CommentInput = ({
   const { data: members = [] } = useTeamMembers(teamId);
   const { mutate } = useCommentStoryMutation();
   const { mutate: updateComment } = useUpdateCommentMutation();
-
-  // Transform team members to mention items
   const mentionUsers: MentionItem[] = members.map((member: Member) => ({
     id: member.id,
     label: member.fullName,
@@ -90,7 +88,6 @@ export const CommentInput = ({
         },
         suggestion: {
           items: ({ query }: { query: string }) => {
-            // If no query, show all users (when user just types @)
             if (!query || query.trim() === "") {
               return mentionUsers.slice(0, 6);
             }
@@ -134,7 +131,6 @@ export const CommentInput = ({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
               onUpdate(props: any) {
                 component.updateProps(props as Record<string, unknown>);
-
                 if (!props.clientRect) {
                   return;
                 }
