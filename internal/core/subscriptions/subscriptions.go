@@ -240,9 +240,9 @@ func (s *Service) UpdateSubscriptionSeats(ctx context.Context, workspaceID uuid.
 	}
 	newQuantity := int64(newUserCount)
 
-	// Check if quantity actually needs increasing
-	if newQuantity <= int64(subData.SeatCount) {
-		s.log.Info(ctx, "Seat count does not need increasing", "workspace_id", workspaceID,
+	// Check if quantity has changed
+	if newQuantity == int64(subData.SeatCount) || newQuantity == 0 {
+		s.log.Info(ctx, "Seat count does not need to be updated", "workspace_id", workspaceID,
 			"current_seats", subData.SeatCount, "target_seats", newQuantity)
 		return nil
 	}
@@ -268,7 +268,7 @@ func (s *Service) UpdateSubscriptionSeats(ctx context.Context, workspaceID uuid.
 	}
 
 	// Use idempotency key
-	idempotencyKey := fmt.Sprintf("add-seat-%s-%d", workspaceID.String(), time.Now().UnixNano())
+	idempotencyKey := fmt.Sprintf("update-seats-%s-%d", workspaceID.String(), time.Now().UnixNano())
 	params.IdempotencyKey = stripe.String(idempotencyKey)
 
 	_, err = s.stripeClient.Subscriptions.Update(*subData.StripeSubscriptionID, params)
