@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { Avatar, Box, Text } from "ui";
 
 export type MentionItem = {
   id: string;
@@ -66,23 +67,17 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
 
     if (props.items.length === 0) {
       return (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-dark-200 dark:bg-dark-100">
-          <div className="px-3 py-2 text-sm text-gray-250 dark:text-gray-300">
-            No users found
-          </div>
-        </div>
+        <Box className="w-56 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[0.95rem] shadow-lg dark:border-dark-100 dark:bg-dark-200">
+          <Text color="muted">No users found</Text>
+        </Box>
       );
     }
 
     return (
-      <div className="max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-dark-200 dark:bg-dark-100">
+      <Box className="z-50 mt-1 w-max rounded-lg border border-gray-50 bg-white py-1.5 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
         {props.items.map((item, index) => (
           <button
-            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 hover:bg-info/5 dark:hover:bg-info/10 ${
-              index === selectedIndex
-                ? "border-l-2 border-info bg-info/10 dark:bg-info/15"
-                : "border-l-2 border-transparent"
-            }`}
+            className="flex w-full cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
             key={item.id}
             onClick={() => {
               selectItem(index);
@@ -90,29 +85,18 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             onMouseEnter={() => {
               setSelectedIndex(index);
             }}
+            type="button"
           >
-            {item.avatar ? (
-              <img
-                alt={item.label}
-                className="h-8 w-8 rounded-full ring-2 ring-gray-200 dark:ring-dark-200"
-                src={item.avatar}
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/20 text-sm font-medium text-info dark:bg-info/30 dark:text-info">
-                {item.label.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex flex-col">
-              <span className="text-gray-800 font-medium dark:text-gray-100">
-                {item.label}
-              </span>
-              <span className="text-xs text-gray-250 dark:text-gray-300">
-                @{item.username}
-              </span>
-            </div>
+            <Avatar name={item.label} size="sm" src={item.avatar} />
+            <Text className="max-w-[12rem] truncate">
+              {item.label}{" "}
+              {/* <Text as="span" color="muted">
+                (You)
+              </Text> */}
+            </Text>
           </button>
         ))}
-      </div>
+      </Box>
     );
   },
 );
