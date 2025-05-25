@@ -271,6 +271,12 @@ func (s *Service) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUI
 		return err
 	}
 
+	// update subscription seats
+	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
+		s.log.Error(ctx, "failed to update subscription seats", err)
+		// no need to return error this is not a critical operation
+	}
+
 	span.AddEvent("workspace member removed.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.String("user_id", userID.String()),
@@ -315,6 +321,12 @@ func (s *Service) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid
 	if err := s.repo.UpdateMemberRole(ctx, workspaceID, userID, role); err != nil {
 		span.RecordError(err)
 		return err
+	}
+
+	// update subscription seats
+	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
+		s.log.Error(ctx, "failed to update subscription seats", err)
+		// no need to return error this is not a critical operation
 	}
 
 	span.AddEvent("workspace member role updated.", trace.WithAttributes(
