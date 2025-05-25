@@ -49,19 +49,6 @@ func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.
 	}
 }
 
-func (h *Handlers) updateSubscriptionSeats(ctx context.Context, workspaceID uuid.UUID) {
-	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateSubscriptionSeats")
-	defer span.End()
-	err := h.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID)
-	if err != nil {
-		h.log.Error(ctx, "failed to update subscription seats", "workspaceId", workspaceID.String(), "error", err)
-		span.AddEvent("failed to update subscription seats", trace.WithAttributes(
-			attribute.String("workspaceId", workspaceID.String()),
-			attribute.String("error", err.Error()),
-		))
-	}
-}
-
 // List returns a list of workspaces for a user.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.List")
@@ -331,9 +318,6 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// update subscription seats
-	h.updateSubscriptionSeats(ctx, workspaceID)
-
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
@@ -381,9 +365,6 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-
-	// update subscription seats
-	h.updateSubscriptionSeats(ctx, workspaceID)
 
 	// Invalidate workspace members cache
 	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
