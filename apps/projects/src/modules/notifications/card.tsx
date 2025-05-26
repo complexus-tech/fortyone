@@ -1,5 +1,5 @@
 "use client";
-import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
+import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
 import {
   DeleteIcon,
   NotificationsCheckIcon,
@@ -15,11 +15,12 @@ import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
 import { useDeleteMutation } from "./hooks/delete-mutation";
+import { renderTemplate } from "./utils/render-template";
 
 export const NotificationCard = ({
   id,
   title,
-  // message,
+  message,
   entityType,
   entityId,
   readAt,
@@ -86,12 +87,19 @@ export const NotificationCard = ({
                     size="xs"
                     src={actor?.avatarUrl}
                   />
-                  message here
-                  {/* <Tooltip className="max-w-[200px]" title={description}>
+
+                  <Tooltip
+                    className="max-w-[200px]"
+                    title={renderTemplate(message).text}
+                  >
                     <Text className="line-clamp-1" color="muted">
-                      {description}
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: renderTemplate(message).html,
+                        }}
+                      />
                     </Text>
-                  </Tooltip> */}
+                  </Tooltip>
                 </Flex>
                 {entityType === "story" && <StoryIcon className="shrink-0" />}
                 {entityType === "objective" && (
