@@ -71,6 +71,9 @@ export const useUpdateStoryMutation = () => {
           context.previousStory,
         );
       }
+      // invalidate all stories
+      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+
       toast.error("Failed to update story", {
         description: error.message || "Your changes were not saved",
         action: {
