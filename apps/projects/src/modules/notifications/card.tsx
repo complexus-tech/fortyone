@@ -1,6 +1,7 @@
 "use client";
 import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
 import {
+  AtIcon,
   CommentIcon,
   DeleteIcon,
   NotificationsCheckIcon,
@@ -106,6 +107,7 @@ export const NotificationCard = ({
                 {type === "story_comment" && (
                   <CommentIcon className="shrink-0" />
                 )}
+                {type === "mention" && <AtIcon className="shrink-0" />}
               </Flex>
             </Box>
           </Link>
