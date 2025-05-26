@@ -195,6 +195,18 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 
 	// Rule 1: Notify mentioned user (if not the actor)
 	if shouldNotify(payload.MentionedUser, actorID) {
+		// Check if this is a comment on a story - if so, get the story to check assignee
+		// to avoid duplicate notifications if the mentioned user is also the assignee
+		if r.stories != nil {
+			if story, err := r.stories.Get(ctx, payload.StoryID, payload.WorkspaceID); err == nil {
+				// If the mentioned user is the story assignee, they already got a notification
+				// from ProcessCommentCreated, so skip this mention notification
+				if story.Assignee != nil && *story.Assignee == payload.MentionedUser {
+					return notifications, nil
+				}
+			}
+		}
+
 		message := NotificationMessage{
 			Template: "{actor} mentioned you in a comment",
 			Variables: map[string]Variable{

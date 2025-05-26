@@ -219,8 +219,6 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 		return c.handleCommentReplied(ctx, event)
 	case events.UserMentioned:
 		return c.handleUserMentioned(ctx, event)
-	case events.StoryCommented:
-		return c.handleStoryCommented(ctx, event)
 	case events.ObjectiveUpdated:
 		return c.handleObjectiveUpdated(ctx, event)
 	case events.KeyResultUpdated:
@@ -262,73 +260,6 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			// Continue with other notifications even if one fails
 		}
 	}
-
-	return nil
-}
-
-func (c *Consumer) handleStoryCommented(ctx context.Context, event events.Event) error {
-	c.log.Info(ctx, "consumer.handleStoryCommented", "event_type", event.Type)
-	var payload events.StoryCommentedPayload
-	payloadBytes, err := json.Marshal(event.Payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
-		return fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	// TODO: Get story details to determine who to notify (e.g., story assignee, other participants)
-	// For now, we'll just notify the parent comment author if it exists and is not the current actor.
-	// This assumes payload.ParentID is the *author* of the parent comment.
-	// A more robust solution would be to fetch the parent comment and get its author's ID.
-
-	if payload.ParentID != nil && *payload.ParentID != event.ActorID {
-		// Attempt to get parent comment author. This is a placeholder logic.
-		// In a real scenario, you would fetch the parent comment and then its author.
-		// For now, we directly use ParentID as RecipientID, assuming it's a user ID.
-		parentCommentAuthorID := *payload.ParentID
-
-		// Fetch story for context if needed for the title or other details
-		story, err := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
-		var storyTitle string
-		if err != nil {
-			c.log.Error(ctx, "failed to get story for comment notification", "error", err, "story_id", payload.StoryID)
-			storyTitle = "New reply to your comment"
-		} else {
-			storyTitle = fmt.Sprintf("Reply in: %s", story.Title)
-		}
-
-		actor, err := c.users.GetUser(ctx, event.ActorID)
-		actorName := "Someone"
-		if err == nil {
-			actorName = actor.Username
-		}
-
-		notification := notifications.CoreNewNotification{
-			RecipientID: parentCommentAuthorID,
-			WorkspaceID: payload.WorkspaceID,
-			Type:        "story_comment_reply", // More specific type
-			EntityType:  "comment",
-			EntityID:    payload.CommentID, // The ID of the new comment (the reply)
-			ActorID:     event.ActorID,
-			Title:       storyTitle,
-			Message: notifications.NotificationMessage{
-				Template: "{actor} replied to your comment",
-				Variables: map[string]notifications.Variable{
-					"actor": {Value: actorName, Type: "actor"},
-				},
-			},
-		}
-
-		if _, err := c.notifications.Create(ctx, notification); err != nil {
-			c.log.Error(ctx, "failed to create notification for comment reply", "error", err)
-			// Decide if this error should be returned or just logged.
-			// For now, logging and continuing.
-		}
-	}
-
-	// Additional notifications could be added here, e.g., for story followers or @mentions
 
 	return nil
 }

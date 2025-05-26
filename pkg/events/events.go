@@ -10,7 +10,6 @@ type EventType string
 
 const (
 	StoryUpdated       EventType = "story.updated"
-	StoryCommented     EventType = "story.commented"
 	StoryDuplicated    EventType = "story.duplicated"
 	CommentCreated     EventType = "comment.created"
 	CommentReplied     EventType = "comment.replied"
@@ -36,14 +35,6 @@ type StoryUpdatedPayload struct {
 	WorkspaceID uuid.UUID      `json:"workspace_id"`
 	Updates     map[string]any `json:"updates"`
 	AssigneeID  *uuid.UUID     `json:"assignee_id,omitempty"`
-}
-
-// StoryCommentedPayload contains data for story comment events
-type StoryCommentedPayload struct {
-	StoryID     uuid.UUID  `json:"story_id"`
-	WorkspaceID uuid.UUID  `json:"workspace_id"`
-	CommentID   uuid.UUID  `json:"comment_id"`
-	ParentID    *uuid.UUID `json:"parent_id,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events
