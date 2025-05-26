@@ -243,7 +243,7 @@ func generateUpdateMessage(actorUsername string, updates map[string]any, ctx con
 			Template: "{actor} set the {field} to {value}",
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "priority", Type: "field"},
+				"field": {Value: "Priority", Type: "field"},
 				"value": {Value: priority, Type: "value"},
 			},
 		}
@@ -254,10 +254,10 @@ func generateUpdateMessage(actorUsername string, updates map[string]any, ctx con
 		statusName := "In Progress" // Placeholder - can be enhanced with actual status lookup
 
 		return NotificationMessage{
-			Template: "{actor} changed the {field} to {value}",
+			Template: "{actor} updated {field} to {value}",
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "status", Type: "field"},
+				"field": {Value: "Status", Type: "field"},
 				"value": {Value: statusName, Type: "value"},
 			},
 		}
@@ -286,7 +286,7 @@ func generateUpdateMessage(actorUsername string, updates map[string]any, ctx con
 			Template: "{actor} set the {field} to {value}",
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "deadline", Type: "field"},
+				"field": {Value: "Deadline", Type: "field"},
 				"value": {Value: dateStr, Type: "date"},
 			},
 		}
