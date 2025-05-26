@@ -2,16 +2,17 @@
 import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
 import {
   AtIcon,
+  CalendarIcon,
   CommentIcon,
   DeleteIcon,
   NotificationsCheckIcon,
   NotificationsUnreadIcon,
-  StoryIcon,
 } from "icons";
 import Link from "next/link";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useMembers } from "@/lib/hooks/members";
+import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
@@ -49,6 +50,8 @@ export const NotificationCard = ({
   const handleMarkUnread = () => {
     unreadNotification(id);
   };
+  const html = renderTemplate(message).html;
+  const text = renderTemplate(message).text;
 
   return (
     <ContextMenu>
@@ -90,20 +93,29 @@ export const NotificationCard = ({
                     src={actor?.avatarUrl}
                   />
 
-                  <Tooltip
-                    className="max-w-[200px]"
-                    title={renderTemplate(message).text}
-                  >
+                  <Tooltip className="max-w-[200px]" title={text}>
                     <Text className="line-clamp-1" color="muted">
                       <span
                         dangerouslySetInnerHTML={{
-                          __html: renderTemplate(message).html,
+                          __html: html,
                         }}
                       />
                     </Text>
                   </Tooltip>
                 </Flex>
-                {type === "story_update" && <StoryIcon className="shrink-0" />}
+                {type === "story_update" && (
+                  <>
+                    {text.toLowerCase().includes("deadline") && (
+                      <CalendarIcon className="shrink-0" />
+                    )}
+                    {text.toLowerCase().includes("status") && (
+                      <StoryStatusIcon className="shrink-0" />
+                    )}
+                    {text.toLowerCase().includes("priority") && (
+                      <PriorityIcon className="shrink-0" />
+                    )}
+                  </>
+                )}
                 {type === "story_comment" && (
                   <CommentIcon className="shrink-0" />
                 )}
