@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	UpdateComment(ctx context.Context, commentID uuid.UUID, comment string) error
 	DeleteComment(ctx context.Context, commentID uuid.UUID) error
+	GetComment(ctx context.Context, commentID uuid.UUID) (CoreComment, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -61,4 +62,11 @@ func (s *Service) DeleteComment(ctx context.Context, commentID uuid.UUID) error 
 	}
 
 	return nil
+}
+
+func (s *Service) GetComment(ctx context.Context, commentID uuid.UUID) (CoreComment, error) {
+	ctx, span := web.AddSpan(ctx, "business.service.comments.GetComment")
+	defer span.End()
+
+	return s.repo.GetComment(ctx, commentID)
 }

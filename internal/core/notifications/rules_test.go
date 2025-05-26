@@ -293,3 +293,218 @@ func TestGenerateUpdateMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessCommentCreated(t *testing.T) {
+	actorID := uuid.New()
+	assigneeID := uuid.New()
+	workspaceID := uuid.New()
+
+	tests := []struct {
+		name              string
+		payload           events.CommentCreatedPayload
+		actorID           uuid.UUID
+		expectedCount     int
+		expectedType      string
+		expectedRecipient uuid.UUID
+	}{
+		{
+			name: "should notify assignee when someone comments on their story",
+			payload: events.CommentCreatedPayload{
+				CommentID:   uuid.New(),
+				StoryID:     uuid.New(),
+				StoryTitle:  "Test Story",
+				AssigneeID:  &assigneeID,
+				WorkspaceID: workspaceID,
+				Content:     "Great work!",
+				Mentions:    []uuid.UUID{},
+			},
+			actorID:           actorID,
+			expectedCount:     1,
+			expectedType:      "story_comment",
+			expectedRecipient: assigneeID,
+		},
+		{
+			name: "should not notify when assignee comments on their own story",
+			payload: events.CommentCreatedPayload{
+				CommentID:   uuid.New(),
+				StoryID:     uuid.New(),
+				StoryTitle:  "Test Story",
+				AssigneeID:  &assigneeID,
+				WorkspaceID: workspaceID,
+				Content:     "Working on this",
+				Mentions:    []uuid.UUID{},
+			},
+			actorID:       assigneeID, // Same as assignee
+			expectedCount: 0,
+		},
+		{
+			name: "should not notify when story has no assignee",
+			payload: events.CommentCreatedPayload{
+				CommentID:   uuid.New(),
+				StoryID:     uuid.New(),
+				StoryTitle:  "Test Story",
+				AssigneeID:  nil,
+				WorkspaceID: workspaceID,
+				Content:     "Unassigned story comment",
+				Mentions:    []uuid.UUID{},
+			},
+			actorID:       actorID,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := NewRules(nil, nil, nil)
+
+			notifications, err := rules.ProcessCommentCreated(context.Background(), tt.payload, tt.actorID)
+			assert.NoError(t, err)
+			assert.Len(t, notifications, tt.expectedCount)
+
+			if tt.expectedCount > 0 {
+				notification := notifications[0]
+				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
+				assert.Equal(t, tt.expectedType, notification.Type)
+				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
+				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
+				assert.Equal(t, tt.actorID, notification.ActorID)
+				assert.Equal(t, tt.payload.WorkspaceID, notification.WorkspaceID)
+			}
+		})
+	}
+}
+
+func TestProcessCommentReplied(t *testing.T) {
+	actorID := uuid.New()
+	workspaceID := uuid.New()
+	parentAuthorID := uuid.New()
+
+	tests := []struct {
+		name              string
+		payload           events.CommentRepliedPayload
+		actorID           uuid.UUID
+		expectedCount     int
+		expectedType      string
+		expectedRecipient uuid.UUID
+	}{
+		{
+			name: "should notify parent comment author when someone replies",
+			payload: events.CommentRepliedPayload{
+				CommentID:       uuid.New(),
+				ParentCommentID: uuid.New(),
+				ParentAuthorID:  parentAuthorID,
+				StoryID:         uuid.New(),
+				StoryTitle:      "Test Story",
+				WorkspaceID:     workspaceID,
+				Content:         "Thanks for the feedback!",
+				Mentions:        []uuid.UUID{},
+			},
+			actorID:           actorID,
+			expectedCount:     1,
+			expectedType:      "comment_reply",
+			expectedRecipient: parentAuthorID,
+		},
+		{
+			name: "should not notify when replying to own comment",
+			payload: events.CommentRepliedPayload{
+				CommentID:       uuid.New(),
+				ParentCommentID: uuid.New(),
+				ParentAuthorID:  actorID, // Same as actor
+				StoryID:         uuid.New(),
+				StoryTitle:      "Test Story",
+				WorkspaceID:     workspaceID,
+				Content:         "Adding more details",
+				Mentions:        []uuid.UUID{},
+			},
+			actorID:       actorID,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := NewRules(nil, nil, nil)
+
+			notifications, err := rules.ProcessCommentReplied(context.Background(), tt.payload, tt.actorID)
+			assert.NoError(t, err)
+			assert.Len(t, notifications, tt.expectedCount)
+
+			if tt.expectedCount > 0 {
+				notification := notifications[0]
+				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
+				assert.Equal(t, tt.expectedType, notification.Type)
+				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
+				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
+				assert.Equal(t, tt.actorID, notification.ActorID)
+				assert.Equal(t, tt.payload.WorkspaceID, notification.WorkspaceID)
+			}
+		})
+	}
+}
+
+func TestProcessUserMentioned(t *testing.T) {
+	actorID := uuid.New()
+	workspaceID := uuid.New()
+	mentionedUserID := uuid.New()
+
+	tests := []struct {
+		name              string
+		payload           events.UserMentionedPayload
+		actorID           uuid.UUID
+		expectedCount     int
+		expectedType      string
+		expectedRecipient uuid.UUID
+	}{
+		{
+			name: "should notify mentioned user",
+			payload: events.UserMentionedPayload{
+				CommentID:     uuid.New(),
+				StoryID:       uuid.New(),
+				StoryTitle:    "Test Story",
+				WorkspaceID:   workspaceID,
+				MentionedUser: mentionedUserID,
+				Content:       "Hey @user, check this out!",
+			},
+			actorID:           actorID,
+			expectedCount:     1,
+			expectedType:      "mention",
+			expectedRecipient: mentionedUserID,
+		},
+		{
+			name: "should not notify when mentioning yourself",
+			payload: events.UserMentionedPayload{
+				CommentID:     uuid.New(),
+				StoryID:       uuid.New(),
+				StoryTitle:    "Test Story",
+				WorkspaceID:   workspaceID,
+				MentionedUser: actorID, // Same as actor
+				Content:       "Mentioning myself @me",
+			},
+			actorID:       actorID,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := NewRules(nil, nil, nil)
+
+			notifications, err := rules.ProcessUserMentioned(context.Background(), tt.payload, tt.actorID)
+			assert.NoError(t, err)
+			assert.Len(t, notifications, tt.expectedCount)
+
+			if tt.expectedCount > 0 {
+				notification := notifications[0]
+				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
+				assert.Equal(t, tt.expectedType, notification.Type)
+				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
+				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
+				assert.Equal(t, tt.actorID, notification.ActorID)
+				assert.Equal(t, tt.payload.WorkspaceID, notification.WorkspaceID)
+			}
+		})
+	}
+}

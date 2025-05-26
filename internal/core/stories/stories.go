@@ -42,6 +42,7 @@ type Repository interface {
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
+	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 }
@@ -321,10 +322,17 @@ func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreA
 }
 
 // CreateComment creates a comment for a story.
-func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (comments.CoreComment, error) {
+func (s *Service) CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc CoreNewComment) (comments.CoreComment, error) {
 	s.log.Info(ctx, "business.core.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateComment")
 	defer span.End()
+
+	// Now get story details for notifications
+	story, err := s.repo.Get(ctx, cnc.StoryID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return comments.CoreComment{}, err
+	}
 
 	comment, err := s.repo.CreateComment(ctx, cnc)
 	if err != nil {
@@ -336,6 +344,86 @@ func (s *Service) CreateComment(ctx context.Context, cnc CoreNewComment) (commen
 		if err := s.mentionsRepo.SaveMentions(ctx, comment.ID, cnc.Mentions); err != nil {
 			s.log.Error(ctx, "failed to save mentions", "error", err, "commentId", comment.ID)
 			// Note: We don't return error here to avoid failing comment creation if mentions fail
+		}
+	}
+
+	// Get actor ID from context
+	actorID, _ := mid.GetUserID(ctx)
+
+	// Publish events based on comment type
+	if cnc.Parent != nil {
+		// This is a reply - get parent comment details
+		parentComment, err := s.repo.GetComment(ctx, *cnc.Parent)
+		if err != nil {
+			s.log.Error(ctx, "failed to get parent comment for notification", "error", err, "parent_id", *cnc.Parent)
+		} else {
+			// Publish comment reply event
+			payload := events.CommentRepliedPayload{
+				CommentID:       comment.ID,
+				ParentCommentID: *cnc.Parent,
+				ParentAuthorID:  parentComment.UserID,
+				StoryID:         cnc.StoryID,
+				StoryTitle:      story.Title,
+				WorkspaceID:     story.Workspace,
+				Content:         cnc.Comment,
+				Mentions:        cnc.Mentions,
+			}
+
+			event := events.Event{
+				Type:      events.CommentReplied,
+				Payload:   payload,
+				Timestamp: time.Now(),
+				ActorID:   actorID,
+			}
+
+			if err := s.publisher.Publish(context.Background(), event); err != nil {
+				s.log.Error(ctx, "failed to publish comment replied event", "error", err)
+			}
+		}
+	} else {
+		// This is a new comment on the story
+		payload := events.CommentCreatedPayload{
+			CommentID:   comment.ID,
+			StoryID:     cnc.StoryID,
+			StoryTitle:  story.Title,
+			AssigneeID:  story.Assignee,
+			WorkspaceID: story.Workspace,
+			Content:     cnc.Comment,
+			Mentions:    cnc.Mentions,
+		}
+
+		event := events.Event{
+			Type:      events.CommentCreated,
+			Payload:   payload,
+			Timestamp: time.Now(),
+			ActorID:   actorID,
+		}
+
+		if err := s.publisher.Publish(context.Background(), event); err != nil {
+			s.log.Error(ctx, "failed to publish comment created event", "error", err)
+		}
+	}
+
+	// Publish mention events for each mentioned user
+	for _, mentionedUserID := range cnc.Mentions {
+		payload := events.UserMentionedPayload{
+			CommentID:     comment.ID,
+			StoryID:       cnc.StoryID,
+			StoryTitle:    story.Title,
+			WorkspaceID:   story.Workspace,
+			MentionedUser: mentionedUserID,
+			Content:       cnc.Comment,
+		}
+
+		event := events.Event{
+			Type:      events.UserMentioned,
+			Payload:   payload,
+			Timestamp: time.Now(),
+			ActorID:   actorID,
+		}
+
+		if err := s.publisher.Publish(context.Background(), event); err != nil {
+			s.log.Error(ctx, "failed to publish user mentioned event", "error", err, "mentioned_user", mentionedUserID)
 		}
 	}
 

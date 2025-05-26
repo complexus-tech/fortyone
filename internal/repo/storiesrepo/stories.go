@@ -1059,6 +1059,34 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.C
 	return toCoreComments(comments), nil
 }
 
+func (r *repo) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComment")
+	defer span.End()
+
+	q := `
+		SELECT comment_id, story_id, commenter_id, content, parent_id, created_at, updated_at
+		FROM story_comments 
+		WHERE comment_id = :comment_id
+	`
+
+	params := map[string]any{"comment_id": commentID}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err))
+		return comments.CoreComment{}, fmt.Errorf("failed to prepare named statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var comment commentsrepo.DbComment
+	if err := stmt.GetContext(ctx, &comment, params); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to get comment: %s", err))
+		return comments.CoreComment{}, fmt.Errorf("failed to get comment: %w", err)
+	}
+
+	return toCoreComment(comment), nil
+}
+
 func (r *repo) validateStatusTeam(ctx context.Context, statusId, teamId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.validateStatusTeam")
 	defer span.End()

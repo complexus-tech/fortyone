@@ -213,6 +213,12 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 	switch event.Type {
 	case events.StoryUpdated:
 		return c.handleStoryUpdated(ctx, event)
+	case events.CommentCreated:
+		return c.handleCommentCreated(ctx, event)
+	case events.CommentReplied:
+		return c.handleCommentReplied(ctx, event)
+	case events.UserMentioned:
+		return c.handleUserMentioned(ctx, event)
 	case events.StoryCommented:
 		return c.handleStoryCommented(ctx, event)
 	case events.ObjectiveUpdated:
@@ -521,6 +527,99 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Ev
 	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
 		c.log.Error(ctx, "failed to send invitation accepted email", "error", err)
 		return fmt.Errorf("failed to send invitation accepted email: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Consumer) handleCommentCreated(ctx context.Context, event events.Event) error {
+	c.log.Info(ctx, "consumer.handleCommentCreated", "event_type", event.Type)
+
+	var payload events.CommentCreatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// Apply notification rules
+	notifications, err := c.notificationRules.ProcessCommentCreated(ctx, payload, event.ActorID)
+	if err != nil {
+		c.log.Error(ctx, "failed to process comment created rules", "error", err)
+		return err
+	}
+
+	// Create notifications
+	for _, notification := range notifications {
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err)
+			// Continue processing other notifications
+		}
+	}
+
+	return nil
+}
+
+func (c *Consumer) handleCommentReplied(ctx context.Context, event events.Event) error {
+	c.log.Info(ctx, "consumer.handleCommentReplied", "event_type", event.Type)
+
+	var payload events.CommentRepliedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// Apply notification rules
+	notifications, err := c.notificationRules.ProcessCommentReplied(ctx, payload, event.ActorID)
+	if err != nil {
+		c.log.Error(ctx, "failed to process comment replied rules", "error", err)
+		return err
+	}
+
+	// Create notifications
+	for _, notification := range notifications {
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err)
+			// Continue processing other notifications
+		}
+	}
+
+	return nil
+}
+
+func (c *Consumer) handleUserMentioned(ctx context.Context, event events.Event) error {
+	c.log.Info(ctx, "consumer.handleUserMentioned", "event_type", event.Type)
+
+	var payload events.UserMentionedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	// Apply notification rules
+	notifications, err := c.notificationRules.ProcessUserMentioned(ctx, payload, event.ActorID)
+	if err != nil {
+		c.log.Error(ctx, "failed to process user mentioned rules", "error", err)
+		return err
+	}
+
+	// Create notifications
+	for _, notification := range notifications {
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err)
+			// Continue processing other notifications
+		}
 	}
 
 	return nil

@@ -599,10 +599,17 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
+	workspaceIdParam := web.Params(r, "workspaceId")
 
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
@@ -626,7 +633,7 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		Mentions: requestData.Mentions,
 	}
 
-	comment, err := h.stories.CreateComment(ctx, ca)
+	comment, err := h.stories.CreateComment(ctx, workspaceId, ca)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil

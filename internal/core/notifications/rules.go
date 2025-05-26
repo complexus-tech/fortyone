@@ -107,6 +107,117 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	return notifications, nil
 }
 
+// ProcessCommentCreated applies notification rules for comment creation
+func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.CommentCreatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
+	var notifications []CoreNewNotification
+
+	// Get actor username
+	actorUsername := "Someone"
+	if r.users != nil {
+		if actor, err := r.users.GetUser(ctx, actorID); err == nil {
+			actorUsername = actor.Username
+		}
+	}
+
+	// Rule 1: Notify story assignee when someone comments on their assigned story
+	if payload.AssigneeID != nil && shouldNotify(*payload.AssigneeID, actorID) {
+		message := NotificationMessage{
+			Template: "{actor} commented on your story",
+			Variables: map[string]Variable{
+				"actor": {Value: actorUsername, Type: "actor"},
+			},
+		}
+
+		notification := CoreNewNotification{
+			RecipientID: *payload.AssigneeID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "story_comment",
+			EntityType:  "story",
+			EntityID:    payload.StoryID,
+			ActorID:     actorID,
+			Title:       payload.StoryTitle,
+			Message:     message,
+		}
+		notifications = append(notifications, notification)
+	}
+
+	return notifications, nil
+}
+
+// ProcessCommentReplied applies notification rules for comment replies
+func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.CommentRepliedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
+	var notifications []CoreNewNotification
+
+	// Get actor username
+	actorUsername := "Someone"
+	if r.users != nil {
+		if actor, err := r.users.GetUser(ctx, actorID); err == nil {
+			actorUsername = actor.Username
+		}
+	}
+
+	// Rule 1: Notify parent comment author when someone replies to their comment
+	if shouldNotify(payload.ParentAuthorID, actorID) {
+		message := NotificationMessage{
+			Template: "{actor} replied to your comment",
+			Variables: map[string]Variable{
+				"actor": {Value: actorUsername, Type: "actor"},
+			},
+		}
+
+		notification := CoreNewNotification{
+			RecipientID: payload.ParentAuthorID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "comment_reply",
+			EntityType:  "story",
+			EntityID:    payload.StoryID,
+			ActorID:     actorID,
+			Title:       payload.StoryTitle,
+			Message:     message,
+		}
+		notifications = append(notifications, notification)
+	}
+
+	return notifications, nil
+}
+
+// ProcessUserMentioned applies notification rules for user mentions
+func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMentionedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
+	var notifications []CoreNewNotification
+
+	// Get actor username
+	actorUsername := "Someone"
+	if r.users != nil {
+		if actor, err := r.users.GetUser(ctx, actorID); err == nil {
+			actorUsername = actor.Username
+		}
+	}
+
+	// Rule 1: Notify mentioned user (if not the actor)
+	if shouldNotify(payload.MentionedUser, actorID) {
+		message := NotificationMessage{
+			Template: "{actor} mentioned you in a comment",
+			Variables: map[string]Variable{
+				"actor": {Value: actorUsername, Type: "actor"},
+			},
+		}
+
+		notification := CoreNewNotification{
+			RecipientID: payload.MentionedUser,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "mention",
+			EntityType:  "story",
+			EntityID:    payload.StoryID,
+			ActorID:     actorID,
+			Title:       payload.StoryTitle,
+			Message:     message,
+		}
+		notifications = append(notifications, notification)
+	}
+
+	return notifications, nil
+}
+
 // generateUpdateMessage creates structured messages for different update types
 func generateUpdateMessage(actorUsername string, updates map[string]any, ctx context.Context, r *Rules) NotificationMessage {
 	// Priority update

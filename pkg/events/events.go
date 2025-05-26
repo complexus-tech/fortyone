@@ -12,6 +12,9 @@ const (
 	StoryUpdated       EventType = "story.updated"
 	StoryCommented     EventType = "story.commented"
 	StoryDuplicated    EventType = "story.duplicated"
+	CommentCreated     EventType = "comment.created"
+	CommentReplied     EventType = "comment.replied"
+	UserMentioned      EventType = "user.mentioned"
 	ObjectiveUpdated   EventType = "objective.updated"
 	KeyResultUpdated   EventType = "keyresult.updated"
 	EmailVerification  EventType = "email.verification"
@@ -94,4 +97,37 @@ type StoryDuplicatedPayload struct {
 	StoryID         uuid.UUID `json:"story_id"`
 	OriginalStoryID uuid.UUID `json:"original_story_id"`
 	WorkspaceID     uuid.UUID `json:"workspace_id"`
+}
+
+// CommentCreatedPayload contains data for comment creation events
+type CommentCreatedPayload struct {
+	CommentID   uuid.UUID   `json:"comment_id"`
+	StoryID     uuid.UUID   `json:"story_id"`
+	StoryTitle  string      `json:"story_title"`
+	AssigneeID  *uuid.UUID  `json:"assignee_id"`
+	WorkspaceID uuid.UUID   `json:"workspace_id"`
+	Content     string      `json:"content"`
+	Mentions    []uuid.UUID `json:"mentions"`
+}
+
+// CommentRepliedPayload contains data for comment reply events
+type CommentRepliedPayload struct {
+	CommentID       uuid.UUID   `json:"comment_id"`
+	ParentCommentID uuid.UUID   `json:"parent_comment_id"`
+	ParentAuthorID  uuid.UUID   `json:"parent_author_id"`
+	StoryID         uuid.UUID   `json:"story_id"`
+	StoryTitle      string      `json:"story_title"`
+	WorkspaceID     uuid.UUID   `json:"workspace_id"`
+	Content         string      `json:"content"`
+	Mentions        []uuid.UUID `json:"mentions"`
+}
+
+// UserMentionedPayload contains data for user mention events
+type UserMentionedPayload struct {
+	CommentID     uuid.UUID `json:"comment_id"`
+	StoryID       uuid.UUID `json:"story_id"`
+	StoryTitle    string    `json:"story_title"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	MentionedUser uuid.UUID `json:"mentioned_user"`
+	Content       string    `json:"content"`
 }
