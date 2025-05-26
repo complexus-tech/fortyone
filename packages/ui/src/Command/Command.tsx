@@ -4,7 +4,6 @@ import { Command as CommandPrimitive } from "cmdk";
 
 import { cn } from "lib";
 import {
-  ComponentProps,
   ComponentPropsWithoutRef,
   ElementRef,
   HTMLAttributes,
@@ -12,8 +11,6 @@ import {
 } from "react";
 import { cva, VariantProps } from "cva";
 import { SearchIcon } from "icons";
-
-// type CommandProps = ComponentPropsWithoutRef<typeof CommandPrimitive>;
 
 export const Command = ({ className, ...props }: any) => (
   <CommandPrimitive
