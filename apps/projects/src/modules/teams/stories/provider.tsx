@@ -19,7 +19,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "Status",
     orderBy: "Priority",
-    showEmptyGroups: false,
+    showEmptyGroups: true,
     displayColumns: [
       "ID",
       "Status",
