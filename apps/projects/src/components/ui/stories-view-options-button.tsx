@@ -34,7 +34,7 @@ export type StoriesViewOptions = {
 const initialViewOptions: StoriesViewOptions = {
   groupBy: "Status",
   orderBy: "Priority",
-  showEmptyGroups: false,
+  showEmptyGroups: true,
   displayColumns: [
     "ID",
     "Status",
