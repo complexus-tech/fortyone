@@ -24,7 +24,7 @@
     "lib": "workspace:*",
     "mouse-follower": "^1.1.2",
     "next": "15.3.2",
-    "next-auth": "5.0.0-beta.25",
+    "next-auth": "5.0.0-beta.28",
     "next-mdx-remote": "^5.0.0",
     "nprogress": "^0.2.0",
     "posthog-js": "^1.246.0",
