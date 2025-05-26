@@ -6,7 +6,7 @@ import { CreateWorkspaceForm } from "./components/create-workspace-form";
 
 export const CreateWorkspace = () => {
   return (
-    <Box className="max-w-sm">
+    <Box className="px-6 md:max-w-sm md:px-0">
       <Logo asIcon className="relative -left-2 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Create Workspace

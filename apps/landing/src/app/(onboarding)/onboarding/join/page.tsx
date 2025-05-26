@@ -19,7 +19,7 @@ export default async function JoinWorkspacePage({
 
   if (res.error?.message) {
     return (
-      <Box className="w-full max-w-md">
+      <Box className="w-full px-6 md:max-w-md md:px-0">
         <Logo asIcon className="relative -left-2 h-10 text-white" />
         <Text
           as="h1"
