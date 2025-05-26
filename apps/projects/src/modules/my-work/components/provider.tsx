@@ -15,7 +15,7 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "Status",
     orderBy: "Priority",
-    showEmptyGroups: true,
+    showEmptyGroups: false,
     displayColumns: [
       "ID",
       "Status",
