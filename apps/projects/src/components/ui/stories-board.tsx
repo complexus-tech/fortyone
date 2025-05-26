@@ -271,21 +271,19 @@ export const StoriesBoard = ({
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
-      tolerance: 10,
-      delay: 50,
+      distance: 8,
     },
   });
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      tolerance: 10,
-      delay: 50,
+      distance: 8,
     },
   });
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      tolerance: 10,
-      delay: 50,
+      delay: 200,
+      tolerance: 8,
     },
   });
 
