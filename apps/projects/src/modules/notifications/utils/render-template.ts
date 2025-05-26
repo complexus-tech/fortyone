@@ -18,7 +18,7 @@ export const renderTemplate = (
 
       if (variable.value) {
         if (wrapInSpan) {
-          return `<span class="font-semibold antialiased text-black dark:text-gray-200">${variable.value}</span>`;
+          return `<span class="font-semibold antialiased text-black/90 dark:text-gray-200">${variable.value}</span>`;
         }
         return variable.value;
       }
