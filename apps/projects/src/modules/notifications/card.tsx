@@ -1,10 +1,10 @@
 "use client";
 import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo, Tooltip } from "ui";
 import {
+  CommentIcon,
   DeleteIcon,
   NotificationsCheckIcon,
   NotificationsUnreadIcon,
-  ObjectiveIcon,
   StoryIcon,
 } from "icons";
 import Link from "next/link";
@@ -21,8 +21,9 @@ export const NotificationCard = ({
   id,
   title,
   message,
-  entityType,
+  type,
   entityId,
+  entityType,
   readAt,
   createdAt,
   actorId,
@@ -101,9 +102,9 @@ export const NotificationCard = ({
                     </Text>
                   </Tooltip>
                 </Flex>
-                {entityType === "story" && <StoryIcon className="shrink-0" />}
-                {entityType === "objective" && (
-                  <ObjectiveIcon className="shrink-0" />
+                {type === "story_update" && <StoryIcon className="shrink-0" />}
+                {type === "story_comment" && (
+                  <CommentIcon className="shrink-0" />
                 )}
               </Flex>
             </Box>

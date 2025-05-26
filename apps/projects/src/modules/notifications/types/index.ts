@@ -2,8 +2,8 @@ export type AppNotification = {
   id: string;
   recipientId: string;
   workspaceId: string;
-  type: "story" | "objective";
-  entityType: string;
+  type: "story_update" | "story_comment";
+  entityType: "story" | "objective";
   entityId: string;
   actorId: string;
   title: string;
