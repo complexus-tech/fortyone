@@ -13,6 +13,7 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { useTerminology } from "@/hooks";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
@@ -38,6 +39,7 @@ export const NotificationCard = ({
   const { mutate: readNotification } = useReadNotificationMutation();
   const { mutate: unreadNotification } = useMarkUnreadMutation();
   const { mutate: deleteNotification } = useDeleteMutation();
+  const { getTermDisplay } = useTerminology();
 
   const handleReadNotification = () => {
     readNotification(id);
@@ -50,8 +52,9 @@ export const NotificationCard = ({
   const handleMarkUnread = () => {
     unreadNotification(id);
   };
-  const html = renderTemplate(message).html;
-  const text = renderTemplate(message).text;
+  const storyTerm = getTermDisplay("storyTerm");
+  const html = renderTemplate(message).html.replace("story", storyTerm);
+  const text = renderTemplate(message).text.replace("story", storyTerm);
 
   return (
     <ContextMenu>
