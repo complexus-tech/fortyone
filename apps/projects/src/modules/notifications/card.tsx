@@ -82,7 +82,7 @@ export const NotificationCard = ({
                 >
                   {title}
                 </Text>
-                <Text className="shrink-0" color="muted">
+                <Text className="shrink-0 text-[0.95rem]" color="muted">
                   <TimeAgo timestamp={createdAt} />
                 </Text>
               </Flex>
