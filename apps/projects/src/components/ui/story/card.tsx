@@ -98,6 +98,11 @@ export const StoryCard = ({
             <Link
               className="flex justify-between gap-2"
               href={`/story/${story.id}/${slugify(story.title)}`}
+              onClick={(e) => {
+                if (isDragging) {
+                  e.preventDefault();
+                }
+              }}
             >
               <Text
                 className="line-clamp-3 text-[1.1rem] leading-[1.6rem]"
