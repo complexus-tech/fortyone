@@ -112,7 +112,10 @@ export const NotificationCard = ({
                       <StoryStatusIcon className="shrink-0" />
                     )}
                     {text.toLowerCase().includes("priority") && (
-                      <PriorityIcon className="shrink-0" />
+                      <PriorityIcon
+                        className="shrink-0 text-gray dark:text-gray-300"
+                        priority="High"
+                      />
                     )}
                   </>
                 )}
