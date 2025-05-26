@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Text } from "ui";
+import { Badge, Box, Button, Container, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
 import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
@@ -24,7 +24,7 @@ export const Welcome = async () => {
   const redirectUrl = await getRedirectUrl(session!);
 
   return (
-    <Box className="max-w-md">
+    <Container className="max-w-md md:max-w-lg">
       <Logo asIcon className="relative -left-2 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Welcome to Complexus👋
@@ -71,6 +71,6 @@ export const Welcome = async () => {
       <Button align="center" className="mt-4" fullWidth href={redirectUrl}>
         Get Started
       </Button>
-    </Box>
+    </Container>
   );
 };

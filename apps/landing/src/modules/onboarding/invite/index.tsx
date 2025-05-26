@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Text } from "ui";
+import { Button, Container, Text } from "ui";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui";
@@ -60,7 +60,7 @@ export const InviteTeam = ({
   };
 
   return (
-    <Box className="max-h-dvh max-w-[30rem] overflow-y-auto">
+    <Container className="max-h-dvh max-w-[30rem] overflow-y-auto md:max-w-lg">
       <Logo asIcon className="relative -left-1 h-10 text-white" />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Build With Your Team
@@ -91,6 +91,6 @@ export const InviteTeam = ({
       >
         I&apos;ll do this later
       </Button>
-    </Box>
+    </Container>
   );
 };
