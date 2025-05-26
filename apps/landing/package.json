@@ -27,7 +27,7 @@
     "next-auth": "5.0.0-beta.25",
     "next-mdx-remote": "^5.0.0",
     "nprogress": "^0.2.0",
-    "posthog-js": "^1.235.6",
+    "posthog-js": "^1.246.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-fast-marquee": "^1.6.4",
