@@ -40,7 +40,7 @@ type WorkerConfig struct {
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
-	Queues     map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2"`
+	Queues     map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4"`
 	MailerLite struct {
 		APIKey            string `env:"APP_MAILERLITE_API_KEY"`
 		OnboardingGroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID" default:"155224971194402532"`
@@ -64,7 +64,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing worker configuration: %w", err)
 	}
 	if cfg.Queues == nil {
-		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2}
+		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2, "notifications": 4}
 	}
 
 	// Initialize database connection
@@ -154,6 +154,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Register existing handlers
 	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
 	mux.HandleFunc(tasks.TypeSubscriberUpdate, workerTaskService.HandleSubscriberUpdate)
+	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	// Register cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)

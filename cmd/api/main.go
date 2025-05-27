@@ -239,7 +239,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}()
 
 	// Create services
-	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb)
+	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb, tasksService)
 	mentionsRepo := mentionsrepo.New(log, db)
 	storiesService := stories.New(log, storiesrepo.New(log, db), mentionsRepo, publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))

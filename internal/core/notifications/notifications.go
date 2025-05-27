@@ -6,8 +6,10 @@ import (
 	"fmt"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -28,19 +30,26 @@ type Repository interface {
 	MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error
 }
 
-// Service provides notification-related operations.
-type Service struct {
-	repo        Repository
-	log         *logger.Logger
-	redisClient *redis.Client
+// TasksService provides access to the task queue for background processing.
+type TasksService interface {
+	EnqueueNotificationEmail(payload tasks.NotificationEmailPayload, opts ...asynq.Option) (*asynq.TaskInfo, error)
 }
 
-// New constructs a new notifications service instance with the provided repository and Redis client.
-func New(log *logger.Logger, repo Repository, redisClient *redis.Client) *Service {
+// Service provides notification-related operations.
+type Service struct {
+	repo         Repository
+	log          *logger.Logger
+	redisClient  *redis.Client
+	tasksService TasksService
+}
+
+// New constructs a new notifications service instance with the provided repository, Redis client, and tasks service.
+func New(log *logger.Logger, repo Repository, redisClient *redis.Client, tasksService TasksService) *Service {
 	return &Service{
-		repo:        repo,
-		log:         log,
-		redisClient: redisClient,
+		repo:         repo,
+		log:          log,
+		redisClient:  redisClient,
+		tasksService: tasksService,
 	}
 }
 
@@ -75,7 +84,7 @@ func (s *Service) publishNotification(ctx context.Context, notification CoreNoti
 	return nil
 }
 
-// Create creates a new notification, saves it to the database, and publishes it to Redis for SSE.
+// Create creates a new notification, saves it to the database, publishes it to Redis for SSE, and enqueues an email task.
 func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error) {
 	s.log.Info(ctx, "business.core.notifications.Create")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.Create")
@@ -92,7 +101,36 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	))
 
 	// Publish notification to Redis Pub/Sub
-	s.publishNotification(ctx, notification)
+	if err := s.publishNotification(ctx, notification); err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", err, "notificationID", notification.ID)
+		return notification, err
+	}
+
+	emailPayload := tasks.NotificationEmailPayload{
+		NotificationID: notification.ID,
+		RecipientID:    notification.RecipientID,
+		WorkspaceID:    notification.WorkspaceID,
+	}
+
+	if _, err := s.tasksService.EnqueueNotificationEmail(emailPayload); err != nil {
+		// Log error but don't fail notification creation
+		s.log.Error(ctx, "Failed to enqueue email notification task",
+			"error", err,
+			"notification_id", notification.ID,
+			"recipient_id", notification.RecipientID)
+		span.AddEvent("email task enqueue failed", trace.WithAttributes(
+			attribute.String("error", err.Error()),
+			attribute.String("notification.id", notification.ID.String()),
+		))
+	} else {
+		s.log.Info(ctx, "Email notification task enqueued successfully",
+			"notification_id", notification.ID,
+			"recipient_id", notification.RecipientID)
+		span.AddEvent("email task enqueued", trace.WithAttributes(
+			attribute.String("notification.id", notification.ID.String()),
+		))
+	}
 
 	return notification, nil
 }
