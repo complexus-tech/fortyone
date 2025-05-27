@@ -144,3 +144,118 @@ func (s *Service) SendTransactionalEmail(ctx context.Context, req SendTransactio
 		MessageID: result.MessageId,
 	}, nil
 }
+
+// SendTemplatedEmailRequest represents the request to send a templated email
+type SendTemplatedEmailRequest struct {
+	TemplateID int64             `json:"templateId"`
+	To         []EmailRecipient  `json:"to"`
+	Cc         []EmailRecipient  `json:"cc,omitempty"`
+	Bcc        []EmailRecipient  `json:"bcc,omitempty"`
+	ReplyTo    *EmailRecipient   `json:"replyTo,omitempty"`
+	Params     map[string]any    `json:"params,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
+	Tags       []string          `json:"tags,omitempty"`
+	Sender     *EmailSender      `json:"sender,omitempty"`  // Optional: override template sender
+	Subject    string            `json:"subject,omitempty"` // Optional: override template subject
+}
+
+// SendTemplatedEmailResponse represents the response from sending a templated email
+type SendTemplatedEmailResponse struct {
+	MessageID string `json:"messageId"`
+}
+
+// SendTemplatedEmail sends a transactional email using a Brevo template with dynamic parameters.
+func (s *Service) SendTemplatedEmail(ctx context.Context, req SendTemplatedEmailRequest) (*SendTemplatedEmailResponse, error) {
+	s.log.Info(ctx, "Sending templated email via Brevo",
+		"template_id", req.TemplateID,
+		"recipient_count", len(req.To))
+
+	// Convert our request to Brevo format
+	brevoEmail := brevo.SendSmtpEmail{
+		TemplateId: req.TemplateID,
+		Params:     req.Params,
+		Tags:       req.Tags,
+	}
+
+	// Override subject if provided
+	if req.Subject != "" {
+		brevoEmail.Subject = req.Subject
+	}
+
+	// Override sender if provided
+	if req.Sender != nil {
+		brevoEmail.Sender = &brevo.SendSmtpEmailSender{
+			Email: req.Sender.Email,
+			Name:  req.Sender.Name,
+		}
+	}
+
+	// Convert recipients
+	var brevoTo []brevo.SendSmtpEmailTo
+	for _, recipient := range req.To {
+		brevoTo = append(brevoTo, brevo.SendSmtpEmailTo{
+			Email: recipient.Email,
+			Name:  recipient.Name,
+		})
+	}
+	brevoEmail.To = brevoTo
+
+	// Convert CC recipients if any
+	if len(req.Cc) > 0 {
+		var brevoCc []brevo.SendSmtpEmailCc
+		for _, recipient := range req.Cc {
+			brevoCc = append(brevoCc, brevo.SendSmtpEmailCc{
+				Email: recipient.Email,
+				Name:  recipient.Name,
+			})
+		}
+		brevoEmail.Cc = brevoCc
+	}
+
+	// Convert BCC recipients if any
+	if len(req.Bcc) > 0 {
+		var brevoBcc []brevo.SendSmtpEmailBcc
+		for _, recipient := range req.Bcc {
+			brevoBcc = append(brevoBcc, brevo.SendSmtpEmailBcc{
+				Email: recipient.Email,
+				Name:  recipient.Name,
+			})
+		}
+		brevoEmail.Bcc = brevoBcc
+	}
+
+	// Convert ReplyTo if provided
+	if req.ReplyTo != nil {
+		brevoEmail.ReplyTo = &brevo.SendSmtpEmailReplyTo{
+			Email: req.ReplyTo.Email,
+			Name:  req.ReplyTo.Name,
+		}
+	}
+
+	// Convert headers if any
+	if len(req.Headers) > 0 {
+		headers := make(map[string]any)
+		for k, v := range req.Headers {
+			headers[k] = v
+		}
+		brevoEmail.Headers = headers
+	}
+
+	// Send the email
+	result, response, err := s.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevoEmail)
+	if err != nil {
+		s.log.Error(ctx, "Failed to send templated email via Brevo",
+			"error", err,
+			"template_id", req.TemplateID,
+			"response_status", response.Status)
+		return nil, fmt.Errorf("brevo: failed to send templated email: %w", err)
+	}
+
+	s.log.Info(ctx, "Successfully sent templated email via Brevo",
+		"template_id", req.TemplateID,
+		"message_id", result.MessageId)
+
+	return &SendTemplatedEmailResponse{
+		MessageID: result.MessageId,
+	}, nil
+}
