@@ -9,9 +9,9 @@ import (
 	"os"
 
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/mailerlite"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 
 	"github.com/hibiken/asynq"
@@ -40,11 +40,10 @@ type WorkerConfig struct {
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
-	Queues     map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4"`
-	MailerLite struct {
-		APIKey            string `env:"APP_MAILERLITE_API_KEY"`
-		OnboardingGroupID string `env:"APP_MAILERLITE_ONBOARDING_GROUP_ID" default:"155224971194402532"`
+	Brevo struct {
+		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
+	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4"`
 }
 
 func main() {
@@ -134,20 +133,16 @@ func run(ctx context.Context, log *logger.Logger) error {
 		},
 	)
 
-	// Initialize MailerLite service
-	mailerLiteService, err := mailerlite.NewService(log, mailerlite.Config{
-		APIKey: cfg.MailerLite.APIKey,
-	})
+	// Initialize Brevo service
+	brevoService, err := brevo.NewService(brevo.Config{
+		APIKey: cfg.Brevo.APIKey,
+	}, log)
 	if err != nil {
-		return fmt.Errorf("failed to initialize MailerLite service: %w", err)
-	}
-
-	if cfg.MailerLite.OnboardingGroupID == "" {
-		return fmt.Errorf("mailerlite onboarding group ID is not configured")
+		return fmt.Errorf("error initializing brevo service: %w", err)
 	}
 
 	// Set up task handlers
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, mailerLiteService, cfg.MailerLite.OnboardingGroupID)
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
 
 	mux := asynq.NewServeMux()

@@ -44,8 +44,37 @@ func (h *healthCheck) Readiness(ctx context.Context, w http.ResponseWriter, r *h
 	}{
 		Status: status,
 	}
+	// h.brevoService.SendTemplatedEmail(ctx, brevo.SendTemplatedEmailRequest{
 
-	return web.Respond(ctx, w, data, statusCode)
+	// 	To: []brevo.EmailRecipient{{Email: "josemukorivo@gmail.com", Name: "Test"}},
+
+	// 	TemplateID: 3,
+	// 	Params: map[string]any{
+	// 		"USER_NAME":            "Joseph",
+	// 		"USER_EMAIL":           "joseph@complexus.app",
+	// 		"WORKSPACE_NAME":       "Test",
+	// 		"WORKSPACE_URL":        "https://test.com",
+	// 		"APP_URL":              "https://test.com",
+	// 		"NOTIFICATION_TITLE":   "Test",
+	// 		"NOTIFICATION_MESSAGE": "Test",
+	// 	},
+	// })
+
+	// res, err := h.brevoService.CreateOrUpdateContact(context.Background(), brevo.CreateOrUpdateContactRequest{
+	// 	Email: "joseph@complexus.app",
+	// 	Attributes: map[string]any{
+	// 		"NAME": "Joseph Mukorivo",
+	// 	},
+	// 	ListIDs: []int64{6},
+	// })
+	// if err != nil {
+	// 	h.log.Error(ctx, "Failed to create or update contact", "error", err)
+	// 	return nil
+	// }
+
+	// fmt.Println("Brevo contact response", res)
+
+	return web.Respond(context.Background(), w, data, statusCode)
 }
 
 // liveness checks if the service is alive and ready to handle requests.

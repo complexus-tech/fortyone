@@ -40,10 +40,10 @@ type Config struct {
 	BrevoService  *brevo.Service
 	GoogleService *google.Service
 	Validate      *validator.Validate
-	AzureConfig   azure.Config
 	Cache         *cache.Service
 	TasksService  *tasks.Service
 	StripeClient  *client.API
+	AzureConfig   azure.Config
 	WebhookSecret string
 	SSEHub        *sse.Hub
 	CorsOrigin    string

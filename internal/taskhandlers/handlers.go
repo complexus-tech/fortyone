@@ -1,21 +1,22 @@
 package taskhandlers
 
 import (
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/mailerlite"
+	"github.com/jmoiron/sqlx"
 )
 
 type handlers struct {
-	log               *logger.Logger
-	mailerLiteService *mailerlite.Service
-	onboardingGroupID string
+	log          *logger.Logger
+	db           *sqlx.DB
+	brevoService *brevo.Service
 }
 
 // NewWorkerHandlers initializes the central task Handlers service.
-func NewWorkerHandlers(log *logger.Logger, mailerLiteService *mailerlite.Service, onboardingGroupID string) *handlers {
+func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service) *handlers {
 	return &handlers{
-		log:               log,
-		mailerLiteService: mailerLiteService,
-		onboardingGroupID: onboardingGroupID,
+		log:          log,
+		db:           db,
+		brevoService: brevoService,
 	}
 }

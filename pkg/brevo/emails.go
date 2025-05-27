@@ -40,13 +40,8 @@ type SendTransactionalEmailRequest struct {
 	Tags        []string          `json:"tags,omitempty"`
 }
 
-// SendTransactionalEmailResponse represents the response from sending a transactional email
-type SendTransactionalEmailResponse struct {
-	MessageID string `json:"messageId"`
-}
-
 // SendTransactionalEmail sends a transactional email using Brevo.
-func (s *Service) SendTransactionalEmail(ctx context.Context, req SendTransactionalEmailRequest) (*SendTransactionalEmailResponse, error) {
+func (s *Service) SendTransactionalEmail(ctx context.Context, req SendTransactionalEmailRequest) error {
 	s.log.Info(ctx, "Sending transactional email via Brevo",
 		"subject", req.Subject,
 		"recipient_count", len(req.To))
@@ -127,22 +122,20 @@ func (s *Service) SendTransactionalEmail(ctx context.Context, req SendTransactio
 	}
 
 	// Send the email
-	result, response, err := s.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevoEmail)
+	_, response, err := s.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevoEmail)
 	if err != nil {
 		s.log.Error(ctx, "Failed to send transactional email via Brevo",
 			"error", err,
 			"subject", req.Subject,
 			"response_status", response.Status)
-		return nil, fmt.Errorf("brevo: failed to send transactional email: %w", err)
+		return fmt.Errorf("brevo: failed to send transactional email: %w", err)
 	}
 
 	s.log.Info(ctx, "Successfully sent transactional email via Brevo",
 		"subject", req.Subject,
-		"message_id", result.MessageId)
+	)
 
-	return &SendTransactionalEmailResponse{
-		MessageID: result.MessageId,
-	}, nil
+	return nil
 }
 
 // SendTemplatedEmailRequest represents the request to send a templated email
@@ -159,13 +152,8 @@ type SendTemplatedEmailRequest struct {
 	Subject    string            `json:"subject,omitempty"` // Optional: override template subject
 }
 
-// SendTemplatedEmailResponse represents the response from sending a templated email
-type SendTemplatedEmailResponse struct {
-	MessageID string `json:"messageId"`
-}
-
 // SendTemplatedEmail sends a transactional email using a Brevo template with dynamic parameters.
-func (s *Service) SendTemplatedEmail(ctx context.Context, req SendTemplatedEmailRequest) (*SendTemplatedEmailResponse, error) {
+func (s *Service) SendTemplatedEmail(ctx context.Context, req SendTemplatedEmailRequest) error {
 	s.log.Info(ctx, "Sending templated email via Brevo",
 		"template_id", req.TemplateID,
 		"recipient_count", len(req.To))
@@ -242,20 +230,17 @@ func (s *Service) SendTemplatedEmail(ctx context.Context, req SendTemplatedEmail
 	}
 
 	// Send the email
-	result, response, err := s.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevoEmail)
+	_, response, err := s.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevoEmail)
 	if err != nil {
 		s.log.Error(ctx, "Failed to send templated email via Brevo",
 			"error", err,
 			"template_id", req.TemplateID,
 			"response_status", response.Status)
-		return nil, fmt.Errorf("brevo: failed to send templated email: %w", err)
+		return fmt.Errorf("brevo: failed to send templated email: %w", err)
 	}
 
 	s.log.Info(ctx, "Successfully sent templated email via Brevo",
-		"template_id", req.TemplateID,
-		"message_id", result.MessageId)
+		"template_id", req.TemplateID)
 
-	return &SendTemplatedEmailResponse{
-		MessageID: result.MessageId,
-	}, nil
+	return nil
 }
