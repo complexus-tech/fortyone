@@ -2,7 +2,6 @@ package brevo
 
 import (
 	"context"
-	"fmt"
 )
 
 // EmailNotificationParams represents parameters for notification emails
@@ -40,8 +39,5 @@ func (service *Service) SendEmailNotification(ctx context.Context, templateId in
 		Tags:   []string{"notification", params.NotificationType},
 	}
 
-	fmt.Println(req)
-
-	return nil
-	// return service.SendTemplatedEmail(ctx, req)
+	return service.SendTemplatedEmail(ctx, req)
 }

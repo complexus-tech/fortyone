@@ -16,7 +16,7 @@ import (
 
 type Variable struct {
 	Value string `json:"value"`
-	Type  string `json:"type"` // "actor", "assignee", "field", "value", "date"
+	Type  string `json:"type"`
 }
 
 type NotificationMessage struct {
@@ -26,15 +26,15 @@ type NotificationMessage struct {
 
 // NotificationEmailData represents all data needed for sending notification emails
 type NotificationEmailData struct {
-	NotificationID   uuid.UUID           `db:"notification_id"`
-	NotificationType string              `db:"type"`
-	Title            string              `db:"title"`
-	Message          NotificationMessage `db:"message"`
-	UserEmail        string              `db:"user_email"`
-	UserName         string              `db:"user_name"`
-	WorkspaceName    string              `db:"workspace_name"`
-	WorkspaceSlug    string              `db:"workspace_slug"`
-	EmailEnabled     bool                `db:"email_enabled"`
+	NotificationID   uuid.UUID       `db:"notification_id"`
+	NotificationType string          `db:"type"`
+	Title            string          `db:"title"`
+	Message          json.RawMessage `db:"message"`
+	UserEmail        string          `db:"user_email"`
+	UserName         string          `db:"user_name"`
+	WorkspaceName    string          `db:"workspace_name"`
+	WorkspaceSlug    string          `db:"workspace_slug"`
+	EmailEnabled     bool            `db:"email_enabled"`
 }
 
 // ParsedMessage represents the final parsed notification message
@@ -153,6 +153,13 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 		return nil
 	}
 
+	// Unmarshal the raw JSON message into NotificationMessage struct
+	var notificationMsg NotificationMessage
+	if err := json.Unmarshal(data.Message, &notificationMsg); err != nil {
+		h.log.Error(ctx, "Failed to unmarshal notification message", "error", err, "notification_id", p.NotificationID, "raw_message", string(data.Message))
+		return fmt.Errorf("failed to unmarshal notification message: %w", err)
+	}
+
 	if !data.EmailEnabled {
 		h.log.Info(ctx, "Email notifications disabled for this type - skipping",
 			"notification_id", p.NotificationID,
@@ -162,7 +169,7 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	}
 
 	// Parse the notification message
-	parsedMessage := parseNotificationMessage(data.Message)
+	parsedMessage := parseNotificationMessage(notificationMsg)
 
 	// Send email with real data
 	workspaceURL := fmt.Sprintf("https://%s.complexus.app", data.WorkspaceSlug)
