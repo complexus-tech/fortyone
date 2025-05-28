@@ -88,7 +88,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			u.full_name AS user_name,
 			w.name AS workspace_name,
 			w.slug AS workspace_slug,
-			COALESCE(np.preferences -> n.type::text ->> 'email', 'true')::boolean AS email_enabled
+			CAST(COALESCE(np.preferences -> CAST(n.type AS TEXT) ->> 'email', 'true') AS BOOLEAN) AS email_enabled
 		FROM
 			notifications n
 			INNER JOIN users u ON n.recipient_id = u.user_id
