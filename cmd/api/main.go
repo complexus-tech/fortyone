@@ -28,6 +28,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/azure"
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
@@ -87,6 +88,9 @@ type Config struct {
 		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
+	}
+	Brevo struct {
+		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
 	Tracing struct {
 		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
@@ -220,6 +224,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, "email service initialized")
 
+	// Initialize Brevo service
+	brevoService, err := brevo.NewService(brevo.Config{
+		APIKey: cfg.Brevo.APIKey,
+	}, log)
+	if err != nil {
+		return fmt.Errorf("error initializing brevo service: %w", err)
+	}
+
 	// Create publisher
 	publisher := publisher.New(rdb, log)
 
@@ -239,7 +251,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}()
 
 	// Create services
-	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb)
+	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb, tasksService)
 	mentionsRepo := mentionsrepo.New(log, db)
 	storiesService := stories.New(log, storiesrepo.New(log, db), mentionsRepo, publisher)
 	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
@@ -303,6 +315,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Tracer:        tracer,
 		SecretKey:     cfg.Auth.SecretKey,
 		EmailService:  emailService,
+		BrevoService:  brevoService,
 		GoogleService: googleService,
 		Validate:      validate,
 		AzureConfig:   azureConfig,

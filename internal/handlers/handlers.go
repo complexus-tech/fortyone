@@ -172,10 +172,11 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the notifications routes
 	notificationsgrp.Routes(notificationsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Redis:     cfg.Redis,
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		Redis:        cfg.Redis,
+		TasksService: cfg.TasksService,
 	}, app)
 
 	// register the invitations routes

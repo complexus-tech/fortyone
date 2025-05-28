@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/hibiken/asynq"
 )
@@ -23,12 +24,17 @@ func (h *handlers) HandleSubscriberUpdate(ctx context.Context, t *asynq.Task) er
 		"task_id", t.ResultWriter().TaskID(),
 	)
 
-	// MailerLite integration
-	subscriberID, err := h.mailerLiteService.CreateOrUpdateSubscriber(ctx, p.Email, p.FullName)
+	// Brevo integration
+	_, err := h.brevoService.CreateOrUpdateContact(ctx, brevo.CreateOrUpdateContactRequest{
+		Email: p.Email,
+		Attributes: map[string]any{
+			"NAME": p.FullName,
+		},
+	})
 	if err != nil {
-		return fmt.Errorf("failed to create/update subscriber: %w", err)
+		return fmt.Errorf("failed to create/update contact: %w", err)
 	}
 
-	h.log.Info(ctx, "HANDLER: Successfully processed SubscriberUpdate task", "email", p.Email, "subscriber_id", subscriberID)
+	h.log.Info(ctx, "HANDLER: Successfully processed ContactUpdate task", "email", p.Email)
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/azure"
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
@@ -36,12 +37,13 @@ type Config struct {
 	Tracer        trace.Tracer
 	SecretKey     string
 	EmailService  email.Service
+	BrevoService  *brevo.Service
 	GoogleService *google.Service
 	Validate      *validator.Validate
-	AzureConfig   azure.Config
 	Cache         *cache.Service
 	TasksService  *tasks.Service
 	StripeClient  *client.API
+	AzureConfig   azure.Config
 	WebhookSecret string
 	SSEHub        *sse.Hub
 	CorsOrigin    string
