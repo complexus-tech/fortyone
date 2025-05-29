@@ -50,7 +50,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 
 	var workspaces []dbWorkspaceWithRole
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id": userID,
 	}
 
@@ -231,7 +231,7 @@ func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 			workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
@@ -271,7 +271,7 @@ func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, 
 
 	// Build values for objective statuses batch insert
 	objectiveValues := make([]string, len(workspaces.DefaultObjectiveStatuses))
-	objectiveParams := make(map[string]interface{})
+	objectiveParams := make(map[string]any)
 
 	for i, status := range workspaces.DefaultObjectiveStatuses {
 		paramPrefix := fmt.Sprintf("o%d_", i)
@@ -323,7 +323,7 @@ func (r *repo) addMemberImpl(ctx context.Context, executor sqlx.ExtContext, work
 		)
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
 		"role":         role,
@@ -442,7 +442,7 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 			AND user_id = :user_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
 	}
@@ -488,7 +488,7 @@ func (r *repo) CheckSlugAvailability(ctx context.Context, slug string) (bool, er
 		)
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"slug": slug,
 	}
 
@@ -639,7 +639,7 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 			updated_at
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id":       workspaceID,
 		"story_term":         settings.StoryTerm,
 		"sprint_term":        settings.SprintTerm,
@@ -700,7 +700,7 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 		)
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 	}
 
