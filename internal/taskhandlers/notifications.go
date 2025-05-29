@@ -8,6 +8,7 @@ import (
 	"html"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -59,8 +60,8 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 			htmlValue = fmt.Sprintf("<strong>%s</strong>", html.EscapeString(value))
 		case "field":
 			htmlValue = fmt.Sprintf("<em>%s</em>", html.EscapeString(value))
-		case "value":
-			htmlValue = fmt.Sprintf("<span style='color: #007bff;'>%s</span>", html.EscapeString(value))
+		case "value", "date":
+			htmlValue = fmt.Sprintf("<strong style='color: #f43f5e;'>%s</strong>", html.EscapeString(value))
 		default:
 			htmlValue = html.EscapeString(value)
 		}
@@ -171,20 +172,20 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	parsedMessage := parseNotificationMessage(notificationMsg)
 
 	// Send email with real data
-	// workspaceURL := fmt.Sprintf("https://%s.complexus.app", data.WorkspaceSlug)
+	workspaceURL := fmt.Sprintf("https://%s.complexus.app/notifications", data.WorkspaceSlug)
 
-	// if err := h.brevoService.SendEmailNotification(ctx, 3, brevo.EmailNotificationParams{
-	// 	UserName:            data.UserName,
-	// 	UserEmail:           data.UserEmail,
-	// 	WorkspaceName:       data.WorkspaceName,
-	// 	WorkspaceURL:        workspaceURL,
-	// 	NotificationTitle:   data.Title,
-	// 	NotificationMessage: parsedMessage.Text,
-	// 	NotificationType:    data.NotificationType,
-	// }); err != nil {
-	// 	h.log.Error(ctx, "Failed to send notification email", "error", err, "task_id", t.ResultWriter().TaskID())
-	// 	return err
-	// }
+	if err := h.brevoService.SendEmailNotification(ctx, brevo.TemplateNotification, brevo.EmailNotificationParams{
+		UserName:            data.UserName,
+		UserEmail:           data.UserEmail,
+		WorkspaceName:       data.WorkspaceName,
+		WorkspaceURL:        workspaceURL,
+		NotificationTitle:   data.Title,
+		NotificationMessage: parsedMessage.Text,
+		NotificationType:    data.NotificationType,
+	}); err != nil {
+		h.log.Error(ctx, "Failed to send notification email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return err
+	}
 
 	h.log.Info(ctx, "HANDLER: Successfully processed NotificationEmail task",
 		"notification_id", p.NotificationID,
