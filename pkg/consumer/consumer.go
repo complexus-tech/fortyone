@@ -405,27 +405,33 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 	// Calculate expiration duration
 	expiresIn := time.Until(payload.ExpiresAt).Round(time.Hour)
 
-	// Prepare template data
-	templateData := map[string]any{
-		"InviterName":     payload.InviterName,
-		"WorkspaceName":   payload.WorkspaceName,
-		"ExpiresIn":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
-		"Subject":         fmt.Sprintf("%s has invited you to join %s on Complexus", payload.InviterName, payload.WorkspaceName),
-		"VerificationURL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
+	// Prepare Brevo template parameters
+	brevoParams := map[string]any{
+		"INVITER_NAME":     payload.InviterName,
+		"WORKSPACE_NAME":   payload.WorkspaceName,
+		"ROLE":             payload.Role,
+		"EXPIRES_IN":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
+		"VERIFICATION_URL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
 	}
 
-	// Send templated email
-	templateEmail := email.TemplatedEmail{
-		To:       []string{payload.Email},
-		Template: "invites/invitation",
-		Data:     templateData,
+	// Send templated email via Brevo service
+	req := brevo.SendTemplatedEmailRequest{
+		TemplateID: brevo.TemplateInvitation,
+		To: []brevo.EmailRecipient{
+			{
+				Email: payload.Email,
+			},
+		},
+		Subject: fmt.Sprintf("You're Invited to Join %s on Complexus", payload.WorkspaceName),
+		Params:  brevoParams,
 	}
 
-	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
-		c.log.Error(ctx, "failed to send invitation email", "error", err)
-		return fmt.Errorf("failed to send invitation email: %w", err)
+	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
+		c.log.Error(ctx, "failed to send invitation email via Brevo", "error", err, "email", payload.Email)
+		return fmt.Errorf("failed to send invitation email via Brevo: %w", err)
 	}
 
+	c.log.Info(ctx, "successfully sent invitation email via Brevo", "email", payload.Email)
 	return nil
 }
 
@@ -445,28 +451,34 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Ev
 		"invitee_email", payload.InviteeEmail,
 		"workspace_id", payload.WorkspaceID)
 
-	// Prepare template data
-	templateData := map[string]any{
-		"InviterName":   payload.InviterName,
-		"InviteeName":   payload.InviteeName,
-		"WorkspaceName": payload.WorkspaceName,
-		"Role":          payload.Role,
-		"Subject":       fmt.Sprintf("%s has accepted your invitation to %s", payload.InviteeName, payload.WorkspaceName),
-		"LoginURL":      fmt.Sprintf("%s/login", c.websiteURL),
+	// Prepare Brevo template parameters
+	brevoParams := map[string]any{
+		"INVITER_NAME":   payload.InviterName,
+		"INVITEE_NAME":   payload.InviteeName,
+		"WORKSPACE_NAME": payload.WorkspaceName,
+		"WORKSPACE_URL":  fmt.Sprintf("https://%s.complexus.app", payload.WorkspaceSlug),
+		"ROLE":           payload.Role,
+		"LOGIN_URL":      fmt.Sprintf("%s/login", c.websiteURL),
 	}
 
-	// Send templated email
-	templateEmail := email.TemplatedEmail{
-		To:       []string{payload.InviterEmail},
-		Template: "invites/acceptance",
-		Data:     templateData,
+	// Send templated email via Brevo service
+	req := brevo.SendTemplatedEmailRequest{
+		TemplateID: brevo.TemplateInvitationAccepted,
+		To: []brevo.EmailRecipient{
+			{
+				Email: payload.InviterEmail,
+			},
+		},
+		Subject: fmt.Sprintf("Great news! %s has joined %s on Complexus", payload.InviteeName, payload.WorkspaceName),
+		Params:  brevoParams,
 	}
 
-	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
-		c.log.Error(ctx, "failed to send invitation accepted email", "error", err)
-		return fmt.Errorf("failed to send invitation accepted email: %w", err)
+	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
+		c.log.Error(ctx, "failed to send invitation accepted email via Brevo", "error", err, "email", payload.InviterEmail)
+		return fmt.Errorf("failed to send invitation accepted email via Brevo: %w", err)
 	}
 
+	c.log.Info(ctx, "successfully sent invitation accepted email via Brevo", "email", payload.InviterEmail)
 	return nil
 }
 
