@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -35,7 +36,7 @@ func (s *Service) EnqueueNotificationEmail(payload NotificationEmailPayload, opt
 	defaultOpts := []asynq.Option{
 		asynq.Queue("notifications"),
 		asynq.MaxRetry(2),
-		// asynq.ProcessIn(time.Hour), // 1-hour delay
+		asynq.ProcessIn(time.Hour), // 1-hour delay
 	}
 
 	finalOpts := append(defaultOpts, opts...)

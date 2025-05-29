@@ -38,7 +38,7 @@ func (service *Service) SendEmailNotification(ctx context.Context, templateId in
 				Name:  params.UserName,
 			},
 		},
-		Subject: fmt.Sprintf("Update from %s", params.WorkspaceName),
+		Subject: fmt.Sprintf("Update from %s", params.ActorName),
 		Params:  templateParams,
 		Tags:    []string{"notification", params.NotificationType},
 	}
