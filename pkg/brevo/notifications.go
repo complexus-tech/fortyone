@@ -8,6 +8,7 @@ import (
 // EmailNotificationParams represents parameters for notification emails
 type EmailNotificationParams struct {
 	UserName            string `json:"USER_NAME"`
+	ActorName           string `json:"ACTOR_NAME"`
 	UserEmail           string `json:"USER_EMAIL"`
 	WorkspaceURL        string `json:"WORKSPACE_URL"`
 	WorkspaceName       string `json:"WORKSPACE_NAME"`
@@ -20,6 +21,7 @@ type EmailNotificationParams struct {
 func (service *Service) SendEmailNotification(ctx context.Context, templateId int64, params EmailNotificationParams) error {
 	templateParams := map[string]any{
 		"USER_NAME":            params.UserName,
+		"ACTOR_NAME":           params.ActorName,
 		"USER_EMAIL":           params.UserEmail,
 		"WORKSPACE_NAME":       params.WorkspaceName,
 		"WORKSPACE_URL":        params.WorkspaceURL,

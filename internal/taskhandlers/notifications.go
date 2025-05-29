@@ -32,6 +32,7 @@ type NotificationEmailData struct {
 	Message          json.RawMessage `db:"message"`
 	UserEmail        string          `db:"user_email"`
 	UserName         string          `db:"user_name"`
+	ActorName        string          `db:"actor_name"`
 	WorkspaceName    string          `db:"workspace_name"`
 	WorkspaceSlug    string          `db:"workspace_slug"`
 	EmailEnabled     bool            `db:"email_enabled"`
@@ -85,7 +86,8 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			n.title,
 			n.message,
 			u.email AS user_email,
-			u.full_name AS user_name,
+			COALESCE(NULLIF(u.full_name, ''), u.username) AS user_name,
+			COALESCE(NULLIF(actor_u.full_name, ''), actor_u.username) AS actor_name,
 			w.name AS workspace_name,
 			w.slug AS workspace_slug,
 			CAST(COALESCE(np.preferences -> CAST(n.type AS TEXT) ->> 'email', 'true') AS BOOLEAN) AS email_enabled
@@ -93,6 +95,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			notifications n
 			INNER JOIN users u ON n.recipient_id = u.user_id
 			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
+			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
 			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
 			AND n.workspace_id = np.workspace_id
 		WHERE
@@ -176,6 +179,7 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 
 	if err := h.brevoService.SendEmailNotification(ctx, brevo.TemplateNotification, brevo.EmailNotificationParams{
 		UserName:            data.UserName,
+		ActorName:           data.ActorName,
 		UserEmail:           data.UserEmail,
 		WorkspaceName:       data.WorkspaceName,
 		WorkspaceURL:        workspaceURL,
