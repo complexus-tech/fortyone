@@ -361,25 +361,29 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 
 	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email)
 
-	// Prepare template data
-	templateData := map[string]any{
-		"VerificationURL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
-		"ExpiresIn":       "10 minutes",
-		"Subject":         "Login to Complexus",
+	// Prepare Brevo template parameters
+	brevoParams := map[string]any{
+		"VERIFICATION_URL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
+		"EXPIRES_IN":       "10 minutes",
 	}
 
-	// Send templated email
-	templateEmail := email.TemplatedEmail{
-		To:       []string{payload.Email},
-		Template: "auth/verification",
-		Data:     templateData,
+	// Send templated email via Brevo service
+	req := brevo.SendTemplatedEmailRequest{
+		TemplateID: brevo.TemplateLogin,
+		To: []brevo.EmailRecipient{
+			{
+				Email: payload.Email,
+			},
+		},
+		Params: brevoParams,
 	}
 
-	if err := c.emailService.SendTemplatedEmail(ctx, templateEmail); err != nil {
-		c.log.Error(ctx, "failed to send verification email", "error", err)
-		return fmt.Errorf("failed to send verification email: %w", err)
+	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
+		c.log.Error(ctx, "failed to send verification email via Brevo", "error", err, "email", payload.Email)
+		return fmt.Errorf("failed to send verification email via Brevo: %w", err)
 	}
 
+	c.log.Info(ctx, "successfully sent verification email via Brevo", "email", payload.Email)
 	return nil
 }
 
