@@ -435,9 +435,19 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.RemoveMember")
 	defer span.End()
 
-	query := `
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to begin transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to begin transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer tx.Rollback() // Rollback is a no-op if Commit has been called
+
+	// Remove from workspace_members
+	queryWorkspaceMembers := `
 		DELETE FROM workspace_members
-		WHERE 
+		WHERE
 			workspace_id = :workspace_id
 			AND user_id = :user_id
 	`
@@ -447,16 +457,16 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 		"user_id":      userID,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	stmtWorkspaceMembers, err := tx.PrepareNamedContext(ctx, queryWorkspaceMembers)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare named statement for workspace_members: %s", err)
 		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		span.RecordError(errors.New("failed to prepare statement for workspace_members"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
-	defer stmt.Close()
+	defer stmtWorkspaceMembers.Close()
 
-	result, err := stmt.ExecContext(ctx, params)
+	resultWorkspaceMembers, err := stmtWorkspaceMembers.ExecContext(ctx, params)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to remove workspace member: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -464,13 +474,49 @@ func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) 
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffectedWorkspaceMembers, err := resultWorkspaceMembers.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	if rowsAffected == 0 {
+	if rowsAffectedWorkspaceMembers == 0 {
 		return workspaces.ErrMemberNotFound
+	}
+
+	// Remove from team_members
+	queryTeamMembers := `
+		DELETE FROM team_members
+		WHERE user_id = :user_id
+		AND team_id IN (
+			SELECT team_id
+			FROM teams
+			WHERE workspace_id = :workspace_id
+		)
+	`
+	// Parameters are the same: workspaceID and userID
+
+	stmtTeamMembers, err := tx.PrepareNamedContext(ctx, queryTeamMembers)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement for team_members: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement for team_members"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmtTeamMembers.Close()
+
+	_, err = stmtTeamMembers.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to remove member from teams: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to remove member from teams"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to commit transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
 	}
 
 	return nil
