@@ -259,7 +259,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	statusesService := states.New(log, statesrepo.New(log, db))
 
 	// Create consumer using Redis Streams
-	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService, usersService, statusesService)
+	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService, usersService, statusesService, brevoService)
 
 	// Start consumer in a goroutine
 	go func() {

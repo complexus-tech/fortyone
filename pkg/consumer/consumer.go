@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -33,6 +34,7 @@ type Consumer struct {
 	notifications     *notifications.Service
 	notificationRules *notifications.Rules
 	emailService      email.Service
+	brevoService      *brevo.Service
 	stories           *stories.Service
 	objectives        *objectives.Service
 	users             *users.Service
@@ -40,7 +42,7 @@ type Consumer struct {
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, brevoService *brevo.Service) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users)
 
 	return &Consumer{
@@ -50,6 +52,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		notificationRules: notificationRules,
 		emailService:      emailService,
 		stories:           stories,
+		brevoService:      brevoService,
 		objectives:        objectives,
 		users:             users,
 		statuses:          statuses,
