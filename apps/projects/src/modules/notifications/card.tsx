@@ -86,7 +86,6 @@ export const NotificationCard = ({
                   <TimeAgo timestamp={createdAt} />
                 </Text>
               </Flex>
-
               <Flex align="center" gap={3} justify="between">
                 <Flex align="center" className="flex-1" gap={2}>
                   <Avatar
@@ -96,7 +95,16 @@ export const NotificationCard = ({
                     src={actor?.avatarUrl}
                   />
 
-                  <Tooltip className="max-w-[200px]" title={text}>
+                  <Tooltip
+                    className="max-w-[200px]"
+                    title={
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: html,
+                        }}
+                      />
+                    }
+                  >
                     <Text className="line-clamp-1" color="muted">
                       <span
                         dangerouslySetInnerHTML={{
