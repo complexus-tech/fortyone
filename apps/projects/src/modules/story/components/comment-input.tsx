@@ -43,7 +43,7 @@ export const CommentInput = ({
   const { mutate: updateComment } = useUpdateCommentMutation();
   const mentionUsers: MentionItem[] = members.map((member: Member) => ({
     id: member.id,
-    label: member.fullName,
+    label: member.fullName || member.username,
     username: member.username,
     avatar: member.avatarUrl,
   }));
