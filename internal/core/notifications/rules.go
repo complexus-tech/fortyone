@@ -122,7 +122,7 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 	// Rule 1: Notify story assignee when someone comments on their assigned story
 	if payload.AssigneeID != nil && shouldNotify(*payload.AssigneeID, actorID) {
 		message := NotificationMessage{
-			Template: "{actor} commented on your story",
+			Template: fmt.Sprintf("{actor} commented on your story: %s", payload.Content),
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
 			},
@@ -159,7 +159,7 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 	// Rule 1: Notify parent comment author when someone replies to their comment
 	if shouldNotify(payload.ParentAuthorID, actorID) {
 		message := NotificationMessage{
-			Template: "{actor} replied to your comment",
+			Template: fmt.Sprintf("{actor} replied to your comment: %s", payload.Content),
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
 			},
@@ -208,7 +208,7 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 		}
 
 		message := NotificationMessage{
-			Template: "{actor} mentioned you in a comment",
+			Template: fmt.Sprintf("{actor} mentioned you: %s", payload.Content),
 			Variables: map[string]Variable{
 				"actor": {Value: actorUsername, Type: "actor"},
 			},
