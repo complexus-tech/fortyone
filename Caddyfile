@@ -8,6 +8,11 @@ complexus.local {
     reverse_proxy localhost:3001
 }
 
+# Docs app (docs.complexus.local)
+docs.complexus.local {
+    reverse_proxy localhost:3001
+}
+
 # Optional: redirect www to main domain
 www.complexus.local {
     redir https://complexus.local{uri}
