@@ -1,11 +1,9 @@
 "use client";
 
-import { Box, Text, Tabs, Flex } from "ui";
-import { EmailIcon, NotificationsUnreadIcon } from "icons";
+import { Box, Text, Flex } from "ui";
 import { Suspense } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { EmailNotifications } from "./components/email";
-import { InAppNotifications } from "./components/in-app";
 
 export const NotificationsSettings = () => {
   return (
@@ -14,7 +12,25 @@ export const NotificationsSettings = () => {
         Notifications
       </Text>
 
-      <Tabs defaultValue="inApp">
+      <Suspense
+        fallback={
+          <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+            <SectionHeader
+              description="Choose what updates you want to receive via email."
+              title="Email Notifications"
+            />
+            <Box className="p-6">
+              <Flex direction="column" gap={6}>
+                <Text color="muted">Loading...</Text>
+              </Flex>
+            </Box>
+          </Box>
+        }
+      >
+        <EmailNotifications />
+      </Suspense>
+
+      {/* <Tabs defaultValue="inApp">
         <Tabs.List className="mx-0 mb-3 md:mx-0">
           <Tabs.Tab leftIcon={<NotificationsUnreadIcon />} value="inApp">
             In-App
@@ -61,7 +77,7 @@ export const NotificationsSettings = () => {
             <InAppNotifications />
           </Suspense>
         </Tabs.Panel>
-      </Tabs>
+      </Tabs> */}
     </Box>
   );
 };
