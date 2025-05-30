@@ -36,7 +36,6 @@ type Repository interface {
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
-	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
@@ -150,21 +149,6 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 }
 
 // List returns a list of stories for a workspace with additional filters.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.List")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
-	defer span.End()
-
-	stories, err := s.repo.List(ctx, workspaceId, filters)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-	))
-	return stories, nil
-}
 
 // Get returns the story with the specified ID.
 func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error) {

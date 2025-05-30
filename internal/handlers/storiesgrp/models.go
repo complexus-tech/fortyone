@@ -178,6 +178,21 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 	return appStories
 }
 
+// AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
+type AppUpdateStory struct {
+	Title           string     `json:"title" db:"title"`
+	Description     string     `json:"description" db:"description"`
+	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
+	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
+	Objective       uuid.UUID  `json:"objectiveId" db:"objective_id"`
+	Status          uuid.UUID  `json:"statusId" db:"status_id"`
+	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
+	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
+	StartDate       *time.Time `json:"startDate" db:"start_date"`
+	EndDate         *time.Time `json:"endDate" db:"end_date"`
+}
+
 type AppNewStory struct {
 	Title           string     `json:"title" validate:"required"`
 	Description     *string    `json:"description"`
@@ -192,21 +207,6 @@ type AppNewStory struct {
 	Team            uuid.UUID  `json:"teamId" validate:"required"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
-}
-
-// AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
-type AppUpdateStory struct {
-	Title           string     `json:"title" db:"title"`
-	Description     string     `json:"description" db:"description"`
-	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
-	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
-	Objective       uuid.UUID  `json:"objectiveId" db:"objective_id"`
-	Status          uuid.UUID  `json:"statusId" db:"status_id"`
-	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
-	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
-	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
-	StartDate       *time.Time `json:"startDate" db:"start_date"`
-	EndDate         *time.Time `json:"endDate" db:"end_date"`
 }
 
 type AppNewComment struct {
@@ -226,17 +226,69 @@ type AppComment struct {
 	SubComments []AppComment `json:"subComments"`
 }
 
-// AppFilters represents the filters for stories.
-type AppFilters struct {
-	Parent    *uuid.UUID `json:"parentId" db:"parent_id"`
-	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
-	Status    *uuid.UUID `json:"statusId" db:"status_id"`
-	Assignee  *uuid.UUID `json:"assigneeId" db:"assignee_id"`
-	Priority  *string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
-	Sprint    *uuid.UUID `json:"sprintId" db:"sprint_id"`
-	Team      *uuid.UUID `json:"teamId" db:"team_id"`
-	Epic      *uuid.UUID `json:"epicId" db:"epic_id"`
-	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
+// StoryFilters represents filtering options for stories at the handler level
+type StoryFilters struct {
+	StatusIDs     []uuid.UUID `json:"statusIds"`
+	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
+	ReporterIDs   []uuid.UUID `json:"reporterIds"`
+	Priorities    []string    `json:"priorities"`
+	TeamIDs       []uuid.UUID `json:"teamIds"`
+	SprintIDs     []uuid.UUID `json:"sprintIds"`
+	LabelIDs      []uuid.UUID `json:"labelIds"`
+	Parent        *uuid.UUID  `json:"parentId"`
+	Objective     *uuid.UUID  `json:"objectiveId"`
+	Epic          *uuid.UUID  `json:"epicId"`
+	HasNoAssignee *bool       `json:"hasNoAssignee"`
+	AssignedToMe  *bool       `json:"assignedToMe"`
+	CreatedByMe   *bool       `json:"createdByMe"`
+}
+
+// StoryQuery represents query parameters for grouped stories at the handler level
+type StoryQuery struct {
+	Filters         StoryFilters `json:"filters"`
+	GroupBy         string       `json:"groupBy"`
+	StoriesPerGroup int          `json:"storiesPerGroup"`
+	GroupKey        string       `json:"groupKey"`
+	Page            int          `json:"page"`
+	PageSize        int          `json:"pageSize"`
+}
+
+// StoryGroup represents a group of stories at the handler level
+type StoryGroup struct {
+	Key         string         `json:"key"`
+	LoadedCount int            `json:"loadedCount"`
+	HasMore     bool           `json:"hasMore"`
+	Stories     []AppStoryList `json:"stories"`
+	NextPage    int            `json:"nextPage"`
+}
+
+// GroupsMeta represents metadata for grouped stories response
+type GroupsMeta struct {
+	TotalGroups int          `json:"totalGroups"`
+	Filters     StoryFilters `json:"filters"`
+	GroupBy     string       `json:"groupBy"`
+}
+
+// StoriesResponse represents the response for stories (grouped or regular)
+type StoriesResponse struct {
+	Stories []AppStoryList `json:"stories,omitempty"`
+	Groups  []StoryGroup   `json:"groups,omitempty"`
+	Meta    GroupsMeta     `json:"meta"`
+}
+
+// GroupPagination represents pagination info for a specific group
+type GroupPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+// GroupStoriesResponse represents the response for loading more stories in a group
+type GroupStoriesResponse struct {
+	GroupKey   string          `json:"groupKey"`
+	Stories    []AppStoryList  `json:"stories"`
+	Pagination GroupPagination `json:"pagination"`
 }
 
 func toAppComment(i comments.CoreComment) AppComment {
@@ -328,69 +380,4 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 	}
 
 	return parts[0] // Return the JSON tag name
-}
-
-// StoryFilters represents filtering options for stories at the handler level
-type StoryFilters struct {
-	StatusIDs     []uuid.UUID `json:"statusIds"`
-	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
-	ReporterIDs   []uuid.UUID `json:"reporterIds"`
-	Priorities    []string    `json:"priorities"`
-	TeamIDs       []uuid.UUID `json:"teamIds"`
-	SprintIDs     []uuid.UUID `json:"sprintIds"`
-	LabelIDs      []uuid.UUID `json:"labelIds"`
-	Parent        *uuid.UUID  `json:"parentId"`
-	Objective     *uuid.UUID  `json:"objectiveId"`
-	Epic          *uuid.UUID  `json:"epicId"`
-	HasNoAssignee *bool       `json:"hasNoAssignee"`
-	AssignedToMe  *bool       `json:"assignedToMe"`
-	CreatedByMe   *bool       `json:"createdByMe"`
-}
-
-// StoryQuery represents query parameters for grouped stories at the handler level
-type StoryQuery struct {
-	Filters         StoryFilters `json:"filters"`
-	GroupBy         string       `json:"groupBy"`
-	StoriesPerGroup int          `json:"storiesPerGroup"`
-	GroupKey        string       `json:"groupKey"`
-	Page            int          `json:"page"`
-	PageSize        int          `json:"pageSize"`
-}
-
-// StoryGroup represents a group of stories at the handler level
-type StoryGroup struct {
-	Key         string         `json:"key"`
-	LoadedCount int            `json:"loadedCount"`
-	HasMore     bool           `json:"hasMore"`
-	Stories     []AppStoryList `json:"stories"`
-	NextPage    int            `json:"nextPage"`
-}
-
-// GroupsMeta represents metadata for grouped stories response
-type GroupsMeta struct {
-	TotalGroups int          `json:"totalGroups"`
-	Filters     StoryFilters `json:"filters"`
-	GroupBy     string       `json:"groupBy"`
-}
-
-// StoriesResponse represents the response for stories (grouped or regular)
-type StoriesResponse struct {
-	Stories []AppStoryList `json:"stories,omitempty"`
-	Groups  []StoryGroup   `json:"groups,omitempty"`
-	Meta    GroupsMeta     `json:"meta"`
-}
-
-// GroupPagination represents pagination info for a specific group
-type GroupPagination struct {
-	Page     int  `json:"page"`
-	PageSize int  `json:"pageSize"`
-	HasMore  bool `json:"hasMore"`
-	NextPage int  `json:"nextPage"`
-}
-
-// GroupStoriesResponse represents the response for loading more stories in a group
-type GroupStoriesResponse struct {
-	GroupKey   string          `json:"groupKey"`
-	Stories    []AppStoryList  `json:"stories"`
-	Pagination GroupPagination `json:"pagination"`
 }

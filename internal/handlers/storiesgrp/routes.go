@@ -52,7 +52,6 @@ func Routes(cfg Config, app *web.App) {
 	h := New(storiesService, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
-	app.Get("/workspaces/{workspaceId}/stories", h.List, auth, gzip)
 	app.Get("/workspaces/{workspaceId}/stories/grouped", h.ListGrouped, auth, gzip)
 	app.Get("/workspaces/{workspaceId}/stories/group", h.LoadMoreGroup, auth, gzip)
 	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth, gzip)
