@@ -52,7 +52,10 @@ export const Teams = () => {
                 <span className="sr-only">Manage Teams</span>
               </Button>
             </TeamsMenu.Trigger>
-            <TeamsMenu.Items setTeam={handleTeam} />
+            <TeamsMenu.Items
+              hideManageTeams={userRole !== "admin"}
+              setTeam={handleTeam}
+            />
           </TeamsMenu>
         )}
       </Flex>

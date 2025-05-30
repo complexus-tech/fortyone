@@ -13,7 +13,12 @@ import {
 } from "icons";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useLocalStorage, useTerminology, useFeatures } from "@/hooks";
+import {
+  useLocalStorage,
+  useTerminology,
+  useFeatures,
+  useUserRole,
+} from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
@@ -37,6 +42,7 @@ export const Team = ({
   );
   const pathname = usePathname();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
+  const { userRole } = useUserRole();
 
   const links = [
     {
@@ -122,7 +128,7 @@ export const Team = ({
       </ContextMenu.Trigger>
       <ContextMenu.Items>
         <ContextMenu.Group>
-          <ContextMenu.Item className="py-0">
+          <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
               className="flex items-center gap-1.5 py-1.5"
               href={`/settings/workspace/teams/${id}`}
