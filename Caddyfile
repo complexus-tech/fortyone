@@ -1,0 +1,14 @@
+# Main landing app (complexus.localhost)
+complexus.local {
+    reverse_proxy localhost:3000
+}
+
+# Projects app - handles all workspace subdomains
+*.complexus.local {
+    reverse_proxy localhost:3001
+}
+
+# Optional: redirect www to main domain
+www.complexus.local {
+    redir https://complexus.local{uri}
+} 
