@@ -10,17 +10,14 @@ export const Activities = ({
   activities,
   className,
   storyId,
-  isNotifications,
   teamId,
 }: {
   activities: StoryActivity[];
   className?: string;
   storyId: string;
   teamId: string;
-  isNotifications?: boolean;
 }) => {
   const { data: session } = useSession();
-  const defaultTab = isNotifications ? "updates" : "comments";
 
   return (
     <Box className={className}>
@@ -33,7 +30,7 @@ export const Activities = ({
         Activity feed
       </Text>
 
-      <Tabs defaultValue={defaultTab}>
+      <Tabs defaultValue="comments">
         <Tabs.List className="mx-0 mb-5 md:mx-0">
           <Tabs.Tab
             className="gap-1 px-2"

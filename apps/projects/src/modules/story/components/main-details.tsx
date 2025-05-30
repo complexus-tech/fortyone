@@ -181,7 +181,6 @@ export const MainDetails = ({
         ) : (
           <Activities
             activities={allActivities}
-            isNotifications={isNotifications}
             storyId={storyId}
             teamId={teamId}
           />
