@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/attachments"
@@ -825,4 +826,309 @@ func (h *Handlers) CountInWorkspace(ctx context.Context, w http.ResponseWriter, 
 	))
 
 	return web.Respond(ctx, w, map[string]int{"count": count}, http.StatusOK)
+}
+
+// ListGrouped handles the initial load of grouped stories
+func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.ListGrouped")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	// Parse query parameters
+	query, err := parseStoryQuery(r, userID, workspaceId)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	// Set default values
+	if query.StoriesPerGroup == 0 {
+		query.StoriesPerGroup = 15 // Increased from 5 for better UX
+	}
+
+	// Convert to core query
+	coreQuery := toCoreStoryQuery(query)
+	coreQuery.Filters.CurrentUserID = userID
+	coreQuery.Filters.WorkspaceID = workspaceId
+
+	// Fetch grouped stories
+	groups, err := h.stories.ListGroupedStories(ctx, coreQuery)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	// Convert to app response
+	response := convertGroupsToResponse(groups, query)
+
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+// LoadMoreGroup handles loading more stories for a specific group
+func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.LoadMoreGroup")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	// Parse query parameters
+	query, err := parseStoryQuery(r, userID, workspaceId)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	// Set default values
+	if query.PageSize == 0 {
+		query.PageSize = 15 // Increased from 10 for better performance
+	}
+
+	// Get group key from query parameters
+	groupKey := r.URL.Query().Get("groupKey")
+	if groupKey == "" {
+		web.RespondError(ctx, w, fmt.Errorf("groupKey is required"), http.StatusBadRequest)
+		return nil
+	}
+
+	// Convert to core query
+	coreQuery := toCoreStoryQuery(query)
+	coreQuery.Filters.CurrentUserID = userID
+	coreQuery.Filters.WorkspaceID = workspaceId
+
+	// Fetch stories for the specific group
+	stories, total, err := h.stories.ListGroupStories(ctx, groupKey, coreQuery)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	// Convert to app stories
+	appStories := toAppStories(stories)
+
+	// Calculate pagination info
+	hasMore := total > (query.Page * query.PageSize)
+	nextPage := query.Page + 1
+	if !hasMore {
+		nextPage = 0
+	}
+
+	response := GroupStoriesResponse{
+		GroupKey: groupKey,
+		Stories:  appStories,
+		Pagination: GroupPagination{
+			Page:     query.Page,
+			PageSize: query.PageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
+
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+// parseStoryQuery parses URL query parameters into a StoryQuery struct
+func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery, error) {
+	query := StoryQuery{
+		Filters: StoryFilters{},
+	}
+
+	// Parse group by
+	query.GroupBy = r.URL.Query().Get("groupBy")
+	if query.GroupBy == "" {
+		query.GroupBy = "status" // Default grouping
+	}
+
+	// Parse stories per group
+	if spg := r.URL.Query().Get("storiesPerGroup"); spg != "" {
+		if val, err := strconv.Atoi(spg); err == nil {
+			query.StoriesPerGroup = val
+		}
+	}
+
+	// Parse page
+	if page := r.URL.Query().Get("page"); page != "" {
+		if val, err := strconv.Atoi(page); err == nil {
+			query.Page = val
+		}
+	}
+	if query.Page == 0 {
+		query.Page = 1
+	}
+
+	// Parse page size
+	if pageSize := r.URL.Query().Get("pageSize"); pageSize != "" {
+		if val, err := strconv.Atoi(pageSize); err == nil {
+			query.PageSize = val
+		}
+	}
+
+	// Parse group key
+	query.GroupKey = r.URL.Query().Get("groupKey")
+
+	// Parse filters
+	if statusIds := r.URL.Query()["statusIds"]; len(statusIds) > 0 {
+		for _, id := range statusIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.StatusIDs = append(query.Filters.StatusIDs, parsed)
+			}
+		}
+	}
+
+	if assigneeIds := r.URL.Query()["assigneeIds"]; len(assigneeIds) > 0 {
+		for _, id := range assigneeIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.AssigneeIDs = append(query.Filters.AssigneeIDs, parsed)
+			}
+		}
+	}
+
+	if reporterIds := r.URL.Query()["reporterIds"]; len(reporterIds) > 0 {
+		for _, id := range reporterIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.ReporterIDs = append(query.Filters.ReporterIDs, parsed)
+			}
+		}
+	}
+
+	if priorities := r.URL.Query()["priorities"]; len(priorities) > 0 {
+		query.Filters.Priorities = priorities
+	}
+
+	if teamIds := r.URL.Query()["teamIds"]; len(teamIds) > 0 {
+		for _, id := range teamIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.TeamIDs = append(query.Filters.TeamIDs, parsed)
+			}
+		}
+	}
+
+	if sprintIds := r.URL.Query()["sprintIds"]; len(sprintIds) > 0 {
+		for _, id := range sprintIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.SprintIDs = append(query.Filters.SprintIDs, parsed)
+			}
+		}
+	}
+
+	if labelIds := r.URL.Query()["labelIds"]; len(labelIds) > 0 {
+		for _, id := range labelIds {
+			if parsed, err := uuid.Parse(id); err == nil {
+				query.Filters.LabelIDs = append(query.Filters.LabelIDs, parsed)
+			}
+		}
+	}
+
+	if parentId := r.URL.Query().Get("parentId"); parentId != "" {
+		if parsed, err := uuid.Parse(parentId); err == nil {
+			query.Filters.Parent = &parsed
+		}
+	}
+
+	if objectiveId := r.URL.Query().Get("objectiveId"); objectiveId != "" {
+		if parsed, err := uuid.Parse(objectiveId); err == nil {
+			query.Filters.Objective = &parsed
+		}
+	}
+
+	if epicId := r.URL.Query().Get("epicId"); epicId != "" {
+		if parsed, err := uuid.Parse(epicId); err == nil {
+			query.Filters.Epic = &parsed
+		}
+	}
+
+	if hasNoAssignee := r.URL.Query().Get("hasNoAssignee"); hasNoAssignee != "" {
+		if val, err := strconv.ParseBool(hasNoAssignee); err == nil {
+			query.Filters.HasNoAssignee = &val
+		}
+	}
+
+	if assignedToMe := r.URL.Query().Get("assignedToMe"); assignedToMe != "" {
+		if val, err := strconv.ParseBool(assignedToMe); err == nil {
+			query.Filters.AssignedToMe = &val
+		}
+	}
+
+	if createdByMe := r.URL.Query().Get("createdByMe"); createdByMe != "" {
+		if val, err := strconv.ParseBool(createdByMe); err == nil {
+			query.Filters.CreatedByMe = &val
+		}
+	}
+
+	return query, nil
+}
+
+// toCoreStoryQuery converts a handler StoryQuery to a core CoreStoryQuery
+func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
+	return stories.CoreStoryQuery{
+		Filters: stories.CoreStoryFilters{
+			StatusIDs:     query.Filters.StatusIDs,
+			AssigneeIDs:   query.Filters.AssigneeIDs,
+			ReporterIDs:   query.Filters.ReporterIDs,
+			Priorities:    query.Filters.Priorities,
+			TeamIDs:       query.Filters.TeamIDs,
+			SprintIDs:     query.Filters.SprintIDs,
+			LabelIDs:      query.Filters.LabelIDs,
+			Parent:        query.Filters.Parent,
+			Objective:     query.Filters.Objective,
+			Epic:          query.Filters.Epic,
+			HasNoAssignee: query.Filters.HasNoAssignee,
+			AssignedToMe:  query.Filters.AssignedToMe,
+			CreatedByMe:   query.Filters.CreatedByMe,
+			CurrentUserID: uuid.Nil, // Will be set in handler
+			WorkspaceID:   uuid.Nil, // Will be set in handler
+		},
+		GroupBy:         query.GroupBy,
+		StoriesPerGroup: query.StoriesPerGroup,
+		GroupKey:        query.GroupKey,
+		Page:            query.Page,
+		PageSize:        query.PageSize,
+	}
+}
+
+// convertGroupsToResponse converts core story groups to handler response
+func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) StoriesResponse {
+	appGroups := make([]StoryGroup, len(groups))
+	for i, group := range groups {
+		appStories := toAppStories(group.Stories)
+
+		appGroups[i] = StoryGroup{
+			Key:         group.Key,
+			LoadedCount: group.LoadedCount,
+			HasMore:     group.HasMore,
+			Stories:     appStories,
+			NextPage:    group.NextPage,
+		}
+	}
+
+	return StoriesResponse{
+		Groups: appGroups,
+		Meta: GroupsMeta{
+			TotalGroups: len(appGroups),
+			Filters:     query.Filters,
+			GroupBy:     query.GroupBy,
+		},
+	}
 }

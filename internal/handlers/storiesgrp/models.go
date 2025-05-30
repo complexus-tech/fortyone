@@ -305,13 +305,10 @@ func (a AppNewStory) Validate() error {
 }
 
 func formatOptions(options []string) string {
-	if len(options) == 0 {
-		return ""
+	for i, option := range options {
+		options[i] = "'" + option + "'"
 	}
-	if len(options) == 1 {
-		return options[0]
-	}
-	return fmt.Sprintf("%s or %s", strings.Join(options[:len(options)-1], ", "), options[len(options)-1])
+	return strings.Join(options, ", ")
 }
 
 func getJSONTagName(t reflect.Type, fieldName string) string {
@@ -331,4 +328,69 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 	}
 
 	return parts[0] // Return the JSON tag name
+}
+
+// StoryFilters represents filtering options for stories at the handler level
+type StoryFilters struct {
+	StatusIDs     []uuid.UUID `json:"statusIds"`
+	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
+	ReporterIDs   []uuid.UUID `json:"reporterIds"`
+	Priorities    []string    `json:"priorities"`
+	TeamIDs       []uuid.UUID `json:"teamIds"`
+	SprintIDs     []uuid.UUID `json:"sprintIds"`
+	LabelIDs      []uuid.UUID `json:"labelIds"`
+	Parent        *uuid.UUID  `json:"parentId"`
+	Objective     *uuid.UUID  `json:"objectiveId"`
+	Epic          *uuid.UUID  `json:"epicId"`
+	HasNoAssignee *bool       `json:"hasNoAssignee"`
+	AssignedToMe  *bool       `json:"assignedToMe"`
+	CreatedByMe   *bool       `json:"createdByMe"`
+}
+
+// StoryQuery represents query parameters for grouped stories at the handler level
+type StoryQuery struct {
+	Filters         StoryFilters `json:"filters"`
+	GroupBy         string       `json:"groupBy"`
+	StoriesPerGroup int          `json:"storiesPerGroup"`
+	GroupKey        string       `json:"groupKey"`
+	Page            int          `json:"page"`
+	PageSize        int          `json:"pageSize"`
+}
+
+// StoryGroup represents a group of stories at the handler level
+type StoryGroup struct {
+	Key         string         `json:"key"`
+	LoadedCount int            `json:"loadedCount"`
+	HasMore     bool           `json:"hasMore"`
+	Stories     []AppStoryList `json:"stories"`
+	NextPage    int            `json:"nextPage"`
+}
+
+// GroupsMeta represents metadata for grouped stories response
+type GroupsMeta struct {
+	TotalGroups int          `json:"totalGroups"`
+	Filters     StoryFilters `json:"filters"`
+	GroupBy     string       `json:"groupBy"`
+}
+
+// StoriesResponse represents the response for stories (grouped or regular)
+type StoriesResponse struct {
+	Stories []AppStoryList `json:"stories,omitempty"`
+	Groups  []StoryGroup   `json:"groups,omitempty"`
+	Meta    GroupsMeta     `json:"meta"`
+}
+
+// GroupPagination represents pagination info for a specific group
+type GroupPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+// GroupStoriesResponse represents the response for loading more stories in a group
+type GroupStoriesResponse struct {
+	GroupKey   string          `json:"groupKey"`
+	Stories    []AppStoryList  `json:"stories"`
+	Pagination GroupPagination `json:"pagination"`
 }

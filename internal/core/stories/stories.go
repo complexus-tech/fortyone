@@ -45,6 +45,8 @@ type Repository interface {
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
+	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
+	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, int, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -477,18 +479,39 @@ func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID,
 
 // CountInWorkspace returns the count of stories in a workspace.
 func (s *Service) CountInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error) {
-	s.log.Info(ctx, "business.core.stories.CountInWorkspace")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.CountInWorkspace")
+	ctx, span := web.AddSpan(ctx, "business.services.stories.CountInWorkspace")
 	defer span.End()
 
 	count, err := s.repo.CountStoriesInWorkspace(ctx, workspaceId)
 	if err != nil {
-		span.RecordError(err)
-		return 0, err
+		return 0, fmt.Errorf("counting stories in workspace: %w", err)
 	}
 
-	span.AddEvent("stories counted.", trace.WithAttributes(
-		attribute.Int("story.count", count),
-	))
 	return count, nil
+}
+
+// ListGroupedStories returns stories grouped by the specified field with limited stories per group
+func (s *Service) ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListGroupedStories")
+	defer span.End()
+
+	groups, err := s.repo.ListGroupedStories(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("listing grouped stories: %w", err)
+	}
+
+	return groups, nil
+}
+
+// ListGroupStories returns more stories for a specific group (for load more functionality)
+func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, int, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListGroupStories")
+	defer span.End()
+
+	stories, total, err := s.repo.ListGroupStories(ctx, groupKey, query)
+	if err != nil {
+		return nil, 0, fmt.Errorf("listing group stories: %w", err)
+	}
+
+	return stories, total, nil
 }

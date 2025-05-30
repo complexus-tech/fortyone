@@ -150,3 +150,41 @@ type CoreNewComment struct {
 	Comment  string
 	Mentions []uuid.UUID
 }
+
+// CoreStoryFilters represents filtering options for stories
+type CoreStoryFilters struct {
+	StatusIDs     []uuid.UUID `json:"statusIds"`
+	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
+	ReporterIDs   []uuid.UUID `json:"reporterIds"`
+	Priorities    []string    `json:"priorities"`
+	TeamIDs       []uuid.UUID `json:"teamIds"`
+	SprintIDs     []uuid.UUID `json:"sprintIds"`
+	LabelIDs      []uuid.UUID `json:"labelIds"`
+	Parent        *uuid.UUID  `json:"parentId"`
+	Objective     *uuid.UUID  `json:"objectiveId"`
+	Epic          *uuid.UUID  `json:"epicId"`
+	HasNoAssignee *bool       `json:"hasNoAssignee"`
+	AssignedToMe  *bool       `json:"assignedToMe"`
+	CreatedByMe   *bool       `json:"createdByMe"`
+	CurrentUserID uuid.UUID   `json:"currentUserId"`
+	WorkspaceID   uuid.UUID   `json:"workspaceId"`
+}
+
+// CoreStoryQuery represents query parameters for grouped stories
+type CoreStoryQuery struct {
+	Filters         CoreStoryFilters `json:"filters"`
+	GroupBy         string           `json:"groupBy"`
+	StoriesPerGroup int              `json:"storiesPerGroup"`
+	GroupKey        string           `json:"groupKey"`
+	Page            int              `json:"page"`
+	PageSize        int              `json:"pageSize"`
+}
+
+// CoreStoryGroup represents a group of stories
+type CoreStoryGroup struct {
+	Key         string          `json:"key"`
+	LoadedCount int             `json:"loadedCount"`
+	HasMore     bool            `json:"hasMore"`
+	Stories     []CoreStoryList `json:"stories"`
+	NextPage    int             `json:"nextPage"`
+}
