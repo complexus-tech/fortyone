@@ -164,6 +164,7 @@ export const {
   pages: {
     signIn: "/login",
     signOut: "/",
+    error: "/login",
   },
   debug: true,
 });
