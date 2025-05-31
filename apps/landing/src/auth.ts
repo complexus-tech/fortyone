@@ -10,8 +10,7 @@ import { getWorkspaces } from "./lib/queries/get-workspaces";
 import { DURATION_FROM_SECONDS } from "./utils";
 
 const domain =
-  process.env.NODE_ENV === "production" ? ".complexus.app" : ".localhost";
-const useSecureCookies = process.env.NODE_ENV === "production";
+  process.env.NODE_ENV === "production" ? ".complexus.app" : ".complexus.local";
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
@@ -72,13 +71,13 @@ export const {
 
   cookies: {
     sessionToken: {
-      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      name: "__Secure-next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        domain: useSecureCookies ? domain : undefined,
-        secure: useSecureCookies,
+        domain,
+        secure: true,
       },
     },
   },
