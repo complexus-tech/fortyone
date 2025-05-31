@@ -44,6 +44,7 @@ const clearAllStorage = () => {
       .replace(/^ +/, "")
       .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
   });
+  localStorage.clear();
 
   if ("caches" in window) {
     caches.keys().then((names) => {

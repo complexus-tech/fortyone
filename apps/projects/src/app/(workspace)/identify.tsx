@@ -16,9 +16,9 @@ export const IdentifyUser = () => {
   useEffect(() => {
     if (session) {
       const now = Date.now();
-      const twentyFourHours = DURATION_FROM_MILLISECONDS.HOUR * 24;
+      const twentyFourHours = DURATION_FROM_MILLISECONDS.HOUR * 6;
 
-      // Only identify if 24 hours have passed since last identification
+      // Only identify if 6 hours have passed since last identification
       if (now - lastIdentifyTime > twentyFourHours) {
         analytics.identify(session.user!.email!, {
           email: session.user!.email!,
