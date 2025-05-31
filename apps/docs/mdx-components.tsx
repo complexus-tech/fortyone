@@ -7,10 +7,10 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
     img: (props) => (
-      <div className="relative">
+      <span className="relative block">
         <ImageZoom {...(props as any)} />
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50 rounded-xl" />
-      </div>
+        <span className="pointer-events-none block absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50 rounded-xl" />
+      </span>
     ),
     ...components,
   };
