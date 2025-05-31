@@ -46,7 +46,15 @@ pnpm install
 
 ### 2. Configure Local Domains
 
-Add the following entries to your `/etc/hosts` file to enable subdomain routing:
+**Important:** We use `.lc` domains for local development instead of `.local` because `.local` domains cannot be added to OAuth providers (like Google) as valid redirect URIs. This allows us to test authentication flows locally with real OAuth providers.
+
+#### Domain Strategy
+
+- **`.local`**: Cannot be used for OAuth redirects, but Caddy supports automatic wildcard routing
+- **`.localhost`**: Caddy supports automatic wildcard routing, but limited OAuth provider support
+- **`.lc`**: Valid TLD for OAuth redirects, but requires manual subdomain configuration
+
+Add the following entries to your `/etc/hosts` file:
 
 ```bash
 sudo nano /etc/hosts
@@ -55,10 +63,19 @@ sudo nano /etc/hosts
 Add these lines:
 
 ```
-127.0.0.1   complexus.local
-127.0.0.1   docs.complexus.local
-127.0.0.1   *.complexus.local
+127.0.0.1   complexus.lc
+127.0.0.1   docs.complexus.lc
+127.0.0.1   www.complexus.lc
+127.0.0.1   qa.complexus.lc
+127.0.0.1   payments.complexus.lc
+127.0.0.1   growth.complexus.lc
 ```
+
+**Note:** Unlike `.local` or `.localhost` domains, each subdomain must be manually added to both `/etc/hosts` and the `Caddyfile`. When adding new workspaces or subdomains, you'll need to:
+
+1. Add the subdomain to `/etc/hosts`
+2. Add a corresponding entry in the `Caddyfile`
+3. Restart Caddy
 
 ### 3. Start Development Environment
 
@@ -71,8 +88,9 @@ pnpm dev
 This command will:
 
 - Start all Next.js applications in development mode
-- Launch Caddy server for subdomain routing
+- Launch Caddy server with SSL/TLS termination
 - Enable hot reloading across all apps
+- Serve apps with HTTPS (using Caddy's internal CA)
 
 **Alternative commands:**
 
@@ -88,9 +106,14 @@ pnpm dev:caddy
 
 Once running, access your applications at:
 
-- **Landing Page**: http://complexus.local (port 3000)
-- **Documentation**: http://docs.complexus.local (port 3002)
-- **Projects App**: http://\*.complexus.local (port 3001)
+- **Landing Page**: https://complexus.lc (port 3000)
+- **Documentation**: https://docs.complexus.lc (port 3002)
+- **Projects App**: https://\*.complexus.lc (port 3001)
+  - QA workspace: https://qa.complexus.lc
+  - Payments workspace: https://payments.complexus.lc
+  - Growth workspace: https://growth.complexus.lc
+
+**Note:** All local domains use HTTPS with Caddy's internal CA. You may need to accept the security certificate in your browser on first visit.
 
 ## Code Structure
 
@@ -99,9 +122,9 @@ This is a Turborepo monorepo with the following structure:
 ```
 complexus.tech/
 ├── apps/                    # Applications
-│   ├── landing/            # Main landing page (complexus.local)
-│   ├── docs/               # Documentation site (docs.complexus.local)
-│   └── projects/           # Projects management app (*.complexus.local)
+│   ├── landing/            # Main landing page (complexus.lc)
+│   ├── docs/               # Documentation site (docs.complexus.lc)
+│   └── projects/           # Projects management app (*.complexus.lc)
 ├── packages/               # Shared packages
 │   ├── ui/                 # Shared React components
 │   ├── icons/              # Icon library
@@ -118,7 +141,7 @@ complexus.tech/
 #### 🏠 Landing App (`apps/landing/`)
 
 - **Purpose**: Main marketing and landing pages
-- **URL**: http://complexus.local
+- **URL**: https://complexus.lc
 - **Port**: 3000
 - **Tech Stack**: Next.js 15, React 19, Framer Motion, GSAP
 - **Features**:
@@ -130,7 +153,7 @@ complexus.tech/
 #### 📚 Docs App (`apps/docs/`)
 
 - **Purpose**: Documentation and guides
-- **URL**: http://docs.complexus.local
+- **URL**: https://docs.complexus.lc
 - **Port**: 3002
 - **Tech Stack**: Next.js 15, Fumadocs
 - **Features**:
@@ -141,13 +164,14 @@ complexus.tech/
 #### 🚀 Projects App (`apps/projects/`)
 
 - **Purpose**: Main application for project management
-- **URL**: http://\*.complexus.local (handles all subdomain routing)
+- **URL**: https://\*.complexus.lc (handles workspace-specific subdomain routing)
 - **Port**: 3001
 - **Tech Stack**: Next.js 15, React 19, TanStack Query, Tiptap
 - **Features**:
   - Rich text editing with Tiptap
   - Drag and drop functionality
   - Real-time collaboration
+  - Workspace-based subdomain routing
   - Jest testing setup
   - Docker support
 
@@ -207,20 +231,52 @@ cd apps/projects
 pnpm test
 ```
 
+### Adding New Subdomains
+
+When adding a new workspace or subdomain:
+
+1. **Add to `/etc/hosts`:**
+
+   ```bash
+   sudo nano /etc/hosts
+   # Add: 127.0.0.1   newworkspace.complexus.lc
+   ```
+
+2. **Update `Caddyfile`:**
+
+   ```caddy
+   newworkspace.complexus.lc {
+       tls internal
+       reverse_proxy localhost:3001
+   }
+   ```
+
+3. **Restart Caddy:**
+   ```bash
+   # Stop current dev process (Ctrl+C) and restart
+   pnpm dev
+   ```
+
 ## Networking Architecture
 
 The development environment uses Caddy as a reverse proxy to route subdomain traffic:
 
-- `complexus.local` → `localhost:3000` (landing)
-- `docs.complexus.local` → `localhost:3002` (docs)
-- `*.complexus.local` → `localhost:3001` (projects - wildcard routing)
+- `complexus.lc` → `localhost:3000` (landing)
+- `docs.complexus.lc` → `localhost:3002` (docs)
+- `*.complexus.lc` → `localhost:3001` (projects - workspace-specific routing)
 
 This setup allows for:
 
-- Realistic subdomain testing
-- SSL/TLS termination in development
-- Clean separation of applications
-- Production-like routing behavior
+- **OAuth compatibility**: `.lc` domains work with Google OAuth and other providers
+- **SSL/TLS in development**: Caddy provides HTTPS with internal certificates
+- **Realistic subdomain testing**: Production-like routing behavior
+- **Clean application separation**: Each app runs independently
+
+### Why .lc domains?
+
+- **OAuth Support**: Unlike `.local`, `.lc` domains can be registered as valid redirect URIs with OAuth providers like Google, enabling full authentication testing in development
+- **Valid TLD**: `.lc` is Saint Lucia's country code TLD, making it a legitimate domain for authentication services
+- **Manual Control**: While requiring manual configuration, this gives explicit control over which subdomains are available
 
 ## Troubleshooting
 
@@ -229,8 +285,15 @@ This setup allows for:
 **Subdomain not resolving:**
 
 - Verify `/etc/hosts` entries are correct
-- Clear DNS cache: `sudo dscacheutil -flushcache` (macOS)
+- Ensure the subdomain is added to the `Caddyfile`
+- Clear DNS cache: `sudo dscacheutil -flushcache` (macOS) or `sudo systemctl restart systemd-resolved` (Linux)
 - Restart Caddy: Stop with `Ctrl+C` and run `pnpm dev` again
+
+**SSL Certificate warnings:**
+
+- Accept Caddy's internal CA certificate in your browser
+- The warning is expected on first visit to each subdomain
+- Consider installing Caddy's root certificate for seamless development
 
 **Port conflicts:**
 
@@ -242,6 +305,12 @@ This setup allows for:
 - Verify Caddy installation: `caddy version`
 - Check Caddyfile syntax: `caddy validate --config Caddyfile`
 - Ensure no other web servers are running on port 80/443
+
+**OAuth authentication issues:**
+
+- Verify the subdomain is registered in your OAuth provider's console
+- Ensure redirect URIs include the full `https://subdomain.complexus.lc` format
+- Check that the subdomain resolves correctly before testing auth
 
 **Dependencies issues:**
 
