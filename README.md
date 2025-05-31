@@ -1,81 +1,249 @@
-# Turborepo starter
+# Complexus.tech
 
-This is an official starter Turborepo.
+A modern web platform built with Next.js, TypeScript, and Turborepo. The Complexus ecosystem consists of multiple interconnected applications served through local subdomains during development.
 
-## Using this example
+## Prerequisites
 
-Run the following command:
+Before setting up the development environment, ensure you have the following installed:
 
-```sh
-npx create-turbo@latest
+### Required Tools
+
+- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
+- **pnpm** (v9.3.0 or higher) - Install with `npm install -g pnpm`
+- **Caddy** (v2 or higher) - [Installation guide](https://caddyserver.com/docs/install)
+
+### Caddy Installation
+
+Caddy is **required** for local development as it handles subdomain routing and SSL termination.
+
+**macOS (Homebrew):**
+
+```bash
+brew install caddy
 ```
 
-## What's inside?
+**Linux (Ubuntu/Debian):**
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `ui`: a stub React component library shared by both `web` and `docs` applications
-- `eslint-config-custom`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `tsconfig`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm build
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
 ```
 
-### Develop
+**Other platforms:** See [Caddy's official installation docs](https://caddyserver.com/docs/install)
 
-To develop all apps and packages, run the following command:
+## Local Development Setup
+
+### 1. Clone and Install Dependencies
+
+```bash
+git clone <repository-url>
+cd complexus.tech
+pnpm install
+```
+
+### 2. Configure Local Domains
+
+Add the following entries to your `/etc/hosts` file to enable subdomain routing:
+
+```bash
+sudo nano /etc/hosts
+```
+
+Add these lines:
 
 ```
-cd my-turborepo
+127.0.0.1   complexus.local
+127.0.0.1   docs.complexus.local
+127.0.0.1   *.complexus.local
+```
+
+### 3. Start Development Environment
+
+The project includes a unified development command that starts both Turbo and Caddy:
+
+```bash
 pnpm dev
 ```
 
-### Remote Caching
+This command will:
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+- Start all Next.js applications in development mode
+- Launch Caddy server for subdomain routing
+- Enable hot reloading across all apps
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
+**Alternative commands:**
 
-```
-cd my-turborepo
-npx turbo login
-```
+```bash
+# Start only the Next.js apps (without Caddy)
+pnpm dev:turbo
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-npx turbo link
+# Start only Caddy (if apps are running separately)
+pnpm dev:caddy
 ```
 
-## Useful Links
+### 4. Access Applications
 
-Learn more about the power of Turborepo:
+Once running, access your applications at:
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+- **Landing Page**: http://complexus.local (port 3000)
+- **Documentation**: http://docs.complexus.local (port 3002)
+- **Projects App**: http://\*.complexus.local (port 3001)
+
+## Code Structure
+
+This is a Turborepo monorepo with the following structure:
+
+```
+complexus.tech/
+├── apps/                    # Applications
+│   ├── landing/            # Main landing page (complexus.local)
+│   ├── docs/               # Documentation site (docs.complexus.local)
+│   └── projects/           # Projects management app (*.complexus.local)
+├── packages/               # Shared packages
+│   ├── ui/                 # Shared React components
+│   ├── icons/              # Icon library
+│   ├── lib/                # Shared utilities and helpers
+│   ├── tailwind-config/    # Shared Tailwind configuration
+│   ├── eslint-config-custom/ # ESLint configuration
+│   └── tsconfig/           # TypeScript configurations
+├── Caddyfile              # Caddy server configuration
+└── package.json           # Root package.json with scripts
+```
+
+### Applications
+
+#### 🏠 Landing App (`apps/landing/`)
+
+- **Purpose**: Main marketing and landing pages
+- **URL**: http://complexus.local
+- **Port**: 3000
+- **Tech Stack**: Next.js 15, React 19, Framer Motion, GSAP
+- **Features**:
+  - MDX content support
+  - Authentication with NextAuth
+  - PostHog analytics
+  - Cal.com integration
+
+#### 📚 Docs App (`apps/docs/`)
+
+- **Purpose**: Documentation and guides
+- **URL**: http://docs.complexus.local
+- **Port**: 3002
+- **Tech Stack**: Next.js 15, Fumadocs
+- **Features**:
+  - MDX-based documentation
+  - Built-in search
+  - Code syntax highlighting
+
+#### 🚀 Projects App (`apps/projects/`)
+
+- **Purpose**: Main application for project management
+- **URL**: http://\*.complexus.local (handles all subdomain routing)
+- **Port**: 3001
+- **Tech Stack**: Next.js 15, React 19, TanStack Query, Tiptap
+- **Features**:
+  - Rich text editing with Tiptap
+  - Drag and drop functionality
+  - Real-time collaboration
+  - Jest testing setup
+  - Docker support
+
+### Shared Packages
+
+#### 🎨 UI Package (`packages/ui/`)
+
+Shared React component library built with:
+
+- Radix UI primitives
+- Tailwind CSS for styling
+- TypeScript for type safety
+
+#### 🔧 Lib Package (`packages/lib/`)
+
+Shared utilities, helpers, and business logic used across applications.
+
+#### 🎯 Icons Package (`packages/icons/`)
+
+Centralized icon library for consistent iconography across all apps.
+
+#### ⚙️ Configuration Packages
+
+- **tailwind-config**: Shared Tailwind CSS configuration
+- **eslint-config-custom**: Custom ESLint rules and configurations
+- **tsconfig**: TypeScript configuration presets
+
+## Development Workflow
+
+### Building Applications
+
+```bash
+# Build all apps and packages
+pnpm build
+
+# Build specific app
+pnpm build --filter=landing
+pnpm build --filter=docs
+pnpm build --filter=projects
+```
+
+### Linting and Formatting
+
+```bash
+# Lint all packages
+pnpm lint
+
+# Format code
+pnpm format
+```
+
+### Testing
+
+```bash
+# Run tests (projects app has Jest setup)
+cd apps/projects
+pnpm test
+```
+
+## Networking Architecture
+
+The development environment uses Caddy as a reverse proxy to route subdomain traffic:
+
+- `complexus.local` → `localhost:3000` (landing)
+- `docs.complexus.local` → `localhost:3002` (docs)
+- `*.complexus.local` → `localhost:3001` (projects - wildcard routing)
+
+This setup allows for:
+
+- Realistic subdomain testing
+- SSL/TLS termination in development
+- Clean separation of applications
+- Production-like routing behavior
+
+## Troubleshooting
+
+### Common Issues
+
+**Subdomain not resolving:**
+
+- Verify `/etc/hosts` entries are correct
+- Clear DNS cache: `sudo dscacheutil -flushcache` (macOS)
+- Restart Caddy: Stop with `Ctrl+C` and run `pnpm dev` again
+
+**Port conflicts:**
+
+- Check if ports 3000, 3001, 3002 are available
+- Kill conflicting processes: `lsof -ti:3000 | xargs kill`
+
+**Caddy not starting:**
+
+- Verify Caddy installation: `caddy version`
+- Check Caddyfile syntax: `caddy validate --config Caddyfile`
+- Ensure no other web servers are running on port 80/443
+
+**Dependencies issues:**
+
+- Clear node_modules: `rm -rf node_modules && pnpm install`
+- Clear Turbo cache: `pnpm turbo clean`
