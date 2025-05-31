@@ -6,12 +6,14 @@ import { useEffect } from "react";
 import { Logo } from "@/components/ui";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
+import { useAnalytics } from "@/hooks";
 import { logIn, getSession } from "./actions";
 
 export const EmailVerificationCallback = () => {
   const params = useParams<{ email: string; token: string }>();
   const validatedEmail = decodeURIComponent(params?.email || "");
   const validatedToken = decodeURIComponent(params?.token || "");
+  const { analytics } = useAnalytics();
 
   useEffect(() => {
     const validate = async () => {
@@ -21,6 +23,10 @@ export const EmailVerificationCallback = () => {
       } else {
         const session = await getSession();
         if (session) {
+          analytics.identify(session.user!.email!, {
+            email: session.user!.email!,
+            name: session.user!.name!,
+          });
           const invitations = await getMyInvitations();
           redirect(getRedirectUrl(session, invitations.data || []));
         }
@@ -28,7 +34,7 @@ export const EmailVerificationCallback = () => {
     };
 
     void validate();
-  }, [validatedEmail, validatedToken]);
+  }, [validatedEmail, validatedToken, analytics]);
 
   return (
     <Flex

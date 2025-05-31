@@ -4,19 +4,23 @@ import { Flex, Text } from "ui";
 import { useEffect } from "react";
 import { redirect } from "next/navigation";
 import nProgress from "nprogress";
-import { useSession } from "next-auth/react";
+import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
 import type { Invitation } from "@/types";
 
-export const ClientPage = ({ invitations }: { invitations: Invitation[] }) => {
-  const { data: session } = useSession();
+export const ClientPage = ({
+  invitations,
+  session,
+}: {
+  invitations: Invitation[];
+  session: Session;
+}) => {
   const { analytics } = useAnalytics();
 
   useEffect(() => {
     nProgress.done();
-
     if (session) {
       analytics.identify(session.user!.email!, {
         email: session.user!.email!,

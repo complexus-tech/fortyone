@@ -26,6 +26,8 @@ declare module "next-auth" {
   }
 }
 
+const errorMessage = "There was an error logging in. Please try again.";
+
 export const {
   handlers,
   auth,
@@ -164,7 +166,7 @@ export const {
   pages: {
     signIn: "/login",
     signOut: "/",
-    error: "/login",
+    error: `/login?error=${encodeURIComponent(errorMessage)}`,
   },
   debug: true,
 });

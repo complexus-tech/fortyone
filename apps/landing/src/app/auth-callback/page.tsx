@@ -9,5 +9,5 @@ export default async function AuthCallback() {
     redirect("/login");
   }
   const invitations = await getMyInvitations();
-  return <ClientPage invitations={invitations.data || []} />;
+  return <ClientPage invitations={invitations.data || []} session={session} />;
 }
