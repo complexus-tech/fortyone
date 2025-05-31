@@ -14,6 +14,8 @@ import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 
+const isLocalhost = process.env.NODE_ENV === "development";
+
 export default async function RootLayout({
   children,
 }: {
@@ -28,7 +30,11 @@ export default async function RootLayout({
   const workspaces = session?.workspaces || [];
 
   if (workspaces.length === 0) {
-    redirect("https://www.complexus.app/onboarding/create");
+    redirect(
+      isLocalhost
+        ? "https://complexus.lc/onboarding/create"
+        : "https://www.complexus.app/onboarding/create",
+    );
   }
 
   // First try to find workspace in session

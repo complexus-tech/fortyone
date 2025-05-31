@@ -7,8 +7,7 @@ import { authenticateWithToken } from "./lib/actions/users/sigin-in";
 import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 import { DURATION_FROM_SECONDS } from "./constants/time";
 
-const domain =
-  process.env.NODE_ENV === "production" ? ".complexus.app" : ".complexus.local";
+const domain = `.${process.env.NEXT_PUBLIC_DOMAIN!}`;
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {

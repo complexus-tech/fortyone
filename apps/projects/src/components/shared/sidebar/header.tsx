@@ -98,36 +98,24 @@ export const Header = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = "https://www.complexus.app?signedOut=true";
+      window.location.href = `https://www.${domain}?signedOut=true`;
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.complexus.app?signedOut=true";
+      window.location.href = `https://www.${domain}?signedOut=true`;
     }
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
     try {
       await changeWorkspace(workspaceId);
-      if (domain.includes("localhost")) {
-        window.location.href = `http://${slug}.${domain}/my-work`;
-      } else {
-        window.location.href = `https://${slug}.${domain}/my-work`;
-      }
+      window.location.href = `https://${slug}.${domain}/my-work`;
     } catch (error) {
-      if (domain.includes("localhost")) {
-        window.location.href = `http://${slug}.${domain}/my-work`;
-      } else {
-        window.location.href = `https://${slug}.${domain}/my-work`;
-      }
+      window.location.href = `https://${slug}.${domain}/my-work`;
     }
   };
 
   const handleCreateWorkspace = () => {
-    if (domain.includes("localhost")) {
-      window.location.href = `http://${domain}/onboarding/create`;
-    } else {
-      window.location.href = `https://${domain}/onboarding/create`;
-    }
+    window.location.href = `https://${domain}/onboarding/create`;
   };
 
   return (

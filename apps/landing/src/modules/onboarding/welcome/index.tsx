@@ -13,9 +13,6 @@ const getRedirectUrl = async (session: Session) => {
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
   const activeWorkspace = workspaces[0] || session.activeWorkspace;
-  if (domain.includes("localhost")) {
-    return `http://${activeWorkspace.slug}.localhost:3000/my-work`;
-  }
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 

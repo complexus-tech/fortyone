@@ -1,26 +1,22 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
-import { LoginPage } from "@/modules/login";
 
 export const metadata: Metadata = {
   title: "Login",
 };
 
+const isLocalhost = process.env.NODE_ENV === "development";
+
 export default async function Page() {
   const session = await auth();
-  const headersList = await headers();
-  const host = headersList.get("host");
-
-  if (host?.includes("complexus.app")) {
-    redirect("https://www.complexus.app/login");
-  }
-
-  // If user is already logged in, redirect to my work on localhost
   if (session) {
     redirect("/my-work");
   }
 
-  return <LoginPage />;
+  redirect(
+    isLocalhost
+      ? "https://complexus.lc/login"
+      : "https://www.complexus.app/login",
+  );
 }

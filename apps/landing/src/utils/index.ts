@@ -14,16 +14,10 @@ export const getRedirectUrl = (
     return "/onboarding/create";
   }
   const activeWorkspace = session.activeWorkspace || session.workspaces[0];
-  if (domain.includes("localhost")) {
-    return `http://${activeWorkspace.slug}.localhost:3000/my-work`;
-  }
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 
 export const buildWorkspaceUrl = (slug: string) => {
-  if (domain.includes("localhost")) {
-    return `http://${slug}.localhost:3000/my-work`;
-  }
   return `https://${slug}.${domain}/my-work`;
 };
 

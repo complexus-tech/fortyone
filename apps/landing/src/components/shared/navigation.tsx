@@ -127,7 +127,7 @@ export const Navigation = () => {
         return "/onboarding/create";
       }
       if (domain.includes("localhost")) {
-        return `http://${workspace.slug}.localhost:3000/my-work`;
+        return `http://${workspace.slug}.complexus.lc/my-work`;
       }
       return `https://${workspace.slug}.${domain}/my-work`;
     }
