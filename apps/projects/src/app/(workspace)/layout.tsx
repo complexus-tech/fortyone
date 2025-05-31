@@ -13,6 +13,7 @@ import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
+import { IdentifyUser } from "./identify";
 
 const isLocalhost = process.env.NODE_ENV === "development";
 
@@ -78,6 +79,7 @@ export default async function RootLayout({
     <HydrationBoundary state={dehydrate(queryClient)}>
       {children}
       <ServerSentEvents />
+      <IdentifyUser />
     </HydrationBoundary>
   );
 }
