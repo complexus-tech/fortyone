@@ -167,7 +167,7 @@ export const {
     signIn: "/login",
     signOut: "/",
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true,
 });
 
 export const refreshSession = async () => {
