@@ -302,7 +302,7 @@ const GanttRow = ({
         </Flex>
 
         {/* Gantt bar on top of grid */}
-        <Box className="relative z-10 h-full px-2">
+        <Box className="z-5 relative h-full px-2">
           <GanttBar
             containerRef={containerRef}
             dateRange={dateRange}
