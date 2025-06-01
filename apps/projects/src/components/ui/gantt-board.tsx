@@ -264,7 +264,10 @@ const GanttRow = ({
       >
         {/* Story info */}
         <Flex align="center" className="min-w-0 flex-1 gap-1.5">
-          <Text className="w-16 shrink-0 text-[0.9rem]" color="muted">
+          <Text
+            className="line-clamp-1 w-16 shrink-0 text-[0.9rem]"
+            color="muted"
+          >
             {teamCode}-{story.sequenceId}
           </Text>
           <Text className="line-clamp-1">{story.title}</Text>
