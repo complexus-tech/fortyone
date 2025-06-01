@@ -234,28 +234,23 @@ const GanttRow = ({
       className="group relative h-14 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
       style={{ minWidth: `${totalRowWidth}px` }}
     >
-      {/* Sticky story info column */}
+      {/* Combined sticky story info and duration column */}
       <Flex
         align="center"
-        className="sticky left-0 z-10 h-full w-[30rem] shrink-0 bg-white pl-6 group-hover:bg-gray-100/60 dark:bg-dark dark:group-hover:bg-dark-200/60"
+        className="sticky left-0 z-10 h-full w-[34rem] shrink-0 border-r border-gray-200 bg-white px-6 group-hover:bg-gray-100/60 dark:border-dark-200 dark:bg-dark dark:group-hover:bg-dark-200/60"
+        justify="between"
       >
-        <Flex align="center" className="gap-1.5">
+        {/* Story info */}
+        <Flex align="center" className="min-w-0 flex-1 gap-1.5">
           <Text className="w-16 shrink-0 text-[0.9rem]" color="muted">
             {teamCode}-{story.sequenceId}
           </Text>
-          <Text className="line-clamp-1" fontWeight="medium">
-            {story.title}
-          </Text>
+          <Text className="line-clamp-1">{story.title}</Text>
         </Flex>
-      </Flex>
 
-      {/* Sticky duration column */}
-      <Flex
-        align="center"
-        className="sticky left-[30rem] z-10 h-full w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-3 group-hover:bg-gray-100/60 dark:border-dark-200 dark:bg-dark dark:group-hover:bg-dark-200/60"
-      >
+        {/* Duration (only if exists) */}
         {duration ? (
-          <Text className="truncate" color="muted">
+          <Text className="ml-4 shrink-0" color="muted">
             {duration} day{duration !== 1 ? "s" : ""}
           </Text>
         ) : null}
@@ -315,21 +310,15 @@ const TimelineHeader = ({
       style={{ minWidth: `${totalRowWidth}px` }}
     >
       <Flex>
-        {/* Sticky work items header */}
+        {/* Combined sticky stories/duration header */}
         <Flex
-          className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white px-6 py-2.5 dark:bg-dark"
-          direction="column-reverse"
+          align="center"
+          className="sticky left-0 z-10 w-[34rem] shrink-0 border-r border-gray-200 bg-white px-6 py-2.5 dark:border-dark-200 dark:bg-dark"
+          justify="between"
         >
           <Text color="muted" fontWeight="medium">
             Stories
           </Text>
-        </Flex>
-
-        {/* Sticky duration header */}
-        <Flex
-          className="sticky left-[30rem] z-10 w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-2.5 dark:border-dark-200 dark:bg-dark"
-          direction="column-reverse"
-        >
           <Text color="muted" fontWeight="medium">
             Duration
           </Text>
