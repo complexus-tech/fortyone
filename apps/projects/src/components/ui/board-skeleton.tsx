@@ -98,20 +98,26 @@ const GanttLayoutSkeleton = () => {
   return (
     <Box>
       {/* Gantt header */}
-      <Box className="sticky top-0 z-20 border-b border-gray-200 bg-white dark:border-dark-200 dark:bg-dark-300">
+      <Box className="sticky top-0 z-20 border-b border-r border-gray-200 dark:border-dark-200">
         <Flex>
           {/* Sticky work items header */}
-          <Box className="sticky left-0 z-10 w-80 shrink-0 bg-white px-6 py-4 dark:bg-dark-300">
+          <Flex
+            className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white px-6 py-2.5 dark:bg-dark"
+            direction="column-reverse"
+          >
             <Skeleton className="h-5 w-20" />
-          </Box>
+          </Flex>
 
           {/* Sticky duration header */}
-          <Box className="sticky left-80 z-10 w-24 shrink-0 bg-white px-4 py-4 dark:bg-dark-300">
+          <Flex
+            className="sticky left-[30rem] z-10 w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-2.5 dark:border-dark-200 dark:bg-dark"
+            direction="column-reverse"
+          >
             <Skeleton className="h-5 w-16" />
-          </Box>
+          </Flex>
 
           {/* Timeline header */}
-          <Flex className="flex-1">
+          <Flex className="flex-1 bg-white dark:bg-dark">
             <Box className="w-full">
               {/* Month row */}
               <Box className="border-b border-gray-100 dark:border-dark-200">
@@ -149,18 +155,21 @@ const GanttLayoutSkeleton = () => {
       {/* Gantt rows */}
       <Box>
         {Array.from({ length: 8 }).map((_, i) => (
-          <Flex align="center" className="relative h-12" key={i}>
+          <Flex
+            align="center"
+            className="relative h-12 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
+            key={i}
+          >
             {/* Sticky story info */}
-            <Box className="sticky left-0 z-10 w-80 shrink-0 bg-white px-6 py-3 dark:bg-dark-300">
-              <Flex align="center" gap={3}>
+            <Box className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white py-3 pl-6 dark:bg-dark">
+              <Flex align="center" className="gap-1.5">
                 <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-4 w-40" />
               </Flex>
             </Box>
 
             {/* Sticky duration */}
-            <Box className="sticky left-80 z-10 w-24 shrink-0 bg-white px-4 py-3 dark:bg-dark-300">
+            <Box className="sticky left-[30rem] z-10 h-full w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-3 dark:border-dark-200 dark:bg-dark">
               <Skeleton className="h-4 w-12" />
             </Box>
 

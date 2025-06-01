@@ -224,10 +224,15 @@ const GanttRow = ({
     end: dateRange.end,
   });
 
+  // Calculate minimum width for timeline to ensure proper sticky behavior
+  const timelineMinWidth = days.length * 80; // 80px per day (min-w-20 = 80px)
+  const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
+
   return (
     <Flex
       align="center"
       className="relative h-12 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
+      style={{ minWidth: `${totalRowWidth}px` }}
     >
       {/* Sticky story info column */}
       <Box className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white py-3 pl-6 dark:bg-dark">
@@ -251,7 +256,10 @@ const GanttRow = ({
       </Box>
 
       {/* Gantt chart area with vertical grid lines */}
-      <Box className="relative h-full flex-1">
+      <Box
+        className="relative h-full"
+        style={{ minWidth: `${timelineMinWidth}px` }}
+      >
         {/* Vertical grid lines for each day */}
         <Flex className="absolute inset-0">
           {days.map((day) => (
@@ -291,8 +299,15 @@ const TimelineHeader = ({
     end: dateRange.end,
   });
 
+  // Calculate minimum width for timeline to ensure proper sticky behavior
+  const timelineMinWidth = days.length * 80; // 80px per day (min-w-20 = 80px)
+  const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
+
   return (
-    <Box className="sticky top-0 z-20 border-b border-r border-gray-200 dark:border-dark-200">
+    <Box
+      className="sticky top-0 z-20 border-b border-r border-gray-200 dark:border-dark-200"
+      style={{ minWidth: `${totalRowWidth}px` }}
+    >
       <Flex>
         {/* Sticky work items header */}
         <Flex
@@ -315,7 +330,10 @@ const TimelineHeader = ({
         </Flex>
 
         {/* Timeline header - show month/year spans */}
-        <Flex className="flex-1 bg-white dark:bg-dark">
+        <Flex
+          className="bg-white dark:bg-dark"
+          style={{ minWidth: `${timelineMinWidth}px` }}
+        >
           {/* Month headers */}
           <Box className="w-full">
             {/* Month row */}
@@ -441,7 +459,7 @@ export const GanttBoard = ({
   }
 
   return (
-    <BodyContainer className={cn("overflow-auto", className)}>
+    <BodyContainer className={cn("overflow-x-auto overflow-y-auto", className)}>
       <TimelineHeader dateRange={dateRange} />
 
       <Box className="min-w-max">
