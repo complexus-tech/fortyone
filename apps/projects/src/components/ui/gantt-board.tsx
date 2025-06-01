@@ -52,17 +52,18 @@ const GanttBar = ({
     ? new Date(story.endDate)
     : addDays(startDate, 1);
 
-  const totalDays = differenceInDays(dateRange.end, dateRange.start);
+  // Normalize dates to start of day to ensure proper alignment
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
   const storyStartOffset = differenceInDays(startDate, dateRange.start);
   const storyDuration = differenceInDays(endDate, startDate) || 1;
 
-  // Use drag position during drag or calculate from story dates
+  // Use pixel-based positioning to align with 64px date columns
+  const dayWidth = 64; // Each day column is 64px wide (min-w-16)
   const leftPosition =
-    dragPosition?.leftPosition ??
-    Math.max(0, (storyStartOffset / totalDays) * 100);
-  const width =
-    dragPosition?.width ??
-    Math.min(100 - leftPosition, (storyDuration / totalDays) * 100);
+    dragPosition?.leftPosition ?? storyStartOffset * dayWidth;
+  const width = dragPosition?.width ?? storyDuration * dayWidth;
 
   // Event handlers
   const handleMouseDown = useCallback(
@@ -88,7 +89,6 @@ const GanttBar = ({
       if (!container) return;
 
       // Calculate how many days we've moved based on pixel movement
-      const dayWidth = 64; // Each day column is 64px wide (min-w-16)
       const deltaDays = Math.round(deltaX / dayWidth);
 
       if (deltaDays === 0) return;
@@ -115,18 +115,15 @@ const GanttBar = ({
       // Update visual position only
       const newStartOffset = differenceInDays(newStartDate, dateRange.start);
       const newDuration = differenceInDays(newEndDate, newStartDate) || 1;
-      const newLeftPosition = Math.max(0, (newStartOffset / totalDays) * 100);
-      const newWidth = Math.min(
-        100 - newLeftPosition,
-        (newDuration / totalDays) * 100,
-      );
+      const newLeftPosition = newStartOffset * dayWidth;
+      const newWidth = newDuration * dayWidth;
 
       setDragPosition({
         leftPosition: newLeftPosition,
         width: newWidth,
       });
     },
-    [isDragging, dragStart, totalDays, dateRange.start],
+    [isDragging, dragStart, dayWidth, dateRange.start],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -138,17 +135,11 @@ const GanttBar = ({
     }
 
     // Calculate final dates from drag position
-    const finalStartOffset = (dragPosition.leftPosition / 100) * totalDays;
-    const finalDuration = (dragPosition.width / 100) * totalDays;
+    const finalStartOffset = Math.round(dragPosition.leftPosition / dayWidth);
+    const finalDuration = Math.round(dragPosition.width / dayWidth);
 
-    const finalStartDate = addDays(
-      dateRange.start,
-      Math.round(finalStartOffset),
-    );
-    const finalEndDate = addDays(
-      finalStartDate,
-      Math.max(1, Math.round(finalDuration)),
-    );
+    const finalStartDate = addDays(dateRange.start, finalStartOffset);
+    const finalEndDate = addDays(finalStartDate, Math.max(1, finalDuration));
 
     // Update story dates only on drag end
     onDateUpdate(story.id, formatISO(finalStartDate), formatISO(finalEndDate));
@@ -161,7 +152,7 @@ const GanttBar = ({
     isDragging,
     dragStart,
     dragPosition,
-    totalDays,
+    dayWidth,
     dateRange.start,
     story.id,
     onDateUpdate,
@@ -195,8 +186,8 @@ const GanttBar = ({
         handleMouseDown(e, "move");
       }}
       style={{
-        left: `${leftPosition}%`,
-        width: `${width}%`,
+        left: `${leftPosition}px`,
+        width: `${width}px`,
         top: "6px",
       }}
     >
@@ -467,10 +458,14 @@ const getWeekSpans = (days: Date[]) => {
 // Helper to get the visible date range for the gantt chart
 const getVisibleDateRange = (centerDate: Date, viewportDays = 365) => {
   const halfViewport = Math.floor(viewportDays / 2);
-  return {
-    start: subDays(centerDate, halfViewport),
-    end: addDays(centerDate, halfViewport),
-  };
+  const start = subDays(centerDate, halfViewport);
+  const end = addDays(centerDate, halfViewport);
+
+  // Normalize to start of day for consistent alignment
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  return { start, end };
 };
 
 export const GanttBoard = ({
@@ -489,7 +484,9 @@ export const GanttBoard = ({
   const teamCode = team?.code || "STORY";
 
   // Calculate visible date range centered on today (1 year total)
-  const dateRange = getVisibleDateRange(new Date(), 365);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize to start of day
+  const dateRange = getVisibleDateRange(today, 365);
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
