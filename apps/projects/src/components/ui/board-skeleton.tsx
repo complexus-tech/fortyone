@@ -94,6 +94,107 @@ const KanbanLayoutSkeleton = () => {
   );
 };
 
+const GanttLayoutSkeleton = () => {
+  return (
+    <Box>
+      {/* Gantt header */}
+      <Box className="sticky top-0 z-20 border-b border-gray-200 bg-white dark:border-dark-200 dark:bg-dark-300">
+        <Flex>
+          {/* Sticky work items header */}
+          <Box className="sticky left-0 z-10 w-80 shrink-0 bg-white px-6 py-4 dark:bg-dark-300">
+            <Skeleton className="h-5 w-20" />
+          </Box>
+
+          {/* Sticky duration header */}
+          <Box className="sticky left-80 z-10 w-24 shrink-0 bg-white px-4 py-4 dark:bg-dark-300">
+            <Skeleton className="h-5 w-16" />
+          </Box>
+
+          {/* Timeline header */}
+          <Flex className="flex-1">
+            <Box className="w-full">
+              {/* Month row */}
+              <Box className="border-b border-gray-100 dark:border-dark-200">
+                <Flex>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Box
+                      className="flex-1 border-r border-gray-100 px-2 py-2 text-center dark:border-dark-200"
+                      key={i}
+                    >
+                      <Skeleton className="mx-auto h-4 w-16" />
+                    </Box>
+                  ))}
+                </Flex>
+              </Box>
+
+              {/* Days row - compact */}
+              <Flex>
+                {Array.from({ length: 21 }).map((_, i) => (
+                  <Box
+                    className="min-w-20 flex-1 border-r border-gray-100 px-1 py-0.5 text-center dark:border-dark-200"
+                    key={i}
+                  >
+                    <Flex align="center" className="px-1" justify="between">
+                      <Skeleton className="h-4 w-3" />
+                      <Skeleton className="h-4 w-2" />
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+          </Flex>
+        </Flex>
+      </Box>
+
+      {/* Gantt rows */}
+      <Box>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Flex align="center" className="relative h-12" key={i}>
+            {/* Sticky story info */}
+            <Box className="sticky left-0 z-10 w-80 shrink-0 bg-white px-6 py-3 dark:bg-dark-300">
+              <Flex align="center" gap={3}>
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-4 rounded-full" />
+                <Skeleton className="h-4 w-40" />
+              </Flex>
+            </Box>
+
+            {/* Sticky duration */}
+            <Box className="sticky left-80 z-10 w-24 shrink-0 bg-white px-4 py-3 dark:bg-dark-300">
+              <Skeleton className="h-4 w-12" />
+            </Box>
+
+            {/* Timeline */}
+            <Box className="relative h-full flex-1">
+              {/* Vertical grid lines */}
+              <Flex className="absolute inset-0">
+                {Array.from({ length: 21 }).map((_, i) => (
+                  <Box
+                    className="min-w-20 flex-1 border-r border-gray-100 dark:border-dark-200"
+                    key={i}
+                  />
+                ))}
+              </Flex>
+
+              {/* Skeleton gantt bar */}
+              <Box className="relative z-10 h-full px-2">
+                <Skeleton
+                  className="absolute h-6 rounded"
+                  style={{
+                    left: `${Math.random() * 50}%`,
+                    width: `${10 + Math.random() * 30}%`,
+                    top: "12px",
+                  }}
+                />
+              </Box>
+            </Box>
+          </Flex>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
 export const BoardSkeleton = ({
   layout,
   className,
@@ -107,11 +208,14 @@ export const BoardSkeleton = ({
         {
           "overflow-x-auto bg-gray-50/60 dark:bg-transparent":
             layout === "kanban",
+          "overflow-auto bg-white dark:bg-dark-300": layout === "gantt",
         },
         className,
       )}
     >
-      {layout === "kanban" ? <KanbanLayoutSkeleton /> : <ListLayoutSkeleton />}
+      {layout === "kanban" && <KanbanLayoutSkeleton />}
+      {layout === "gantt" && <GanttLayoutSkeleton />}
+      {(layout === "list" || !layout) && <ListLayoutSkeleton />}
     </BodyContainer>
   );
 };
