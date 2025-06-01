@@ -177,7 +177,7 @@ const GanttBar = ({
   return (
     <Box
       className={cn(
-        "group absolute z-0 h-10 cursor-pointer overflow-hidden rounded-lg bg-gray-100 transition-colors dark:bg-dark-200",
+        "group absolute z-0 h-10 cursor-pointer overflow-hidden rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 transition-colors dark:border-dark-50/80 dark:bg-dark-200",
         {
           "shadow-lg ring-2": isDragging,
         },
@@ -253,13 +253,13 @@ const GanttRow = ({
   return (
     <Flex
       align="center"
-      className="group relative h-14 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
+      className="group relative h-14 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
       style={{ minWidth: `${totalRowWidth}px` }}
     >
       {/* Combined sticky story info and duration column */}
       <Flex
         align="center"
-        className="sticky left-0 z-10 h-full w-[34rem] shrink-0 border-r border-gray-200 bg-white px-6 group-hover:bg-gray-100/60 dark:border-dark-200 dark:bg-dark dark:group-hover:bg-dark-200/60"
+        className="sticky left-0 z-10 h-full w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white px-6 transition-colors group-hover:bg-gray-50 dark:border-dark-100 dark:bg-dark dark:group-hover:bg-dark-300"
         justify="between"
       >
         {/* Story info */}
@@ -291,7 +291,7 @@ const GanttRow = ({
           {days.map((day) => (
             <Box
               className={cn(
-                "min-w-16 flex-1 border-r border-gray-100 dark:border-dark-200",
+                "min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100",
                 {
                   "bg-gray-50/50 dark:bg-dark-200/20": isWeekend(day),
                 },
@@ -332,14 +332,14 @@ const TimelineHeader = ({
 
   return (
     <Box
-      className="sticky top-0 z-20 border-b border-r border-gray-200 dark:border-dark-200"
+      className="sticky top-0 z-20 border-b-[0.5px] border-r-[0.5px] border-gray-200/60 dark:border-dark-100"
       style={{ minWidth: `${totalRowWidth}px` }}
     >
       <Flex>
         {/* Combined sticky stories/duration header */}
         <Flex
           align="center"
-          className="sticky left-0 z-10 w-[34rem] shrink-0 border-r border-gray-200 bg-white px-6 py-2.5 dark:border-dark-200 dark:bg-dark"
+          className="sticky left-0 z-10 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
           justify="between"
         >
           <Text color="muted" fontWeight="medium">
@@ -357,11 +357,11 @@ const TimelineHeader = ({
         >
           <Box className="w-full">
             {/* Week row */}
-            <Box className="border-b border-gray-100 dark:border-dark-200">
+            <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
               <Flex>
                 {getWeekSpans(days).map(({ week, month, span }, index) => (
                   <Box
-                    className="border-r border-gray-100 px-2 py-1.5 text-left dark:border-dark-200"
+                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
                     key={`${month}-${week}-${index}`}
                     style={{ width: `${(span / days.length) * 100}%` }}
                   >
@@ -395,7 +395,7 @@ const TimelineHeader = ({
               {days.map((day) => (
                 <Box
                   className={cn(
-                    "min-w-16 flex-1 border-r border-gray-100 px-1 py-1 text-center dark:border-dark-200",
+                    "min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
                     {
                       "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
                     },
