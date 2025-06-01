@@ -25,15 +25,25 @@ const GanttBar = ({
   story,
   dateRange,
   onDateUpdate,
+  containerRef,
 }: {
   story: Story;
   dateRange: { start: Date; end: Date };
   onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{
     x: number;
     type: "move" | "resize-start" | "resize-end";
+    originalStartDate: Date;
+    originalEndDate: Date;
+  } | null>(null);
+
+  // Local state for visual feedback during drag
+  const [dragPosition, setDragPosition] = useState<{
+    leftPosition: number;
+    width: number;
   } | null>(null);
 
   // Calculate positions (will be used only if both dates exist)
@@ -46,17 +56,27 @@ const GanttBar = ({
   const storyStartOffset = differenceInDays(startDate, dateRange.start);
   const storyDuration = differenceInDays(endDate, startDate) || 1;
 
-  const leftPosition = Math.max(0, (storyStartOffset / totalDays) * 100);
-  const width = Math.min(100 - leftPosition, (storyDuration / totalDays) * 100);
+  // Use drag position during drag or calculate from story dates
+  const leftPosition =
+    dragPosition?.leftPosition ??
+    Math.max(0, (storyStartOffset / totalDays) * 100);
+  const width =
+    dragPosition?.width ??
+    Math.min(100 - leftPosition, (storyDuration / totalDays) * 100);
 
   // Event handlers
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, type: "move" | "resize-start" | "resize-end") => {
       e.preventDefault();
       setIsDragging(true);
-      setDragStart({ x: e.clientX, type });
+      setDragStart({
+        x: e.clientX,
+        type,
+        originalStartDate: startDate,
+        originalEndDate: endDate,
+      });
     },
-    [],
+    [startDate, endDate],
   );
 
   const handleMouseMove = useCallback(
@@ -64,48 +84,88 @@ const GanttBar = ({
       if (!isDragging || !dragStart) return;
 
       const deltaX = e.clientX - dragStart.x;
-      const container = (e.target as HTMLElement).closest(".gantt-timeline");
+      const container = containerRef.current;
       if (!container) return;
 
-      const containerWidth = container.clientWidth;
-      const deltaPercent = (deltaX / containerWidth) * 100;
-      const deltaDays = Math.round((deltaPercent / 100) * totalDays);
+      // Calculate how many days we've moved based on pixel movement
+      const dayWidth = 64; // Each day column is 64px wide (min-w-16)
+      const deltaDays = Math.round(deltaX / dayWidth);
 
       if (deltaDays === 0) return;
 
-      let newStartDate = startDate;
-      let newEndDate = endDate;
+      let newStartDate = dragStart.originalStartDate;
+      let newEndDate = dragStart.originalEndDate;
 
       if (dragStart.type === "move") {
-        newStartDate = addDays(startDate, deltaDays);
-        newEndDate = addDays(endDate, deltaDays);
+        newStartDate = addDays(dragStart.originalStartDate, deltaDays);
+        newEndDate = addDays(dragStart.originalEndDate, deltaDays);
       } else if (dragStart.type === "resize-start") {
-        newStartDate = addDays(startDate, deltaDays);
-        if (newStartDate >= endDate) newStartDate = addDays(endDate, -1);
+        newStartDate = addDays(dragStart.originalStartDate, deltaDays);
+        if (newStartDate >= dragStart.originalEndDate) {
+          newStartDate = addDays(dragStart.originalEndDate, -1);
+        }
       } else {
         // resize-end case
-        newEndDate = addDays(endDate, deltaDays);
-        if (newEndDate <= startDate) newEndDate = addDays(startDate, 1);
+        newEndDate = addDays(dragStart.originalEndDate, deltaDays);
+        if (newEndDate <= dragStart.originalStartDate) {
+          newEndDate = addDays(dragStart.originalStartDate, 1);
+        }
       }
 
-      onDateUpdate(story.id, formatISO(newStartDate), formatISO(newEndDate));
-      setDragStart({ ...dragStart, x: e.clientX });
+      // Update visual position only
+      const newStartOffset = differenceInDays(newStartDate, dateRange.start);
+      const newDuration = differenceInDays(newEndDate, newStartDate) || 1;
+      const newLeftPosition = Math.max(0, (newStartOffset / totalDays) * 100);
+      const newWidth = Math.min(
+        100 - newLeftPosition,
+        (newDuration / totalDays) * 100,
+      );
+
+      setDragPosition({
+        leftPosition: newLeftPosition,
+        width: newWidth,
+      });
     },
-    [
-      isDragging,
-      dragStart,
-      startDate,
-      endDate,
-      totalDays,
-      story.id,
-      onDateUpdate,
-    ],
+    [isDragging, dragStart, totalDays, dateRange.start],
   );
 
   const handleMouseUp = useCallback(() => {
+    if (!isDragging || !dragStart || !dragPosition) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragPosition(null);
+      return;
+    }
+
+    // Calculate final dates from drag position
+    const finalStartOffset = (dragPosition.leftPosition / 100) * totalDays;
+    const finalDuration = (dragPosition.width / 100) * totalDays;
+
+    const finalStartDate = addDays(
+      dateRange.start,
+      Math.round(finalStartOffset),
+    );
+    const finalEndDate = addDays(
+      finalStartDate,
+      Math.max(1, Math.round(finalDuration)),
+    );
+
+    // Update story dates only on drag end
+    onDateUpdate(story.id, formatISO(finalStartDate), formatISO(finalEndDate));
+
+    // Reset drag state
     setIsDragging(false);
     setDragStart(null);
-  }, []);
+    setDragPosition(null);
+  }, [
+    isDragging,
+    dragStart,
+    dragPosition,
+    totalDays,
+    dateRange.start,
+    story.id,
+    onDateUpdate,
+  ]);
 
   // Global mouse event listeners
   useEffect(() => {
@@ -176,11 +236,13 @@ const GanttRow = ({
   dateRange,
   onDateUpdate,
   teamCode,
+  containerRef,
 }: {
   story: Story;
   dateRange: { start: Date; end: Date };
   onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
   teamCode?: string;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   // Calculate duration
   const startDate = story.startDate ? new Date(story.startDate) : null;
@@ -248,6 +310,7 @@ const GanttRow = ({
         {/* Gantt bar on top of grid */}
         <Box className="relative z-10 h-full px-2">
           <GanttBar
+            containerRef={containerRef}
             dateRange={dateRange}
             onDateUpdate={onDateUpdate}
             story={story}
@@ -506,6 +569,7 @@ export const GanttBoard = ({
       <Box className="min-w-max">
         {storiesWithDates.map((story) => (
           <GanttRow
+            containerRef={containerRef}
             dateRange={dateRange}
             key={story.id}
             onDateUpdate={handleDateUpdate}
