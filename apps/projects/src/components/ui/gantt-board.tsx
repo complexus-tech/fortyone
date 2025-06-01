@@ -177,7 +177,7 @@ const GanttBar = ({
   return (
     <Box
       className={cn(
-        "group absolute h-10 cursor-pointer overflow-hidden rounded-lg bg-gray-100 transition-colors dark:bg-dark-200",
+        "group absolute z-0 h-10 cursor-pointer overflow-hidden rounded-lg bg-gray-100 transition-colors dark:bg-dark-200",
         {
           "shadow-lg ring-2": isDragging,
         },
