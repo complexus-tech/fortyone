@@ -10,6 +10,8 @@ import {
   formatISO,
   isWeekend,
   subDays,
+  getWeek,
+  isSameWeek,
 } from "date-fns";
 import { useParams } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -294,25 +296,38 @@ const TimelineHeader = ({
           </Text>
         </Flex>
 
-        {/* Timeline header - show month/year spans */}
+        {/* Timeline header - show week/month spans */}
         <Flex
           className="bg-white dark:bg-dark"
           style={{ minWidth: `${timelineMinWidth}px` }}
         >
-          {/* Month headers */}
           <Box className="w-full">
-            {/* Month row */}
+            {/* Week row */}
             <Box className="border-b border-gray-100 dark:border-dark-200">
               <Flex>
-                {getMonthSpans(days).map(({ month, startIndex, span }) => (
+                {getWeekSpans(days).map(({ week, month, span }, index) => (
                   <Box
                     className="border-r border-gray-100 px-2 py-1.5 text-left dark:border-dark-200"
-                    key={month}
+                    key={`${month}-${week}-${index}`}
                     style={{ width: `${(span / days.length) * 100}%` }}
                   >
-                    <Text color="muted" fontSize="sm" fontWeight="medium">
-                      {format(days[startIndex], "MMM yyyy")}
-                    </Text>
+                    <Flex
+                      align="center"
+                      className="h-5 min-h-0"
+                      justify="between"
+                    >
+                      <Text color="muted" fontSize="sm" fontWeight="medium">
+                        {month}
+                      </Text>
+                      <Text
+                        className="opacity-80"
+                        color="muted"
+                        fontSize="sm"
+                        fontWeight="medium"
+                      >
+                        {week}
+                      </Text>
+                    </Flex>
                   </Box>
                 ))}
               </Flex>
@@ -348,25 +363,43 @@ const TimelineHeader = ({
   );
 };
 
-// Helper function to get month spans
-const getMonthSpans = (days: Date[]) => {
-  const spans: { month: string; startIndex: number; span: number }[] = [];
-  let currentMonth = format(days[0], "MMM yyyy");
-  let startIndex = 0;
-  let span = 1;
+// Helper function to get week spans
+const getWeekSpans = (days: Date[]) => {
+  if (days.length === 0) return [];
 
-  for (let i = 1; i < days.length; i++) {
-    const month = format(days[i], "MMM yyyy");
-    if (month === currentMonth) {
-      span++;
-    } else {
-      spans.push({ month: currentMonth, startIndex, span });
-      currentMonth = month;
-      startIndex = i;
-      span = 1;
+  const spans: {
+    week: string;
+    month: string;
+    startIndex: number;
+    span: number;
+  }[] = [];
+  let startIndex = 0;
+
+  for (let i = 0; i < days.length; i++) {
+    const currentDay = days[i];
+    const nextDay = days[i + 1];
+
+    // Check if this is the last day of the current week or the last day overall
+    const isEndOfWeek =
+      !nextDay || !isSameWeek(currentDay, nextDay, { weekStartsOn: 0 }); // 0 = Sunday
+
+    if (isEndOfWeek) {
+      const span = i - startIndex + 1;
+      const weekStart = days[startIndex];
+      const weekNumber = getWeek(weekStart, { weekStartsOn: 0 });
+      const monthYear = format(weekStart, "MMM yyyy");
+
+      spans.push({
+        week: `Week ${weekNumber}`,
+        month: monthYear,
+        startIndex,
+        span,
+      });
+
+      startIndex = i + 1;
     }
   }
-  spans.push({ month: currentMonth, startIndex, span });
+
   return spans;
 };
 
@@ -464,24 +497,25 @@ export const GanttBoard = ({
   }
 
   return (
-    <BodyContainer className={cn("relative left-px", className)}>
-      <div
-        className="gantt-container overflow-x-auto overflow-y-auto"
-        ref={containerRef}
-      >
-        <TimelineHeader dateRange={dateRange} />
-        <Box className="min-w-max">
-          {storiesWithDates.map((story) => (
-            <GanttRow
-              dateRange={dateRange}
-              key={story.id}
-              onDateUpdate={handleDateUpdate}
-              story={story}
-              teamCode={teamCode}
-            />
-          ))}
-        </Box>
-      </div>
-    </BodyContainer>
+    <div
+      className={cn(
+        "relative left-px overflow-x-auto overflow-y-auto",
+        className,
+      )}
+      ref={containerRef}
+    >
+      <TimelineHeader dateRange={dateRange} />
+      <Box className="min-w-max">
+        {storiesWithDates.map((story) => (
+          <GanttRow
+            dateRange={dateRange}
+            key={story.id}
+            onDateUpdate={handleDateUpdate}
+            story={story}
+            teamCode={teamCode}
+          />
+        ))}
+      </Box>
+    </div>
   );
 };
