@@ -231,29 +231,35 @@ const GanttRow = ({
   return (
     <Flex
       align="center"
-      className="relative h-12 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
+      className="group relative h-14 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
       style={{ minWidth: `${totalRowWidth}px` }}
     >
       {/* Sticky story info column */}
-      <Box className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white py-3 pl-6 dark:bg-dark">
+      <Flex
+        align="center"
+        className="sticky left-0 z-10 h-full w-[30rem] shrink-0 bg-white pl-6 group-hover:bg-gray-100/60 dark:bg-dark dark:group-hover:bg-dark-200/60"
+      >
         <Flex align="center" className="gap-1.5">
           <Text className="w-16 shrink-0 text-[0.9rem]" color="muted">
             {teamCode}-{story.sequenceId}
           </Text>
-          <Text className="truncate" fontWeight="medium">
+          <Text className="line-clamp-1" fontWeight="medium">
             {story.title}
           </Text>
         </Flex>
-      </Box>
+      </Flex>
 
       {/* Sticky duration column */}
-      <Box className="sticky left-[30rem] z-10 h-full w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-3 dark:border-dark-200 dark:bg-dark">
+      <Flex
+        align="center"
+        className="sticky left-[30rem] z-10 h-full w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-3 group-hover:bg-gray-100/60 dark:border-dark-200 dark:bg-dark dark:group-hover:bg-dark-200/60"
+      >
         {duration ? (
           <Text className="truncate" color="muted">
             {duration} day{duration !== 1 ? "s" : ""}
           </Text>
         ) : null}
-      </Box>
+      </Flex>
 
       {/* Gantt chart area with vertical grid lines */}
       <Box
@@ -315,7 +321,7 @@ const TimelineHeader = ({
           direction="column-reverse"
         >
           <Text color="muted" fontWeight="medium">
-            Work items
+            Stories
           </Text>
         </Flex>
 
@@ -341,7 +347,7 @@ const TimelineHeader = ({
               <Flex>
                 {getMonthSpans(days).map(({ month, startIndex, span }) => (
                   <Box
-                    className="border-r border-gray-100 px-2 py-2 text-center dark:border-dark-200"
+                    className="border-r border-gray-100 px-2 py-1.5 text-center dark:border-dark-200"
                     key={month}
                     style={{ width: `${(span / days.length) * 100}%` }}
                   >
@@ -358,7 +364,7 @@ const TimelineHeader = ({
               {days.map((day) => (
                 <Box
                   className={cn(
-                    "min-w-20 flex-1 border-r border-gray-100 px-1 py-0.5 text-center dark:border-dark-200",
+                    "min-w-20 flex-1 border-r border-gray-100 px-1 py-1 text-center dark:border-dark-200",
                     {
                       "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
                     },
@@ -459,9 +465,13 @@ export const GanttBoard = ({
   }
 
   return (
-    <BodyContainer className={cn("overflow-x-auto overflow-y-auto", className)}>
+    <BodyContainer
+      className={cn(
+        "relative left-px overflow-x-auto overflow-y-auto",
+        className,
+      )}
+    >
       <TimelineHeader dateRange={dateRange} />
-
       <Box className="min-w-max">
         {storiesWithDates.map((story) => (
           <GanttRow
