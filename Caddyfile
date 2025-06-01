@@ -1,7 +1,7 @@
 # Main landing app (complexus.lc)
 complexus.lc {
 	tls internal
-	reverse_proxy localhost:3000
+	reverse_proxy localhost:3001
 }
 
 # Docs app (docs.complexus.lc)
@@ -13,17 +13,17 @@ docs.complexus.lc {
 # Projects app - handles specific workspace subdomains
 qa.complexus.lc {
 	tls internal
-	reverse_proxy localhost:3001
+	reverse_proxy localhost:3000
 }
 
 payments.complexus.lc {
 	tls internal
-	reverse_proxy localhost:3001
+	reverse_proxy localhost:3000
 }
 
 growth.complexus.lc {
 	tls internal
-	reverse_proxy localhost:3001
+	reverse_proxy localhost:3000
 }
 
 # Optional: redirect www to main domain
