@@ -220,101 +220,7 @@ const GanttBar = ({
   );
 };
 
-// Story row component
-const GanttRow = ({
-  story,
-  dateRange,
-  onDateUpdate,
-  teamCode,
-  containerRef,
-}: {
-  story: Story;
-  dateRange: { start: Date; end: Date };
-  onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
-  teamCode?: string;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) => {
-  // Calculate duration
-  const startDate = story.startDate ? new Date(story.startDate) : null;
-  const endDate = story.endDate ? new Date(story.endDate) : null;
-  const duration =
-    startDate && endDate ? differenceInDays(endDate, startDate) : null;
-
-  const days = eachDayOfInterval({
-    start: dateRange.start,
-    end: dateRange.end,
-  });
-
-  // Calculate minimum width for timeline to ensure proper sticky behavior
-  const timelineMinWidth = days.length * 64; // 64px per day (min-w-16 = 64px)
-  const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
-
-  return (
-    <Flex
-      align="center"
-      className="group relative h-14 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300"
-      style={{ minWidth: `${totalRowWidth}px` }}
-    >
-      {/* Combined sticky story info and duration column */}
-      <Flex
-        align="center"
-        className="sticky left-0 z-10 h-full w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white px-6 transition-colors group-hover:bg-gray-50 dark:border-dark-100 dark:bg-dark dark:group-hover:bg-dark-300"
-        justify="between"
-      >
-        {/* Story info */}
-        <Flex align="center" className="min-w-0 flex-1 gap-1.5">
-          <Text
-            className="line-clamp-1 w-16 shrink-0 text-[0.9rem]"
-            color="muted"
-          >
-            {teamCode}-{story.sequenceId}
-          </Text>
-          <Text className="line-clamp-1">{story.title}</Text>
-        </Flex>
-
-        {/* Duration (only if exists) */}
-        {duration ? (
-          <Text className="ml-4 shrink-0" color="muted">
-            {duration} day{duration !== 1 ? "s" : ""}
-          </Text>
-        ) : null}
-      </Flex>
-
-      {/* Gantt chart area with vertical grid lines */}
-      <Box
-        className="relative h-full"
-        style={{ minWidth: `${timelineMinWidth}px` }}
-      >
-        {/* Vertical grid lines for each day */}
-        <Flex className="absolute inset-0">
-          {days.map((day) => (
-            <Box
-              className={cn(
-                "min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100",
-                {
-                  "bg-gray-50/50 dark:bg-dark-200/20": isWeekend(day),
-                },
-              )}
-              key={day.getTime()}
-            />
-          ))}
-        </Flex>
-
-        {/* Gantt bar on top of grid */}
-        <Box className="z-5 relative h-full px-2">
-          <GanttBar
-            containerRef={containerRef}
-            dateRange={dateRange}
-            onDateUpdate={onDateUpdate}
-            story={story}
-          />
-        </Box>
-      </Box>
-    </Flex>
-  );
-};
-
-// Timeline header component
+// Timeline header component - now only handles the date columns
 const TimelineHeader = ({
   dateRange,
 }: {
@@ -327,94 +233,192 @@ const TimelineHeader = ({
 
   // Calculate minimum width for timeline to ensure proper sticky behavior
   const timelineMinWidth = days.length * 64; // 64px per day (min-w-16 = 64px)
-  const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
 
   return (
     <Box
-      className="sticky top-0 z-20 border-b-[0.5px] border-r-[0.5px] border-gray-200/60 dark:border-dark-100"
-      style={{ minWidth: `${totalRowWidth}px` }}
+      className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark"
+      style={{ minWidth: `${timelineMinWidth}px` }}
     >
-      <Flex>
-        {/* Combined sticky stories/duration header */}
-        <Flex
-          align="center"
-          className="sticky left-0 z-10 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
-          justify="between"
-        >
-          <Text color="muted" fontWeight="medium">
-            Stories
-          </Text>
-          <Text color="muted" fontWeight="medium">
-            Duration
-          </Text>
-        </Flex>
-
-        {/* Timeline header - show week/month spans */}
-        <Flex
-          className="bg-white dark:bg-dark"
-          style={{ minWidth: `${timelineMinWidth}px` }}
-        >
-          <Box className="w-full">
-            {/* Week row */}
-            <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
-              <Flex>
-                {getWeekSpans(days).map(({ week, month, span }, index) => (
-                  <Box
-                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
-                    key={`${month}-${week}-${index}`}
-                    style={{ width: `${(span / days.length) * 100}%` }}
+      <Box className="w-full">
+        {/* Week row */}
+        <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+          <Flex>
+            {getWeekSpans(days).map(({ week, month, span }, index) => (
+              <Box
+                className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                key={`${month}-${week}-${index}`}
+                style={{ width: `${(span / days.length) * 100}%` }}
+              >
+                <Flex align="center" className="h-5 min-h-0" justify="between">
+                  <Text
+                    className="text-[0.9rem]"
+                    color="muted"
+                    fontWeight="semibold"
                   >
-                    <Flex
-                      align="center"
-                      className="h-5 min-h-0"
-                      justify="between"
-                    >
-                      <Text
-                        className="text-[0.9rem]"
-                        color="muted"
-                        fontWeight="semibold"
-                      >
-                        {month}
-                      </Text>
-                      <Text
-                        className="text-[0.9rem] opacity-60"
-                        color="muted"
-                        fontWeight="semibold"
-                      >
-                        {week}
-                      </Text>
-                    </Flex>
-                  </Box>
-                ))}
+                    {month}
+                  </Text>
+                  <Text
+                    className="text-[0.9rem] opacity-60"
+                    color="muted"
+                    fontWeight="semibold"
+                  >
+                    {week}
+                  </Text>
+                </Flex>
+              </Box>
+            ))}
+          </Flex>
+        </Box>
+
+        {/* Days row - compact */}
+        <Flex>
+          {days.map((day) => (
+            <Box
+              className={cn(
+                "min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
+                {
+                  "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
+                },
+              )}
+              key={day.getTime()}
+            >
+              <Flex align="center" className="px-1" justify="between">
+                <Text color="muted" fontSize="sm">
+                  {format(day, "d")}
+                </Text>
+                <Text color="muted" fontSize="sm">
+                  {format(day, "eeeee")}
+                </Text>
               </Flex>
             </Box>
-
-            {/* Days row - compact */}
-            <Flex>
-              {days.map((day) => (
-                <Box
-                  className={cn(
-                    "min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
-                    {
-                      "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
-                    },
-                  )}
-                  key={day.getTime()}
-                >
-                  <Flex align="center" className="px-1" justify="between">
-                    <Text color="muted" fontSize="sm">
-                      {format(day, "d")}
-                    </Text>
-                    <Text color="muted" fontSize="sm">
-                      {format(day, "eeeee")}
-                    </Text>
-                  </Flex>
-                </Box>
-              ))}
-            </Flex>
-          </Box>
+          ))}
         </Flex>
-      </Flex>
+      </Box>
+    </Box>
+  );
+};
+
+// Stories header component
+const StoriesHeader = () => {
+  return (
+    <Flex
+      align="center"
+      className="sticky top-0 h-16 border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
+      justify="between"
+    >
+      <Text color="muted" fontWeight="medium">
+        Stories
+      </Text>
+      <Text color="muted" fontWeight="medium">
+        Duration
+      </Text>
+    </Flex>
+  );
+};
+
+// Sticky stories section component
+const StoriesSection = ({
+  stories,
+  teamCode,
+}: {
+  stories: Story[];
+  teamCode: string;
+}) => {
+  return (
+    <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
+      <StoriesHeader />
+      {stories.map((story) => {
+        // Calculate duration
+        const startDate = story.startDate ? new Date(story.startDate) : null;
+        const endDate = story.endDate ? new Date(story.endDate) : null;
+        const duration =
+          startDate && endDate ? differenceInDays(endDate, startDate) : null;
+
+        return (
+          <Flex
+            align="center"
+            className="group h-14 border-b-[0.5px] border-gray-100 px-6 transition-colors hover:bg-gray-50 dark:border-dark-100 dark:hover:bg-dark-300"
+            justify="between"
+            key={story.id}
+          >
+            {/* Story info */}
+            <Flex align="center" className="min-w-0 flex-1 gap-1.5">
+              <Text
+                className="line-clamp-1 w-16 shrink-0 text-[0.9rem]"
+                color="muted"
+              >
+                {teamCode}-{story.sequenceId}
+              </Text>
+              <Text className="line-clamp-1">{story.title}</Text>
+            </Flex>
+
+            {/* Duration (only if exists) */}
+            {duration ? (
+              <Text className="ml-4 shrink-0" color="muted">
+                {duration} day{duration !== 1 ? "s" : ""}
+              </Text>
+            ) : null}
+          </Flex>
+        );
+      })}
+    </Box>
+  );
+};
+
+// Chart section component
+const ChartSection = ({
+  stories,
+  dateRange,
+  onDateUpdate,
+  containerRef,
+}: {
+  stories: Story[];
+  dateRange: { start: Date; end: Date };
+  onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) => {
+  const days = eachDayOfInterval({
+    start: dateRange.start,
+    end: dateRange.end,
+  });
+
+  // Calculate minimum width for timeline
+  const timelineMinWidth = days.length * 64; // 64px per day
+
+  return (
+    <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
+      <TimelineHeader dateRange={dateRange} />
+      {stories.map((story) => (
+        <Box
+          className="relative h-14 border-b-[0.5px] border-gray-100 dark:border-dark-100"
+          key={story.id}
+        >
+          {/* Vertical grid lines for each day */}
+          <Flex className="absolute inset-0">
+            {days.map((day) => (
+              <Box
+                className={cn(
+                  "min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100",
+                  {
+                    "bg-gray-50/50 dark:bg-dark-200/20": isWeekend(day),
+                  },
+                )}
+                key={day.getTime()}
+              />
+            ))}
+          </Flex>
+
+          {/* Gantt bar on top of grid */}
+          <Box className="z-5 relative h-full px-2">
+            <GanttBar
+              containerRef={containerRef}
+              dateRange={dateRange}
+              onDateUpdate={onDateUpdate}
+              story={story}
+            />
+          </Box>
+        </Box>
+      ))}
     </Box>
   );
 };
@@ -550,19 +554,15 @@ export const GanttBoard = ({
       )}
       ref={containerRef}
     >
-      <TimelineHeader dateRange={dateRange} />
-      <Box className="min-w-max">
-        {storiesWithDates.map((story) => (
-          <GanttRow
-            containerRef={containerRef}
-            dateRange={dateRange}
-            key={story.id}
-            onDateUpdate={handleDateUpdate}
-            story={story}
-            teamCode={teamCode}
-          />
-        ))}
-      </Box>
+      <Flex className="min-w-max">
+        <StoriesSection stories={storiesWithDates} teamCode={teamCode} />
+        <ChartSection
+          containerRef={containerRef}
+          dateRange={dateRange}
+          onDateUpdate={handleDateUpdate}
+          stories={storiesWithDates}
+        />
+      </Flex>
     </div>
   );
 };
