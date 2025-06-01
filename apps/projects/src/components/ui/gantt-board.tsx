@@ -9,44 +9,14 @@ import {
   differenceInDays,
   formatISO,
   isWeekend,
-  startOfWeek,
-  endOfWeek,
+  subDays,
 } from "date-fns";
 import { useParams } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { BodyContainer } from "../shared/body";
-
-// Helper to get date range for the gantt chart
-const getDateRange = (stories: Story[]) => {
-  const storiesWithDates = stories.filter(
-    (story) => story.startDate || story.endDate,
-  );
-
-  if (storiesWithDates.length === 0) {
-    const now = new Date();
-    return {
-      start: startOfWeek(now),
-      end: endOfWeek(addDays(now, 21)), // 3 weeks
-    };
-  }
-
-  const dates = storiesWithDates.reduce<Date[]>((acc, story) => {
-    if (story.startDate) acc.push(new Date(story.startDate));
-    if (story.endDate) acc.push(new Date(story.endDate));
-    return acc;
-  }, []);
-
-  const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-  return {
-    start: startOfWeek(addDays(minDate, -3)),
-    end: endOfWeek(addDays(maxDate, 7)),
-  };
-};
 
 // Interactive gantt bar component
 const GanttBar = ({
@@ -225,7 +195,7 @@ const GanttRow = ({
   });
 
   // Calculate minimum width for timeline to ensure proper sticky behavior
-  const timelineMinWidth = days.length * 80; // 80px per day (min-w-20 = 80px)
+  const timelineMinWidth = days.length * 64; // 64px per day (min-w-16 = 64px)
   const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
 
   return (
@@ -266,7 +236,7 @@ const GanttRow = ({
           {days.map((day) => (
             <Box
               className={cn(
-                "min-w-20 flex-1 border-r border-gray-100 dark:border-dark-200",
+                "min-w-16 flex-1 border-r border-gray-100 dark:border-dark-200",
                 {
                   "bg-gray-50/50 dark:bg-dark-200/20": isWeekend(day),
                 },
@@ -301,7 +271,7 @@ const TimelineHeader = ({
   });
 
   // Calculate minimum width for timeline to ensure proper sticky behavior
-  const timelineMinWidth = days.length * 80; // 80px per day (min-w-20 = 80px)
+  const timelineMinWidth = days.length * 64; // 64px per day (min-w-16 = 64px)
   const totalRowWidth = 30 * 16 + 24 * 4 + timelineMinWidth; // 30rem + 6rem + timeline width (converted to px)
 
   return (
@@ -353,7 +323,7 @@ const TimelineHeader = ({
               {days.map((day) => (
                 <Box
                   className={cn(
-                    "min-w-20 flex-1 border-r border-gray-100 px-1 py-1 text-center dark:border-dark-200",
+                    "min-w-16 flex-1 border-r border-gray-100 px-1 py-1 text-center dark:border-dark-200",
                     {
                       "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
                     },
@@ -400,6 +370,15 @@ const getMonthSpans = (days: Date[]) => {
   return spans;
 };
 
+// Helper to get the visible date range for the gantt chart
+const getVisibleDateRange = (centerDate: Date, viewportDays = 365) => {
+  const halfViewport = Math.floor(viewportDays / 2);
+  return {
+    start: subDays(centerDate, halfViewport),
+    end: addDays(centerDate, halfViewport),
+  };
+};
+
 export const GanttBoard = ({
   stories,
   className,
@@ -410,9 +389,13 @@ export const GanttBoard = ({
   const { teamId } = useParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const team = teams.find(({ id }) => id === teamId);
   const teamCode = team?.code || "STORY";
+
+  // Calculate visible date range centered on today (1 year total)
+  const dateRange = getVisibleDateRange(new Date(), 365);
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -428,11 +411,38 @@ export const GanttBoard = ({
     [mutate],
   );
 
+  // Auto-scroll to center on today when component mounts
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Wait for next frame to ensure everything is rendered
+    const timer = requestAnimationFrame(() => {
+      const now = new Date();
+      const daysFromStart = differenceInDays(now, dateRange.start);
+
+      // Calculate position: sticky columns width + (current date position * day width)
+      const stickyColumnsWidth = 34 * 16; // 34rem converted to px
+      const dayWidth = 64; // min-w-16 = 64px
+      const currentDatePixelPosition = daysFromStart * dayWidth;
+
+      // Center the current date in the viewport
+      const viewportWidth = container.clientWidth;
+      const scrollPosition =
+        stickyColumnsWidth + currentDatePixelPosition - viewportWidth / 2;
+
+      container.scrollLeft = Math.max(0, scrollPosition);
+    });
+
+    return () => {
+      cancelAnimationFrame(timer);
+    };
+  }, [dateRange.start, dateRange.end]);
+
   // Filter stories to only show those with dates
   const storiesWithDates = stories.filter(
     (story) => story.startDate || story.endDate,
   );
-  const dateRange = getDateRange(stories);
 
   if (storiesWithDates.length === 0) {
     return (
@@ -454,24 +464,24 @@ export const GanttBoard = ({
   }
 
   return (
-    <BodyContainer
-      className={cn(
-        "relative left-px overflow-x-auto overflow-y-auto",
-        className,
-      )}
-    >
-      <TimelineHeader dateRange={dateRange} />
-      <Box className="min-w-max">
-        {storiesWithDates.map((story) => (
-          <GanttRow
-            dateRange={dateRange}
-            key={story.id}
-            onDateUpdate={handleDateUpdate}
-            story={story}
-            teamCode={teamCode}
-          />
-        ))}
-      </Box>
+    <BodyContainer className={cn("relative left-px", className)}>
+      <div
+        className="gantt-container overflow-x-auto overflow-y-auto"
+        ref={containerRef}
+      >
+        <TimelineHeader dateRange={dateRange} />
+        <Box className="min-w-max">
+          {storiesWithDates.map((story) => (
+            <GanttRow
+              dateRange={dateRange}
+              key={story.id}
+              onDateUpdate={handleDateUpdate}
+              story={story}
+              teamCode={teamCode}
+            />
+          ))}
+        </Box>
+      </div>
     </BodyContainer>
   );
 };
