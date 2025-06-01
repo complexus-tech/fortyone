@@ -381,7 +381,8 @@ const getWeekSpans = (days: Date[]) => {
 
     // Check if this is the last day of the current week or the last day overall
     const isEndOfWeek =
-      !nextDay || !isSameWeek(currentDay, nextDay, { weekStartsOn: 0 }); // 0 = Sunday
+      i === days.length - 1 ||
+      !isSameWeek(currentDay, nextDay, { weekStartsOn: 0 }); // 0 = Sunday
 
     if (isEndOfWeek) {
       const span = i - startIndex + 1;
