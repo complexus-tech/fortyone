@@ -14,30 +14,10 @@ export const GanttIcon = (props: Icon) => {
       width="24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M3 3V21H21"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 7H13"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 11H17"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 15H11"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect width="24" height="24" fill="none" />
+      <rect x="2" y="5" width="10" height="4" fill="currentColor" rx="2" />
+      <rect x="6" y="11" width="14" height="4" fill="currentColor" rx="2" />
+      <rect x="4" y="17" width="10" height="4" fill="currentColor" rx="2" />
     </svg>
   );
 };

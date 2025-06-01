@@ -18,7 +18,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { BodyContainer } from "../shared/body";
 
 // Interactive gantt bar component
 const GanttBar = ({
@@ -542,25 +541,6 @@ export const GanttBoard = ({
   const storiesWithDates = stories.filter(
     (story) => story.startDate || story.endDate,
   );
-
-  if (storiesWithDates.length === 0) {
-    return (
-      <BodyContainer
-        className={cn("flex h-96 items-center justify-center", className)}
-      >
-        <Box className="max-w-lg text-center">
-          <Text className="mb-4" fontSize="xl" fontWeight="semibold">
-            No stories with dates
-          </Text>
-          <Text color="muted">
-            Add start dates or deadlines to stories to see them in the gantt
-            chart. Once visible, you can drag the bars to update dates
-            interactively.
-          </Text>
-        </Box>
-      </BodyContainer>
-    );
-  }
 
   return (
     <div

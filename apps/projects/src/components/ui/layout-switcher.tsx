@@ -39,7 +39,7 @@ export const LayoutSwitcher = ({
         title={disabled ? undefined : "List view"}
         type="button"
       >
-        <ListIcon className="h-[1.1rem] w-auto" strokeWidth={3} />
+        <ListIcon className="h-[1.1rem] w-auto" strokeWidth={3.5} />
         <span className="hidden md:inline">List</span>
       </button>
       <button
@@ -62,7 +62,7 @@ export const LayoutSwitcher = ({
       </button>
       <button
         className={cn(
-          "flex h-full items-center gap-1.5 rounded-lg px-3 font-medium disabled:cursor-not-allowed dark:text-white/55 enabled:hover:dark:text-gray-100",
+          "flex h-full items-center gap-1 rounded-lg px-3 font-medium disabled:cursor-not-allowed dark:text-white/55 enabled:hover:dark:text-gray-100",
           {
             "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
               layout === "gantt",
@@ -75,7 +75,7 @@ export const LayoutSwitcher = ({
         title={disabled ? undefined : "Gantt Chart"}
         type="button"
       >
-        <GanttIcon className="h-5 w-auto" />
+        <GanttIcon />
         <span className="hidden md:inline">Gantt</span>
       </button>
     </Flex>
