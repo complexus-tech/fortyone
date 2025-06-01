@@ -370,14 +370,17 @@ const TimelineHeader = ({
                       className="h-5 min-h-0"
                       justify="between"
                     >
-                      <Text color="muted" fontSize="sm" fontWeight="medium">
+                      <Text
+                        className="text-[0.9rem]"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
                         {month}
                       </Text>
                       <Text
-                        className="opacity-80"
+                        className="text-[0.9rem] opacity-60"
                         color="muted"
-                        fontSize="sm"
-                        fontWeight="medium"
+                        fontWeight="semibold"
                       >
                         {week}
                       </Text>
