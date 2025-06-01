@@ -479,6 +479,7 @@ export const GanttBoard = ({
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
 
   const team = teams.find(({ id }) => id === teamId);
   const teamCode = team?.code || "STORY";
@@ -502,10 +503,10 @@ export const GanttBoard = ({
     [mutate],
   );
 
-  // Auto-scroll to center on today when component mounts
+  // Auto-scroll to center on today when component mounts (only once)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || hasScrolledRef.current) return;
 
     // Wait for next frame to ensure everything is rendered
     const timer = requestAnimationFrame(() => {
@@ -523,12 +524,13 @@ export const GanttBoard = ({
         stickyColumnsWidth + currentDatePixelPosition - viewportWidth / 2;
 
       container.scrollLeft = Math.max(0, scrollPosition);
+      hasScrolledRef.current = true;
     });
 
     return () => {
       cancelAnimationFrame(timer);
     };
-  }, [dateRange.start, dateRange.end]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Filter stories to only show those with dates
   const storiesWithDates = stories.filter(
