@@ -36,10 +36,8 @@ const GanttBar = ({
     type: "move" | "resize-start" | "resize-end";
   } | null>(null);
 
-  // Calculate positions
-  const startDate = story.startDate
-    ? new Date(story.startDate)
-    : new Date(story.createdAt);
+  // Calculate positions (will be used only if both dates exist)
+  const startDate = story.startDate ? new Date(story.startDate) : new Date();
   const endDate = story.endDate
     ? new Date(story.endDate)
     : addDays(startDate, 1);
@@ -121,16 +119,16 @@ const GanttBar = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Early returns after hooks
-  if (!story.startDate && !story.endDate) return null;
+  // Early return if story doesn't have both start and end dates (after all hooks)
+  if (!story.startDate || !story.endDate) return null;
   if (width <= 0) return null;
 
   return (
     <Box
       className={cn(
-        "bg-blue-500 hover:bg-blue-600 group absolute h-6 cursor-pointer rounded transition-colors",
+        "group absolute h-10 cursor-pointer overflow-hidden rounded-lg bg-gray-100 transition-colors dark:bg-dark-200",
         {
-          "ring-blue-300 shadow-lg ring-2": isDragging,
+          "shadow-lg ring-2": isDragging,
         },
       )}
       onMouseDown={(e) => {
@@ -144,7 +142,7 @@ const GanttBar = ({
     >
       {/* Resize handle - start */}
       <Box
-        className="bg-blue-700 absolute left-0 top-0 h-full w-1 cursor-ew-resize opacity-0 group-hover:opacity-100"
+        className="absolute left-0 top-0 h-full w-1 cursor-ew-resize"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-start");
@@ -153,7 +151,7 @@ const GanttBar = ({
 
       {/* Resize handle - end */}
       <Box
-        className="bg-blue-700 absolute right-0 top-0 h-full w-1 cursor-ew-resize opacity-0 group-hover:opacity-100"
+        className="absolute right-0 top-0 h-full w-1 cursor-ew-resize"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-end");
@@ -161,14 +159,13 @@ const GanttBar = ({
       />
 
       {/* Story title inside bar */}
-      {width > 15 && (
-        <Text
-          className="absolute inset-0 flex items-center truncate px-2 text-xs text-white"
-          fontWeight="medium"
-        >
-          {story.title}
-        </Text>
-      )}
+
+      <Text
+        className="line-clamp-1 block truncate px-3 leading-10"
+        fontWeight="medium"
+      >
+        {story.title}
+      </Text>
     </Box>
   );
 };
