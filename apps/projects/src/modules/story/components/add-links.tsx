@@ -14,12 +14,7 @@ export const AddLinks = ({ storyId }: { storyId: string }) => {
         <Button
           color="tertiary"
           disabled={userRole === "guest"}
-          leftIcon={
-            <PlusIcon
-              className="text-white dark:text-gray-200"
-              strokeWidth={2}
-            />
-          }
+          leftIcon={<PlusIcon strokeWidth={2} />}
           onClick={() => {
             if (userRole !== "guest") {
               setIsOpen(true);
