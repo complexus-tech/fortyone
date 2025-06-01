@@ -306,7 +306,7 @@ const TimelineHeader = ({
               <Flex>
                 {getMonthSpans(days).map(({ month, startIndex, span }) => (
                   <Box
-                    className="border-r border-gray-100 px-2 py-1.5 text-center dark:border-dark-200"
+                    className="border-r border-gray-100 px-2 py-1.5 text-left dark:border-dark-200"
                     key={month}
                     style={{ width: `${(span / days.length) * 100}%` }}
                   >
