@@ -720,20 +720,66 @@ const TimelineHeader = ({
       case "quarters":
         // Quarterly view
         return (
-          <Flex>
-            {periods.map((quarter) => (
-              <Box
-                className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
-                key={quarter.getTime()}
-                style={{ minWidth: `${columnWidth}px` }}
-              >
-                <Text color="muted" fontSize="sm" fontWeight="medium">
-                  Q{Math.ceil((quarter.getMonth() + 1) / 3)}{" "}
-                  {format(quarter, "yyyy")}
-                </Text>
-              </Box>
-            ))}
-          </Flex>
+          <>
+            {/* Quarter row */}
+            <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+              <Flex>
+                {periods.map((quarter) => (
+                  <Box
+                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    key={quarter.getTime()}
+                    style={{ minWidth: `${columnWidth}px` }}
+                  >
+                    <Flex
+                      align="center"
+                      className="h-5 min-h-0"
+                      justify="between"
+                    >
+                      <Text
+                        className="text-[0.9rem]"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        Q{Math.ceil((quarter.getMonth() + 1) / 3)}
+                      </Text>
+                      <Text
+                        className="text-[0.9rem] opacity-60"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        {format(quarter, "yyyy")}
+                      </Text>
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+
+            {/* Months row - first and last month of quarter */}
+            <Flex>
+              {periods.map((quarter) => {
+                const quarterStart = startOfQuarter(quarter);
+                const quarterEnd = endOfQuarter(quarter);
+
+                return (
+                  <Box
+                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                    key={quarter.getTime()}
+                    style={{ minWidth: `${columnWidth}px` }}
+                  >
+                    <Flex align="center" className="px-1" justify="between">
+                      <Text color="muted" fontSize="sm">
+                        {format(quarterStart, "MMM")}
+                      </Text>
+                      <Text color="muted" fontSize="sm">
+                        {format(quarterEnd, "MMM")}
+                      </Text>
+                    </Flex>
+                  </Box>
+                );
+              })}
+            </Flex>
+          </>
         );
       default:
         return null;
