@@ -22,7 +22,7 @@ import {
   addMonths,
   addQuarters,
 } from "date-fns";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ArrowDown2Icon } from "icons";
 import Link from "next/link";
@@ -842,7 +842,7 @@ const Header = ({
   return (
     <Flex
       align="center"
-      className="sticky top-0 h-16 border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
+      className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
       justify="between"
     >
       <Button color="tertiary" onClick={onReset} size="sm">
@@ -896,13 +896,13 @@ const Header = ({
 // Stories Component
 const Stories = ({
   stories,
-  teamCode,
+  getTeamCode,
   onReset,
   zoomLevel,
   onZoomChange,
 }: {
   stories: Story[];
-  teamCode: string;
+  getTeamCode: (teamId: string) => string;
   onReset: () => void;
   zoomLevel: ZoomLevel;
   onZoomChange: (zoom: ZoomLevel) => void;
@@ -978,7 +978,7 @@ const Stories = ({
                     className="line-clamp-1 w-16 shrink-0 text-[0.95rem]"
                     color="muted"
                   >
-                    {teamCode}-{story.sequenceId}
+                    {getTeamCode(story.teamId)}-{story.sequenceId}
                   </Text>
                   <AssigneesMenu>
                     <Tooltip
@@ -1186,7 +1186,6 @@ type GanttBoardProps = {
 };
 
 export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
-  const { teamId } = useParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1196,8 +1195,11 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     "weeks",
   );
 
-  const team = teams.find(({ id }) => id === teamId);
-  const teamCode = team?.code || "STORY";
+  // Simple function to get team code from teamId
+  const getTeamCode = (teamId: string) => {
+    const team = teams.find((t) => t.id === teamId);
+    return team?.code || "STORY";
+  };
 
   // Calculate visible date range centered on today (1 year total)
   const today = new Date();
@@ -1298,10 +1300,10 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     >
       <Flex className="min-w-max">
         <Stories
+          getTeamCode={getTeamCode}
           onReset={scrollToToday}
           onZoomChange={setZoomLevel}
           stories={storiesWithDates}
-          teamCode={teamCode}
           zoomLevel={zoomLevel}
         />
         <Chart
