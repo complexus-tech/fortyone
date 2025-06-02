@@ -33,8 +33,102 @@ import { StatusesMenu } from "@/components/ui/story/statuses-menu";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 
-// Interactive gantt bar component
-const GanttBar = ({
+// Types
+type ZoomLevel = "weeks" | "months" | "quarters";
+
+// Helper functions
+const getTimePeriodsForZoom = (
+  dateRange: { start: Date; end: Date },
+  zoomLevel: ZoomLevel,
+) => {
+  switch (zoomLevel) {
+    case "weeks":
+      return eachDayOfInterval({
+        start: dateRange.start,
+        end: dateRange.end,
+      });
+    case "months":
+      return eachMonthOfInterval({
+        start: startOfMonth(dateRange.start),
+        end: endOfMonth(dateRange.end),
+      });
+    case "quarters":
+      return eachQuarterOfInterval({
+        start: startOfQuarter(dateRange.start),
+        end: endOfQuarter(dateRange.end),
+      });
+    default:
+      return [];
+  }
+};
+
+const getColumnWidth = (zoomLevel: ZoomLevel) => {
+  switch (zoomLevel) {
+    case "weeks":
+      return 64; // 64px per day
+    case "months":
+      return 120; // 120px per month
+    case "quarters":
+      return 180; // 180px per quarter
+    default:
+      return 64;
+  }
+};
+
+const getWeekSpans = (days: Date[]) => {
+  if (days.length === 0) return [];
+
+  const spans: {
+    week: string;
+    month: string;
+    startIndex: number;
+    span: number;
+  }[] = [];
+  let startIndex = 0;
+
+  for (let i = 0; i < days.length; i++) {
+    const currentDay = days[i];
+    const nextDay = days[i + 1];
+
+    // Check if this is the last day of the current week or the last day overall
+    const isEndOfWeek =
+      i === days.length - 1 ||
+      !isSameWeek(currentDay, nextDay, { weekStartsOn: 0 }); // 0 = Sunday
+
+    if (isEndOfWeek) {
+      const span = i - startIndex + 1;
+      const weekStart = days[startIndex];
+      const weekNumber = getWeek(weekStart, { weekStartsOn: 0 });
+      const monthYear = format(weekStart, "MMM yyyy");
+
+      spans.push({
+        week: `Week ${weekNumber}`,
+        month: monthYear,
+        startIndex,
+        span,
+      });
+
+      startIndex = i + 1;
+    }
+  }
+
+  return spans;
+};
+
+const getVisibleDateRange = (centerDate: Date, viewportDays = 365) => {
+  const halfViewport = Math.floor(viewportDays / 2);
+  const start = subDays(centerDate, halfViewport);
+  const end = addDays(centerDate, halfViewport);
+
+  // Normalize to start of day for consistent alignment
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  return { start, end };
+};
+
+// Bar Component - Interactive gantt bar
+const Bar = ({
   story,
   dateRange,
   onDateUpdate,
@@ -465,7 +559,7 @@ const GanttBar = ({
   );
 };
 
-// Timeline header component - now only handles the date columns
+// Timeline Header Component
 const TimelineHeader = ({
   dateRange,
   zoomLevel,
@@ -614,50 +708,8 @@ const TimelineHeader = ({
   );
 };
 
-// Zoom level type
-type ZoomLevel = "weeks" | "months" | "quarters";
-
-// Helper functions for different time periods
-const getTimePeriodsForZoom = (
-  dateRange: { start: Date; end: Date },
-  zoomLevel: ZoomLevel,
-) => {
-  switch (zoomLevel) {
-    case "weeks":
-      return eachDayOfInterval({
-        start: dateRange.start,
-        end: dateRange.end,
-      });
-    case "months":
-      return eachMonthOfInterval({
-        start: startOfMonth(dateRange.start),
-        end: endOfMonth(dateRange.end),
-      });
-    case "quarters":
-      return eachQuarterOfInterval({
-        start: startOfQuarter(dateRange.start),
-        end: endOfQuarter(dateRange.end),
-      });
-    default:
-      return [];
-  }
-};
-
-const getColumnWidth = (zoomLevel: ZoomLevel) => {
-  switch (zoomLevel) {
-    case "weeks":
-      return 64; // 64px per day
-    case "months":
-      return 120; // 120px per month
-    case "quarters":
-      return 180; // 180px per quarter
-    default:
-      return 64;
-  }
-};
-
-// Stories header component
-const StoriesHeader = ({
+// Header Component
+const Header = ({
   onReset,
   zoomLevel,
   onZoomChange,
@@ -733,8 +785,8 @@ const StoriesHeader = ({
   );
 };
 
-// Sticky stories section component
-const StoriesSection = ({
+// Stories Component
+const Stories = ({
   stories,
   teamCode,
   onReset,
@@ -749,7 +801,7 @@ const StoriesSection = ({
 }) => {
   return (
     <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
-      <StoriesHeader
+      <Header
         onReset={onReset}
         onZoomChange={onZoomChange}
         zoomLevel={zoomLevel}
@@ -827,8 +879,8 @@ const StoriesSection = ({
   );
 };
 
-// Chart section component
-const ChartSection = ({
+// Chart Component
+const Chart = ({
   stories,
   dateRange,
   onDateUpdate,
@@ -891,7 +943,7 @@ const ChartSection = ({
 
           {/* Gantt bar on top of grid */}
           <Box className="z-5 relative h-full px-2">
-            <GanttBar
+            <Bar
               containerRef={containerRef}
               dateRange={dateRange}
               onDateUpdate={onDateUpdate}
@@ -906,67 +958,13 @@ const ChartSection = ({
   );
 };
 
-// Helper function to get week spans
-const getWeekSpans = (days: Date[]) => {
-  if (days.length === 0) return [];
-
-  const spans: {
-    week: string;
-    month: string;
-    startIndex: number;
-    span: number;
-  }[] = [];
-  let startIndex = 0;
-
-  for (let i = 0; i < days.length; i++) {
-    const currentDay = days[i];
-    const nextDay = days[i + 1];
-
-    // Check if this is the last day of the current week or the last day overall
-    const isEndOfWeek =
-      i === days.length - 1 ||
-      !isSameWeek(currentDay, nextDay, { weekStartsOn: 0 }); // 0 = Sunday
-
-    if (isEndOfWeek) {
-      const span = i - startIndex + 1;
-      const weekStart = days[startIndex];
-      const weekNumber = getWeek(weekStart, { weekStartsOn: 0 });
-      const monthYear = format(weekStart, "MMM yyyy");
-
-      spans.push({
-        week: `Week ${weekNumber}`,
-        month: monthYear,
-        startIndex,
-        span,
-      });
-
-      startIndex = i + 1;
-    }
-  }
-
-  return spans;
-};
-
-// Helper to get the visible date range for the gantt chart
-const getVisibleDateRange = (centerDate: Date, viewportDays = 365) => {
-  const halfViewport = Math.floor(viewportDays / 2);
-  const start = subDays(centerDate, halfViewport);
-  const end = addDays(centerDate, halfViewport);
-
-  // Normalize to start of day for consistent alignment
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-
-  return { start, end };
-};
-
-export const GanttBoard = ({
-  stories,
-  className,
-}: {
+// Main GanttBoard Component
+type GanttBoardProps = {
   stories: Story[];
   className?: string;
-}) => {
+};
+
+export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
@@ -1075,14 +1073,14 @@ export const GanttBoard = ({
       ref={containerRef}
     >
       <Flex className="min-w-max">
-        <StoriesSection
+        <Stories
           onReset={scrollToToday}
           onZoomChange={setZoomLevel}
           stories={storiesWithDates}
           teamCode={teamCode}
           zoomLevel={zoomLevel}
         />
-        <ChartSection
+        <Chart
           containerRef={containerRef}
           dateRange={dateRange}
           onDateUpdate={handleDateUpdate}
