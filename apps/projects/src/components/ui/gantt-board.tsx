@@ -148,14 +148,12 @@ const Bar = ({
   onDateUpdate,
   containerRef,
   zoomLevel,
-  onDragStateChange,
 }: {
   story: Story;
   dateRange: { start: Date; end: Date };
   onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
-  onDragStateChange: (isDragging: boolean) => void;
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{
@@ -190,7 +188,6 @@ const Bar = ({
       e.preventDefault();
       e.stopPropagation();
       // Immediately prevent scrolling before drag state is set
-      onDragStateChange(true);
       setIsDragging(true);
       setDragStart({
         x: e.clientX,
@@ -199,7 +196,7 @@ const Bar = ({
         originalEndDate: endDate,
       });
     },
-    [startDate, endDate, onDragStateChange],
+    [startDate, endDate],
   );
 
   const handleMouseMove = useCallback(
@@ -348,7 +345,6 @@ const Bar = ({
   const handleMouseUp = useCallback(() => {
     if (!isDragging || !dragStart || !dragPosition) {
       setIsDragging(false);
-      onDragStateChange(false);
       setDragStart(null);
       setDragPosition(null);
       return;
@@ -419,7 +415,6 @@ const Bar = ({
 
     // Reset drag state but delay clearing drag position for optimistic update
     setIsDragging(false);
-    onDragStateChange(false);
     setDragStart(null);
 
     // Delay clearing drag position to allow server update to complete
@@ -435,7 +430,6 @@ const Bar = ({
     story.id,
     onDateUpdate,
     zoomLevel,
-    onDragStateChange,
   ]);
 
   // Global mouse event listeners
@@ -1107,14 +1101,12 @@ const Chart = ({
   onDateUpdate,
   containerRef,
   zoomLevel,
-  onDragStateChange,
 }: {
   stories: Story[];
   dateRange: { start: Date; end: Date };
   onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
-  onDragStateChange: (isDragging: boolean) => void;
 }) => {
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
@@ -1168,7 +1160,6 @@ const Chart = ({
               containerRef={containerRef}
               dateRange={dateRange}
               onDateUpdate={onDateUpdate}
-              onDragStateChange={onDragStateChange}
               story={story}
               zoomLevel={zoomLevel}
             />
@@ -1219,11 +1210,6 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     },
     [mutate],
   );
-
-  // Update the drag state tracking
-  const handleDragStateChange = useCallback((_dragging: boolean) => {
-    // Simplified - no longer tracking drag state for scroll prevention
-  }, []);
 
   // Scroll to today function - only called on mount and when Today button is clicked
   const scrollToToday = useCallback(() => {
@@ -1310,7 +1296,6 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
           containerRef={containerRef}
           dateRange={dateRange}
           onDateUpdate={handleDateUpdate}
-          onDragStateChange={handleDragStateChange}
           stories={storiesWithDates}
           zoomLevel={zoomLevel}
         />
