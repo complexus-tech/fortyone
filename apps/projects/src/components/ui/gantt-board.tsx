@@ -661,19 +661,61 @@ const TimelineHeader = ({
       case "months":
         // Monthly view
         return (
-          <Flex>
-            {periods.map((month) => (
-              <Box
-                className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
-                key={month.getTime()}
-                style={{ minWidth: `${columnWidth}px` }}
-              >
-                <Text color="muted" fontSize="sm" fontWeight="medium">
-                  {format(month, "MMM yyyy")}
-                </Text>
-              </Box>
-            ))}
-          </Flex>
+          <>
+            {/* Month row */}
+            <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+              <Flex>
+                {periods.map((month) => (
+                  <Box
+                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    key={month.getTime()}
+                    style={{ minWidth: `${columnWidth}px` }}
+                  >
+                    <Flex
+                      align="center"
+                      className="h-5 min-h-0"
+                      justify="between"
+                    >
+                      <Text
+                        className="text-[0.9rem]"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        {format(month, "MMM")}
+                      </Text>
+                      <Text
+                        className="text-[0.9rem] opacity-60"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        {format(month, "yyyy")}
+                      </Text>
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+
+            {/* Days row - first and last day */}
+            <Flex>
+              {periods.map((month) => (
+                <Box
+                  className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                  key={month.getTime()}
+                  style={{ minWidth: `${columnWidth}px` }}
+                >
+                  <Flex align="center" className="px-1" justify="between">
+                    <Text color="muted" fontSize="sm">
+                      {format(month, "d")}
+                    </Text>
+                    <Text color="muted" fontSize="sm">
+                      {format(endOfMonth(month), "d")}
+                    </Text>
+                  </Flex>
+                </Box>
+              ))}
+            </Flex>
+          </>
         );
       case "quarters":
         // Quarterly view
