@@ -23,7 +23,7 @@ import {
   addQuarters,
 } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { ArrowDown2Icon } from "icons";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -169,15 +169,20 @@ const Bar = ({
     width: number;
   } | null>(null);
 
-  // Calculate positions (will be used only if both dates exist)
-  const startDate = story.startDate ? new Date(story.startDate) : new Date();
-  const endDate = story.endDate
-    ? new Date(story.endDate)
-    : addDays(startDate, 1);
+  // Calculate positions (will be used only if both dates exist) - wrapped in useMemo to fix dependency warnings
+  const startDate = useMemo(() => {
+    const date = story.startDate ? new Date(story.startDate) : new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [story.startDate]);
 
-  // Normalize dates to start of day to ensure proper alignment
-  startDate.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
+  const endDate = useMemo(() => {
+    const date = story.endDate
+      ? new Date(story.endDate)
+      : addDays(startDate, 1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [story.endDate, startDate]);
 
   // Use pixel-based positioning to align with date columns
   const columnWidth = getColumnWidth(zoomLevel);
@@ -339,7 +344,7 @@ const Bar = ({
         width: newWidth,
       });
     },
-    [isDragging, dragStart, columnWidth, dateRange.start, zoomLevel],
+    [isDragging, dragStart, columnWidth, dateRange, zoomLevel, containerRef],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -426,7 +431,7 @@ const Bar = ({
     dragStart,
     dragPosition,
     columnWidth,
-    dateRange.start,
+    dateRange,
     story.id,
     onDateUpdate,
     zoomLevel,
@@ -908,7 +913,7 @@ const Stories = ({
   const { mutate } = useUpdateStoryMutation();
 
   // Get team members for the first story's team (assuming all stories are from same team)
-  const firstStoryTeamId = stories[0]?.teamId;
+  const firstStoryTeamId = stories[0]?.teamId as string | undefined;
   const { data: members = [] } = useTeamMembers(firstStoryTeamId);
 
   const handleUpdate = useCallback(
@@ -925,7 +930,9 @@ const Stories = ({
     <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
       <Header
         onReset={onReset}
-        onZoomChange={onZoomChange}
+        onZoomChange={(zoom: ZoomLevel) => {
+          onZoomChange(zoom);
+        }}
         zoomLevel={zoomLevel}
       />
       {stories.map((story) => {
@@ -937,7 +944,7 @@ const Stories = ({
 
         // Get selected assignee
         const selectedAssignee = members.find(
-          (member) => member.id === story.assigneeId,
+          (member) => member.id === story.assigneeId!,
         );
 
         return (
@@ -945,18 +952,20 @@ const Stories = ({
             key={story.id}
             onMouseEnter={() => {
               // Prefetch story data for better UX
-              queryClient.prefetchQuery({
-                queryKey: storyKeys.detail(story.id),
-                queryFn: () => getStory(story.id, session!),
-              });
-              queryClient.prefetchQuery({
-                queryKey: storyKeys.attachments(story.id),
-                queryFn: () => getStoryAttachments(story.id, session!),
-              });
-              queryClient.prefetchQuery({
-                queryKey: linkKeys.story(story.id),
-                queryFn: () => getLinks(story.id, session!),
-              });
+              if (session) {
+                queryClient.prefetchQuery({
+                  queryKey: storyKeys.detail(story.id),
+                  queryFn: () => getStory(story.id, session),
+                });
+                queryClient.prefetchQuery({
+                  queryKey: storyKeys.attachments(story.id),
+                  queryFn: () => getStoryAttachments(story.id, session),
+                });
+                queryClient.prefetchQuery({
+                  queryKey: linkKeys.story(story.id),
+                  queryFn: () => getLinks(story.id, session),
+                });
+              }
               router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
             }}
           >
@@ -1183,7 +1192,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const hasScrolledRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     "zoomLevel",
-    "weeks",
+    "weeks" as ZoomLevel,
   );
 
   // Simple function to get team code from teamId
@@ -1261,7 +1270,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
 
       container.scrollLeft = Math.max(0, scrollPosition);
     });
-  }, [dateRange.start, zoomLevel]);
+  }, [dateRange, zoomLevel]);
 
   // Auto-scroll to center on today when component mounts (only once)
   useEffect(() => {
@@ -1288,7 +1297,9 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
         <Stories
           getTeamCode={getTeamCode}
           onReset={scrollToToday}
-          onZoomChange={setZoomLevel}
+          onZoomChange={(zoom: ZoomLevel) => {
+            setZoomLevel(zoom);
+          }}
           stories={storiesWithDates}
           zoomLevel={zoomLevel}
         />
