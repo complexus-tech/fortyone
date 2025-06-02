@@ -45,10 +45,13 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: members = [] } = useTeamMembers(firstStoryTeamId);
 
   // Simple function to get team code from teamId
-  const getTeamCode = (teamId: string) => {
-    const team = teams.find((t) => t.id === teamId);
-    return team?.code;
-  };
+  const getTeamCode = useCallback(
+    (teamId: string) => {
+      const team = teams.find((t) => t.id === teamId);
+      return team?.code;
+    },
+    [teams],
+  );
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
