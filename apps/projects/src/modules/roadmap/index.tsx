@@ -1,31 +1,26 @@
 "use client";
 
-import { useCallback } from "react";
-import { BreadCrumbs, Flex, Text } from "ui";
-import { RoadmapIcon } from "icons";
+import { useState } from "react";
+import { BreadCrumbs, Flex, Button, Box } from "ui";
+import { RoadmapIcon, PlusIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useLocalStorage } from "@/hooks";
-import {
-  RoadmapLayout,
-  type RoadmapLayoutType,
-} from "@/components/ui/roadmap-layout";
+import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
 import { RoadmapGanttBoard } from "@/components/ui/roadmap-gantt-board";
 import { ListObjectives } from "@/modules/objectives/components/list-objectives";
+import { NewObjectiveDialog } from "@/components/ui";
+import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
+import type { RoadmapLayoutType } from "./types";
 
 export const RoadmapPage = () => {
+  const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
   const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
     "roadmapLayout",
     "gantt",
   );
   const { data: objectives = [] } = useObjectives();
-
-  const handleLayoutChange = useCallback(
-    (newLayout: RoadmapLayoutType) => {
-      setLayout(newLayout);
-    },
-    [setLayout],
-  );
+  const [isOpen, setIsOpen] = useState(false);
 
   const renderContent = () => {
     switch (layout) {
@@ -54,20 +49,26 @@ export const RoadmapPage = () => {
             ]}
           />
         </Flex>
-        <Flex align="center" gap={2}>
-          <Text className="text-gray-500 text-sm">
-            {objectives.length} objective{objectives.length !== 1 ? "s" : ""}
-          </Text>
+        <Flex align="center" gap={1}>
+          <RoadmapLayoutSwitcher layout={layout} setLayout={setLayout} />
+          <Button
+            color="tertiary"
+            disabled={userRole === "guest"}
+            leftIcon={<PlusIcon className="h-[1.1rem]" />}
+            onClick={() => {
+              if (userRole !== "guest") {
+                setIsOpen(true);
+              }
+            }}
+            size="sm"
+          >
+            New {getTermDisplay("objectiveTerm", { capitalize: true })}
+          </Button>
         </Flex>
       </HeaderContainer>
 
-      <RoadmapLayout
-        className="h-[calc(100dvh-4rem)]"
-        layout={layout}
-        onLayoutChange={handleLayoutChange}
-      >
-        {renderContent()}
-      </RoadmapLayout>
+      <Box className="h-[calc(100dvh-4rem)]">{renderContent()}</Box>
+      <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
   );
 };
