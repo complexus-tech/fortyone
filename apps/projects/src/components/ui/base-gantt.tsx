@@ -165,17 +165,40 @@ const Bar = <T extends GanttItem>({
     pixelOffsetX: number;
   } | null>(null);
 
+  // Optimistic state to prevent flash during update
+  const [optimisticDates, setOptimisticDates] = useState<{
+    startDate: string;
+    endDate: string;
+  } | null>(null);
+
   const startDate = useMemo(() => {
-    const date = item.startDate ? new Date(item.startDate) : new Date();
+    const dateStr = optimisticDates?.startDate || item.startDate;
+    const date = dateStr ? new Date(dateStr) : new Date();
     date.setHours(0, 0, 0, 0);
     return date;
-  }, [item.startDate]);
+  }, [item.startDate, optimisticDates?.startDate]);
 
   const endDate = useMemo(() => {
-    const date = item.endDate ? new Date(item.endDate) : addDays(startDate, 1);
+    const dateStr = optimisticDates?.endDate || item.endDate;
+    const date = dateStr ? new Date(dateStr) : addDays(startDate, 1);
     date.setHours(0, 0, 0, 0);
     return date;
-  }, [item.endDate, startDate]);
+  }, [item.endDate, optimisticDates?.endDate, startDate]);
+
+  // Clear optimistic state when props actually update to match
+  useEffect(() => {
+    if (optimisticDates && item.startDate && item.endDate) {
+      const propsStartISO = formatISO(new Date(item.startDate));
+      const propsEndISO = formatISO(new Date(item.endDate));
+
+      if (
+        propsStartISO === optimisticDates.startDate &&
+        propsEndISO === optimisticDates.endDate
+      ) {
+        setOptimisticDates(null);
+      }
+    }
+  }, [item.startDate, item.endDate, optimisticDates]);
 
   const columnWidth = getColumnWidth(zoomLevel);
 
@@ -214,6 +237,9 @@ const Bar = <T extends GanttItem>({
     (e: React.MouseEvent, type: "move" | "resize-start" | "resize-end") => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Clear any existing optimistic state when starting a new drag
+      setOptimisticDates(null);
 
       // Capture the current visual position
       const currentPosition = getPositionFromDates(startDate, endDate);
@@ -315,6 +341,12 @@ const Bar = <T extends GanttItem>({
     const finalEndISO = formatISO(finalEndDate);
 
     if (originalStartISO !== finalStartISO || originalEndISO !== finalEndISO) {
+      // Set optimistic state to maintain visual position until props update
+      setOptimisticDates({
+        startDate: finalStartISO,
+        endDate: finalEndISO,
+      });
+
       onDateUpdate(item.id, finalStartISO, finalEndISO);
     }
 
