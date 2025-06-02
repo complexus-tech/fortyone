@@ -34,10 +34,10 @@ import { useLocalStorage, useUserRole } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
-import { StatusesMenu } from "@/components/ui/story/statuses-menu";
+import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { PriorityIcon } from "./priority-icon";
-import { StoryStatusIcon } from "./story-status-icon";
+import { ObjectiveStatusIcon } from "./objective-status-icon";
 
 type ZoomLevel = "weeks" | "months" | "quarters";
 
@@ -987,25 +987,24 @@ const Objectives = ({
                   </PrioritiesMenu>
                 ) : null}
 
-                <StatusesMenu>
-                  <StatusesMenu.Trigger>
+                <ObjectiveStatusesMenu>
+                  <ObjectiveStatusesMenu.Trigger>
                     <button
                       className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={userRole === "guest"}
                       type="button"
                     >
-                      <StoryStatusIcon statusId={objective.statusId} />
+                      <ObjectiveStatusIcon statusId={objective.statusId} />
                       <span className="sr-only">Objective status</span>
                     </button>
-                  </StatusesMenu.Trigger>
-                  <StatusesMenu.Items
+                  </ObjectiveStatusesMenu.Trigger>
+                  <ObjectiveStatusesMenu.Items
                     setStatusId={(statusId) => {
                       handleUpdate(objective.id, { statusId });
                     }}
                     statusId={objective.statusId}
-                    teamId={objective.teamId}
                   />
-                </StatusesMenu>
+                </ObjectiveStatusesMenu>
 
                 <Link
                   className="flex min-w-0 flex-1 items-center gap-1.5"
