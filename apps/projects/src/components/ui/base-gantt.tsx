@@ -325,10 +325,7 @@ const Bar = <T extends GanttItem>({
 
     setIsDragging(false);
     setDragStart(null);
-
-    setTimeout(() => {
-      setDragPosition(null);
-    }, 200);
+    setDragPosition(null);
   }, [
     isDragging,
     dragStart,
