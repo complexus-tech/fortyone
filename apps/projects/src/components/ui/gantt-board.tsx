@@ -403,11 +403,15 @@ const Bar = ({
       onDateUpdate(story.id, finalStartISO, finalEndISO);
     }
 
-    // Reset drag state
+    // Reset drag state but delay clearing drag position for optimistic update
     setIsDragging(false);
     onDragStateChange(false);
     setDragStart(null);
-    setDragPosition(null);
+
+    // Delay clearing drag position to allow server update to complete
+    setTimeout(() => {
+      setDragPosition(null);
+    }, 200);
   }, [
     isDragging,
     dragStart,
@@ -498,6 +502,8 @@ const Bar = ({
 
   const { leftPosition: calculatedLeft, width: calculatedWidth } =
     calculatePosition();
+
+  // Use pending position for optimistic updates, then drag position, then calculated position
   const finalLeftPosition = dragPosition?.leftPosition ?? calculatedLeft;
   const finalWidth = dragPosition?.width ?? calculatedWidth;
 
