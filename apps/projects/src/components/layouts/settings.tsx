@@ -95,7 +95,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           },
         ]
       : []),
-    ...(isAdmin || isMember
+    ...(isAdmin
       ? [
           {
             category: "Features",

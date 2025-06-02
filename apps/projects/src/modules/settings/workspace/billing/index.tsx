@@ -72,7 +72,7 @@ export const Billing = () => {
             </a>{" "}
             Your workspace has {totalValidMembers} users.
           </Text>
-          {tier !== "free" && (
+          {!["free", "trial"].includes(tier) && (
             <Button
               color="tertiary"
               onClick={() => {
