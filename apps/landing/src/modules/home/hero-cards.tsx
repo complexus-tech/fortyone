@@ -26,18 +26,18 @@ export const HeroCards = () => {
     },
     {
       id: 2,
-      title: "Objective",
-      image: {
-        src: objectiveImg,
-        alt: "Objective",
-      },
-    },
-    {
-      id: 3,
       title: "Kanban",
       image: {
         src: kanbanImg,
         alt: "Kanban",
+      },
+    },
+    {
+      id: 3,
+      title: "Objective",
+      image: {
+        src: objectiveImg,
+        alt: "Objective",
       },
     },
   ];
