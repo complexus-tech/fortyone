@@ -19,6 +19,158 @@ import { PriorityIcon } from "./priority-icon";
 import { ObjectiveStatusIcon } from "./objective-status-icon";
 import { BaseGantt, GanttHeader, type ZoomLevel } from "./base-gantt";
 
+// Individual Objective Row Component
+const ObjectiveRow = ({
+  objective,
+  duration,
+  handleUpdate,
+}: {
+  objective: Objective;
+  duration: number | null;
+  handleUpdate: (objectiveId: string, data: Partial<Objective>) => void;
+}) => {
+  // Import userRole directly in this component
+  const { userRole } = useUserRole();
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  // Get team members for this specific objective's team
+  const { data: members = [] } = useTeamMembers(objective.teamId);
+
+  const selectedAssignee = members.find(
+    (member) => member.id === objective.leadUser,
+  );
+
+  return (
+    <Box
+      onMouseEnter={() => {
+        if (session) {
+          queryClient.prefetchQuery({
+            queryKey: objectiveKeys.objective(objective.id),
+            queryFn: () => getObjective(objective.id, session),
+          });
+        }
+      }}
+    >
+      <Flex
+        align="center"
+        className="group h-14 border-b-[0.5px] border-gray-100 px-6 transition-colors hover:bg-gray-50 dark:border-dark-100 dark:hover:bg-dark-300"
+        justify="between"
+      >
+        <Flex align="center" className="min-w-0 flex-1 gap-3">
+          <AssigneesMenu>
+            <Tooltip
+              className="py-2.5"
+              title={
+                selectedAssignee ? (
+                  <Box>
+                    <Flex gap={2}>
+                      <Avatar
+                        className="mt-0.5"
+                        name={selectedAssignee.fullName}
+                        size="sm"
+                        src={selectedAssignee.avatarUrl}
+                      />
+                      <Box>
+                        <Text fontSize="md" fontWeight="medium">
+                          {selectedAssignee.fullName}
+                        </Text>
+                        <Text color="muted" fontSize="md">
+                          ({selectedAssignee.username})
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </Box>
+                ) : null
+              }
+            >
+              <span>
+                <AssigneesMenu.Trigger>
+                  <button
+                    className="flex"
+                    disabled={userRole === "guest"}
+                    type="button"
+                  >
+                    <Avatar
+                      name={
+                        selectedAssignee?.fullName || selectedAssignee?.username
+                      }
+                      size="xs"
+                      src={selectedAssignee?.avatarUrl}
+                    />
+                  </button>
+                </AssigneesMenu.Trigger>
+              </span>
+            </Tooltip>
+            <AssigneesMenu.Items
+              assigneeId={selectedAssignee?.id}
+              onAssigneeSelected={(assigneeId) => {
+                handleUpdate(objective.id, {
+                  leadUser: assigneeId || undefined,
+                });
+              }}
+              teamId={objective.teamId}
+            />
+          </AssigneesMenu>
+
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <button
+                className="flex shrink-0 select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={userRole === "guest"}
+                type="button"
+              >
+                <PriorityIcon priority={objective.priority} />
+                <span className="sr-only">{objective.priority}</span>
+              </button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items
+              priority={objective.priority}
+              setPriority={(priority) => {
+                handleUpdate(objective.id, { priority });
+              }}
+            />
+          </PrioritiesMenu>
+
+          <ObjectiveStatusesMenu>
+            <ObjectiveStatusesMenu.Trigger>
+              <button
+                className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={userRole === "guest"}
+                type="button"
+              >
+                <ObjectiveStatusIcon statusId={objective.statusId} />
+                <span className="sr-only">Objective status</span>
+              </button>
+            </ObjectiveStatusesMenu.Trigger>
+            <ObjectiveStatusesMenu.Items
+              setStatusId={(statusId) => {
+                handleUpdate(objective.id, { statusId });
+              }}
+              statusId={objective.statusId}
+            />
+          </ObjectiveStatusesMenu>
+
+          <Link
+            className="flex min-w-0 flex-1 items-center gap-1.5"
+            href={`/teams/${objective.teamId}/objectives/${objective.id}`}
+          >
+            <Text className="line-clamp-1 hover:opacity-90" fontWeight="medium">
+              {objective.name}
+            </Text>
+          </Link>
+        </Flex>
+
+        {duration ? (
+          <Text className="ml-4 shrink-0" color="muted">
+            {duration} day{duration !== 1 ? "s" : ""}
+          </Text>
+        ) : null}
+      </Flex>
+    </Box>
+  );
+};
+
 type RoadmapGanttBoardProps = {
   objectives: Objective[];
   className?: string;
@@ -29,13 +181,6 @@ export const RoadmapGanttBoard = ({
   className,
 }: RoadmapGanttBoardProps) => {
   const { mutate } = useUpdateObjectiveMutation();
-  const queryClient = useQueryClient();
-  const { data: session } = useSession();
-  const { userRole } = useUserRole();
-
-  // Get team members for the first objective's team (assuming all objectives are from same team)
-  const firstObjectiveTeamId = objectives[0]?.teamId as string | undefined;
-  const { data: members = [] } = useTeamMembers(firstObjectiveTeamId);
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -88,154 +233,19 @@ export const RoadmapGanttBoard = ({
                 ? differenceInDays(endDate, startDate)
                 : null;
 
-            const selectedAssignee = members.find(
-              (member) => member.id === objective.leadUser,
-            );
-
             return (
-              <Box
+              <ObjectiveRow
+                duration={duration}
+                handleUpdate={handleUpdate}
                 key={objective.id}
-                onMouseEnter={() => {
-                  if (session) {
-                    queryClient.prefetchQuery({
-                      queryKey: objectiveKeys.objective(objective.id),
-                      queryFn: () => getObjective(objective.id, session),
-                    });
-                  }
-                }}
-              >
-                <Flex
-                  align="center"
-                  className="group h-14 border-b-[0.5px] border-gray-100 px-6 transition-colors hover:bg-gray-50 dark:border-dark-100 dark:hover:bg-dark-300"
-                  justify="between"
-                >
-                  <Flex align="center" className="min-w-0 flex-1 gap-2">
-                    <Text
-                      className="line-clamp-1 w-16 shrink-0 text-[0.95rem]"
-                      color="muted"
-                    >
-                      OBJ-{objective.id.slice(-4)}
-                    </Text>
-                    <AssigneesMenu>
-                      <Tooltip
-                        className="py-2.5"
-                        title={
-                          selectedAssignee ? (
-                            <Box>
-                              <Flex gap={2}>
-                                <Avatar
-                                  className="mt-0.5"
-                                  name={selectedAssignee.fullName}
-                                  size="sm"
-                                  src={selectedAssignee.avatarUrl}
-                                />
-                                <Box>
-                                  <Text fontSize="md" fontWeight="medium">
-                                    {selectedAssignee.fullName}
-                                  </Text>
-                                  <Text color="muted" fontSize="md">
-                                    ({selectedAssignee.username})
-                                  </Text>
-                                </Box>
-                              </Flex>
-                            </Box>
-                          ) : null
-                        }
-                      >
-                        <span>
-                          <AssigneesMenu.Trigger>
-                            <button
-                              className="flex"
-                              disabled={userRole === "guest"}
-                              type="button"
-                            >
-                              <Avatar
-                                name={
-                                  selectedAssignee?.fullName ||
-                                  selectedAssignee?.username
-                                }
-                                size="xs"
-                                src={selectedAssignee?.avatarUrl}
-                              />
-                            </button>
-                          </AssigneesMenu.Trigger>
-                        </span>
-                      </Tooltip>
-                      <AssigneesMenu.Items
-                        assigneeId={selectedAssignee?.id}
-                        onAssigneeSelected={(assigneeId) => {
-                          handleUpdate(objective.id, {
-                            leadUser: assigneeId || undefined,
-                          });
-                        }}
-                        teamId={objective.teamId}
-                      />
-                    </AssigneesMenu>
-
-                    <PrioritiesMenu>
-                      <PrioritiesMenu.Trigger>
-                        <button
-                          className="flex shrink-0 select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={userRole === "guest"}
-                          type="button"
-                        >
-                          <PriorityIcon priority={objective.priority} />
-                          <span className="sr-only">{objective.priority}</span>
-                        </button>
-                      </PrioritiesMenu.Trigger>
-                      <PrioritiesMenu.Items
-                        priority={objective.priority}
-                        setPriority={(priority) => {
-                          handleUpdate(objective.id, { priority });
-                        }}
-                      />
-                    </PrioritiesMenu>
-
-                    <ObjectiveStatusesMenu>
-                      <ObjectiveStatusesMenu.Trigger>
-                        <button
-                          className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={userRole === "guest"}
-                          type="button"
-                        >
-                          <ObjectiveStatusIcon statusId={objective.statusId} />
-                          <span className="sr-only">Objective status</span>
-                        </button>
-                      </ObjectiveStatusesMenu.Trigger>
-                      <ObjectiveStatusesMenu.Items
-                        setStatusId={(statusId) => {
-                          handleUpdate(objective.id, { statusId });
-                        }}
-                        statusId={objective.statusId}
-                      />
-                    </ObjectiveStatusesMenu>
-
-                    <Link
-                      className="flex min-w-0 flex-1 items-center gap-1.5"
-                      href={`/objective/${objective.id}`}
-                    >
-                      <Text
-                        className="line-clamp-1 hover:opacity-90"
-                        fontWeight="medium"
-                      >
-                        {objective.name}
-                      </Text>
-                    </Link>
-                  </Flex>
-
-                  {duration ? (
-                    <Text className="ml-4 shrink-0" color="muted">
-                      {duration} day{duration !== 1 ? "s" : ""}
-                    </Text>
-                  ) : null}
-                </Flex>
-              </Box>
+                objective={objective}
+              />
             );
           })}
         </Box>
       );
     },
-    [handleUpdate, session, queryClient, userRole, members],
+    [handleUpdate],
   );
 
   // Render bar content
