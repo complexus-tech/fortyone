@@ -1038,6 +1038,7 @@ const Chart = ({
   onDateUpdate,
   containerRef,
   zoomLevel,
+  isContainerScrollable,
 }: {
   objectives: Objective[];
   dateRange: { start: Date; end: Date };
@@ -1048,12 +1049,10 @@ const Chart = ({
   ) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
+  isContainerScrollable: boolean;
 }) => {
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
-  const isContainerScrollable =
-    containerRef.current &&
-    containerRef.current.scrollHeight > containerRef.current.clientHeight;
 
   const timelineMinWidth = periods.length * columnWidth;
 
@@ -1206,6 +1205,37 @@ export const RoadmapGanttBoard = ({
     (objective) => objective.startDate || objective.endDate,
   );
 
+  // Subscribe to container scrollable state changes
+  const [isContainerScrollable, setIsContainerScrollable] = useState(false);
+
+  useEffect(() => {
+    const updateScrollableState = () => {
+      if (containerRef.current) {
+        // Calculate if content naturally exceeds viewport
+        const pageHeaderHeight = 64; // 4rem = 64px
+        const timelineHeaderHeight = 64; // h-16 = 64px
+        const rowHeight = 56; // h-14 = 56px
+        const availableHeight = window.innerHeight - pageHeaderHeight;
+        const usedHeight =
+          timelineHeaderHeight + objectivesWithDates.length * rowHeight;
+
+        // Content exceeds available space = needs scroll
+        const needsScroll = usedHeight > availableHeight;
+        setIsContainerScrollable(needsScroll);
+      }
+    };
+
+    // Update immediately
+    updateScrollableState();
+
+    // Subscribe to window resize
+    window.addEventListener("resize", updateScrollableState);
+
+    return () => {
+      window.removeEventListener("resize", updateScrollableState);
+    };
+  }, [objectivesWithDates.length]); // Re-run when objectives count changes
+
   return (
     <div
       className={cn(
@@ -1226,6 +1256,7 @@ export const RoadmapGanttBoard = ({
         <Chart
           containerRef={containerRef}
           dateRange={dateRange}
+          isContainerScrollable={isContainerScrollable}
           objectives={objectivesWithDates}
           onDateUpdate={handleDateUpdate}
           zoomLevel={zoomLevel}

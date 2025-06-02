@@ -1110,19 +1110,17 @@ const Chart = ({
   onDateUpdate,
   containerRef,
   zoomLevel,
+  isContainerScrollable,
 }: {
   stories: Story[];
   dateRange: { start: Date; end: Date };
   onDateUpdate: (storyId: string, startDate: string, endDate: string) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
+  isContainerScrollable: boolean;
 }) => {
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
-
-  const isContainerScrollable =
-    containerRef.current &&
-    containerRef.current.scrollHeight > containerRef.current.clientHeight;
 
   // Calculate minimum width for timeline
   const timelineMinWidth = periods.length * columnWidth;
@@ -1165,7 +1163,7 @@ const Chart = ({
                     minWidth: `${columnWidth}px`,
                     height:
                       idx === stories.length - 1 && !isContainerScrollable
-                        ? `calc(100dvh - 8rem - ${3.5 * (stories.length - 1)}rem)`
+                        ? `calc(100dvh - 8rem - ${3.5 * (stories.length - 0)}rem)`
                         : "100%",
                   }}
                 />
@@ -1204,6 +1202,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     "zoomLevel",
     "weeks" as ZoomLevel,
   );
+  const [isContainerScrollable, setIsContainerScrollable] = useState(false);
 
   // Simple function to get team code from teamId
   const getTeamCode = (teamId: string) => {
@@ -1290,6 +1289,34 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     }
   }, [scrollToToday]);
 
+  // Subscribe to container scrollable state changes
+  useEffect(() => {
+    const updateScrollableState = () => {
+      if (containerRef.current) {
+        // Calculate if content naturally exceeds viewport
+        const pageHeaderHeight = 64; // 4rem = 64px
+        const timelineHeaderHeight = 64; // h-16 = 64px
+        const rowHeight = 56; // h-14 = 56px
+        const availableHeight = window.innerHeight - pageHeaderHeight;
+        const usedHeight = timelineHeaderHeight + stories.length * rowHeight;
+
+        // Content exceeds available space = needs scroll
+        const needsScroll = usedHeight > availableHeight;
+        setIsContainerScrollable(needsScroll);
+      }
+    };
+
+    // Update immediately
+    updateScrollableState();
+
+    // Subscribe to window resize
+    window.addEventListener("resize", updateScrollableState);
+
+    return () => {
+      window.removeEventListener("resize", updateScrollableState);
+    };
+  }, [stories.length]); // Re-run when stories count changes
+
   // Filter stories to only show those with dates
   const storiesWithDates = stories.filter(
     (story) => story.startDate || story.endDate,
@@ -1303,7 +1330,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
       )}
       ref={containerRef}
     >
-      <Flex className="min-h-[calc(100dvh-4rem)] min-w-max">
+      <Flex className="min-h-[calc(100dvh-7.5rem)] min-w-max">
         <Stories
           getTeamCode={getTeamCode}
           onReset={scrollToToday}
@@ -1316,6 +1343,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
         <Chart
           containerRef={containerRef}
           dateRange={dateRange}
+          isContainerScrollable={isContainerScrollable}
           onDateUpdate={handleDateUpdate}
           stories={storiesWithDates}
           zoomLevel={zoomLevel}
