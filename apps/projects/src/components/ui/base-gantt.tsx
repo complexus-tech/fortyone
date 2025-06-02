@@ -921,7 +921,21 @@ export const BaseGantt = <T extends GanttItem>({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const dateRange = getVisibleDateRange(today, 365);
+
+  // Calculate date range based on zoom level
+  const getDateRangeForZoom = (zoomLevel: ZoomLevel) => {
+    switch (zoomLevel) {
+      case "weeks":
+        return getVisibleDateRange(today, 365); // 1 year for weeks
+      case "months":
+      case "quarters":
+        return getVisibleDateRange(today, 1460); // 4 years for months and quarters
+      default:
+        return getVisibleDateRange(today, 365);
+    }
+  };
+
+  const dateRange = getDateRangeForZoom(zoomLevel);
 
   // Subscribe to container scrollable state changes
   useEffect(() => {
