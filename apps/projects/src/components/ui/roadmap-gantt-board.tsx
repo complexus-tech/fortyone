@@ -1051,6 +1051,9 @@ const Chart = ({
 }) => {
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
+  const isContainerScrollable =
+    containerRef.current &&
+    containerRef.current.scrollHeight > containerRef.current.clientHeight;
 
   const timelineMinWidth = periods.length * columnWidth;
 
@@ -1088,10 +1091,10 @@ const Chart = ({
                   key={period.getTime()}
                   style={{
                     minWidth: `${columnWidth}px`,
-                    // height:
-                    //   idx === objectives.length - 1
-                    //     ? `calc(100dvh - 8rem - ${3.5 * (objectives.length - 1)}rem)`
-                    //     : "100%",
+                    height:
+                      idx === objectives.length - 1 && !isContainerScrollable
+                        ? `calc(100dvh - 8rem - ${3.5 * (objectives.length - 1)}rem)`
+                        : "100%",
                   }}
                 />
               );

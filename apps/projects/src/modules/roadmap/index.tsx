@@ -25,18 +25,7 @@ export const RoadmapPage = () => {
   const renderContent = () => {
     switch (layout) {
       case "gantt":
-        return (
-          <RoadmapGanttBoard
-            className="h-full"
-            objectives={[
-              ...objectives,
-              ...objectives,
-              ...objectives,
-              ...objectives,
-              ...objectives,
-            ]}
-          />
-        );
+        return <RoadmapGanttBoard className="h-full" objectives={objectives} />;
       case "list":
         return <ListObjectives objectives={objectives} />;
       default:
