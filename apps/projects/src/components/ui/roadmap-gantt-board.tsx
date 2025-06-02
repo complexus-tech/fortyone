@@ -22,7 +22,6 @@ import {
   addMonths,
   addQuarters,
 } from "date-fns";
-import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { ArrowDown2Icon } from "icons";
 import Link from "next/link";
@@ -30,7 +29,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useLocalStorage, useUserRole } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
@@ -819,21 +817,21 @@ const Header = ({
           <Menu.Items className="w-40">
             <Menu.Group>
               <Menu.Item
-                onClick={() => {
+                onSelect={() => {
                   onZoomChange("weeks");
                 }}
               >
                 Weeks
               </Menu.Item>
               <Menu.Item
-                onClick={() => {
+                onSelect={() => {
                   onZoomChange("months");
                 }}
               >
                 Months
               </Menu.Item>
               <Menu.Item
-                onClick={() => {
+                onSelect={() => {
                   onZoomChange("quarters");
                 }}
               >
@@ -849,18 +847,15 @@ const Header = ({
 
 const Objectives = ({
   objectives,
-  getTeamCode,
   onReset,
   zoomLevel,
   onZoomChange,
 }: {
   objectives: Objective[];
-  getTeamCode: (teamId: string) => string;
   onReset: () => void;
   zoomLevel: ZoomLevel;
   onZoomChange: (zoom: ZoomLevel) => void;
 }) => {
-  const router = useRouter();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
@@ -910,7 +905,6 @@ const Objectives = ({
                   queryFn: () => getObjective(objective.id, session),
                 });
               }
-              router.prefetch(`/objectives/${objective.id}`);
             }}
           >
             <Flex
@@ -918,68 +912,59 @@ const Objectives = ({
               className="group h-14 border-b-[0.5px] border-gray-100 px-6 transition-colors hover:bg-gray-50 dark:border-dark-100 dark:hover:bg-dark-300"
               justify="between"
             >
-              <Flex align="center" className="min-w-0 flex-1 gap-2">
-                <Text
-                  className="line-clamp-1 w-16 shrink-0 text-[0.95rem]"
-                  color="muted"
-                >
-                  {getTeamCode(objective.teamId)}-{objective.id.slice(-4)}
-                </Text>
-
-                {selectedLead ? (
-                  <AssigneesMenu>
-                    <Tooltip
-                      className="py-2.5"
-                      title={
-                        <Box>
-                          <Flex gap={2}>
-                            <Avatar
-                              className="mt-0.5"
-                              name={selectedLead.fullName}
-                              size="sm"
-                              src={selectedLead.avatarUrl}
-                            />
-                            <Box>
-                              <Text fontSize="md" fontWeight="medium">
-                                {selectedLead.fullName}
-                              </Text>
-                              <Text color="muted" fontSize="md">
-                                ({selectedLead.username})
-                              </Text>
-                            </Box>
-                          </Flex>
-                        </Box>
-                      }
-                    >
-                      <span>
-                        <AssigneesMenu.Trigger>
-                          <button
-                            className="flex"
-                            disabled={userRole === "guest"}
-                            type="button"
-                          >
-                            <Avatar
-                              name={
-                                selectedLead.fullName || selectedLead.username
-                              }
-                              size="xs"
-                              src={selectedLead.avatarUrl}
-                            />
-                          </button>
-                        </AssigneesMenu.Trigger>
-                      </span>
-                    </Tooltip>
-                    <AssigneesMenu.Items
-                      assigneeId={selectedLead.id}
-                      onAssigneeSelected={(assigneeId) => {
-                        handleUpdate(objective.id, {
-                          leadUser: assigneeId || undefined,
-                        });
-                      }}
-                      teamId={objective.teamId}
-                    />
-                  </AssigneesMenu>
-                ) : null}
+              <Flex align="center" className="min-w-0 flex-1 gap-3">
+                <AssigneesMenu>
+                  <Tooltip
+                    className="py-2.5"
+                    title={
+                      <Box>
+                        <Flex gap={2}>
+                          <Avatar
+                            className="mt-0.5"
+                            name={selectedLead?.fullName}
+                            size="sm"
+                            src={selectedLead?.avatarUrl}
+                          />
+                          <Box>
+                            <Text fontSize="md" fontWeight="medium">
+                              {selectedLead?.fullName}
+                            </Text>
+                            <Text color="muted" fontSize="md">
+                              ({selectedLead?.username})
+                            </Text>
+                          </Box>
+                        </Flex>
+                      </Box>
+                    }
+                  >
+                    <span>
+                      <AssigneesMenu.Trigger>
+                        <button
+                          className="flex"
+                          disabled={userRole === "guest"}
+                          type="button"
+                        >
+                          <Avatar
+                            name={
+                              selectedLead?.fullName || selectedLead?.username
+                            }
+                            size="xs"
+                            src={selectedLead?.avatarUrl}
+                          />
+                        </button>
+                      </AssigneesMenu.Trigger>
+                    </span>
+                  </Tooltip>
+                  <AssigneesMenu.Items
+                    assigneeId={selectedLead?.id}
+                    onAssigneeSelected={(assigneeId) => {
+                      handleUpdate(objective.id, {
+                        leadUser: assigneeId || undefined,
+                      });
+                    }}
+                    teamId={objective.teamId}
+                  />
+                </AssigneesMenu>
 
                 {objective.priority ? (
                   <PrioritiesMenu>
@@ -1024,7 +1009,7 @@ const Objectives = ({
 
                 <Link
                   className="flex min-w-0 flex-1 items-center gap-1.5"
-                  href={`/objectives/${objective.id}`}
+                  href={`/teams/${objective.teamId}/objectives/${objective.id}`}
                 >
                   <Text
                     className="line-clamp-1 hover:opacity-90"
@@ -1132,7 +1117,6 @@ export const RoadmapGanttBoard = ({
   objectives,
   className,
 }: RoadmapGanttBoardProps) => {
-  const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateObjectiveMutation();
   const containerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
@@ -1140,11 +1124,6 @@ export const RoadmapGanttBoard = ({
     "roadmapZoomLevel",
     "weeks" as ZoomLevel,
   );
-
-  const getTeamCode = (teamId: string) => {
-    const team = teams.find((t) => t.id === teamId);
-    return team?.code || "OBJ";
-  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -1230,7 +1209,6 @@ export const RoadmapGanttBoard = ({
     >
       <Flex className="min-w-max">
         <Objectives
-          getTeamCode={getTeamCode}
           objectives={objectivesWithDates}
           onReset={scrollToToday}
           onZoomChange={(zoom: ZoomLevel) => {
