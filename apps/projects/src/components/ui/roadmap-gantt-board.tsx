@@ -1122,7 +1122,7 @@ export const RoadmapGanttBoard = ({
   const hasScrolledRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     "roadmapZoomLevel",
-    "weeks" as ZoomLevel,
+    "months",
   );
 
   const today = new Date();
