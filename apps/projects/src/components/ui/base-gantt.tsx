@@ -142,14 +142,12 @@ const Bar = <T extends GanttItem>({
   item,
   dateRange,
   onDateUpdate,
-  containerRef,
   zoomLevel,
   renderContent,
 }: {
   item: T;
   dateRange: { start: Date; end: Date };
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
   renderContent: (item: T) => ReactNode;
 }) => {
@@ -159,12 +157,12 @@ const Bar = <T extends GanttItem>({
     type: "move" | "resize-start" | "resize-end";
     originalStartDate: Date;
     originalEndDate: Date;
+    originalLeft: number;
+    originalWidth: number;
   } | null>(null);
 
   const [dragPosition, setDragPosition] = useState<{
     pixelOffsetX: number;
-    originalLeft: number;
-    originalWidth: number;
   } | null>(null);
 
   const startDate = useMemo(() => {
@@ -181,19 +179,56 @@ const Bar = <T extends GanttItem>({
 
   const columnWidth = getColumnWidth(zoomLevel);
 
+  // Helper function to calculate position from dates
+  const getPositionFromDates = (start: Date, end: Date) => {
+    const startDayOffset = differenceInDays(start, dateRange.start);
+    const durationDays = Math.max(1, differenceInDays(end, start));
+
+    switch (zoomLevel) {
+      case "weeks": {
+        return {
+          leftPosition: startDayOffset * columnWidth,
+          width: durationDays * columnWidth,
+        };
+      }
+      case "months":
+      case "quarters": {
+        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+        const totalDays = differenceInDays(dateRange.end, dateRange.start);
+        const daysPerPeriod = totalDays / periods.length;
+
+        return {
+          leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
+          width: (durationDays / daysPerPeriod) * columnWidth,
+        };
+      }
+      default:
+        return {
+          leftPosition: 0,
+          width: columnWidth,
+        };
+    }
+  };
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, type: "move" | "resize-start" | "resize-end") => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Capture the current visual position
+      const currentPosition = getPositionFromDates(startDate, endDate);
+
       setIsDragging(true);
       setDragStart({
         x: e.clientX,
         type,
         originalStartDate: startDate,
         originalEndDate: endDate,
+        originalLeft: currentPosition.leftPosition,
+        originalWidth: currentPosition.width,
       });
     },
-    [startDate, endDate],
+    [startDate, endDate, getPositionFromDates],
   );
 
   const handleMouseMove = useCallback(
@@ -201,53 +236,13 @@ const Bar = <T extends GanttItem>({
       if (!isDragging || !dragStart) return;
 
       const deltaX = e.clientX - dragStart.x;
-      const container = containerRef.current;
-      if (!container) return;
 
-      // Get original position for reference
-      const originalStartOffset = differenceInDays(
-        dragStart.originalStartDate,
-        dateRange.start,
-      );
-      const originalDuration =
-        differenceInDays(
-          dragStart.originalEndDate,
-          dragStart.originalStartDate,
-        ) || 1;
-
-      let originalLeft: number;
-      let originalWidth: number;
-
-      // Calculate original visual position based on zoom level
-      switch (zoomLevel) {
-        case "weeks": {
-          originalLeft = originalStartOffset * columnWidth;
-          originalWidth = originalDuration * columnWidth;
-          break;
-        }
-        case "months":
-        case "quarters": {
-          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-          const totalDays = differenceInDays(dateRange.end, dateRange.start);
-          const daysPerPeriod = totalDays / periods.length;
-
-          originalLeft = (originalStartOffset / daysPerPeriod) * columnWidth;
-          originalWidth = (originalDuration / daysPerPeriod) * columnWidth;
-          break;
-        }
-        default:
-          originalLeft = 0;
-          originalWidth = columnWidth;
-      }
-
-      // Store raw pixel movement for 1:1 mouse responsiveness
+      // Store just the pixel offset for 1:1 mouse responsiveness
       setDragPosition({
         pixelOffsetX: deltaX,
-        originalLeft,
-        originalWidth,
       });
     },
-    [isDragging, dragStart, dateRange, zoomLevel, containerRef],
+    [isDragging, dragStart],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -287,23 +282,23 @@ const Bar = <T extends GanttItem>({
     if (dragStart.type === "move") {
       // For move: convert final left position to day offset
       const finalLeftPosition =
-        dragPosition.originalLeft + dragPosition.pixelOffsetX;
+        dragStart.originalLeft + dragPosition.pixelOffsetX;
       finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
-      finalDurationDays = dragPosition.originalWidth * pixelsToDayRatio;
+      finalDurationDays = dragStart.originalWidth * pixelsToDayRatio;
     } else if (dragStart.type === "resize-start") {
       // For resize-start: adjust start position, keep end the same
       const finalLeftPosition =
-        dragPosition.originalLeft + dragPosition.pixelOffsetX;
+        dragStart.originalLeft + dragPosition.pixelOffsetX;
       const originalEndPosition =
-        dragPosition.originalLeft + dragPosition.originalWidth;
+        dragStart.originalLeft + dragStart.originalWidth;
       finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
       finalDurationDays =
         (originalEndPosition - finalLeftPosition) * pixelsToDayRatio;
     } else {
       // For resize-end: keep start the same, adjust width
-      finalStartDayOffset = dragPosition.originalLeft * pixelsToDayRatio;
+      finalStartDayOffset = dragStart.originalLeft * pixelsToDayRatio;
       finalDurationDays =
-        (dragPosition.originalWidth + dragPosition.pixelOffsetX) *
+        (dragStart.originalWidth + dragPosition.pixelOffsetX) *
         pixelsToDayRatio;
     }
 
@@ -350,56 +345,89 @@ const Bar = <T extends GanttItem>({
 
   const calculatePosition = () => {
     // Use drag position if dragging, otherwise calculate from actual dates
-    if (dragPosition) {
-      // During drag: apply pixel offset directly for 1:1 mouse movement
-      let finalLeft = dragPosition.originalLeft;
-      let finalWidth = dragPosition.originalWidth;
+    if (dragPosition && dragStart) {
+      // During drag: apply the same rounding logic as final calculation to prevent jumps
+      const columnWidth = getColumnWidth(zoomLevel);
 
-      if (dragStart?.type === "move") {
-        finalLeft += dragPosition.pixelOffsetX;
-      } else if (dragStart?.type === "resize-start") {
-        finalLeft += dragPosition.pixelOffsetX;
-        finalWidth -= dragPosition.pixelOffsetX;
-      } else if (dragStart?.type === "resize-end") {
-        finalWidth += dragPosition.pixelOffsetX;
+      // Calculate conversion factor based on zoom level (same as in handleMouseUp)
+      let pixelsToDayRatio: number;
+      switch (zoomLevel) {
+        case "weeks": {
+          pixelsToDayRatio = 1 / columnWidth;
+          break;
+        }
+        case "months":
+        case "quarters": {
+          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+          const totalDays = differenceInDays(dateRange.end, dateRange.start);
+          const daysPerPeriod = totalDays / periods.length;
+          pixelsToDayRatio = daysPerPeriod / columnWidth;
+          break;
+        }
+        default:
+          pixelsToDayRatio = 1 / 64;
       }
 
-      return {
-        leftPosition: Math.max(0, finalLeft),
-        width: Math.max(10, finalWidth), // Minimum width for visibility
-      };
+      let finalStartDayOffset: number;
+      let finalDurationDays: number;
+
+      if (dragStart.type === "move") {
+        const finalLeftPosition =
+          dragStart.originalLeft + dragPosition.pixelOffsetX;
+        finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
+        finalDurationDays = dragStart.originalWidth * pixelsToDayRatio;
+      } else if (dragStart.type === "resize-start") {
+        const finalLeftPosition =
+          dragStart.originalLeft + dragPosition.pixelOffsetX;
+        const originalEndPosition =
+          dragStart.originalLeft + dragStart.originalWidth;
+        finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
+        finalDurationDays =
+          (originalEndPosition - finalLeftPosition) * pixelsToDayRatio;
+      } else {
+        // resize-end
+        finalStartDayOffset = dragStart.originalLeft * pixelsToDayRatio;
+        finalDurationDays =
+          (dragStart.originalWidth + dragPosition.pixelOffsetX) *
+          pixelsToDayRatio;
+      }
+
+      // Apply the same rounding as in handleMouseUp to prevent optimistic update jumps
+      const roundedStartOffset = Math.round(finalStartDayOffset);
+      const roundedDuration = Math.max(1, Math.round(finalDurationDays));
+
+      // Convert back to visual position using rounded values
+      switch (zoomLevel) {
+        case "weeks": {
+          return {
+            leftPosition: Math.max(0, roundedStartOffset * columnWidth),
+            width: roundedDuration * columnWidth,
+          };
+        }
+        case "months":
+        case "quarters": {
+          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+          const totalDays = differenceInDays(dateRange.end, dateRange.start);
+          const daysPerPeriod = totalDays / periods.length;
+
+          return {
+            leftPosition: Math.max(
+              0,
+              (roundedStartOffset / daysPerPeriod) * columnWidth,
+            ),
+            width: (roundedDuration / daysPerPeriod) * columnWidth,
+          };
+        }
+        default:
+          return {
+            leftPosition: Math.max(0, roundedStartOffset * columnWidth),
+            width: Math.max(10, roundedDuration * columnWidth),
+          };
+      }
     }
 
     // When not dragging: calculate from actual dates
-    const startDayOffset = differenceInDays(startDate, dateRange.start);
-    const durationDays = differenceInDays(endDate, startDate) || 1;
-
-    const columnWidth = getColumnWidth(zoomLevel);
-
-    switch (zoomLevel) {
-      case "weeks": {
-        return {
-          leftPosition: startDayOffset * columnWidth,
-          width: durationDays * columnWidth,
-        };
-      }
-      case "months":
-      case "quarters": {
-        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-        const totalDays = differenceInDays(dateRange.end, dateRange.start);
-        const daysPerPeriod = totalDays / periods.length;
-
-        return {
-          leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
-          width: (durationDays / daysPerPeriod) * columnWidth,
-        };
-      }
-      default:
-        return {
-          leftPosition: 0,
-          width: columnWidth,
-        };
-    }
+    return getPositionFromDates(startDate, endDate);
   };
 
   const { leftPosition: calculatedLeft, width: calculatedWidth } =
@@ -767,7 +795,6 @@ const Chart = <T extends GanttItem>({
   items,
   dateRange,
   onDateUpdate,
-  containerRef,
   zoomLevel,
   isContainerScrollable,
   renderBarContent,
@@ -775,7 +802,6 @@ const Chart = <T extends GanttItem>({
   items: T[];
   dateRange: { start: Date; end: Date };
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: ZoomLevel;
   isContainerScrollable: boolean;
   renderBarContent: (item: T) => ReactNode;
@@ -831,7 +857,6 @@ const Chart = <T extends GanttItem>({
 
           <Box className="z-5 relative h-full px-2">
             <Bar
-              containerRef={containerRef}
               dateRange={dateRange}
               item={item}
               onDateUpdate={onDateUpdate}
@@ -955,7 +980,6 @@ export const BaseGantt = <T extends GanttItem>({
       <Flex className="min-h-[calc(100dvh-7.5rem)] min-w-max">
         {renderSidebar(itemsWithDates, scrollToToday, zoomLevel, setZoomLevel)}
         <Chart
-          containerRef={containerRef}
           dateRange={dateRange}
           isContainerScrollable={isContainerScrollable}
           items={itemsWithDates}
