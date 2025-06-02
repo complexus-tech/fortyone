@@ -5,6 +5,7 @@ import {
   DashboardIcon,
   NotificationsIcon,
   ObjectiveIcon,
+  RoadmapIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -47,11 +48,11 @@ export const Navigation = () => {
     //   ),
     //   href: "/analytics",
     // },
-    // {
-    //   name: "Roadmap",
-    //   icon: <RoadmapIcon strokeWidth={2} />,
-    //   href: "/roadmaps",
-    // },
+    {
+      name: "Roadmap",
+      icon: <RoadmapIcon strokeWidth={2} />,
+      href: "/roadmaps",
+    },
     {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
