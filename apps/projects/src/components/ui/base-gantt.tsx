@@ -19,8 +19,6 @@ import {
   endOfMonth,
   startOfQuarter,
   endOfQuarter,
-  addMonths,
-  addQuarters,
 } from "date-fns";
 import type { ReactNode } from "react";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -164,8 +162,9 @@ const Bar = <T extends GanttItem>({
   } | null>(null);
 
   const [dragPosition, setDragPosition] = useState<{
-    leftPosition: number;
-    width: number;
+    pixelOffsetX: number;
+    originalLeft: number;
+    originalWidth: number;
   } | null>(null);
 
   const startDate = useMemo(() => {
@@ -205,134 +204,50 @@ const Bar = <T extends GanttItem>({
       const container = containerRef.current;
       if (!container) return;
 
-      const deltaUnits = Math.round(deltaX / columnWidth);
-      if (deltaUnits === 0) return;
+      // Get original position for reference
+      const originalStartOffset = differenceInDays(
+        dragStart.originalStartDate,
+        dateRange.start,
+      );
+      const originalDuration =
+        differenceInDays(
+          dragStart.originalEndDate,
+          dragStart.originalStartDate,
+        ) || 1;
 
-      let newStartDate = dragStart.originalStartDate;
-      let newEndDate = dragStart.originalEndDate;
+      let originalLeft: number;
+      let originalWidth: number;
 
-      if (dragStart.type === "move") {
-        switch (zoomLevel) {
-          case "weeks":
-            newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
-            newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
-            break;
-          case "months":
-            newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
-            newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
-            break;
-          case "quarters":
-            newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
-            newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
-            break;
-        }
-      } else if (dragStart.type === "resize-start") {
-        switch (zoomLevel) {
-          case "weeks":
-            newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
-            if (newStartDate >= dragStart.originalEndDate) {
-              newStartDate = addDays(dragStart.originalEndDate, -1);
-            }
-            break;
-          case "months":
-            newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
-            if (newStartDate >= dragStart.originalEndDate) {
-              newStartDate = addMonths(dragStart.originalEndDate, -1);
-            }
-            break;
-          case "quarters":
-            newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
-            if (newStartDate >= dragStart.originalEndDate) {
-              newStartDate = addQuarters(dragStart.originalEndDate, -1);
-            }
-            break;
-        }
-      } else {
-        switch (zoomLevel) {
-          case "weeks":
-            newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
-            if (newEndDate <= dragStart.originalStartDate) {
-              newEndDate = addDays(dragStart.originalStartDate, 1);
-            }
-            break;
-          case "months":
-            newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
-            if (newEndDate <= dragStart.originalStartDate) {
-              newEndDate = addMonths(dragStart.originalStartDate, 1);
-            }
-            break;
-          case "quarters":
-            newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
-            if (newEndDate <= dragStart.originalStartDate) {
-              newEndDate = addQuarters(dragStart.originalStartDate, 1);
-            }
-            break;
-        }
-      }
-
-      let newLeftPosition = 0;
-      let newWidth = columnWidth;
-
+      // Calculate original visual position based on zoom level
       switch (zoomLevel) {
         case "weeks": {
-          const newStartOffset = differenceInDays(
-            newStartDate,
-            dateRange.start,
-          );
-          const newDuration = differenceInDays(newEndDate, newStartDate) || 1;
-          newLeftPosition = newStartOffset * columnWidth;
-          newWidth = newDuration * columnWidth;
+          originalLeft = originalStartOffset * columnWidth;
+          originalWidth = originalDuration * columnWidth;
           break;
         }
         case "months":
         case "quarters": {
           const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+          const totalDays = differenceInDays(dateRange.end, dateRange.start);
+          const daysPerPeriod = totalDays / periods.length;
 
-          if (zoomLevel === "months") {
-            const newStartMonth = startOfMonth(newStartDate);
-            const newEndMonth = startOfMonth(newEndDate);
-
-            const startOffset = periods.findIndex(
-              (period) => period.getTime() === newStartMonth.getTime(),
-            );
-            const endOffset = periods.findIndex(
-              (period) => period.getTime() === newEndMonth.getTime(),
-            );
-
-            if (startOffset !== -1) {
-              newLeftPosition = startOffset * columnWidth;
-              const duration =
-                endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
-              newWidth = duration * columnWidth;
-            }
-          } else {
-            const newStartQuarter = startOfQuarter(newStartDate);
-            const newEndQuarter = startOfQuarter(newEndDate);
-
-            const startOffset = periods.findIndex(
-              (period) => period.getTime() === newStartQuarter.getTime(),
-            );
-            const endOffset = periods.findIndex(
-              (period) => period.getTime() === newEndQuarter.getTime(),
-            );
-
-            if (startOffset !== -1) {
-              newLeftPosition = startOffset * columnWidth;
-              const duration =
-                endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
-              newWidth = duration * columnWidth;
-            }
-          }
+          originalLeft = (originalStartOffset / daysPerPeriod) * columnWidth;
+          originalWidth = (originalDuration / daysPerPeriod) * columnWidth;
           break;
         }
+        default:
+          originalLeft = 0;
+          originalWidth = columnWidth;
       }
 
+      // Store raw pixel movement for 1:1 mouse responsiveness
       setDragPosition({
-        leftPosition: newLeftPosition,
-        width: newWidth,
+        pixelOffsetX: deltaX,
+        originalLeft,
+        originalWidth,
       });
     },
-    [isDragging, dragStart, columnWidth, dateRange, zoomLevel, containerRef],
+    [isDragging, dragStart, dateRange, zoomLevel, containerRef],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -343,52 +258,61 @@ const Bar = <T extends GanttItem>({
       return;
     }
 
-    let finalStartDate = dragStart.originalStartDate;
-    let finalEndDate = dragStart.originalEndDate;
+    // Convert final pixel position back to day units using correct scaling for zoom level
+    const columnWidth = getColumnWidth(zoomLevel);
+    let finalStartDayOffset: number;
+    let finalDurationDays: number;
 
+    // Calculate conversion factor based on zoom level
+    let pixelsToDayRatio: number;
     switch (zoomLevel) {
       case "weeks": {
-        const finalStartOffset = Math.round(
-          dragPosition.leftPosition / columnWidth,
-        );
-        const finalDuration = Math.round(dragPosition.width / columnWidth);
-
-        finalStartDate = addDays(dateRange.start, finalStartOffset);
-        finalEndDate = addDays(finalStartDate, Math.max(1, finalDuration));
+        // Direct 1:1 ratio in weeks view
+        pixelsToDayRatio = 1 / columnWidth; // 1 day per 64px
         break;
       }
       case "months":
       case "quarters": {
+        // In months/quarters, need to account for the scaling
         const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-        const startPeriodIndex = Math.round(
-          dragPosition.leftPosition / columnWidth,
-        );
-        const durationPeriods = Math.round(dragPosition.width / columnWidth);
-
-        if (startPeriodIndex >= 0 && startPeriodIndex < periods.length) {
-          const startPeriod = periods[startPeriodIndex];
-
-          if (zoomLevel === "months") {
-            finalStartDate = startOfMonth(startPeriod);
-            if (durationPeriods === 1) {
-              finalEndDate = endOfMonth(startPeriod);
-            } else {
-              const lastMonth = addMonths(startPeriod, durationPeriods - 1);
-              finalEndDate = endOfMonth(lastMonth);
-            }
-          } else {
-            finalStartDate = startOfQuarter(startPeriod);
-            if (durationPeriods === 1) {
-              finalEndDate = endOfQuarter(startPeriod);
-            } else {
-              const lastQuarter = addQuarters(startPeriod, durationPeriods - 1);
-              finalEndDate = endOfQuarter(lastQuarter);
-            }
-          }
-        }
+        const totalDays = differenceInDays(dateRange.end, dateRange.start);
+        const daysPerPeriod = totalDays / periods.length;
+        pixelsToDayRatio = daysPerPeriod / columnWidth; // days per pixel in this view
         break;
       }
+      default:
+        pixelsToDayRatio = 1 / 64;
     }
+
+    if (dragStart.type === "move") {
+      // For move: convert final left position to day offset
+      const finalLeftPosition =
+        dragPosition.originalLeft + dragPosition.pixelOffsetX;
+      finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
+      finalDurationDays = dragPosition.originalWidth * pixelsToDayRatio;
+    } else if (dragStart.type === "resize-start") {
+      // For resize-start: adjust start position, keep end the same
+      const finalLeftPosition =
+        dragPosition.originalLeft + dragPosition.pixelOffsetX;
+      const originalEndPosition =
+        dragPosition.originalLeft + dragPosition.originalWidth;
+      finalStartDayOffset = finalLeftPosition * pixelsToDayRatio;
+      finalDurationDays =
+        (originalEndPosition - finalLeftPosition) * pixelsToDayRatio;
+    } else {
+      // For resize-end: keep start the same, adjust width
+      finalStartDayOffset = dragPosition.originalLeft * pixelsToDayRatio;
+      finalDurationDays =
+        (dragPosition.originalWidth + dragPosition.pixelOffsetX) *
+        pixelsToDayRatio;
+    }
+
+    // Round to nearest day for final positioning
+    const roundedStartOffset = Math.round(finalStartDayOffset);
+    const roundedDuration = Math.max(1, Math.round(finalDurationDays));
+
+    const finalStartDate = addDays(dateRange.start, roundedStartOffset);
+    const finalEndDate = addDays(finalStartDate, roundedDuration);
 
     const originalStartISO = formatISO(dragStart.originalStartDate);
     const originalEndISO = formatISO(dragStart.originalEndDate);
@@ -409,90 +333,83 @@ const Bar = <T extends GanttItem>({
     isDragging,
     dragStart,
     dragPosition,
-    columnWidth,
     dateRange,
+    zoomLevel,
     item.id,
     onDateUpdate,
-    zoomLevel,
   ]);
 
   useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
+    if (!isDragging) return;
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const calculatePosition = () => {
-    const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-    const columnWidth = getColumnWidth(zoomLevel);
+    // Use drag position if dragging, otherwise calculate from actual dates
+    if (dragPosition) {
+      // During drag: apply pixel offset directly for 1:1 mouse movement
+      let finalLeft = dragPosition.originalLeft;
+      let finalWidth = dragPosition.originalWidth;
 
-    let startOffset = 0;
-    let duration = 1;
+      if (dragStart?.type === "move") {
+        finalLeft += dragPosition.pixelOffsetX;
+      } else if (dragStart?.type === "resize-start") {
+        finalLeft += dragPosition.pixelOffsetX;
+        finalWidth -= dragPosition.pixelOffsetX;
+      } else if (dragStart?.type === "resize-end") {
+        finalWidth += dragPosition.pixelOffsetX;
+      }
+
+      return {
+        leftPosition: Math.max(0, finalLeft),
+        width: Math.max(10, finalWidth), // Minimum width for visibility
+      };
+    }
+
+    // When not dragging: calculate from actual dates
+    const startDayOffset = differenceInDays(startDate, dateRange.start);
+    const durationDays = differenceInDays(endDate, startDate) || 1;
+
+    const columnWidth = getColumnWidth(zoomLevel);
 
     switch (zoomLevel) {
       case "weeks": {
-        startOffset = differenceInDays(startDate, dateRange.start);
-        duration = differenceInDays(endDate, startDate) || 1;
-        break;
+        return {
+          leftPosition: startDayOffset * columnWidth,
+          width: durationDays * columnWidth,
+        };
       }
-      case "months": {
-        const startMonth = startOfMonth(startDate);
-        const endMonth = startOfMonth(endDate);
-
-        startOffset = periods.findIndex(
-          (period) => period.getTime() === startMonth.getTime(),
-        );
-
-        const endOffset = periods.findIndex(
-          (period) => period.getTime() === endMonth.getTime(),
-        );
-
-        if (startOffset === -1) startOffset = 0;
-        if (endOffset === -1) {
-          duration = 1;
-        } else {
-          duration = Math.max(1, endOffset - startOffset + 1);
-        }
-        break;
-      }
+      case "months":
       case "quarters": {
-        const startQuarter = startOfQuarter(startDate);
-        const endQuarter = startOfQuarter(endDate);
+        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+        const totalDays = differenceInDays(dateRange.end, dateRange.start);
+        const daysPerPeriod = totalDays / periods.length;
 
-        startOffset = periods.findIndex(
-          (period) => period.getTime() === startQuarter.getTime(),
-        );
-
-        const endOffset = periods.findIndex(
-          (period) => period.getTime() === endQuarter.getTime(),
-        );
-
-        if (startOffset === -1) startOffset = 0;
-        if (endOffset === -1) {
-          duration = 1;
-        } else {
-          duration = Math.max(1, endOffset - startOffset + 1);
-        }
-        break;
+        return {
+          leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
+          width: (durationDays / daysPerPeriod) * columnWidth,
+        };
       }
+      default:
+        return {
+          leftPosition: 0,
+          width: columnWidth,
+        };
     }
-
-    return {
-      leftPosition: startOffset * columnWidth,
-      width: duration * columnWidth,
-    };
   };
 
   const { leftPosition: calculatedLeft, width: calculatedWidth } =
     calculatePosition();
 
-  const finalLeftPosition = dragPosition?.leftPosition ?? calculatedLeft;
-  const finalWidth = dragPosition?.width ?? calculatedWidth;
+  const finalLeftPosition = calculatedLeft;
+  const finalWidth = calculatedWidth;
 
   if (!item.startDate || !item.endDate) return null;
   if (finalWidth <= 0) return null;
