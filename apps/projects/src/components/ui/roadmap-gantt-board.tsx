@@ -875,7 +875,7 @@ const Objectives = ({
   );
 
   return (
-    <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
+    <Box className="sticky left-0 z-20 min-h-full w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
       <Header
         onReset={onReset}
         onZoomChange={(zoom: ZoomLevel) => {
@@ -1060,7 +1060,7 @@ const Chart = ({
   return (
     <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
       <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
-      {objectives.map((objective) => (
+      {objectives.map((objective, idx) => (
         <Box className="relative h-14" key={objective.id}>
           <Flex className="absolute inset-0">
             {periods.map((period) => {
@@ -1086,12 +1086,17 @@ const Chart = ({
                     },
                   )}
                   key={period.getTime()}
-                  style={{ minWidth: `${columnWidth}px` }}
+                  style={{
+                    minWidth: `${columnWidth}px`,
+                    // height:
+                    //   idx === objectives.length - 1
+                    //     ? `calc(100dvh - 8rem - ${3.5 * (objectives.length - 1)}rem)`
+                    //     : "100%",
+                  }}
                 />
               );
             })}
           </Flex>
-
           <Box className="z-5 relative h-full px-2">
             <Bar
               containerRef={containerRef}
@@ -1206,7 +1211,7 @@ export const RoadmapGanttBoard = ({
       )}
       ref={containerRef}
     >
-      <Flex className="min-w-max">
+      <Flex className="min-h-[calc(100dvh-4rem)] min-w-max">
         <Objectives
           objectives={objectivesWithDates}
           onReset={scrollToToday}
