@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text } from "ui";
+import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
 import {
   format,
@@ -15,9 +15,14 @@ import {
 } from "date-fns";
 import { useParams } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { ArrowDown2Icon } from "icons";
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
+import { StatusesMenu } from "@/components/ui/story/statuses-menu";
+import { PriorityIcon } from "./priority-icon";
+import { StoryStatusIcon } from "./story-status-icon";
 
 // Interactive gantt bar component
 const GanttBar = ({
@@ -299,19 +304,40 @@ const TimelineHeader = ({
 };
 
 // Stories header component
-const StoriesHeader = () => {
+const StoriesHeader = ({ onReset }: { onReset: () => void }) => {
   return (
     <Flex
       align="center"
       className="sticky top-0 h-16 border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
       justify="between"
     >
-      <Text color="muted" fontWeight="medium">
-        Stories
-      </Text>
-      <Text color="muted" fontWeight="medium">
-        Duration
-      </Text>
+      <Button color="tertiary" onClick={onReset} size="sm">
+        Today
+      </Button>
+      <Flex align="center" gap={2}>
+        <Text color="muted" fontWeight="medium">
+          Zoom:
+        </Text>
+        <Menu>
+          <Menu.Button>
+            <Button
+              color="tertiary"
+              onClick={onReset}
+              rightIcon={<ArrowDown2Icon className="h-4" />}
+              size="sm"
+            >
+              Weeks
+            </Button>
+          </Menu.Button>
+          <Menu.Items className="w-40">
+            <Menu.Group>
+              <Menu.Item>Weeks</Menu.Item>
+              <Menu.Item>Months</Menu.Item>
+              <Menu.Item>Quarters</Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+      </Flex>
     </Flex>
   );
 };
@@ -320,13 +346,15 @@ const StoriesHeader = () => {
 const StoriesSection = ({
   stories,
   teamCode,
+  onReset,
 }: {
   stories: Story[];
   teamCode: string;
+  onReset: () => void;
 }) => {
   return (
     <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark">
-      <StoriesHeader />
+      <StoriesHeader onReset={onReset} />
       {stories.map((story) => {
         // Calculate duration
         const startDate = story.startDate ? new Date(story.startDate) : null;
@@ -342,13 +370,48 @@ const StoriesSection = ({
             key={story.id}
           >
             {/* Story info */}
-            <Flex align="center" className="min-w-0 flex-1 gap-1.5">
+            <Flex align="center" className="min-w-0 flex-1 gap-2">
               <Text
-                className="line-clamp-1 w-16 shrink-0 text-[0.9rem]"
+                className="line-clamp-1 w-16 shrink-0 text-[0.95rem]"
                 color="muted"
               >
                 {teamCode}-{story.sequenceId}
               </Text>
+              <PrioritiesMenu>
+                <PrioritiesMenu.Trigger>
+                  <button
+                    className="flex shrink-0 select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    type="button"
+                  >
+                    <PriorityIcon priority={story.priority} />
+                    <span className="sr-only">{story.priority}</span>
+                  </button>
+                </PrioritiesMenu.Trigger>
+                <PrioritiesMenu.Items
+                  priority={story.priority}
+                  setPriority={(p) => {
+                    // handleUpdate({ priority: p });
+                  }}
+                />
+              </PrioritiesMenu>
+              <StatusesMenu>
+                <StatusesMenu.Trigger>
+                  <button
+                    className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    type="button"
+                  >
+                    <StoryStatusIcon statusId={story.statusId} />
+                    <span className="sr-only">Story status</span>
+                  </button>
+                </StatusesMenu.Trigger>
+                <StatusesMenu.Items
+                  setStatusId={(statusId) => {
+                    // handleUpdate({ statusId });
+                  }}
+                  statusId={story.statusId}
+                  teamId={story.teamId}
+                />
+              </StatusesMenu>
               <Text className="line-clamp-1">{story.title}</Text>
             </Flex>
 
@@ -389,10 +452,7 @@ const ChartSection = ({
     <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
       <TimelineHeader dateRange={dateRange} />
       {stories.map((story) => (
-        <Box
-          className="relative h-14 border-b-[0.5px] border-gray-100 dark:border-dark-100"
-          key={story.id}
-        >
+        <Box className="relative h-14" key={story.id}>
           {/* Vertical grid lines for each day */}
           <Flex className="absolute inset-0">
             {days.map((day) => (
@@ -512,13 +572,13 @@ export const GanttBoard = ({
     [mutate],
   );
 
-  // Auto-scroll to center on today when component mounts (only once)
-  useEffect(() => {
+  // Scroll to today function - reusable for both initial scroll and reset
+  const scrollToToday = useCallback(() => {
     const container = containerRef.current;
-    if (!container || hasScrolledRef.current) return;
+    if (!container) return;
 
     // Wait for next frame to ensure everything is rendered
-    const timer = requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
       const now = new Date();
       const daysFromStart = differenceInDays(now, dateRange.start);
 
@@ -533,13 +593,16 @@ export const GanttBoard = ({
         stickyColumnsWidth + currentDatePixelPosition - viewportWidth / 2;
 
       container.scrollLeft = Math.max(0, scrollPosition);
-      hasScrolledRef.current = true;
     });
+  }, [dateRange.start]);
 
-    return () => {
-      cancelAnimationFrame(timer);
-    };
-  }, []); // Empty dependency array - only run once on mount
+  // Auto-scroll to center on today when component mounts (only once)
+  useEffect(() => {
+    if (!hasScrolledRef.current) {
+      scrollToToday();
+      hasScrolledRef.current = true;
+    }
+  }, [scrollToToday]);
 
   // Filter stories to only show those with dates
   const storiesWithDates = stories.filter(
@@ -555,7 +618,11 @@ export const GanttBoard = ({
       ref={containerRef}
     >
       <Flex className="min-w-max">
-        <StoriesSection stories={storiesWithDates} teamCode={teamCode} />
+        <StoriesSection
+          onReset={scrollToToday}
+          stories={storiesWithDates}
+          teamCode={teamCode}
+        />
         <ChartSection
           containerRef={containerRef}
           dateRange={dateRange}
