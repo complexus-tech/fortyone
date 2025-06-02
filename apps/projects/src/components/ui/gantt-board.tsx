@@ -80,8 +80,10 @@ const GanttBar = ({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, type: "move" | "resize-start" | "resize-end") => {
       e.preventDefault();
-      setIsDragging(true);
+      e.stopPropagation();
+      // Immediately prevent scrolling before drag state is set
       onDragStateChange(true);
+      setIsDragging(true);
       setDragStart({
         x: e.clientX,
         type,
@@ -109,50 +111,62 @@ const GanttBar = ({
       let newEndDate = dragStart.originalEndDate;
 
       if (dragStart.type === "move") {
-        if (zoomLevel === "weeks") {
-          newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
-          newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
-        } else if (zoomLevel === "months") {
-          newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
-          newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
-        } else if (zoomLevel === "quarters") {
-          newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
-          newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
+        switch (zoomLevel) {
+          case "weeks":
+            newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
+            newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
+            break;
+          case "months":
+            newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
+            newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
+            break;
+          case "quarters":
+            newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
+            newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
+            break;
         }
       } else if (dragStart.type === "resize-start") {
-        if (zoomLevel === "weeks") {
-          newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
-          if (newStartDate >= dragStart.originalEndDate) {
-            newStartDate = addDays(dragStart.originalEndDate, -1);
-          }
-        } else if (zoomLevel === "months") {
-          newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
-          if (newStartDate >= dragStart.originalEndDate) {
-            newStartDate = addMonths(dragStart.originalEndDate, -1);
-          }
-        } else if (zoomLevel === "quarters") {
-          newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
-          if (newStartDate >= dragStart.originalEndDate) {
-            newStartDate = addQuarters(dragStart.originalEndDate, -1);
-          }
+        switch (zoomLevel) {
+          case "weeks":
+            newStartDate = addDays(dragStart.originalStartDate, deltaUnits);
+            if (newStartDate >= dragStart.originalEndDate) {
+              newStartDate = addDays(dragStart.originalEndDate, -1);
+            }
+            break;
+          case "months":
+            newStartDate = addMonths(dragStart.originalStartDate, deltaUnits);
+            if (newStartDate >= dragStart.originalEndDate) {
+              newStartDate = addMonths(dragStart.originalEndDate, -1);
+            }
+            break;
+          case "quarters":
+            newStartDate = addQuarters(dragStart.originalStartDate, deltaUnits);
+            if (newStartDate >= dragStart.originalEndDate) {
+              newStartDate = addQuarters(dragStart.originalEndDate, -1);
+            }
+            break;
         }
       } else {
         // resize-end case
-        if (zoomLevel === "weeks") {
-          newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
-          if (newEndDate <= dragStart.originalStartDate) {
-            newEndDate = addDays(dragStart.originalStartDate, 1);
-          }
-        } else if (zoomLevel === "months") {
-          newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
-          if (newEndDate <= dragStart.originalStartDate) {
-            newEndDate = addMonths(dragStart.originalStartDate, 1);
-          }
-        } else if (zoomLevel === "quarters") {
-          newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
-          if (newEndDate <= dragStart.originalStartDate) {
-            newEndDate = addQuarters(dragStart.originalStartDate, 1);
-          }
+        switch (zoomLevel) {
+          case "weeks":
+            newEndDate = addDays(dragStart.originalEndDate, deltaUnits);
+            if (newEndDate <= dragStart.originalStartDate) {
+              newEndDate = addDays(dragStart.originalStartDate, 1);
+            }
+            break;
+          case "months":
+            newEndDate = addMonths(dragStart.originalEndDate, deltaUnits);
+            if (newEndDate <= dragStart.originalStartDate) {
+              newEndDate = addMonths(dragStart.originalStartDate, 1);
+            }
+            break;
+          case "quarters":
+            newEndDate = addQuarters(dragStart.originalEndDate, deltaUnits);
+            if (newEndDate <= dragStart.originalStartDate) {
+              newEndDate = addQuarters(dragStart.originalStartDate, 1);
+            }
+            break;
         }
       }
 
@@ -160,49 +174,58 @@ const GanttBar = ({
       let newLeftPosition = 0;
       let newWidth = columnWidth;
 
-      if (zoomLevel === "weeks") {
-        const newStartOffset = differenceInDays(newStartDate, dateRange.start);
-        const newDuration = differenceInDays(newEndDate, newStartDate) || 1;
-        newLeftPosition = newStartOffset * columnWidth;
-        newWidth = newDuration * columnWidth;
-      } else {
-        // For months/quarters, recalculate position using the same logic as the main positioning
-        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-
-        if (zoomLevel === "months") {
-          const newStartMonth = startOfMonth(newStartDate);
-          const newEndMonth = startOfMonth(newEndDate);
-
-          const startOffset = periods.findIndex(
-            (period) => period.getTime() === newStartMonth.getTime(),
+      switch (zoomLevel) {
+        case "weeks": {
+          const newStartOffset = differenceInDays(
+            newStartDate,
+            dateRange.start,
           );
-          const endOffset = periods.findIndex(
-            (period) => period.getTime() === newEndMonth.getTime(),
-          );
+          const newDuration = differenceInDays(newEndDate, newStartDate) || 1;
+          newLeftPosition = newStartOffset * columnWidth;
+          newWidth = newDuration * columnWidth;
+          break;
+        }
+        case "months":
+        case "quarters": {
+          // For months/quarters, recalculate position using the same logic as the main positioning
+          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
 
-          if (startOffset !== -1) {
-            newLeftPosition = startOffset * columnWidth;
-            const duration =
-              endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
-            newWidth = duration * columnWidth;
+          if (zoomLevel === "months") {
+            const newStartMonth = startOfMonth(newStartDate);
+            const newEndMonth = startOfMonth(newEndDate);
+
+            const startOffset = periods.findIndex(
+              (period) => period.getTime() === newStartMonth.getTime(),
+            );
+            const endOffset = periods.findIndex(
+              (period) => period.getTime() === newEndMonth.getTime(),
+            );
+
+            if (startOffset !== -1) {
+              newLeftPosition = startOffset * columnWidth;
+              const duration =
+                endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
+              newWidth = duration * columnWidth;
+            }
+          } else {
+            const newStartQuarter = startOfQuarter(newStartDate);
+            const newEndQuarter = startOfQuarter(newEndDate);
+
+            const startOffset = periods.findIndex(
+              (period) => period.getTime() === newStartQuarter.getTime(),
+            );
+            const endOffset = periods.findIndex(
+              (period) => period.getTime() === newEndQuarter.getTime(),
+            );
+
+            if (startOffset !== -1) {
+              newLeftPosition = startOffset * columnWidth;
+              const duration =
+                endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
+              newWidth = duration * columnWidth;
+            }
           }
-        } else if (zoomLevel === "quarters") {
-          const newStartQuarter = startOfQuarter(newStartDate);
-          const newEndQuarter = startOfQuarter(newEndDate);
-
-          const startOffset = periods.findIndex(
-            (period) => period.getTime() === newStartQuarter.getTime(),
-          );
-          const endOffset = periods.findIndex(
-            (period) => period.getTime() === newEndQuarter.getTime(),
-          );
-
-          if (startOffset !== -1) {
-            newLeftPosition = startOffset * columnWidth;
-            const duration =
-              endOffset !== -1 ? Math.max(1, endOffset - startOffset + 1) : 1;
-            newWidth = duration * columnWidth;
-          }
+          break;
         }
       }
 
@@ -227,46 +250,52 @@ const GanttBar = ({
     let finalStartDate = dragStart.originalStartDate;
     let finalEndDate = dragStart.originalEndDate;
 
-    if (zoomLevel === "weeks") {
-      const finalStartOffset = Math.round(
-        dragPosition.leftPosition / columnWidth,
-      );
-      const finalDuration = Math.round(dragPosition.width / columnWidth);
+    switch (zoomLevel) {
+      case "weeks": {
+        const finalStartOffset = Math.round(
+          dragPosition.leftPosition / columnWidth,
+        );
+        const finalDuration = Math.round(dragPosition.width / columnWidth);
 
-      finalStartDate = addDays(dateRange.start, finalStartOffset);
-      finalEndDate = addDays(finalStartDate, Math.max(1, finalDuration));
-    } else {
-      // For months/quarters, calculate based on the visual position
-      const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-      const startPeriodIndex = Math.round(
-        dragPosition.leftPosition / columnWidth,
-      );
-      const durationPeriods = Math.round(dragPosition.width / columnWidth);
+        finalStartDate = addDays(dateRange.start, finalStartOffset);
+        finalEndDate = addDays(finalStartDate, Math.max(1, finalDuration));
+        break;
+      }
+      case "months":
+      case "quarters": {
+        // For months/quarters, calculate based on the visual position
+        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+        const startPeriodIndex = Math.round(
+          dragPosition.leftPosition / columnWidth,
+        );
+        const durationPeriods = Math.round(dragPosition.width / columnWidth);
 
-      if (startPeriodIndex >= 0 && startPeriodIndex < periods.length) {
-        const startPeriod = periods[startPeriodIndex];
+        if (startPeriodIndex >= 0 && startPeriodIndex < periods.length) {
+          const startPeriod = periods[startPeriodIndex];
 
-        if (zoomLevel === "months") {
-          finalStartDate = startOfMonth(startPeriod);
-          // If spanning only one month, end within that month
-          if (durationPeriods === 1) {
-            finalEndDate = endOfMonth(startPeriod);
+          if (zoomLevel === "months") {
+            finalStartDate = startOfMonth(startPeriod);
+            // If spanning only one month, end within that month
+            if (durationPeriods === 1) {
+              finalEndDate = endOfMonth(startPeriod);
+            } else {
+              // If spanning multiple months, add the duration minus 1 and end within the last month
+              const lastMonth = addMonths(startPeriod, durationPeriods - 1);
+              finalEndDate = endOfMonth(lastMonth);
+            }
           } else {
-            // If spanning multiple months, add the duration minus 1 and end within the last month
-            const lastMonth = addMonths(startPeriod, durationPeriods - 1);
-            finalEndDate = endOfMonth(lastMonth);
-          }
-        } else if (zoomLevel === "quarters") {
-          finalStartDate = startOfQuarter(startPeriod);
-          // If spanning only one quarter, end within that quarter
-          if (durationPeriods === 1) {
-            finalEndDate = endOfQuarter(startPeriod);
-          } else {
-            // If spanning multiple quarters, add the duration minus 1 and end within the last quarter
-            const lastQuarter = addQuarters(startPeriod, durationPeriods - 1);
-            finalEndDate = endOfQuarter(lastQuarter);
+            finalStartDate = startOfQuarter(startPeriod);
+            // If spanning only one quarter, end within that quarter
+            if (durationPeriods === 1) {
+              finalEndDate = endOfQuarter(startPeriod);
+            } else {
+              // If spanning multiple quarters, add the duration minus 1 and end within the last quarter
+              const lastQuarter = addQuarters(startPeriod, durationPeriods - 1);
+              finalEndDate = endOfQuarter(lastQuarter);
+            }
           }
         }
+        break;
       }
     }
 
@@ -317,46 +346,53 @@ const GanttBar = ({
     let startOffset = 0;
     let duration = 1;
 
-    if (zoomLevel === "weeks") {
-      startOffset = differenceInDays(startDate, dateRange.start);
-      duration = differenceInDays(endDate, startDate) || 1;
-    } else if (zoomLevel === "months") {
-      // Find which month the start date falls in
-      const startMonth = startOfMonth(startDate);
-      const endMonth = startOfMonth(endDate);
-
-      startOffset = periods.findIndex(
-        (period) => period.getTime() === startMonth.getTime(),
-      );
-
-      const endOffset = periods.findIndex(
-        (period) => period.getTime() === endMonth.getTime(),
-      );
-
-      if (startOffset === -1) startOffset = 0;
-      if (endOffset === -1) {
-        duration = 1;
-      } else {
-        duration = Math.max(1, endOffset - startOffset + 1);
+    switch (zoomLevel) {
+      case "weeks": {
+        startOffset = differenceInDays(startDate, dateRange.start);
+        duration = differenceInDays(endDate, startDate) || 1;
+        break;
       }
-    } else if (zoomLevel === "quarters") {
-      // Find which quarter the start date falls in
-      const startQuarter = startOfQuarter(startDate);
-      const endQuarter = startOfQuarter(endDate);
+      case "months": {
+        // Find which month the start date falls in
+        const startMonth = startOfMonth(startDate);
+        const endMonth = startOfMonth(endDate);
 
-      startOffset = periods.findIndex(
-        (period) => period.getTime() === startQuarter.getTime(),
-      );
+        startOffset = periods.findIndex(
+          (period) => period.getTime() === startMonth.getTime(),
+        );
 
-      const endOffset = periods.findIndex(
-        (period) => period.getTime() === endQuarter.getTime(),
-      );
+        const endOffset = periods.findIndex(
+          (period) => period.getTime() === endMonth.getTime(),
+        );
 
-      if (startOffset === -1) startOffset = 0;
-      if (endOffset === -1) {
-        duration = 1;
-      } else {
-        duration = Math.max(1, endOffset - startOffset + 1);
+        if (startOffset === -1) startOffset = 0;
+        if (endOffset === -1) {
+          duration = 1;
+        } else {
+          duration = Math.max(1, endOffset - startOffset + 1);
+        }
+        break;
+      }
+      case "quarters": {
+        // Find which quarter the start date falls in
+        const startQuarter = startOfQuarter(startDate);
+        const endQuarter = startOfQuarter(endDate);
+
+        startOffset = periods.findIndex(
+          (period) => period.getTime() === startQuarter.getTime(),
+        );
+
+        const endOffset = periods.findIndex(
+          (period) => period.getTime() === endQuarter.getTime(),
+        );
+
+        if (startOffset === -1) startOffset = 0;
+        if (endOffset === -1) {
+          duration = 1;
+        } else {
+          duration = Math.max(1, endOffset - startOffset + 1);
+        }
+        break;
       }
     }
 
@@ -383,6 +419,13 @@ const GanttBar = ({
           "shadow-lg ring-2": isDragging,
         },
       )}
+      onFocus={(e) => {
+        e.preventDefault();
+        e.currentTarget.blur();
+      }}
+      onKeyDown={(e) => {
+        e.preventDefault();
+      }}
       onMouseDown={(e) => {
         handleMouseDown(e, "move");
       }}
@@ -391,6 +434,7 @@ const GanttBar = ({
         width: `${finalWidth}px`,
         top: "6px",
       }}
+      tabIndex={-1}
     >
       {/* Resize handle - start */}
       <Box
@@ -440,122 +484,124 @@ const TimelineHeader = ({
   today.setHours(0, 0, 0, 0);
 
   const renderPeriodHeader = () => {
-    if (zoomLevel === "weeks") {
-      // Existing week view logic
-      return (
-        <>
-          {/* Week row */}
-          <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
-            <Flex>
-              {getWeekSpans(periods).map(({ week, month, span }, index) => (
-                <Box
-                  className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
-                  key={`${month}-${week}-${index}`}
-                  style={{ width: `${(span / periods.length) * 100}%` }}
-                >
-                  <Flex
-                    align="center"
-                    className="h-5 min-h-0"
-                    justify="between"
+    switch (zoomLevel) {
+      case "weeks":
+        // Existing week view logic
+        return (
+          <>
+            {/* Week row */}
+            <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+              <Flex>
+                {getWeekSpans(periods).map(({ week, month, span }, index) => (
+                  <Box
+                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    key={`${month}-${week}-${index}`}
+                    style={{ width: `${(span / periods.length) * 100}%` }}
                   >
-                    <Text
-                      className="text-[0.9rem]"
-                      color="muted"
-                      fontWeight="semibold"
+                    <Flex
+                      align="center"
+                      className="h-5 min-h-0"
+                      justify="between"
                     >
-                      {month}
-                    </Text>
-                    <Text
-                      className="text-[0.9rem] opacity-60"
-                      color="muted"
-                      fontWeight="semibold"
-                    >
-                      {week}
-                    </Text>
-                  </Flex>
-                </Box>
-              ))}
-            </Flex>
-          </Box>
-
-          {/* Days row - compact */}
-          <Flex>
-            {periods.map((day) => {
-              const isToday = day.getTime() === today.getTime();
-
-              return (
-                <Box
-                  className={cn(
-                    "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
-                    {
-                      "bg-gray-50 dark:bg-dark-200/30":
-                        isWeekend(day) && !isToday,
-                      "border-primary bg-primary dark:border-primary": isToday,
-                    },
-                  )}
-                  key={day.getTime()}
-                  style={{ minWidth: `${columnWidth}px` }}
-                >
-                  <Flex align="center" className="px-1" justify="between">
-                    {isToday ? (
-                      <Text color="white" fontSize="sm" fontWeight="medium">
-                        Today
+                      <Text
+                        className="text-[0.9rem]"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        {month}
                       </Text>
-                    ) : (
-                      <>
-                        <Text color="muted" fontSize="sm">
-                          {format(day, "d")}
-                        </Text>
-                        <Text color="muted" fontSize="sm">
-                          {format(day, "eeeee")}
-                        </Text>
-                      </>
-                    )}
-                  </Flex>
-                </Box>
-              );
-            })}
-          </Flex>
-        </>
-      );
-    } else if (zoomLevel === "months") {
-      // Monthly view
-      return (
-        <Flex>
-          {periods.map((month) => (
-            <Box
-              className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
-              key={month.getTime()}
-              style={{ minWidth: `${columnWidth}px` }}
-            >
-              <Text color="muted" fontSize="sm" fontWeight="medium">
-                {format(month, "MMM yyyy")}
-              </Text>
+                      <Text
+                        className="text-[0.9rem] opacity-60"
+                        color="muted"
+                        fontWeight="semibold"
+                      >
+                        {week}
+                      </Text>
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
             </Box>
-          ))}
-        </Flex>
-      );
-    } else if (zoomLevel === "quarters") {
-      // Quarterly view
-      return (
-        <Flex>
-          {periods.map((quarter) => (
-            <Box
-              className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
-              key={quarter.getTime()}
-              style={{ minWidth: `${columnWidth}px` }}
-            >
-              <Text color="muted" fontSize="sm" fontWeight="medium">
-                Q{Math.ceil((quarter.getMonth() + 1) / 3)}{" "}
-                {format(quarter, "yyyy")}
-              </Text>
-            </Box>
-          ))}
-        </Flex>
-      );
-    }
 
-    return null;
+            {/* Days row - compact */}
+            <Flex>
+              {periods.map((day) => {
+                const isToday = day.getTime() === today.getTime();
+
+                return (
+                  <Box
+                    className={cn(
+                      "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
+                      {
+                        "bg-gray-50 dark:bg-dark-200/30":
+                          isWeekend(day) && !isToday,
+                        "border-primary bg-primary dark:border-primary":
+                          isToday,
+                      },
+                    )}
+                    key={day.getTime()}
+                    style={{ minWidth: `${columnWidth}px` }}
+                  >
+                    <Flex align="center" className="px-1" justify="between">
+                      {isToday ? (
+                        <Text color="white" fontSize="sm" fontWeight="medium">
+                          Today
+                        </Text>
+                      ) : (
+                        <>
+                          <Text color="muted" fontSize="sm">
+                            {format(day, "d")}
+                          </Text>
+                          <Text color="muted" fontSize="sm">
+                            {format(day, "eeeee")}
+                          </Text>
+                        </>
+                      )}
+                    </Flex>
+                  </Box>
+                );
+              })}
+            </Flex>
+          </>
+        );
+      case "months":
+        // Monthly view
+        return (
+          <Flex>
+            {periods.map((month) => (
+              <Box
+                className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
+                key={month.getTime()}
+                style={{ minWidth: `${columnWidth}px` }}
+              >
+                <Text color="muted" fontSize="sm" fontWeight="medium">
+                  {format(month, "MMM yyyy")}
+                </Text>
+              </Box>
+            ))}
+          </Flex>
+        );
+      case "quarters":
+        // Quarterly view
+        return (
+          <Flex>
+            {periods.map((quarter) => (
+              <Box
+                className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-2 py-3 text-center dark:border-dark-100"
+                key={quarter.getTime()}
+                style={{ minWidth: `${columnWidth}px` }}
+              >
+                <Text color="muted" fontSize="sm" fontWeight="medium">
+                  Q{Math.ceil((quarter.getMonth() + 1) / 3)}{" "}
+                  {format(quarter, "yyyy")}
+                </Text>
+              </Box>
+            ))}
+          </Flex>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -927,8 +973,6 @@ export const GanttBoard = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>("weeks");
-  const [isDragging, setIsDragging] = useState(false);
-  const isDraggingRef = useRef(false); // Immediate ref for scroll prevention
 
   const team = teams.find(({ id }) => id === teamId);
   const teamCode = team?.code || "STORY";
@@ -953,18 +997,14 @@ export const GanttBoard = ({
   );
 
   // Update the drag state tracking
-  const handleDragStateChange = useCallback((dragging: boolean) => {
-    isDraggingRef.current = dragging;
-    setIsDragging(dragging);
+  const handleDragStateChange = useCallback((_dragging: boolean) => {
+    // Simplified - no longer tracking drag state for scroll prevention
   }, []);
 
-  // Scroll to today function - reusable for both initial scroll and reset
+  // Scroll to today function - only called on mount and when Today button is clicked
   const scrollToToday = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    // Don't auto-scroll if user is dragging (check both state and ref)
-    if (isDragging || isDraggingRef.current) return;
 
     // Wait for next frame to ensure everything is rendered
     requestAnimationFrame(() => {
@@ -973,25 +1013,31 @@ export const GanttBoard = ({
       const columnWidth = getColumnWidth(zoomLevel);
 
       let periodOffset = 0;
-      if (zoomLevel === "weeks") {
-        periodOffset = differenceInDays(now, dateRange.start);
-      } else if (zoomLevel === "months") {
-        // Find the current month in the periods array
-        const currentMonth = periods.findIndex(
-          (period) =>
-            period.getMonth() === now.getMonth() &&
-            period.getFullYear() === now.getFullYear(),
-        );
-        periodOffset = currentMonth >= 0 ? currentMonth : 0;
-      } else if (zoomLevel === "quarters") {
-        // Find the current quarter in the periods array
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        const currentQuarterIndex = periods.findIndex(
-          (period) =>
-            Math.floor(period.getMonth() / 3) === currentQuarter &&
-            period.getFullYear() === now.getFullYear(),
-        );
-        periodOffset = currentQuarterIndex >= 0 ? currentQuarterIndex : 0;
+      switch (zoomLevel) {
+        case "weeks":
+          periodOffset = differenceInDays(now, dateRange.start);
+          break;
+        case "months": {
+          // Find the current month in the periods array
+          const currentMonth = periods.findIndex(
+            (period) =>
+              period.getMonth() === now.getMonth() &&
+              period.getFullYear() === now.getFullYear(),
+          );
+          periodOffset = currentMonth >= 0 ? currentMonth : 0;
+          break;
+        }
+        case "quarters": {
+          // Find the current quarter in the periods array
+          const currentQuarter = Math.floor(now.getMonth() / 3);
+          const currentQuarterIndex = periods.findIndex(
+            (period) =>
+              Math.floor(period.getMonth() / 3) === currentQuarter &&
+              period.getFullYear() === now.getFullYear(),
+          );
+          periodOffset = currentQuarterIndex >= 0 ? currentQuarterIndex : 0;
+          break;
+        }
       }
 
       // Calculate position: sticky columns width + (current period position * column width)
@@ -1005,7 +1051,7 @@ export const GanttBoard = ({
 
       container.scrollLeft = Math.max(0, scrollPosition);
     });
-  }, [dateRange.start, zoomLevel, isDragging]);
+  }, [dateRange.start, zoomLevel]);
 
   // Auto-scroll to center on today when component mounts (only once)
   useEffect(() => {
@@ -1014,13 +1060,6 @@ export const GanttBoard = ({
       hasScrolledRef.current = true;
     }
   }, [scrollToToday]);
-
-  // Reset scroll when zoom level changes (but not during drag)
-  useEffect(() => {
-    if (hasScrolledRef.current && !isDragging && !isDraggingRef.current) {
-      scrollToToday();
-    }
-  }, [zoomLevel, scrollToToday, isDragging]);
 
   // Filter stories to only show those with dates
   const storiesWithDates = stories.filter(
