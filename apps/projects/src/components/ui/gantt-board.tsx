@@ -12,6 +12,7 @@ import {
   subDays,
   getWeek,
   isSameWeek,
+  isYesterday,
 } from "date-fns";
 import { useParams } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -239,12 +240,16 @@ const TimelineHeader = ({
   // Calculate minimum width for timeline to ensure proper sticky behavior
   const timelineMinWidth = days.length * 64; // 64px per day (min-w-16 = 64px)
 
+  // Get today's date for comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <Box
       className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark"
       style={{ minWidth: `${timelineMinWidth}px` }}
     >
-      <Box className="w-full">
+      <Box className="h-8 w-full">
         {/* Week row */}
         <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
           <Flex>
@@ -277,26 +282,40 @@ const TimelineHeader = ({
 
         {/* Days row - compact */}
         <Flex>
-          {days.map((day) => (
-            <Box
-              className={cn(
-                "min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
-                {
-                  "bg-gray-50 dark:bg-dark-200/30": isWeekend(day),
-                },
-              )}
-              key={day.getTime()}
-            >
-              <Flex align="center" className="px-1" justify="between">
-                <Text color="muted" fontSize="sm">
-                  {format(day, "d")}
-                </Text>
-                <Text color="muted" fontSize="sm">
-                  {format(day, "eeeee")}
-                </Text>
-              </Flex>
-            </Box>
-          ))}
+          {days.map((day) => {
+            const isToday = day.getTime() === today.getTime();
+
+            return (
+              <Box
+                className={cn(
+                  "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
+                  {
+                    "bg-gray-50 dark:bg-dark-200/30":
+                      isWeekend(day) && !isToday,
+                    "border-primary bg-primary dark:border-primary": isToday,
+                  },
+                )}
+                key={day.getTime()}
+              >
+                <Flex align="center" className="px-1" justify="between">
+                  {isToday ? (
+                    <Text color="white" fontSize="sm" fontWeight="medium">
+                      Today
+                    </Text>
+                  ) : (
+                    <>
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "d")}
+                      </Text>
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "eeeee")}
+                      </Text>
+                    </>
+                  )}
+                </Flex>
+              </Box>
+            );
+          })}
         </Flex>
       </Box>
     </Box>
@@ -389,7 +408,7 @@ const StoriesSection = ({
                 </PrioritiesMenu.Trigger>
                 <PrioritiesMenu.Items
                   priority={story.priority}
-                  setPriority={(p) => {
+                  setPriority={(_p) => {
                     // handleUpdate({ priority: p });
                   }}
                 />
@@ -405,7 +424,7 @@ const StoriesSection = ({
                   </button>
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
-                  setStatusId={(statusId) => {
+                  setStatusId={(_statusId) => {
                     // handleUpdate({ statusId });
                   }}
                   statusId={story.statusId}
@@ -448,6 +467,10 @@ const ChartSection = ({
   // Calculate minimum width for timeline
   const timelineMinWidth = days.length * 64; // 64px per day
 
+  // Get today's date for comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
       <TimelineHeader dateRange={dateRange} />
@@ -455,17 +478,27 @@ const ChartSection = ({
         <Box className="relative h-14" key={story.id}>
           {/* Vertical grid lines for each day */}
           <Flex className="absolute inset-0">
-            {days.map((day) => (
-              <Box
-                className={cn(
-                  "min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100",
-                  {
-                    "bg-gray-50/50 dark:bg-dark-200/20": isWeekend(day),
-                  },
-                )}
-                key={day.getTime()}
-              />
-            ))}
+            {days.map((day) => {
+              const isToday = day.getTime() === today.getTime();
+              const dayIsYesterday = isYesterday(day);
+
+              return (
+                <Box
+                  className={cn(
+                    "min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100",
+                    {
+                      "bg-gray-50/50 dark:bg-dark-200/20":
+                        isWeekend(day) && !isToday,
+                      "border-primary/50 bg-primary/10 dark:border-primary/50":
+                        isToday,
+                      "border-primary/50 dark:border-primary/50":
+                        dayIsYesterday,
+                    },
+                  )}
+                  key={day.getTime()}
+                />
+              );
+            })}
           </Flex>
 
           {/* Gantt bar on top of grid */}
