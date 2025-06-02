@@ -29,16 +29,20 @@ export const Sidebar = () => {
           <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
             <Text fontWeight="medium">You&apos;re on the free plan</Text>
             <Text className="mt-2" color="muted">
-              Upgrade to a paid plan to get more features.
+              {userRole === "admin"
+                ? "Upgrade to a paid plan to get more features."
+                : "Ask your admin to upgrade to a paid plan to get more features."}
             </Text>
-            <Button
-              className="mt-3 px-3"
-              color="tertiary"
-              href="/settings/workspace/billing"
-              size="sm"
-            >
-              Upgrade plan
-            </Button>
+            {userRole === "admin" && (
+              <Button
+                className="mt-3 px-3"
+                color="tertiary"
+                href="/settings/workspace/billing"
+                size="sm"
+              >
+                Upgrade plan
+              </Button>
+            )}
           </Box>
         )}
 
