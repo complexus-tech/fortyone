@@ -1120,6 +1120,10 @@ const Chart = ({
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
 
+  const isContainerScrollable =
+    containerRef.current &&
+    containerRef.current.scrollHeight > containerRef.current.clientHeight;
+
   // Calculate minimum width for timeline
   const timelineMinWidth = periods.length * columnWidth;
 
@@ -1130,7 +1134,7 @@ const Chart = ({
   return (
     <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
       <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
-      {stories.map((story) => (
+      {stories.map((story, idx) => (
         <Box className="relative h-14" key={story.id}>
           {/* Vertical grid lines for each period */}
           <Flex className="absolute inset-0">
@@ -1157,7 +1161,13 @@ const Chart = ({
                     },
                   )}
                   key={period.getTime()}
-                  style={{ minWidth: `${columnWidth}px` }}
+                  style={{
+                    minWidth: `${columnWidth}px`,
+                    height:
+                      idx === stories.length - 1 && !isContainerScrollable
+                        ? `calc(100dvh - 8rem - ${3.5 * (stories.length - 1)}rem)`
+                        : "100%",
+                  }}
                 />
               );
             })}
@@ -1293,7 +1303,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
       )}
       ref={containerRef}
     >
-      <Flex className="min-w-max">
+      <Flex className="min-h-[calc(100dvh-4rem)] min-w-max">
         <Stories
           getTeamCode={getTeamCode}
           onReset={scrollToToday}
