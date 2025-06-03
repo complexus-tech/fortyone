@@ -52,9 +52,10 @@ export const RoadmapPage = () => {
         <Flex align="center" gap={1}>
           <RoadmapLayoutSwitcher layout={layout} setLayout={setLayout} />
           <Button
-            color="tertiary"
             disabled={userRole === "guest"}
-            leftIcon={<PlusIcon className="h-[1.1rem]" />}
+            leftIcon={
+              <PlusIcon className="h-[1.1rem] text-white dark:text-white" />
+            }
             onClick={() => {
               if (userRole !== "guest") {
                 setIsOpen(true);
