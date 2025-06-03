@@ -41,6 +41,7 @@ type BaseGanttProps<T extends GanttItem> = {
   storageKey: string; // for zoom level persistence
   zoomLevel?: ZoomLevel;
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
+  onBarClick?: (item: T) => void;
   renderSidebar: (
     items: T[],
     onReset: () => void,
@@ -144,12 +145,14 @@ const Bar = <T extends GanttItem>({
   item,
   dateRange,
   onDateUpdate,
+  onBarClick,
   zoomLevel,
   renderContent,
 }: {
   item: T;
   dateRange: { start: Date; end: Date };
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
+  onBarClick?: (item: T) => void;
   zoomLevel: ZoomLevel;
   renderContent: (item: T) => ReactNode;
 }) => {
@@ -165,6 +168,12 @@ const Bar = <T extends GanttItem>({
 
   const [dragPosition, setDragPosition] = useState<{
     pixelOffsetX: number;
+  } | null>(null);
+
+  // Track mouse down position for click vs drag detection
+  const [mouseDownPos, setMouseDownPos] = useState<{
+    x: number;
+    y: number;
   } | null>(null);
 
   // Optimistic state to prevent flash during update
@@ -240,6 +249,9 @@ const Bar = <T extends GanttItem>({
       e.preventDefault();
       e.stopPropagation();
 
+      // Track mouse down position for click detection
+      setMouseDownPos({ x: e.clientX, y: e.clientY });
+
       // Clear any existing optimistic state when starting a new drag
       setOptimisticDates(null);
 
@@ -278,6 +290,7 @@ const Bar = <T extends GanttItem>({
       setIsDragging(false);
       setDragStart(null);
       setDragPosition(null);
+      setMouseDownPos(null);
       return;
     }
 
@@ -355,6 +368,7 @@ const Bar = <T extends GanttItem>({
     setIsDragging(false);
     setDragStart(null);
     setDragPosition(null);
+    setMouseDownPos(null);
   }, [
     isDragging,
     dragStart,
@@ -364,6 +378,25 @@ const Bar = <T extends GanttItem>({
     item.id,
     onDateUpdate,
   ]);
+
+  // Handle click detection
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!onBarClick || !mouseDownPos) return;
+
+      // Check if this was a click (not a drag)
+      const deltaX = Math.abs(e.clientX - mouseDownPos.x);
+      const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+      const clickThreshold = 5; // pixels
+
+      if (deltaX <= clickThreshold && deltaY <= clickThreshold) {
+        onBarClick(item);
+      }
+
+      setMouseDownPos(null);
+    },
+    [onBarClick, mouseDownPos, item],
+  );
 
   useEffect(() => {
     if (!isDragging) return;
@@ -476,9 +509,10 @@ const Bar = <T extends GanttItem>({
   return (
     <Box
       className={cn(
-        "group absolute z-0 h-10 cursor-pointer overflow-hidden rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 transition-colors dark:border-dark-50/80 dark:bg-dark-200",
+        "group absolute z-0 h-10 overflow-hidden rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 transition-colors dark:border-dark-50/80 dark:bg-dark-200",
         {
           "shadow-lg ring-2": isDragging,
+          "cursor-pointer hover:bg-gray-200 dark:hover:bg-dark-100": onBarClick,
         },
       )}
       onFocus={(e) => {
@@ -491,6 +525,7 @@ const Bar = <T extends GanttItem>({
       onMouseDown={(e) => {
         handleMouseDown(e, "move");
       }}
+      onMouseUp={handleClick}
       style={{
         left: `${finalLeftPosition}px`,
         width: `${finalWidth}px`,
@@ -829,6 +864,7 @@ const Chart = <T extends GanttItem>({
   items,
   dateRange,
   onDateUpdate,
+  onBarClick,
   zoomLevel,
   isContainerScrollable,
   renderBarContent,
@@ -836,6 +872,7 @@ const Chart = <T extends GanttItem>({
   items: T[];
   dateRange: { start: Date; end: Date };
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
+  onBarClick?: (item: T) => void;
   zoomLevel: ZoomLevel;
   isContainerScrollable: boolean;
   renderBarContent: (item: T) => ReactNode;
@@ -895,6 +932,7 @@ const Chart = <T extends GanttItem>({
             <Bar
               dateRange={dateRange}
               item={item}
+              onBarClick={onBarClick}
               onDateUpdate={onDateUpdate}
               renderContent={renderBarContent}
               zoomLevel={zoomLevel}
@@ -912,6 +950,7 @@ export const BaseGantt = <T extends GanttItem>({
   className,
   storageKey,
   onDateUpdate,
+  onBarClick,
   renderSidebar,
   renderBarContent,
   zoomLevel: defaultZoomLevel = "weeks",
@@ -1034,6 +1073,7 @@ export const BaseGantt = <T extends GanttItem>({
           dateRange={dateRange}
           isContainerScrollable={isContainerScrollable}
           items={itemsWithDates}
+          onBarClick={onBarClick}
           onDateUpdate={onDateUpdate}
           renderBarContent={renderBarContent}
           zoomLevel={zoomLevel}

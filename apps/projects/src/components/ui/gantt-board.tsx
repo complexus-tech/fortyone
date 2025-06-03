@@ -210,6 +210,7 @@ type GanttBoardProps = {
 export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
+  const router = useRouter();
 
   // Simple function to get team code from teamId
   const getTeamCode = (teamId: string): string => {
@@ -229,6 +230,14 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
       });
     },
     [mutate],
+  );
+
+  // Handle bar clicks to navigate to story page
+  const handleBarClick = useCallback(
+    (story: Story) => {
+      router.push(`/story/${story.id}/${slugify(story.title)}`);
+    },
+    [router],
   );
 
   const handleUpdate = useCallback(
@@ -292,6 +301,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     <BaseGantt
       className={className}
       items={stories}
+      onBarClick={handleBarClick}
       onDateUpdate={handleDateUpdate}
       renderBarContent={renderBarContent}
       renderSidebar={renderSidebar}

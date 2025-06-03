@@ -6,6 +6,7 @@ import { useCallback } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
@@ -181,6 +182,7 @@ export const RoadmapGanttBoard = ({
   className,
 }: RoadmapGanttBoardProps) => {
   const { mutate } = useUpdateObjectiveMutation();
+  const router = useRouter();
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -194,6 +196,14 @@ export const RoadmapGanttBoard = ({
       });
     },
     [mutate],
+  );
+
+  // Handle bar clicks to navigate to objective page
+  const handleBarClick = useCallback(
+    (objective: Objective) => {
+      router.push(`/teams/${objective.teamId}/objectives/${objective.id}`);
+    },
+    [router],
   );
 
   const handleUpdate = useCallback(
@@ -258,6 +268,7 @@ export const RoadmapGanttBoard = ({
     <BaseGantt
       className={className}
       items={objectives}
+      onBarClick={handleBarClick}
       onDateUpdate={handleDateUpdate}
       renderBarContent={renderBarContent}
       renderSidebar={renderSidebar}
