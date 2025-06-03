@@ -96,111 +96,122 @@ const KanbanLayoutSkeleton = () => {
 
 const GanttLayoutSkeleton = () => {
   return (
-    <Box>
-      {/* Gantt header */}
-      <Box className="sticky top-0 z-20 border-b border-r border-gray-200 dark:border-dark-200">
-        <Flex>
-          {/* Sticky work items header */}
+    <div className="relative left-px h-[calc(100dvh-4rem)] overflow-x-auto overflow-y-hidden">
+      <Flex className="min-h-full min-w-max">
+        {/* Sidebar */}
+        <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 dark:border-dark-100">
+          {/* Header */}
           <Flex
-            className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white px-6 py-2.5 dark:bg-dark"
-            direction="column-reverse"
+            align="center"
+            className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 px-6 py-2.5 dark:border-dark-100"
+            justify="between"
           >
-            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-8 w-16" />
+            <Flex align="center" gap={2}>
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-8 w-20" />
+            </Flex>
           </Flex>
 
-          {/* Sticky duration header */}
-          <Flex
-            className="sticky left-[30rem] z-10 w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-2.5 dark:border-dark-200 dark:bg-dark"
-            direction="column-reverse"
-          >
-            <Skeleton className="h-5 w-16" />
-          </Flex>
+          {/* Sidebar rows */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Box
+              className="h-14 border-b-[0.5px] border-gray-100 dark:border-dark-100"
+              key={i}
+            >
+              <Flex align="center" className="h-full px-6" justify="between">
+                <Flex align="center" gap={3}>
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-40" />
+                </Flex>
+                <Flex align="center" gap={2}>
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </Flex>
+              </Flex>
+            </Box>
+          ))}
+        </Box>
 
-          {/* Timeline header */}
-          <Flex className="flex-1 bg-white dark:bg-dark">
-            <Box className="w-full">
-              {/* Month row */}
-              <Box className="border-b border-gray-100 dark:border-dark-200">
+        {/* Chart */}
+        <Box className="flex-1" style={{ minWidth: "1344px" }}>
+          {/* Timeline Header */}
+          <Box className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 dark:border-dark-100">
+            <Box className="h-8 w-full">
+              {/* Month/Quarter row */}
+              <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
                 <Flex>
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Box
-                      className="flex-1 border-r border-gray-100 px-2 py-2 text-center dark:border-dark-200"
+                      className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
                       key={i}
+                      style={{ width: "33.33%" }}
                     >
-                      <Skeleton className="mx-auto h-4 w-16" />
+                      <Flex
+                        align="center"
+                        className="h-5 min-h-0"
+                        justify="between"
+                      >
+                        <Skeleton className="h-4 w-8" />
+                        <Skeleton className="h-4 w-6" />
+                      </Flex>
                     </Box>
                   ))}
                 </Flex>
               </Box>
 
-              {/* Days row - compact */}
+              {/* Days/Periods row */}
               <Flex>
                 {Array.from({ length: 21 }).map((_, i) => (
                   <Box
-                    className="min-w-20 flex-1 border-r border-gray-100 px-1 py-0.5 text-center dark:border-dark-200"
+                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
                     key={i}
+                    style={{ minWidth: "64px" }}
                   >
                     <Flex align="center" className="px-1" justify="between">
-                      <Skeleton className="h-4 w-3" />
                       <Skeleton className="h-4 w-2" />
+                      <Skeleton className="h-4 w-3" />
                     </Flex>
                   </Box>
                 ))}
               </Flex>
             </Box>
-          </Flex>
-        </Flex>
-      </Box>
+          </Box>
 
-      {/* Gantt rows */}
-      <Box>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Flex
-            align="center"
-            className="relative h-12 hover:bg-gray-100/60 dark:hover:bg-dark-200/60"
-            key={i}
-          >
-            {/* Sticky story info */}
-            <Box className="sticky left-0 z-10 w-[30rem] shrink-0 bg-white py-3 pl-6 dark:bg-dark">
-              <Flex align="center" className="gap-1.5">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-40" />
-              </Flex>
-            </Box>
-
-            {/* Sticky duration */}
-            <Box className="sticky left-[30rem] z-10 h-full w-24 shrink-0 border-r border-gray-200 bg-white px-4 py-3 dark:border-dark-200 dark:bg-dark">
-              <Skeleton className="h-4 w-12" />
-            </Box>
-
-            {/* Timeline */}
-            <Box className="relative h-full flex-1">
-              {/* Vertical grid lines */}
+          {/* Chart rows */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Box className="relative h-14" key={i}>
+              {/* Grid lines spanning full height */}
               <Flex className="absolute inset-0">
-                {Array.from({ length: 21 }).map((_, i) => (
+                {Array.from({ length: 21 }).map((_, j) => (
                   <Box
-                    className="min-w-20 flex-1 border-r border-gray-100 dark:border-dark-200"
-                    key={i}
+                    className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100"
+                    key={j}
+                    style={{
+                      minWidth: "64px",
+                      height: i === 7 ? `calc(100dvh - 4rem - 4rem)` : "100%",
+                    }}
                   />
                 ))}
               </Flex>
 
-              {/* Skeleton gantt bar */}
+              {/* Gantt bar */}
               <Box className="relative z-10 h-full px-2">
                 <Skeleton
-                  className="absolute h-6 rounded"
+                  className="absolute h-10 rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 dark:border-dark-50/80 dark:bg-dark-200"
                   style={{
-                    left: `${Math.random() * 50}%`,
-                    width: `${10 + Math.random() * 30}%`,
-                    top: "12px",
+                    left: `${Math.random() * 50 + 10}%`,
+                    width: `${15 + Math.random() * 25}%`,
+                    top: "6px",
                   }}
                 />
               </Box>
             </Box>
-          </Flex>
-        ))}
-      </Box>
-    </Box>
+          ))}
+        </Box>
+      </Flex>
+    </div>
   );
 };
 
@@ -217,7 +228,7 @@ export const BoardSkeleton = ({
         {
           "overflow-x-auto bg-gray-50/60 dark:bg-transparent":
             layout === "kanban",
-          "overflow-auto bg-white dark:bg-dark-300": layout === "gantt",
+          "overflow-auto bg-white dark:bg-dark": layout === "gantt",
         },
         className,
       )}
