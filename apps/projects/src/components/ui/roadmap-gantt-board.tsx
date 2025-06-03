@@ -262,6 +262,7 @@ export const RoadmapGanttBoard = ({
       renderBarContent={renderBarContent}
       renderSidebar={renderSidebar}
       storageKey="roadmapZoomLevel"
+      zoomLevel="months"
     />
   );
 };

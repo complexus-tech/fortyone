@@ -39,6 +39,7 @@ type BaseGanttProps<T extends GanttItem> = {
   items: T[];
   className?: string;
   storageKey: string; // for zoom level persistence
+  zoomLevel?: ZoomLevel;
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
   renderSidebar: (
     items: T[],
@@ -913,12 +914,13 @@ export const BaseGantt = <T extends GanttItem>({
   onDateUpdate,
   renderSidebar,
   renderBarContent,
+  zoomLevel: defaultZoomLevel = "weeks",
 }: BaseGanttProps<T>) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     storageKey,
-    "weeks" as ZoomLevel,
+    defaultZoomLevel,
   );
   const [isContainerScrollable, setIsContainerScrollable] = useState(false);
 
