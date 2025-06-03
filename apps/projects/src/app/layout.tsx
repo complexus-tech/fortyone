@@ -15,7 +15,10 @@ const font = InstrumentSans({
 });
 
 export const metadata: Metadata = {
-  title: "Complexus",
+  title: {
+    template: "%s | Complexus",
+    default: "Complexus",
+  },
 };
 
 export const viewport: Viewport = {
