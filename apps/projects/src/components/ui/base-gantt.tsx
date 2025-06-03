@@ -23,6 +23,7 @@ import {
 import type { ReactNode } from "react";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { ArrowDown2Icon } from "icons";
+import { usePathname } from "next/navigation";
 import { useLocalStorage } from "@/hooks";
 
 // Types
@@ -838,6 +839,8 @@ const Chart = <T extends GanttItem>({
   isContainerScrollable: boolean;
   renderBarContent: (item: T) => ReactNode;
 }) => {
+  const pathname = usePathname();
+  const isRoadmap = pathname.includes("roadmap");
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
 
@@ -879,7 +882,7 @@ const Chart = <T extends GanttItem>({
                     minWidth: `${columnWidth}px`,
                     height:
                       idx === items.length - 1 && !isContainerScrollable
-                        ? `calc(100dvh - 8rem - ${3.5 * (items.length - 0)}rem)`
+                        ? `calc(100dvh - 8rem - ${3.5 * (items.length - (isRoadmap ? 1 : 0))}rem)`
                         : "100%",
                   }}
                 />
@@ -1023,7 +1026,7 @@ export const BaseGantt = <T extends GanttItem>({
       )}
       ref={containerRef}
     >
-      <Flex className="min-h-[calc(100dvh-7.5rem)] min-w-max">
+      <Flex className="min-h-full min-w-max">
         {renderSidebar(itemsWithDates, scrollToToday, zoomLevel, setZoomLevel)}
         <Chart
           dateRange={dateRange}
