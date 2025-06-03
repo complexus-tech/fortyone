@@ -498,7 +498,7 @@ const Bar = <T extends GanttItem>({
       tabIndex={-1}
     >
       <Box
-        className="absolute left-0 top-0 h-full w-1 cursor-ew-resize"
+        className="absolute left-0 top-0 h-full w-2 cursor-col-resize"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-start");
@@ -506,7 +506,7 @@ const Bar = <T extends GanttItem>({
       />
 
       <Box
-        className="absolute right-0 top-0 h-full w-1 cursor-ew-resize"
+        className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-end");
