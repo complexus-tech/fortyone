@@ -1,13 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import {
-  DashboardIcon,
-  NotificationsIcon,
-  ObjectiveIcon,
-  RoadmapIcon,
-  UserIcon,
-} from "icons";
+import { DashboardIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
@@ -37,7 +31,12 @@ export const Navigation = () => {
       icon: <UserIcon />,
       href: "/my-work",
     },
-
+    {
+      name: "Roadmap",
+      icon: <RoadmapIcon strokeWidth={2} />,
+      href: "/roadmaps",
+      disabled: !features.objectiveEnabled,
+    },
     // {
     //   name: "Analytics",
     //   icon: (
@@ -48,17 +47,7 @@ export const Navigation = () => {
     //   ),
     //   href: "/analytics",
     // },
-    {
-      name: "Roadmap",
-      icon: <RoadmapIcon strokeWidth={2} />,
-      href: "/roadmaps",
-    },
-    {
-      name: getTermDisplay("objectiveTerm", { variant: "plural" }),
-      icon: <ObjectiveIcon className="relative -top-[0.5px] left-px" />,
-      href: "/objectives",
-      disabled: !features.objectiveEnabled,
-    },
+
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
