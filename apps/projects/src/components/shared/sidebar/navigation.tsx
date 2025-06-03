@@ -3,7 +3,7 @@ import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import { DashboardIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
-import { NavLink } from "@/components/ui";
+import { NavLink, PriorityIcon } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useTerminology, useFeatures } from "@/hooks";
 
@@ -37,17 +37,16 @@ export const Navigation = () => {
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
-    // {
-    //   name: "Analytics",
-    //   icon: (
-    //     <PriorityIcon
-    //       className="h-5 w-auto text-gray dark:text-gray-300"
-    //       priority="High"
-    //     />
-    //   ),
-    //   href: "/analytics",
-    // },
-
+    {
+      name: "Analytics",
+      icon: (
+        <PriorityIcon
+          className="h-5 w-auto text-gray dark:text-gray-300"
+          priority="High"
+        />
+      ),
+      href: "/analytics",
+    },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
@@ -55,7 +54,7 @@ export const Navigation = () => {
       messages: unreadNotifications,
     },
     // {
-    //   name: "Running sprints",
+    //   name: "Active sprints",
     //   icon: <SprintsIcon />,
     //   href: "/sprints",
     // },
