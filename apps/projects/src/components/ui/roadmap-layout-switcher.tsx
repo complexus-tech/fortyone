@@ -36,11 +36,11 @@ export const RoadmapLayoutSwitcher = ({
         onClick={() => {
           setLayout("gantt");
         }}
-        title={disabled ? undefined : "Gantt Chart"}
+        title={disabled ? undefined : "Timeline"}
         type="button"
       >
         <GanttIcon />
-        <span className="hidden md:inline">Gantt</span>
+        <span className="hidden md:inline">Timeline</span>
       </button>
       <button
         className={cn(
