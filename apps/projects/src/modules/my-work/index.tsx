@@ -14,7 +14,7 @@ export const ListMyStories = () => {
   const searchParams = useSearchParams();
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
-    "list",
+    "kanban",
   );
   const { isPending } = useMyStories();
 
