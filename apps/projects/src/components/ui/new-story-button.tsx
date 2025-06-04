@@ -29,6 +29,8 @@ export const NewStoryButton = ({
   return (
     <>
       <Button
+        className={cn("shrink-0", className)}
+        data-new-story-button
         disabled={rest.disabled || userRole === "guest"}
         leftIcon={leftIcon}
         onClick={() => {
@@ -38,7 +40,6 @@ export const NewStoryButton = ({
         }}
         size={size}
         {...rest}
-        className={cn("shrink-0", className)}
       >
         {children || `New ${getTermDisplay("storyTerm")}`}
       </Button>

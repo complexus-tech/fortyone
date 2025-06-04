@@ -81,7 +81,7 @@ export const Header = ({
           |
         </span>
         <Box className="hidden md:block">
-          <NewStoryButton />
+          <NewStoryButton data-header-new-story-button />
         </Box>
       </Flex>
     </HeaderContainer>

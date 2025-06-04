@@ -11,6 +11,7 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -80,6 +81,7 @@ export default async function RootLayout({
       {children}
       <ServerSentEvents />
       <IdentifyUser />
+      <WalkthroughIntegration />
     </HydrationBoundary>
   );
 }
