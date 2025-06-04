@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { CalendarPlusIcon } from "icons";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
@@ -166,7 +167,13 @@ const ObjectiveRow = ({
           <Text className="ml-4 shrink-0" color="muted">
             {duration} day{duration !== 1 ? "s" : ""}
           </Text>
-        ) : null}
+        ) : (
+          <Tooltip title="Add dates">
+            <button type="button">
+              <CalendarPlusIcon />
+            </button>
+          </Tooltip>
+        )}
       </Flex>
     </Box>
   );
