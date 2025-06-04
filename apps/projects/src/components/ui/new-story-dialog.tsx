@@ -137,9 +137,8 @@ export const NewStoryDialog = ({
     endDate: null,
     startDate: null,
     assigneeId:
-      assigneeId || automationPreferences?.autoAssignSelf
-        ? session.data?.user?.id
-        : null,
+      assigneeId ||
+      (automationPreferences?.autoAssignSelf ? session.data?.user?.id : null),
     priority,
     objectiveId: objectiveId || null,
     sprintId: sprintId || null,
@@ -596,7 +595,6 @@ export const NewStoryDialog = ({
                     color="tertiary"
                     leftIcon={
                       <Avatar
-                        color="tertiary"
                         name={member?.fullName}
                         size="xs"
                         src={member?.avatarUrl}
