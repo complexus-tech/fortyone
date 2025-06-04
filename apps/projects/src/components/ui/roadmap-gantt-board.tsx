@@ -2,12 +2,13 @@
 
 import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
 import { differenceInDays } from "date-fns";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { CalendarPlusIcon } from "icons";
+import type { DateRange } from "react-day-picker";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
@@ -35,6 +36,7 @@ const ObjectiveRow = ({
   const { userRole } = useUserRole();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+  const [dates, setDates] = useState<DateRange | undefined>(undefined);
 
   // Get team members for this specific objective's team
   const { data: members = [] } = useTeamMembers(objective.teamId);
@@ -180,12 +182,17 @@ const ObjectiveRow = ({
             </Tooltip>
             <DatePicker.Calendar
               mode="range"
-              // onDayClick={(_day) => {
-              //   // handleUpdate({
-              //   //   endDate: formatISO(day),
-              //   // });
-              // }}
-              // selected={endDate ? new Date(endDate) : undefined}
+              numberOfMonths={2}
+              onSelect={(range) => {
+                setDates(range);
+                if (range?.from && range.to) {
+                  handleUpdate(objective.id, {
+                    startDate: range.from.toISOString(),
+                    endDate: range.to.toISOString(),
+                  });
+                }
+              }}
+              selected={dates}
             />
           </DatePicker>
         )}
