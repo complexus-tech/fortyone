@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text, Tooltip, Avatar } from "ui";
+import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
 import { differenceInDays } from "date-fns";
 import { useCallback } from "react";
 import Link from "next/link";
@@ -168,11 +168,26 @@ const ObjectiveRow = ({
             {duration} day{duration !== 1 ? "s" : ""}
           </Text>
         ) : (
-          <Tooltip title="Add dates">
-            <button type="button">
-              <CalendarPlusIcon />
-            </button>
-          </Tooltip>
+          <DatePicker>
+            <Tooltip title="Add dates">
+              <span className="mt-1">
+                <DatePicker.Trigger>
+                  <button type="button">
+                    <CalendarPlusIcon />
+                  </button>
+                </DatePicker.Trigger>
+              </span>
+            </Tooltip>
+            <DatePicker.Calendar
+              mode="range"
+              // onDayClick={(_day) => {
+              //   // handleUpdate({
+              //   //   endDate: formatISO(day),
+              //   // });
+              // }}
+              // selected={endDate ? new Date(endDate) : undefined}
+            />
+          </DatePicker>
         )}
       </Flex>
     </Box>
