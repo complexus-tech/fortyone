@@ -1,18 +1,28 @@
 package workspaces
 
 import (
+	"time"
+
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/google/uuid"
 )
 
 func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState) []stories.CoreNewStory {
+	// Helper function to create date pointers
+	datePtr := func(days int) *time.Time {
+		t := time.Now().AddDate(0, 0, days)
+		return &t
+	}
+
 	storyData := []struct {
 		title           string
 		description     string
 		descriptionHTML string
 		priority        string
 		statusCategory  string
+		startDate       *time.Time
+		endDate         *time.Time
 	}{
 		{
 			"Welcome to Complexus: Streamline Your Project Management",
@@ -30,6 +40,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<p>To get started, explore our <a href="https://docs.complexus.app/concepts" target="_blank">Core Concepts</a> to understand the fundamental building blocks of Complexus.</p>`,
 			"High",
 			"completed",
+			datePtr(0), // Started today
+			datePtr(1), // Completed tomorrow
 		},
 		{
 			"Setting Up Your Workspace in Complexus",
@@ -46,6 +58,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<p>For detailed instructions, refer to our guide on <a href="https://docs.complexus.app/start-here/set-up-your-workspace" target="_blank">Setting Up Your Workspace</a>.</p>`,
 			"High",
 			"started",
+			datePtr(0),
+			datePtr(3),
 		},
 		{
 			"Understanding Roles and Permissions in Complexus",
@@ -61,6 +75,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<p>Learn more about configuring roles and permissions in our <a href="https://docs.complexus.app/roles-and-permissions" target="_blank">Roles and Permissions</a> section.</p>`,
 			"Medium",
 			"backlog",
+			datePtr(3),
+			datePtr(7),
 		},
 		{
 			"Navigating Core Features of Complexus",
@@ -77,6 +93,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<p>Explore these features in detail in our <a href="https://docs.complexus.app/product-guide/stories" target="_blank">Core Features</a> section.</p>`,
 			"Medium",
 			"started",
+			datePtr(0),
+			datePtr(1),
 		},
 		{
 			"Accessing Help and Support in Complexus",
@@ -92,6 +110,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<p>We're committed to ensuring you have a smooth experience with Complexus.</p>`,
 			"Low",
 			"unstarted",
+			nil, // No start date set
+			nil, // No end date set
 		},
 	}
 
@@ -124,6 +144,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			Priority:        data.priority,
 			Team:            teamID,
 			Status:          &statusID,
+			StartDate:       data.startDate,
+			EndDate:         data.endDate,
 		}
 	}
 
