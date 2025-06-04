@@ -167,6 +167,13 @@ export const NewObjectiveDialog = ({
       });
       return;
     }
+
+    if (!objectiveForm.startDate || !objectiveForm.endDate) {
+      toast.warning("Validation Error", {
+        description: "Start date and deadline are required",
+      });
+      return;
+    }
     if (
       teamObjectives.some(
         (objective) =>
@@ -532,7 +539,7 @@ export const NewObjectiveDialog = ({
                   >
                     {objectiveForm.endDate
                       ? format(new Date(objectiveForm.endDate), "MMM d, yyyy")
-                      : "Target date"}
+                      : "Deadline"}
                   </Button>
                 </DatePicker.Trigger>
                 <DatePicker.Calendar

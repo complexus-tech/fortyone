@@ -2,7 +2,7 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const ListIcon = (props: Icon) => {
-  const { strokeWidth = 2, className, ...rest } = props;
+  const { strokeWidth = 3, className, ...rest } = props;
   return (
     <svg
       {...rest}

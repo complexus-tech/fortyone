@@ -7,6 +7,7 @@ import { PlusIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import type { Member } from "@/types";
+import { useTerminology } from "@/hooks";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -36,7 +37,7 @@ const List = ({
         className={cn(
           "flex h-full w-[340px] flex-col gap-4 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
-            "bg-gray-100/30 dark:bg-dark-200/20": totalStories === 0,
+            "bg-gray-100/20 dark:bg-dark-200/10": totalStories === 0,
             "bg-gray-100/40 dark:bg-dark-200/50": isOver,
           },
         )}
@@ -61,6 +62,7 @@ export const KanbanGroup = ({
   member?: Member;
   groupBy: ViewOptionsGroupBy;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
 
   let filteredStories: Story[] = [];
@@ -88,16 +90,17 @@ export const KanbanGroup = ({
         <StoryCard key={story.id} story={story} />
       ))}
       <Button
-        className="relative min-h-[2.35rem] w-[340px]"
+        align="center"
+        className="relative min-h-[2.35rem] w-[340px] border-gray-100/80 dark:border-dark-200 dark:bg-dark-200/60"
         color="tertiary"
+        fullWidth
         onClick={() => {
           setIsOpen(true);
         }}
         size="sm"
-        variant="naked"
       >
-        <PlusIcon className="relative -top-[0.3px] h-[1.15rem] w-auto" /> New
-        Story
+        <PlusIcon className="relative -top-[0.3px] h-[1.15rem] w-auto" /> New{" "}
+        {getTermDisplay("storyTerm", { capitalize: true })}
       </Button>
       <NewStoryDialog
         assigneeId={member?.id}

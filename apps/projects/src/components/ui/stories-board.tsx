@@ -27,11 +27,12 @@ import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
 import { ListBoard } from "./list-board";
+import { GanttBoard } from "./gantt-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
 import { NewStoryButton } from "./new-story-button";
 
-export type StoriesLayout = "list" | "kanban" | null;
+export type StoriesLayout = "list" | "kanban" | "gantt" | null;
 
 const StoryOverlay = ({
   story,
@@ -322,9 +323,13 @@ export const StoriesBoard = ({
             onDragStart={handleDragStart}
             sensors={sensors}
           >
-            {layout === "kanban" ? (
+            {layout === "kanban" && (
               <KanbanBoard className={className} stories={orderedStories} />
-            ) : (
+            )}
+            {layout === "gantt" && (
+              <GanttBoard className={className} stories={orderedStories} />
+            )}
+            {(layout === "list" || !layout) && (
               <ListBoard
                 className={className}
                 isInSearch={isInSearch}

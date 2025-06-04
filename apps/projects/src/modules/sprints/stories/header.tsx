@@ -89,7 +89,11 @@ export const Header = ({
         />
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
+        <LayoutSwitcher
+          layout={layout}
+          options={["list", "kanban"]}
+          setLayout={setLayout}
+        />
         <StoriesViewOptionsButton
           layout={layout}
           setViewOptions={setViewOptions}

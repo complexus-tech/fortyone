@@ -94,6 +94,127 @@ const KanbanLayoutSkeleton = () => {
   );
 };
 
+const GanttLayoutSkeleton = () => {
+  return (
+    <div className="relative left-px h-[calc(100dvh-4rem)] overflow-x-auto overflow-y-hidden">
+      <Flex className="min-h-full min-w-max">
+        {/* Sidebar */}
+        <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 dark:border-dark-100">
+          {/* Header */}
+          <Flex
+            align="center"
+            className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 px-6 py-2.5 dark:border-dark-100"
+            justify="between"
+          >
+            <Skeleton className="h-8 w-16" />
+            <Flex align="center" gap={2}>
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-8 w-20" />
+            </Flex>
+          </Flex>
+
+          {/* Sidebar rows */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Box
+              className="h-14 border-b-[0.5px] border-gray-100 dark:border-dark-100"
+              key={i}
+            >
+              <Flex align="center" className="h-full px-6" justify="between">
+                <Flex align="center" gap={3}>
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-40" />
+                </Flex>
+                <Flex align="center" gap={2}>
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </Flex>
+              </Flex>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Chart */}
+        <Box className="flex-1" style={{ minWidth: "1344px" }}>
+          {/* Timeline Header */}
+          <Box className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 dark:border-dark-100">
+            <Box className="h-8 w-full">
+              {/* Month/Quarter row */}
+              <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+                <Flex>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Box
+                      className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                      key={i}
+                      style={{ width: "33.33%" }}
+                    >
+                      <Flex
+                        align="center"
+                        className="h-5 min-h-0"
+                        justify="between"
+                      >
+                        <Skeleton className="h-4 w-8" />
+                        <Skeleton className="h-4 w-6" />
+                      </Flex>
+                    </Box>
+                  ))}
+                </Flex>
+              </Box>
+
+              {/* Days/Periods row */}
+              <Flex>
+                {Array.from({ length: 21 }).map((_, i) => (
+                  <Box
+                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                    key={i}
+                    style={{ minWidth: "64px" }}
+                  >
+                    <Flex align="center" className="px-1" justify="between">
+                      <Skeleton className="h-4 w-2" />
+                      <Skeleton className="h-4 w-3" />
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+          </Box>
+
+          {/* Chart rows */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Box className="relative h-14" key={i}>
+              {/* Grid lines spanning full height */}
+              <Flex className="absolute inset-0">
+                {Array.from({ length: 21 }).map((_, j) => (
+                  <Box
+                    className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100"
+                    key={j}
+                    style={{
+                      minWidth: "64px",
+                      height: i === 7 ? `calc(100dvh - 4rem - 4rem)` : "100%",
+                    }}
+                  />
+                ))}
+              </Flex>
+
+              {/* Gantt bar */}
+              <Box className="relative z-10 h-full px-2">
+                <Skeleton
+                  className="absolute h-10 rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 dark:border-dark-50/80 dark:bg-dark-200"
+                  style={{
+                    left: `${Math.random() * 50 + 10}%`,
+                    width: `${15 + Math.random() * 25}%`,
+                    top: "6px",
+                  }}
+                />
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Flex>
+    </div>
+  );
+};
+
 export const BoardSkeleton = ({
   layout,
   className,
@@ -107,11 +228,14 @@ export const BoardSkeleton = ({
         {
           "overflow-x-auto bg-gray-50/60 dark:bg-transparent":
             layout === "kanban",
+          "overflow-auto bg-white dark:bg-dark": layout === "gantt",
         },
         className,
       )}
     >
-      {layout === "kanban" ? <KanbanLayoutSkeleton /> : <ListLayoutSkeleton />}
+      {layout === "kanban" && <KanbanLayoutSkeleton />}
+      {layout === "gantt" && <GanttLayoutSkeleton />}
+      {(layout === "list" || !layout) && <ListLayoutSkeleton />}
     </BodyContainer>
   );
 };

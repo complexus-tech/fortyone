@@ -12,6 +12,7 @@ export * from "./new-objective";
 export * from "./stories-list";
 export * from "./stories-group";
 export * from "./kanban-board";
+export * from "./gantt-board";
 export * from "./kanban-group";
 export * from "./stories-board";
 export * from "./layout-switcher";

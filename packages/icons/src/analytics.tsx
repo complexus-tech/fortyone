@@ -1,30 +1,25 @@
 import type { Icon } from "./types";
+import { cn } from "lib";
 
 export const AnalyticsIcon = (props: Icon) => {
-  const { strokeWidth = 2, ...rest } = props;
+  const { strokeWidth = 2, className, ...rest } = props;
   return (
     <svg
-      {...rest}
+      className={cn(
+        "shrink-0 text-gray dark:text-gray-300 h-5 w-auto",
+        className
+      )}
       fill="currentColor"
-      fillOpacity={0.1}
+      focusable="false"
       strokeWidth={strokeWidth}
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
+      {...rest}
+      height="16"
+      viewBox="0 0 16 16"
+      width="16"
     >
-      <path
-        d="M7 18V16M12 18V15M17 18V13M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5.99219 11.4863C8.14729 11.5581 13.0341 11.2328 15.8137 6.82132M13.9923 6.28835L15.8678 5.98649C16.0964 5.95738 16.432 6.13785 16.5145 6.35298L17.0104 7.99142"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect height="6" rx="1" width="3" x="1" y="8" />
+      <rect height="9" rx="1" width="3" x="6" y="5" />
+      <rect height="12" rx="1" width="3" x="11" y="2" />
     </svg>
   );
 };
