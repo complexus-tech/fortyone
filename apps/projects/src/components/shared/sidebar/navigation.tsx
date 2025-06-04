@@ -1,13 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import {
-  AnalyticsIcon,
-  DashboardIcon,
-  NotificationsIcon,
-  RoadmapIcon,
-  UserIcon,
-} from "icons";
+import { DashboardIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
@@ -43,11 +37,11 @@ export const Navigation = () => {
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
-    {
-      name: "Analytics",
-      icon: <AnalyticsIcon />,
-      href: "/analytics",
-    },
+    // {
+    //   name: "Analytics",
+    //   icon: <AnalyticsIcon />,
+    //   href: "/analytics",
+    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
