@@ -1,9 +1,15 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import { DashboardIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
+import {
+  AnalyticsIcon,
+  DashboardIcon,
+  NotificationsIcon,
+  RoadmapIcon,
+  UserIcon,
+} from "icons";
 import type { ReactNode } from "react";
-import { NavLink, PriorityIcon } from "@/components/ui";
+import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useTerminology, useFeatures } from "@/hooks";
 
@@ -39,12 +45,7 @@ export const Navigation = () => {
     },
     {
       name: "Analytics",
-      icon: (
-        <PriorityIcon
-          className="h-5 w-auto text-gray dark:text-gray-300"
-          priority="High"
-        />
-      ),
+      icon: <AnalyticsIcon />,
       href: "/analytics",
     },
     {
