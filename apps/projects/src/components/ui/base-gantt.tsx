@@ -991,8 +991,7 @@ export const BaseGantt = <T extends GanttItem>({
         const timelineHeaderHeight = 64;
         const rowHeight = 56;
         const availableHeight = window.innerHeight - pageHeaderHeight;
-        const usedHeight =
-          timelineHeaderHeight + itemsWithDates.length * rowHeight;
+        const usedHeight = timelineHeaderHeight + items.length * rowHeight;
 
         const needsScroll = usedHeight > availableHeight;
         setIsContainerScrollable(needsScroll);
@@ -1059,8 +1058,6 @@ export const BaseGantt = <T extends GanttItem>({
     }
   }, [scrollToToday]);
 
-  const itemsWithDates = items.filter((item) => item.startDate || item.endDate);
-
   return (
     <div
       className={cn(
@@ -1070,11 +1067,11 @@ export const BaseGantt = <T extends GanttItem>({
       ref={containerRef}
     >
       <Flex className="min-h-full min-w-max">
-        {renderSidebar(itemsWithDates, scrollToToday, zoomLevel, setZoomLevel)}
+        {renderSidebar(items, scrollToToday, zoomLevel, setZoomLevel)}
         <Chart
           dateRange={dateRange}
           isContainerScrollable={isContainerScrollable}
-          items={itemsWithDates}
+          items={items}
           onBarClick={onBarClick}
           onDateUpdate={onDateUpdate}
           renderBarContent={renderBarContent}
