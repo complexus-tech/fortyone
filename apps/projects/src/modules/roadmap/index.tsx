@@ -59,27 +59,29 @@ export const RoadmapPage = () => {
         </Flex>
         <Flex align="center" gap={1}>
           <RoadmapLayoutSwitcher layout={layout} setLayout={setLayout} />
-          <Button
-            className="mr-1.5 gap-1 px-3"
-            color="tertiary"
-            leftIcon={<CopyIcon className="h-4" />}
-            onClick={async () => {
-              await copyText(window.location.href);
-              setIsCopied(true);
-              toast.info("Success", {
-                description: "Roadmap link copied to clipboard",
-              });
-              setTimeout(() => {
-                setIsCopied(false);
-              }, 5000);
-            }}
-            size="sm"
-          >
-            <span className="hidden md:inline">
-              {isCopied ? "Copied" : "Copy link"}
-            </span>
-            <span className="md:hidden">{isCopied ? "Copied" : "Copy"}</span>
-          </Button>
+          <Box className="hidden md:block">
+            <Button
+              className="mr-1.5 gap-1 px-3"
+              color="tertiary"
+              leftIcon={<CopyIcon className="h-4" />}
+              onClick={async () => {
+                await copyText(window.location.href);
+                setIsCopied(true);
+                toast.info("Success", {
+                  description: "Roadmap link copied to clipboard",
+                });
+                setTimeout(() => {
+                  setIsCopied(false);
+                }, 5000);
+              }}
+              size="sm"
+            >
+              <span className="hidden md:inline">
+                {isCopied ? "Copied" : "Copy link"}
+              </span>
+              <span className="md:hidden">{isCopied ? "Copied" : "Copy"}</span>
+            </Button>
+          </Box>
           <Button
             disabled={userRole === "guest"}
             leftIcon={
