@@ -530,7 +530,7 @@ const Bar = <T extends GanttItem>({
       style={{
         left: `${finalLeftPosition}px`,
         width: `${finalWidth}px`,
-        top: "7px",
+        top: "6px",
       }}
       tabIndex={-1}
     >
