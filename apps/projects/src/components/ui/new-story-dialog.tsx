@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useState,
+  useReducer,
+  useMemo,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   Button,
   Dialog,
@@ -71,6 +78,34 @@ import { ObjectivesMenu } from "./story/objectives-menu";
 import { SprintsMenu } from "./story/sprints-menu";
 import { FeatureGuard } from "./feature-guard";
 
+type StoryFormAction =
+  | { type: "INITIALIZE"; payload: NewStory }
+  | { type: "SET_FIELD"; field: keyof NewStory; value: string | null }
+  | { type: "RESET_FORM"; payload: NewStory }
+  | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
+
+const storyFormReducer = (
+  state: NewStory,
+  action: StoryFormAction,
+): NewStory => {
+  switch (action.type) {
+    case "INITIALIZE":
+      return action.payload;
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SYNC_TEAM_STATUS":
+      return {
+        ...state,
+        teamId: action.teamId,
+        statusId: action.statusId,
+      };
+    case "RESET_FORM":
+      return action.payload;
+    default:
+      return state;
+  }
+};
+
 export const NewStoryDialog = ({
   isOpen,
   setIsOpen,
@@ -128,22 +163,35 @@ export const NewStoryDialog = ({
       ? teamStatuses.find((status) => status.isDefault) || teamStatuses[0]
       : null);
 
-  const initialForm: NewStory = {
-    title: "",
-    description: "",
-    descriptionHTML: "",
-    teamId: currentTeamId,
-    statusId: defaultStatus?.id,
-    endDate: null,
-    startDate: null,
-    assigneeId:
-      assigneeId ||
-      (automationPreferences?.autoAssignSelf ? session.data?.user?.id : null),
-    priority,
-    objectiveId: objectiveId || null,
-    sprintId: sprintId || null,
-  };
-  const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
+  const initialForm: NewStory = useMemo(
+    () => ({
+      title: "",
+      description: "",
+      descriptionHTML: "",
+      teamId: currentTeamId,
+      statusId: defaultStatus?.id,
+      endDate: null,
+      startDate: null,
+      assigneeId:
+        assigneeId ||
+        (automationPreferences?.autoAssignSelf ? session.data?.user?.id : null),
+      priority,
+      objectiveId: objectiveId || null,
+      sprintId: sprintId || null,
+    }),
+    [
+      currentTeamId,
+      defaultStatus?.id,
+      assigneeId,
+      automationPreferences?.autoAssignSelf,
+      session.data?.user?.id,
+      priority,
+      objectiveId,
+      sprintId,
+    ],
+  );
+
+  const [storyForm, dispatch] = useReducer(storyFormReducer, initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const mutation = useCreateStoryMutation();
@@ -216,7 +264,7 @@ export const NewStoryDialog = ({
       }
       titleEditor.commands.setContent("");
       editor.commands.setContent("");
-      setStoryForm(initialForm);
+      dispatch({ type: "RESET_FORM", payload: initialForm });
       if (tier === "free") {
         queryClient.invalidateQueries({ queryKey: storyKeys.total() });
       }
@@ -226,19 +274,6 @@ export const NewStoryDialog = ({
   };
 
   useEffect(() => {
-    if (isOpen && teams.length === 0) {
-      toast.warning("Join or create a team", {
-        description: "You need to be part of a team to create a story",
-        action: {
-          label: "Join a team",
-          onClick: () => {
-            router.push("/settings/workspace/teams");
-          },
-        },
-      });
-      setIsOpen(false);
-      return;
-    }
     if (teamId) {
       const team = teams.find((team) => team.id === teamId);
       if (team) {
@@ -251,12 +286,12 @@ export const NewStoryDialog = ({
     const currentStatus = teamStatuses.find(
       (status) => status.id === storyForm.statusId,
     );
-    if (!currentStatus && teamStatuses.length > 0) {
-      setStoryForm((prev) => ({
-        ...prev,
-        statusId: teamStatuses[0].id,
+    if (!currentStatus && teamStatuses.length > 0 && currentTeamId) {
+      dispatch({
+        type: "SYNC_TEAM_STATUS",
         teamId: currentTeamId,
-      }));
+        statusId: teamStatuses[0].id,
+      });
     }
   }, [currentTeamId, storyForm.statusId, teamStatuses, statusId]);
 
@@ -267,25 +302,15 @@ export const NewStoryDialog = ({
   }, [teams, activeTeam, setActiveTeam, firstTeam]);
 
   useEffect(() => {
-    if (isOpen && teams.length === 0) {
-      toast.warning("Join or create a team", {
-        description: "You need to be part of a team to create a story",
-        action: {
-          label: "Join a team",
-          onClick: () => {
-            router.push("/settings/workspace/teams");
-          },
-        },
-      });
-      setIsOpen(false);
-    }
-  }, [isOpen, teams, setIsOpen, router]);
-
-  useEffect(() => {
     if (isOpen && titleEditor) {
       titleEditor.commands.focus();
     }
   }, [isOpen, titleEditor]);
+
+  // Initialize form when props change
+  useEffect(() => {
+    dispatch({ type: "INITIALIZE", payload: initialForm });
+  }, [initialForm]);
 
   return (
     <FeatureGuard
@@ -471,7 +496,11 @@ export const NewStoryDialog = ({
                 </StatusesMenu.Trigger>
                 <StatusesMenu.Items
                   setStatusId={(statusId) => {
-                    setStoryForm((prev) => ({ ...prev, statusId }));
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "statusId",
+                      value: statusId,
+                    });
                   }}
                   statusId={storyForm.statusId}
                   teamId={currentTeamId ?? ""}
@@ -497,7 +526,11 @@ export const NewStoryDialog = ({
                 <PrioritiesMenu.Items
                   priority={storyForm.priority}
                   setPriority={(priority) => {
-                    setStoryForm((prev) => ({ ...prev, priority }));
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "priority",
+                      value: priority,
+                    });
                   }}
                 />
               </PrioritiesMenu>
@@ -513,10 +546,11 @@ export const NewStoryDialog = ({
                           aria-label="Remove date"
                           className="h-4 w-auto"
                           onClick={() => {
-                            setStoryForm((prev) => ({
-                              ...prev,
-                              startDate: null,
-                            }));
+                            dispatch({
+                              type: "SET_FIELD",
+                              field: "startDate",
+                              value: null,
+                            });
                           }}
                           role="button"
                         />
@@ -532,9 +566,10 @@ export const NewStoryDialog = ({
                 </DatePicker.Trigger>
                 <DatePicker.Calendar
                   onDayClick={(date) => {
-                    setStoryForm({
-                      ...storyForm,
-                      startDate: date.toISOString(),
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "startDate",
+                      value: date.toISOString(),
                     });
                   }}
                 />
@@ -560,10 +595,11 @@ export const NewStoryDialog = ({
                           aria-label="Remove date"
                           className="h-4 w-auto"
                           onClick={() => {
-                            setStoryForm((prev) => ({
-                              ...prev,
-                              endDate: null,
-                            }));
+                            dispatch({
+                              type: "SET_FIELD",
+                              field: "endDate",
+                              value: null,
+                            });
                           }}
                           role="button"
                         />
@@ -584,7 +620,11 @@ export const NewStoryDialog = ({
                       : undefined
                   }
                   onDayClick={(date) => {
-                    setStoryForm({ ...storyForm, endDate: date.toISOString() });
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "endDate",
+                      value: date.toISOString(),
+                    });
                   }}
                 />
               </DatePicker>
@@ -611,7 +651,11 @@ export const NewStoryDialog = ({
                 <AssigneesMenu.Items
                   assigneeId={storyForm.assigneeId}
                   onAssigneeSelected={(assigneeId) => {
-                    setStoryForm({ ...storyForm, assigneeId });
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "assigneeId",
+                      value: assigneeId,
+                    });
                   }}
                 />
               </AssigneesMenu>
@@ -634,7 +678,11 @@ export const NewStoryDialog = ({
                   <ObjectivesMenu.Items
                     objectiveId={storyForm.objectiveId ?? undefined}
                     setObjectiveId={(objectiveId) => {
-                      setStoryForm({ ...storyForm, objectiveId });
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "objectiveId",
+                        value: objectiveId,
+                      });
                     }}
                     teamId={currentTeamId}
                   />
@@ -658,7 +706,11 @@ export const NewStoryDialog = ({
                   </SprintsMenu.Trigger>
                   <SprintsMenu.Items
                     setSprintId={(sprintId) => {
-                      setStoryForm({ ...storyForm, sprintId });
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "sprintId",
+                        value: sprintId,
+                      });
                     }}
                     sprintId={storyForm.sprintId ?? undefined}
                     teamId={currentTeamId}
