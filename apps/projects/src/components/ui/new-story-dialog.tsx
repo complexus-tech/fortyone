@@ -223,7 +223,9 @@ export const NewStoryDialog = ({
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Story description" }),
+      Placeholder.configure({
+        placeholder: `${getTermDisplay("objectiveTerm", { capitalize: true })} description`,
+      }),
     ],
     content: "",
     editable: true,
