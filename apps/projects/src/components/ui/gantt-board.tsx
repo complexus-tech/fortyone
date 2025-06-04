@@ -1,12 +1,14 @@
 "use client";
 
-import { Box, Flex, Text, Tooltip, Avatar } from "ui";
+import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
 import { differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import type { DateRange } from "react-day-picker";
+import { CalendarPlusIcon } from "icons";
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -44,7 +46,7 @@ const StoryRow = ({
   const { userRole } = useUserRole();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-
+  const [dates, setDates] = useState<DateRange | undefined>(undefined);
   // Get team members for this specific story's team
   const { data: members = [] } = useTeamMembers(story.teamId);
 
@@ -80,7 +82,7 @@ const StoryRow = ({
         >
           <Flex align="center" className="min-w-0 flex-1 gap-2">
             <Text
-              className="line-clamp-1 w-16 shrink-0 text-[0.95rem]"
+              className="line-clamp-1 w-[4.1rem] shrink-0 text-[0.95rem]"
               color="muted"
             >
               {getTeamCode(story.teamId)}-{story.sequenceId}
@@ -195,7 +197,33 @@ const StoryRow = ({
             <Text className="ml-4 shrink-0" color="muted">
               {duration} day{duration !== 1 ? "s" : ""}
             </Text>
-          ) : null}
+          ) : (
+            <DatePicker>
+              <Tooltip title="Add dates">
+                <span className="mt-1">
+                  <DatePicker.Trigger>
+                    <button type="button">
+                      <CalendarPlusIcon />
+                    </button>
+                  </DatePicker.Trigger>
+                </span>
+              </Tooltip>
+              <DatePicker.Calendar
+                mode="range"
+                numberOfMonths={2}
+                onSelect={(range) => {
+                  setDates(range);
+                  if (range?.from && range.to) {
+                    handleUpdate(story.id, {
+                      startDate: range.from.toISOString(),
+                      endDate: range.to.toISOString(),
+                    });
+                  }
+                }}
+                selected={dates}
+              />
+            </DatePicker>
+          )}
         </Flex>
       </StoryContextMenu>
     </Box>
