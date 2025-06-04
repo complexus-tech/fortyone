@@ -84,10 +84,10 @@ export const WalkthroughOverlay = () => {
 
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-50">
-      {/* Dark overlay with spotlight effect - only for non-body targets */}
-      {currentStepData.target !== "body" && (
-        <div className="absolute inset-0 bg-black/60 dark:bg-black/80">
-          {/* Spotlight cutout */}
+      {/* Dark overlay - always present */}
+      <div className="absolute inset-0 bg-black/40">
+        {/* Spotlight cutout - only for non-body targets */}
+        {currentStepData.target !== "body" && (
           <div
             className="absolute rounded-lg border-2 border-primary/50 bg-transparent shadow-xl"
             style={{
@@ -101,8 +101,8 @@ export const WalkthroughOverlay = () => {
               `,
             }}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Walkthrough step content */}
       <WalkthroughStep step={currentStepData} targetPosition={targetPosition} />

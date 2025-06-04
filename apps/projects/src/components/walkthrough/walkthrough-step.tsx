@@ -1,8 +1,7 @@
 "use client";
 
 import { Button, Flex, Text, Box } from "ui";
-import { ArrowLeftIcon, CloseIcon } from "icons";
-import { cn } from "lib";
+import { ArrowLeft2Icon, ArrowRight2Icon, CheckIcon, CloseIcon } from "icons";
 import {
   useWalkthrough,
   type WalkthroughStep as WalkthroughStepType,
@@ -107,61 +106,22 @@ export const WalkthroughStep = ({
         zIndex: 60,
       }}
     >
-      {/* Arrow pointing to target - hide for center position */}
-      {step.position !== "center" && (
-        <div
-          className={cn("absolute h-0 w-0 border-8", {
-            "-top-4 left-1/2 -translate-x-1/2 border-transparent border-b-white dark:border-b-dark-200":
-              step.position === "bottom",
-            "-top-4 left-8 border-transparent border-b-white dark:border-b-dark-200":
-              step.position === "bottom-start",
-            "-bottom-4 left-1/2 -translate-x-1/2 border-transparent border-t-white dark:border-t-dark-200":
-              step.position === "top",
-            "-bottom-4 left-8 border-transparent border-t-white dark:border-t-dark-200":
-              step.position === "top-start",
-            "-left-4 top-1/2 -translate-y-1/2 border-transparent border-r-white dark:border-r-dark-200":
-              step.position === "right",
-            "-right-4 top-1/2 -translate-y-1/2 border-transparent border-l-white dark:border-l-dark-200":
-              step.position === "left",
-          })}
-        />
-      )}
-
-      {/* Content card */}
-      <Box className="w-80 max-w-[90vw] rounded-xl border border-gray-100 bg-white shadow-lg backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
-        {/* Header */}
+      <Box className="w-[27rem] max-w-[95vw] rounded-2xl border border-gray-100 bg-white shadow-lg dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
         <Flex
           align="center"
-          className="border-b border-gray-100 px-6 py-4 dark:border-dark-50"
+          className="border-b border-gray-100 px-4 py-3.5 dark:border-dark-50"
           justify="between"
         >
-          <div>
-            <Text className="text-lg" fontWeight="medium">
-              {step.title}
-            </Text>
-            <Text className="text-sm" color="muted">
-              Step {state.currentStep + 1} of {state.totalSteps}
-            </Text>
-          </div>
-          <Button
-            asIcon
-            color="tertiary"
-            onClick={closeWalkthrough}
-            size="sm"
-            variant="naked"
-          >
-            <CloseIcon className="h-4 w-auto" />
+          <Text className="text-[1.1rem]" fontWeight="medium">
+            {step.title} [{state.currentStep + 1}/{state.totalSteps}]
+          </Text>
+          <Button asIcon color="tertiary" onClick={closeWalkthrough} size="sm">
+            <CloseIcon className="h-5 w-auto" strokeWidth={3} />
             <span className="sr-only">Close walkthrough</span>
           </Button>
         </Flex>
-
-        {/* Content */}
-        <Box className="px-6 py-4">
-          {typeof step.content === "string" ? (
-            <Text color="muted">{step.content}</Text>
-          ) : (
-            step.content
-          )}
+        <Box className="p-4">
+          <Box className="text-[1.06rem]">{step.content}</Box>
         </Box>
 
         {/* Footer */}
@@ -172,30 +132,34 @@ export const WalkthroughStep = ({
         >
           <div>
             {step.showSkip !== false && (
-              <Button
-                color="tertiary"
-                onClick={skipWalkthrough}
-                size="sm"
-                variant="naked"
-              >
+              <Button color="tertiary" onClick={skipWalkthrough}>
                 Skip tour
               </Button>
             )}
           </div>
 
-          <Flex align="center" gap={2}>
+          <Flex align="center" gap={3}>
             {!isFirstStep && (
               <Button
+                className="pl-2"
                 color="tertiary"
-                leftIcon={<ArrowLeftIcon className="h-4 w-auto" />}
+                leftIcon={<ArrowLeft2Icon />}
                 onClick={prevStep}
-                size="sm"
-                variant="outline"
               >
                 Back
               </Button>
             )}
-            <Button onClick={nextStep} size="sm">
+            <Button
+              className="pl-6"
+              onClick={nextStep}
+              rightIcon={
+                isLastStep ? (
+                  <CheckIcon className="text-white dark:text-gray-200" />
+                ) : (
+                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
+                )
+              }
+            >
               {isLastStep ? "Finish" : "Next"}
             </Button>
           </Flex>

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Text } from "ui";
+import { Box, Kbd, Text } from "ui";
 import { type WalkthroughStep } from "./walkthrough-provider";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
@@ -30,12 +30,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         content: (
           <div className="space-y-3">
             <Text color="muted">
-              The sidebar is your main navigation hub. Start with &ldquo;My
-              Work&rdquo; to see everything assigned to you.
+              The sidebar is your main navigation hub. Start with{" "}
+              <Kbd className="inline-flex capitalize">My stories</Kbd> to see
+              everything you created or assigned to you.
             </Text>
             <Text color="muted">
-              You can also browse all Stories, set Objectives, manage Sprints,
-              and collaborate with Teams.
+              You can also see notifications, summary, the roadmap, and your
+              teams.
             </Text>
           </div>
         ),
@@ -44,12 +45,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
       {
         id: "command-menu",
         target: "body",
-        title: "Quick Actions with ⌘K",
+        title: "Quick Actions",
         content: (
           <div className="space-y-3">
             <Text color="muted">
-              Press <strong>⌘K</strong> (or <strong>Ctrl+K</strong>) anywhere to
-              open the command menu.
+              Press <Kbd className="inline-flex">⌘ + K</Kbd> (or{" "}
+              <Kbd className="inline-flex">Ctrl + K</Kbd>) anywhere to open the
+              command menu.
             </Text>
             <Text color="muted">
               Quickly search for stories, navigate to different sections, or
@@ -69,12 +71,12 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         content: (
           <div className="space-y-3">
             <Text color="muted">
-              Stories are the building blocks of your work. Create tasks,
-              features, or bugs to track progress.
+              Stories are the building blocks of your work. They are used to
+              track progress and collaborate with your team.
             </Text>
             <Text color="muted">
-              Pro tip: Press <strong>Shift+N</strong> to quickly create a new
-              story from anywhere!
+              Press <Kbd className="inline-flex">Shift + N</Kbd> to quickly
+              create a new story from anywhere!
             </Text>
           </div>
         ),
@@ -85,16 +87,16 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         target: "[data-invite-button]",
         title: "Collaborate with Your Team",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               Invite your team members to collaborate on objectives and stories
               together.
             </Text>
             <Text color="muted">
-              Use <strong>⌘I</strong> to quickly invite someone to your
-              workspace.
+              Use <Kbd className="inline-flex">⌘ I</Kbd> to quickly invite
+              someone to your workspace.
             </Text>
-          </div>
+          </Box>
         ),
         position: "top-start",
       },
@@ -109,8 +111,8 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               your productivity.
             </Text>
             <Text color="muted">
-              Press <strong>?</strong> to see all available shortcuts, or check
-              the help menu.
+              Press <Kbd className="inline-flex">⌘ /</Kbd> to see all available
+              shortcuts, or check the help menu.
             </Text>
           </div>
         ),
@@ -119,7 +121,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
       {
         id: "completion",
         target: "body",
-        title: "You&apos;re All Set! 🎉",
+        title: "You're All Set! 🎉",
         content: (
           <div className="space-y-3">
             <Text color="muted">
