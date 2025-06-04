@@ -17,8 +17,7 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 		{
 			"Welcome to Complexus: Streamline Your Project Management",
 			"Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking issues precisely, and facilitating seamless collaboration.",
-			`<h2>Welcome to Complexus: Streamline Your Project Management</h2>
-			<p>Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking issues precisely, and facilitating seamless collaboration.</p>
+			`<p>Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking issues precisely, and facilitating seamless collaboration.</p>
 			
 			<h3>Key Features</h3>
 			<ul>
@@ -28,15 +27,14 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 				<li><strong>Continuous Improvement:</strong> Leverage insights from your work to refine processes and boost team velocity.</li>
 			</ul>
 			
-			<p>To get started, explore our <a href="https://docs.complexus.app/core-concepts" target="_blank">Core Concepts</a> to understand the fundamental building blocks of Complexus.</p>`,
+			<p>To get started, explore our <a href="https://docs.complexus.app/concepts" target="_blank">Core Concepts</a> to understand the fundamental building blocks of Complexus.</p>`,
 			"High",
 			"completed",
 		},
 		{
 			"Setting Up Your Workspace in Complexus",
 			"Creating a well-structured workspace is the first step to effective project management in Complexus.",
-			`<h2>Setting Up Your Workspace in Complexus</h2>
-			<p>Creating a well-structured workspace is the first step to effective project management in Complexus.</p>
+			`<p>Creating a well-structured workspace is the first step to effective project management in Complexus.</p>
 			
 			<h3>Steps to Set Up Your Workspace</h3>
 			<ol>
@@ -45,15 +43,14 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 				<li><strong>Invite Team Members:</strong> Add colleagues to your workspace to start collaborating on projects.</li>
 			</ol>
 			
-			<p>For detailed instructions, refer to our guide on <a href="https://docs.complexus.app/getting-started/set-up-your-workspace" target="_blank">Setting Up Your Workspace</a>.</p>`,
+			<p>For detailed instructions, refer to our guide on <a href="https://docs.complexus.app/start-here/set-up-your-workspace" target="_blank">Setting Up Your Workspace</a>.</p>`,
 			"High",
 			"started",
 		},
 		{
 			"Understanding Roles and Permissions in Complexus",
 			"Effective collaboration requires clear roles and permissions within your workspace.",
-			`<h2>Understanding Roles and Permissions in Complexus</h2>
-			<p>Effective collaboration requires clear roles and permissions within your workspace.</p>
+			`<p>Effective collaboration requires clear roles and permissions within your workspace.</p>
 			
 			<h3>Key Points</h3>
 			<ul>
@@ -61,15 +58,14 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 				<li><strong>Permissions:</strong> Control access to projects, tasks, and settings to ensure data security and appropriate information sharing.</li>
 			</ul>
 			
-			<p>Learn more about configuring roles and permissions in our <a href="https://docs.complexus.app/product-guide/roles-and-permissions" target="_blank">Roles and Permissions</a> section.</p>`,
+			<p>Learn more about configuring roles and permissions in our <a href="https://docs.complexus.app/roles-and-permissions" target="_blank">Roles and Permissions</a> section.</p>`,
 			"Medium",
 			"backlog",
 		},
 		{
 			"Navigating Core Features of Complexus",
 			"Complexus offers a suite of tools to enhance your project management experience.",
-			`<h2>Navigating Core Features of Complexus</h2>
-			<p>Complexus offers a suite of tools to enhance your project management experience.</p>
+			`<p>Complexus offers a suite of tools to enhance your project management experience.</p>
 			
 			<h3>Core Features</h3>
 			<ul>
@@ -78,20 +74,19 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 				<li><strong>Customizable Boards:</strong> Visualize your workflow with boards tailored to your team's processes.</li>
 			</ul>
 			
-			<p>Explore these features in detail in our <a href="https://docs.complexus.app/core-features" target="_blank">Core Features</a> section.</p>`,
+			<p>Explore these features in detail in our <a href="https://docs.complexus.app/product-guide/stories" target="_blank">Core Features</a> section.</p>`,
 			"Medium",
 			"started",
 		},
 		{
 			"Accessing Help and Support in Complexus",
 			"Should you need assistance while using Complexus, our support resources are readily available.",
-			`<h2>Accessing Help and Support in Complexus</h2>
-			<p>Should you need assistance while using Complexus, our support resources are readily available.</p>
+			`<p>Should you need assistance while using Complexus, our support resources are readily available.</p>
 			
 			<h3>Support Resources</h3>
 			<ul>
-				<li><strong>Frequently Asked Questions:</strong> Find answers to common queries in our <a href="https://docs.complexus.app/help-support/frequently-asked-questions" target="_blank">FAQ section</a>.</li>
-				<li><strong>Contact Support:</strong> Reach out to our support team for personalized assistance through the <a href="https://docs.complexus.app/help-support/get-support" target="_blank">Get Support page</a>.</li>
+				<li><strong>Frequently Asked Questions:</strong> Find answers to common queries in our <a href="https://docs.complexus.app/help-and-support/faq" target="_blank">FAQ section</a>.</li>
+				<li><strong>Contact Support:</strong> Reach out to our support team for personalized assistance through the <a href="https://docs.complexus.app/help-and-support/contact-us" target="_blank">Get Support page</a>.</li>
 			</ul>
 			
 			<p>We're committed to ensuring you have a smooth experience with Complexus.</p>`,
