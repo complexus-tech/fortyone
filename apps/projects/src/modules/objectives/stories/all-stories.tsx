@@ -116,7 +116,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
               await copyText(window.location.href);
               setIsCopied(true);
               toast.info("Success", {
-                description: "Objective link copied to clipboard",
+                description: `${getTermDisplay("objectiveTerm", { capitalize: true })} link copied to clipboard`,
               });
               setTimeout(() => {
                 setIsCopied(false);

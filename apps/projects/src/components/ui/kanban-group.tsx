@@ -7,6 +7,7 @@ import { PlusIcon } from "icons";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import type { Member } from "@/types";
+import { useTerminology } from "@/hooks";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -61,6 +62,7 @@ export const KanbanGroup = ({
   member?: Member;
   groupBy: ViewOptionsGroupBy;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
 
   let filteredStories: Story[] = [];
@@ -97,7 +99,7 @@ export const KanbanGroup = ({
         variant="naked"
       >
         <PlusIcon className="relative -top-[0.3px] h-[1.15rem] w-auto" /> New
-        Story
+        {getTermDisplay("storyTerm", { capitalize: true })}
       </Button>
       <NewStoryDialog
         assigneeId={member?.id}
