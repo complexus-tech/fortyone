@@ -509,10 +509,11 @@ const Bar = <T extends GanttItem>({
   return (
     <Box
       className={cn(
-        "group absolute z-0 h-10 overflow-hidden rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 transition-colors dark:border-dark-50/80 dark:bg-dark-200",
+        "group absolute z-0 h-10 rounded-[0.6rem] border-[0.5px] border-gray-200/60 bg-gray-100 backdrop-blur transition-colors dark:border-dark-50 dark:bg-dark-200",
         {
-          "shadow-lg ring-2": isDragging,
-          "cursor-pointer hover:bg-gray-200 dark:hover:bg-dark-100": onBarClick,
+          "shadow-lg": isDragging,
+          "cursor-pointer hover:border-gray-300 hover:bg-gray-200/80 dark:hover:border-gray-300/60 dark:hover:bg-dark-100":
+            onBarClick,
         },
       )}
       onFocus={(e) => {
@@ -529,12 +530,12 @@ const Bar = <T extends GanttItem>({
       style={{
         left: `${finalLeftPosition}px`,
         width: `${finalWidth}px`,
-        top: "6px",
+        top: "7px",
       }}
       tabIndex={-1}
     >
       <Box
-        className="absolute left-0 top-0 h-full w-2 cursor-col-resize"
+        className="absolute -left-1 bottom-1/2 top-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors group-hover:bg-gray-300 group-hover:dark:bg-gray"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-start");
@@ -542,15 +543,16 @@ const Bar = <T extends GanttItem>({
       />
 
       <Box
-        className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+        className="absolute -right-1 bottom-1/2 top-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors group-hover:bg-gray-300 group-hover:dark:bg-gray"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-end");
         }}
       />
-
-      <Box className="line-clamp-1 block truncate px-3 leading-10">
-        {renderContent(item)}
+      <Box className="absolute inset-0 overflow-hidden">
+        <Box className="line-clamp-1 block truncate px-3 leading-10">
+          {renderContent(item)}
+        </Box>
       </Box>
     </Box>
   );
