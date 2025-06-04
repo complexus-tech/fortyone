@@ -168,6 +168,12 @@ export const NewObjectiveDialog = ({
       return;
     }
 
+    if (!objectiveForm.startDate || !objectiveForm.endDate) {
+      toast.warning("Validation Error", {
+        description: "Start date and deadline are required",
+      });
+      return;
+    }
     if (
       teamObjectives.some(
         (objective) =>
