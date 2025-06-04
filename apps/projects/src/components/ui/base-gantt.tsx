@@ -893,7 +893,10 @@ const Chart = <T extends GanttItem>({
     <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
       <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
       {items.map((item, idx) => (
-        <Box className="relative h-14" key={item.id}>
+        <Box
+          className="relative h-14 border-gray-100 hover:border-y-[0.5px] hover:bg-gray-50/50 dark:border-dark-100 dark:hover:bg-dark-200/30"
+          key={item.id}
+        >
           <Flex className="absolute inset-0">
             {periods.map((period) => {
               let isToday = false;
