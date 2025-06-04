@@ -293,7 +293,11 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
 
   // Render bar content
   const renderBarContent = useCallback(
-    (story: Story) => <Text fontWeight="medium">{story.title}</Text>,
+    (story: Story) => (
+      <Text className="line-clamp-1" fontWeight="medium">
+        {story.title}
+      </Text>
+    ),
     [],
   );
 

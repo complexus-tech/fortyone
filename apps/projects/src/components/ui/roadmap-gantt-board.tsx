@@ -289,7 +289,11 @@ export const RoadmapGanttBoard = ({
 
   // Render bar content
   const renderBarContent = useCallback(
-    (objective: Objective) => <Text fontWeight="medium">{objective.name}</Text>,
+    (objective: Objective) => (
+      <Text className="line-clamp-1" fontWeight="medium">
+        {objective.name}
+      </Text>
+    ),
     [],
   );
 

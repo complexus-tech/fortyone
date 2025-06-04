@@ -550,9 +550,7 @@ const Bar = <T extends GanttItem>({
         }}
       />
       <Box className="absolute inset-0 overflow-hidden">
-        <Box className="line-clamp-1 block truncate px-3 leading-10">
-          {renderContent(item)}
-        </Box>
+        <Box className="px-3 leading-10">{renderContent(item)}</Box>
       </Box>
     </Box>
   );
