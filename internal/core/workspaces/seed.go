@@ -16,13 +16,13 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 	}{
 		{
 			"Welcome to Complexus: Streamline Your Project Management",
-			"Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking issues precisely, and facilitating seamless collaboration.",
-			`<p>Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking issues precisely, and facilitating seamless collaboration.</p>
+			"Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking objectives and stories precisely, and facilitating seamless collaboration.",
+			`<p>Welcome to Complexus! Our platform is designed to help your team build better products faster by streamlining workflows, tracking objectives and stories precisely, and facilitating seamless collaboration.</p>
 			
 			<h3>Key Features</h3>
 			<ul>
-				<li><strong>Plan with Clarity:</strong> Define goals, map out projects, and organize work into manageable sprints or cycles.</li>
-				<li><strong>Track Progress:</strong> Capture tasks, bugs, and features using flexible issue tracking. Monitor real-time progress with customizable boards and lists.</li>
+				<li><strong>Plan with Clarity:</strong> Define goals, map out objectives, and organize work into manageable stories.</li>
+				<li><strong>Track Progress:</strong> Capture objectives and stories using flexible tracking. Monitor real-time progress with customizable boards and lists.</li>
 				<li><strong>Collaborate Effectively:</strong> Keep your team aligned with shared views, discussions, and notifications.</li>
 				<li><strong>Continuous Improvement:</strong> Leverage insights from your work to refine processes and boost team velocity.</li>
 			</ul>
@@ -38,9 +38,9 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			
 			<h3>Steps to Set Up Your Workspace</h3>
 			<ol>
-				<li><strong>Create a New Workspace:</strong> Navigate to the dashboard and click on 'New Workspace'. Provide a name and description that reflect your team's purpose.</li>
+				<li><strong>Create a New Workspace:</strong> Go to the menu to the top left corner and click on 'Create workspace'. Provide a name for your workspace.</li>
 				<li><strong>Configure Settings:</strong> Customize your workspace by setting up roles, permissions, and preferences to suit your team's needs.</li>
-				<li><strong>Invite Team Members:</strong> Add colleagues to your workspace to start collaborating on projects.</li>
+				<li><strong>Invite Team Members:</strong> Add colleagues to your workspace to start collaborating on objectives.</li>
 			</ol>
 			
 			<p>For detailed instructions, refer to our guide on <a href="https://docs.complexus.app/start-here/set-up-your-workspace" target="_blank">Setting Up Your Workspace</a>.</p>`,
@@ -55,7 +55,7 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			<h3>Key Points</h3>
 			<ul>
 				<li><strong>Roles:</strong> Assign predefined roles to team members based on their responsibilities.</li>
-				<li><strong>Permissions:</strong> Control access to projects, tasks, and settings to ensure data security and appropriate information sharing.</li>
+				<li><strong>Permissions:</strong> Control access to objectives, stories, and settings to ensure data security and appropriate information sharing.</li>
 			</ul>
 			
 			<p>Learn more about configuring roles and permissions in our <a href="https://docs.complexus.app/roles-and-permissions" target="_blank">Roles and Permissions</a> section.</p>`,
@@ -69,8 +69,8 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			
 			<h3>Core Features</h3>
 			<ul>
-				<li><strong>Issue Tracking:</strong> Capture and prioritize tasks, bugs, and features to maintain a clear backlog.</li>
-				<li><strong>Sprints/Cycles:</strong> Organize work into time-boxed periods to focus efforts and deliver incrementally.</li>
+				<li><strong>Objectives:</strong> Capture and prioritize objectives to maintain a clear backlog.</li>
+				<li><strong>Stories:</strong> Capture and prioritize stories to maintain a clear backlog.</li>
 				<li><strong>Customizable Boards:</strong> Visualize your workflow with boards tailored to your team's processes.</li>
 			</ul>
 			
