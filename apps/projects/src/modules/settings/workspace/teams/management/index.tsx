@@ -15,6 +15,7 @@ import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
 import { WorkflowSettings } from "./components/workflows";
 import { DeleteTeam } from "./components/delete";
+import { Automations } from "./components/automations";
 
 export const TeamManagement = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -80,6 +81,9 @@ export const TeamManagement = () => {
           </Tabs.Panel>
           <Tabs.Panel value="delete">
             <DeleteTeam team={team} />
+          </Tabs.Panel>
+          <Tabs.Panel value="automations">
+            <Automations />
           </Tabs.Panel>
         </Box>
       </Tabs>
