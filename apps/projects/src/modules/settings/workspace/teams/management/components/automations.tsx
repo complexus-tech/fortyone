@@ -15,6 +15,8 @@ export const Automations = () => {
     sprintLength: "2weeks",
     startsOn: "monday",
     autoMoveIncompleteStories: false,
+    autoCloseInactiveStories: false,
+    inactivePeriod: "6months",
     autoArchiveStories: false,
     archivePeriod: "6months",
   });
@@ -212,6 +214,62 @@ export const Automations = () => {
         />
 
         <Box className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100">
+          {/* Auto-close Inactive Stories */}
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text className="font-medium">
+                Auto-close {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
+                that are inactive for
+              </Text>
+              <Text className="line-clamp-2" color="muted">
+                Automatically close{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })} that
+                haven&apos;t been updated
+              </Text>
+            </Box>
+            <Switch
+              checked={settings.autoCloseInactiveStories}
+              onCheckedChange={(checked) => {
+                setSettings((prev) => ({
+                  ...prev,
+                  autoCloseInactiveStories: checked,
+                }));
+              }}
+            />
+          </Flex>
+
+          {/* Inactive Period */}
+          {settings.autoCloseInactiveStories ? (
+            <Flex align="center" className="px-6 py-4" justify="between">
+              <Box>
+                <Text className="font-medium">
+                  Close after being inactive for
+                </Text>
+              </Box>
+              <Select
+                onValueChange={(value) => {
+                  setSettings((prev) => ({ ...prev, inactivePeriod: value }));
+                }}
+                value={settings.inactivePeriod}
+              >
+                <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
+                  <Select.Input />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Option className="text-base" value="3months">
+                    3 months
+                  </Select.Option>
+                  <Select.Option className="text-base" value="6months">
+                    6 months
+                  </Select.Option>
+                  <Select.Option className="text-base" value="1year">
+                    1 year
+                  </Select.Option>
+                </Select.Content>
+              </Select>
+            </Flex>
+          ) : null}
+
           {/* Auto-archive Stories */}
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
