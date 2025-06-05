@@ -1,14 +1,17 @@
 import { useMemo } from "react";
 import { Box, Kbd, Text } from "ui";
+import confetti from "canvas-confetti";
+import { useSession } from "next-auth/react";
 import { type WalkthroughStep } from "./walkthrough-provider";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
+  const { data: session } = useSession();
   return useMemo(
     () => [
       {
         id: "welcome",
         target: "[data-workspace-switcher]",
-        title: "Welcome to Complexus! 👋",
+        title: `Welcome ${session?.user?.name || "to Complexus"}! 👋`,
         content: (
           <Box className="space-y-3">
             <Text color="muted">
@@ -190,7 +193,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         position: "center",
         showSkip: false,
         action: () => {
-          // Optional: Could trigger command menu demo
+          // Trigger confetti celebration!
+          confetti({
+            particleCount: 1000,
+            spread: 150,
+            origin: { y: 0.6 },
+            colors: ["#f43f5e", "#06b6d4", "#22c55e", "#eab308", "#a855f7"],
+          });
         },
       },
     ],
