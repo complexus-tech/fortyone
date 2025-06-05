@@ -42,7 +42,10 @@ export const useUpdateProfileMutation = () => {
       });
     },
 
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      if ("hasSeenWalkthrough" in variables) {
+        return;
+      }
       toast.success("Success", {
         description: "Your profile has been updated",
       });

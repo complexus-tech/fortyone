@@ -8,7 +8,8 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { useLocalStorage } from "@/hooks";
+import { useProfile } from "@/lib/hooks/profile";
+import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
 
 export interface WalkthroughStep {
   id: string;
@@ -83,25 +84,38 @@ export const WalkthroughProvider = ({
   version = "1.0.0",
   autoStart = false,
 }: WalkthroughProviderProps) => {
-  const [walkthroughState, setWalkthroughState] = useLocalStorage<{
-    hasSeenWalkthrough: boolean;
-    version: string;
-  }>("complexus:walkthrough", {
-    hasSeenWalkthrough: false,
-    version: "0.0.0",
-  });
+  const { data: profile } = useProfile();
+  const { mutate: updateProfile } = useUpdateProfileMutation();
 
   const [state, setState] = useState<WalkthroughState>({
     isActive: false,
     currentStep: 0,
     totalSteps: 0,
-    hasSeenWalkthrough: walkthroughState.hasSeenWalkthrough,
+    hasSeenWalkthrough: profile?.hasSeenWalkthrough || false,
     walkthroughVersion: version,
   });
 
   const [steps, setSteps] = useState<WalkthroughStep[]>([]);
 
   const currentStepData = steps[state.currentStep] || null;
+
+  // Update state when profile changes
+  useEffect(() => {
+    if (profile) {
+      setState((prev) => ({
+        ...prev,
+        hasSeenWalkthrough: profile.hasSeenWalkthrough,
+      }));
+    }
+  }, [profile, updateProfile]);
+
+  const markWalkthroughComplete = useCallback(() => {
+    updateProfile({ hasSeenWalkthrough: true });
+    setState((prev) => ({
+      ...prev,
+      hasSeenWalkthrough: true,
+    }));
+  }, [updateProfile]);
 
   const startWalkthrough = useCallback(() => {
     setState((prev) => ({
@@ -118,17 +132,14 @@ export const WalkthroughProvider = ({
         return { ...prev, currentStep: prev.currentStep + 1 };
       }
       // Completed walkthrough
-      setWalkthroughState({
-        hasSeenWalkthrough: true,
-        version,
-      });
+      markWalkthroughComplete();
       return {
         ...prev,
         isActive: false,
         hasSeenWalkthrough: true,
       };
     });
-  }, [setWalkthroughState, version]);
+  }, [markWalkthroughComplete]);
 
   const prevStep = useCallback(() => {
     setState((prev) => ({
@@ -145,16 +156,13 @@ export const WalkthroughProvider = ({
   }, []);
 
   const skipWalkthrough = useCallback(() => {
-    setWalkthroughState({
-      hasSeenWalkthrough: true,
-      version,
-    });
+    markWalkthroughComplete();
     setState((prev) => ({
       ...prev,
       isActive: false,
       hasSeenWalkthrough: true,
     }));
-  }, [setWalkthroughState, version]);
+  }, [markWalkthroughComplete]);
 
   const closeWalkthrough = useCallback(() => {
     setState((prev) => ({
@@ -163,24 +171,17 @@ export const WalkthroughProvider = ({
     }));
   }, []);
 
-  // Handle version changes - restart walkthrough if version is newer
+  // Handle auto-start logic
   useEffect(() => {
-    const shouldShowWalkthrough =
-      !walkthroughState.hasSeenWalkthrough ||
-      walkthroughState.version !== version;
-
-    if (shouldShowWalkthrough && autoStart && steps.length > 0) {
+    if (!state.hasSeenWalkthrough && autoStart && steps.length > 0) {
       startWalkthrough();
     }
 
     setState((prev) => ({
       ...prev,
-      hasSeenWalkthrough:
-        walkthroughState.hasSeenWalkthrough &&
-        walkthroughState.version === version,
       totalSteps: steps.length,
     }));
-  }, [walkthroughState, version, autoStart, steps.length, startWalkthrough]);
+  }, [state.hasSeenWalkthrough, autoStart, steps.length, startWalkthrough]);
 
   // Execute step action when current step changes
   useEffect(() => {
