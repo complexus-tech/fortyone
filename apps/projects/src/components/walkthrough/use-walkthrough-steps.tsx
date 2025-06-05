@@ -177,7 +177,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               </Text>
             </Box>
           ),
-          position: "top",
+          position: "top-start",
         },
         {
           id: "completion",
