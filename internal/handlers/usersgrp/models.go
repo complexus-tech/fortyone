@@ -14,6 +14,7 @@ type AppUser struct {
 	FullName            string     `json:"fullName"`
 	AvatarURL           string     `json:"avatarUrl"`
 	IsActive            bool       `json:"isActive"`
+	HasSeenWalkthrough  bool       `json:"hasSeenWalkthrough"`
 	LastLoginAt         time.Time  `json:"-"`
 	LastUsedWorkspaceID *uuid.UUID `json:"lastUsedWorkspaceId"`
 	CreatedAt           time.Time  `json:"createdAt"`
@@ -27,9 +28,10 @@ type AppFilter struct {
 }
 
 type UpdateProfileRequest struct {
-	Username  string `json:"username"`
-	FullName  string `json:"fullName"`
-	AvatarURL string `json:"avatarUrl"`
+	Username           string `json:"username"`
+	FullName           string `json:"fullName"`
+	AvatarURL          string `json:"avatarUrl"`
+	HasSeenWalkthrough *bool  `json:"hasSeenWalkthrough,omitempty"`
 }
 
 type SwitchWorkspaceRequest struct {
@@ -83,6 +85,7 @@ func toAppUser(user users.CoreUser) AppUser {
 		FullName:            user.FullName,
 		AvatarURL:           user.AvatarURL,
 		IsActive:            user.IsActive,
+		HasSeenWalkthrough:  user.HasSeenWalkthrough,
 		LastLoginAt:         user.LastLoginAt,
 		LastUsedWorkspaceID: user.LastUsedWorkspaceID,
 		CreatedAt:           user.CreatedAt,

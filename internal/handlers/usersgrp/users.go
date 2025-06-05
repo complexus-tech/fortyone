@@ -71,9 +71,10 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	updates := users.CoreUpdateUser{
-		Username:  req.Username,
-		FullName:  req.FullName,
-		AvatarURL: req.AvatarURL,
+		Username:           req.Username,
+		FullName:           req.FullName,
+		AvatarURL:          req.AvatarURL,
+		HasSeenWalkthrough: req.HasSeenWalkthrough,
 	}
 
 	if err := h.users.UpdateUser(ctx, userID, updates); err != nil {
