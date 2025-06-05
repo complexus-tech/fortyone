@@ -46,45 +46,43 @@ export const Sidebar = () => {
           </Box>
         )}
 
+        {tier === "trial" && (
+          <Tooltip
+            className="ml-2 max-w-56 py-3"
+            title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
+          >
+            <span>
+              <Button
+                className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
+                href={
+                  userRole === "admin"
+                    ? "/settings/workspace/billing"
+                    : undefined
+                }
+                rounded="lg"
+                size="sm"
+              >
+                {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
+                left in trial
+              </Button>
+            </span>
+          </Tooltip>
+        )}
+
         <Flex align="center" className="mt-3 gap-3" justify="between">
-          {tier === "trial" ? (
-            <Tooltip
-              className="ml-2 max-w-56 py-3"
-              title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
+          {userRole === "admin" ? (
+            <button
+              className="flex items-center gap-2 px-1"
+              data-invite-button
+              onClick={() => {
+                setIsOpen(true);
+              }}
+              type="button"
             >
-              <span>
-                <Button
-                  className="border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
-                  href={
-                    userRole === "admin"
-                      ? "/settings/workspace/billing"
-                      : undefined
-                  }
-                  rounded="lg"
-                  size="sm"
-                >
-                  {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
-                  left in trial
-                </Button>
-              </span>
-            </Tooltip>
-          ) : (
-            <>
-              {userRole === "admin" ? (
-                <button
-                  className="flex items-center gap-2 px-1"
-                  data-invite-button
-                  onClick={() => {
-                    setIsOpen(true);
-                  }}
-                  type="button"
-                >
-                  <PlusIcon />
-                  Invite members
-                </button>
-              ) : null}
-            </>
-          )}
+              <PlusIcon />
+              Invite members
+            </button>
+          ) : null}
 
           <Menu>
             <Menu.Button>
