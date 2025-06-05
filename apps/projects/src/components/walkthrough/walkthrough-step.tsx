@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Flex, Text, Box } from "ui";
+import { Button, Flex, Text, Box, Tooltip } from "ui";
 import { ArrowLeft2Icon, ArrowRight2Icon, CheckIcon, CloseIcon } from "icons";
 import {
   useWalkthrough,
@@ -115,10 +115,20 @@ export const WalkthroughStep = ({
           <Text className="text-[1.1rem]" fontWeight="medium">
             {step.title} [{state.currentStep + 1}/{state.totalSteps}]
           </Text>
-          <Button asIcon color="tertiary" onClick={closeWalkthrough} size="sm">
-            <CloseIcon className="h-5 w-auto" strokeWidth={3} />
-            <span className="sr-only">Close walkthrough</span>
-          </Button>
+          <Tooltip
+            className="w-56"
+            title="This will temporarily dismiss the walkthrough"
+          >
+            <Button
+              asIcon
+              color="tertiary"
+              onClick={closeWalkthrough}
+              size="sm"
+            >
+              <CloseIcon className="h-5 w-auto" strokeWidth={3} />
+              <span className="sr-only">Close walkthrough</span>
+            </Button>
+          </Tooltip>
         </Flex>
         <Box className="p-4">
           <Box className="text-[1.06rem]">{step.content}</Box>

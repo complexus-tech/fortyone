@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
+import { useLocalStorage } from "@/hooks";
 
 export interface WalkthroughStep {
   id: string;
@@ -86,6 +87,9 @@ export const WalkthroughProvider = ({
 }: WalkthroughProviderProps) => {
   const { data: profile } = useProfile();
   const { mutate: updateProfile } = useUpdateProfileMutation();
+  const [walkthroughClosedAt, setWalkthroughClosedAt] = useLocalStorage<
+    string | null
+  >("complexus:walkthrough-closed-at", null);
 
   const [state, setState] = useState<WalkthroughState>({
     isActive: false,
@@ -165,15 +169,45 @@ export const WalkthroughProvider = ({
   }, [markWalkthroughComplete]);
 
   const closeWalkthrough = useCallback(() => {
+    // Store the close timestamp using useLocalStorage hook
+    const closeTimestamp = new Date().toISOString();
+    setWalkthroughClosedAt(closeTimestamp);
+
     setState((prev) => ({
       ...prev,
       isActive: false,
     }));
-  }, []);
+  }, [setWalkthroughClosedAt]);
+
+  // Check if walkthrough should be shown based on close timestamp
+  const shouldShowWalkthrough = useCallback(() => {
+    if (state.hasSeenWalkthrough) {
+      return false; // Already completed permanently
+    }
+
+    if (!walkthroughClosedAt) {
+      return true; // Never closed before
+    }
+
+    try {
+      const closedTimestamp = new Date(walkthroughClosedAt).getTime();
+      const now = new Date().getTime();
+      const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
+      // Show if more than 4 hours have passed since last close
+      return now - closedTimestamp > fourHours;
+    } catch (error) {
+      // If timestamp parsing fails, default to showing
+      return true;
+    }
+  }, [state.hasSeenWalkthrough, walkthroughClosedAt]);
+
+  // Calculate if should show - this will update when dependencies change
+  const canShowWalkthrough = shouldShowWalkthrough();
 
   // Handle auto-start logic
   useEffect(() => {
-    if (!state.hasSeenWalkthrough && autoStart && steps.length > 0) {
+    if (canShowWalkthrough && autoStart && steps.length > 0) {
       startWalkthrough();
     }
 
@@ -181,7 +215,7 @@ export const WalkthroughProvider = ({
       ...prev,
       totalSteps: steps.length,
     }));
-  }, [state.hasSeenWalkthrough, autoStart, steps.length, startWalkthrough]);
+  }, [canShowWalkthrough, autoStart, steps.length, startWalkthrough]);
 
   // Execute step action when current step changes
   useEffect(() => {
