@@ -10,7 +10,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         target: "[data-workspace-switcher]",
         title: "Welcome to Complexus! 👋",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               Welcome to your workspace! This is where you and your team
               collaborate on objectives and stories.
@@ -19,7 +19,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               Click on your workspace name to switch between workspaces, invite
               team members, or access settings.
             </Text>
-          </div>
+          </Box>
         ),
         position: "bottom-start",
       },
@@ -28,7 +28,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         target: "[data-nav-my-work]",
         title: "Navigate Your Work",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               The sidebar is your main navigation hub. Start with{" "}
               <Kbd className="inline-flex capitalize">My stories</Kbd> to see
@@ -38,38 +38,16 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               You can also see notifications, summary, the roadmap, and your
               teams.
             </Text>
-          </div>
+          </Box>
         ),
         position: "right",
-      },
-      {
-        id: "command-menu",
-        target: "body",
-        title: "Quick Actions",
-        content: (
-          <div className="space-y-3">
-            <Text color="muted">
-              Press <Kbd className="inline-flex">⌘ + K</Kbd> (or{" "}
-              <Kbd className="inline-flex">Ctrl + K</Kbd>) anywhere to open the
-              command menu.
-            </Text>
-            <Text color="muted">
-              Quickly search for stories, navigate to different sections, or
-              execute actions without using your mouse.
-            </Text>
-          </div>
-        ),
-        position: "center",
-        action: () => {
-          // Optional: Could trigger command menu demo
-        },
       },
       {
         id: "create-story",
         target: "[data-sidebar-create-story-button]",
         title: "Create Your First Story",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               Stories are the building blocks of your work. They are used to
               track progress and collaborate with your team.
@@ -78,7 +56,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               Press <Kbd className="inline-flex">Shift + N</Kbd> to quickly
               create a new story from anywhere!
             </Text>
-          </div>
+          </Box>
         ),
         position: "bottom-start",
       },
@@ -105,7 +83,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         target: "[data-help-button]",
         title: "Master Keyboard Shortcuts",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               Complexus is built for speed. Learn keyboard shortcuts to boost
               your productivity.
@@ -114,16 +92,38 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               Press <Kbd className="inline-flex">⌘ /</Kbd> to see all available
               shortcuts, or check the help menu.
             </Text>
-          </div>
+          </Box>
         ),
         position: "top",
+      },
+      {
+        id: "command-menu",
+        target: "body",
+        title: "Quick Actions",
+        content: (
+          <Box className="space-y-3">
+            <Text color="muted">
+              Press <Kbd className="inline-flex">⌘ + K</Kbd> (or{" "}
+              <Kbd className="inline-flex">Ctrl + K</Kbd>) anywhere to open the
+              command menu.
+            </Text>
+            <Text color="muted">
+              Quickly search for stories, navigate to different sections, or
+              execute actions without using your mouse.
+            </Text>
+          </Box>
+        ),
+        position: "center",
+        action: () => {
+          // Optional: Could trigger command menu demo
+        },
       },
       {
         id: "completion",
         target: "body",
         title: "You're All Set! 🎉",
         content: (
-          <div className="space-y-3">
+          <Box className="space-y-3">
             <Text color="muted">
               You&apos;ve completed the walkthrough! You can replay this tour
               anytime from the help menu.
@@ -132,7 +132,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               Start by creating your first story or setting up your team
               objectives. Happy collaborating!
             </Text>
-          </div>
+          </Box>
         ),
         position: "center",
         showSkip: false,
