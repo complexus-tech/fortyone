@@ -60,6 +60,10 @@ export const Automations = () => {
                   {getTermDisplay("sprintTerm", { variant: "plural" })} to
                   create
                 </Text>
+                <Text className="line-clamp-2" color="muted">
+                  How many {getTermDisplay("sprintTerm", { variant: "plural" })}{" "}
+                  to create in advance for planning
+                </Text>
               </Box>
               <Select
                 onValueChange={(value) => {
@@ -94,6 +98,9 @@ export const Automations = () => {
               <Box>
                 <Text className="font-medium">
                   Each {getTermDisplay("sprintTerm")} lasts
+                </Text>
+                <Text className="line-clamp-2" color="muted">
+                  Duration of each {getTermDisplay("sprintTerm")} cycle
                 </Text>
               </Box>
               <Select
@@ -133,6 +140,10 @@ export const Automations = () => {
                     variant: "plural",
                   })}{" "}
                   start on
+                </Text>
+                <Text className="line-clamp-2" color="muted">
+                  Which day of the week new{" "}
+                  {getTermDisplay("sprintTerm", { variant: "plural" })} begin
                 </Text>
               </Box>
               <Select
