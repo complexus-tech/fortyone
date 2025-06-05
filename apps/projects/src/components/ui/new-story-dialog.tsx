@@ -735,11 +735,11 @@ export const NewStoryDialog = ({
             <Button
               leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
               loading={loading}
-              loadingText="Creating story..."
+              loadingText={`Creating ${getTermDisplay("storyTerm")}...`}
               onClick={handleCreateStory}
               size="md"
             >
-              Create story
+              Create {getTermDisplay("storyTerm")}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
