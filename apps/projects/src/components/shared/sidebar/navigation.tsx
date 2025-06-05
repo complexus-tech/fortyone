@@ -67,6 +67,11 @@ export const Navigation = () => {
               className={cn({
                 "justify-between": messages,
               })}
+              data-nav-my-work={href === "/my-work" ? "" : undefined}
+              data-nav-notifications={
+                href === "/notifications" ? "" : undefined
+              }
+              data-nav-summary={href === "/summary" ? "" : undefined}
               href={href}
               key={name}
             >

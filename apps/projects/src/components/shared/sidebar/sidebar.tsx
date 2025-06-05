@@ -73,6 +73,7 @@ export const Sidebar = () => {
               {userRole === "admin" ? (
                 <button
                   className="flex items-center gap-2 px-1"
+                  data-invite-button
                   onClick={() => {
                     setIsOpen(true);
                   }}
@@ -91,6 +92,7 @@ export const Sidebar = () => {
                 asIcon
                 className="border-[0.5px]"
                 color="tertiary"
+                data-help-button
                 rounded="full"
               >
                 <HelpIcon className="h-6" />

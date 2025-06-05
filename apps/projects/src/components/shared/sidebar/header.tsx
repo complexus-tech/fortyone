@@ -127,6 +127,7 @@ export const Header = () => {
             <Button
               className="gap-2 pl-1"
               color="tertiary"
+              data-workspace-switcher
               leftIcon={
                 <Avatar
                   className="h-[1.6rem] text-sm"
@@ -371,6 +372,7 @@ export const Header = () => {
         <Button
           className="truncate rounded-[0.6rem] md:h-[2.5rem]"
           color="tertiary"
+          data-sidebar-create-story-button
           disabled={userRole === "guest"}
           fullWidth
           leftIcon={<NewStoryIcon className="shrink-0" />}

@@ -15,6 +15,7 @@ export type User = {
   avatarUrl: string;
   isActive: boolean;
   lastUsedWorkspaceId: string;
+  hasSeenWalkthrough: boolean;
   createdAt: string;
   updatedAt: string;
 };

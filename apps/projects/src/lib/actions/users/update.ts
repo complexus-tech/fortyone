@@ -6,8 +6,9 @@ import { auth } from "@/auth";
 import { getApiError } from "@/utils";
 
 export type UpdateProfile = {
-  fullName: string;
-  username: string;
+  fullName?: string;
+  username?: string;
+  hasSeenWalkthrough?: boolean;
 };
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
