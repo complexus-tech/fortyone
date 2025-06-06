@@ -2,6 +2,7 @@ package teamsettings
 
 import (
 	"context"
+	"errors"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -19,6 +20,15 @@ type Repository interface {
 	GetTeamsWithAutoSprintCreation(ctx context.Context) ([]CoreTeamSprintSettings, error)
 	IncrementAutoSprintNumber(ctx context.Context, teamID, workspaceID uuid.UUID) error
 }
+
+// Validation errors
+var (
+	ErrInvalidSprintStartDay = errors.New("sprint start day must be Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday")
+	ErrInvalidSprintDuration = errors.New("sprint duration must be between 1 and 8 weeks")
+	ErrInvalidUpcomingCount  = errors.New("upcoming sprints count must be between 0 and 10")
+	ErrInvalidCloseMonths    = errors.New("auto-close inactive months must be between 1 and 24")
+	ErrInvalidArchiveMonths  = errors.New("auto-archive months must be between 1 and 24")
+)
 
 // Service provides team settings-related operations.
 type Service struct {
@@ -89,6 +99,12 @@ func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID 
 	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.UpdateSprintSettings")
 	defer span.End()
 
+	// Validate the updates
+	if err := s.validateSprintSettingsUpdate(updates); err != nil {
+		span.RecordError(err)
+		return CoreTeamSprintSettings{}, err
+	}
+
 	result, err := s.repo.UpdateSprintSettings(ctx, teamID, workspaceID, updates)
 	if err != nil {
 		span.RecordError(err)
@@ -127,6 +143,12 @@ func (s *Service) UpdateStoryAutomationSettings(ctx context.Context, teamID, wor
 	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.UpdateStoryAutomationSettings")
 	defer span.End()
 
+	// Validate the updates
+	if err := s.validateStoryAutomationSettingsUpdate(updates); err != nil {
+		span.RecordError(err)
+		return CoreTeamStoryAutomationSettings{}, err
+	}
+
 	result, err := s.repo.UpdateStoryAutomationSettings(ctx, teamID, workspaceID, updates)
 	if err != nil {
 		span.RecordError(err)
@@ -138,6 +160,46 @@ func (s *Service) UpdateStoryAutomationSettings(ctx context.Context, teamID, wor
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 	return result, nil
+}
+
+// validateSprintSettingsUpdate validates sprint settings updates
+func (s *Service) validateSprintSettingsUpdate(updates CoreUpdateTeamSprintSettings) error {
+	validDays := map[string]bool{
+		"Monday":    true,
+		"Tuesday":   true,
+		"Wednesday": true,
+		"Thursday":  true,
+		"Friday":    true,
+		"Saturday":  true,
+		"Sunday":    true,
+	}
+
+	if updates.SprintStartDay != nil && !validDays[*updates.SprintStartDay] {
+		return ErrInvalidSprintStartDay
+	}
+
+	if updates.SprintDurationWeeks != nil && (*updates.SprintDurationWeeks < 1 || *updates.SprintDurationWeeks > 8) {
+		return ErrInvalidSprintDuration
+	}
+
+	if updates.UpcomingSprintsCount != nil && (*updates.UpcomingSprintsCount < 0 || *updates.UpcomingSprintsCount > 10) {
+		return ErrInvalidUpcomingCount
+	}
+
+	return nil
+}
+
+// validateStoryAutomationSettingsUpdate validates story automation settings updates
+func (s *Service) validateStoryAutomationSettingsUpdate(updates CoreUpdateTeamStoryAutomationSettings) error {
+	if updates.AutoCloseInactiveMonths != nil && (*updates.AutoCloseInactiveMonths < 1 || *updates.AutoCloseInactiveMonths > 24) {
+		return ErrInvalidCloseMonths
+	}
+
+	if updates.AutoArchiveMonths != nil && (*updates.AutoArchiveMonths < 1 || *updates.AutoArchiveMonths > 24) {
+		return ErrInvalidArchiveMonths
+	}
+
+	return nil
 }
 
 // GetTeamsWithAutoSprintCreation returns teams that have auto sprint creation enabled.

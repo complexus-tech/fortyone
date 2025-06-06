@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -138,6 +139,17 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 	defer stmt.Close()
 
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		// Check for constraint violations and return user-friendly errors
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Constraint {
+			case "team_sprint_settings_sprint_start_day_check":
+				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidSprintStartDay
+			case "team_sprint_settings_sprint_duration_weeks_check":
+				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidSprintDuration
+			case "team_sprint_settings_upcoming_sprints_count_check":
+				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidUpcomingCount
+			}
+		}
 		errMsg := fmt.Sprintf("Failed to update team sprint settings: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update team sprint settings"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -258,6 +270,15 @@ func (r *repo) UpdateStoryAutomationSettings(ctx context.Context, teamID, worksp
 	defer stmt.Close()
 
 	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		// Check for constraint violations and return user-friendly errors
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Constraint {
+			case "team_story_automation_settings_auto_close_inactive_months_check":
+				return teamsettings.CoreTeamStoryAutomationSettings{}, teamsettings.ErrInvalidCloseMonths
+			case "team_story_automation_settings_auto_archive_months_check":
+				return teamsettings.CoreTeamStoryAutomationSettings{}, teamsettings.ErrInvalidArchiveMonths
+			}
+		}
 		errMsg := fmt.Sprintf("Failed to update team story automation settings: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to update team story automation settings"), trace.WithAttributes(attribute.String("error", errMsg)))
