@@ -62,3 +62,16 @@ func (c *CleanupHandlers) HandleWebhookCleanup(ctx context.Context, t *asynq.Tas
 	c.log.Info(ctx, "HANDLER: Successfully processed WebhookCleanup task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleSprintAutoCreation processes the sprint auto-creation task
+func (c *CleanupHandlers) HandleSprintAutoCreation(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing SprintAutoCreation task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessSprintAutoCreation(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process sprint auto-creation", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("sprint auto-creation failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed SprintAutoCreation task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
