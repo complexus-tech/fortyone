@@ -108,7 +108,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"@weekly", // Sunday 00:00 AM
 		asynq.NewTask(tasks.TypeTokenCleanup, nil),
 		asynq.Queue("cleanup"),
 	)
@@ -117,7 +117,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"0 3 * * 3", // Wednesday 3:00 AM
 		asynq.NewTask(tasks.TypeWebhookCleanup, nil),
 		asynq.Queue("cleanup"),
 	)
@@ -126,7 +126,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@daily",
+		"0 1 * * *", // Every day at 1:00 AM (avoids Sunday collision)
 		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
 		asynq.Queue("automation"),
 	)
@@ -135,7 +135,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"0 4 * * 5", // Friday 4:00 AM
 		asynq.NewTask(tasks.TypeStoryAutoArchive, nil),
 		asynq.Queue("automation"),
 	)
@@ -144,7 +144,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"0 5 * * 6", // Saturday 5:00 AM
 		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
 		asynq.Queue("automation"),
 	)
