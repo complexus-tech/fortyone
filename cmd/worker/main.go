@@ -135,12 +135,21 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@every 20s",
+		"@weekly",
 		asynq.NewTask(tasks.TypeStoryAutoArchive, nil),
 		asynq.Queue("automation"),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register story auto-archive task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"@every 20s",
+		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-close task: %w", err)
 	}
 
 	srv := asynq.NewServer(
@@ -175,6 +184,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Register automation handlers
 	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
 	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
+	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",

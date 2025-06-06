@@ -10,6 +10,7 @@ import (
 const (
 	TypeSprintAutoCreation = "automation:sprints:create"
 	TypeStoryAutoArchive   = "automation:stories:archive"
+	TypeStoryAutoClose     = "automation:stories:close"
 )
 
 // EnqueueSprintAutoCreation enqueues a task to auto-create sprints for teams.
@@ -55,5 +56,28 @@ func (s *Service) EnqueueStoryAutoArchive(opts ...asynq.Option) (*asynq.TaskInfo
 	}
 
 	s.log.Info(ctx, "Successfully enqueued StoryAutoArchive task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}
+
+// EnqueueStoryAutoClose enqueues a task to auto-close inactive stories.
+func (s *Service) EnqueueStoryAutoClose(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue StoryAutoClose task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.MaxRetry(3),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeStoryAutoClose, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue StoryAutoClose task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued StoryAutoClose task", "task_id", info.ID, "queue", info.Queue)
 	return info, nil
 }

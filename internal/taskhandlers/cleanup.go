@@ -88,3 +88,16 @@ func (c *CleanupHandlers) HandleStoryAutoArchive(ctx context.Context, t *asynq.T
 	c.log.Info(ctx, "HANDLER: Successfully processed StoryAutoArchive task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleStoryAutoClose processes the story auto-close task
+func (c *CleanupHandlers) HandleStoryAutoClose(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing StoryAutoClose task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessStoryAutoClose(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process story auto-close", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("story auto-close failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed StoryAutoClose task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
