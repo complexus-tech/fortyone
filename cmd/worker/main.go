@@ -43,7 +43,7 @@ type WorkerConfig struct {
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4"`
+	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4,automation:3"`
 }
 
 func main() {
@@ -63,7 +63,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing worker configuration: %w", err)
 	}
 	if cfg.Queues == nil {
-		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2, "notifications": 4}
+		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2, "notifications": 4, "automation": 3}
 	}
 
 	// Initialize database connection
@@ -125,6 +125,33 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register webhook cleanup task: %w", err)
 	}
 
+	_, err = scheduler.Register(
+		"@every 24h",
+		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register sprint auto-creation task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"@weekly",
+		asynq.NewTask(tasks.TypeStoryAutoArchive, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-archive task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"@every 20s",
+		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-close task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -154,6 +181,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
+	// Register automation handlers
+	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
+	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
+	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",

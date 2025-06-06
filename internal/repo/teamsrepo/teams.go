@@ -97,7 +97,7 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.ListPublicTeams")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"user_id":      userID,
 	}
@@ -173,7 +173,7 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 	}
 	defer tx.Rollback()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":         team.Name,
 		"code":         team.Code,
 		"color":        team.Color,
@@ -235,7 +235,7 @@ func (r *repo) createDefaultStoryStatuses(ctx context.Context, tx *sqlx.Tx, team
 
 	// Build values for story statuses batch insert
 	storyValues := make([]string, len(teams.DefaultStoryStatuses))
-	storyParams := make(map[string]interface{})
+	storyParams := make(map[string]any)
 	for i, status := range teams.DefaultStoryStatuses {
 		paramPrefix := fmt.Sprintf("s%d_", i)
 		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
@@ -286,7 +286,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			updated_at
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": updates.Workspace,
 		"name":         updates.Name,
@@ -334,7 +334,7 @@ func (r *repo) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UU
 			AND workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": workspaceID,
 	}
@@ -471,7 +471,7 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 	ctx, span := web.AddSpan(ctx, "teamsrepo.CreateTx")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":         team.Name,
 		"code":         team.Code,
 		"color":        team.Color,
