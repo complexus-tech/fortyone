@@ -12,13 +12,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ProcessStoryAutoArchive archives completed stories that have been in completed status
+// ProcessStoryAutoArchive archives completed and cancelled stories that have been in those statuses
 // for longer than each team's configured auto_archive_months setting
 func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessStoryAutoArchive")
 	defer span.End()
 
-	log.Info(ctx, "Processing auto-archive for completed stories")
+	log.Info(ctx, "Processing auto-archive for completed and cancelled stories")
 
 	startTime := time.Now()
 
@@ -30,7 +30,7 @@ func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logge
 		FROM statuses st
 		JOIN team_story_automation_settings tsas ON st.team_id = tsas.team_id
 		WHERE stories.status_id = st.status_id
-			AND st.category = 'completed'
+			AND st.category IN ('completed', 'cancelled')
 			AND stories.updated_at < (CURRENT_DATE - INTERVAL '1 month' * tsas.auto_archive_months)
 			AND stories.deleted_at IS NULL
 			AND stories.archived_at IS NULL
@@ -39,8 +39,8 @@ func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logge
 	result, err := db.ExecContext(ctx, query)
 	if err != nil {
 		span.RecordError(err)
-		log.Error(ctx, "Failed to auto-archive completed stories", "error", err)
-		return fmt.Errorf("failed to auto-archive completed stories: %w", err)
+		log.Error(ctx, "Failed to auto-archive completed and cancelled stories", "error", err)
+		return fmt.Errorf("failed to auto-archive completed and cancelled stories: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -56,7 +56,7 @@ func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logge
 		attribute.String("duration", duration.String()),
 	))
 
-	log.Info(ctx, fmt.Sprintf("Auto-archive completed stories job finished: %d stories archived in %v",
+	log.Info(ctx, fmt.Sprintf("Auto-archive completed and cancelled stories job finished: %d stories archived in %v",
 		rowsAffected, duration))
 
 	return nil
