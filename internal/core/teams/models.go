@@ -37,4 +37,5 @@ var DefaultStoryStatuses = []DefaultStatus{
 	{Name: "In Progress", Category: "started", OrderIndex: 2},
 	{Name: "Blocked", Category: "paused", OrderIndex: 3},
 	{Name: "Done", Category: "completed", OrderIndex: 4},
+	{Name: "Cancelled", Category: "cancelled", OrderIndex: 5},
 }
