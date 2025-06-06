@@ -75,3 +75,16 @@ func (c *CleanupHandlers) HandleSprintAutoCreation(ctx context.Context, t *asynq
 	c.log.Info(ctx, "HANDLER: Successfully processed SprintAutoCreation task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleStoryAutoArchive processes the story auto-archive task
+func (c *CleanupHandlers) HandleStoryAutoArchive(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing StoryAutoArchive task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessStoryAutoArchive(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process story auto-archive", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("story auto-archive failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed StoryAutoArchive task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}

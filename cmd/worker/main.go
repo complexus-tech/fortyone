@@ -126,12 +126,21 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@every 20s",
+		"@every 24h",
 		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
 		asynq.Queue("automation"),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register sprint auto-creation task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"@every 20s",
+		asynq.NewTask(tasks.TypeStoryAutoArchive, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-archive task: %w", err)
 	}
 
 	srv := asynq.NewServer(
@@ -165,6 +174,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
 	// Register automation handlers
 	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
+	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",
