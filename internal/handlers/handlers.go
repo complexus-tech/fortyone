@@ -20,6 +20,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/subscriptionsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/teamsettingsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/usersgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/workspacesgrp"
@@ -214,6 +215,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:  cfg.SecretKey,
 		SSEHub:     cfg.SSEHub,
 		CorsOrigin: cfg.CorsOrigin,
+	}, app)
+
+	// register the team settings routes
+	teamsettingsgrp.Routes(teamsettingsgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 }
