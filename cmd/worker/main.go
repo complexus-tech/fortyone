@@ -126,7 +126,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@every 24h",
+		"@daily",
 		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
 		asynq.Queue("automation"),
 	)
@@ -144,7 +144,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@every 20s",
+		"@weekly",
 		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
 		asynq.Queue("automation"),
 	)
