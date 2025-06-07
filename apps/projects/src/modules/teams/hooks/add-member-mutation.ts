@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { memberKeys, teamKeys } from "@/constants/keys";
+import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { useMembers } from "@/lib/hooks/members";
 import { addTeamMemberAction } from "../actions/add-team-member";
@@ -81,6 +81,7 @@ export const useAddMemberMutation = () => {
       if (memberId === session?.user?.id) {
         queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
         queryClient.invalidateQueries({ queryKey: teamKeys.public() });
+        queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
       }
     },
   });
