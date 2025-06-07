@@ -96,7 +96,7 @@ func (c *CleanupHandlers) HandleStoryAutoArchive(ctx context.Context, t *asynq.T
 func (c *CleanupHandlers) HandleStoryAutoClose(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing StoryAutoClose task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessStoryAutoClose(ctx, c.db, c.log); err != nil {
+	if err := jobs.ProcessStoryAutoClose(ctx, c.db, c.log, c.systemUserID); err != nil {
 		c.log.Error(ctx, "Failed to process story auto-close", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("story auto-close failed: %w", err)
 	}

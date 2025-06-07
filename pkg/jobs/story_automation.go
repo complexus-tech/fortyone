@@ -7,6 +7,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -64,7 +65,7 @@ func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logge
 
 // ProcessStoryAutoClose closes inactive unstarted and started stories by moving them to 'cancelled' status
 // for longer than each team's configured auto_close_inactive_months setting
-func ProcessStoryAutoClose(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+func ProcessStoryAutoClose(ctx context.Context, db *sqlx.DB, log *logger.Logger, systemUserID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessStoryAutoClose")
 	defer span.End()
 
