@@ -9,9 +9,10 @@ import (
 
 // Team settings automation task types
 const (
-	TypeSprintAutoCreation = "automation:sprints:create"
-	TypeStoryAutoArchive   = "automation:stories:archive"
-	TypeStoryAutoClose     = "automation:stories:close"
+	TypeSprintAutoCreation   = "automation:sprints:create"
+	TypeStoryAutoArchive     = "automation:stories:archive"
+	TypeStoryAutoClose       = "automation:stories:close"
+	TypeSprintStoryMigration = "automation:sprints:migrate_stories"
 )
 
 // EnqueueSprintAutoCreation enqueues a task to auto-create sprints for teams.
@@ -81,5 +82,28 @@ func (s *Service) EnqueueStoryAutoClose(opts ...asynq.Option) (*asynq.TaskInfo, 
 	}
 
 	s.log.Info(ctx, "Successfully enqueued StoryAutoClose task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}
+
+// EnqueueSprintStoryMigration enqueues a task to migrate incomplete stories from ended sprints to next sprints.
+func (s *Service) EnqueueSprintStoryMigration(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue SprintStoryMigration task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.MaxRetry(3),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeSprintStoryMigration, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue SprintStoryMigration task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued SprintStoryMigration task", "task_id", info.ID, "queue", info.Queue)
 	return info, nil
 }

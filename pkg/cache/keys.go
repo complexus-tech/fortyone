@@ -9,12 +9,12 @@ import (
 
 const (
 	// TTLs
-	DefaultTTL    = 10 * time.Minute
-	ListTTL       = 10 * time.Minute
-	DetailTTL     = 15 * time.Minute
+	DefaultTTL    = 5 * time.Minute
+	ListTTL       = 5 * time.Minute
+	DetailTTL     = 5 * time.Minute
 	ShortTermTTL  = 3 * time.Minute
-	MediumTermTTL = 30 * time.Minute
-	LongTermTTL   = 2 * time.Hour
+	MediumTermTTL = 10 * time.Minute
+	LongTermTTL   = 1 * time.Hour
 )
 
 // Key formats for different types of cache entries
