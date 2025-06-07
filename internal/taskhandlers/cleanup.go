@@ -6,21 +6,24 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
 )
 
 // CleanupHandlers handles cleanup tasks with database access
 type CleanupHandlers struct {
-	log *logger.Logger
-	db  *sqlx.DB
+	log          *logger.Logger
+	db           *sqlx.DB
+	systemUserID uuid.UUID
 }
 
 // NewCleanupHandlers creates a new CleanupHandlers instance
-func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB) *CleanupHandlers {
+func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, systemUserID uuid.UUID) *CleanupHandlers {
 	return &CleanupHandlers{
-		log: log,
-		db:  db,
+		log:          log,
+		db:           db,
+		systemUserID: systemUserID,
 	}
 }
 

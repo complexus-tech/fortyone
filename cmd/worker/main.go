@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -39,6 +40,9 @@ type WorkerConfig struct {
 		Port     string `default:"6379" env:"APP_REDIS_PORT"`
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
+	}
+	System struct {
+		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
 	}
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
@@ -168,9 +172,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error initializing brevo service: %w", err)
 	}
 
+	systemUserID, err := uuid.Parse(cfg.System.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid system user ID: %w", err)
+	}
+
 	// Set up task handlers
 	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, systemUserID)
 
 	mux := asynq.NewServeMux()
 	// Register existing handlers
