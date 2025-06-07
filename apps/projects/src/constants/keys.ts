@@ -53,6 +53,7 @@ export const teamKeys = {
   details: () => [...teamKeys.all, "detail"] as const,
   detail: (id: string) => [...teamKeys.details(), id] as const,
   public: () => [...teamKeys.lists(), "public"] as const,
+  settings: (id: string) => [...teamKeys.all, "settings", id] as const,
 };
 
 export const userKeys = {
