@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useAnalytics } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import type { Team, UpdateTeamInput } from "../types";
-import { updateTeam } from "../actions";
+import { updateTeamAction } from "../actions/update-team";
 
 export const useUpdateTeamMutation = (teamId: string) => {
   const queryClient = useQueryClient();
@@ -11,7 +11,7 @@ export const useUpdateTeamMutation = (teamId: string) => {
   const toastId = "update-team";
 
   const mutation = useMutation({
-    mutationFn: (input: UpdateTeamInput) => updateTeam(teamId, input),
+    mutationFn: (input: UpdateTeamInput) => updateTeamAction(teamId, input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: teamKeys.detail(teamId) });
       const previousTeam = queryClient.getQueryData<Team>(

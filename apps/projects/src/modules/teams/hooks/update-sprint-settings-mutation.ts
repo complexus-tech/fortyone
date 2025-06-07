@@ -52,7 +52,6 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
       queryClient.invalidateQueries({
         queryKey: teamKeys.settings(teamId),
       });
-      toast.success("Sprint settings updated");
     },
   });
 

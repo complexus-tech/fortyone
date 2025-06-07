@@ -1,25 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useParams } from "next/navigation";
 import { Box, Text, Switch, Select, Flex } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTerminology } from "@/hooks";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import { useUpdateSprintSettingsMutation } from "@/modules/teams/hooks/update-sprint-settings-mutation";
+import { useUpdateStoryAutomationSettingsMutation } from "@/modules/teams/hooks/update-story-automation-settings-mutation";
 
 export const Automations = () => {
+  const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
-
-  // State for all automation settings
-  const [settings, setSettings] = useState({
-    sprintsEnabled: false,
-    numberOfSprints: "2",
-    sprintLength: "2weeks",
-    startsOn: "monday",
-    autoMoveIncompleteStories: false,
-    autoCloseInactiveStories: false,
-    inactivePeriod: "6months",
-    autoArchiveStories: false,
-    archivePeriod: "6months",
-  });
+  const { data: teamSettings } = useTeamSettings(teamId);
+  const updateSprintSettings = useUpdateSprintSettingsMutation(teamId);
+  const updateStorySettings = useUpdateStoryAutomationSettingsMutation(teamId);
+  const sprintSettings = teamSettings?.sprintSettings;
+  const storySettings = teamSettings?.storyAutomationSettings;
 
   return (
     <>
@@ -44,15 +40,15 @@ export const Automations = () => {
               </Text>
             </Box>
             <Switch
-              checked={settings.sprintsEnabled}
+              checked={sprintSettings?.autoCreateSprints}
               onCheckedChange={(checked) => {
-                setSettings((prev) => ({ ...prev, sprintsEnabled: checked }));
+                updateSprintSettings.mutate({ autoCreateSprints: checked });
               }}
             />
           </Flex>
 
           {/* Number of Sprints to Create */}
-          {settings.sprintsEnabled ? (
+          {sprintSettings?.autoCreateSprints ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
@@ -67,9 +63,11 @@ export const Automations = () => {
               </Box>
               <Select
                 onValueChange={(value) => {
-                  setSettings((prev) => ({ ...prev, numberOfSprints: value }));
+                  updateSprintSettings.mutate({
+                    upcomingSprintsCount: parseInt(value),
+                  });
                 }}
-                value={settings.numberOfSprints}
+                value={sprintSettings.upcomingSprintsCount.toString()}
               >
                 <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
                   <Select.Input />
@@ -93,7 +91,7 @@ export const Automations = () => {
           ) : null}
 
           {/* Sprint Length */}
-          {settings.sprintsEnabled ? (
+          {sprintSettings?.autoCreateSprints ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
@@ -105,24 +103,26 @@ export const Automations = () => {
               </Box>
               <Select
                 onValueChange={(value) => {
-                  setSettings((prev) => ({ ...prev, sprintLength: value }));
+                  updateSprintSettings.mutate({
+                    sprintDurationWeeks: parseInt(value),
+                  });
                 }}
-                value={settings.sprintLength}
+                value={sprintSettings.sprintDurationWeeks.toString()}
               >
                 <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Option className="text-base" value="1week">
+                  <Select.Option className="text-base" value="1">
                     1 week
                   </Select.Option>
-                  <Select.Option className="text-base" value="2weeks">
+                  <Select.Option className="text-base" value="2">
                     2 weeks
                   </Select.Option>
-                  <Select.Option className="text-base" value="3weeks">
+                  <Select.Option className="text-base" value="3">
                     3 weeks
                   </Select.Option>
-                  <Select.Option className="text-base" value="4weeks">
+                  <Select.Option className="text-base" value="4">
                     4 weeks
                   </Select.Option>
                 </Select.Content>
@@ -131,7 +131,7 @@ export const Automations = () => {
           ) : null}
 
           {/* Sprints Start On */}
-          {settings.sprintsEnabled ? (
+          {sprintSettings?.autoCreateSprints ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
@@ -148,27 +148,29 @@ export const Automations = () => {
               </Box>
               <Select
                 onValueChange={(value) => {
-                  setSettings((prev) => ({ ...prev, startsOn: value }));
+                  updateSprintSettings.mutate({
+                    sprintStartDay: value,
+                  });
                 }}
-                value={settings.startsOn}
+                value={sprintSettings.sprintStartDay}
               >
                 <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Option className="text-base" value="monday">
+                  <Select.Option className="text-base" value="Monday">
                     Monday
                   </Select.Option>
-                  <Select.Option className="text-base" value="tuesday">
+                  <Select.Option className="text-base" value="Tuesday">
                     Tuesday
                   </Select.Option>
-                  <Select.Option className="text-base" value="wednesday">
+                  <Select.Option className="text-base" value="Wednesday">
                     Wednesday
                   </Select.Option>
-                  <Select.Option className="text-base" value="thursday">
+                  <Select.Option className="text-base" value="Thursday">
                     Thursday
                   </Select.Option>
-                  <Select.Option className="text-base" value="friday">
+                  <Select.Option className="text-base" value="Friday">
                     Friday
                   </Select.Option>
                 </Select.Content>
@@ -177,7 +179,7 @@ export const Automations = () => {
           ) : null}
 
           {/* Move Incomplete Stories */}
-          {settings.sprintsEnabled ? (
+          {sprintSettings?.autoCreateSprints ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
@@ -191,12 +193,11 @@ export const Automations = () => {
                 </Text>
               </Box>
               <Switch
-                checked={settings.autoMoveIncompleteStories}
+                checked={sprintSettings.moveIncompleteStoriesEnabled}
                 onCheckedChange={(checked) => {
-                  setSettings((prev) => ({
-                    ...prev,
-                    autoMoveIncompleteStories: checked,
-                  }));
+                  updateSprintSettings.mutate({
+                    moveIncompleteStoriesEnabled: checked,
+                  });
                 }}
               />
             </Flex>
@@ -226,18 +227,17 @@ export const Automations = () => {
               </Text>
             </Box>
             <Switch
-              checked={settings.autoCloseInactiveStories}
+              checked={storySettings?.autoCloseInactiveEnabled ?? false}
               onCheckedChange={(checked) => {
-                setSettings((prev) => ({
-                  ...prev,
-                  autoCloseInactiveStories: checked,
-                }));
+                updateStorySettings.mutate({
+                  autoCloseInactiveEnabled: checked,
+                });
               }}
             />
           </Flex>
 
           {/* Inactive Period */}
-          {settings.autoCloseInactiveStories ? (
+          {storySettings?.autoCloseInactiveEnabled ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">
@@ -246,21 +246,23 @@ export const Automations = () => {
               </Box>
               <Select
                 onValueChange={(value) => {
-                  setSettings((prev) => ({ ...prev, inactivePeriod: value }));
+                  updateStorySettings.mutate({
+                    autoCloseInactiveMonths: parseInt(value),
+                  });
                 }}
-                value={settings.inactivePeriod}
+                value={storySettings.autoCloseInactiveMonths.toString()}
               >
                 <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Option className="text-base" value="3months">
+                  <Select.Option className="text-base" value="3">
                     3 months
                   </Select.Option>
-                  <Select.Option className="text-base" value="6months">
+                  <Select.Option className="text-base" value="6">
                     6 months
                   </Select.Option>
-                  <Select.Option className="text-base" value="1year">
+                  <Select.Option className="text-base" value="12">
                     1 year
                   </Select.Option>
                 </Select.Content>
@@ -282,39 +284,38 @@ export const Automations = () => {
               </Text>
             </Box>
             <Switch
-              checked={settings.autoArchiveStories}
+              checked={storySettings?.autoArchiveEnabled ?? false}
               onCheckedChange={(checked) => {
-                setSettings((prev) => ({
-                  ...prev,
-                  autoArchiveStories: checked,
-                }));
+                updateStorySettings.mutate({ autoArchiveEnabled: checked });
               }}
             />
           </Flex>
 
           {/* Archive Period */}
-          {settings.autoArchiveStories ? (
+          {storySettings?.autoArchiveEnabled ? (
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">Archive after</Text>
               </Box>
               <Select
                 onValueChange={(value) => {
-                  setSettings((prev) => ({ ...prev, archivePeriod: value }));
+                  updateStorySettings.mutate({
+                    autoArchiveMonths: parseInt(value),
+                  });
                 }}
-                value={settings.archivePeriod}
+                value={storySettings.autoArchiveMonths.toString()}
               >
                 <Select.Trigger className="w-32 text-[0.9rem] md:text-base">
                   <Select.Input />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Option className="text-base" value="3months">
+                  <Select.Option className="text-base" value="3">
                     3 months
                   </Select.Option>
-                  <Select.Option className="text-base" value="6months">
+                  <Select.Option className="text-base" value="6">
                     6 months
                   </Select.Option>
-                  <Select.Option className="text-base" value="1year">
+                  <Select.Option className="text-base" value="12">
                     1 year
                   </Select.Option>
                 </Select.Content>

@@ -56,7 +56,6 @@ export const useUpdateStoryAutomationSettingsMutation = (teamId: string) => {
       queryClient.invalidateQueries({
         queryKey: teamKeys.settings(teamId),
       });
-      toast.success("Story automation settings updated");
     },
   });
 
