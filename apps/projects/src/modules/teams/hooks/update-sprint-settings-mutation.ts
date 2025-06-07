@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { teamKeys } from "@/constants/keys";
+import { sprintKeys, teamKeys } from "@/constants/keys";
 import { updateSprintSettingsAction } from "../actions/update-sprint-settings";
 import type { UpdateSprintSettingsInput, TeamSettings } from "../types";
 
@@ -51,6 +51,9 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
       }
       queryClient.invalidateQueries({
         queryKey: teamKeys.settings(teamId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.running(),
       });
     },
   });
