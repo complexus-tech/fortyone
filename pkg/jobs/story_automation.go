@@ -212,7 +212,17 @@ func processAutoCloseBatch(ctx context.Context, db *sqlx.DB, log *logger.Logger,
 	return len(closedStories), activitiesRecorded, nil
 }
 
-// recordActivitiesBatch bulk inserts activity records for closed stories using prepared named statements
+// ActivityRecord represents a story activity for bulk insertion
+type ActivityRecord struct {
+	StoryID      uuid.UUID `db:"story_id"`
+	UserID       uuid.UUID `db:"user_id"`
+	ActivityType string    `db:"activity_type"`
+	FieldChanged string    `db:"field_changed"`
+	CurrentValue uuid.UUID `db:"current_value"`
+	WorkspaceID  uuid.UUID `db:"workspace_id"`
+}
+
+// recordActivitiesBatch bulk inserts activity records for closed stories using VALUES clause
 func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedStory, systemUserID uuid.UUID, log *logger.Logger) error {
 	ctx, span := web.AddSpan(ctx, "jobs.recordActivitiesBatch")
 	defer span.End()
@@ -221,7 +231,20 @@ func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedSto
 		return nil
 	}
 
-	// Prepare named statement for bulk activity insertion
+	// Build structured activity records (much more efficient than maps)
+	activities := make([]ActivityRecord, len(stories))
+	for i, story := range stories {
+		activities[i] = ActivityRecord{
+			StoryID:      story.ID,
+			UserID:       systemUserID,
+			ActivityType: "update",
+			FieldChanged: "status_id",
+			CurrentValue: story.StatusID,
+			WorkspaceID:  story.WorkspaceID,
+		}
+	}
+
+	// Use VALUES clause for true bulk insert (single database round-trip)
 	activityQuery := `
 		INSERT INTO story_activities (
 			story_id, 
@@ -230,48 +253,29 @@ func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedSto
 			field_changed, 
 			current_value, 
 			workspace_id
-		) VALUES (
-			:story_id,
-			:user_id,
-			:activity_type,
-			:field_changed,
-			:current_value,
-			:workspace_id
-		)`
+		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :workspace_id)`
 
-	stmt, err := tx.PrepareNamedContext(ctx, activityQuery)
+	// Execute single bulk insert with all records
+	result, err := tx.NamedExecContext(ctx, activityQuery, activities)
 	if err != nil {
 		span.RecordError(err)
-		return fmt.Errorf("failed to prepare activity insert statement: %w", err)
-	}
-	defer stmt.Close()
-
-	// Build activity records for batch insertion
-	activities := make([]map[string]any, len(stories))
-	for i, story := range stories {
-		activities[i] = map[string]any{
-			"story_id":      story.ID,
-			"user_id":       systemUserID,
-			"activity_type": "update",
-			"field_changed": "status_id",
-			"current_value": story.StatusID,
-			"workspace_id":  story.WorkspaceID,
-		}
+		log.Error(ctx, "Failed to bulk insert activity records", "error", err, "count", len(activities))
+		return fmt.Errorf("failed to bulk insert %d activities: %w", len(activities), err)
 	}
 
-	// Execute batch insert using the prepared named statement
-	for _, activity := range activities {
-		if _, err := stmt.ExecContext(ctx, activity); err != nil {
-			span.RecordError(err)
-			log.Error(ctx, "Failed to insert activity record", "error", err, "story_id", activity["story_id"])
-			return fmt.Errorf("failed to insert activity for story %v: %w", activity["story_id"], err)
-		}
+	// Verify all records were inserted
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Warn(ctx, "Could not verify activity insert count", "error", err)
+	} else if int(rowsAffected) != len(activities) {
+		log.Warn(ctx, "Activity insert count mismatch", "expected", len(activities), "actual", rowsAffected)
 	}
 
 	span.AddEvent("activities recorded", trace.WithAttributes(
 		attribute.Int("activities.count", len(activities)),
+		attribute.Int64("rows.affected", rowsAffected),
 	))
 
-	log.Info(ctx, fmt.Sprintf("Successfully recorded %d auto-close activities", len(activities)))
+	log.Info(ctx, fmt.Sprintf("Successfully bulk inserted %d auto-close activities", len(activities)))
 	return nil
 }
