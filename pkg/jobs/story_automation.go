@@ -386,12 +386,11 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 		)
 		UPDATE stories 
 		SET 
-			sprint_id = next_sprints.next_sprint_id,
-			updated_at = CURRENT_TIMESTAMP
-		FROM next_sprints
-		JOIN statuses stat ON stories.status_id = stat.status_id
-		WHERE stories.sprint_id = next_sprints.ended_sprint_id
-			AND stat.team_id = next_sprints.team_id
+			sprint_id = ns.next_sprint_id
+		FROM next_sprints ns, statuses stat
+		WHERE stories.sprint_id = ns.ended_sprint_id
+			AND stories.status_id = stat.status_id
+			AND stat.team_id = ns.team_id
 			AND stat.category IN ('unstarted', 'started')
 			AND stories.deleted_at IS NULL
 			AND stories.archived_at IS NULL
@@ -399,7 +398,7 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 			stories.id, 
 			stories.workspace_id, 
 			stories.team_id,
-			next_sprints.ended_sprint_id as previous_sprint_id,
+			ns.ended_sprint_id as previous_sprint_id,
 			stories.sprint_id as new_sprint_id`
 
 	tx, err := db.BeginTxx(ctx, nil)
