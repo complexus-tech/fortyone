@@ -2,7 +2,7 @@ import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import {
-  AnalyticsIcon,
+  // AnalyticsIcon,
   DashboardIcon,
   NotificationsIcon,
   RoadmapIcon,
@@ -60,11 +60,11 @@ export const Navigation = () => {
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
-    {
-      name: "Analytics",
-      icon: <AnalyticsIcon />,
-      href: "/analytics",
-    },
+    // {
+    //   name: "Analytics",
+    //   icon: <AnalyticsIcon />,
+    //   href: "/analytics",
+    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
