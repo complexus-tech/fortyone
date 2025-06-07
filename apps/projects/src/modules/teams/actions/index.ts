@@ -32,6 +32,3 @@ export async function updateTeam(teamId: string, input: UpdateTeamInput) {
     return getApiError(error);
   }
 }
-
-export { updateSprintSettingsAction } from "./update-sprint-settings";
-export { updateStoryAutomationSettingsAction } from "./update-story-automation-settings";
