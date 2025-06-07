@@ -25,10 +25,7 @@ export const Calendar = ({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn(
-        "px-4 py-5 rounded-xl border border-gray-100/90 dark:border-dark-50 bg-white z-50 dark:bg-dark-200 backdrop-blur w-max shadow-lg",
-        className
-      )}
+      className={cn("px-4 py-5 w-max shadow-lg rounded-2xl", className)}
       classNames={{
         months:
           "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 dark:text-white text-lg",
@@ -37,18 +34,18 @@ export const Calendar = ({
         caption_label: "text-base font-medium",
         nav: "space-x-1 flex items-center",
         nav_button:
-          "h-8 aspect-square border border-gray-100 dark:border-dark-50 rounded-lg flex items-center justify-center",
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
+          "h-9 aspect-square rounded-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-dark-100",
+        nav_button_previous: "absolute -left-1",
+        nav_button_next: "absolute -right-1",
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
-        head_cell: "w-10 font-semibold border-0 text-[1rem]",
+        head_cell: "w-10 font-semibold border-0 text-base",
         row: "flex w-full mt-2",
-        cell: "text-center text-[1rem] p-0 relative focus-within:relative focus-within:z-50",
-        day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-lg hover:bg-primary hover:text-white cursor-pointer",
-        day_selected: "bg-primary border-primary rounded-lg",
+        cell: "text-center text-base p-0 relative focus-within:relative focus-within:z-50",
+        day: "h-10 w-10 p-0 font-normal flex items-center justify-center aria-selected:opacity-100 rounded-full hover:bg-primary hover:text-white cursor-pointer leading-10",
+        day_selected: "bg-primary border-primary rounded-full",
         day_today:
-          "border border-gray-200 dark:border-dark-50 hover:border-primary",
+          "border border-gray-200 dark:border-gray/50 hover:border-primary bg-gray-50 dark:bg-dark-50",
         day_outside: "opacity-40",
         day_disabled: "opacity-40",
         day_range_start: "rounded-r-none aria-selected:text-white",
@@ -63,8 +60,18 @@ export const Calendar = ({
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ArrowLeft2Icon className="h-4 w-auto" />,
-        IconRight: () => <ArrowRight2Icon className="h-4 w-auto" />,
+        IconLeft: () => (
+          <ArrowLeft2Icon
+            className="h-5 w-auto dark:text-white/80"
+            strokeWidth={2.5}
+          />
+        ),
+        IconRight: () => (
+          <ArrowRight2Icon
+            className="h-5 w-auto dark:text-white/80"
+            strokeWidth={2.5}
+          />
+        ),
       }}
       {...props}
     />
