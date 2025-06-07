@@ -82,7 +82,7 @@ func (r *repo) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.
 	ctx, span := web.AddSpan(ctx, "business.repository.states.TeamList")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"team_id":      teamId,
 	}
@@ -152,7 +152,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 			AND workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"team_id":      ns.Team,
 			"workspace_id": workspaceId,
 		}
@@ -177,7 +177,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	}
 
 	// Get the next order index based on category
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"category":     ns.Category,
 	}
@@ -218,7 +218,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		IsDefault:  ns.IsDefault,
 	}
 
-	params = map[string]interface{}{
+	params = map[string]any{
 		"name":         state.Name,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
@@ -289,7 +289,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 			WHERE status_id = :status_id 
 			AND workspace_id = :workspace_id
 		`
-		teamParams := map[string]interface{}{
+		teamParams := map[string]any{
 			"status_id":    stateId,
 			"workspace_id": workspaceId,
 		}
@@ -320,7 +320,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 			AND workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"team_id":      teamID,
 			"workspace_id": workspaceId,
 		}
@@ -344,7 +344,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		}
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
@@ -413,7 +413,7 @@ func (r *repo) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Delete")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
@@ -460,7 +460,7 @@ func (r *repo) CountStoriesWithStatus(ctx context.Context, statusID uuid.UUID) (
 	ctx, span := web.AddSpan(ctx, "business.repository.states.CountStoriesWithStatus")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id": statusID,
 	}
 
@@ -531,7 +531,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, stateId uuid.UUID) (states.
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Get")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
