@@ -463,9 +463,9 @@ func (r *repo) createDefaultStoryAutomationSettings(ctx context.Context, teamID,
 			:team_id,
 			:workspace_id,
 			false,
-			6,
+			3,
 			false,
-			6
+			3
 		)
 		RETURNING
 			team_id,
