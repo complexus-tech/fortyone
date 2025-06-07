@@ -24,7 +24,7 @@ func ProcessSprintAutoCreation(ctx context.Context, db *sqlx.DB, log *logger.Log
 
 	// Initialize the team settings service
 	teamsettingsRepo := teamsettingsrepo.New(log, db)
-	teamsettingsService := teamsettings.New(log, teamsettingsRepo)
+	teamsettingsService := teamsettings.New(log, teamsettingsRepo, nil)
 
 	// Get teams that have auto sprint creation enabled
 	teams, err := teamsettingsService.GetTeamsWithAutoSprintCreation(ctx)

@@ -148,7 +148,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"0 5 * * 6", // Saturday 5:00 AM
+		// "0 5 * * 6", // Saturday 5:00 AM
+		"@every 30s",
 		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
 		asynq.Queue("automation"),
 	)
