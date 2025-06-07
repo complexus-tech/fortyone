@@ -9,6 +9,7 @@ export const statusKeys = {
 export const sprintKeys = {
   all: ["sprints"] as const,
   lists: () => [...sprintKeys.all, "list"] as const,
+  running: () => [...sprintKeys.all, "running"] as const,
   details: () => [...sprintKeys.all, "detail"] as const,
   detail: (id: string) => [...sprintKeys.details(), id] as const,
   team: (teamId: string) => [...sprintKeys.lists(), teamId] as const,

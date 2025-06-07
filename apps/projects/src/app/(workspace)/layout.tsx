@@ -5,13 +5,18 @@ import { redirect } from "next/navigation";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
 import { getQueryClient } from "@/app/get-query-client";
-import { teamKeys, statusKeys, workspaceKeys } from "@/constants/keys";
+import {
+  teamKeys,
+  statusKeys,
+  workspaceKeys,
+  sprintKeys,
+} from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { getStatuses } from "@/lib/queries/states/get-states";
-import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
+import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -57,22 +62,22 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
       queryFn: () => getTeams(session!),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
       queryFn: () => getStatuses(session!),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
       queryFn: () => getObjectiveStatuses(session!),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
       queryFn: () => getWorkspaces(token),
-      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: sprintKeys.running(),
+      queryFn: () => getRunningSprints(session!),
     }),
   ]);
 

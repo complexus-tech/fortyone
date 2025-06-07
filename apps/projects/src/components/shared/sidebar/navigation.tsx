@@ -1,11 +1,19 @@
 import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
-import { DashboardIcon, NotificationsIcon, RoadmapIcon, UserIcon } from "icons";
+import {
+  AnalyticsIcon,
+  DashboardIcon,
+  NotificationsIcon,
+  RoadmapIcon,
+  SprintsIcon,
+  UserIcon,
+} from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { useTerminology, useFeatures } from "@/hooks";
+import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
   name: string;
@@ -18,8 +26,23 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
+  const { data: runningSprints = [] } = useRunningSprints();
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
+
+  const getSprintsItem = (): MenuItem | null => {
+    if (runningSprints.length === 0) return null;
+    const sprint = runningSprints[0];
+    return {
+      name: `Current ${getTermDisplay("sprintTerm", { capitalize: true, variant: runningSprints.length > 1 ? "plural" : "singular" })}`,
+      icon: <SprintsIcon />,
+      href:
+        runningSprints.length > 1
+          ? "/sprints"
+          : `/teams/${sprint.teamId}/sprints/${sprint.id}/stories`,
+    };
+  };
+
   const links: MenuItem[] = [
     {
       name: "Summary",
@@ -37,22 +60,18 @@ export const Navigation = () => {
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
-    // {
-    //   name: "Analytics",
-    //   icon: <AnalyticsIcon />,
-    //   href: "/analytics",
-    // },
+    {
+      name: "Analytics",
+      icon: <AnalyticsIcon />,
+      href: "/analytics",
+    },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
       href: "/notifications",
       messages: unreadNotifications,
     },
-    // {
-    //   name: "Active sprints",
-    //   icon: <SprintsIcon />,
-    //   href: "/sprints",
-    // },
+    ...(getSprintsItem() ? [getSprintsItem()!] : []),
   ];
 
   return (
@@ -76,11 +95,13 @@ export const Navigation = () => {
               key={name}
             >
               <span className="flex items-center gap-2">
-                <span>{icon}</span>
-                <span className="first-letter:capitalize">{name}</span>
+                <span className="shrink-0">{icon}</span>
+                <span className="line-clamp-1 first-letter:capitalize">
+                  {name}
+                </span>
               </span>
               {messages ? (
-                <Badge rounded="full" size="sm">
+                <Badge className="shrink-0" rounded="full" size="sm">
                   {messages}
                 </Badge>
               ) : null}
