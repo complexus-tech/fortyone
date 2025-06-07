@@ -32,7 +32,7 @@ module.exports = {
       },
       {
         protocol: "https",
-        hostname: "complexus.app",
+        hostname: "www.complexus.app",
       },
     ],
   },

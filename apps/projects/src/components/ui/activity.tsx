@@ -169,7 +169,7 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member && member.role !== "system" ? (
+            member ? (
               <Box>
                 <Flex gap={2}>
                   <Avatar
@@ -179,8 +179,12 @@ export const Activity = ({
                   />
                   <Box>
                     <Link
-                      className="mb-2 flex gap-1"
-                      href={`/profile/${member.id}`}
+                      className={cn("mb-2 flex gap-1", {
+                        "mb-0": member.role === "system",
+                      })}
+                      href={
+                        member.role === "system" ? "" : `/profile/${member.id}`
+                      }
                     >
                       <Text fontSize="md" fontWeight="medium">
                         {member.fullName}
@@ -189,14 +193,20 @@ export const Activity = ({
                         ({member.username})
                       </Text>
                     </Link>
-                    <Button
-                      className="mb-0.5 ml-px px-2"
-                      color="tertiary"
-                      href={`/profile/${member.id}`}
-                      size="xs"
-                    >
-                      Go to profile
-                    </Button>
+                    {member.role !== "system" ? (
+                      <Button
+                        className="mb-0.5 ml-px px-2"
+                        color="tertiary"
+                        href={`/profile/${member.id}`}
+                        size="xs"
+                      >
+                        Go to profile
+                      </Button>
+                    ) : (
+                      <Text color="muted" fontSize="md">
+                        (System Account)
+                      </Text>
+                    )}
                   </Box>
                 </Flex>
               </Box>
