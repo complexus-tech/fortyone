@@ -187,6 +187,24 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
 
+	defaultStoryAutomationSettingsQuery := `
+	INSERT INTO team_story_automation_settings (
+		team_id,
+		workspace_id,
+		auto_close_inactive_enabled,
+		auto_close_inactive_months,
+		auto_archive_enabled,
+		auto_archive_months
+	) VALUES (
+		:team_id,
+		:workspace_id,
+		true,
+		3,
+		true,
+		3
+	)
+`
+
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
@@ -216,6 +234,16 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create default statuses"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
+	}
+
+	defaultStoryAutomationSettingsParams := map[string]any{
+		"team_id":      dbTeam.ID,
+		"workspace_id": dbTeam.Workspace,
+	}
+	if _, err := tx.NamedExecContext(ctx, defaultStoryAutomationSettingsQuery, defaultStoryAutomationSettingsParams); err != nil {
+		errMsg := fmt.Sprintf("failed to create default story automation settings: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default story automation settings"), trace.WithAttributes(attribute.String("error", errMsg)))
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -485,6 +513,24 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
 
+	defaultStoryAutomationSettingsQuery := `
+	INSERT INTO team_story_automation_settings (
+		team_id,
+		workspace_id,
+		auto_close_inactive_enabled,
+		auto_close_inactive_months,
+		auto_archive_enabled,
+		auto_archive_months
+	) VALUES (
+		:team_id,
+		:workspace_id,
+		true,
+		3,
+		true,
+		3
+	)
+`
+
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
@@ -493,6 +539,11 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		return teams.CoreTeam{}, err
 	}
 	defer stmt.Close()
+
+	defaultStoryAutomationSettingsParams := map[string]any{
+		"team_id":      team.ID,
+		"workspace_id": team.Workspace,
+	}
 
 	var dbTeam dbTeam
 	if err := stmt.GetContext(ctx, &dbTeam, params); err != nil {
@@ -507,6 +558,12 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
+	}
+
+	if _, err := tx.NamedExecContext(ctx, defaultStoryAutomationSettingsQuery, defaultStoryAutomationSettingsParams); err != nil {
+		errMsg := fmt.Sprintf("failed to create default story automation settings: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default story automation settings"), trace.WithAttributes(attribute.String("error", errMsg)))
 	}
 
 	if err := r.createDefaultStoryStatuses(ctx, tx, dbTeam.ID, dbTeam.Workspace); err != nil {

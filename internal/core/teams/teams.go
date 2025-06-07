@@ -3,7 +3,6 @@ package teams
 import (
 	"context"
 
-	"github.com/complexus-tech/projects-api/internal/core/teamsettings"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -26,23 +25,18 @@ type Repository interface {
 }
 
 // TeamSettingsRepository provides access to the team settings storage.
-type TeamSettingsRepository interface {
-	CreateDefaultStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamStoryAutomationSettings, error)
-}
 
 // Service provides team-related operations.
 type Service struct {
-	repo             Repository
-	teamSettingsRepo TeamSettingsRepository
-	log              *logger.Logger
+	repo Repository
+	log  *logger.Logger
 }
 
 // New constructs a new teams service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, teamSettingsRepo TeamSettingsRepository) *Service {
+func New(log *logger.Logger, repo Repository) *Service {
 	return &Service{
-		repo:             repo,
-		teamSettingsRepo: teamSettingsRepo,
-		log:              log,
+		repo: repo,
+		log:  log,
 	}
 }
 
@@ -93,11 +87,6 @@ func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {
 		return CoreTeam{}, err
 	}
 
-	if _, err := s.teamSettingsRepo.CreateDefaultStoryAutomationSettings(ctx, result.ID, result.Workspace); err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "business.core.teams.create", "error creating default story automation settings", "error", err)
-	}
-
 	span.AddEvent("team created.", trace.WithAttributes(
 		attribute.String("team_id", result.ID.String()),
 		attribute.String("workspace_id", result.Workspace.String()),
@@ -114,11 +103,6 @@ func (s *Service) CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (Cor
 	if err != nil {
 		span.RecordError(err)
 		return CoreTeam{}, err
-	}
-
-	if _, err := s.teamSettingsRepo.CreateDefaultStoryAutomationSettings(ctx, result.ID, result.Workspace); err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "business.core.teams.createTx", "error creating default story automation settings", "error", err)
 	}
 
 	span.AddEvent("team created.", trace.WithAttributes(

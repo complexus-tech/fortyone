@@ -19,7 +19,6 @@ type Repository interface {
 	UpdateStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamStoryAutomationSettings) (CoreTeamStoryAutomationSettings, error)
 	GetTeamsWithAutoSprintCreation(ctx context.Context) ([]CoreTeamSprintSettings, error)
 	IncrementAutoSprintNumber(ctx context.Context, teamID, workspaceID uuid.UUID) error
-	CreateDefaultStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamStoryAutomationSettings, error)
 }
 
 // Validation errors
@@ -88,25 +87,6 @@ func (s *Service) GetSprintSettings(ctx context.Context, teamID, workspaceID uui
 	}
 
 	span.AddEvent("sprint settings retrieved.", trace.WithAttributes(
-		attribute.String("team.id", teamID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
-	))
-	return settings, nil
-}
-
-// CreateDefaultStoryAutomationSettings creates default story automation settings for a team.
-func (s *Service) CreateDefaultStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamStoryAutomationSettings, error) {
-	s.log.Info(ctx, "business.core.teamsettings.createDefaultStoryAutomationSettings")
-	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.CreateDefaultStoryAutomationSettings")
-	defer span.End()
-
-	settings, err := s.repo.CreateDefaultStoryAutomationSettings(ctx, teamID, workspaceID)
-	if err != nil {
-		span.RecordError(err)
-		return CoreTeamStoryAutomationSettings{}, err
-	}
-
-	span.AddEvent("default story automation settings created.", trace.WithAttributes(
 		attribute.String("team.id", teamID.String()),
 		attribute.String("workspace.id", workspaceID.String()),
 	))
