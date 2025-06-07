@@ -104,3 +104,16 @@ func (c *CleanupHandlers) HandleStoryAutoClose(ctx context.Context, t *asynq.Tas
 	c.log.Info(ctx, "HANDLER: Successfully processed StoryAutoClose task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleSprintStoryMigration processes the sprint story migration task
+func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing SprintStoryMigration task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessSprintStoryMigration(ctx, c.db, c.log, c.systemUserID); err != nil {
+		c.log.Error(ctx, "Failed to process sprint story migration", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("sprint story migration failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed SprintStoryMigration task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}

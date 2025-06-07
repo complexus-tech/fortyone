@@ -148,13 +148,21 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		// "0 5 * * 6", // Saturday 5:00 AM
-		"@every 30s",
+		"0 5 * * 6", // Saturday 5:00 AM
 		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
 		asynq.Queue("automation"),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register story auto-close task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 6 * * *", // Daily at 6:00 AM
+		asynq.NewTask(tasks.TypeSprintStoryMigration, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register sprint story migration task: %w", err)
 	}
 
 	srv := asynq.NewServer(
@@ -195,6 +203,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
 	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
 	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
+	mux.HandleFunc(tasks.TypeSprintStoryMigration, cleanupHandlers.HandleSprintStoryMigration)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",
