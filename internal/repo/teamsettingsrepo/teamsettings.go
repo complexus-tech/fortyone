@@ -211,7 +211,7 @@ func (r *repo) GetStoryAutomationSettings(ctx context.Context, teamID, workspace
 	if err := stmt.GetContext(ctx, &settings, params); err != nil {
 		if err == sql.ErrNoRows {
 			// Return default settings if not found
-			return r.createDefaultStoryAutomationSettings(ctx, teamID, workspaceID)
+			return r.CreateDefaultStoryAutomationSettings(ctx, teamID, workspaceID)
 		}
 		errMsg := fmt.Sprintf("Failed to retrieve team story automation settings from the database: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -446,9 +446,9 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 	return toCoreTeamSprintSettings(settings), nil
 }
 
-// createDefaultStoryAutomationSettings creates and returns default story automation settings
-func (r *repo) createDefaultStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamStoryAutomationSettings, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.createDefaultStoryAutomationSettings")
+// CreateDefaultStoryAutomationSettings creates and returns default story automation settings
+func (r *repo) CreateDefaultStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamStoryAutomationSettings, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.CreateDefaultStoryAutomationSettings")
 	defer span.End()
 
 	query := `
@@ -462,9 +462,9 @@ func (r *repo) createDefaultStoryAutomationSettings(ctx context.Context, teamID,
 		) VALUES (
 			:team_id,
 			:workspace_id,
-			false,
+			true,
 			3,
-			false,
+			true,
 			3
 		)
 		RETURNING
