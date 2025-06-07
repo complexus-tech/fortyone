@@ -540,11 +540,6 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 	}
 	defer stmt.Close()
 
-	defaultStoryAutomationSettingsParams := map[string]any{
-		"team_id":      team.ID,
-		"workspace_id": team.Workspace,
-	}
-
 	var dbTeam dbTeam
 	if err := stmt.GetContext(ctx, &dbTeam, params); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
@@ -558,6 +553,11 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
+	}
+
+	defaultStoryAutomationSettingsParams := map[string]any{
+		"team_id":      dbTeam.ID,
+		"workspace_id": dbTeam.Workspace,
 	}
 
 	if _, err := tx.NamedExecContext(ctx, defaultStoryAutomationSettingsQuery, defaultStoryAutomationSettingsParams); err != nil {
