@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/subscriptionsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsettingsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
@@ -45,7 +46,8 @@ func Routes(cfg Config, app *web.App) {
 		cfg.WebhookSecret,
 	)
 
-	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
+	teamSettingsRepo := teamsettingsrepo.New(cfg.Log, cfg.DB)
+	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB), teamSettingsRepo)
 	mentionsRepo := mentionsrepo.New(cfg.Log, cfg.DB)
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))

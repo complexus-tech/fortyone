@@ -2,6 +2,7 @@ package teamsgrp
 
 import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsettingsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -18,7 +19,8 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
+	teamSettingsRepo := teamsettingsrepo.New(cfg.Log, cfg.DB)
+	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB), teamSettingsRepo)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 

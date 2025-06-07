@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
 	"github.com/complexus-tech/projects-api/internal/repo/invitationsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/subscriptionsrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/teamsettingsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
@@ -32,10 +33,11 @@ type Config struct {
 
 func Routes(cfg Config, app *web.App) {
 	repo := invitationsrepo.New(cfg.Log, cfg.DB)
+	teamSettingsRepo := teamsettingsrepo.New(cfg.Log, cfg.DB)
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
 	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.StripeSecret)
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil, subscriptionsService)
-	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
+	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB), teamSettingsRepo)
 	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService, workspacesService, teamsService)
 	h := New(invitationsService, usersService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
