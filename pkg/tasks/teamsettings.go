@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -21,6 +22,7 @@ func (s *Service) EnqueueSprintAutoCreation(opts ...asynq.Option) (*asynq.TaskIn
 	defaultOpts := []asynq.Option{
 		asynq.Queue("automation"),
 		asynq.MaxRetry(3),
+		asynq.ProcessIn(10 * time.Minute),
 	}
 
 	finalOpts := append(defaultOpts, opts...)

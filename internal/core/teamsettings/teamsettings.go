@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -32,15 +33,17 @@ var (
 
 // Service provides team settings-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo         Repository
+	log          *logger.Logger
+	tasksService *tasks.Service
 }
 
 // New constructs a new team settings service instance with the provided repository.
-func New(log *logger.Logger, repo Repository) *Service {
+func New(log *logger.Logger, repo Repository, tasksService *tasks.Service) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:         repo,
+		log:          log,
+		tasksService: tasksService,
 	}
 }
 
@@ -111,6 +114,13 @@ func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID 
 		return CoreTeamSprintSettings{}, err
 	}
 
+	if updates.AutoCreateSprints != nil && *updates.AutoCreateSprints {
+		if _, err := s.tasksService.EnqueueSprintAutoCreation(); err != nil {
+			span.RecordError(err)
+			s.log.Error(ctx, "business.core.teamsettings.updateSprintSettings", "error enqueuing sprint auto creation task", "error", err)
+		}
+	}
+
 	span.AddEvent("sprint settings updated.", trace.WithAttributes(
 		attribute.String("team.id", teamID.String()),
 		attribute.String("workspace.id", workspaceID.String()),
@@ -153,6 +163,20 @@ func (s *Service) UpdateStoryAutomationSettings(ctx context.Context, teamID, wor
 	if err != nil {
 		span.RecordError(err)
 		return CoreTeamStoryAutomationSettings{}, err
+	}
+
+	if updates.AutoCloseInactiveEnabled != nil && *updates.AutoCloseInactiveEnabled {
+		if _, err := s.tasksService.EnqueueStoryAutoClose(); err != nil {
+			span.RecordError(err)
+			s.log.Error(ctx, "business.core.teamsettings.updateStoryAutomationSettings", "error enqueuing story auto close task", "error", err)
+		}
+	}
+
+	if updates.AutoArchiveEnabled != nil && *updates.AutoArchiveEnabled {
+		if _, err := s.tasksService.EnqueueStoryAutoArchive(); err != nil {
+			span.RecordError(err)
+			s.log.Error(ctx, "business.core.teamsettings.updateStoryAutomationSettings", "error enqueuing story auto archive task", "error", err)
+		}
 	}
 
 	span.AddEvent("story automation settings updated.", trace.WithAttributes(

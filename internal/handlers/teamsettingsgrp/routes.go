@@ -5,18 +5,20 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/teamsettingsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
+	DB           *sqlx.DB
+	Log          *logger.Logger
+	SecretKey    string
+	TasksService *tasks.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	teamsettingsService := teamsettings.New(cfg.Log, teamsettingsrepo.New(cfg.Log, cfg.DB))
+	teamsettingsService := teamsettings.New(cfg.Log, teamsettingsrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	h := New(teamsettingsService)

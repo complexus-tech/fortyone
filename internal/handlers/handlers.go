@@ -219,9 +219,10 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the team settings routes
 	teamsettingsgrp.Routes(teamsettingsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		TasksService: cfg.TasksService,
 	}, app)
 
 }
