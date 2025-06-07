@@ -34,15 +34,13 @@ export const Automations = () => {
         />
 
         <Box className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100">
-          {/* Enable Sprints Toggle */}
+          {/* Enable Automation Toggle */}
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
-              <Text className="font-medium">
-                Enable {getTermDisplay("sprintTerm", { variant: "plural" })}
-              </Text>
+              <Text className="font-medium">Enable automation</Text>
               <Text className="line-clamp-2" color="muted">
-                Turn on {getTermDisplay("sprintTerm", { variant: "plural" })}{" "}
-                for your team workflow
+                Turn on automated {getTermDisplay("sprintTerm")} management and
+                scheduling
               </Text>
             </Box>
             <Switch
