@@ -23,6 +23,7 @@ func (s *Service) EnqueueSprintAutoCreation(opts ...asynq.Option) (*asynq.TaskIn
 	defaultOpts := []asynq.Option{
 		asynq.Queue("automation"),
 		asynq.MaxRetry(3),
+		asynq.TaskID("sprint_auto_creation"),
 		asynq.ProcessIn(10 * time.Minute),
 	}
 
@@ -46,6 +47,7 @@ func (s *Service) EnqueueStoryAutoArchive(opts ...asynq.Option) (*asynq.TaskInfo
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("automation"),
+		asynq.TaskID("story_auto_archive"),
 		asynq.MaxRetry(3),
 	}
 
@@ -69,6 +71,7 @@ func (s *Service) EnqueueStoryAutoClose(opts ...asynq.Option) (*asynq.TaskInfo, 
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("automation"),
+		asynq.TaskID("story_auto_close"),
 		asynq.MaxRetry(3),
 	}
 
@@ -92,6 +95,7 @@ func (s *Service) EnqueueSprintStoryMigration(opts ...asynq.Option) (*asynq.Task
 
 	defaultOpts := []asynq.Option{
 		asynq.Queue("automation"),
+		asynq.TaskID("sprint_story_migration"),
 		asynq.MaxRetry(3),
 	}
 
