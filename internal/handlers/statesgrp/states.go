@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/states"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -103,7 +104,12 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	states, err := h.states.List(ctx, workspaceId)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	states, err := h.states.List(ctx, workspaceId, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

@@ -27,30 +27,37 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreState, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]states.CoreState, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.states.List")
 	defer span.End()
 
 	params := map[string]any{
 		"workspace_id": workspaceId,
+		"user_id":      userID,
 	}
 
 	var statuses []dbState
 	q := `
 		SELECT
-			status_id,
-			name,
-			category,
-			order_index,
-			team_id,
-			workspace_id,
-			is_default,
-			created_at,
-			updated_at
+			s.status_id,
+			s.name,
+			s.category,
+			s.order_index,
+			s.team_id,
+			s.workspace_id,
+			s.is_default,
+			s.created_at,
+			s.updated_at
 		FROM
-			statuses
-		WHERE workspace_id = :workspace_id
-		ORDER BY order_index ASC;
+			statuses s
+		WHERE s.workspace_id = :workspace_id
+		AND EXISTS (
+			SELECT 1 
+			FROM team_members tm 
+			WHERE tm.team_id = s.team_id 
+			AND tm.user_id = :user_id
+		)
+		ORDER BY s.order_index ASC;
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
