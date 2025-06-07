@@ -243,6 +243,11 @@ export const Automations = () => {
                 <Text className="font-medium">
                   Close after being inactive for
                 </Text>
+                <Text className="line-clamp-2" color="muted">
+                  Automatically close{" "}
+                  {getTermDisplay("storyTerm", { variant: "plural" })} that
+                  haven&apos;t been updated
+                </Text>
               </Box>
               <Select
                 onValueChange={(value) => {
@@ -296,6 +301,11 @@ export const Automations = () => {
             <Flex align="center" className="px-6 py-4" justify="between">
               <Box>
                 <Text className="font-medium">Archive after</Text>
+                <Text className="line-clamp-2" color="muted">
+                  Automatically archive completed and cancelled{" "}
+                  {getTermDisplay("storyTerm", { variant: "plural" })} that
+                  haven&apos;t been updated
+                </Text>
               </Box>
               <Select
                 onValueChange={(value) => {
