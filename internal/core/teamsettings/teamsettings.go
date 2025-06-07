@@ -114,7 +114,7 @@ func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID 
 		return CoreTeamSprintSettings{}, err
 	}
 
-	if updates.AutoCreateSprints != nil && *updates.AutoCreateSprints {
+	if result.AutoCreateSprints {
 		if _, err := s.tasksService.EnqueueSprintAutoCreation(); err != nil {
 			span.RecordError(err)
 			s.log.Error(ctx, "business.core.teamsettings.updateSprintSettings", "error enqueuing sprint auto creation task", "error", err)
@@ -165,14 +165,14 @@ func (s *Service) UpdateStoryAutomationSettings(ctx context.Context, teamID, wor
 		return CoreTeamStoryAutomationSettings{}, err
 	}
 
-	if updates.AutoCloseInactiveEnabled != nil && *updates.AutoCloseInactiveEnabled {
+	if result.AutoCloseInactiveEnabled {
 		if _, err := s.tasksService.EnqueueStoryAutoClose(); err != nil {
 			span.RecordError(err)
 			s.log.Error(ctx, "business.core.teamsettings.updateStoryAutomationSettings", "error enqueuing story auto close task", "error", err)
 		}
 	}
 
-	if updates.AutoArchiveEnabled != nil && *updates.AutoArchiveEnabled {
+	if result.AutoArchiveEnabled {
 		if _, err := s.tasksService.EnqueueStoryAutoArchive(); err != nil {
 			span.RecordError(err)
 			s.log.Error(ctx, "business.core.teamsettings.updateStoryAutomationSettings", "error enqueuing story auto archive task", "error", err)
