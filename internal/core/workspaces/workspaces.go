@@ -63,10 +63,11 @@ type Service struct {
 	users           *users.Service
 	objectivestatus *objectivestatus.Service
 	subscriptions   *subscriptions.Service
+	systemUserID    uuid.UUID
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, systemUserID uuid.UUID) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -77,6 +78,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		users:           users,
 		objectivestatus: objectivestatus,
 		subscriptions:   subscriptions,
+		systemUserID:    systemUserID,
 	}
 }
 
@@ -118,6 +120,11 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 
 	// Add creator as member of the workspace
 	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, userID, "admin"); err != nil {
+		return CoreWorkspace{}, err
+	}
+
+	// Add system user as member of the workspace
+	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, s.systemUserID, "system"); err != nil {
 		return CoreWorkspace{}, err
 	}
 

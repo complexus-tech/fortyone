@@ -16,6 +16,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -47,6 +48,7 @@ type Config struct {
 	WebhookSecret string
 	SSEHub        *sse.Hub
 	CorsOrigin    string
+	SystemUserID  uuid.UUID
 }
 
 // New returns a new HTTP handler that defines all the API routes.
