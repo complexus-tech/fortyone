@@ -64,7 +64,9 @@ const Items = ({
   const { data: teamMembers = [], isPending: isLoadingTeamMembers } =
     useTeamMembers(teamId);
 
-  const members = teamId ? teamMembers : allMembers;
+  const members = (teamId ? teamMembers : allMembers).filter(
+    ({ role }) => role !== "system",
+  );
   const isPending = teamId ? isLoadingTeamMembers : isLoadingMembers;
   const self = members.find(({ id }) => id === session?.user?.id);
 

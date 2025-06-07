@@ -15,7 +15,8 @@ const MembersTab = ({
 }: {
   setIsInviteMembersDialogOpen: (open: boolean) => void;
 }) => {
-  const { data: members = [] } = useMembers();
+  const { data: allMembers = [] } = useMembers();
+  const members = allMembers.filter(({ role }) => role !== "system");
   return (
     <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader

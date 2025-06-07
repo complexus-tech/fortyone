@@ -5,7 +5,7 @@ export type ApiResponse<T> = {
   };
 };
 
-export type UserRole = "admin" | "member" | "guest";
+export type UserRole = "admin" | "member" | "guest" | "system";
 
 export type User = {
   id: string;

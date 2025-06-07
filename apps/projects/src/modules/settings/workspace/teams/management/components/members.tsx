@@ -12,10 +12,13 @@ import { useMembers } from "@/lib/hooks/members";
 import { TeamMemberRow } from "./team-member-row";
 
 export const MembersSettings = ({ team }: { team: Team }) => {
-  const { data: allMembers = [] } = useMembers();
-  const { data: members = [] } = useTeamMembers(team.id);
+  const { data: workspaceMembers = [] } = useMembers();
+  const { data: teamMembers = [] } = useTeamMembers(team.id);
   const { mutate: addMember } = useAddMemberMutation();
   const [search, setSearch] = useState("");
+
+  const members = teamMembers.filter(({ role }) => role !== "system");
+  const allMembers = workspaceMembers.filter(({ role }) => role !== "system");
 
   const handleAddMember = (memberId: string) => {
     addMember({ teamId: team.id, memberId });

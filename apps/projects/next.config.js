@@ -30,6 +30,10 @@ module.exports = {
         protocol: "https",
         hostname: "complexus.blob.core.windows.net",
       },
+      {
+        protocol: "https",
+        hostname: "complexus.app",
+      },
     ],
   },
   async rewrites() {
