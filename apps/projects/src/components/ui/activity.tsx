@@ -169,7 +169,7 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? (
+            member && member.role !== "system" ? (
               <Box>
                 <Flex gap={2}>
                   <Avatar
