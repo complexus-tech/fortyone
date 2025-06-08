@@ -72,7 +72,6 @@ export const ServerSentEvents = () => {
                   ? {
                       ...story,
                       ...workspaceUpdate.changes,
-                      subStories: story.subStories,
                     }
                   : story,
               );
@@ -88,7 +87,6 @@ export const ServerSentEvents = () => {
           return {
             ...oldData,
             ...workspaceUpdate.changes,
-            subStories: oldData.subStories,
           };
         },
       );
