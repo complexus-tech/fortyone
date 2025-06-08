@@ -78,3 +78,19 @@ export const notificationKeys = {
 export const subscriptionKeys = {
   details: ["subscriptions"] as const,
 };
+
+export const analyticsKeys = {
+  all: ["analytics"] as const,
+  overview: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "overview", filters] as const,
+  storyAnalytics: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "story-analytics", filters] as const,
+  objectiveProgress: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "objective-progress", filters] as const,
+  teamPerformance: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "team-performance", filters] as const,
+  sprintAnalytics: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "sprint-analytics", filters] as const,
+  timelineTrends: (filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all, "timeline-trends", filters] as const,
+};
