@@ -205,3 +205,85 @@ func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
 	}
 	return result
 }
+
+// Objective Analytics Models
+
+type AppObjectiveAnalytics struct {
+	ObjectiveID       uuid.UUID                 `json:"objectiveId"`
+	PriorityBreakdown []AppPriorityBreakdown    `json:"priorityBreakdown"`
+	ProgressBreakdown AppProgressBreakdown      `json:"progressBreakdown"`
+	TeamAllocation    []AppTeamMemberAllocation `json:"teamAllocation"`
+}
+
+type AppPriorityBreakdown struct {
+	Priority string `json:"priority"`
+	Count    int    `json:"count"`
+}
+
+type AppProgressBreakdown struct {
+	Total      int `json:"total"`
+	Completed  int `json:"completed"`
+	InProgress int `json:"inProgress"`
+	Todo       int `json:"todo"`
+	Blocked    int `json:"blocked"`
+	Cancelled  int `json:"cancelled"`
+}
+
+type AppTeamMemberAllocation struct {
+	MemberID  uuid.UUID `json:"memberId"`
+	Username  string    `json:"username"`
+	AvatarURL *string   `json:"avatarUrl"`
+	Assigned  int       `json:"assigned"`
+	Completed int       `json:"completed"`
+}
+
+// Conversion functions
+
+func toAppObjectiveAnalytics(analytics objectives.CoreObjectiveAnalytics) AppObjectiveAnalytics {
+	return AppObjectiveAnalytics{
+		ObjectiveID:       analytics.ObjectiveID,
+		PriorityBreakdown: toAppPriorityBreakdown(analytics.PriorityBreakdown),
+		ProgressBreakdown: toAppProgressBreakdown(analytics.ProgressBreakdown),
+		TeamAllocation:    toAppTeamAllocation(analytics.TeamAllocation),
+	}
+}
+
+func toAppPriorityBreakdown(breakdown []objectives.CorePriorityBreakdown) []AppPriorityBreakdown {
+	result := make([]AppPriorityBreakdown, len(breakdown))
+	for i, b := range breakdown {
+		result[i] = AppPriorityBreakdown{
+			Priority: b.Priority,
+			Count:    b.Count,
+		}
+	}
+	return result
+}
+
+func toAppProgressBreakdown(breakdown objectives.CoreProgressBreakdown) AppProgressBreakdown {
+	return AppProgressBreakdown{
+		Total:      breakdown.Total,
+		Completed:  breakdown.Completed,
+		InProgress: breakdown.InProgress,
+		Todo:       breakdown.Todo,
+		Blocked:    breakdown.Blocked,
+		Cancelled:  breakdown.Cancelled,
+	}
+}
+
+func toAppTeamAllocation(allocation []objectives.CoreTeamMemberAllocation) []AppTeamMemberAllocation {
+	result := make([]AppTeamMemberAllocation, len(allocation))
+	for i, a := range allocation {
+		var avatarURL *string
+		if a.AvatarURL != "" {
+			avatarURL = &a.AvatarURL
+		}
+		result[i] = AppTeamMemberAllocation{
+			MemberID:  a.MemberID,
+			Username:  a.Username,
+			AvatarURL: avatarURL,
+			Assigned:  a.Assigned,
+			Completed: a.Completed,
+		}
+	}
+	return result
+}

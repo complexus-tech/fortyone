@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
@@ -344,22 +345,28 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.Delete")
 	defer span.End()
 
-	query := `DELETE FROM objectives WHERE objective_id = :id AND workspace_id = :workspace_id`
-	params := map[string]any{
-		"id":           id,
+	query := `
+		UPDATE objectives
+		SET deleted_at = NOW()
+		WHERE objective_id = :objective_id
+		AND workspace_id = :workspace_id
+		AND deleted_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"objective_id": id,
 		"workspace_id": workspaceId,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, fmt.Sprintf("Deleting objective #%s", id), "id", id)
 	result, err := stmt.ExecContext(ctx, params)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to delete objective: %s", err)
@@ -370,9 +377,6 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get rows affected: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to get rows affected"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
 
@@ -380,10 +384,195 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		return ErrNotFound
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Objective #%s deleted successfully", id), "id", id)
-	span.AddEvent("objective deleted", trace.WithAttributes(
-		attribute.String("objective.id", id.String()),
+	return nil
+}
+
+func (r *repo) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (objectives.CoreObjectiveAnalytics, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.objectives.GetAnalytics")
+	defer span.End()
+
+	// Run queries in parallel for better performance
+	var (
+		priorityBreakdown []objectives.CorePriorityBreakdown
+		progressBreakdown objectives.CoreProgressBreakdown
+		teamAllocation    []objectives.CoreTeamMemberAllocation
+		wg                sync.WaitGroup
+		mu                sync.Mutex
+		analyticsErr      error
+	)
+
+	wg.Add(3)
+
+	// Parallel query 1: Priority breakdown
+	go func() {
+		defer wg.Done()
+		breakdown, err := r.getPriorityBreakdown(ctx, objectiveID)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		priorityBreakdown = breakdown
+	}()
+
+	// Parallel query 2: Progress breakdown
+	go func() {
+		defer wg.Done()
+		breakdown, err := r.getProgressBreakdown(ctx, objectiveID)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		progressBreakdown = breakdown
+	}()
+
+	// Parallel query 3: Team allocation
+	go func() {
+		defer wg.Done()
+		allocation, err := r.getTeamAllocation(ctx, objectiveID)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		teamAllocation = allocation
+	}()
+
+	// Wait for all queries to complete
+	wg.Wait()
+
+	if analyticsErr != nil {
+		r.log.Error(ctx, "Failed to get analytics data", "error", analyticsErr)
+		span.RecordError(analyticsErr)
+		return objectives.CoreObjectiveAnalytics{}, analyticsErr
+	}
+
+	analytics := objectives.CoreObjectiveAnalytics{
+		ObjectiveID:       objectiveID,
+		PriorityBreakdown: priorityBreakdown,
+		ProgressBreakdown: progressBreakdown,
+		TeamAllocation:    teamAllocation,
+	}
+
+	r.log.Info(ctx, "Objective analytics retrieved successfully.")
+	span.AddEvent("objective analytics retrieved.", trace.WithAttributes(
+		attribute.String("objective.id", objectiveID.String()),
+		attribute.Int("priority_breakdown.count", len(priorityBreakdown)),
+		attribute.Int("team_allocation.count", len(teamAllocation)),
 	))
 
-	return nil
+	return analytics, nil
+}
+
+func (r *repo) getPriorityBreakdown(ctx context.Context, objectiveID uuid.UUID) ([]objectives.CorePriorityBreakdown, error) {
+	query := `
+		SELECT 
+			COALESCE(priority, 'No Priority') as priority,
+			COUNT(*) as count
+		FROM stories
+		WHERE objective_id = :objective_id
+			AND deleted_at IS NULL
+			AND archived_at IS NULL
+		GROUP BY priority
+		ORDER BY 
+			CASE priority
+				WHEN 'Urgent' THEN 1
+				WHEN 'High' THEN 2
+				WHEN 'Medium' THEN 3
+				WHEN 'Low' THEN 4
+				WHEN 'No Priority' THEN 5
+			END
+	`
+
+	params := map[string]interface{}{
+		"objective_id": objectiveID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var breakdown []objectives.CorePriorityBreakdown
+	if err := stmt.SelectContext(ctx, &breakdown, params); err != nil {
+		return nil, err
+	}
+
+	return breakdown, nil
+}
+
+func (r *repo) getProgressBreakdown(ctx context.Context, objectiveID uuid.UUID) (objectives.CoreProgressBreakdown, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total,
+			COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed,
+			COUNT(CASE WHEN st.category = 'started' THEN 1 END) as in_progress,
+			COUNT(CASE WHEN st.category = 'unstarted' THEN 1 END) as todo,
+			COUNT(CASE WHEN st.category = 'blocked' THEN 1 END) as blocked,
+			COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled
+		FROM stories s
+		INNER JOIN statuses st ON s.status_id = st.status_id
+		WHERE s.objective_id = :objective_id
+			AND s.deleted_at IS NULL
+			AND s.archived_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"objective_id": objectiveID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return objectives.CoreProgressBreakdown{}, err
+	}
+	defer stmt.Close()
+
+	var breakdown objectives.CoreProgressBreakdown
+	if err := stmt.GetContext(ctx, &breakdown, params); err != nil {
+		return objectives.CoreProgressBreakdown{}, err
+	}
+
+	return breakdown, nil
+}
+
+func (r *repo) getTeamAllocation(ctx context.Context, objectiveID uuid.UUID) ([]objectives.CoreTeamMemberAllocation, error) {
+	query := `
+		SELECT 
+			u.user_id,
+			u.username,
+			u.avatar_url,
+			COUNT(s.id) as assigned,
+			COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed
+		FROM stories s
+		INNER JOIN users u ON s.assignee_id = u.user_id
+		LEFT JOIN statuses st ON s.status_id = st.status_id
+		WHERE s.objective_id = :objective_id
+			AND s.deleted_at IS NULL
+			AND s.archived_at IS NULL
+			AND u.is_active = true
+		GROUP BY u.user_id, u.username, u.avatar_url
+		ORDER BY assigned DESC, u.username
+	`
+
+	params := map[string]interface{}{
+		"objective_id": objectiveID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var allocation []objectives.CoreTeamMemberAllocation
+	if err := stmt.SelectContext(ctx, &allocation, params); err != nil {
+		return nil, err
+	}
+
+	return allocation, nil
 }
