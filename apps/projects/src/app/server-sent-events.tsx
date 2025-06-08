@@ -53,7 +53,7 @@ export const ServerSentEvents = () => {
     return () => {
       eventSource.close();
     };
-  }, [posthog, session?.token, queryClient]);
+  }, [posthog, session?.token, workspace, queryClient]);
 
   return null;
 };
