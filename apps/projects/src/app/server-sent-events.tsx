@@ -9,6 +9,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import { notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { DetailedStory } from "@/modules/story/types";
+import type { Story } from "@/modules/stories/types";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -43,9 +44,6 @@ export const ServerSentEvents = () => {
         queryClient.invalidateQueries({
           queryKey: storyKeys.detail(notification.entityId),
         });
-        queryClient.invalidateQueries({
-          queryKey: storyKeys.mine(),
-        });
       }
     },
     [queryClient],
@@ -53,6 +51,36 @@ export const ServerSentEvents = () => {
 
   const handleWorkspaceUpdate = useCallback(
     (workspaceUpdate: WorkspaceUpdate) => {
+      const queryCache = queryClient.getQueryCache();
+      const queries = queryCache.getAll();
+
+      queries.forEach((query) => {
+        const queryKey = JSON.stringify(query.queryKey);
+        // Only target story list queries that are active
+        if (
+          queryKey.toLowerCase().includes("stories") &&
+          !queryKey.toLowerCase().includes("detail") &&
+          query.isActive()
+        ) {
+          queryClient.setQueriesData(
+            { queryKey: query.queryKey },
+            (oldData: Story[] | undefined) => {
+              if (!oldData) return oldData;
+              // Find and update the specific story
+              return oldData.map((story) =>
+                story.id === workspaceUpdate.storyId
+                  ? {
+                      ...story,
+                      ...workspaceUpdate.changes,
+                      subStories: story.subStories,
+                    }
+                  : story,
+              );
+            },
+          );
+        }
+      });
+
       queryClient.setQueryData(
         storyKeys.detail(workspaceUpdate.storyId),
         (oldData: DetailedStory | undefined) => {
@@ -60,6 +88,7 @@ export const ServerSentEvents = () => {
           return {
             ...oldData,
             ...workspaceUpdate.changes,
+            subStories: oldData.subStories,
           };
         },
       );
@@ -70,12 +99,6 @@ export const ServerSentEvents = () => {
   useEffect(() => {
     const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace?.id}/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
-
-    eventSource.onopen = () => {
-      queryClient.invalidateQueries({
-        queryKey: notificationKeys.all,
-      });
-    };
 
     eventSource.onmessage = (event) => {
       try {
