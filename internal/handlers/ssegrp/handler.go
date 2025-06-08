@@ -10,6 +10,8 @@ import (
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
 
 // Handler manages SSE operations.
@@ -21,22 +23,32 @@ type Handler struct {
 
 func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, _ := mid.GetUserID(ctx)
-	h.Log.Info(ctx, "SSE connection attempt (hijack) for userID", "userID", userID)
+
+	// NEW: Get workspace from URL path parameter
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		h.Log.Error(ctx, "sse: Invalid workspace ID", "userID", userID, "workspaceParam", workspaceIDParam, "error", err)
+		http.Error(w, "Invalid workspace ID", http.StatusBadRequest)
+		return fmt.Errorf("invalid workspace ID: %w", err)
+	}
+
+	h.Log.Info(ctx, "SSE connection attempt (hijack) for user in workspace", "userID", userID, "workspaceID", workspaceID)
 
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		h.Log.Error(ctx, "sse (hijack): ResponseWriter does not support hijacking", "userID", userID)
+		h.Log.Error(ctx, "sse (hijack): ResponseWriter does not support hijacking", "userID", userID, "workspaceID", workspaceID)
 		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return fmt.Errorf("hijacking unsupported: ResponseWriter does not implement http.Hijacker")
 	}
 
 	conn, bufRW, err := hijacker.Hijack()
 	if err != nil {
-		h.Log.Error(ctx, "sse (hijack): Failed to hijack connection", "userID", userID, "error", err)
+		h.Log.Error(ctx, "sse (hijack): Failed to hijack connection", "userID", userID, "workspaceID", workspaceID, "error", err)
 		return fmt.Errorf("failed to hijack connection: %w", err)
 	}
 	defer func() {
-		h.Log.Info(ctx, "SSE (hijack): Closing hijacked connection for userID", "userID", userID)
+		h.Log.Info(ctx, "SSE (hijack): Closing hijacked connection", "userID", userID, "workspaceID", workspaceID)
 		conn.Close()
 	}()
 
@@ -58,45 +70,47 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 		err = bufRW.Flush()
 	}
 	if err != nil {
-		h.Log.Error(ctx, "sse (hijack): Failed to write initial headers for userID", "userID", userID, "error", err)
+		h.Log.Error(ctx, "sse (hijack): Failed to write initial headers", "userID", userID, "workspaceID", workspaceID, "error", err)
 		return nil
 	}
 
-	sseClient := h.SSEHub.RegisterNewClient(userID)
-	h.Log.Info(ctx, "SSE (hijack): Client registered with hub for userID", "userID", userID)
+	// Register client with both userID and workspaceID
+	sseClient := h.SSEHub.RegisterNewClient(userID, workspaceID)
+	h.Log.Info(ctx, "SSE (hijack): Client registered with hub", "userID", userID, "workspaceID", workspaceID)
 	defer func() {
 		h.SSEHub.UnregisterClient(sseClient)
-		h.Log.Info(ctx, "SSE (hijack): Client unregistered from hub for userID", "userID", userID)
+		h.Log.Info(ctx, "SSE (hijack): Client unregistered from hub", "userID", userID, "workspaceID", workspaceID)
 	}()
 
-	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\"}\n\n", userID.String())
+	// Include workspaceID in initial connected event
+	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\", \"workspaceID\": \"%s\"}\n\n", userID.String(), workspaceID.String())
 	_, err = bufRW.WriteString(initialEvent)
 	if err == nil {
 		err = bufRW.Flush()
 	}
 	if err != nil {
-		h.Log.Warn(ctx, "sse (hijack): Error writing initial connected event for userID", "userID", userID, "error", err)
+		h.Log.Warn(ctx, "sse (hijack): Error writing initial connected event", "userID", userID, "workspaceID", workspaceID, "error", err)
 		return nil
 	}
 
 	keepAliveTicker := time.NewTicker(25 * time.Second)
 	defer keepAliveTicker.Stop()
 
-	h.Log.Info(ctx, "SSE (hijack): Event loop starting for userID", "userID", userID)
+	h.Log.Info(ctx, "SSE (hijack): Event loop starting", "userID", userID, "workspaceID", workspaceID)
 
 	for {
 		select {
 		case <-r.Context().Done():
-			h.Log.Info(ctx, "SSE (hijack): Request context done for userID", "userID", userID, "error", r.Context().Err())
+			h.Log.Info(ctx, "SSE (hijack): Request context done", "userID", userID, "workspaceID", workspaceID, "error", r.Context().Err())
 			return nil
 
 		case <-sseClient.Ctx().Done():
-			h.Log.Info(ctx, "SSE (hijack): Hub client context done for userID", "userID", userID)
+			h.Log.Info(ctx, "SSE (hijack): Hub client context done", "userID", userID, "workspaceID", workspaceID)
 			return nil
 
 		case messageData, ok_chan := <-sseClient.Send:
 			if !ok_chan {
-				h.Log.Info(ctx, "SSE (hijack): Hub send channel closed for userID", "userID", userID)
+				h.Log.Info(ctx, "SSE (hijack): Hub send channel closed", "userID", userID, "workspaceID", workspaceID)
 				return nil
 			}
 			dataLine := fmt.Sprintf("data: %s\n\n", messageData)
@@ -105,10 +119,9 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 				err = bufRW.Flush()
 			}
 			if err != nil {
-				h.Log.Warn(ctx, "SSE (hijack): Error writing data event to client for userID", "userID", userID, "error", err)
+				h.Log.Warn(ctx, "SSE (hijack): Error writing data event to client", "userID", userID, "workspaceID", workspaceID, "error", err)
 				return nil
 			}
-			// h.Log.Debug(ctx, "SSE (hijack): Message sent to client for userID", "userID", userID, "sizeBytes", len(dataLine)) // Optional: Can be noisy
 
 		case <-keepAliveTicker.C:
 			pingData := ":keep-alive\n\n"
@@ -117,7 +130,7 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 				err = bufRW.Flush()
 			}
 			if err != nil {
-				h.Log.Warn(ctx, "SSE (hijack): Error writing keep-alive to client for userID", "userID", userID, "error", err)
+				h.Log.Warn(ctx, "SSE (hijack): Error writing keep-alive to client", "userID", userID, "workspaceID", workspaceID, "error", err)
 				return nil
 			}
 		}

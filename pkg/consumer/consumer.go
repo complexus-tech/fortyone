@@ -264,7 +264,85 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		}
 	}
 
+	// Workspace broadcasting
+	if c.hasSignificantChanges(payload.Updates) {
+		c.broadcastToWorkspace(ctx, payload, event.ActorID)
+	}
+
 	return nil
+}
+
+// NEW: Check if updates contain workspace-worthy changes
+func (c *Consumer) hasSignificantChanges(updates map[string]any) bool {
+	significantFields := map[string]bool{
+		"status_id":   true,
+		"assignee_id": true,
+		"priority":    true,
+		"title":       true,
+	}
+
+	for field := range updates {
+		if significantFields[field] {
+			return true
+		}
+	}
+	return false
+}
+
+// Broadcast to workspace with frontend-friendly field names
+func (c *Consumer) broadcastToWorkspace(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) {
+	// Map database field names to frontend camelCase
+	dbToFrontendFields := map[string]string{
+		"status_id":   "statusId",
+		"assignee_id": "assigneeId",
+		"priority":    "priority",
+		"title":       "title",
+	}
+
+	// Filter and transform field names
+	frontendChanges := make(map[string]any)
+	for dbField, value := range payload.Updates {
+		if frontendField, isSignificant := dbToFrontendFields[dbField]; isSignificant {
+			frontendChanges[frontendField] = value
+		}
+	}
+
+	// Skip if no significant changes
+	if len(frontendChanges) == 0 {
+		return
+	}
+
+	// Get actor name
+	actorName := "Someone"
+	if actor, err := c.users.GetUser(ctx, actorID); err == nil {
+		actorName = actor.Username
+	}
+
+	// Create frontend-friendly workspace update
+	workspaceUpdate := map[string]any{
+		"type":        "story.workspace_update",
+		"storyId":     payload.StoryID,     // camelCase
+		"workspaceId": payload.WorkspaceID, // camelCase
+		"changes":     frontendChanges,     // camelCase field names
+		"actorId":     actorID,             // camelCase
+		"actorName":   actorName,           // Actor name for display
+		"timestamp":   time.Now().Unix(),
+	}
+
+	// Publish to workspace channel
+	data, err := json.Marshal(workspaceUpdate)
+	if err != nil {
+		c.log.Error(ctx, "failed to marshal workspace update", "error", err)
+		return
+	}
+
+	channelName := fmt.Sprintf("workspace-updates:%s", payload.WorkspaceID.String())
+	if err := c.redis.Publish(ctx, channelName, data).Err(); err != nil {
+		c.log.Error(ctx, "failed to publish workspace update", "error", err)
+		return
+	}
+
+	c.log.Debug(ctx, "workspace update broadcasted", "storyId", payload.StoryID, "changes", len(frontendChanges), "actorName", actorName)
 }
 
 func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Event) error {

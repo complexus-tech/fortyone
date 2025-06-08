@@ -16,16 +16,19 @@ import (
 const (
 	// pubSubChannelPrefix is the prefix for user-specific notification channels.
 	pubSubChannelPrefix = "user-notifications:"
+	// workspaceChannelPrefix is the prefix for workspace-wide update channels.
+	workspaceChannelPrefix = "workspace-updates:"
 	// clientSendTimeout is the timeout for sending a message to a client's channel.
 	clientSendTimeout = 1 * time.Second
 )
 
 // Client represents an active SSE client connection.
 type Client struct {
-	UserID     uuid.UUID
-	Send       chan []byte // Channel for sending messages to this client.
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID   // Track workspace for workspace-wide updates
+	Send        chan []byte // Channel for sending messages to this client.
+	ctx         context.Context
+	cancelFunc  context.CancelFunc
 }
 
 // Ctx returns the client's context. This context is cancelled when the client unregisters or the hub shuts down.
@@ -88,8 +91,11 @@ func (h *Hub) handleRegistration(client *Client) {
 	h.clients[client.UserID][client] = true
 	h.mu.Unlock()
 
-	h.log.Info(client.ctx, "SSE client registered", "userID", client.UserID)
-	go h.listenToPubSub(client)
+	h.log.Info(client.ctx, "SSE client registered", "userID", client.UserID, "workspaceID", client.WorkspaceID)
+
+	// Start listening to both user notifications and workspace updates
+	go h.listenToUserNotifications(client)
+	go h.listenToWorkspaceUpdates(client)
 }
 
 func (h *Hub) handleUnregistration(client *Client) {
@@ -114,13 +120,14 @@ func (h *Hub) handleUnregistration(client *Client) {
 
 // RegisterNewClient is called by the SSE HTTP handler to register a new client.
 // It creates a new client context that can be cancelled when the client disconnects.
-func (h *Hub) RegisterNewClient(userID uuid.UUID) *Client {
+func (h *Hub) RegisterNewClient(userID, workspaceID uuid.UUID) *Client {
 	clientCtx, cancel := context.WithCancel(h.appCtx) // Client context derived from app context.
 	client := &Client{
-		UserID:     userID,
-		Send:       make(chan []byte, 256), // Buffered channel.
-		ctx:        clientCtx,
-		cancelFunc: cancel,
+		UserID:      userID,
+		WorkspaceID: workspaceID,
+		Send:        make(chan []byte, 256), // Buffered channel.
+		ctx:         clientCtx,
+		cancelFunc:  cancel,
 	}
 	h.register <- client
 	return client
@@ -134,9 +141,9 @@ func (h *Hub) UnregisterClient(client *Client) {
 	h.unregister <- client
 }
 
-// listenToPubSub is run in a goroutine for each connected client.
+// listenToUserNotifications is run in a goroutine for each connected client.
 // It subscribes to the user-specific Redis Pub/Sub channel and forwards messages.
-func (h *Hub) listenToPubSub(client *Client) {
+func (h *Hub) listenToUserNotifications(client *Client) {
 	channelName := fmt.Sprintf("%s%s", pubSubChannelPrefix, client.UserID.String())
 	pubsub := h.redisClient.Subscribe(client.ctx, channelName) // client.ctx will be cancelled on disconnect
 	defer pubsub.Close()                                       // Ensure subscription is closed when this goroutine exits.
@@ -190,6 +197,55 @@ func (h *Hub) listenToPubSub(client *Client) {
 			// Consider strategies if this becomes an issue (e.g., increasing buffer, or more aggressive client disconnect).
 			case <-client.ctx.Done(): // Check again in case client disconnected while trying to send.
 				h.log.Info(client.ctx, "Client disconnected while attempting to send message from Pub/Sub", "userID", client.UserID, "channel", channelName)
+				return
+			}
+		}
+	}
+}
+
+// listenToWorkspaceUpdates is run in a goroutine for each connected client.
+// It subscribes to the workspace-specific Redis Pub/Sub channel and forwards messages.
+func (h *Hub) listenToWorkspaceUpdates(client *Client) {
+	channelName := fmt.Sprintf("%s%s", workspaceChannelPrefix, client.WorkspaceID.String())
+	pubsub := h.redisClient.Subscribe(client.ctx, channelName) // client.ctx will be cancelled on disconnect
+	defer pubsub.Close()                                       // Ensure subscription is closed when this goroutine exits.
+
+	// Wait for subscription to be confirmed.
+	_, err := pubsub.Receive(client.ctx)
+	if err != nil {
+		// If client.ctx is already Done, this error might be expected (e.g., context canceled)
+		if client.ctx.Err() != nil {
+			h.log.Info(client.ctx, "Client disconnected before workspace Pub/Sub subscription could be confirmed", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+		} else {
+			h.log.Error(client.ctx, "Failed to subscribe to workspace Redis Pub/Sub channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName, "error", err)
+		}
+		return
+	}
+
+	h.log.Info(client.ctx, "Subscribed to workspace Redis Pub/Sub channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+	redisChannel := pubsub.Channel() // Get the Go channel for messages
+
+	for {
+		select {
+		case <-client.ctx.Done(): // Client disconnected (cancelled by unregister or app shutdown)
+			h.log.Info(client.ctx, "Client context done, stopping workspace Pub/Sub listener", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+			return
+		case msg, ok := <-redisChannel:
+			if !ok { // Channel closed by Redis client (e.g. connection issue, or pubsub.Close() called)
+				h.log.Info(client.ctx, "Workspace Redis Pub/Sub channel closed by library", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+				return
+			}
+
+			h.log.Debug(client.ctx, "Received workspace update from Pub/Sub", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+
+			// Send workspace update to client's channel.
+			select {
+			case client.Send <- []byte(msg.Payload):
+				h.log.Debug(client.ctx, "Workspace update sent to client's send channel", "userID", client.UserID, "workspaceID", client.WorkspaceID)
+			case <-time.After(clientSendTimeout):
+				h.log.Warn(client.ctx, "Timeout sending workspace update to client channel", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+			case <-client.ctx.Done(): // Check again in case client disconnected while trying to send.
+				h.log.Info(client.ctx, "Client disconnected while attempting to send workspace update", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
 				return
 			}
 		}
