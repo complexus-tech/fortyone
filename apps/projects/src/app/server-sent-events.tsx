@@ -7,16 +7,18 @@ import { useEffect } from "react";
 import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { notificationKeys } from "@/constants/keys";
+import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL!;
 
 export const ServerSentEvents = () => {
   const posthog = usePostHog();
   const { data: session } = useSession();
+  const { workspace } = useCurrentWorkspace();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const SSE_ENDPOINT = `${apiURL}/notifications/subscribe?token=${session?.token}`;
+    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace?.id}/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
     eventSource.onopen = () => {
