@@ -14,7 +14,7 @@ import {
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { useTeams } from "../../teams/hooks/teams";
-import { useSprints } from "../hooks/sprints";
+import { useSprint } from "../hooks/sprint-details";
 import { useSprintOptions } from "./provider";
 
 export const Header = ({
@@ -34,14 +34,8 @@ export const Header = ({
     teamId: string;
     sprintId: string;
   }>();
-  const { data: sprints = [] } = useSprints();
   const { data: teams = [] } = useTeams();
-
-  const team = teams.find((team) => team.id === teamId)!;
-  const sprint = sprints.find((sprint) => sprint.id === sprintId)!;
-  const startDate = format(new Date(sprint.startDate), "MMM d");
-  const endDate = format(new Date(sprint.endDate), "MMM d");
-  const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
+  const { data: sprint } = useSprint(sprintId);
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -50,6 +44,15 @@ export const Header = ({
   useHotkeys("v+k", () => {
     setLayout("kanban");
   });
+
+  if (!sprint) {
+    return null;
+  }
+
+  const team = teams.find((team) => team.id === teamId)!;
+  const startDate = format(new Date(sprint.startDate), "MMM d");
+  const endDate = format(new Date(sprint.endDate), "MMM d");
+  const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
 
   return (
     <HeaderContainer className="justify-between gap-4">
