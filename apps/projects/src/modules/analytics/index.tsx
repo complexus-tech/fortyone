@@ -65,7 +65,7 @@ export const AnalyticsPage = () => {
           </Box>
 
           {/* Stories & Work Analysis */}
-          <Box className="my-4 grid gap-4 md:grid-cols-3">
+          <Box className="my-4 grid gap-4 md:grid-cols-2">
             <ErrorBoundary fallback={<div>Error loading status breakdown</div>}>
               <StatusBreakdown />
             </ErrorBoundary>
@@ -74,17 +74,7 @@ export const AnalyticsPage = () => {
             >
               <PriorityDistribution />
             </ErrorBoundary>
-            <ErrorBoundary fallback={<div>Error loading burndown chart</div>}>
-              <BurndownChart />
-            </ErrorBoundary>
           </Box>
-
-          {/* Team Performance */}
-          <ErrorBoundary
-            fallback={<div>Error loading member contributions</div>}
-          >
-            <MemberContributions />
-          </ErrorBoundary>
 
           {/* Key Results Progress */}
           <ErrorBoundary
@@ -106,15 +96,29 @@ export const AnalyticsPage = () => {
             </ErrorBoundary>
           </Box>
 
-          {/* Team Workload & Timeline Trends */}
-          <Box className="my-4 grid gap-4 md:grid-cols-2">
-            <ErrorBoundary fallback={<div>Error loading team workload</div>}>
-              <TeamWorkload />
+          {/* Team Performance & Contributions */}
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
+            <ErrorBoundary
+              fallback={<div>Error loading member contributions</div>}
+            >
+              <MemberContributions />
             </ErrorBoundary>
-            <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
-              <TimelineTrends />
+            <ErrorBoundary fallback={<div>Error loading burndown chart</div>}>
+              <Box className="md:col-span-2">
+                <BurndownChart />
+              </Box>
             </ErrorBoundary>
           </Box>
+
+          {/* Team Workload */}
+          <ErrorBoundary fallback={<div>Error loading team workload</div>}>
+            <TeamWorkload />
+          </ErrorBoundary>
+
+          {/* Timeline Trends */}
+          <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
+            <TimelineTrends />
+          </ErrorBoundary>
         </Container>
       </BodyContainer>
     </>

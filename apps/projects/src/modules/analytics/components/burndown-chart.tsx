@@ -14,7 +14,6 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useStoryAnalytics } from "../hooks/story-analytics";
 import type { BurndownPoint } from "../types";
-import { BurndownChartSkeleton } from "./burndown-chart-skeleton";
 
 type ChartDataItem = {
   date: string;
@@ -66,7 +65,17 @@ export const BurndownChart = () => {
   }, [storyAnalytics]);
 
   if (isPending) {
-    return <BurndownChartSkeleton />;
+    return (
+      <Wrapper>
+        <Box className="mb-6">
+          <Text className="mb-1" fontSize="lg">
+            Burndown chart
+          </Text>
+          <Text color="muted">Story completion progress over time.</Text>
+        </Box>
+        <Box className="h-[220px] animate-pulse rounded bg-gray-200 dark:bg-dark-100" />
+      </Wrapper>
+    );
   }
 
   return (
@@ -106,24 +115,24 @@ export const BurndownChart = () => {
           <Line
             activeDot={{
               r: 4,
-              fill: "#EA6060",
+              fill: "#6366F1",
               strokeWidth: 2,
               stroke:
                 resolvedTheme === "dark"
                   ? "rgba(255, 255, 255, 0.8)"
-                  : "#EA6060",
+                  : "#6366F1",
             }}
             dataKey="remaining"
             dot={{
               r: 3,
-              fill: "#EA6060",
+              fill: "#6366F1",
               strokeWidth: 2,
               stroke:
                 resolvedTheme === "dark"
                   ? "rgba(255, 255, 255, 0.8)"
-                  : "#EA6060",
+                  : "#6366F1",
             }}
-            stroke="#EA6060"
+            stroke="#6366F1"
             strokeWidth={2}
             type="monotone"
           />

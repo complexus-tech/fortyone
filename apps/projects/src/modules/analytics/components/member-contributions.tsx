@@ -3,7 +3,6 @@ import { Avatar, Box, Flex, Text, Wrapper } from "ui";
 import { useState, useEffect } from "react";
 import { useTeamPerformance } from "../hooks/team-performance";
 import type { MemberContributionItem } from "../types";
-import { MemberContributionsSkeleton } from "./member-contributions-skeleton";
 
 export const MemberContributions = () => {
   const { data: teamPerformance, isPending } = useTeamPerformance();
@@ -13,54 +12,102 @@ export const MemberContributions = () => {
 
   useEffect(() => {
     if (teamPerformance?.memberContributions.length) {
-      setContributionsData(teamPerformance.memberContributions.slice(0, 8));
+      const sortedData = teamPerformance.memberContributions
+        .slice(0, 6)
+        .sort((a, b) => b.completed - a.completed);
+      setContributionsData(sortedData);
     }
   }, [teamPerformance]);
 
   if (isPending) {
-    return <MemberContributionsSkeleton />;
+    return (
+      <Wrapper>
+        <Box className="mb-4">
+          <Text className="mb-1" fontSize="lg">
+            Team contributions
+          </Text>
+          <Text color="muted" fontSize="sm">
+            Performance overview.
+          </Text>
+        </Box>
+        <Box className="space-y-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Box
+              className="h-10 animate-pulse rounded bg-gray-200 dark:bg-dark-100"
+              key={index}
+            />
+          ))}
+        </Box>
+      </Wrapper>
+    );
   }
-
-  const maxCompleted = Math.max(
-    ...contributionsData.map((item) => item.completed),
-  );
 
   return (
     <Wrapper>
-      <Box className="mb-6">
+      <Box className="mb-4">
         <Text className="mb-1" fontSize="lg">
-          Member contributions
+          Team contributions
         </Text>
-        <Text color="muted">Top contributors by completed work.</Text>
+        <Text color="muted" fontSize="sm">
+          Performance overview.
+        </Text>
       </Box>
 
-      <Box className="space-y-3">
-        {contributionsData.map((member) => (
-          <Flex align="center" gap={3} key={member.userId}>
-            <Avatar name={member.username} size="sm" src={member.avatarUrl} />
-            <Box className="flex-1">
-              <Flex align="center" className="mb-1" justify="between">
-                <Text className="truncate font-medium">{member.username}</Text>
-                <Text color="muted" fontSize="sm">
-                  {member.completed}
-                </Text>
-              </Flex>
-              <Box className="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-100">
+      {contributionsData.length > 0 ? (
+        <Box className="overflow-hidden rounded-lg border border-gray-200 dark:border-dark-50">
+          {/* Compact Rows */}
+          <Box className="bg-white dark:bg-dark-200">
+            {contributionsData.map((member, index) => {
+              const completionRate =
+                member.assigned > 0
+                  ? (member.completed / member.assigned) * 100
+                  : 0;
+
+              return (
                 <Box
-                  className="from-blue-500 to-purple-600 h-full rounded-full bg-gradient-to-r transition-all duration-300"
-                  style={{
-                    width: `${(member.completed / maxCompleted) * 100}%`,
-                  }}
-                />
-              </Box>
-            </Box>
-          </Flex>
-        ))}
-      </Box>
+                  className={`px-3 py-2.5 ${
+                    index !== contributionsData.length - 1
+                      ? "border-b border-gray-100 dark:border-dark-50"
+                      : ""
+                  }`}
+                  key={member.userId}
+                >
+                  <Flex align="center" className="mb-2" gap={2}>
+                    <Avatar
+                      name={member.username}
+                      size="xs"
+                      src={member.avatarUrl}
+                    />
+                    <Text className="truncate text-sm font-medium">
+                      {member.username}
+                    </Text>
+                  </Flex>
 
-      {contributionsData.length === 0 && (
-        <Box className="text-gray-400 flex h-[180px] items-center justify-center">
-          <Text>No contribution data available</Text>
+                  <Flex className="mb-1" justify="between">
+                    <Text color="muted" fontSize="xs">
+                      {member.completed}/{member.assigned}
+                    </Text>
+                    <Text className="font-medium" fontSize="xs">
+                      {Math.round(completionRate)}%
+                    </Text>
+                  </Flex>
+
+                  <Box className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-100">
+                    <Box
+                      className="from-green-500 to-green-600 h-full rounded-full bg-gradient-to-r"
+                      style={{
+                        width: `${Math.min(completionRate, 100)}%`,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      ) : (
+        <Box className="text-gray-400 flex h-[100px] items-center justify-center">
+          <Text fontSize="sm">No data available</Text>
         </Box>
       )}
     </Wrapper>

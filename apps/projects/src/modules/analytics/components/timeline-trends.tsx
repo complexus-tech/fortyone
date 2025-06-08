@@ -7,15 +7,14 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   Legend,
 } from "recharts";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useTimelineTrends } from "../hooks/timeline-trends";
 import type { StoryCompletionPoint, ObjectiveProgressPoint } from "../types";
-import { TimelineTrendsSkeleton } from "./timeline-trends-skeleton";
 
 type ChartDataItem = {
   date: string;
@@ -114,7 +113,19 @@ export const TimelineTrends = () => {
   }, [timelineTrends]);
 
   if (isPending) {
-    return <TimelineTrendsSkeleton />;
+    return (
+      <Wrapper className="my-4">
+        <Box className="mb-6">
+          <Text className="mb-1" fontSize="lg">
+            Timeline trends
+          </Text>
+          <Text color="muted">
+            Historical trends for stories and objectives.
+          </Text>
+        </Box>
+        <Box className="h-[380px] animate-pulse rounded bg-gray-200 dark:bg-dark-100" />
+      </Wrapper>
+    );
   }
 
   return (
@@ -126,8 +137,8 @@ export const TimelineTrends = () => {
         <Text color="muted">Historical trends for stories and objectives.</Text>
       </Box>
 
-      <ResponsiveContainer height={280} width="100%">
-        <LineChart
+      <ResponsiveContainer height={380} width="100%">
+        <BarChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
@@ -146,34 +157,25 @@ export const TimelineTrends = () => {
           <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Line
-            activeDot={{ r: 4 }}
+          <Bar
             dataKey="storiesCompleted"
-            dot={{ r: 3 }}
+            fill="#6366F1"
             name="Stories Completed"
-            stroke="#6366F1"
-            strokeWidth={2}
-            type="monotone"
+            radius={[4, 4, 0, 0]}
           />
-          <Line
-            activeDot={{ r: 4 }}
+          <Bar
             dataKey="storiesCreated"
-            dot={{ r: 3 }}
+            fill="#22c55e"
             name="Stories Created"
-            stroke="#22c55e"
-            strokeWidth={2}
-            type="monotone"
+            radius={[4, 4, 0, 0]}
           />
-          <Line
-            activeDot={{ r: 4 }}
+          <Bar
             dataKey="objectivesCompleted"
-            dot={{ r: 3 }}
+            fill="#eab308"
             name="Objectives Completed"
-            stroke="#eab308"
-            strokeWidth={2}
-            type="monotone"
+            radius={[4, 4, 0, 0]}
           />
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
     </Wrapper>
   );

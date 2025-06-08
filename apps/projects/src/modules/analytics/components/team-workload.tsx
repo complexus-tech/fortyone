@@ -83,7 +83,7 @@ export const TeamWorkload = () => {
         <Text color="muted">Work distribution and capacity by team.</Text>
       </Box>
 
-      <ResponsiveContainer height={280} width="100%">
+      <ResponsiveContainer height={380} width="100%">
         <BarChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
