@@ -18,7 +18,7 @@ export const Sidebar = () => {
   const { userRole } = useUserRole();
 
   return (
-    <Box className="flex h-dvh flex-col justify-between bg-gray-50/70 px-4 pb-6 dark:bg-[#000000]/45">
+    <Box className="flex h-dvh flex-col justify-between bg-gray-50/80 px-4 pb-6 dark:bg-[#000000]/45">
       <Box>
         <Header />
         <Navigation />

@@ -26,17 +26,20 @@ import { useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import type { StoryPriority } from "@/modules/stories/types";
-import { useSprints } from "../hooks/sprints";
+import { useSprint } from "../hooks/sprint-details";
 
 export const Sidebar = () => {
   const { sprintId } = useParams<{ sprintId: string }>();
   const { data: stories = [] } = useSprintStories(sprintId);
-  const { data: sprints = [] } = useSprints();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { data: labels = [] } = useLabels();
+  const { data: sprint } = useSprint(sprintId);
 
-  const sprint = sprints.find((s) => s.id === sprintId)!;
+  if (!sprint) {
+    return null;
+  }
+
   const totalStories = stories.length;
 
   // Compute sprint status
@@ -106,7 +109,7 @@ export const Sidebar = () => {
     totalStories > 0 ? (completedStories / totalStories) * 100 : 0;
 
   return (
-    <Box className="py-6">
+    <Box className="h-full bg-gray-50/30 py-6 dark:bg-dark-300/50">
       <Box className="px-6">
         <Flex align="center" justify="between">
           <Text className="flex items-center gap-1.5" fontSize="lg">
@@ -173,7 +176,7 @@ export const Sidebar = () => {
           <Text>Sprint Progress</Text>
           <Text>{Math.round(sprintProgress)}%</Text>
         </Flex>
-        <ProgressBar className="h-1.5" progress={sprintProgress} />
+        <ProgressBar className="h-2" progress={sprintProgress} />
       </Box>
       <Divider className="mb-6 mt-6" />
       <Box className="px-6">
