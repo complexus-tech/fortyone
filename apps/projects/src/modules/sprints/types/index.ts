@@ -19,6 +19,8 @@ export type Sprint = {
   };
 };
 
+export type SprintDetails = Omit<Sprint, "stats">;
+
 export type NewSprint = {
   name: string;
   goal?: string;
