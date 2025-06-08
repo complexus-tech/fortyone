@@ -26,6 +26,28 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
+// Helper function to build filter conditions and named parameters
+func buildFilters(filters reports.ReportFilters, namedParams map[string]any) (teamFilter, sprintFilter, objectiveFilter string) {
+	var tb, sb, ob strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		tb.WriteString("AND team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		sb.WriteString("AND sprint_id = ANY(:sprint_ids)")
+		namedParams["sprint_ids"] = filters.SprintIDs
+	}
+
+	if len(filters.ObjectiveIDs) > 0 {
+		ob.WriteString("AND objective_id = ANY(:objective_ids)")
+		namedParams["objective_ids"] = filters.ObjectiveIDs
+	}
+
+	return tb.String(), sb.String(), ob.String()
+}
+
 // GetStoryStats gets story statistics for a workspace.
 func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (reports.CoreStoryStats, error) {
 	const query = `
@@ -1434,59 +1456,33 @@ func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, fi
 
 	// Get sprint health
 	healthQuery := fmt.Sprintf(`
+		WITH sprint_status AS (
+			SELECT 
+				CASE 
+					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+					ELSE 'Unknown'
+				END as status
+			FROM sprints s
+			WHERE s.workspace_id = :workspace_id
+				AND s.created_at >= :start_date
+				AND s.created_at <= :end_date
+				%s
+				%s
+		)
 		SELECT 
-			CASE 
-				WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-				WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-				WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-				WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-				ELSE 'Unknown'
-			END as status,
-			COUNT(s.sprint_id) as count
-		FROM sprints s
-		WHERE s.workspace_id = :workspace_id
-			AND s.created_at >= :start_date
-			AND s.created_at <= :end_date
-			%s
-			%s
-		GROUP BY 
-			CASE 
-				WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-				WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-				WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-				WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-				ELSE 'Unknown'
-			END
+			status,
+			COUNT(*) as count
+		FROM sprint_status
+		GROUP BY status
 		ORDER BY 
-			CASE 
-				WHEN CASE 
-					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-					ELSE 'Unknown'
-				END = 'On Track' THEN 1
-				WHEN CASE 
-					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-					ELSE 'Unknown'
-				END = 'At Risk' THEN 2
-				WHEN CASE 
-					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-					ELSE 'Unknown'
-				END = 'Not Started' THEN 3
-				WHEN CASE 
-					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
-					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
-					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
-					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
-					ELSE 'Unknown'
-				END = 'Completed' THEN 4
+			CASE status
+				WHEN 'On Track' THEN 1
+				WHEN 'At Risk' THEN 2
+				WHEN 'Not Started' THEN 3
+				WHEN 'Completed' THEN 4
 				ELSE 5
 			END
 	`, teamFilter.String(), sprintFilter.String())
@@ -1561,41 +1557,30 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 
 	// Get story completion timeline
 	storyCompletionQuery := fmt.Sprintf(`
-		SELECT 
-			DATE(created_at) as date,
-			COUNT(id) as created,
-			COALESCE(completed_count, 0) as completed
-		FROM (
+		WITH daily_stats AS (
 			SELECT 
-				created_at,
-				id,
-				(
-					SELECT COUNT(*)
-					FROM stories s2
-					INNER JOIN statuses stat ON s2.status_id = stat.status_id
-					WHERE s2.workspace_id = :workspace_id
-						AND s2.deleted_at IS NULL
-						AND s2.is_draft = false
-						AND stat.category = 'completed'
-						AND DATE(s2.updated_at) = DATE(s1.created_at)
-						%s
-						%s
-						%s
-				) as completed_count
-			FROM stories s1
-			WHERE s1.workspace_id = :workspace_id
-				AND s1.deleted_at IS NULL
-				AND s1.is_draft = false
-				AND s1.created_at >= :start_date
-				AND s1.created_at <= :end_date
+				DATE(st.created_at) as date,
+				COUNT(st.id) as created,
+				COUNT(CASE 
+					WHEN stat.category = 'completed' AND DATE(st.updated_at) = DATE(st.created_at) 
+					THEN st.id 
+				END) as completed
+			FROM stories st
+			LEFT JOIN statuses stat ON st.status_id = stat.status_id
+			WHERE st.workspace_id = :workspace_id
+				AND st.deleted_at IS NULL
+				AND st.is_draft = false
+				AND st.created_at >= :start_date
+				AND st.created_at <= :end_date
 				%s
 				%s
 				%s
-		) story_data
-		GROUP BY DATE(created_at), completed_count
+			GROUP BY DATE(st.created_at)
+		)
+		SELECT date, created, COALESCE(completed, 0) as completed
+		FROM daily_stats
 		ORDER BY date
-	`, teamFilter.String(), sprintFilter.String(), objectiveFilter.String(),
-		teamFilter.String(), sprintFilter.String(), objectiveFilter.String())
+	`, teamFilter.String(), sprintFilter.String(), objectiveFilter.String())
 
 	type dbStoryCompletion struct {
 		Date      time.Time `db:"date"`
