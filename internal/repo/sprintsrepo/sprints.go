@@ -135,7 +135,7 @@ func (r *repo) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid
 		WHERE sprint_id = :sprint_id AND workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sprint_id":    sprintID,
 		"workspace_id": workspaceID,
 	}
@@ -284,7 +284,7 @@ func (r *repo) Create(ctx context.Context, sprint sprints.CoreNewSprint) (sprint
 			0 as backlog_stories
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":         sprint.Name,
 		"goal":         sprint.Goal,
 		"objective_id": sprint.Objective,
@@ -446,7 +446,7 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		AND workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sprint_id":    sprintID,
 		"workspace_id": workspaceID,
 	}
@@ -598,7 +598,7 @@ func (r *repo) getStoryBreakdownAndHealth(ctx context.Context, sprintID uuid.UUI
 		AND s.archived_at IS NULL
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sprint_id":         sprintID,
 		"sprint_start_date": sprintStartDate,
 	}
@@ -701,7 +701,7 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 		ORDER BY date
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sprint_id":  sprintID,
 		"start_date": startDate,
 		"end_date":   endDate,
@@ -742,7 +742,7 @@ func (r *repo) getTeamAllocation(ctx context.Context, sprintID uuid.UUID, teamID
 		ORDER BY assigned DESC, u.username
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sprint_id": sprintID,
 		"team_id":   teamID,
 	}
