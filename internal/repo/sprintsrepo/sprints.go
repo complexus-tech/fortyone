@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -482,4 +483,271 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 	))
 
 	return nil
+}
+
+func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (sprints.CoreSprintAnalytics, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.sprints.GetAnalytics")
+	defer span.End()
+
+	// First, get the sprint basic info
+	sprint, err := r.GetByID(ctx, sprintID, workspaceID)
+	if err != nil {
+		return sprints.CoreSprintAnalytics{}, err
+	}
+
+	// Calculate story breakdown and health indicators in one query (optimization)
+	storyBreakdown, healthIndicators, err := r.getStoryBreakdownAndHealth(ctx, sprintID, sprint.StartDate)
+	if err != nil {
+		r.log.Error(ctx, "Failed to get story breakdown and health", "error", err)
+		span.RecordError(err)
+		return sprints.CoreSprintAnalytics{}, err
+	}
+
+	// Calculate overview metrics
+	overview := r.calculateOverview(sprint, storyBreakdown)
+
+	// Get burndown data
+	burndownData, err := r.getBurndownData(ctx, sprintID, sprint.StartDate, sprint.EndDate)
+	if err != nil {
+		r.log.Error(ctx, "Failed to get burndown data", "error", err)
+		span.RecordError(err)
+		return sprints.CoreSprintAnalytics{}, err
+	}
+
+	// Get team allocation
+	teamAllocation, err := r.getTeamAllocation(ctx, sprintID, sprint.Team)
+	if err != nil {
+		r.log.Error(ctx, "Failed to get team allocation", "error", err)
+		span.RecordError(err)
+		return sprints.CoreSprintAnalytics{}, err
+	}
+
+	analytics := sprints.CoreSprintAnalytics{
+		SprintID:         sprintID,
+		Overview:         overview,
+		StoryBreakdown:   storyBreakdown,
+		Burndown:         burndownData,
+		TeamAllocation:   teamAllocation,
+		HealthIndicators: healthIndicators,
+	}
+
+	r.log.Info(ctx, "Sprint analytics retrieved successfully.")
+	span.AddEvent("sprint analytics retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", sprintID.String()),
+		attribute.Int("total_stories", storyBreakdown.Total),
+	))
+
+	return analytics, nil
+}
+
+func (r *repo) getStoryBreakdownAndHealth(ctx context.Context, sprintID uuid.UUID, sprintStartDate time.Time) (sprints.CoreStoryBreakdown, sprints.CoreSprintHealthIndicators, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total,
+			COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed,
+			COUNT(CASE WHEN st.category = 'started' THEN 1 END) as in_progress,
+			COUNT(CASE WHEN st.category = 'unstarted' THEN 1 END) as todo,
+			COUNT(CASE WHEN st.category = 'paused' THEN 1 END) as blocked,
+			COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled,
+			COUNT(CASE WHEN st.category = 'paused' THEN 1 END) as blocked_count,
+			COUNT(CASE WHEN s.end_date < NOW() AND st.category NOT IN ('completed', 'cancelled') THEN 1 END) as overdue_count,
+			COUNT(CASE WHEN s.created_at > :sprint_start_date THEN 1 END) as added_mid_sprint
+		FROM stories s
+		LEFT JOIN statuses st ON s.status_id = st.status_id
+		WHERE s.sprint_id = :sprint_id 
+		AND s.deleted_at IS NULL 
+		AND s.archived_at IS NULL
+	`
+
+	params := map[string]interface{}{
+		"sprint_id":         sprintID,
+		"sprint_start_date": sprintStartDate,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return sprints.CoreStoryBreakdown{}, sprints.CoreSprintHealthIndicators{}, err
+	}
+	defer stmt.Close()
+
+	var result struct {
+		sprints.CoreStoryBreakdown
+		sprints.CoreSprintHealthIndicators
+	}
+
+	err = stmt.GetContext(ctx, &result, params)
+	if err != nil {
+		return sprints.CoreStoryBreakdown{}, sprints.CoreSprintHealthIndicators{}, err
+	}
+
+	return result.CoreStoryBreakdown, result.CoreSprintHealthIndicators, nil
+}
+
+func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.CoreStoryBreakdown) sprints.CoreSprintOverview {
+	now := time.Now()
+
+	// Calculate completion percentage
+	completionPercentage := 0
+	if breakdown.Total > 0 {
+		completionPercentage = (breakdown.Completed * 100) / breakdown.Total
+	}
+
+	// Calculate days elapsed and remaining
+	totalDays := int(sprint.EndDate.Sub(sprint.StartDate).Hours() / 24)
+	daysElapsed := int(now.Sub(sprint.StartDate).Hours() / 24)
+	daysRemaining := int(sprint.EndDate.Sub(now).Hours() / 24)
+
+	// Ensure values are not negative
+	if daysElapsed < 0 {
+		daysElapsed = 0
+	}
+	if daysRemaining < 0 {
+		daysRemaining = 0
+	}
+
+	// Calculate sprint status
+	status := "on_track"
+	if totalDays > 0 {
+		timeProgress := float64(daysElapsed) / float64(totalDays)
+		workProgress := float64(completionPercentage) / 100.0
+
+		if workProgress < timeProgress-0.2 {
+			status = "behind"
+		} else if workProgress < timeProgress-0.1 {
+			status = "at_risk"
+		}
+	}
+
+	return sprints.CoreSprintOverview{
+		CompletionPercentage: completionPercentage,
+		DaysElapsed:          daysElapsed,
+		DaysRemaining:        daysRemaining,
+		Status:               status,
+	}
+}
+
+func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
+	// Optimized burndown query - generate date series and calculate remaining stories efficiently
+	query := `
+		WITH RECURSIVE date_series AS (
+			SELECT CAST(:start_date AS date) as date
+			UNION ALL
+			SELECT CAST(date + INTERVAL '1 day' AS date)
+			FROM date_series
+			WHERE date < CAST(:end_date AS date)
+		),
+		story_completion AS (
+			SELECT 
+				DATE(s.updated_at) as completion_date,
+				COUNT(*) as completed_count
+			FROM stories s
+			INNER JOIN statuses st ON s.status_id = st.status_id
+			WHERE s.sprint_id = :sprint_id 
+			AND st.category = 'completed'
+			AND s.deleted_at IS NULL 
+			AND s.archived_at IS NULL
+			AND s.updated_at BETWEEN :start_date AND :end_date
+			GROUP BY DATE(s.updated_at)
+		),
+		total_count AS (
+			SELECT COUNT(*) as total
+			FROM stories s
+			WHERE s.sprint_id = :sprint_id 
+			AND s.deleted_at IS NULL 
+			AND s.archived_at IS NULL
+		)
+		SELECT 
+			ds.date,
+			tc.total - COALESCE(
+				(SELECT SUM(sc.completed_count) 
+				 FROM story_completion sc 
+				 WHERE sc.completion_date <= ds.date), 0
+			) as remaining
+		FROM date_series ds
+		CROSS JOIN total_count tc
+		ORDER BY ds.date
+	`
+
+	params := map[string]interface{}{
+		"sprint_id":  sprintID,
+		"start_date": startDate,
+		"end_date":   endDate,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var burndownData []sprints.CoreBurndownDataPoint
+	for rows.Next() {
+		var date time.Time
+		var remaining int
+		if err := rows.Scan(&date, &remaining); err != nil {
+			return nil, err
+		}
+		burndownData = append(burndownData, sprints.CoreBurndownDataPoint{
+			Date:      date,
+			Remaining: remaining,
+		})
+	}
+
+	return burndownData, nil
+}
+
+func (r *repo) getTeamAllocation(ctx context.Context, sprintID uuid.UUID, teamID uuid.UUID) ([]sprints.CoreTeamMemberAllocation, error) {
+	query := `
+		SELECT 
+			u.user_id,
+			u.username,
+			u.avatar_url,
+			COUNT(s.id) as assigned,
+			COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed
+		FROM users u
+		INNER JOIN team_members tm ON u.user_id = tm.user_id
+		LEFT JOIN stories s ON u.user_id = s.assignee_id 
+			AND s.sprint_id = :sprint_id 
+			AND s.deleted_at IS NULL 
+			AND s.archived_at IS NULL
+		LEFT JOIN statuses st ON s.status_id = st.status_id
+		WHERE tm.team_id = :team_id
+		AND u.is_active = true
+		GROUP BY u.user_id, u.username, u.avatar_url
+		ORDER BY assigned DESC, u.username
+	`
+
+	params := map[string]interface{}{
+		"sprint_id": sprintID,
+		"team_id":   teamID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var allocation []sprints.CoreTeamMemberAllocation
+	for rows.Next() {
+		var member sprints.CoreTeamMemberAllocation
+		if err := rows.Scan(&member.MemberID, &member.Username, &member.AvatarURL, &member.Assigned, &member.Completed); err != nil {
+			return nil, err
+		}
+		allocation = append(allocation, member)
+	}
+
+	return allocation, nil
 }

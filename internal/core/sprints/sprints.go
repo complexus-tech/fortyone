@@ -18,6 +18,7 @@ type Repository interface {
 	Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error)
 	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint) (CoreSprint, error)
 	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error
+	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error)
 }
 
 // Service provides story-related operations.
@@ -139,4 +140,21 @@ func (s *Service) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uu
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 	return nil
+}
+
+// GetAnalytics returns analytics data for a sprint.
+func (s *Service) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error) {
+	s.log.Info(ctx, "business.core.sprints.getAnalytics")
+	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetAnalytics")
+	defer span.End()
+
+	analytics, err := s.repo.GetAnalytics(ctx, sprintID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprintAnalytics{}, err
+	}
+	span.AddEvent("sprint analytics retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", analytics.SprintID.String()),
+	))
+	return analytics, nil
 }
