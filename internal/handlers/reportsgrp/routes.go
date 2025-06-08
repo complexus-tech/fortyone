@@ -26,4 +26,12 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/analytics/users", h.GetUserStats, auth)
 	app.Get("/workspaces/{workspaceId}/analytics/status", h.GetStatusStats, auth)
 	app.Get("/workspaces/{workspaceId}/analytics/priority", h.GetPriorityStats, auth)
+
+	// Workspace Analytics
+	app.Get("/workspaces/{workspaceId}/analytics/overview", h.GetWorkspaceOverview, auth)
+	app.Get("/workspaces/{workspaceId}/analytics/story-analytics", h.GetStoryAnalytics, auth)
+	app.Get("/workspaces/{workspaceId}/analytics/objective-progress", h.GetObjectiveProgress, auth)
+	app.Get("/workspaces/{workspaceId}/analytics/team-performance", h.GetTeamPerformance, auth)
+	app.Get("/workspaces/{workspaceId}/analytics/sprint-analytics", h.GetSprintAnalytics, auth)
+	app.Get("/workspaces/{workspaceId}/analytics/timeline-trends", h.GetTimelineTrends, auth)
 }

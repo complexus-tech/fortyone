@@ -18,6 +18,14 @@ type Repository interface {
 	GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (CoreUserStats, error)
 	GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CoreStatusStats, error)
 	GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CorePriorityStats, error)
+
+	// Workspace Reports Methods
+	GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceOverview, error)
+	GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreStoryAnalytics, error)
+	GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error)
+	GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error)
+	GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error)
+	GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error)
 }
 
 // Service manages the reports operations.
@@ -113,4 +121,102 @@ func (s *Service) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, f
 		attribute.Int("stats.count", len(stats)),
 	))
 	return stats, nil
+}
+
+// Workspace Reports Service Methods
+
+// GetWorkspaceOverview retrieves workspace overview with key metrics and trends.
+func (s *Service) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceOverview, error) {
+	s.log.Info(ctx, "business.core.reports.GetWorkspaceOverview")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetWorkspaceOverview")
+	defer span.End()
+
+	overview, err := s.repo.GetWorkspaceOverview(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspaceOverview{}, fmt.Errorf("getting workspace overview: %w", err)
+	}
+
+	span.AddEvent("workspace overview retrieved.")
+	return overview, nil
+}
+
+// GetStoryAnalytics retrieves story analytics including status breakdown and burndown.
+func (s *Service) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreStoryAnalytics, error) {
+	s.log.Info(ctx, "business.core.reports.GetStoryAnalytics")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetStoryAnalytics")
+	defer span.End()
+
+	analytics, err := s.repo.GetStoryAnalytics(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreStoryAnalytics{}, fmt.Errorf("getting story analytics: %w", err)
+	}
+
+	span.AddEvent("story analytics retrieved.")
+	return analytics, nil
+}
+
+// GetObjectiveProgress retrieves objective progress including health and key results.
+func (s *Service) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error) {
+	s.log.Info(ctx, "business.core.reports.GetObjectiveProgress")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetObjectiveProgress")
+	defer span.End()
+
+	progress, err := s.repo.GetObjectiveProgress(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjectiveProgress{}, fmt.Errorf("getting objective progress: %w", err)
+	}
+
+	span.AddEvent("objective progress retrieved.")
+	return progress, nil
+}
+
+// GetTeamPerformance retrieves team performance including workload and velocity.
+func (s *Service) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error) {
+	s.log.Info(ctx, "business.core.reports.GetTeamPerformance")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetTeamPerformance")
+	defer span.End()
+
+	performance, err := s.repo.GetTeamPerformance(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeamPerformance{}, fmt.Errorf("getting team performance: %w", err)
+	}
+
+	span.AddEvent("team performance retrieved.")
+	return performance, nil
+}
+
+// GetSprintAnalytics retrieves sprint analytics including progress and burndown.
+func (s *Service) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error) {
+	s.log.Info(ctx, "business.core.reports.GetSprintAnalytics")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetSprintAnalytics")
+	defer span.End()
+
+	analytics, err := s.repo.GetSprintAnalytics(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprintAnalyticsWorkspace{}, fmt.Errorf("getting sprint analytics: %w", err)
+	}
+
+	span.AddEvent("sprint analytics retrieved.")
+	return analytics, nil
+}
+
+// GetTimelineTrends retrieves timeline trends for all key metrics.
+func (s *Service) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error) {
+	s.log.Info(ctx, "business.core.reports.GetTimelineTrends")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetTimelineTrends")
+	defer span.End()
+
+	trends, err := s.repo.GetTimelineTrends(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTimelineTrends{}, fmt.Errorf("getting timeline trends: %w", err)
+	}
+
+	span.AddEvent("timeline trends retrieved.")
+	return trends, nil
 }
