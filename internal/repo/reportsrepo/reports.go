@@ -692,13 +692,262 @@ func (r *repo) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "reportsrepo.GetObjectiveProgress")
 	defer span.End()
 
-	// TODO: Implement actual queries for objective progress
-	// For now, return empty data structure
+	// Prepare named parameters
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+		"start_date":   *filters.StartDate,
+		"end_date":     *filters.EndDate,
+	}
+
+	// Build filter conditions
+	var teamFilter strings.Builder
+	var objectiveFilter strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		teamFilter.WriteString("AND o.team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	if len(filters.ObjectiveIDs) > 0 {
+		objectiveFilter.WriteString("AND o.objective_id = ANY(:objective_ids)")
+		namedParams["objective_ids"] = filters.ObjectiveIDs
+	}
+
+	// Get health distribution
+	healthQuery := fmt.Sprintf(`
+		SELECT 
+			CASE 
+				WHEN o.health IS NULL THEN 'Not Set'
+				ELSE CAST(o.health AS text)
+			END as status,
+			COUNT(o.objective_id) as count
+		FROM objectives o
+		WHERE o.workspace_id = :workspace_id
+			AND o.created_at >= :start_date
+			AND o.created_at <= :end_date
+			%s
+			%s
+		GROUP BY 
+			CASE 
+				WHEN o.health IS NULL THEN 'Not Set'
+				ELSE CAST(o.health AS text)
+			END
+		ORDER BY 
+			CASE 
+				WHEN CASE 
+					WHEN o.health IS NULL THEN 'Not Set'
+					ELSE CAST(o.health AS text)
+				END = 'On Track' THEN 1
+				WHEN CASE 
+					WHEN o.health IS NULL THEN 'Not Set'
+					ELSE CAST(o.health AS text)
+				END = 'At Risk' THEN 2
+				WHEN CASE 
+					WHEN o.health IS NULL THEN 'Not Set'
+					ELSE CAST(o.health AS text)
+				END = 'Off Track' THEN 3
+				WHEN CASE 
+					WHEN o.health IS NULL THEN 'Not Set'
+					ELSE CAST(o.health AS text)
+				END = 'Not Set' THEN 4
+				ELSE 5
+			END
+	`, teamFilter.String(), objectiveFilter.String())
+
+	type dbHealthDistribution struct {
+		Status string `db:"status"`
+		Count  int    `db:"count"`
+	}
+
+	healthStmt, err := r.db.PrepareNamedContext(ctx, healthQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare health query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("preparing health query: %w", err)
+	}
+	defer healthStmt.Close()
+
+	var dbHealthDistributions []dbHealthDistribution
+	err = healthStmt.SelectContext(ctx, &dbHealthDistributions, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute health query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("executing health query: %w", err)
+	}
+
+	// Convert to core model
+	healthDistribution := make([]reports.CoreHealthDistributionItem, len(dbHealthDistributions))
+	for i, health := range dbHealthDistributions {
+		healthDistribution[i] = reports.CoreHealthDistributionItem{
+			Status: health.Status,
+			Count:  health.Count,
+		}
+	}
+
+	// Get status breakdown
+	statusQuery := fmt.Sprintf(`
+		SELECT 
+			s.name as status_name,
+			COUNT(o.objective_id) as count
+		FROM objectives o
+		INNER JOIN objective_statuses s ON s.status_id = o.status_id
+		WHERE o.workspace_id = :workspace_id
+			AND o.created_at >= :start_date
+			AND o.created_at <= :end_date
+			%s
+			%s
+		GROUP BY s.status_id, s.name, s.order_index
+		ORDER BY s.order_index
+	`, teamFilter.String(), objectiveFilter.String())
+
+	type dbObjectiveStatus struct {
+		StatusName string `db:"status_name"`
+		Count      int    `db:"count"`
+	}
+
+	statusStmt, err := r.db.PrepareNamedContext(ctx, statusQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare status query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("preparing status query: %w", err)
+	}
+	defer statusStmt.Close()
+
+	var dbObjectiveStatuses []dbObjectiveStatus
+	err = statusStmt.SelectContext(ctx, &dbObjectiveStatuses, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute status query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("executing status query: %w", err)
+	}
+
+	// Convert to core model
+	statusBreakdown := make([]reports.CoreObjectiveStatusItem, len(dbObjectiveStatuses))
+	for i, status := range dbObjectiveStatuses {
+		statusBreakdown[i] = reports.CoreObjectiveStatusItem{
+			StatusName: status.StatusName,
+			Count:      status.Count,
+		}
+	}
+
+	// Get key results progress
+	keyResultsQuery := fmt.Sprintf(`
+		SELECT 
+			o.objective_id,
+			o.name as objective_name,
+			COUNT(kr.id) as total,
+			COUNT(CASE 
+				WHEN kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value THEN kr.id
+				WHEN kr.measurement_type = 'number' AND kr.current_value >= kr.target_value THEN kr.id
+				WHEN kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value THEN kr.id
+			END) as completed,
+			COALESCE(AVG(
+				CASE 
+					WHEN kr.measurement_type = 'percentage' THEN LEAST(kr.current_value, 100)
+					WHEN kr.measurement_type = 'number' AND kr.target_value != kr.start_value THEN 
+						LEAST(((kr.current_value - kr.start_value) / NULLIF(kr.target_value - kr.start_value, 0)) * 100, 100)
+					WHEN kr.measurement_type = 'boolean' THEN 
+						CASE WHEN kr.current_value = kr.target_value THEN 100 ELSE 0 END
+					ELSE 0
+				END
+			), 0) as avg_progress
+		FROM objectives o
+		LEFT JOIN key_results kr ON kr.objective_id = o.objective_id
+		WHERE o.workspace_id = :workspace_id
+			AND o.created_at >= :start_date
+			AND o.created_at <= :end_date
+			%s
+			%s
+		GROUP BY o.objective_id, o.name
+		ORDER BY o.name
+	`, teamFilter.String(), objectiveFilter.String())
+
+	type dbKeyResultProgress struct {
+		ObjectiveID   uuid.UUID `db:"objective_id"`
+		ObjectiveName string    `db:"objective_name"`
+		Total         int       `db:"total"`
+		Completed     int       `db:"completed"`
+		AvgProgress   float64   `db:"avg_progress"`
+	}
+
+	keyResultsStmt, err := r.db.PrepareNamedContext(ctx, keyResultsQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare key results query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("preparing key results query: %w", err)
+	}
+	defer keyResultsStmt.Close()
+
+	var dbKeyResultProgresses []dbKeyResultProgress
+	err = keyResultsStmt.SelectContext(ctx, &dbKeyResultProgresses, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute key results query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("executing key results query: %w", err)
+	}
+
+	// Convert to core model
+	keyResultsProgress := make([]reports.CoreKeyResultProgressItem, len(dbKeyResultProgresses))
+	for i, kr := range dbKeyResultProgresses {
+		keyResultsProgress[i] = reports.CoreKeyResultProgressItem{
+			ObjectiveID:   kr.ObjectiveID,
+			ObjectiveName: kr.ObjectiveName,
+			Total:         kr.Total,
+			Completed:     kr.Completed,
+			AvgProgress:   kr.AvgProgress,
+		}
+	}
+
+	// Get progress by team
+	teamProgressQuery := fmt.Sprintf(`
+		SELECT 
+			t.team_id,
+			t.name as team_name,
+			COUNT(o.objective_id) as objectives,
+			COUNT(CASE WHEN stat.category = 'completed' THEN o.objective_id END) as completed
+		FROM teams t
+		LEFT JOIN objectives o ON o.team_id = t.team_id 
+			AND o.workspace_id = :workspace_id
+			AND o.created_at >= :start_date
+			AND o.created_at <= :end_date
+			%s
+		LEFT JOIN objective_statuses stat ON o.status_id = stat.status_id
+		WHERE t.workspace_id = :workspace_id
+		GROUP BY t.team_id, t.name
+		ORDER BY t.name
+	`, objectiveFilter.String())
+
+	type dbObjectiveTeamProgress struct {
+		TeamID     uuid.UUID `db:"team_id"`
+		TeamName   string    `db:"team_name"`
+		Objectives int       `db:"objectives"`
+		Completed  int       `db:"completed"`
+	}
+
+	teamProgressStmt, err := r.db.PrepareNamedContext(ctx, teamProgressQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare team progress query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("preparing team progress query: %w", err)
+	}
+	defer teamProgressStmt.Close()
+
+	var dbObjectiveTeamProgresses []dbObjectiveTeamProgress
+	err = teamProgressStmt.SelectContext(ctx, &dbObjectiveTeamProgresses, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute team progress query", "error", err)
+		return reports.CoreObjectiveProgress{}, fmt.Errorf("executing team progress query: %w", err)
+	}
+
+	// Convert to core model
+	progressByTeam := make([]reports.CoreObjectiveTeamProgressItem, len(dbObjectiveTeamProgresses))
+	for i, team := range dbObjectiveTeamProgresses {
+		progressByTeam[i] = reports.CoreObjectiveTeamProgressItem{
+			TeamID:     team.TeamID,
+			TeamName:   team.TeamName,
+			Objectives: team.Objectives,
+			Completed:  team.Completed,
+		}
+	}
+
 	return reports.CoreObjectiveProgress{
-		HealthDistribution: []reports.CoreHealthDistributionItem{},
-		StatusBreakdown:    []reports.CoreObjectiveStatusItem{},
-		KeyResultsProgress: []reports.CoreKeyResultProgressItem{},
-		ProgressByTeam:     []reports.CoreObjectiveTeamProgressItem{},
+		HealthDistribution: healthDistribution,
+		StatusBreakdown:    statusBreakdown,
+		KeyResultsProgress: keyResultsProgress,
+		ProgressByTeam:     progressByTeam,
 	}, nil
 }
 
@@ -707,13 +956,278 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	ctx, span := web.AddSpan(ctx, "reportsrepo.GetTeamPerformance")
 	defer span.End()
 
-	// TODO: Implement actual queries for team performance
-	// For now, return empty data structure
+	// Prepare named parameters
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+		"start_date":   *filters.StartDate,
+		"end_date":     *filters.EndDate,
+	}
+
+	// Build filter conditions
+	var teamFilter strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		teamFilter.WriteString("AND t.team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	// Get team workload
+	workloadQuery := fmt.Sprintf(`
+		SELECT 
+			t.team_id,
+			t.name as team_name,
+			COUNT(st.id) as assigned,
+			COUNT(CASE WHEN stat.category = 'completed' THEN st.id END) as completed,
+			COUNT(DISTINCT tm.user_id) * 40 as capacity
+		FROM teams t
+		LEFT JOIN stories st ON st.team_id = t.team_id 
+			AND st.workspace_id = :workspace_id
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+			AND st.created_at >= :start_date
+			AND st.created_at <= :end_date
+		LEFT JOIN statuses stat ON st.status_id = stat.status_id
+		LEFT JOIN team_members tm ON tm.team_id = t.team_id
+		WHERE t.workspace_id = :workspace_id
+			%s
+		GROUP BY t.team_id, t.name
+		ORDER BY t.name
+	`, teamFilter.String())
+
+	type dbTeamWorkload struct {
+		TeamID    uuid.UUID `db:"team_id"`
+		TeamName  string    `db:"team_name"`
+		Assigned  int       `db:"assigned"`
+		Completed int       `db:"completed"`
+		Capacity  int       `db:"capacity"`
+	}
+
+	workloadStmt, err := r.db.PrepareNamedContext(ctx, workloadQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare workload query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("preparing workload query: %w", err)
+	}
+	defer workloadStmt.Close()
+
+	var dbTeamWorkloads []dbTeamWorkload
+	err = workloadStmt.SelectContext(ctx, &dbTeamWorkloads, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute workload query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("executing workload query: %w", err)
+	}
+
+	// Convert to core model
+	teamWorkload := make([]reports.CoreTeamWorkloadItem, len(dbTeamWorkloads))
+	for i, workload := range dbTeamWorkloads {
+		teamWorkload[i] = reports.CoreTeamWorkloadItem{
+			TeamID:    workload.TeamID,
+			TeamName:  workload.TeamName,
+			Assigned:  workload.Assigned,
+			Completed: workload.Completed,
+			Capacity:  workload.Capacity,
+		}
+	}
+
+	// Get member contributions
+	contributionsQuery := fmt.Sprintf(`
+		SELECT 
+			u.user_id,
+			u.username,
+			u.avatar_url,
+			tm.team_id,
+			COUNT(st.id) as assigned,
+			COUNT(CASE WHEN stat.category = 'completed' THEN st.id END) as completed
+		FROM users u
+		INNER JOIN team_members tm ON tm.user_id = u.user_id
+		INNER JOIN teams t ON t.team_id = tm.team_id
+		LEFT JOIN stories st ON st.assignee_id = u.user_id 
+			AND st.workspace_id = :workspace_id
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+			AND st.created_at >= :start_date
+			AND st.created_at <= :end_date
+		LEFT JOIN statuses stat ON st.status_id = stat.status_id
+		WHERE t.workspace_id = :workspace_id
+			%s
+		GROUP BY u.user_id, u.username, u.avatar_url, tm.team_id
+		ORDER BY u.username
+	`, teamFilter.String())
+
+	type dbMemberContribution struct {
+		UserID    uuid.UUID `db:"user_id"`
+		Username  string    `db:"username"`
+		AvatarURL string    `db:"avatar_url"`
+		TeamID    uuid.UUID `db:"team_id"`
+		Assigned  int       `db:"assigned"`
+		Completed int       `db:"completed"`
+	}
+
+	contributionsStmt, err := r.db.PrepareNamedContext(ctx, contributionsQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare contributions query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("preparing contributions query: %w", err)
+	}
+	defer contributionsStmt.Close()
+
+	var dbMemberContributions []dbMemberContribution
+	err = contributionsStmt.SelectContext(ctx, &dbMemberContributions, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute contributions query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("executing contributions query: %w", err)
+	}
+
+	// Convert to core model
+	memberContributions := make([]reports.CoreMemberContributionItem, len(dbMemberContributions))
+	for i, contrib := range dbMemberContributions {
+		memberContributions[i] = reports.CoreMemberContributionItem{
+			UserID:    contrib.UserID,
+			Username:  contrib.Username,
+			AvatarURL: contrib.AvatarURL,
+			TeamID:    contrib.TeamID,
+			Assigned:  contrib.Assigned,
+			Completed: contrib.Completed,
+		}
+	}
+
+	// Get velocity by team (last 3 weeks)
+	velocityQuery := fmt.Sprintf(`
+		WITH weekly_velocity AS (
+			SELECT 
+				t.team_id,
+				t.name as team_name,
+				DATE_TRUNC('week', st.updated_at) as week_start,
+				COUNT(st.id) as weekly_count
+			FROM teams t
+			LEFT JOIN stories st ON st.team_id = t.team_id 
+				AND st.workspace_id = :workspace_id
+				AND st.deleted_at IS NULL
+				AND st.is_draft = false
+				AND DATE(st.updated_at) >= DATE(:start_date) - INTERVAL '3 weeks'
+				AND DATE(st.updated_at) <= DATE(:end_date)
+			LEFT JOIN statuses stat ON st.status_id = stat.status_id AND stat.category = 'completed'
+			WHERE t.workspace_id = :workspace_id
+				%s
+			GROUP BY t.team_id, t.name, DATE_TRUNC('week', st.updated_at)
+		),
+		ranked_velocity AS (
+			SELECT 
+				team_id,
+				team_name,
+				weekly_count,
+				ROW_NUMBER() OVER (PARTITION BY team_id ORDER BY week_start DESC) as week_rank
+			FROM weekly_velocity
+		),
+		pivoted AS (
+			SELECT 
+				team_id,
+				team_name,
+				COALESCE(MAX(CASE WHEN week_rank = 1 THEN weekly_count END), 0) as week1,
+				COALESCE(MAX(CASE WHEN week_rank = 2 THEN weekly_count END), 0) as week2,
+				COALESCE(MAX(CASE WHEN week_rank = 3 THEN weekly_count END), 0) as week3
+			FROM ranked_velocity
+			GROUP BY team_id, team_name
+		)
+		SELECT 
+			team_id,
+			team_name,
+			week1,
+			week2,
+			week3,
+			ROUND((week1 + week2 + week3) / 3.0, 2) as average
+		FROM pivoted
+		ORDER BY team_name
+	`, teamFilter.String())
+
+	type dbTeamVelocity struct {
+		TeamID   uuid.UUID `db:"team_id"`
+		TeamName string    `db:"team_name"`
+		Week1    int       `db:"week1"`
+		Week2    int       `db:"week2"`
+		Week3    int       `db:"week3"`
+		Average  float64   `db:"average"`
+	}
+
+	velocityStmt, err := r.db.PrepareNamedContext(ctx, velocityQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare velocity query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("preparing velocity query: %w", err)
+	}
+	defer velocityStmt.Close()
+
+	var dbTeamVelocities []dbTeamVelocity
+	err = velocityStmt.SelectContext(ctx, &dbTeamVelocities, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute velocity query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("executing velocity query: %w", err)
+	}
+
+	// Convert to core model
+	velocityByTeam := make([]reports.CoreTeamVelocityItem, len(dbTeamVelocities))
+	for i, velocity := range dbTeamVelocities {
+		velocityByTeam[i] = reports.CoreTeamVelocityItem{
+			TeamID:   velocity.TeamID,
+			TeamName: velocity.TeamName,
+			Week1:    velocity.Week1,
+			Week2:    velocity.Week2,
+			Week3:    velocity.Week3,
+			Average:  velocity.Average,
+		}
+	}
+
+	// Get workload trend (daily)
+	trendQuery := fmt.Sprintf(`
+		SELECT 
+			DATE(st.created_at) as date,
+			COUNT(st.id) as assigned,
+			COUNT(CASE WHEN stat.category = 'completed' THEN st.id END) as completed
+		FROM stories st
+		LEFT JOIN statuses stat ON st.status_id = stat.status_id
+		LEFT JOIN teams t ON t.team_id = st.team_id
+		WHERE st.workspace_id = :workspace_id
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+			AND st.created_at >= :start_date
+			AND st.created_at <= :end_date
+			%s
+		GROUP BY DATE(st.created_at)
+		ORDER BY date
+	`, teamFilter.String())
+
+	type dbWorkloadTrend struct {
+		Date      time.Time `db:"date"`
+		Assigned  int       `db:"assigned"`
+		Completed int       `db:"completed"`
+	}
+
+	trendStmt, err := r.db.PrepareNamedContext(ctx, trendQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare trend query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("preparing trend query: %w", err)
+	}
+	defer trendStmt.Close()
+
+	var dbWorkloadTrends []dbWorkloadTrend
+	err = trendStmt.SelectContext(ctx, &dbWorkloadTrends, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute trend query", "error", err)
+		return reports.CoreTeamPerformance{}, fmt.Errorf("executing trend query: %w", err)
+	}
+
+	// Convert to core model
+	workloadTrend := make([]reports.CoreWorkloadTrendPoint, len(dbWorkloadTrends))
+	for i, trend := range dbWorkloadTrends {
+		workloadTrend[i] = reports.CoreWorkloadTrendPoint{
+			Date:      trend.Date,
+			Assigned:  trend.Assigned,
+			Completed: trend.Completed,
+		}
+	}
+
 	return reports.CoreTeamPerformance{
-		TeamWorkload:        []reports.CoreTeamWorkloadItem{},
-		MemberContributions: []reports.CoreMemberContributionItem{},
-		VelocityByTeam:      []reports.CoreTeamVelocityItem{},
-		WorkloadTrend:       []reports.CoreWorkloadTrendPoint{},
+		TeamWorkload:        teamWorkload,
+		MemberContributions: memberContributions,
+		VelocityByTeam:      velocityByTeam,
+		WorkloadTrend:       workloadTrend,
 	}, nil
 }
 
@@ -722,13 +1236,294 @@ func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, fi
 	ctx, span := web.AddSpan(ctx, "reportsrepo.GetSprintAnalytics")
 	defer span.End()
 
-	// TODO: Implement actual queries for sprint analytics
-	// For now, return empty data structure
+	// Prepare named parameters
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+		"start_date":   *filters.StartDate,
+		"end_date":     *filters.EndDate,
+	}
+
+	// Build filter conditions
+	var teamFilter strings.Builder
+	var sprintFilter strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		teamFilter.WriteString("AND s.team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		sprintFilter.WriteString("AND s.sprint_id = ANY(:sprint_ids)")
+		namedParams["sprint_ids"] = filters.SprintIDs
+	}
+
+	// Get sprint progress
+	progressQuery := fmt.Sprintf(`
+		SELECT 
+			s.sprint_id,
+			s.name as sprint_name,
+			s.team_id,
+			COUNT(st.id) as total,
+			COUNT(CASE WHEN stat.category = 'completed' THEN st.id END) as completed,
+			CASE 
+				WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+				WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+				WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'Active'
+				ELSE 'Unknown'
+			END as status
+		FROM sprints s
+		LEFT JOIN stories st ON st.sprint_id = s.sprint_id 
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+		LEFT JOIN statuses stat ON st.status_id = stat.status_id
+		WHERE s.workspace_id = :workspace_id
+			AND s.created_at >= :start_date
+			AND s.created_at <= :end_date
+			%s
+			%s
+		GROUP BY s.sprint_id, s.name, s.team_id, s.start_date, s.end_date
+		ORDER BY s.name
+	`, teamFilter.String(), sprintFilter.String())
+
+	type dbSprintProgress struct {
+		SprintID   uuid.UUID `db:"sprint_id"`
+		SprintName string    `db:"sprint_name"`
+		TeamID     uuid.UUID `db:"team_id"`
+		Total      int       `db:"total"`
+		Completed  int       `db:"completed"`
+		Status     string    `db:"status"`
+	}
+
+	progressStmt, err := r.db.PrepareNamedContext(ctx, progressQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare progress query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("preparing progress query: %w", err)
+	}
+	defer progressStmt.Close()
+
+	var dbSprintProgresses []dbSprintProgress
+	err = progressStmt.SelectContext(ctx, &dbSprintProgresses, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute progress query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("executing progress query: %w", err)
+	}
+
+	// Convert to core model
+	sprintProgress := make([]reports.CoreSprintProgressItem, len(dbSprintProgresses))
+	for i, progress := range dbSprintProgresses {
+		sprintProgress[i] = reports.CoreSprintProgressItem{
+			SprintID:   progress.SprintID,
+			SprintName: progress.SprintName,
+			TeamID:     progress.TeamID,
+			Total:      progress.Total,
+			Completed:  progress.Completed,
+			Status:     progress.Status,
+		}
+	}
+
+	// Get combined burndown (daily across all sprints)
+	burndownQuery := fmt.Sprintf(`
+		WITH daily_burndown AS (
+			SELECT 
+				DATE(st.updated_at) as date,
+				COUNT(st.id) as actual,
+				COUNT(st.id) FILTER (WHERE st.created_at <= DATE(st.updated_at)) as planned
+			FROM stories st
+			INNER JOIN sprints s ON s.sprint_id = st.sprint_id
+			LEFT JOIN statuses stat ON st.status_id = stat.status_id
+			WHERE s.workspace_id = :workspace_id
+				AND st.deleted_at IS NULL
+				AND st.is_draft = false
+				AND stat.category = 'completed'
+				AND st.updated_at >= :start_date
+				AND st.updated_at <= :end_date
+				%s
+				%s
+			GROUP BY DATE(st.updated_at)
+			ORDER BY date
+		)
+		SELECT date, planned, actual FROM daily_burndown
+	`, teamFilter.String(), sprintFilter.String())
+
+	type dbCombinedBurndown struct {
+		Date    time.Time `db:"date"`
+		Planned int       `db:"planned"`
+		Actual  int       `db:"actual"`
+	}
+
+	burndownStmt, err := r.db.PrepareNamedContext(ctx, burndownQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare burndown query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("preparing burndown query: %w", err)
+	}
+	defer burndownStmt.Close()
+
+	var dbCombinedBurndowns []dbCombinedBurndown
+	err = burndownStmt.SelectContext(ctx, &dbCombinedBurndowns, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute burndown query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("executing burndown query: %w", err)
+	}
+
+	// Convert to core model
+	combinedBurndown := make([]reports.CoreCombinedBurndownPoint, len(dbCombinedBurndowns))
+	for i, burndown := range dbCombinedBurndowns {
+		combinedBurndown[i] = reports.CoreCombinedBurndownPoint{
+			Date:    burndown.Date,
+			Planned: burndown.Planned,
+			Actual:  burndown.Actual,
+		}
+	}
+
+	// Get team allocation
+	allocationQuery := fmt.Sprintf(`
+		SELECT 
+			t.team_id,
+			t.name as team_name,
+			COUNT(DISTINCT s.sprint_id) as active_sprints,
+			COUNT(st.id) as total_stories,
+			COUNT(CASE WHEN stat.category = 'completed' THEN st.id END) as completed_stories
+		FROM teams t
+		LEFT JOIN sprints s ON s.team_id = t.team_id 
+			AND s.workspace_id = :workspace_id
+			AND s.created_at >= :start_date
+			AND s.created_at <= :end_date
+			%s
+		LEFT JOIN stories st ON st.sprint_id = s.sprint_id 
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+		LEFT JOIN statuses stat ON st.status_id = stat.status_id
+		WHERE t.workspace_id = :workspace_id
+		GROUP BY t.team_id, t.name
+		ORDER BY t.name
+	`, sprintFilter.String())
+
+	type dbSprintTeamAllocation struct {
+		TeamID           uuid.UUID `db:"team_id"`
+		TeamName         string    `db:"team_name"`
+		ActiveSprints    int       `db:"active_sprints"`
+		TotalStories     int       `db:"total_stories"`
+		CompletedStories int       `db:"completed_stories"`
+	}
+
+	allocationStmt, err := r.db.PrepareNamedContext(ctx, allocationQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare allocation query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("preparing allocation query: %w", err)
+	}
+	defer allocationStmt.Close()
+
+	var dbSprintTeamAllocations []dbSprintTeamAllocation
+	err = allocationStmt.SelectContext(ctx, &dbSprintTeamAllocations, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute allocation query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("executing allocation query: %w", err)
+	}
+
+	// Convert to core model
+	teamAllocation := make([]reports.CoreSprintTeamAllocation, len(dbSprintTeamAllocations))
+	for i, allocation := range dbSprintTeamAllocations {
+		teamAllocation[i] = reports.CoreSprintTeamAllocation{
+			TeamID:           allocation.TeamID,
+			TeamName:         allocation.TeamName,
+			ActiveSprints:    allocation.ActiveSprints,
+			TotalStories:     allocation.TotalStories,
+			CompletedStories: allocation.CompletedStories,
+		}
+	}
+
+	// Get sprint health
+	healthQuery := fmt.Sprintf(`
+		SELECT 
+			CASE 
+				WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+				WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+				WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+				WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+				ELSE 'Unknown'
+			END as status,
+			COUNT(s.sprint_id) as count
+		FROM sprints s
+		WHERE s.workspace_id = :workspace_id
+			AND s.created_at >= :start_date
+			AND s.created_at <= :end_date
+			%s
+			%s
+		GROUP BY 
+			CASE 
+				WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+				WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+				WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+				WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+				ELSE 'Unknown'
+			END
+		ORDER BY 
+			CASE 
+				WHEN CASE 
+					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+					ELSE 'Unknown'
+				END = 'On Track' THEN 1
+				WHEN CASE 
+					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+					ELSE 'Unknown'
+				END = 'At Risk' THEN 2
+				WHEN CASE 
+					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+					ELSE 'Unknown'
+				END = 'Not Started' THEN 3
+				WHEN CASE 
+					WHEN s.end_date < CURRENT_DATE THEN 'Completed'
+					WHEN s.start_date > CURRENT_DATE THEN 'Not Started'
+					WHEN s.end_date <= CURRENT_DATE + INTERVAL '3 days' THEN 'At Risk'
+					WHEN s.start_date <= CURRENT_DATE AND s.end_date >= CURRENT_DATE THEN 'On Track'
+					ELSE 'Unknown'
+				END = 'Completed' THEN 4
+				ELSE 5
+			END
+	`, teamFilter.String(), sprintFilter.String())
+
+	type dbSprintHealth struct {
+		Status string `db:"status"`
+		Count  int    `db:"count"`
+	}
+
+	healthStmt, err := r.db.PrepareNamedContext(ctx, healthQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare health query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("preparing health query: %w", err)
+	}
+	defer healthStmt.Close()
+
+	var dbSprintHealths []dbSprintHealth
+	err = healthStmt.SelectContext(ctx, &dbSprintHealths, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute health query", "error", err)
+		return reports.CoreSprintAnalyticsWorkspace{}, fmt.Errorf("executing health query: %w", err)
+	}
+
+	// Convert to core model
+	sprintHealth := make([]reports.CoreSprintHealthItem, len(dbSprintHealths))
+	for i, health := range dbSprintHealths {
+		sprintHealth[i] = reports.CoreSprintHealthItem{
+			Status: health.Status,
+			Count:  health.Count,
+		}
+	}
+
 	return reports.CoreSprintAnalyticsWorkspace{
-		SprintProgress:   []reports.CoreSprintProgressItem{},
-		CombinedBurndown: []reports.CoreCombinedBurndownPoint{},
-		TeamAllocation:   []reports.CoreSprintTeamAllocation{},
-		SprintHealth:     []reports.CoreSprintHealthItem{},
+		SprintProgress:   sprintProgress,
+		CombinedBurndown: combinedBurndown,
+		TeamAllocation:   teamAllocation,
+		SprintHealth:     sprintHealth,
 	}, nil
 }
 
@@ -737,12 +1532,263 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 	ctx, span := web.AddSpan(ctx, "reportsrepo.GetTimelineTrends")
 	defer span.End()
 
-	// TODO: Implement actual queries for timeline trends
-	// For now, return empty data structure
+	// Prepare named parameters
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+		"start_date":   *filters.StartDate,
+		"end_date":     *filters.EndDate,
+	}
+
+	// Build filter conditions
+	var teamFilter strings.Builder
+	var sprintFilter strings.Builder
+	var objectiveFilter strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		teamFilter.WriteString("AND team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		sprintFilter.WriteString("AND sprint_id = ANY(:sprint_ids)")
+		namedParams["sprint_ids"] = filters.SprintIDs
+	}
+
+	if len(filters.ObjectiveIDs) > 0 {
+		objectiveFilter.WriteString("AND objective_id = ANY(:objective_ids)")
+		namedParams["objective_ids"] = filters.ObjectiveIDs
+	}
+
+	// Get story completion timeline
+	storyCompletionQuery := fmt.Sprintf(`
+		SELECT 
+			DATE(created_at) as date,
+			COUNT(id) as created,
+			COALESCE(completed_count, 0) as completed
+		FROM (
+			SELECT 
+				created_at,
+				id,
+				(
+					SELECT COUNT(*)
+					FROM stories s2
+					INNER JOIN statuses stat ON s2.status_id = stat.status_id
+					WHERE s2.workspace_id = :workspace_id
+						AND s2.deleted_at IS NULL
+						AND s2.is_draft = false
+						AND stat.category = 'completed'
+						AND DATE(s2.updated_at) = DATE(s1.created_at)
+						%s
+						%s
+						%s
+				) as completed_count
+			FROM stories s1
+			WHERE s1.workspace_id = :workspace_id
+				AND s1.deleted_at IS NULL
+				AND s1.is_draft = false
+				AND s1.created_at >= :start_date
+				AND s1.created_at <= :end_date
+				%s
+				%s
+				%s
+		) story_data
+		GROUP BY DATE(created_at), completed_count
+		ORDER BY date
+	`, teamFilter.String(), sprintFilter.String(), objectiveFilter.String(),
+		teamFilter.String(), sprintFilter.String(), objectiveFilter.String())
+
+	type dbStoryCompletion struct {
+		Date      time.Time `db:"date"`
+		Created   int       `db:"created"`
+		Completed int       `db:"completed"`
+	}
+
+	storyCompletionStmt, err := r.db.PrepareNamedContext(ctx, storyCompletionQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare story completion query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("preparing story completion query: %w", err)
+	}
+	defer storyCompletionStmt.Close()
+
+	var dbStoryCompletions []dbStoryCompletion
+	err = storyCompletionStmt.SelectContext(ctx, &dbStoryCompletions, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute story completion query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("executing story completion query: %w", err)
+	}
+
+	// Convert to core model
+	storyCompletion := make([]reports.CoreStoryCompletionPoint, len(dbStoryCompletions))
+	for i, completion := range dbStoryCompletions {
+		storyCompletion[i] = reports.CoreStoryCompletionPoint{
+			Date:      completion.Date,
+			Created:   completion.Created,
+			Completed: completion.Completed,
+		}
+	}
+
+	// Get objective progress timeline
+	objectiveProgressQuery := fmt.Sprintf(`
+		SELECT 
+			DATE(o.created_at) as date,
+			COUNT(o.objective_id) as total_objectives,
+			COUNT(CASE WHEN stat.category = 'completed' THEN o.objective_id END) as completed_objectives
+		FROM objectives o
+		LEFT JOIN objective_statuses stat ON o.status_id = stat.status_id
+		WHERE o.workspace_id = :workspace_id
+			AND o.created_at >= :start_date
+			AND o.created_at <= :end_date
+			%s
+			%s
+		GROUP BY DATE(o.created_at)
+		ORDER BY date
+	`, teamFilter.String(), objectiveFilter.String())
+
+	type dbObjectiveProgress struct {
+		Date                time.Time `db:"date"`
+		TotalObjectives     int       `db:"total_objectives"`
+		CompletedObjectives int       `db:"completed_objectives"`
+	}
+
+	objectiveProgressStmt, err := r.db.PrepareNamedContext(ctx, objectiveProgressQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare objective progress query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("preparing objective progress query: %w", err)
+	}
+	defer objectiveProgressStmt.Close()
+
+	var dbObjectiveProgresses []dbObjectiveProgress
+	err = objectiveProgressStmt.SelectContext(ctx, &dbObjectiveProgresses, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute objective progress query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("executing objective progress query: %w", err)
+	}
+
+	// Convert to core model
+	objectiveProgress := make([]reports.CoreObjectiveProgressPoint, len(dbObjectiveProgresses))
+	for i, progress := range dbObjectiveProgresses {
+		objectiveProgress[i] = reports.CoreObjectiveProgressPoint{
+			Date:                progress.Date,
+			TotalObjectives:     progress.TotalObjectives,
+			CompletedObjectives: progress.CompletedObjectives,
+		}
+	}
+
+	// Get team velocity timeline
+	teamVelocityQuery := fmt.Sprintf(`
+		SELECT 
+			DATE(st.updated_at) as date,
+			st.team_id,
+			COUNT(st.id) as velocity
+		FROM stories st
+		INNER JOIN statuses stat ON st.status_id = stat.status_id
+		WHERE st.workspace_id = :workspace_id
+			AND st.deleted_at IS NULL
+			AND st.is_draft = false
+			AND stat.category = 'completed'
+			AND st.updated_at >= :start_date
+			AND st.updated_at <= :end_date
+			%s
+			%s
+			%s
+		GROUP BY DATE(st.updated_at), st.team_id
+		ORDER BY date, team_id
+	`, teamFilter.String(), sprintFilter.String(), objectiveFilter.String())
+
+	type dbTeamVelocityPoint struct {
+		Date     time.Time `db:"date"`
+		TeamID   uuid.UUID `db:"team_id"`
+		Velocity int       `db:"velocity"`
+	}
+
+	teamVelocityStmt, err := r.db.PrepareNamedContext(ctx, teamVelocityQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare team velocity query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("preparing team velocity query: %w", err)
+	}
+	defer teamVelocityStmt.Close()
+
+	var dbTeamVelocityPoints []dbTeamVelocityPoint
+	err = teamVelocityStmt.SelectContext(ctx, &dbTeamVelocityPoints, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute team velocity query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("executing team velocity query: %w", err)
+	}
+
+	// Convert to core model
+	teamVelocity := make([]reports.CoreTeamVelocityPoint, len(dbTeamVelocityPoints))
+	for i, velocity := range dbTeamVelocityPoints {
+		teamVelocity[i] = reports.CoreTeamVelocityPoint{
+			Date:     velocity.Date,
+			TeamID:   velocity.TeamID,
+			Velocity: velocity.Velocity,
+		}
+	}
+
+	// Get key metrics trend
+	keyMetricsQuery := fmt.Sprintf(`
+		WITH daily_metrics AS (
+			SELECT 
+				DATE(st.created_at) as date,
+				COUNT(DISTINCT st.assignee_id) as active_users,
+				CAST(COUNT(st.id) AS numeric) as stories_count,
+				CAST(AVG(EXTRACT(EPOCH FROM (st.updated_at - st.created_at)) / 86400) AS numeric) as avg_cycle_time_days
+			FROM stories st
+			WHERE st.workspace_id = :workspace_id
+				AND st.deleted_at IS NULL
+				AND st.is_draft = false
+				AND st.created_at >= :start_date
+				AND st.created_at <= :end_date
+				%s
+				%s
+				%s
+			GROUP BY DATE(st.created_at)
+		)
+		SELECT 
+			date,
+			active_users,
+			ROUND(stories_count, 2) as stories_per_day,
+			ROUND(COALESCE(avg_cycle_time_days, 0), 2) as avg_cycle_time
+		FROM daily_metrics
+		ORDER BY date
+	`, teamFilter.String(), sprintFilter.String(), objectiveFilter.String())
+
+	type dbKeyMetricsTrend struct {
+		Date          time.Time `db:"date"`
+		ActiveUsers   int       `db:"active_users"`
+		StoriesPerDay float64   `db:"stories_per_day"`
+		AvgCycleTime  float64   `db:"avg_cycle_time"`
+	}
+
+	keyMetricsStmt, err := r.db.PrepareNamedContext(ctx, keyMetricsQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare key metrics query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("preparing key metrics query: %w", err)
+	}
+	defer keyMetricsStmt.Close()
+
+	var dbKeyMetricsTrends []dbKeyMetricsTrend
+	err = keyMetricsStmt.SelectContext(ctx, &dbKeyMetricsTrends, namedParams)
+	if err != nil {
+		r.log.Error(ctx, "failed to execute key metrics query", "error", err)
+		return reports.CoreTimelineTrends{}, fmt.Errorf("executing key metrics query: %w", err)
+	}
+
+	// Convert to core model
+	keyMetricsTrend := make([]reports.CoreKeyMetricsTrendPoint, len(dbKeyMetricsTrends))
+	for i, metrics := range dbKeyMetricsTrends {
+		keyMetricsTrend[i] = reports.CoreKeyMetricsTrendPoint{
+			Date:          metrics.Date,
+			ActiveUsers:   metrics.ActiveUsers,
+			StoriesPerDay: metrics.StoriesPerDay,
+			AvgCycleTime:  metrics.AvgCycleTime,
+		}
+	}
+
 	return reports.CoreTimelineTrends{
-		StoryCompletion:   []reports.CoreStoryCompletionPoint{},
-		ObjectiveProgress: []reports.CoreObjectiveProgressPoint{},
-		TeamVelocity:      []reports.CoreTeamVelocityPoint{},
-		KeyMetricsTrend:   []reports.CoreKeyMetricsTrendPoint{},
+		StoryCompletion:   storyCompletion,
+		ObjectiveProgress: objectiveProgress,
+		TeamVelocity:      teamVelocity,
+		KeyMetricsTrend:   keyMetricsTrend,
 	}, nil
 }
