@@ -71,16 +71,16 @@ type CoreStoryBreakdown struct {
 }
 
 type CoreBurndownDataPoint struct {
-	Date      time.Time
-	Remaining int
+	Date      time.Time `db:"date"`
+	Remaining int       `db:"remaining"`
 }
 
 type CoreTeamMemberAllocation struct {
-	MemberID  uuid.UUID
-	Username  string
-	AvatarURL string
-	Assigned  int
-	Completed int
+	MemberID  uuid.UUID `db:"user_id"`
+	Username  string    `db:"username"`
+	AvatarURL string    `db:"avatar_url"`
+	Assigned  int       `db:"assigned"`
+	Completed int       `db:"completed"`
 }
 
 type CoreSprintHealthIndicators struct {

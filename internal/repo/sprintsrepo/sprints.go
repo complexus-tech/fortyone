@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
@@ -489,38 +490,76 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.GetAnalytics")
 	defer span.End()
 
-	// First, get the sprint basic info
+	// First, get the sprint basic info (needed for other queries)
 	sprint, err := r.GetByID(ctx, sprintID, workspaceID)
 	if err != nil {
 		return sprints.CoreSprintAnalytics{}, err
 	}
 
-	// Calculate story breakdown and health indicators in one query (optimization)
-	storyBreakdown, healthIndicators, err := r.getStoryBreakdownAndHealth(ctx, sprintID, sprint.StartDate)
-	if err != nil {
-		r.log.Error(ctx, "Failed to get story breakdown and health", "error", err)
-		span.RecordError(err)
-		return sprints.CoreSprintAnalytics{}, err
+	// Run independent queries in parallel for better performance
+	var (
+		storyBreakdown   sprints.CoreStoryBreakdown
+		healthIndicators sprints.CoreSprintHealthIndicators
+		burndownData     []sprints.CoreBurndownDataPoint
+		teamAllocation   []sprints.CoreTeamMemberAllocation
+		wg               sync.WaitGroup
+		mu               sync.Mutex
+		analyticsErr     error
+	)
+
+	wg.Add(3)
+
+	// Parallel query 1: Story breakdown and health indicators
+	go func() {
+		defer wg.Done()
+		breakdown, health, err := r.getStoryBreakdownAndHealth(ctx, sprintID, sprint.StartDate)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		storyBreakdown = breakdown
+		healthIndicators = health
+	}()
+
+	// Parallel query 2: Burndown data (simplified for performance)
+	go func() {
+		defer wg.Done()
+		burndown, err := r.getBurndownData(ctx, sprintID, sprint.StartDate, sprint.EndDate)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		burndownData = burndown
+	}()
+
+	// Parallel query 3: Team allocation
+	go func() {
+		defer wg.Done()
+		allocation, err := r.getTeamAllocation(ctx, sprintID, sprint.Team)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		teamAllocation = allocation
+	}()
+
+	// Wait for all queries to complete
+	wg.Wait()
+
+	if analyticsErr != nil {
+		r.log.Error(ctx, "Failed to get analytics data", "error", analyticsErr)
+		span.RecordError(analyticsErr)
+		return sprints.CoreSprintAnalytics{}, analyticsErr
 	}
 
 	// Calculate overview metrics
 	overview := r.calculateOverview(sprint, storyBreakdown)
-
-	// Get burndown data
-	burndownData, err := r.getBurndownData(ctx, sprintID, sprint.StartDate, sprint.EndDate)
-	if err != nil {
-		r.log.Error(ctx, "Failed to get burndown data", "error", err)
-		span.RecordError(err)
-		return sprints.CoreSprintAnalytics{}, err
-	}
-
-	// Get team allocation
-	teamAllocation, err := r.getTeamAllocation(ctx, sprintID, sprint.Team)
-	if err != nil {
-		r.log.Error(ctx, "Failed to get team allocation", "error", err)
-		span.RecordError(err)
-		return sprints.CoreSprintAnalytics{}, err
-	}
 
 	analytics := sprints.CoreSprintAnalytics{
 		SprintID:         sprintID,
@@ -627,45 +666,39 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 }
 
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
-	// Optimized burndown query - generate date series and calculate remaining stories efficiently
+	// Fast burndown query - key data points only for sidebar performance
 	query := `
-		WITH RECURSIVE date_series AS (
-			SELECT CAST(:start_date AS date) as date
-			UNION ALL
-			SELECT CAST(date + INTERVAL '1 day' AS date)
-			FROM date_series
-			WHERE date < CAST(:end_date AS date)
+		WITH total_count AS (
+			SELECT COUNT(*) as total
+			FROM stories s
+			WHERE s.sprint_id = :sprint_id 
+			AND s.deleted_at IS NULL 
+			AND s.archived_at IS NULL
 		),
-		story_completion AS (
-			SELECT 
-				DATE(s.updated_at) as completion_date,
-				COUNT(*) as completed_count
+		completed_so_far AS (
+			SELECT COUNT(*) as completed
 			FROM stories s
 			INNER JOIN statuses st ON s.status_id = st.status_id
 			WHERE s.sprint_id = :sprint_id 
 			AND st.category = 'completed'
 			AND s.deleted_at IS NULL 
 			AND s.archived_at IS NULL
-			AND s.updated_at BETWEEN :start_date AND :end_date
-			GROUP BY DATE(s.updated_at)
-		),
-		total_count AS (
-			SELECT COUNT(*) as total
-			FROM stories s
-			WHERE s.sprint_id = :sprint_id 
-			AND s.deleted_at IS NULL 
-			AND s.archived_at IS NULL
 		)
 		SELECT 
-			ds.date,
-			tc.total - COALESCE(
-				(SELECT SUM(sc.completed_count) 
-				 FROM story_completion sc 
-				 WHERE sc.completion_date <= ds.date), 0
-			) as remaining
-		FROM date_series ds
-		CROSS JOIN total_count tc
-		ORDER BY ds.date
+			:start_date as date,
+			tc.total as remaining
+		FROM total_count tc
+		UNION ALL
+		SELECT 
+			NOW() as date,
+			tc.total - csf.completed as remaining
+		FROM total_count tc, completed_so_far csf
+		WHERE NOW() BETWEEN :start_date AND :end_date
+		UNION ALL
+		SELECT 
+			:end_date as date,
+			0 as remaining
+		ORDER BY date
 	`
 
 	params := map[string]interface{}{
@@ -680,23 +713,9 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var burndownData []sprints.CoreBurndownDataPoint
-	for rows.Next() {
-		var date time.Time
-		var remaining int
-		if err := rows.Scan(&date, &remaining); err != nil {
-			return nil, err
-		}
-		burndownData = append(burndownData, sprints.CoreBurndownDataPoint{
-			Date:      date,
-			Remaining: remaining,
-		})
+	if err := stmt.SelectContext(ctx, &burndownData, params); err != nil {
+		return nil, err
 	}
 
 	return burndownData, nil
@@ -734,19 +753,9 @@ func (r *repo) getTeamAllocation(ctx context.Context, sprintID uuid.UUID, teamID
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var allocation []sprints.CoreTeamMemberAllocation
-	for rows.Next() {
-		var member sprints.CoreTeamMemberAllocation
-		if err := rows.Scan(&member.MemberID, &member.Username, &member.AvatarURL, &member.Assigned, &member.Completed); err != nil {
-			return nil, err
-		}
-		allocation = append(allocation, member)
+	if err := stmt.SelectContext(ctx, &allocation, params); err != nil {
+		return nil, err
 	}
 
 	return allocation, nil
