@@ -14,6 +14,7 @@ import (
 type Repository interface {
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error)
 	Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSprint, error)
+	GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error)
 	Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error)
 	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint) (CoreSprint, error)
 	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error
@@ -65,6 +66,23 @@ func (s *Service) Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSpr
 		attribute.Int("story.count", len(sprints)),
 	))
 	return sprints, nil
+}
+
+// GetByID returns a single sprint by ID.
+func (s *Service) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error) {
+	s.log.Info(ctx, "business.core.sprints.getByID")
+	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetByID")
+	defer span.End()
+
+	sprint, err := s.repo.GetByID(ctx, sprintID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprint{}, err
+	}
+	span.AddEvent("sprint retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", sprint.ID.String()),
+	))
+	return sprint, nil
 }
 
 // Create creates a new sprint.

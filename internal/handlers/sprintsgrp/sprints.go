@@ -65,6 +65,29 @@ func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.R
 	return nil
 }
 
+// GetByID returns a single sprint by ID without stats.
+func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return ErrInvalidWorkspaceID
+	}
+
+	sprintIdParam := web.Params(r, "sprintId")
+	sprintId, err := uuid.Parse(sprintIdParam)
+	if err != nil {
+		return errors.New("sprint id is not in its proper form")
+	}
+
+	sprint, err := h.sprints.GetByID(ctx, sprintId, workspaceId)
+	if err != nil {
+		return err
+	}
+
+	web.Respond(ctx, w, toAppSprint(sprint), http.StatusOK)
+	return nil
+}
+
 // Create creates a new sprint.
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspaceIdParam := web.Params(r, "workspaceId")

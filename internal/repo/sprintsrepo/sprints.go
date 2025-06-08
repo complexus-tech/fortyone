@@ -106,6 +106,64 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	return toCoreSprints(sprints), nil
 }
 
+func (r *repo) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (sprints.CoreSprint, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.sprints.GetByID")
+	defer span.End()
+
+	var sprint dbSprint
+	query := `
+		SELECT
+			sprint_id,
+			name,
+			goal,
+			objective_id,
+			team_id,
+			workspace_id,
+			start_date,
+			end_date,
+			created_at,
+			updated_at,
+			0 as total_stories,
+			0 as cancelled_stories,
+			0 as completed_stories,
+			0 as started_stories,
+			0 as unstarted_stories,
+			0 as backlog_stories
+		FROM sprints
+		WHERE sprint_id = :sprint_id AND workspace_id = :workspace_id
+	`
+
+	params := map[string]interface{}{
+		"sprint_id":    sprintID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return sprints.CoreSprint{}, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "Fetching sprint by ID.")
+	if err := stmt.GetContext(ctx, &sprint, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve sprint from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("sprint not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return sprints.CoreSprint{}, err
+	}
+
+	r.log.Info(ctx, "sprint retrieved successfully.")
+	span.AddEvent("sprint retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", sprint.ID.String()),
+		attribute.String("workspace.id", sprint.Workspace.String()),
+	))
+
+	return toCoreSprint(sprint), nil
+}
+
 func (r *repo) Running(ctx context.Context, workspaceId uuid.UUID) ([]sprints.CoreSprint, error) {
 
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.List")

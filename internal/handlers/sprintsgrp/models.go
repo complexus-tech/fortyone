@@ -7,6 +7,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// AppSprint represents a single sprint without stats in the application layer.
+type AppSprint struct {
+	ID        uuid.UUID  `json:"id"`
+	Name      string     `json:"name"`
+	Goal      *string    `json:"goal"`
+	Objective *uuid.UUID `json:"objectiveId"`
+	Team      uuid.UUID  `json:"teamId"`
+	Workspace uuid.UUID  `json:"workspaceId"`
+	StartDate time.Time  `json:"startDate"`
+	EndDate   time.Time  `json:"endDate"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
 // AppSprintList represents a sprint in the application layer.
 type AppSprintsList struct {
 	ID        uuid.UUID   `json:"id"`
@@ -79,4 +93,20 @@ func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 		}
 	}
 	return appSprints
+}
+
+// toAppSprint converts a core sprint to a simple application sprint (without stats).
+func toAppSprint(sprint sprints.CoreSprint) AppSprint {
+	return AppSprint{
+		ID:        sprint.ID,
+		Name:      sprint.Name,
+		Goal:      sprint.Goal,
+		Objective: sprint.Objective,
+		Team:      sprint.Team,
+		Workspace: sprint.Workspace,
+		StartDate: sprint.StartDate,
+		EndDate:   sprint.EndDate,
+		CreatedAt: sprint.CreatedAt,
+		UpdatedAt: sprint.UpdatedAt,
+	}
 }
