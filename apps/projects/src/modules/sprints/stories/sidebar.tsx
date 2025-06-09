@@ -3,6 +3,7 @@ import {
   Badge,
   Box,
   Button,
+  Divider,
   Flex,
   Menu,
   ProgressBar,
@@ -154,9 +155,9 @@ export const Sidebar = () => {
           )}
         </Flex>
       </Box>
-
-      <Box className="mt-7 px-6">
-        <Text className="mb-3">Burndown Chart</Text>
+      <Divider className="my-6" />
+      <Box className="px-6">
+        <Text>Burndown Chart</Text>
         <BurndownChart burndownData={analytics.burndown} />
       </Box>
 

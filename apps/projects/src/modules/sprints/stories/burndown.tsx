@@ -8,7 +8,6 @@ import {
   Tooltip,
   ReferenceArea,
   CartesianGrid,
-  YAxis,
 } from "recharts";
 import { useTheme } from "next-themes";
 import { Box } from "ui";
@@ -32,7 +31,7 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="z-50 min-w-44 rounded-[0.6rem] border border-gray-100 bg-white/80 p-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-200">
+      <Box className="z-50 min-w-44 rounded-[0.6rem] border border-gray-100 bg-white/80 p-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/60 dark:text-gray-200">
         <Box>{label}</Box>
         <Box className="mb-0.1 mt-1 text-warning">
           Actual: {data.actual} stories
@@ -96,11 +95,6 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
     weekendRanges.push({ start: weekendStart, end: lastItem.date });
   }
 
-  // const maxValue = Math.max(
-  //   ...chartData.map((item) => Math.max(item.actual, item.ideal)),
-  // );
-  // const yAxisMax = Math.ceil(maxValue * 1.1);
-
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer height="100%" width="100%">
@@ -108,7 +102,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
           data={chartData}
           margin={{
             top: 20,
-            right: 10,
+            right: 20,
             left: -35,
             bottom: 0,
           }}
@@ -153,24 +147,25 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             interval={0}
             tick={{ fontSize: 12 }}
             tickFormatter={(value, index) => {
-              // Only show every few ticks to get roughly 3 dates
-              const step = Math.max(1, Math.floor((chartData.length - 1) / 2));
+              const totalLength = chartData.length - 1;
+              const quarter = Math.floor(totalLength / 4);
+              const middle = Math.floor(totalLength / 2);
+              const threeQuarter = Math.floor((totalLength * 3) / 4);
+
               if (
                 index === 0 ||
-                index === step ||
-                index === chartData.length - 1
+                index === quarter ||
+                index === middle ||
+                index === threeQuarter ||
+                index === totalLength
               ) {
                 return value;
               }
               return "";
             }}
-            tickLine={false}
-          />
-          <YAxis
-            axisLine={false}
-            // domain={[0, yAxisMax]}
-            tick={{ fontSize: 12 }}
-            tickLine={false}
+            tickLine={{
+              stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
+            }}
           />
 
           <Tooltip
