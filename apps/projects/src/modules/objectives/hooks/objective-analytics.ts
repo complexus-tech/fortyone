@@ -8,6 +8,5 @@ export const useObjectiveAnalytics = (objectiveId: string) => {
   return useQuery({
     queryKey: objectiveKeys.analytics(objectiveId),
     queryFn: () => getObjectiveAnalytics(objectiveId, session!),
-    enabled: Boolean(objectiveId),
   });
 };
