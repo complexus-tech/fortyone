@@ -655,19 +655,23 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 }
 
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
-	// Single optimized query to get all burndown data
+	// Enhanced query to track scope changes and daily completions
 	query := `
-		WITH sprint_stories AS (
-			SELECT COUNT(*) as total_stories
+		WITH daily_scope_changes AS (
+			SELECT 
+				DATE(s.created_at) as date,
+				COUNT(*) as stories_added
 			FROM stories s
 			WHERE s.sprint_id = :sprint_id 
 			AND s.deleted_at IS NULL 
 			AND s.archived_at IS NULL
+			AND s.created_at >= :start_date
+			GROUP BY DATE(s.created_at)
 		),
 		daily_completions AS (
 			SELECT 
-				DATE(s.updated_at) as completion_date,
-				COUNT(*) as completed_count
+				DATE(s.updated_at) as date,
+				COUNT(*) as stories_completed
 			FROM stories s
 			INNER JOIN statuses st ON s.status_id = st.status_id
 			WHERE s.sprint_id = :sprint_id 
@@ -677,14 +681,25 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 			AND s.updated_at >= :start_date
 			AND s.updated_at <= NOW()
 			GROUP BY DATE(s.updated_at)
+		),
+		initial_scope AS (
+			SELECT COUNT(*) as initial_stories
+			FROM stories s
+			WHERE s.sprint_id = :sprint_id 
+			AND s.deleted_at IS NULL 
+			AND s.archived_at IS NULL
+			AND s.created_at < :start_date
 		)
 		SELECT 
-			ss.total_stories,
-			COALESCE(dc.completion_date, NULL) as completion_date,
-			COALESCE(dc.completed_count, 0) as completed_count
-		FROM sprint_stories ss
-		LEFT JOIN daily_completions dc ON true
-		ORDER BY dc.completion_date
+			COALESCE(dsc.date, dc.date) as event_date,
+			COALESCE(dsc.stories_added, 0) as stories_added,
+			COALESCE(dc.stories_completed, 0) as stories_completed,
+			ins.initial_stories
+		FROM daily_scope_changes dsc
+		FULL OUTER JOIN daily_completions dc ON dsc.date = dc.date
+		CROSS JOIN initial_scope ins
+		WHERE COALESCE(dsc.date, dc.date) IS NOT NULL
+		ORDER BY event_date
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -694,9 +709,10 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	defer stmt.Close()
 
 	type queryResult struct {
-		TotalStories   int        `db:"total_stories"`
-		CompletionDate *time.Time `db:"completion_date"`
-		CompletedCount int        `db:"completed_count"`
+		EventDate        *time.Time `db:"event_date"`
+		StoriesAdded     int        `db:"stories_added"`
+		StoriesCompleted int        `db:"stories_completed"`
+		InitialStories   int        `db:"initial_stories"`
 	}
 
 	var results []queryResult
@@ -708,46 +724,62 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 		return nil, err
 	}
 
-	totalStories := 0
-	if len(results) > 0 {
-		totalStories = results[0].TotalStories
-	}
+	// Build daily changes maps
+	scopeChanges := make(map[string]int)
+	completions := make(map[string]int)
+	initialStories := 0
 
-	// Build completion map for quick lookup
-	completionMap := make(map[string]int)
 	for _, result := range results {
-		if result.CompletionDate != nil {
-			dateKey := result.CompletionDate.Format("2006-01-02")
-			completionMap[dateKey] = result.CompletedCount
+		if result.EventDate != nil {
+			dateKey := result.EventDate.Format("2006-01-02")
+			if result.StoriesAdded > 0 {
+				scopeChanges[dateKey] = result.StoriesAdded
+			}
+			if result.StoriesCompleted > 0 {
+				completions[dateKey] = result.StoriesCompleted
+			}
+		}
+		if result.InitialStories > 0 {
+			initialStories = result.InitialStories
 		}
 	}
 
 	// Generate burndown data for all days
 	var burndownData []sprints.CoreBurndownDataPoint
 	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1 // +1 to include end date
+
+	currentTotal := initialStories
 	cumulativeCompleted := 0
 
 	for i := 0; i < totalDays; i++ {
 		currentDate := startDate.AddDate(0, 0, i)
 		dateKey := currentDate.Format("2006-01-02")
 
-		// Calculate ideal remaining (linear burndown)
-		idealRemaining := totalStories
-		if totalDays > 1 {
-			idealRemaining = totalStories - (totalStories * i / (totalDays - 1))
+		// Add any new stories added on this day
+		if added, exists := scopeChanges[dateKey]; exists {
+			currentTotal += added
+		}
+
+		// Calculate ideal remaining based on current scope and days remaining
+		daysRemaining := totalDays - i - 1
+		idealRemaining := 0
+		if daysRemaining > 0 && currentTotal > cumulativeCompleted {
+			// Ideal burndown from current scope over remaining days
+			storiesRemaining := currentTotal - cumulativeCompleted
+			idealRemaining = storiesRemaining - (storiesRemaining * (i) / (totalDays - 1))
 		}
 		if idealRemaining < 0 {
 			idealRemaining = 0
 		}
 
 		// Calculate actual remaining
-		actualRemaining := totalStories
+		actualRemaining := currentTotal
 		if !currentDate.After(time.Now()) {
 			// Add any completions for this day
-			if dailyCompleted, exists := completionMap[dateKey]; exists {
-				cumulativeCompleted += dailyCompleted
+			if completed, exists := completions[dateKey]; exists {
+				cumulativeCompleted += completed
 			}
-			actualRemaining = totalStories - cumulativeCompleted
+			actualRemaining = currentTotal - cumulativeCompleted
 		}
 
 		burndownData = append(burndownData, sprints.CoreBurndownDataPoint{
