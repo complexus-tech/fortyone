@@ -87,16 +87,15 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
       weekendRanges.push({ start: weekendStart, end: prevItem.date });
       weekendStart = null;
     }
+
+    // Handle case where sprint ends on weekend (last item)
+    if (index === chartData.length - 1 && weekendStart) {
+      weekendRanges.push({ start: weekendStart, end: item.date });
+    }
   });
 
-  // Handle case where sprint ends on weekend
-  if (weekendStart) {
-    const lastItem = chartData[chartData.length - 1];
-    weekendRanges.push({ start: weekendStart, end: lastItem.date });
-  }
-
   return (
-    <div className="h-64 w-full">
+    <div className="h-60 w-full">
       <ResponsiveContainer height="100%" width="100%">
         <ComposedChart
           data={chartData}

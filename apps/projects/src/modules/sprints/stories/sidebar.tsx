@@ -160,8 +160,8 @@ export const Sidebar = () => {
         <Text>Burndown Chart</Text>
         <BurndownChart burndownData={analytics.burndown} />
       </Box>
-
-      <Box className="mt-6 px-6">
+      <Divider className="my-6" />
+      <Box className="px-6">
         <Text className="mb-3">Stories Overview</Text>
         <Tabs defaultValue="assignees">
           <Tabs.List className="mx-0 mb-3 md:mx-0">
