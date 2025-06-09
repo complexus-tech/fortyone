@@ -57,7 +57,7 @@ type CoreSprintOverview struct {
 	CompletionPercentage int
 	DaysElapsed          int
 	DaysRemaining        int
-	Status               string // "on_track", "at_risk", "behind"
+	Status               string // "not_started", "on_track", "at_risk", "behind", "completed"
 }
 
 type CoreStoryBreakdown struct {

@@ -635,7 +635,14 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 
 	// Calculate sprint status
 	status := "on_track"
-	if totalDays > 0 {
+
+	// Check if sprint has ended
+	if now.After(sprint.EndDate) {
+		status = "completed"
+	} else if now.Before(sprint.StartDate) {
+		status = "not_started"
+	} else if totalDays > 0 {
+		// Sprint is active, check progress
 		timeProgress := float64(daysElapsed) / float64(totalDays)
 		workProgress := float64(completionPercentage) / 100.0
 
