@@ -23,6 +23,7 @@ import { RowWrapper, StoryStatusIcon } from "@/components/ui";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintAnalytics } from "../types";
+import { BurndownChart } from "./burndown";
 
 export const Sidebar = () => {
   const { sprintId } = useParams<{ sprintId: string }>();
@@ -154,11 +155,9 @@ export const Sidebar = () => {
         </Flex>
       </Box>
 
-      <Box className="mt-6 px-6">
+      <Box className="mt-7 px-6">
         <Text className="mb-3">Burndown Chart</Text>
-        <Box className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 dark:border-dark-200">
-          <Text color="muted">Chart will be implemented here</Text>
-        </Box>
+        <BurndownChart burndownData={analytics.burndown} />
       </Box>
 
       <Box className="mt-6 px-6">
