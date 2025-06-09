@@ -10,5 +10,6 @@ export const useSubscription = () => {
     queryKey: subscriptionKeys.details,
     queryFn: () => getSubscription(session!),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    refetchOnMount: true,
   });
 };
