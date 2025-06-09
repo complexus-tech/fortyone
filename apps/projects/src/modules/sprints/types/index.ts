@@ -38,7 +38,7 @@ export type SprintAnalytics = {
     completionPercentage: number;
     daysElapsed: number;
     daysRemaining: number;
-    status: string;
+    status: "on_track" | "at_risk" | "behind" | "completed" | "not_started";
   };
   storyBreakdown: {
     total: number;
