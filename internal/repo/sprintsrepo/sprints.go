@@ -498,21 +498,20 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 
 	// Run independent queries in parallel for better performance
 	var (
-		storyBreakdown   sprints.CoreStoryBreakdown
-		healthIndicators sprints.CoreSprintHealthIndicators
-		burndownData     []sprints.CoreBurndownDataPoint
-		teamAllocation   []sprints.CoreTeamMemberAllocation
-		wg               sync.WaitGroup
-		mu               sync.Mutex
-		analyticsErr     error
+		storyBreakdown sprints.CoreStoryBreakdown
+		burndownData   []sprints.CoreBurndownDataPoint
+		teamAllocation []sprints.CoreTeamMemberAllocation
+		wg             sync.WaitGroup
+		mu             sync.Mutex
+		analyticsErr   error
 	)
 
 	wg.Add(3)
 
-	// Parallel query 1: Story breakdown and health indicators
+	// Parallel query 1: Story breakdown
 	go func() {
 		defer wg.Done()
-		breakdown, health, err := r.getStoryBreakdownAndHealth(ctx, sprintID, sprint.StartDate)
+		breakdown, err := r.getStoryBreakdown(ctx, sprintID)
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
@@ -520,7 +519,6 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 			return
 		}
 		storyBreakdown = breakdown
-		healthIndicators = health
 	}()
 
 	// Parallel query 2: Burndown data (simplified for performance)
@@ -562,12 +560,11 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	overview := r.calculateOverview(sprint, storyBreakdown)
 
 	analytics := sprints.CoreSprintAnalytics{
-		SprintID:         sprintID,
-		Overview:         overview,
-		StoryBreakdown:   storyBreakdown,
-		Burndown:         burndownData,
-		TeamAllocation:   teamAllocation,
-		HealthIndicators: healthIndicators,
+		SprintID:       sprintID,
+		Overview:       overview,
+		StoryBreakdown: storyBreakdown,
+		Burndown:       burndownData,
+		TeamAllocation: teamAllocation,
 	}
 
 	r.log.Info(ctx, "Sprint analytics retrieved successfully.")
@@ -579,7 +576,7 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	return analytics, nil
 }
 
-func (r *repo) getStoryBreakdownAndHealth(ctx context.Context, sprintID uuid.UUID, sprintStartDate time.Time) (sprints.CoreStoryBreakdown, sprints.CoreSprintHealthIndicators, error) {
+func (r *repo) getStoryBreakdown(ctx context.Context, sprintID uuid.UUID) (sprints.CoreStoryBreakdown, error) {
 	query := `
 		SELECT 
 			COUNT(*) as total,
@@ -587,10 +584,7 @@ func (r *repo) getStoryBreakdownAndHealth(ctx context.Context, sprintID uuid.UUI
 			COUNT(CASE WHEN st.category = 'started' THEN 1 END) as in_progress,
 			COUNT(CASE WHEN st.category = 'unstarted' THEN 1 END) as todo,
 			COUNT(CASE WHEN st.category = 'paused' THEN 1 END) as blocked,
-			COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled,
-			COUNT(CASE WHEN st.category = 'paused' THEN 1 END) as blocked_count,
-			COUNT(CASE WHEN s.end_date < NOW() AND st.category NOT IN ('completed', 'cancelled') THEN 1 END) as overdue_count,
-			COUNT(CASE WHEN s.created_at > :sprint_start_date THEN 1 END) as added_mid_sprint
+			COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled
 		FROM stories s
 		LEFT JOIN statuses st ON s.status_id = st.status_id
 		WHERE s.sprint_id = :sprint_id 
@@ -599,27 +593,22 @@ func (r *repo) getStoryBreakdownAndHealth(ctx context.Context, sprintID uuid.UUI
 	`
 
 	params := map[string]any{
-		"sprint_id":         sprintID,
-		"sprint_start_date": sprintStartDate,
+		"sprint_id": sprintID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return sprints.CoreStoryBreakdown{}, sprints.CoreSprintHealthIndicators{}, err
+		return sprints.CoreStoryBreakdown{}, err
 	}
 	defer stmt.Close()
 
-	var result struct {
-		sprints.CoreStoryBreakdown
-		sprints.CoreSprintHealthIndicators
-	}
-
+	var result sprints.CoreStoryBreakdown
 	err = stmt.GetContext(ctx, &result, params)
 	if err != nil {
-		return sprints.CoreStoryBreakdown{}, sprints.CoreSprintHealthIndicators{}, err
+		return sprints.CoreStoryBreakdown{}, err
 	}
 
-	return result.CoreStoryBreakdown, result.CoreSprintHealthIndicators, nil
+	return result, nil
 }
 
 func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.CoreStoryBreakdown) sprints.CoreSprintOverview {
@@ -666,46 +655,37 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 }
 
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
-	// Fast burndown query - key data points only for sidebar performance
+	// Single optimized query to get all burndown data
 	query := `
-		WITH total_count AS (
-			SELECT COUNT(*) as total
+		WITH sprint_stories AS (
+			SELECT COUNT(*) as total_stories
 			FROM stories s
 			WHERE s.sprint_id = :sprint_id 
 			AND s.deleted_at IS NULL 
 			AND s.archived_at IS NULL
 		),
-		completed_so_far AS (
-			SELECT COUNT(*) as completed
+		daily_completions AS (
+			SELECT 
+				DATE(s.updated_at) as completion_date,
+				COUNT(*) as completed_count
 			FROM stories s
 			INNER JOIN statuses st ON s.status_id = st.status_id
 			WHERE s.sprint_id = :sprint_id 
 			AND st.category = 'completed'
 			AND s.deleted_at IS NULL 
 			AND s.archived_at IS NULL
+			AND s.updated_at >= :start_date
+			AND s.updated_at <= NOW()
+			GROUP BY DATE(s.updated_at)
 		)
 		SELECT 
-			:start_date as date,
-			tc.total as remaining
-		FROM total_count tc
-		UNION ALL
-		SELECT 
-			NOW() as date,
-			tc.total - csf.completed as remaining
-		FROM total_count tc, completed_so_far csf
-		WHERE NOW() BETWEEN :start_date AND :end_date
-		UNION ALL
-		SELECT 
-			:end_date as date,
-			0 as remaining
-		ORDER BY date
+			ss.total_stories,
+			COALESCE(dc.completion_date, NULL) as completion_date,
+			COALESCE(dc.completed_count, 0) as completed_count
+		FROM sprint_stories ss
+		LEFT JOIN daily_completions dc ON true
+		ORDER BY dc.completion_date
 	`
-
-	params := map[string]any{
-		"sprint_id":  sprintID,
-		"start_date": startDate,
-		"end_date":   endDate,
-	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -713,9 +693,68 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	}
 	defer stmt.Close()
 
-	var burndownData []sprints.CoreBurndownDataPoint
-	if err := stmt.SelectContext(ctx, &burndownData, params); err != nil {
+	type queryResult struct {
+		TotalStories   int        `db:"total_stories"`
+		CompletionDate *time.Time `db:"completion_date"`
+		CompletedCount int        `db:"completed_count"`
+	}
+
+	var results []queryResult
+	err = stmt.SelectContext(ctx, &results, map[string]any{
+		"sprint_id":  sprintID,
+		"start_date": startDate,
+	})
+	if err != nil {
 		return nil, err
+	}
+
+	totalStories := 0
+	if len(results) > 0 {
+		totalStories = results[0].TotalStories
+	}
+
+	// Build completion map for quick lookup
+	completionMap := make(map[string]int)
+	for _, result := range results {
+		if result.CompletionDate != nil {
+			dateKey := result.CompletionDate.Format("2006-01-02")
+			completionMap[dateKey] = result.CompletedCount
+		}
+	}
+
+	// Generate burndown data for all days
+	var burndownData []sprints.CoreBurndownDataPoint
+	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1 // +1 to include end date
+	cumulativeCompleted := 0
+
+	for i := 0; i < totalDays; i++ {
+		currentDate := startDate.AddDate(0, 0, i)
+		dateKey := currentDate.Format("2006-01-02")
+
+		// Calculate ideal remaining (linear burndown)
+		idealRemaining := totalStories
+		if totalDays > 1 {
+			idealRemaining = totalStories - (totalStories * i / (totalDays - 1))
+		}
+		if idealRemaining < 0 {
+			idealRemaining = 0
+		}
+
+		// Calculate actual remaining
+		actualRemaining := totalStories
+		if !currentDate.After(time.Now()) {
+			// Add any completions for this day
+			if dailyCompleted, exists := completionMap[dateKey]; exists {
+				cumulativeCompleted += dailyCompleted
+			}
+			actualRemaining = totalStories - cumulativeCompleted
+		}
+
+		burndownData = append(burndownData, sprints.CoreBurndownDataPoint{
+			Date:      currentDate,
+			Remaining: actualRemaining,
+			Ideal:     idealRemaining,
+		})
 	}
 
 	return burndownData, nil

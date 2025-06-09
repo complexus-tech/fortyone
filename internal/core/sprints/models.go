@@ -46,12 +46,11 @@ type CoreUpdateSprint struct {
 // Sprint Analytics Models
 
 type CoreSprintAnalytics struct {
-	SprintID         uuid.UUID
-	Overview         CoreSprintOverview
-	StoryBreakdown   CoreStoryBreakdown
-	Burndown         []CoreBurndownDataPoint
-	TeamAllocation   []CoreTeamMemberAllocation
-	HealthIndicators CoreSprintHealthIndicators
+	SprintID       uuid.UUID
+	Overview       CoreSprintOverview
+	StoryBreakdown CoreStoryBreakdown
+	Burndown       []CoreBurndownDataPoint
+	TeamAllocation []CoreTeamMemberAllocation
 }
 
 type CoreSprintOverview struct {
@@ -73,6 +72,7 @@ type CoreStoryBreakdown struct {
 type CoreBurndownDataPoint struct {
 	Date      time.Time `db:"date"`
 	Remaining int       `db:"remaining"`
+	Ideal     int       `db:"ideal"`
 }
 
 type CoreTeamMemberAllocation struct {
@@ -81,10 +81,4 @@ type CoreTeamMemberAllocation struct {
 	AvatarURL string    `db:"avatar_url"`
 	Assigned  int       `db:"assigned"`
 	Completed int       `db:"completed"`
-}
-
-type CoreSprintHealthIndicators struct {
-	BlockedCount   int `db:"blocked_count"`
-	OverdueCount   int `db:"overdue_count"`
-	AddedMidSprint int `db:"added_mid_sprint"`
 }

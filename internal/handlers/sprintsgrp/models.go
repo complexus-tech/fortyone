@@ -114,12 +114,11 @@ func toAppSprint(sprint sprints.CoreSprint) AppSprint {
 // Sprint Analytics Models
 
 type AppSprintAnalytics struct {
-	SprintID         uuid.UUID              `json:"sprintId"`
-	Overview         SprintOverview         `json:"overview"`
-	StoryBreakdown   StoryBreakdown         `json:"storyBreakdown"`
-	Burndown         []BurndownDataPoint    `json:"burndown"`
-	TeamAllocation   []TeamMemberAllocation `json:"teamAllocation"`
-	HealthIndicators SprintHealthIndicators `json:"healthIndicators"`
+	SprintID       uuid.UUID              `json:"sprintId"`
+	Overview       SprintOverview         `json:"overview"`
+	StoryBreakdown StoryBreakdown         `json:"storyBreakdown"`
+	Burndown       []BurndownDataPoint    `json:"burndown"`
+	TeamAllocation []TeamMemberAllocation `json:"teamAllocation"`
 }
 
 type SprintOverview struct {
@@ -141,6 +140,7 @@ type StoryBreakdown struct {
 type BurndownDataPoint struct {
 	Date      time.Time `json:"date"`
 	Remaining int       `json:"remaining"`
+	Ideal     int       `json:"ideal"`
 }
 
 type TeamMemberAllocation struct {
@@ -149,12 +149,6 @@ type TeamMemberAllocation struct {
 	AvatarURL string    `json:"avatarUrl"`
 	Assigned  int       `json:"assigned"`
 	Completed int       `json:"completed"`
-}
-
-type SprintHealthIndicators struct {
-	BlockedCount   int `json:"blockedCount"`
-	OverdueCount   int `json:"overdueCount"`
-	AddedMidSprint int `json:"addedMidSprint"`
 }
 
 // toAppSprintAnalytics converts core sprint analytics to app sprint analytics.
@@ -177,11 +171,6 @@ func toAppSprintAnalytics(analytics sprints.CoreSprintAnalytics) AppSprintAnalyt
 		},
 		Burndown:       toAppBurndownData(analytics.Burndown),
 		TeamAllocation: toAppTeamAllocation(analytics.TeamAllocation),
-		HealthIndicators: SprintHealthIndicators{
-			BlockedCount:   analytics.HealthIndicators.BlockedCount,
-			OverdueCount:   analytics.HealthIndicators.OverdueCount,
-			AddedMidSprint: analytics.HealthIndicators.AddedMidSprint,
-		},
 	}
 }
 
@@ -191,6 +180,7 @@ func toAppBurndownData(burndown []sprints.CoreBurndownDataPoint) []BurndownDataP
 		result[i] = BurndownDataPoint{
 			Date:      point.Date,
 			Remaining: point.Remaining,
+			Ideal:     point.Ideal,
 		}
 	}
 	return result

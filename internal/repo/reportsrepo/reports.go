@@ -212,7 +212,7 @@ func (r *repo) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filter
 		)
 		SELECT 
 			name,
-			count::integer
+			CAST(count AS integer)
 		FROM story_stats`
 
 	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
@@ -275,7 +275,7 @@ func (r *repo) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filt
 		)
 		SELECT 
 			priority,
-			count::integer
+			CAST(count AS integer)
 		FROM priority_stats`
 
 	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
