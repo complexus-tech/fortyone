@@ -10,23 +10,18 @@ import {
   Tabs,
   Text,
 } from "ui";
-import {
-  SprintsIcon,
-  MoreVerticalIcon,
-  LinkIcon,
-  DeleteIcon,
-  StarIcon,
-  EditIcon,
-} from "icons";
+import { SprintsIcon, EditIcon, CopyIcon, MoreHorizontalIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { RowWrapper, StoryStatusIcon } from "@/components/ui";
+import { useTerminology } from "@/hooks";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintAnalytics } from "../types";
 import { BurndownChart } from "./burndown";
 
 export const Sidebar = () => {
+  const { getTermDisplay } = useTerminology();
   const { sprintId } = useParams<{ sprintId: string }>();
   const { data: sprint, isPending: isSprintPending } = useSprint(sprintId);
   const { data: analytics, isPending: isAnalyticsPending } =
@@ -80,7 +75,7 @@ export const Sidebar = () => {
   } as const;
 
   return (
-    <Box className="h-full bg-gray-50/30 py-6 dark:bg-dark-300/50">
+    <Box className="h-full bg-gray-50/30 py-6 dark:bg-dark-300/60">
       <Box className="px-6">
         <Flex align="center" justify="between">
           <Text className="flex items-center gap-1.5" fontSize="lg">
@@ -92,7 +87,7 @@ export const Sidebar = () => {
               <Button
                 asIcon
                 color="tertiary"
-                leftIcon={<MoreVerticalIcon />}
+                leftIcon={<MoreHorizontalIcon />}
                 rounded="full"
                 size="sm"
                 variant="naked"
@@ -100,29 +95,15 @@ export const Sidebar = () => {
                 <span className="sr-only">More options</span>
               </Button>
             </Menu.Button>
-            <Menu.Items align="end" className="w-56">
-              <Menu.Group className="px-4">
-                <Text className="mb-2 mt-1" color="muted">
-                  Manage Sprint
-                </Text>
-              </Menu.Group>
-              <Menu.Separator className="mb-1.5" />
+            <Menu.Items align="end" className="w-48">
               <Menu.Group>
                 <Menu.Item>
-                  <EditIcon className="h-[1.1rem] w-auto" />
-                  Edit sprint
+                  <EditIcon />
+                  Edit {getTermDisplay("sprintTerm")}
                 </Menu.Item>
                 <Menu.Item>
-                  <LinkIcon />
+                  <CopyIcon />
                   Copy link
-                </Menu.Item>
-                <Menu.Item>
-                  <StarIcon />
-                  Favorite
-                </Menu.Item>
-                <Menu.Item>
-                  <DeleteIcon className="h-5 w-auto" />
-                  Delete sprint
                 </Menu.Item>
               </Menu.Group>
             </Menu.Items>
