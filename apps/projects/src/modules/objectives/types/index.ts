@@ -86,3 +86,26 @@ export type ObjectiveStatus = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ObjectiveAnalytics = {
+  objectiveId: string;
+  priorityBreakdown: {
+    priority: string;
+    count: number;
+  }[];
+  progressBreakdown: {
+    total: number;
+    completed: number;
+    inProgress: number;
+    todo: number;
+    blocked: number;
+    cancelled: number;
+  };
+  teamAllocation: {
+    memberId: string;
+    username: string;
+    avatarUrl: string;
+    assigned: number;
+    completed: number;
+  }[];
+};
