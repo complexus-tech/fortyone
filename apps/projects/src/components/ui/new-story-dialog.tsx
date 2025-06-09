@@ -224,7 +224,7 @@ export const NewStoryDialog = ({
         autolink: true,
       }),
       Placeholder.configure({
-        placeholder: `${getTermDisplay("objectiveTerm", { capitalize: true })} description`,
+        placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description`,
       }),
     ],
     content: "",
