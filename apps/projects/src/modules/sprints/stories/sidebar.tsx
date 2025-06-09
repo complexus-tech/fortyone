@@ -1,27 +1,14 @@
-import {
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Menu,
-  ProgressBar,
-  Tabs,
-  Text,
-} from "ui";
-import { SprintsIcon, EditIcon, CopyIcon, MoreHorizontalIcon } from "icons";
+import { Avatar, Badge, Box, Divider, Flex, ProgressBar, Tabs, Text } from "ui";
+import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { RowWrapper, StoryStatusIcon } from "@/components/ui";
-import { useTerminology } from "@/hooks";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintAnalytics } from "../types";
 import { BurndownChart } from "./burndown";
 
 export const Sidebar = () => {
-  const { getTermDisplay } = useTerminology();
   const { sprintId } = useParams<{ sprintId: string }>();
   const { data: sprint, isPending: isSprintPending } = useSprint(sprintId);
   const { data: analytics, isPending: isAnalyticsPending } =
@@ -82,7 +69,7 @@ export const Sidebar = () => {
             <SprintsIcon className="relative -top-px h-[1.4rem] w-auto" />
             {sprint.name}
           </Text>
-          <Menu>
+          {/* <Menu>
             <Menu.Button>
               <Button
                 asIcon
@@ -107,7 +94,7 @@ export const Sidebar = () => {
                 </Menu.Item>
               </Menu.Group>
             </Menu.Items>
-          </Menu>
+          </Menu> */}
         </Flex>
         <Flex align="center" className="my-4" gap={2}>
           <Badge
