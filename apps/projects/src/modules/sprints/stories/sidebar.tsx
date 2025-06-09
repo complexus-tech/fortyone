@@ -26,15 +26,11 @@ import type { SprintAnalytics } from "../types";
 
 export const Sidebar = () => {
   const { sprintId } = useParams<{ sprintId: string }>();
-  const { data: sprint } = useSprint(sprintId);
+  const { data: sprint, isPending: isSprintPending } = useSprint(sprintId);
   const { data: analytics, isPending: isAnalyticsPending } =
     useSprintAnalytics(sprintId);
 
-  if (!sprint || isAnalyticsPending) {
-    return null;
-  }
-
-  if (!analytics) {
+  if (isSprintPending || isAnalyticsPending || !sprint || !analytics) {
     return null;
   }
 
