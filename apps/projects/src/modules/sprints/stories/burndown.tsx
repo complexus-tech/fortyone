@@ -3,7 +3,6 @@ import { format, isWeekend } from "date-fns";
 import {
   Line,
   XAxis,
-  YAxis,
   ResponsiveContainer,
   ComposedChart,
   Tooltip,
@@ -32,8 +31,8 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="z-50 min-w-44 rounded-[0.6rem] border border-gray-100 bg-white/80 px-3 py-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-200">
-        <Box className="font-medium">{label}</Box>
+      <Box className="z-50 min-w-44 rounded-[0.6rem] border border-gray-100 bg-white/80 p-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-200">
+        <Box>{label}</Box>
         <Box className="mb-0.1 mt-1 text-warning">
           Actual: {data.actual} stories
         </Box>
