@@ -29,7 +29,7 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]sprints.CoreSprint, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]sprints.CoreSprint, error) {
 
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.List")
 	defer span.End()
@@ -70,14 +70,18 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			COALESCE(ss.backlog, 0) as backlog_stories
 		FROM
 			sprints s
+		INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
 		LEFT JOIN story_stats ss ON s.sprint_id = ss.sprint_id
 	`
 
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
+	filters["user_id"] = userID
 
 	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
+		if field != "user_id" { // Skip user_id since it's used in the JOIN
+			setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
+		}
 	}
 
 	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.end_date DESC;"

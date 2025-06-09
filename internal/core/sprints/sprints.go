@@ -12,7 +12,7 @@ import (
 
 // Repository provides access to the sprints storage.
 type Repository interface {
-	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error)
+	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error)
 	Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error)
 	GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error)
 	Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error)
@@ -36,12 +36,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // List returns a list of sprints.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
 	s.log.Info(ctx, "business.core.sprints.list")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.List")
 	defer span.End()
 
-	sprints, err := s.repo.List(ctx, workspaceId, filters)
+	sprints, err := s.repo.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

@@ -42,7 +42,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	sprints, err := h.sprints.List(ctx, workspaceId, filters)
+	userID, _ := mid.GetUserID(ctx)
+
+	sprints, err := h.sprints.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		return err
 	}
@@ -165,8 +167,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	userID, _ := mid.GetUserID(ctx)
+
 	// First get the sprint to verify it belongs to the workspace
-	existingSprints, err := h.sprints.List(ctx, workspaceId, map[string]any{"sprint_id": sprintId})
+	existingSprints, err := h.sprints.List(ctx, workspaceId, userID, map[string]any{"sprint_id": sprintId})
 	if err != nil {
 		return err
 	}
