@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { useTheme } from "next-themes";
 import { Box } from "ui";
+import { useTerminology } from "@/hooks";
 import type { SprintAnalytics } from "../types";
 
 type BurndownChartProps = {
@@ -27,15 +28,20 @@ const CustomTooltip = ({
   }[];
   label?: string;
 }) => {
+  const { getTermDisplay } = useTerminology();
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
       <Box className="z-50 min-w-44 rounded-[0.6rem] border border-gray-100 bg-white/80 p-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/60 dark:text-gray-200">
         <Box>{label}</Box>
         <Box className="mb-0.1 mt-1 text-warning">
-          Actual: {data.actual} stories
+          Actual: {data.actual}{" "}
+          {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-[#6366F1]">Ideal: {data.ideal} stories</Box>
+        <Box className="mb-0.5 text-[#6366F1]">
+          Ideal: {data.ideal}{" "}
+          {getTermDisplay("storyTerm", { variant: "plural" })}
+        </Box>
         {data.isWeekend ? <Box className="opacity-60">Weekend</Box> : null}
       </Box>
     );
