@@ -15,6 +15,8 @@ export const sprintKeys = {
   team: (teamId: string) => [...sprintKeys.lists(), teamId] as const,
   objective: (objectiveId: string) =>
     [...sprintKeys.lists(), objectiveId] as const,
+  analytics: (sprintId: string) =>
+    [...sprintKeys.all, "analytics", sprintId] as const,
 };
 
 export const memberKeys = {
