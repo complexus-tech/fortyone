@@ -146,7 +146,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             dataKey="date"
             interval={0}
             tick={{ fontSize: 12 }}
-            tickFormatter={(value, index) => {
+            tickFormatter={(value: string, index) => {
               const totalLength = chartData.length - 1;
               const quarter = Math.floor(totalLength / 4);
               const middle = Math.floor(totalLength / 2);
