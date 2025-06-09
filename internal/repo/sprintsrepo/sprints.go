@@ -207,6 +207,7 @@ func (r *repo) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]sp
 			COALESCE(ss.backlog, 0) as backlog_stories
 		FROM
 			sprints s
+		INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
 		LEFT JOIN story_stats ss ON s.sprint_id = ss.sprint_id
 		WHERE s.workspace_id = :workspace_id
 		AND s.start_date <= NOW() AND s.end_date >= NOW() 
@@ -215,6 +216,7 @@ func (r *repo) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]sp
 
 	var filters = make(map[string]any)
 	filters["workspace_id"] = workspaceId
+	filters["user_id"] = userID
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

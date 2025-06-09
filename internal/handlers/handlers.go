@@ -86,9 +86,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the sprints routes
 	sprintsgrp.Routes(sprintsgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register epics routes
