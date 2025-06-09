@@ -8,6 +8,7 @@ import {
   Tooltip,
   ReferenceArea,
   CartesianGrid,
+  YAxis,
 } from "recharts";
 import { useTheme } from "next-themes";
 import { Box } from "ui";
@@ -95,10 +96,10 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
     weekendRanges.push({ start: weekendStart, end: lastItem.date });
   }
 
-  const maxValue = Math.max(
-    ...chartData.map((item) => Math.max(item.actual, item.ideal)),
-  );
-  const yAxisMax = Math.ceil(maxValue * 1.1);
+  // const maxValue = Math.max(
+  //   ...chartData.map((item) => Math.max(item.actual, item.ideal)),
+  // );
+  // const yAxisMax = Math.ceil(maxValue * 1.1);
 
   return (
     <div className="h-64 w-full">
@@ -149,12 +150,14 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
               stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
             }}
             dataKey="date"
-            interval="preserveStartEnd"
+            interval={0}
             tick={{ fontSize: 12 }}
             tickFormatter={(value, index) => {
+              // Only show every few ticks to get roughly 3 dates
+              const step = Math.max(1, Math.floor((chartData.length - 1) / 2));
               if (
                 index === 0 ||
-                index === Math.floor(chartData.length / 2) ||
+                index === step ||
                 index === chartData.length - 1
               ) {
                 return value;
@@ -163,12 +166,12 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             }}
             tickLine={false}
           />
-          {/* <YAxis
+          <YAxis
             axisLine={false}
-            domain={[0, yAxisMax]}
+            // domain={[0, yAxisMax]}
             tick={{ fontSize: 12 }}
             tickLine={false}
-          /> */}
+          />
 
           <Tooltip
             content={<CustomTooltip />}
