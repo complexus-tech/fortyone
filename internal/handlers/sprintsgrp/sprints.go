@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -57,7 +58,9 @@ func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.R
 		return ErrInvalidWorkspaceID
 	}
 
-	sprints, err := h.sprints.Running(ctx, workspaceId)
+	userID, _ := mid.GetUserID(ctx)
+
+	sprints, err := h.sprints.Running(ctx, workspaceId, userID)
 	if err != nil {
 		return err
 	}

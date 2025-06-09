@@ -166,7 +166,7 @@ func (r *repo) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid
 	return toCoreSprint(sprint), nil
 }
 
-func (r *repo) Running(ctx context.Context, workspaceId uuid.UUID) ([]sprints.CoreSprint, error) {
+func (r *repo) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]sprints.CoreSprint, error) {
 
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.List")
 	defer span.End()
