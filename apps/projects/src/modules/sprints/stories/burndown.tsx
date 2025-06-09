@@ -116,8 +116,8 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
               width="6"
             >
               <rect
-                fill={resolvedTheme === "dark" ? "#6b7280" : "#9ca3af"}
-                fillOpacity="0.2"
+                fill={resolvedTheme === "dark" ? "#6b7280" : "#6b7280"}
+                fillOpacity="0.4"
                 height="6"
                 width="1"
               />
