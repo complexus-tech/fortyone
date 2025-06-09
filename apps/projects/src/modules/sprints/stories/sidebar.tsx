@@ -48,7 +48,7 @@ export const Sidebar = () => {
       case "behind":
         return "danger";
       case "completed":
-        return "success";
+        return "tertiary";
       case "at_risk":
         return "warning";
       case "not_started":
@@ -213,14 +213,15 @@ export const Sidebar = () => {
                   storyBreakdown.total > 0
                     ? (count / storyBreakdown.total) * 100
                     : 0;
-                const displayName =
-                  status === "inProgress"
-                    ? "In Progress"
-                    : status.charAt(0).toUpperCase() + status.slice(1);
+                const statusConfig =
+                  breakdownStatusMap[status as keyof typeof breakdownStatusMap];
+                const displayName = statusConfig.label;
+                const category = statusConfig.category;
+
                 return (
                   <RowWrapper className="px-1 py-2 md:px-0" key={status}>
                     <Flex align="center" gap={2}>
-                      <StoryStatusIcon category="cancelled" />
+                      <StoryStatusIcon category={category} />
                       <Text color="muted">{displayName}</Text>
                     </Flex>
                     <Flex align="center" gap={2}>
