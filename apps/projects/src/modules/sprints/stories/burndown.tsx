@@ -7,7 +7,6 @@ import {
   ComposedChart,
   Tooltip,
   ReferenceArea,
-  CartesianGrid,
 } from "recharts";
 import { useTheme } from "next-themes";
 import { Box } from "ui";
@@ -124,11 +123,6 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             </pattern>
           </defs>
 
-          <CartesianGrid
-            stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
-            strokeDasharray="3 3"
-            vertical={false}
-          />
           {weekendRanges.map((range, index) => (
             <ReferenceArea
               fill="url(#weekendPattern)"

@@ -133,7 +133,7 @@ export const Sidebar = () => {
             className="h-8 px-2 text-base capitalize tracking-wide"
             color={getStatusColor(overview.status)}
           >
-            {overview.status}
+            {overview.status.replace("_", " ")}
           </Badge>
           <Badge
             className="h-8 px-2 text-base capitalize tracking-wide"
