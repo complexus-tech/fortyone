@@ -597,7 +597,7 @@ func (r *repo) getObjectiveProgressData(ctx context.Context, objectiveID uuid.UU
 	query := `
 		WITH date_series AS (
 			SELECT DATE(generate_series(
-				NOW() - INTERVAL '90 days',
+				NOW() - INTERVAL '30 days',
 				NOW(),
 				INTERVAL '1 day'
 			)) as completion_date

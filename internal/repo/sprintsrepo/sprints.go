@@ -668,32 +668,36 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 }
 
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
-	// Enhanced query to track scope changes and daily completions
+	// Enhanced query using story_activities to track accurate scope changes and completions
 	query := `
-		WITH daily_scope_changes AS (
-			SELECT 
-				DATE(s.created_at) as date,
-				COUNT(*) as stories_added
-			FROM stories s
-			WHERE s.sprint_id = :sprint_id 
-			AND s.deleted_at IS NULL 
-			AND s.archived_at IS NULL
-			AND s.created_at >= :start_date
-			GROUP BY DATE(s.created_at)
+		WITH date_series AS (
+			SELECT DATE(generate_series(
+				CAST(:start_date AS date),
+				CAST(:end_date AS date),
+				INTERVAL '1 day'
+			)) as burn_date
 		),
-		daily_completions AS (
+		sprint_activity AS (
 			SELECT 
-				DATE(s.updated_at) as date,
-				COUNT(*) as stories_completed
-			FROM stories s
-			INNER JOIN statuses st ON s.status_id = st.status_id
-			WHERE s.sprint_id = :sprint_id 
-			AND st.category = 'completed'
-			AND s.deleted_at IS NULL 
-			AND s.archived_at IS NULL
-			AND s.updated_at >= :start_date
-			AND s.updated_at <= NOW()
-			GROUP BY DATE(s.updated_at)
+				DATE(sa.created_at) as activity_date,
+				sa.story_id,
+				sa.field_changed,
+				sa.current_value,
+				st.category as status_category,
+				ROW_NUMBER() OVER (
+					PARTITION BY sa.story_id, DATE(sa.created_at), sa.field_changed
+					ORDER BY sa.created_at DESC
+				) as rn
+			FROM story_activities sa
+			JOIN stories s ON sa.story_id = s.id
+			LEFT JOIN statuses st ON sa.field_changed = 'status_id' AND CAST(sa.current_value AS uuid) = st.status_id
+			WHERE s.sprint_id = :sprint_id
+			  AND sa.activity_type = 'update'
+			  AND sa.field_changed IN ('sprint_id', 'status_id')
+			  AND sa.created_at >= :start_date
+			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
+			  AND s.deleted_at IS NULL
+			  AND s.archived_at IS NULL
 		),
 		initial_scope AS (
 			SELECT COUNT(*) as initial_stories
@@ -702,17 +706,36 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 			AND s.deleted_at IS NULL 
 			AND s.archived_at IS NULL
 			AND s.created_at < :start_date
+		),
+		daily_changes AS (
+			SELECT 
+				ds.burn_date,
+				-- Stories added to sprint on this date
+				COUNT(CASE 
+					WHEN spa.field_changed = 'sprint_id' 
+					AND CAST(spa.current_value AS uuid) = :sprint_id 
+					AND spa.rn = 1 
+					THEN 1 
+				END) as stories_added,
+				-- Stories completed on this date  
+				COUNT(CASE 
+					WHEN spa.field_changed = 'status_id' 
+					AND spa.status_category = 'completed' 
+					AND spa.rn = 1 
+					THEN 1 
+				END) as stories_completed
+			FROM date_series ds
+			LEFT JOIN sprint_activity spa ON ds.burn_date = spa.activity_date
+			GROUP BY ds.burn_date
 		)
 		SELECT 
-			COALESCE(dsc.date, dc.date) as event_date,
-			COALESCE(dsc.stories_added, 0) as stories_added,
-			COALESCE(dc.stories_completed, 0) as stories_completed,
+			dc.burn_date as event_date,
+			dc.stories_added,
+			dc.stories_completed,
 			ins.initial_stories
-		FROM daily_scope_changes dsc
-		FULL OUTER JOIN daily_completions dc ON dsc.date = dc.date
+		FROM daily_changes dc
 		CROSS JOIN initial_scope ins
-		WHERE COALESCE(dsc.date, dc.date) IS NOT NULL
-		ORDER BY event_date
+		ORDER BY dc.burn_date
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -722,16 +745,17 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	defer stmt.Close()
 
 	type queryResult struct {
-		EventDate        *time.Time `db:"event_date"`
-		StoriesAdded     int        `db:"stories_added"`
-		StoriesCompleted int        `db:"stories_completed"`
-		InitialStories   int        `db:"initial_stories"`
+		EventDate        time.Time `db:"event_date"`
+		StoriesAdded     int       `db:"stories_added"`
+		StoriesCompleted int       `db:"stories_completed"`
+		InitialStories   int       `db:"initial_stories"`
 	}
 
 	var results []queryResult
 	err = stmt.SelectContext(ctx, &results, map[string]any{
 		"sprint_id":  sprintID,
 		"start_date": startDate,
+		"end_date":   endDate,
 	})
 	if err != nil {
 		return nil, err
@@ -743,14 +767,12 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	initialStories := 0
 
 	for _, result := range results {
-		if result.EventDate != nil {
-			dateKey := result.EventDate.Format("2006-01-02")
-			if result.StoriesAdded > 0 {
-				scopeChanges[dateKey] = result.StoriesAdded
-			}
-			if result.StoriesCompleted > 0 {
-				completions[dateKey] = result.StoriesCompleted
-			}
+		dateKey := result.EventDate.Format("2006-01-02")
+		if result.StoriesAdded > 0 {
+			scopeChanges[dateKey] = result.StoriesAdded
+		}
+		if result.StoriesCompleted > 0 {
+			completions[dateKey] = result.StoriesCompleted
 		}
 		if result.InitialStories > 0 {
 			initialStories = result.InitialStories
