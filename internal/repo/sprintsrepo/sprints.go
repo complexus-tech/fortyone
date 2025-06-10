@@ -668,7 +668,7 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 }
 
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
-	// Enhanced query using story_activities to track accurate scope changes and completions
+	// Optimized query for better performance
 	query := `
 		WITH date_series AS (
 			SELECT DATE(generate_series(
@@ -677,28 +677,7 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 				INTERVAL '1 day'
 			)) as burn_date
 		),
-		sprint_activity AS (
-			SELECT 
-				DATE(sa.created_at) as activity_date,
-				sa.story_id,
-				sa.field_changed,
-				sa.current_value,
-				st.category as status_category,
-				ROW_NUMBER() OVER (
-					PARTITION BY sa.story_id, DATE(sa.created_at), sa.field_changed
-					ORDER BY sa.created_at DESC
-				) as rn
-			FROM story_activities sa
-			JOIN stories s ON sa.story_id = s.id
-			LEFT JOIN statuses st ON sa.field_changed = 'status_id' AND CAST(sa.current_value AS uuid) = st.status_id
-			WHERE s.sprint_id = :sprint_id
-			  AND sa.activity_type = 'update'
-			  AND sa.field_changed IN ('sprint_id', 'status_id')
-			  AND sa.created_at >= :start_date
-			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
-			  AND s.deleted_at IS NULL
-			  AND s.archived_at IS NULL
-		),
+		-- Get initial scope before sprint started
 		initial_scope AS (
 			SELECT COUNT(*) as initial_stories
 			FROM stories s
@@ -707,35 +686,50 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 			AND s.archived_at IS NULL
 			AND s.created_at < :start_date
 		),
-		daily_changes AS (
+		-- Get daily sprint additions 
+		daily_additions AS (
 			SELECT 
-				ds.burn_date,
-				-- Stories added to sprint on this date
-				COUNT(CASE 
-					WHEN spa.field_changed = 'sprint_id' 
-					AND CAST(spa.current_value AS uuid) = :sprint_id 
-					AND spa.rn = 1 
-					THEN 1 
-				END) as stories_added,
-				-- Stories completed on this date  
-				COUNT(CASE 
-					WHEN spa.field_changed = 'status_id' 
-					AND spa.status_category = 'completed' 
-					AND spa.rn = 1 
-					THEN 1 
-				END) as stories_completed
-			FROM date_series ds
-			LEFT JOIN sprint_activity spa ON ds.burn_date = spa.activity_date
-			GROUP BY ds.burn_date
+				DATE(sa.created_at) as add_date,
+				COUNT(DISTINCT sa.story_id) as stories_added
+			FROM story_activities sa
+			JOIN stories s ON sa.story_id = s.id
+			WHERE sa.activity_type = 'update'
+			  AND sa.field_changed = 'sprint_id'
+			  AND CAST(sa.current_value AS uuid) = :sprint_id
+			  AND sa.created_at >= :start_date
+			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
+			  AND s.deleted_at IS NULL
+			  AND s.archived_at IS NULL
+			GROUP BY DATE(sa.created_at)
+		),
+		-- Get daily completions (simplified)
+		daily_completions AS (
+			SELECT 
+				DATE(sa.created_at) as completion_date,
+				COUNT(DISTINCT sa.story_id) as stories_completed
+			FROM story_activities sa
+			JOIN stories s ON sa.story_id = s.id
+			JOIN statuses st ON CAST(sa.current_value AS uuid) = st.status_id
+			WHERE sa.activity_type = 'update'
+			  AND sa.field_changed = 'status_id'
+			  AND st.category = 'completed'
+			  AND s.sprint_id = :sprint_id
+			  AND sa.created_at >= :start_date
+			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
+			  AND s.deleted_at IS NULL
+			  AND s.archived_at IS NULL
+			GROUP BY DATE(sa.created_at)
 		)
 		SELECT 
-			dc.burn_date as event_date,
-			dc.stories_added,
-			dc.stories_completed,
+			ds.burn_date as event_date,
+			COALESCE(da.stories_added, 0) as stories_added,
+			COALESCE(dc.stories_completed, 0) as stories_completed,
 			ins.initial_stories
-		FROM daily_changes dc
+		FROM date_series ds
 		CROSS JOIN initial_scope ins
-		ORDER BY dc.burn_date
+		LEFT JOIN daily_additions da ON ds.burn_date = da.add_date
+		LEFT JOIN daily_completions dc ON ds.burn_date = dc.completion_date
+		ORDER BY ds.burn_date
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
