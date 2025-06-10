@@ -14,7 +14,7 @@ import { StoriesSkeleton } from "./skeleton";
 export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "team:sprints:stories:layout",
-    "kanban",
+    "list",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "team:sprints:stories:isExpanded",
