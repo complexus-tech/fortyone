@@ -7,4 +7,6 @@ export const objectiveKeys = {
     [...objectiveKeys.all, "list", objectiveId] as const,
   keyResults: (objectiveId: string) =>
     [...objectiveKeys.all, objectiveId, "key-results"] as const,
+  analytics: (objectiveId: string) =>
+    [...objectiveKeys.all, "analytics", objectiveId] as const,
 };

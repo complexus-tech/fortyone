@@ -31,3 +31,33 @@ export type NewSprint = {
 };
 
 export type UpdateSprint = Partial<Omit<NewSprint, "teamId">>;
+
+export type SprintAnalytics = {
+  sprintId: string;
+  overview: {
+    completionPercentage: number;
+    daysElapsed: number;
+    daysRemaining: number;
+    status: "on_track" | "at_risk" | "behind" | "completed" | "not_started";
+  };
+  storyBreakdown: {
+    total: number;
+    completed: number;
+    inProgress: number;
+    todo: number;
+    blocked: number;
+    cancelled: number;
+  };
+  burndown: {
+    date: string;
+    remaining: number;
+    ideal: number;
+  }[];
+  teamAllocation: {
+    memberId: string;
+    username: string;
+    avatarUrl: string;
+    assigned: number;
+    completed: number;
+  }[];
+};

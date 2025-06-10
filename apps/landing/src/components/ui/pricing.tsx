@@ -20,7 +20,7 @@ const packages = [
     features: [
       "1 team",
       "Up to 5 members",
-      "Up to 50 stories",
+      "Up to 200 stories",
       "Single Sign-On (SSO)",
       "Kanban & list views",
       "Email support",
@@ -35,7 +35,7 @@ const packages = [
     price: 7,
     features: [
       "Up to 3 teams",
-      "Up to 5 objectives",
+      "Up to 20 objectives",
       "Track OKRs",
       "Unlimited stories",
       "Unlimited guests",

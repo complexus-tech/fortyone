@@ -32,7 +32,7 @@ export const plans: Plan[] = [
     limits: {
       members: "Up to 5 members",
       fileUploads: "10MB",
-      issues: "Up to 50 stories",
+      issues: "Up to 200 stories",
     },
     features: {
       teams: "1 team",
@@ -43,7 +43,7 @@ export const plans: Plan[] = [
   {
     name: "Professional",
     limits: {
-      members: "Up to 50 members",
+      members: "Up to 10 members",
       fileUploads: "Unlimited",
       issues: "Unlimited",
     },

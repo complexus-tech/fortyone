@@ -2,14 +2,12 @@
 import { Flex, Text, ProgressBar, Box, Badge, Tooltip } from "ui";
 import Link from "next/link";
 import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
-import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { QueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
 import { StoryStatusIcon } from "@/components/ui";
-import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -25,14 +23,13 @@ const statusColors = {
 export const SprintRow = ({
   id,
   name,
+  teamId,
   startDate,
   endDate,
   stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
   const { data: session } = useSession();
   const queryClient = new QueryClient();
-  const { teamId } = useParams<{ teamId: string }>();
-  const { data: statuses = [] } = useTeamStatuses(teamId);
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
 
@@ -42,15 +39,6 @@ export const SprintRow = ({
   } else if (startDateObj > new Date()) {
     sprintStatus = "upcoming";
   }
-
-  const completedStatus = statuses.find(
-    (status) => status.category === "completed",
-  );
-  const activeStatus = statuses.find((status) => status.category === "started");
-  const todoStatus = statuses.find((status) => status.category === "unstarted");
-  const plannedStatus = statuses.find(
-    (status) => status.category === "backlog",
-  );
 
   const progress = Math.round((completed / total) * 100) || 0;
 
@@ -108,28 +96,28 @@ export const SprintRow = ({
 
         <Flex className="hidden min-w-[300px] md:flex" gap={4}>
           <Flex align="center" className="min-w-[80px] gap-1.5">
-            <StoryStatusIcon statusId={completedStatus?.id} />
+            <StoryStatusIcon category="completed" />
             <Text>
               {completed}
               <span className="text-muted ml-1.5">Done</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
-            <StoryStatusIcon statusId={activeStatus?.id} />
+            <StoryStatusIcon category="started" />
             <Text className="whitespace-nowrap">
               {started}
               <span className="text-muted ml-2">Active</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
-            <StoryStatusIcon statusId={todoStatus?.id} />
+            <StoryStatusIcon category="unstarted" />
             <Text className="whitespace-nowrap">
               {unstarted}
               <span className="text-muted ml-1.5">Todo</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
-            <StoryStatusIcon statusId={plannedStatus?.id} />
+            <StoryStatusIcon category="backlog" />
             <Text className="whitespace-nowrap">
               {backlog}
               <span className="text-muted ml-1.5">Backlog</span>
