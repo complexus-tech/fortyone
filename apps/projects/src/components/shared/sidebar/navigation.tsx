@@ -72,6 +72,7 @@ export const Navigation = () => {
       name: "Analytics",
       icon: <AnalyticsIcon />,
       href: "/analytics",
+      disabled: !isAnalyticsEnabled,
     },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
   ];
