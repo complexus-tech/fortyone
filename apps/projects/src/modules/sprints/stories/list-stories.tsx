@@ -16,7 +16,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
     "team:sprints:stories:layout",
     "kanban",
   );
-  const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
+  const [isExpanded, setIsExpanded] = useLocalStorage(
     "team:sprints:stories:isExpanded",
     true,
   );
