@@ -252,7 +252,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 		WHERE o.objective_id = :id AND o.workspace_id = :workspace_id;
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id":           id,
 		"workspace_id": workspaceId,
 	}
@@ -353,7 +353,7 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		AND deleted_at IS NULL
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": id,
 		"workspace_id": workspaceId,
 	}
@@ -504,7 +504,7 @@ func (r *repo) getPriorityBreakdown(ctx context.Context, objectiveID uuid.UUID) 
 			END
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveID,
 	}
 
@@ -538,7 +538,7 @@ func (r *repo) getProgressBreakdown(ctx context.Context, objectiveID uuid.UUID) 
 			AND s.archived_at IS NULL
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveID,
 	}
 
@@ -575,7 +575,7 @@ func (r *repo) getTeamAllocation(ctx context.Context, objectiveID uuid.UUID) ([]
 		ORDER BY assigned DESC, u.username
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveID,
 	}
 
@@ -643,7 +643,7 @@ func (r *repo) getObjectiveProgressData(ctx context.Context, objectiveID uuid.UU
 		ORDER BY ds.completion_date
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveID,
 	}
 
