@@ -35,7 +35,7 @@ const CustomTooltip = ({
       <Box className="z-50 min-w-44 rounded-2xl border border-gray-100 bg-white/60 p-3 font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/60 dark:text-gray-200">
         <Text fontWeight="semibold">{label}</Text>
         <Box className="mb-0.1 mt-1 text-warning">
-          Actual: {data.actual}{" "}
+          Remaining: {data.actual}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
         <Box className="mb-0.5 text-[#6366F1]">
