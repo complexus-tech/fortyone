@@ -396,12 +396,13 @@ func (r *repo) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspac
 		priorityBreakdown []objectives.CorePriorityBreakdown
 		progressBreakdown objectives.CoreProgressBreakdown
 		teamAllocation    []objectives.CoreTeamMemberAllocation
+		progressChart     []objectives.CoreObjectiveProgressDataPoint
 		wg                sync.WaitGroup
 		mu                sync.Mutex
 		analyticsErr      error
 	)
 
-	wg.Add(3)
+	wg.Add(4)
 
 	// Parallel query 1: Priority breakdown
 	go func() {
@@ -442,6 +443,19 @@ func (r *repo) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspac
 		teamAllocation = allocation
 	}()
 
+	// Parallel query 4: Progress chart
+	go func() {
+		defer wg.Done()
+		chart, err := r.getObjectiveProgressData(ctx, objectiveID)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			analyticsErr = err
+			return
+		}
+		progressChart = chart
+	}()
+
 	// Wait for all queries to complete
 	wg.Wait()
 
@@ -456,6 +470,7 @@ func (r *repo) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspac
 		PriorityBreakdown: priorityBreakdown,
 		ProgressBreakdown: progressBreakdown,
 		TeamAllocation:    teamAllocation,
+		ProgressChart:     progressChart,
 	}
 
 	r.log.Info(ctx, "Objective analytics retrieved successfully.")
@@ -463,6 +478,7 @@ func (r *repo) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspac
 		attribute.String("objective.id", objectiveID.String()),
 		attribute.Int("priority_breakdown.count", len(priorityBreakdown)),
 		attribute.Int("team_allocation.count", len(teamAllocation)),
+		attribute.Int("progress_chart.count", len(progressChart)),
 	))
 
 	return analytics, nil
@@ -575,4 +591,58 @@ func (r *repo) getTeamAllocation(ctx context.Context, objectiveID uuid.UUID) ([]
 	}
 
 	return allocation, nil
+}
+
+func (r *repo) getObjectiveProgressData(ctx context.Context, objectiveID uuid.UUID) ([]objectives.CoreObjectiveProgressDataPoint, error) {
+	query := `
+		WITH date_series AS (
+			SELECT DATE(generate_series(
+				NOW() - INTERVAL '30 days',
+				NOW(),
+				INTERVAL '1 day'
+			)) as completion_date
+		),
+		daily_activity AS (
+			SELECT 
+				DATE(sa.created_at) as completion_date,
+				COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as stories_completed,
+				COUNT(CASE WHEN st.category = 'started' THEN 1 END) as stories_in_progress
+			FROM story_activities sa
+			JOIN stories s ON sa.story_id = s.id
+			JOIN statuses st ON CAST(sa.current_value AS uuid) = st.status_id
+			WHERE s.objective_id = :objective_id
+			  AND sa.activity_type = 'update'
+			  AND sa.field_changed = 'status_id'
+			  AND st.category IN ('completed', 'started')
+			  AND sa.created_at >= NOW() - INTERVAL '30 days'
+			  AND sa.created_at <= NOW()
+			  AND s.deleted_at IS NULL
+			  AND s.archived_at IS NULL
+			GROUP BY DATE(sa.created_at)
+		)
+		SELECT 
+			ds.completion_date,
+			COALESCE(da.stories_completed, 0) as stories_completed,
+			COALESCE(da.stories_in_progress, 0) as stories_in_progress
+		FROM date_series ds
+		LEFT JOIN daily_activity da ON ds.completion_date = da.completion_date
+		ORDER BY ds.completion_date
+	`
+
+	params := map[string]interface{}{
+		"objective_id": objectiveID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var progressData []objectives.CoreObjectiveProgressDataPoint
+	if err := stmt.SelectContext(ctx, &progressData, params); err != nil {
+		return nil, err
+	}
+
+	return progressData, nil
 }

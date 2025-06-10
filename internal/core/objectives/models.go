@@ -73,6 +73,7 @@ type CoreObjectiveAnalytics struct {
 	PriorityBreakdown []CorePriorityBreakdown
 	ProgressBreakdown CoreProgressBreakdown
 	TeamAllocation    []CoreTeamMemberAllocation
+	ProgressChart     []CoreObjectiveProgressDataPoint
 }
 
 type CorePriorityBreakdown struct {
@@ -92,7 +93,14 @@ type CoreProgressBreakdown struct {
 type CoreTeamMemberAllocation struct {
 	MemberID  uuid.UUID `db:"user_id"`
 	Username  string    `db:"username"`
-	AvatarURL string    `db:"avatar_url"`
+	AvatarURL *string   `db:"avatar_url"`
 	Assigned  int       `db:"assigned"`
 	Completed int       `db:"completed"`
+}
+
+type CoreObjectiveProgressDataPoint struct {
+	Date       time.Time `json:"date" db:"completion_date"`
+	Completed  int       `json:"completed" db:"stories_completed"`
+	InProgress int       `json:"inProgress" db:"stories_in_progress"`
+	Total      int       `json:"total" db:"total_stories"`
 }
