@@ -597,49 +597,58 @@ func (r *repo) getObjectiveProgressData(ctx context.Context, objectiveID uuid.UU
 	query := `
 		WITH date_series AS (
 			SELECT DATE(generate_series(
-				NOW() - INTERVAL '30 days',
+				NOW() - INTERVAL '90 days',
 				NOW(),
 				INTERVAL '1 day'
 			)) as completion_date
 		),
-		daily_activity AS (
+		story_status_changes AS (
 			SELECT 
-				DATE(sa.created_at) as completion_date,
-				COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as stories_completed,
-				COUNT(CASE WHEN st.category = 'started' THEN 1 END) as stories_in_progress
-			FROM story_activities sa
-			JOIN stories s ON sa.story_id = s.id
+				s.id as story_id,
+				DATE(sa.created_at) as change_date,
+				st.category,
+				ROW_NUMBER() OVER (
+					PARTITION BY s.id, DATE(sa.created_at) 
+					ORDER BY sa.created_at DESC
+				) as rn
+			FROM stories s
+			JOIN story_activities sa ON sa.story_id = s.id
 			JOIN statuses st ON CAST(sa.current_value AS uuid) = st.status_id
 			WHERE s.objective_id = :objective_id
 			  AND sa.activity_type = 'update'
 			  AND sa.field_changed = 'status_id'
-			  AND st.category IN ('completed', 'started')
-			  AND sa.created_at >= NOW() - INTERVAL '30 days'
-			  AND sa.created_at <= NOW()
 			  AND s.deleted_at IS NULL
 			  AND s.archived_at IS NULL
-			GROUP BY DATE(sa.created_at)
 		),
-		daily_totals AS (
+		latest_status_by_date AS (
 			SELECT 
 				ds.completion_date,
-				COUNT(s.id) as total_stories
+				s.id as story_id,
+				COALESCE(
+					(SELECT ssc.category 
+					 FROM story_status_changes ssc 
+					 WHERE ssc.story_id = s.id 
+					   AND ssc.change_date <= ds.completion_date 
+					   AND ssc.rn = 1
+					 ORDER BY ssc.change_date DESC 
+					 LIMIT 1),
+					'unstarted'
+				) as status_category
 			FROM date_series ds
 			CROSS JOIN stories s
 			WHERE s.objective_id = :objective_id
 			  AND s.created_at <= ds.completion_date + INTERVAL '1 day'
-			  AND (s.deleted_at IS NULL OR s.deleted_at > ds.completion_date)
+			  AND s.deleted_at IS NULL
 			  AND s.archived_at IS NULL
-			GROUP BY ds.completion_date
 		)
 		SELECT 
 			ds.completion_date,
-			COALESCE(da.stories_completed, 0) as stories_completed,
-			COALESCE(da.stories_in_progress, 0) as stories_in_progress,
-			COALESCE(dt.total_stories, 0) as total_stories
+			COALESCE(SUM(CASE WHEN lsbd.status_category = 'completed' THEN 1 ELSE 0 END), 0) as stories_completed,
+			COALESCE(SUM(CASE WHEN lsbd.status_category = 'started' THEN 1 ELSE 0 END), 0) as stories_in_progress,
+			COALESCE(COUNT(lsbd.story_id), 0) as total_stories
 		FROM date_series ds
-		LEFT JOIN daily_activity da ON ds.completion_date = da.completion_date
-		LEFT JOIN daily_totals dt ON ds.completion_date = dt.completion_date
+		LEFT JOIN latest_status_by_date lsbd ON ds.completion_date = lsbd.completion_date
+		GROUP BY ds.completion_date
 		ORDER BY ds.completion_date
 	`
 
