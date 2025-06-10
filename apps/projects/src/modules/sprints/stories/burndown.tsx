@@ -172,7 +172,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             strokeDasharray="8 4"
             strokeOpacity={0.6}
             strokeWidth={2}
-            type="linear"
+            type="monotone"
           />
           <Line
             connectNulls={false}
