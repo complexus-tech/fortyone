@@ -201,6 +201,18 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             strokeWidth={2}
             type="linear"
           />
+
+          {/* Total line */}
+          <Line
+            connectNulls={false}
+            dataKey="total"
+            dot={false}
+            stroke={resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280"}
+            strokeDasharray="8 4"
+            strokeOpacity={0.6}
+            strokeWidth={2}
+            type="linear"
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
