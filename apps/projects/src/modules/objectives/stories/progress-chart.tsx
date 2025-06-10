@@ -139,7 +139,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
   const yAxisMax = Math.ceil(maxValue * 1.1);
 
   return (
-    <div className="h-64 w-full">
+    <Box className="h-64 w-full">
       <ResponsiveContainer height="100%" width="100%">
         <ComposedChart
           data={chartData}
@@ -184,7 +184,9 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             }}
             dataKey="date"
             interval={0}
-            tick={{ fontSize: 12 }}
+            tick={{
+              fontSize: 12,
+            }}
             tickFormatter={(value: string, index) => {
               const totalLength = chartData.length - 1;
               const oneThird = Math.floor(totalLength / 3);
@@ -212,7 +214,6 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             domain={[0, yAxisMax]}
             tick={{
               fontSize: 12,
-              fill: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
             }}
             tickLine={{
               stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
@@ -265,6 +266,6 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
           />
         </ComposedChart>
       </ResponsiveContainer>
-    </div>
+    </Box>
   );
 };
