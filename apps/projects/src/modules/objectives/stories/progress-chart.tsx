@@ -133,11 +133,6 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
     }
   });
 
-  const maxValue = Math.max(
-    ...chartData.map((d) => Math.max(d.completed, d.inProgress, d.total)),
-  );
-  const yAxisMax = Math.ceil(maxValue * 1.1);
-
   return (
     <Box className="h-64 w-full">
       <ResponsiveContainer height="100%" width="100%">
@@ -146,7 +141,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
           margin={{
             top: 20,
             right: 20,
-            left: -40,
+            left: -35,
             bottom: 0,
           }}
         >
@@ -211,7 +206,6 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             axisLine={{
               stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
             }}
-            domain={[0, yAxisMax]}
             tick={{
               fontSize: 12,
             }}
