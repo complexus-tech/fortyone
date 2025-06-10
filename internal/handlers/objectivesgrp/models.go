@@ -242,6 +242,7 @@ type AppObjectiveProgressDataPoint struct {
 	Date       time.Time `json:"date"`
 	Completed  int       `json:"completed"`
 	InProgress int       `json:"inProgress"`
+	Total      int       `json:"total"`
 }
 
 // Conversion functions
@@ -299,6 +300,7 @@ func toAppProgressChart(progressChart []objectives.CoreObjectiveProgressDataPoin
 			Date:       p.Date,
 			Completed:  p.Completed,
 			InProgress: p.InProgress,
+			Total:      p.Total,
 		}
 	}
 	return result

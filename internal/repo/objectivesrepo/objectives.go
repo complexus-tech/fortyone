@@ -619,13 +619,27 @@ func (r *repo) getObjectiveProgressData(ctx context.Context, objectiveID uuid.UU
 			  AND s.deleted_at IS NULL
 			  AND s.archived_at IS NULL
 			GROUP BY DATE(sa.created_at)
+		),
+		daily_totals AS (
+			SELECT 
+				ds.completion_date,
+				COUNT(s.id) as total_stories
+			FROM date_series ds
+			CROSS JOIN stories s
+			WHERE s.objective_id = :objective_id
+			  AND s.created_at <= ds.completion_date + INTERVAL '1 day'
+			  AND (s.deleted_at IS NULL OR s.deleted_at > ds.completion_date)
+			  AND s.archived_at IS NULL
+			GROUP BY ds.completion_date
 		)
 		SELECT 
 			ds.completion_date,
 			COALESCE(da.stories_completed, 0) as stories_completed,
-			COALESCE(da.stories_in_progress, 0) as stories_in_progress
+			COALESCE(da.stories_in_progress, 0) as stories_in_progress,
+			COALESCE(dt.total_stories, 0) as total_stories
 		FROM date_series ds
 		LEFT JOIN daily_activity da ON ds.completion_date = da.completion_date
+		LEFT JOIN daily_totals dt ON ds.completion_date = dt.completion_date
 		ORDER BY ds.completion_date
 	`
 
