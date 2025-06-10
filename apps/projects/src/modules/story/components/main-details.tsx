@@ -11,6 +11,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
+import { useEffect } from "react";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
@@ -124,6 +125,13 @@ export const MainDetails = ({
     },
     immediatelyRender: false,
   });
+
+  // Sync title editor content when title changes from cache updates
+  useEffect(() => {
+    if (titleEditor && title && titleEditor.getText() !== title) {
+      titleEditor.commands.setContent(title);
+    }
+  }, [title, titleEditor]);
 
   return (
     <BodyContainer className="h-dvh overflow-y-auto pb-8">
