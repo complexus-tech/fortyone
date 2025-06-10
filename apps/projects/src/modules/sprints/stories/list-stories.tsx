@@ -13,12 +13,12 @@ import { StoriesSkeleton } from "./skeleton";
 
 export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    "objective:sprints:layout",
-    "list",
+    "team:sprints:stories:layout",
+    "kanban",
   );
   const [isExpanded, setIsExpanded] = useLocalStorage<boolean>(
-    "objective:sprints:isExpanded",
-    false,
+    "team:sprints:stories:isExpanded",
+    true,
   );
   const { isPending: isSprintStoriesPending } = useSprintStories(sprintId);
   const { isPending: isSprintPending } = useSprint(sprintId);
@@ -35,7 +35,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
-      <BoardDividedPanel autoSaveId="my-stories:divided-panel">
+      <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
         <BoardDividedPanel.MainPanel>
           <AllStories layout={layout} />
         </BoardDividedPanel.MainPanel>
