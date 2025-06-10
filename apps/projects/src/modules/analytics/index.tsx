@@ -1,40 +1,125 @@
-import { ArrowLeftIcon } from "icons";
-import { Box, Button, Flex, Text } from "ui";
-import { NewStoryButton, PriorityIcon } from "@/components/ui";
+"use client";
+import { Box, Container, Text } from "ui";
+import { useSession } from "next-auth/react";
+import { BodyContainer } from "@/components/shared/body";
+// import { useTerminology } from "@/hooks";
+import { ErrorBoundary } from "@/components/shared";
+import { Header } from "./components/header";
+import { Overview } from "./components/overview";
+import { CompletionTrend } from "./components/completion-trend";
+import { VelocityTrend } from "./components/velocity-trend";
+import { StatusBreakdown } from "./components/status-breakdown";
+import { PriorityDistribution } from "./components/priority-distribution";
+// import { BurndownChart } from "./components/burndown-chart";
+// import { TeamWorkload } from "./components/team-workload";
+import { TeamVelocity } from "./components/team-velocity";
+// import { MemberContributions } from "./components/member-contributions";
+import { ObjectiveHealth } from "./components/objective-health";
+// import { KeyResultsProgress } from "./components/key-results-progress";
+import { SprintHealth } from "./components/sprint-health";
+import { TeamAllocation } from "./components/team-allocation";
+// import { TimelineTrends } from "./components/timeline-trends";
 
 export const AnalyticsPage = () => {
+  // const { getTermDisplay } = useTerminology();
+  const { data: session } = useSession();
+  const timeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 18) return "afternoon";
+    return "evening";
+  };
+
   return (
-    <Box className="flex h-screen items-center justify-center">
-      <Box className="flex flex-col items-center">
-        <PriorityIcon
-          className="h-20 w-auto text-gray dark:text-gray-300"
-          priority="High"
-        />
-        <Text className="mb-6 mt-10" fontSize="3xl">
-          Coming soon...
-        </Text>
-        <Text className="mb-6 max-w-md text-center" color="muted">
-          Oops! This page is under construction. Our team is working on it!
-          While we clear the roadblock, why not explore other routes to
-          productivity?
-        </Text>
-        <Flex gap={2}>
-          <Button
-            className="gap-1 pl-2"
-            color="tertiary"
-            href="/my-work"
-            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+    <>
+      <Header />
+      <BodyContainer>
+        <Container className="pb-4 pt-3">
+          <Text
+            as="h2"
+            className="mb-1 text-2xl md:mb-2 md:text-3xl"
+            fontWeight="medium"
           >
-            Goto my work
-          </Button>
-          <NewStoryButton
-            className="dark:bg-opacity-20 dark:hover:bg-opacity-40"
-            size="md"
+            Good {timeOfDay()}, {session?.user?.name}.
+          </Text>
+          <Text color="muted" fontSize="lg">
+            Here&rsquo;s your workspace analytics and insights.
+          </Text>
+
+          {/* Workspace Overview */}
+          <ErrorBoundary fallback={<div>Error loading overview</div>}>
+            <Overview />
+          </ErrorBoundary>
+
+          {/* Completion & Velocity Trends */}
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
+            <ErrorBoundary fallback={<div>Error loading completion trend</div>}>
+              <CompletionTrend />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading velocity trend</div>}>
+              <VelocityTrend />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading team velocity</div>}>
+              <TeamVelocity />
+            </ErrorBoundary>
+          </Box>
+
+          {/* Stories & Work Analysis */}
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
+            <ErrorBoundary fallback={<div>Error loading status breakdown</div>}>
+              <StatusBreakdown />
+            </ErrorBoundary>
+            <ErrorBoundary
+              fallback={<div>Error loading priority distribution</div>}
+            >
+              <PriorityDistribution />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading team allocation</div>}>
+              <TeamAllocation />
+            </ErrorBoundary>
+          </Box>
+
+          {/* Key Results Progress */}
+          {/* <ErrorBoundary
+            fallback={<div>Error loading key results progress</div>}
           >
-            Create story
-          </NewStoryButton>
-        </Flex>
-      </Box>
-    </Box>
+            <KeyResultsProgress />
+          </ErrorBoundary> */}
+
+          {/* Health & Allocation Analytics */}
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
+            <ErrorBoundary fallback={<div>Error loading objective health</div>}>
+              <ObjectiveHealth />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading sprint health</div>}>
+              <SprintHealth />
+            </ErrorBoundary>
+          </Box>
+
+          {/* Team Performance & Contributions */}
+          {/* <Box className="my-4 grid gap-4 md:grid-cols-3">
+            <ErrorBoundary
+              fallback={<div>Error loading member contributions</div>}
+            >
+              <MemberContributions />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading burndown chart</div>}>
+              <Box className="md:col-span-2">
+                <BurndownChart />
+              </Box>
+            </ErrorBoundary>
+          </Box> */}
+          {/* 
+          <Box className="my-4 grid gap-4 md:grid-cols-2">
+            <ErrorBoundary fallback={<div>Error loading team workload</div>}>
+              <TeamWorkload />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
+              <TimelineTrends />
+            </ErrorBoundary>
+          </Box> */}
+        </Container>
+      </BodyContainer>
+    </>
   );
 };

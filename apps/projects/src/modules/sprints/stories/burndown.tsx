@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { format, isWeekend } from "date-fns";
 import {
   Line,
@@ -49,8 +49,72 @@ const CustomTooltip = ({
   return null;
 };
 
+// Custom tick component defined outside the main component
+const CustomXAxisTick = ({
+  x,
+  y,
+  payload,
+  index,
+  totalLength,
+  isDark,
+}: {
+  x: number;
+  y: number;
+  payload: { value: string };
+  index: number;
+  totalLength: number;
+  isDark: boolean;
+}) => {
+  // Determine text anchor based on position
+  let textAnchor: "start" | "middle" | "end" = "middle";
+  if (index === 0) {
+    textAnchor = "start";
+  } else if (index === totalLength) {
+    textAnchor = "end";
+  }
+
+  const middle = Math.floor(totalLength / 2);
+
+  // Only show ticks at specific intervals (first, middle, last)
+  const shouldShow = index === 0 || index === middle || index === totalLength;
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <text
+      dy={16}
+      fill={isDark ? "#9CA3AF" : "#6B7280"}
+      fontSize={12}
+      textAnchor={textAnchor}
+      x={x}
+      y={y}
+    >
+      {payload.value}
+    </text>
+  );
+};
+
 export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
   const { resolvedTheme } = useTheme();
+
+  // Memoized tick component to avoid recreation on every render
+  const renderTick = useCallback(
+    (props: {
+      x: number;
+      y: number;
+      payload: { value: string };
+      index: number;
+    }) => (
+      <CustomXAxisTick
+        {...props}
+        isDark={resolvedTheme === "dark"}
+        totalLength={burndownData.length - 1}
+      />
+    ),
+    [resolvedTheme, burndownData.length],
+  );
 
   // Transform the analytics data for the chart
   const chartData = burndownData.map((item, index) => {
@@ -94,7 +158,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
           margin={{
             top: 20,
             right: 20,
-            left: -35,
+            left: 2,
             bottom: 0,
           }}
         >
@@ -131,24 +195,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
             }}
             dataKey="date"
             interval={0}
-            tick={{ fontSize: 12 }}
-            tickFormatter={(value: string, index) => {
-              const totalLength = chartData.length - 1;
-              const quarter = Math.floor(totalLength / 4);
-              const middle = Math.floor(totalLength / 2);
-              const threeQuarter = Math.floor((totalLength * 3) / 4);
-
-              if (
-                index === 0 ||
-                index === quarter ||
-                index === middle ||
-                index === threeQuarter ||
-                index === totalLength
-              ) {
-                return value;
-              }
-              return "";
-            }}
+            tick={renderTick}
             tickLine={{
               stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
             }}

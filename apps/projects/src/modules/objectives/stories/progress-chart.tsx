@@ -1,11 +1,10 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { format, isWeekend, parseISO } from "date-fns";
 import {
   ComposedChart,
   Line,
   XAxis,
-  YAxis,
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
@@ -94,8 +93,77 @@ const CustomLegend = () => {
   );
 };
 
+// Custom tick component for X-axis with dynamic text anchoring
+const CustomXAxisTick = ({
+  x,
+  y,
+  payload,
+  index,
+  totalLength,
+  isDark,
+}: {
+  x: number;
+  y: number;
+  payload: { value: string };
+  index: number;
+  totalLength: number;
+  isDark: boolean;
+}) => {
+  // Determine text anchor based on position
+  let textAnchor: "start" | "middle" | "end" = "middle";
+  if (index === 0) {
+    textAnchor = "start";
+  } else if (index === totalLength) {
+    textAnchor = "end";
+  }
+
+  const oneThird = Math.floor(totalLength / 3);
+  const twoThird = Math.floor((totalLength * 2) / 3);
+
+  // Only show ticks at specific intervals (first, one-third, two-thirds, last)
+  const shouldShow =
+    index === 0 ||
+    index === oneThird ||
+    index === twoThird ||
+    index === totalLength;
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <text
+      dy={16}
+      fill={isDark ? "#9CA3AF" : "#6B7280"}
+      fontSize={12}
+      textAnchor={textAnchor}
+      x={x}
+      y={y}
+    >
+      {payload.value}
+    </text>
+  );
+};
+
 export const ProgressChart = ({ progressData }: ProgressChartProps) => {
   const { resolvedTheme } = useTheme();
+
+  // Memoized tick component to avoid recreation on every render
+  const renderTick = useCallback(
+    (props: {
+      x: number;
+      y: number;
+      payload: { value: string };
+      index: number;
+    }) => (
+      <CustomXAxisTick
+        {...props}
+        isDark={resolvedTheme === "dark"}
+        totalLength={progressData.length - 1}
+      />
+    ),
+    [resolvedTheme, progressData.length],
+  );
 
   const chartData = useMemo(() => {
     return progressData.map((item, index) => {
@@ -141,7 +209,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
           margin={{
             top: 20,
             right: 20,
-            left: -42,
+            left: 3,
             bottom: 0,
           }}
         >
@@ -179,38 +247,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             }}
             dataKey="date"
             interval={0}
-            tick={{
-              fontSize: 12,
-            }}
-            tickFormatter={(value: string, index) => {
-              const totalLength = chartData.length - 1;
-              const oneThird = Math.floor(totalLength / 3);
-              const twoThird = Math.floor((totalLength * 2) / 3);
-
-              if (
-                index === 0 ||
-                index === oneThird ||
-                index === twoThird ||
-                index === totalLength
-              ) {
-                return value;
-              }
-              return "";
-            }}
-            tickLine={false}
-          />
-
-          <YAxis
-            axisLine={{
-              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
-            }}
-            tick={{
-              fontSize: 12,
-            }}
-            tickFormatter={(_) => {
-              // Hide y-axis labels
-              return "";
-            }}
+            tick={renderTick}
             tickLine={{
               stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
             }}

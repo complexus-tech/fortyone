@@ -3,7 +3,7 @@ import {
   useFeatureFlagVariantKey,
 } from "posthog-js/react";
 
-export const availableFlags = ["enable-sprints"] as const;
+export const availableFlags = ["analytics_page"] as const;
 
 export const useFeatureFlag = (flag: (typeof availableFlags)[number]) => {
   return useFeatureFlagEnabled(flag);

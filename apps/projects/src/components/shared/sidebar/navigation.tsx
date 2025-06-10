@@ -2,6 +2,7 @@ import { usePathname } from "next/navigation";
 import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import {
+  AnalyticsIcon,
   // AnalyticsIcon,
   DashboardIcon,
   NotificationsIcon,
@@ -12,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
-import { useTerminology, useFeatures } from "@/hooks";
+import { useTerminology, useFeatures, useFeatureFlag } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
@@ -27,6 +28,7 @@ export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { data: runningSprints = [] } = useRunningSprints();
+  const isAnalyticsEnabled = useFeatureFlag("analytics_page");
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
 
@@ -60,16 +62,17 @@ export const Navigation = () => {
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
-    // {
-    //   name: "Analytics",
-    //   icon: <AnalyticsIcon />,
-    //   href: "/analytics",
-    // },
     {
       name: "Notifications",
       icon: <NotificationsIcon className="h-[1.3rem]" />,
       href: "/notifications",
       messages: unreadNotifications,
+    },
+    {
+      name: "Analytics",
+      icon: <AnalyticsIcon />,
+      href: "/analytics",
+      disabled: !isAnalyticsEnabled,
     },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
   ];
