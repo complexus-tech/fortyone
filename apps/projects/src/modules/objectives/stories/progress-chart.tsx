@@ -52,11 +52,11 @@ const CustomTooltip = ({
           Completed: {data.completed}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.1 text-warning">
+        <Box className="mb-0.5 text-warning">
           In Progress: {data.inProgress}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="text-gray-600 mb-0.5 dark:text-gray-300">
+        <Box className="mb-0.5 text-gray dark:text-gray-300">
           Total: {data.total}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
@@ -73,19 +73,19 @@ const CustomLegend = () => {
   return (
     <Box className="flex justify-center gap-6">
       <Box className="flex items-center gap-2">
-        <Box className="h-0.5 w-3 bg-[#6366F1]" />
+        <Box className="h-1 w-3 bg-[#6366F1]" />
         <span className="text-gray dark:text-gray-300">Completed</span>
       </Box>
       <Box className="flex items-center gap-2">
-        <Box className="h-0.5 w-3 bg-[#eab308]" />
+        <Box className="h-1 w-3 bg-[#eab308]" />
         <span className="text-gray dark:text-gray-300">In Progress</span>
       </Box>
       <Box className="flex items-center gap-2">
         <Box
-          className="h-0.5 w-3 border-b-2 border-dashed"
+          className="h-1 w-3 bg-gray dark:bg-gray-300"
           style={{
             borderColor: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
-            opacity: 0.6,
+            opacity: 0.8,
           }}
         />
         <span className="text-gray dark:text-gray-300">Total</span>
@@ -141,7 +141,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
           margin={{
             top: 20,
             right: 20,
-            left: -35,
+            left: -42,
             bottom: 0,
           }}
         >
@@ -197,9 +197,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
               }
               return "";
             }}
-            tickLine={{
-              stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
-            }}
+            tickLine={false}
           />
 
           <YAxis
@@ -208,6 +206,10 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             }}
             tick={{
               fontSize: 12,
+            }}
+            tickFormatter={(_) => {
+              // Hide y-axis labels
+              return "";
             }}
             tickLine={{
               stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
@@ -232,7 +234,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             dataKey="completed"
             dot={false}
             stroke="#6366F1"
-            strokeWidth={2}
+            strokeWidth={1.5}
             type="linear"
           />
 
@@ -242,8 +244,7 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             dataKey="inProgress"
             dot={false}
             stroke="#eab308"
-            strokeOpacity={0.8}
-            strokeWidth={2}
+            strokeWidth={1.5}
             type="linear"
           />
 
@@ -253,9 +254,8 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             dataKey="total"
             dot={false}
             stroke={resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280"}
-            strokeDasharray="8 4"
-            strokeOpacity={0.6}
-            strokeWidth={2}
+            strokeOpacity={0.8}
+            strokeWidth={1.5}
             type="linear"
           />
         </ComposedChart>

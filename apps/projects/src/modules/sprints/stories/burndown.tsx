@@ -57,24 +57,11 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
     const date = new Date(item.date);
     const isWeekendDay = isWeekend(date);
 
-    // For weekends, use the ideal value from the last working day
-    let idealValue = item.ideal;
-    if (isWeekendDay && index > 0) {
-      // Find the last working day's ideal value
-      for (let i = index - 1; i >= 0; i--) {
-        const prevDate = new Date(burndownData[i].date);
-        if (!isWeekend(prevDate)) {
-          idealValue = burndownData[i].ideal;
-          break;
-        }
-      }
-    }
-
     return {
       date: format(date, "MMM d"),
       day: index + 1,
       actual: item.remaining,
-      ideal: idealValue,
+      ideal: item.ideal,
       isWeekend: isWeekendDay,
       rawDate: item.date,
     };
