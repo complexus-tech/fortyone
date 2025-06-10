@@ -5,9 +5,11 @@ import {
   ComposedChart,
   Line,
   XAxis,
+  YAxis,
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  Legend,
 } from "recharts";
 import { Box, Text } from "ui";
 import { useTheme } from "next-themes";
@@ -65,6 +67,33 @@ const CustomTooltip = ({
   return null;
 };
 
+const CustomLegend = () => {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <Box className="flex justify-center gap-6">
+      <Box className="flex items-center gap-2">
+        <Box className="h-0.5 w-3 bg-[#6366F1]" />
+        <span className="text-gray dark:text-gray-300">Completed</span>
+      </Box>
+      <Box className="flex items-center gap-2">
+        <Box className="h-0.5 w-3 bg-[#eab308]" />
+        <span className="text-gray dark:text-gray-300">In Progress</span>
+      </Box>
+      <Box className="flex items-center gap-2">
+        <Box
+          className="h-0.5 w-3 border-b-2 border-dashed"
+          style={{
+            borderColor: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
+            opacity: 0.6,
+          }}
+        />
+        <span className="text-gray dark:text-gray-300">Total</span>
+      </Box>
+    </Box>
+  );
+};
+
 export const ProgressChart = ({ progressData }: ProgressChartProps) => {
   const { resolvedTheme } = useTheme();
 
@@ -104,15 +133,20 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
     }
   });
 
+  const maxValue = Math.max(
+    ...chartData.map((d) => Math.max(d.completed, d.inProgress, d.total)),
+  );
+  const yAxisMax = Math.ceil(maxValue * 1.1);
+
   return (
-    <div className="h-60 w-full">
+    <div className="h-64 w-full">
       <ResponsiveContainer height="100%" width="100%">
         <ComposedChart
           data={chartData}
           margin={{
             top: 20,
             right: 20,
-            left: -35,
+            left: -40,
             bottom: 0,
           }}
         >
@@ -171,6 +205,20 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
             }}
           />
 
+          <YAxis
+            axisLine={{
+              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
+            }}
+            domain={[0, yAxisMax]}
+            tick={{
+              fontSize: 12,
+              fill: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
+            }}
+            tickLine={{
+              stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
+            }}
+          />
+
           <Tooltip
             content={<CustomTooltip />}
             cursor={{
@@ -180,6 +228,8 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
                   : "rgba(0, 0, 0, 0.05)",
             }}
           />
+
+          <Legend content={<CustomLegend />} />
 
           {/* Completed line */}
           <Line
