@@ -108,4 +108,10 @@ export type ObjectiveAnalytics = {
     assigned: number;
     completed: number;
   }[];
+  progressChart: {
+    date: string;
+    completed: number;
+    inProgress: number;
+    total: number;
+  }[];
 };

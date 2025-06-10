@@ -26,6 +26,7 @@ import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-anal
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import { ProgressChart } from "./progress-chart";
 
 const Option = ({
   label,
@@ -75,7 +76,12 @@ export const Sidebar = ({ className }: { className?: string }) => {
     return null;
   }
 
-  const { progressBreakdown, teamAllocation, priorityBreakdown } = analytics;
+  const {
+    progressBreakdown,
+    teamAllocation,
+    priorityBreakdown,
+    progressChart,
+  } = analytics;
   const createdBy = members.find((m) => m.id === objective?.createdBy);
   const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
@@ -214,7 +220,12 @@ export const Sidebar = ({ className }: { className?: string }) => {
           }
         />
       </Box>
-      <Divider className="mb-3" />
+      <Divider className="my-6" />
+      <Box>
+        <Text>Progress Chart</Text>
+        <ProgressChart progressData={progressChart} />
+      </Box>
+      <Divider className="my-6" />
       <Text className="mb-3">Stories Overview</Text>
       <Tabs defaultValue="assignees">
         <Tabs.List className="mx-0 mb-3 md:mx-0">
