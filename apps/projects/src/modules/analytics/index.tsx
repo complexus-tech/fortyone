@@ -2,7 +2,7 @@
 import { Box, Container, Text } from "ui";
 import { useSession } from "next-auth/react";
 import { BodyContainer } from "@/components/shared/body";
-import { useTerminology } from "@/hooks";
+// import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
 import { Header } from "./components/header";
 import { Overview } from "./components/overview";
@@ -10,18 +10,18 @@ import { CompletionTrend } from "./components/completion-trend";
 import { VelocityTrend } from "./components/velocity-trend";
 import { StatusBreakdown } from "./components/status-breakdown";
 import { PriorityDistribution } from "./components/priority-distribution";
-import { BurndownChart } from "./components/burndown-chart";
-import { TeamWorkload } from "./components/team-workload";
+// import { BurndownChart } from "./components/burndown-chart";
+// import { TeamWorkload } from "./components/team-workload";
 import { TeamVelocity } from "./components/team-velocity";
-import { MemberContributions } from "./components/member-contributions";
+// import { MemberContributions } from "./components/member-contributions";
 import { ObjectiveHealth } from "./components/objective-health";
-import { KeyResultsProgress } from "./components/key-results-progress";
+// import { KeyResultsProgress } from "./components/key-results-progress";
 import { SprintHealth } from "./components/sprint-health";
 import { TeamAllocation } from "./components/team-allocation";
-import { TimelineTrends } from "./components/timeline-trends";
+// import { TimelineTrends } from "./components/timeline-trends";
 
 export const AnalyticsPage = () => {
-  const { getTermDisplay } = useTerminology();
+  // const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
   const timeOfDay = () => {
     const hour = new Date().getHours();
@@ -65,7 +65,7 @@ export const AnalyticsPage = () => {
           </Box>
 
           {/* Stories & Work Analysis */}
-          <Box className="my-4 grid gap-4 md:grid-cols-2">
+          <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading status breakdown</div>}>
               <StatusBreakdown />
             </ErrorBoundary>
@@ -74,14 +74,17 @@ export const AnalyticsPage = () => {
             >
               <PriorityDistribution />
             </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading team allocation</div>}>
+              <TeamAllocation />
+            </ErrorBoundary>
           </Box>
 
           {/* Key Results Progress */}
-          <ErrorBoundary
+          {/* <ErrorBoundary
             fallback={<div>Error loading key results progress</div>}
           >
             <KeyResultsProgress />
-          </ErrorBoundary>
+          </ErrorBoundary> */}
 
           {/* Health & Allocation Analytics */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
@@ -91,13 +94,10 @@ export const AnalyticsPage = () => {
             <ErrorBoundary fallback={<div>Error loading sprint health</div>}>
               <SprintHealth />
             </ErrorBoundary>
-            <ErrorBoundary fallback={<div>Error loading team allocation</div>}>
-              <TeamAllocation />
-            </ErrorBoundary>
           </Box>
 
           {/* Team Performance & Contributions */}
-          <Box className="my-4 grid gap-4 md:grid-cols-3">
+          {/* <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary
               fallback={<div>Error loading member contributions</div>}
             >
@@ -108,17 +108,16 @@ export const AnalyticsPage = () => {
                 <BurndownChart />
               </Box>
             </ErrorBoundary>
-          </Box>
-
-          {/* Team Workload */}
-          <ErrorBoundary fallback={<div>Error loading team workload</div>}>
-            <TeamWorkload />
-          </ErrorBoundary>
-
-          {/* Timeline Trends */}
-          <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
-            <TimelineTrends />
-          </ErrorBoundary>
+          </Box> */}
+          {/* 
+          <Box className="my-4 grid gap-4 md:grid-cols-2">
+            <ErrorBoundary fallback={<div>Error loading team workload</div>}>
+              <TeamWorkload />
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
+              <TimelineTrends />
+            </ErrorBoundary>
+          </Box> */}
         </Container>
       </BodyContainer>
     </>

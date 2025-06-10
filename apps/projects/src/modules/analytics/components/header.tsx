@@ -1,16 +1,24 @@
 "use client";
-import { Flex, Text } from "ui";
+import { Flex, BreadCrumbs } from "ui";
+import { AnalyticsIcon } from "icons";
+import { HeaderContainer, MobileMenuButton } from "@/components/shared";
+import { NewStoryButton } from "@/components/ui";
 
 export const Header = () => {
   return (
-    <Flex
-      align="center"
-      className="border-b border-gray-100 bg-gray-50/30 px-4 py-3 dark:border-dark-100 dark:bg-dark-300/50 md:px-5"
-      justify="between"
-    >
-      <Text fontSize="lg" fontWeight="medium">
-        Analytics
-      </Text>
-    </Flex>
+    <HeaderContainer className="justify-between">
+      <Flex align="center" gap={2}>
+        <MobileMenuButton />
+        <BreadCrumbs
+          breadCrumbs={[
+            {
+              name: "Analytics",
+              icon: <AnalyticsIcon />,
+            },
+          ]}
+        />
+      </Flex>
+      <NewStoryButton />
+    </HeaderContainer>
   );
 };

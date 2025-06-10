@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
-import { useTerminology, useFeatures } from "@/hooks";
+import { useTerminology, useFeatures, useFeatureFlag } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
@@ -28,6 +28,7 @@ export const Navigation = () => {
   const pathname = usePathname();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { data: runningSprints = [] } = useRunningSprints();
+  const isAnalyticsEnabled = useFeatureFlag("analytics_page");
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
 
