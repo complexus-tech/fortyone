@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useAnalytics } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Story } from "@/modules/stories/types";
+import type { SearchResponse } from "@/modules/search/types";
 import type { DetailedStory } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
@@ -55,6 +56,20 @@ export const useUpdateStoryMutation = () => {
           }
         }
       });
+
+      // Update search results if any exist
+      queryClient
+        .getQueriesData<SearchResponse>({ queryKey: ["search"] })
+        .forEach(([queryKey, data]) => {
+          if (data?.stories) {
+            queryClient.setQueryData<SearchResponse>(queryKey, {
+              ...data,
+              stories: data.stories.map((story) =>
+                story.id === storyId ? { ...story, ...payload } : story,
+              ),
+            });
+          }
+        });
 
       if (previousStory) {
         queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
