@@ -70,7 +70,7 @@ export const NotificationCard = ({
                 "block cursor-pointer border-b-[0.5px] border-gray-100 px-5 py-[0.655rem] transition hover:bg-gray-50/60 dark:border-dark-100 dark:hover:bg-dark-300/90 md:px-4",
                 {
                   "bg-gray-100/70 dark:bg-dark-200/80": pathname.includes(id),
-                  "relative left-px border-l-[1.5px] border-l-primary dark:border-l-primary":
+                  "border-l-[1.5px] border-l-primary dark:border-l-primary":
                     isUnread,
                 },
               )}
