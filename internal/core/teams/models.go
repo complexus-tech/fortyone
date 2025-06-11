@@ -33,10 +33,10 @@ type DefaultStatus struct {
 }
 
 var DefaultStoryStatuses = []DefaultStatus{
-	{Name: "Backlog", Category: "backlog", OrderIndex: 0, Color: "#6b665c"},
-	{Name: "To Do", Category: "unstarted", OrderIndex: 1, Color: "#6b665c"},
-	{Name: "In Progress", Category: "started", OrderIndex: 2, Color: "#eab308"},
-	{Name: "Blocked", Category: "paused", OrderIndex: 3, Color: "#6b665c"},
-	{Name: "Done", Category: "completed", OrderIndex: 4, Color: "#22c55e"},
-	{Name: "Cancelled", Category: "cancelled", OrderIndex: 5, Color: "#f43f5e"},
+	{Name: "Backlog", Category: "backlog", OrderIndex: 1000, Color: "#6b665c"},
+	{Name: "To Do", Category: "unstarted", OrderIndex: 2000, Color: "#6b665c"},
+	{Name: "In Progress", Category: "started", OrderIndex: 3000, Color: "#eab308"},
+	{Name: "Done", Category: "completed", OrderIndex: 4000, Color: "#22c55e"},
+	{Name: "Blocked", Category: "paused", OrderIndex: 5000, Color: "#6b665c"},
+	{Name: "Cancelled", Category: "cancelled", OrderIndex: 6000, Color: "#f43f5e"},
 }
