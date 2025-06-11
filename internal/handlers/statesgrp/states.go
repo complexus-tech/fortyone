@@ -109,6 +109,24 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
+	// Check for optional teamId query parameter
+	teamIdParam := r.URL.Query().Get("teamId")
+	if teamIdParam != "" {
+		teamId, err := uuid.Parse(teamIdParam)
+		if err != nil {
+			return web.RespondError(ctx, w, errors.New("invalid team ID"), http.StatusBadRequest)
+		}
+
+		// Use TeamList for specific team filtering
+		states, err := h.states.TeamList(ctx, workspaceId, teamId)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		return web.Respond(ctx, w, toAppStates(states), http.StatusOK)
+	}
+
+	// Default behavior - all states for teams user belongs to
 	states, err := h.states.List(ctx, workspaceId, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
