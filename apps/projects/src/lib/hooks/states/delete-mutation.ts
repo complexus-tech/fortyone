@@ -1,21 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import { statusKeys } from "@/constants/keys";
 import type { State } from "@/types/states";
 import { deleteStateAction } from "../../actions/states/delete";
 
 export const useDeleteStateMutation = () => {
   const queryClient = useQueryClient();
+  const { teamId } = useParams<{ teamId: string }>();
 
   const mutation = useMutation({
     mutationFn: (stateId: string) => deleteStateAction(stateId),
     onMutate: (stateId) => {
       const previousStates = queryClient.getQueryData<State[]>(
-        statusKeys.lists(),
+        statusKeys.team(teamId),
       );
       if (previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.lists(),
+          statusKeys.team(teamId),
           previousStates.filter((state) => state.id !== stateId),
         );
       }
@@ -24,7 +26,7 @@ export const useDeleteStateMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.lists(),
+          statusKeys.team(teamId),
           context.previousStates,
         );
       }
@@ -38,6 +40,9 @@ export const useDeleteStateMutation = () => {
         },
       });
       queryClient.invalidateQueries({
+        queryKey: statusKeys.team(teamId),
+      });
+      queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
       });
     },
@@ -48,6 +53,9 @@ export const useDeleteStateMutation = () => {
 
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: statusKeys.team(teamId),
       });
     },
   });

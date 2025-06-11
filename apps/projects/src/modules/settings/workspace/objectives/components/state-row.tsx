@@ -7,11 +7,12 @@ import {
   CheckIcon,
   CloseIcon,
   DeleteIcon,
-  // DragIcon,
+  DragIcon,
   EditIcon,
   MoreHorizontalIcon,
   SuccessIcon,
 } from "icons";
+import { useSortable } from "@dnd-kit/sortable";
 import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
 import { StoryStatusIcon } from "@/components/ui";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
@@ -35,6 +36,26 @@ export const StateRow = ({
   const [isEditing, setIsEditing] = useState(isNew);
   const [form, setForm] = useState({ name: status.name });
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: status.id,
+    disabled: isNew || isEditing,
+  });
+
+  const style = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -79,9 +100,19 @@ export const StateRow = ({
     <form
       className="flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70"
       onSubmit={handleSubmit}
+      ref={setNodeRef}
+      style={style}
     >
       <Flex align="center" gap={2}>
-        {/* <DragIcon strokeWidth={4} /> */}
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing"
+          style={{ touchAction: "none" }}
+        >
+          <DragIcon strokeWidth={4} />
+        </button>
         <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
           <StoryStatusIcon category={status.category} />
         </Box>

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { ObjectiveStatus } from "../../types";
 import { objectiveKeys } from "../../constants";
 import type { NewObjectiveStatus } from "../../actions/statuses/create";
 import { createObjectiveStatusAction } from "../../actions/statuses/create";
@@ -13,41 +12,13 @@ export const useCreateObjectiveStatusMutation = () => {
     mutationFn: (newStatus: NewObjectiveStatus) =>
       createObjectiveStatusAction(newStatus),
 
-    onMutate: (newStatus) => {
+    onMutate: () => {
       toast.loading("Please wait...", {
         id: toastId,
         description: "Creating status...",
       });
-      const optimisticStatus: ObjectiveStatus = {
-        ...newStatus,
-        id: "optimistic",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isDefault: false,
-        orderIndex: 50,
-        workspaceId: "optimistic",
-      };
-
-      const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
-        objectiveKeys.statuses(),
-      );
-      if (previousStatuses) {
-        queryClient.setQueryData<ObjectiveStatus[]>(objectiveKeys.statuses(), [
-          ...previousStatuses,
-          optimisticStatus,
-        ]);
-      }
-
-      return { previousStatuses };
     },
-
-    onError: (error, variables, context) => {
-      if (context?.previousStatuses) {
-        queryClient.setQueryData<ObjectiveStatus[]>(
-          objectiveKeys.statuses(),
-          context.previousStatuses,
-        );
-      }
+    onError: (error, variables) => {
       toast.error("Failed to create status", {
         description: error.message || "Your changes were not saved",
         id: toastId,

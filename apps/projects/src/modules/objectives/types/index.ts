@@ -81,6 +81,7 @@ export type ObjectiveStatus = {
   name: string;
   category: StateCategory;
   isDefault: boolean;
+  color: string;
   orderIndex: number;
   workspaceId: string;
   createdAt: string;
