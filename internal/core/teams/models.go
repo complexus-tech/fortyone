@@ -29,13 +29,14 @@ type DefaultStatus struct {
 	Name       string
 	Category   string
 	OrderIndex int
+	Color      string
 }
 
 var DefaultStoryStatuses = []DefaultStatus{
-	{Name: "Backlog", Category: "backlog", OrderIndex: 0},
-	{Name: "To Do", Category: "unstarted", OrderIndex: 1},
-	{Name: "In Progress", Category: "started", OrderIndex: 2},
-	{Name: "Blocked", Category: "paused", OrderIndex: 3},
-	{Name: "Done", Category: "completed", OrderIndex: 4},
-	{Name: "Cancelled", Category: "cancelled", OrderIndex: 5},
+	{Name: "Backlog", Category: "backlog", OrderIndex: 0, Color: "#6b665c"},
+	{Name: "To Do", Category: "unstarted", OrderIndex: 1, Color: "#6b665c"},
+	{Name: "In Progress", Category: "started", OrderIndex: 2, Color: "#eab308"},
+	{Name: "Blocked", Category: "paused", OrderIndex: 3, Color: "#6b665c"},
+	{Name: "Done", Category: "completed", OrderIndex: 4, Color: "#22c55e"},
+	{Name: "Cancelled", Category: "cancelled", OrderIndex: 5, Color: "#f43f5e"},
 }

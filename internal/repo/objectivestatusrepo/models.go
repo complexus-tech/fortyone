@@ -14,6 +14,7 @@ type dbObjectiveStatus struct {
 	OrderIndex int        `db:"order_index"`
 	Workspace  uuid.UUID  `db:"workspace_id"`
 	IsDefault  bool       `db:"is_default"`
+	Color      string     `db:"color"`
 	CreatedAt  time.Time  `db:"created_at"`
 	UpdatedAt  time.Time  `db:"updated_at"`
 	DeletedAt  *time.Time `db:"deleted_at"`
@@ -27,6 +28,7 @@ func toCoreObjectiveStatus(s dbObjectiveStatus) objectivestatus.CoreObjectiveSta
 		OrderIndex: s.OrderIndex,
 		Workspace:  s.Workspace,
 		IsDefault:  s.IsDefault,
+		Color:      s.Color,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 	}

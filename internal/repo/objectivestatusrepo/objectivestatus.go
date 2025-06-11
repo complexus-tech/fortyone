@@ -44,6 +44,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]objectivestat
 			order_index,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM
@@ -159,6 +160,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		OrderIndex: maxOrder + 1,
 		Workspace:  workspaceId,
 		IsDefault:  ns.IsDefault,
+		Color:      ns.Color,
 	}
 
 	params = map[string]interface{}{
@@ -167,18 +169,19 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		"order_index":  status.OrderIndex,
 		"workspace_id": status.Workspace,
 		"is_default":   status.IsDefault,
+		"color":        status.Color,
 	}
 
 	q2 := `
 		INSERT INTO objective_statuses (
-			name, category, order_index,
+			name, category, order_index, color,
 			workspace_id, is_default
 		) VALUES (
-			:name, :category, :order_index,
+			:name, :category, :order_index, :color,
 			:workspace_id, :is_default
 		)
 		RETURNING 
-			status_id, name, category, order_index, workspace_id, is_default, created_at, updated_at
+			status_id, name, category, order_index, workspace_id, is_default, color, created_at, updated_at
 	`
 
 	stmt2, err := tx.PrepareNamedContext(ctx, q2)
@@ -273,6 +276,10 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 		params["is_default"] = *us.IsDefault
 		setClauses = append(setClauses, "is_default = :is_default")
 	}
+	if us.Color != nil {
+		params["color"] = *us.Color
+		setClauses = append(setClauses, "color = :color")
+	}
 
 	if len(setClauses) == 0 {
 		tx.Rollback()
@@ -287,7 +294,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, workspace_id, is_default, created_at, updated_at
+		RETURNING status_id, name, category, order_index, workspace_id, is_default, color, created_at, updated_at
 	`, setClause)
 
 	stmt, err := tx.PrepareNamedContext(ctx, q)
@@ -456,6 +463,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, statusId uuid.UUID) (object
 			order_index,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM

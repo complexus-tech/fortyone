@@ -25,14 +25,15 @@ type DefaultStatus struct {
 	Name       string
 	Category   string
 	OrderIndex int
+	Color      string
 }
 
 // DefaultObjectiveStatuses defines the default statuses created for objectives in a workspace
 var DefaultObjectiveStatuses = []DefaultStatus{
-	{Name: "To Do", Category: "unstarted", OrderIndex: 0},
-	{Name: "In Progress", Category: "started", OrderIndex: 1},
-	{Name: "Blocked", Category: "paused", OrderIndex: 2},
-	{Name: "Done", Category: "completed", OrderIndex: 3},
+	{Name: "To Do", Category: "unstarted", OrderIndex: 0, Color: "#6b665c"},
+	{Name: "In Progress", Category: "started", OrderIndex: 1, Color: "#eab308"},
+	{Name: "Blocked", Category: "paused", OrderIndex: 2, Color: "#6b665c"},
+	{Name: "Done", Category: "completed", OrderIndex: 3, Color: "#22c55e"},
 }
 
 // CoreWorkspaceSettings represents workspace settings in the application layer

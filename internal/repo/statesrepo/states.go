@@ -46,6 +46,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			s.team_id,
 			s.workspace_id,
 			s.is_default,
+			s.color,
 			s.created_at,
 			s.updated_at
 		FROM
@@ -104,6 +105,7 @@ func (r *repo) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.
 			team_id,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM
@@ -223,6 +225,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		Team:       ns.Team,
 		Workspace:  workspaceId,
 		IsDefault:  ns.IsDefault,
+		Color:      ns.Color,
 	}
 
 	params = map[string]any{
@@ -232,17 +235,18 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 		"team_id":      state.Team,
 		"workspace_id": state.Workspace,
 		"is_default":   state.IsDefault,
+		"color":        state.Color,
 	}
 
 	q2 := `
 		INSERT INTO statuses (
-			name, category, order_index,
+			name, category, order_index, color,
 			team_id, workspace_id, is_default
 		) VALUES (
-			:name, :category, :order_index,
+			:name, :category, :order_index, :color,
 			:team_id, :workspace_id, :is_default
 		)
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, color, created_at, updated_at
 	`
 
 	stmt2, err := tx.PrepareNamedContext(ctx, q2)
@@ -370,6 +374,10 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		params["is_default"] = *us.IsDefault
 		setClauses = append(setClauses, "is_default = :is_default")
 	}
+	if us.Color != nil {
+		params["color"] = *us.Color
+		setClauses = append(setClauses, "color = :color")
+	}
 
 	if len(setClauses) == 0 {
 		tx.Rollback()
@@ -384,7 +392,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, color, created_at, updated_at
 	`, setClause)
 
 	stmt, err := tx.PrepareNamedContext(ctx, q)
@@ -553,6 +561,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, stateId uuid.UUID) (states.
 			team_id,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM

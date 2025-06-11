@@ -275,16 +275,17 @@ func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, 
 
 	for i, status := range workspaces.DefaultObjectiveStatuses {
 		paramPrefix := fmt.Sprintf("o%d_", i)
-		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :%scolor, :workspace_id)", paramPrefix, paramPrefix, paramPrefix, paramPrefix)
 		objectiveParams[paramPrefix+"name"] = status.Name
 		objectiveParams[paramPrefix+"category"] = status.Category
 		objectiveParams[paramPrefix+"order_index"] = status.OrderIndex
+		objectiveParams[paramPrefix+"color"] = status.Color
 	}
 	objectiveParams["workspace_id"] = workspaceID
 
 	// Batch insert objective statuses
 	objectiveQuery := fmt.Sprintf(`
-		INSERT INTO objective_statuses (name, category, order_index, workspace_id)
+		INSERT INTO objective_statuses (name, category, order_index, color, workspace_id)
 		VALUES %s
 	`, strings.Join(objectiveValues, ","))
 

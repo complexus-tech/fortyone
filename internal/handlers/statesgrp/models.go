@@ -16,6 +16,7 @@ type AppStatesList struct {
 	Team       uuid.UUID  `json:"teamId"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
 	IsDefault  bool       `json:"isDefault"`
+	Color      string     `json:"color"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
@@ -26,12 +27,14 @@ type NewState struct {
 	Category  string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
 	Team      uuid.UUID `json:"teamId" validate:"required"`
 	IsDefault bool      `json:"isDefault"`
+	Color     string    `json:"color" validate:"required"`
 }
 
 type UpdateState struct {
 	Name       *string `json:"name,omitempty"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
 	IsDefault  *bool   `json:"isDefault,omitempty"`
+	Color      *string `json:"color,omitempty"`
 }
 
 func toAppState(s states.CoreState) AppStatesList {
@@ -43,6 +46,7 @@ func toAppState(s states.CoreState) AppStatesList {
 		Team:       s.Team,
 		Workspace:  s.Workspace,
 		IsDefault:  s.IsDefault,
+		Color:      s.Color,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 	}
@@ -62,6 +66,7 @@ func toCoreNewState(ns NewState) states.CoreNewState {
 		Category:  ns.Category,
 		Team:      ns.Team,
 		IsDefault: ns.IsDefault,
+		Color:     ns.Color,
 	}
 }
 
@@ -70,5 +75,6 @@ func toCoreUpdateState(us UpdateState) states.CoreUpdateState {
 		Name:       us.Name,
 		OrderIndex: us.OrderIndex,
 		IsDefault:  us.IsDefault,
+		Color:      us.Color,
 	}
 }

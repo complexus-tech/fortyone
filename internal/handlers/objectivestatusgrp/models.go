@@ -15,6 +15,7 @@ type AppObjectiveStatusList struct {
 	OrderIndex int        `json:"orderIndex"`
 	Workspace  uuid.UUID  `json:"workspaceId"`
 	IsDefault  bool       `json:"isDefault"`
+	Color      string     `json:"color"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 	DeletedAt  *time.Time `json:"deletedAt,omitempty"`
@@ -24,12 +25,14 @@ type NewObjectiveStatus struct {
 	Name      string `json:"name" validate:"required"`
 	Category  string `json:"category" validate:"required,oneof=unstarted started paused completed cancelled"`
 	IsDefault bool   `json:"isDefault"`
+	Color     string `json:"color" validate:"required"`
 }
 
 type UpdateObjectiveStatus struct {
 	Name       *string `json:"name,omitempty"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
 	IsDefault  *bool   `json:"isDefault,omitempty"`
+	Color      *string `json:"color,omitempty"`
 }
 
 func toAppObjectiveStatus(s objectivestatus.CoreObjectiveStatus) AppObjectiveStatusList {
@@ -40,6 +43,7 @@ func toAppObjectiveStatus(s objectivestatus.CoreObjectiveStatus) AppObjectiveSta
 		OrderIndex: s.OrderIndex,
 		Workspace:  s.Workspace,
 		IsDefault:  s.IsDefault,
+		Color:      s.Color,
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 	}
@@ -58,6 +62,7 @@ func toCoreNewObjectiveStatus(ns NewObjectiveStatus) objectivestatus.CoreNewObje
 		Name:      ns.Name,
 		Category:  ns.Category,
 		IsDefault: ns.IsDefault,
+		Color:     ns.Color,
 	}
 }
 
@@ -66,5 +71,6 @@ func toCoreUpdateObjectiveStatus(us UpdateObjectiveStatus) objectivestatus.CoreU
 		Name:       us.Name,
 		OrderIndex: us.OrderIndex,
 		IsDefault:  us.IsDefault,
+		Color:      us.Color,
 	}
 }

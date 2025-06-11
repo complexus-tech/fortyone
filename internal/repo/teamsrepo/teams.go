@@ -266,17 +266,18 @@ func (r *repo) createDefaultStoryStatuses(ctx context.Context, tx *sqlx.Tx, team
 	storyParams := make(map[string]any)
 	for i, status := range teams.DefaultStoryStatuses {
 		paramPrefix := fmt.Sprintf("s%d_", i)
-		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :%scolor, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix, paramPrefix)
 		storyParams[paramPrefix+"name"] = status.Name
 		storyParams[paramPrefix+"category"] = status.Category
 		storyParams[paramPrefix+"order_index"] = status.OrderIndex
+		storyParams[paramPrefix+"color"] = status.Color
 	}
 	storyParams["team_id"] = teamID
 	storyParams["workspace_id"] = workspaceID
 
 	// Batch insert story statuses
 	storyQuery := fmt.Sprintf(`
-		INSERT INTO statuses (name, category, order_index, team_id, workspace_id)
+		INSERT INTO statuses (name, category, order_index, color, team_id, workspace_id)
 		VALUES %s
 	`, strings.Join(storyValues, ","))
 
