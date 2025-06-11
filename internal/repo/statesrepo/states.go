@@ -221,7 +221,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	state := dbState{
 		Name:       ns.Name,
 		Category:   ns.Category,
-		OrderIndex: maxOrder + 1,
+		OrderIndex: maxOrder + 10,
 		Team:       ns.Team,
 		Workspace:  workspaceId,
 		IsDefault:  ns.IsDefault,

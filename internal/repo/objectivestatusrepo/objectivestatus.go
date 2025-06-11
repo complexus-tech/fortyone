@@ -157,7 +157,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 	status := dbObjectiveStatus{
 		Name:       ns.Name,
 		Category:   ns.Category,
-		OrderIndex: maxOrder + 1,
+		OrderIndex: maxOrder + 10,
 		Workspace:  workspaceId,
 		IsDefault:  ns.IsDefault,
 		Color:      ns.Color,
