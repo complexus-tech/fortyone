@@ -128,6 +128,12 @@ export const WorkflowSettings = () => {
     const activeState = states.find((state) => state.id === active.id);
     if (!activeState) return;
 
+    // Find the category configuration
+    const categoryConfig = categories.find(
+      (cat) => cat.value === activeState.category,
+    );
+    if (!categoryConfig) return;
+
     const categoryStates = states
       .filter((state) => state.category === activeState.category)
       .sort((a, b) => a.orderIndex - b.orderIndex);
@@ -137,20 +143,77 @@ export const WorkflowSettings = () => {
     );
     const newIndex = categoryStates.findIndex((state) => state.id === over.id);
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
-    const reorderedStates = arrayMove(categoryStates, oldIndex, newIndex);
+    const { minOrderIndex, maxOrderIndex } = categoryConfig;
 
-    // Update orderIndex for affected states
-    reorderedStates.forEach((state, index) => {
-      const newOrderIndex = (index + 1) * 10;
-      if (state.orderIndex !== newOrderIndex) {
+    // Create a copy without the dragged item to check positions
+    const otherStates = categoryStates.filter(
+      (state) => state.id !== activeState.id,
+    );
+
+    // Calculate the desired orderIndex based on drop position
+    let targetOrderIndex: number;
+
+    if (oldIndex < newIndex) {
+      // Moving down
+      const targetItem = otherStates[newIndex - 1]; // Adjust index since we removed active item
+      targetOrderIndex = targetItem.orderIndex + 10;
+    } else {
+      // Moving up
+      const targetItem = otherStates[newIndex];
+      targetOrderIndex = targetItem.orderIndex - 10;
+    }
+
+    // Ensure within bounds
+    targetOrderIndex = Math.max(
+      minOrderIndex,
+      Math.min(maxOrderIndex, targetOrderIndex),
+    );
+
+    // Check for conflicts and boundary violations
+    const hasExactConflict = categoryStates.some(
+      (state) =>
+        state.id !== activeState.id && state.orderIndex === targetOrderIndex,
+    );
+
+    const isOutOfBounds =
+      targetOrderIndex < minOrderIndex || targetOrderIndex > maxOrderIndex;
+
+    const needsFullReorder =
+      targetOrderIndex === -1 || hasExactConflict || isOutOfBounds;
+
+    if (needsFullReorder) {
+      // Fall back to full reordering with guaranteed spacing
+      const reorderedStates = arrayMove(categoryStates, oldIndex, newIndex);
+      const range = maxOrderIndex - minOrderIndex;
+      const idealStep = Math.floor(range / (reorderedStates.length + 1));
+      const step = Math.max(50, idealStep); // Ensure minimum 50-point spacing
+
+      reorderedStates.forEach((state, index) => {
+        const newOrderIndex = minOrderIndex + (index + 1) * step;
+        // Ensure we don't exceed max boundary
+        const clampedOrderIndex = Math.min(
+          newOrderIndex,
+          maxOrderIndex - (reorderedStates.length - index - 1) * 50,
+        );
+
+        if (state.orderIndex !== clampedOrderIndex) {
+          updateMutation.mutate({
+            stateId: state.id,
+            payload: { orderIndex: clampedOrderIndex },
+          });
+        }
+      });
+    } else {
+      // Simple update - only change the dragged item
+      if (activeState.orderIndex !== targetOrderIndex) {
         updateMutation.mutate({
-          stateId: state.id,
-          payload: { orderIndex: newOrderIndex },
+          stateId: activeState.id,
+          payload: { orderIndex: targetOrderIndex },
         });
       }
-    });
+    }
   };
 
   return (
@@ -242,7 +305,7 @@ export const WorkflowSettings = () => {
                             color: "#6366F1",
                             isDefault: false,
                             category: value,
-                            orderIndex: 50,
+                            orderIndex: 9999, // Temporary value, backend will set the actual orderIndex
                             teamId,
                             workspaceId: "",
                             createdAt: new Date().toISOString(),

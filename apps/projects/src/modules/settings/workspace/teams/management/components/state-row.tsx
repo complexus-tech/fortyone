@@ -135,7 +135,7 @@ export const StateRow = ({
             placeholder="State name..."
             readOnly={!isEditing}
             ref={inputRef}
-            value={form.name}
+            value={form.name + state.orderIndex}
           />
           {storyCount ? (
             <Text color="muted" fontSize="sm">
