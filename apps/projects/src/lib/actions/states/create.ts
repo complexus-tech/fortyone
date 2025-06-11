@@ -10,6 +10,7 @@ export type NewState = {
   name: string;
   category: StateCategory;
   teamId: string;
+  color: string;
 };
 
 export const createStateAction = async (payload: NewState) => {

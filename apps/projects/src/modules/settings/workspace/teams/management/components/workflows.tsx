@@ -62,6 +62,7 @@ export const WorkflowSettings = () => {
           name: state.name,
           category: selectedCategory,
           teamId,
+          color: state.color,
         },
         {
           onSuccess: () => {
