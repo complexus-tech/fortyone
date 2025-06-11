@@ -6,7 +6,7 @@ import { Box, Button, Dialog, Input, Text } from "ui";
 type ConfirmDialogProps = {
   isOpen: boolean;
   onClose?: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   onConfirm: () => void;
   title: string;
   description: string;
@@ -23,7 +23,7 @@ type ConfirmDialogProps = {
  *
  * @param isOpen - Whether the dialog is open
  * @param onClose - Function to call when the dialog is closed
- * @param onCancel - Function to call when the dialog is cancelled
+ * @param onCancel - Function to call when the dialog is cancelled. if provided its only triggered on button click
  * @param onConfirm - Function to call when the dialog is confirmed
  * @param title - The title of the dialog
  * @param description - The description of the dialog
