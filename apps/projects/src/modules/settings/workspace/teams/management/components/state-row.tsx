@@ -7,13 +7,14 @@ import {
   CloseIcon,
   DeleteIcon,
   DragIcon,
-  // DragIcon,
   EditIcon,
   MoreHorizontalIcon,
   SuccessIcon,
 } from "icons";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
+import { useSortable } from "@dnd-kit/sortable";
+import { cn } from "lib";
 import { StoryStatusIcon } from "@/components/ui";
 import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import type { State } from "@/types/states";
@@ -39,6 +40,25 @@ export const StateRow = ({
   const [isEditing, setIsEditing] = useState(isNew);
   const [form, setForm] = useState({ name: state.name, color: state.color });
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: state.id,
+    disabled: isNew || isEditing,
+  });
+
+  const style = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    transition,
+  };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -81,11 +101,28 @@ export const StateRow = ({
 
   return (
     <form
-      className="flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70"
+      className={cn(
+        "flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70",
+        {
+          "opacity-80 backdrop-blur": isDragging,
+          "shadow-lg": isDragging,
+        },
+      )}
       onSubmit={handleSubmit}
+      ref={setNodeRef}
+      style={style}
     >
       <Flex align="center" gap={2}>
-        <DragIcon className="cursor-grab" strokeWidth={4} />
+        <DragIcon
+          className={cn("cursor-grab", {
+            "cursor-grabbing": isDragging,
+            "opacity-80": isNew || isEditing,
+            "cursor-not-allowed": isNew || isEditing,
+          })}
+          strokeWidth={4}
+          {...attributes}
+          {...listeners}
+        />
         <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
           <StoryStatusIcon category={state.category} />
         </Box>

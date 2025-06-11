@@ -5,24 +5,68 @@ import { Box, Text, Button, Flex, Tooltip, Wrapper } from "ui";
 import { PlusIcon, WarningIcon } from "icons";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useDeleteStateMutation } from "@/lib/hooks/states/delete-mutation";
 import { useCreateStateMutation } from "@/lib/hooks/states/create-mutation";
+import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
 import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { useUserRole } from "@/hooks";
 import { StateRow } from "./state-row";
 
-const categories: { label: string; value: StateCategory }[] = [
-  { label: "Backlog", value: "backlog" },
-  { label: "Unstarted", value: "unstarted" },
-  { label: "Started", value: "started" },
-  { label: "Completed", value: "completed" },
-  { label: "Paused", value: "paused" },
-  { label: "Cancelled", value: "cancelled" },
+const categories: {
+  label: string;
+  value: StateCategory;
+  minOrderIndex: number;
+  maxOrderIndex: number;
+}[] = [
+  { label: "Backlog", value: "backlog", minOrderIndex: 1, maxOrderIndex: 1999 },
+  {
+    label: "Unstarted",
+    value: "unstarted",
+    minOrderIndex: 2000,
+    maxOrderIndex: 2999,
+  },
+  {
+    label: "Started",
+    value: "started",
+    minOrderIndex: 3000,
+    maxOrderIndex: 3999,
+  },
+  {
+    label: "Completed",
+    value: "completed",
+    minOrderIndex: 4000,
+    maxOrderIndex: 4999,
+  },
+  {
+    label: "Paused",
+    value: "paused",
+    minOrderIndex: 5000,
+    maxOrderIndex: 5999,
+  },
+  {
+    label: "Cancelled",
+    value: "cancelled",
+    minOrderIndex: 6000,
+    maxOrderIndex: 6999,
+  },
 ];
+
+// Helper function to reorder array items
+const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
+  const newArray = [...array];
+  const [removed] = newArray.splice(from, 1);
+  newArray.splice(to, 0, removed);
+  return newArray;
+};
 
 export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -31,6 +75,7 @@ export const WorkflowSettings = () => {
   const { data: stories = [] } = useTeamStories(teamId);
   const deleteMutation = useDeleteStateMutation();
   const createMutation = useCreateStateMutation();
+  const updateMutation = useUpdateStateMutation();
   const [selectedCategory, setSelectedCategory] =
     useState<StateCategory | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -73,6 +118,41 @@ export const WorkflowSettings = () => {
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeState = states.find((state) => state.id === active.id);
+    if (!activeState) return;
+
+    const categoryStates = states
+      .filter((state) => state.category === activeState.category)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
+    const oldIndex = categoryStates.findIndex(
+      (state) => state.id === active.id,
+    );
+    const newIndex = categoryStates.findIndex((state) => state.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedStates = arrayMove(categoryStates, oldIndex, newIndex);
+
+    // Update orderIndex for affected states
+    reorderedStates.forEach((state, index) => {
+      const newOrderIndex = (index + 1) * 10;
+      if (state.orderIndex !== newOrderIndex) {
+        updateMutation.mutate({
+          stateId: state.id,
+          payload: { orderIndex: newOrderIndex },
+        });
+      }
+    });
+  };
+
   return (
     <FeatureGuard
       fallback={
@@ -99,78 +179,85 @@ export const WorkflowSettings = () => {
           description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."
           title="Team Workflow"
         />
-        <Flex direction="column" gap={4}>
-          {categories.map(({ label, value }) => {
-            const categoryStates = states.filter(
-              (state) => state.category === value,
-            );
-            const isCreatingInCategory =
-              selectedCategory === value && isCreateOpen;
+        <DndContext onDragEnd={handleDragEnd}>
+          <Flex direction="column" gap={4}>
+            {categories.map(({ label, value }) => {
+              const categoryStates = states
+                .filter((state) => state.category === value)
+                .sort((a, b) => a.orderIndex - b.orderIndex);
+              const isCreatingInCategory =
+                selectedCategory === value && isCreateOpen;
 
-            return (
-              <Box className="px-6" key={value}>
-                <Flex align="center" className="mb-2" justify="between">
-                  <Text color="muted">{label}</Text>
-                  <Tooltip title="Add Status">
-                    <Button
-                      color="tertiary"
-                      leftIcon={<PlusIcon />}
-                      onClick={() => {
-                        setSelectedCategory(value);
-                        setIsCreateOpen(true);
-                      }}
-                      size="sm"
-                      variant="naked"
-                    >
-                      <span className="sr-only">Add State</span>
-                    </Button>
-                  </Tooltip>
-                </Flex>
+              return (
+                <Box className="px-6" key={value}>
+                  <Flex align="center" className="mb-2" justify="between">
+                    <Text color="muted">{label}</Text>
+                    <Tooltip title="Add Status">
+                      <Button
+                        color="tertiary"
+                        leftIcon={<PlusIcon />}
+                        onClick={() => {
+                          setSelectedCategory(value);
+                          setIsCreateOpen(true);
+                        }}
+                        size="sm"
+                        variant="naked"
+                      >
+                        <span className="sr-only">Add State</span>
+                      </Button>
+                    </Tooltip>
+                  </Flex>
 
-                <Flex direction="column" gap={3}>
-                  {categoryStates.map((state) => {
-                    const storyCount = stories.filter(
-                      (story) => story.statusId === state.id,
-                    ).length;
+                  <SortableContext
+                    items={categoryStates.map((state) => state.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <Flex direction="column" gap={3}>
+                      {categoryStates.map((state) => {
+                        const storyCount = stories.filter(
+                          (story) => story.statusId === state.id,
+                        ).length;
 
-                    return (
-                      <StateRow
-                        key={state.id}
-                        onDelete={handleDeleteState}
-                        state={state}
-                        storyCount={storyCount}
-                      />
-                    );
-                  })}
-                  {isCreatingInCategory ? (
-                    <StateRow
-                      isNew
-                      onCreate={handleCreateState}
-                      onCreateCancel={() => {
-                        setIsCreateOpen(false);
-                        setSelectedCategory(null);
-                      }}
-                      onDelete={() => {}}
-                      state={{
-                        id: "new",
-                        name: "",
-                        color: "#6366F1",
-                        isDefault: false,
-                        category: value,
-                        orderIndex: 50,
-                        teamId,
-                        workspaceId: "",
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                      }}
-                      storyCount={0}
-                    />
-                  ) : null}
-                </Flex>
-              </Box>
-            );
-          })}
-        </Flex>
+                        return (
+                          <StateRow
+                            key={state.id}
+                            onDelete={handleDeleteState}
+                            state={state}
+                            storyCount={storyCount}
+                          />
+                        );
+                      })}
+                      {isCreatingInCategory ? (
+                        <StateRow
+                          isNew
+                          onCreate={handleCreateState}
+                          onCreateCancel={() => {
+                            setIsCreateOpen(false);
+                            setSelectedCategory(null);
+                          }}
+                          onDelete={() => {}}
+                          state={{
+                            id: "new",
+                            name: "",
+                            color: "#6366F1",
+                            isDefault: false,
+                            category: value,
+                            orderIndex: 50,
+                            teamId,
+                            workspaceId: "",
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                          }}
+                          storyCount={0}
+                        />
+                      ) : null}
+                    </Flex>
+                  </SortableContext>
+                </Box>
+              );
+            })}
+          </Flex>
+        </DndContext>
         <ConfirmDialog
           confirmText="Delete state"
           description="Are you sure you want to delete this state? Any stories in this state will need to be moved to another state."
