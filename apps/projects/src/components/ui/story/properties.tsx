@@ -18,6 +18,7 @@ import {
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
+import { useState } from "react";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { Labels } from "@/components/ui/story/labels";
@@ -35,6 +36,7 @@ import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { slugify } from "@/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RowWrapper } from "../row-wrapper";
 
 type StoryPropertiesProps = Story & {
@@ -68,6 +70,9 @@ export const StoryProperties = ({
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: sprints = [] } = useTeamSprints(teamId);
   const { data: objectives = [] } = useTeamObjectives(teamId);
+  const [showChildrenDialog, setShowChildrenDialog] = useState(false);
+  const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
+
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const selectedObjective = objectives.find(
@@ -80,6 +85,61 @@ export const StoryProperties = ({
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
+
+  const isDoneStatus = (statusId: string) => {
+    const status = statuses.find((s) => s.id === statusId);
+    return status?.category === "completed";
+  };
+
+  const getUndoneChildren = () => {
+    const unstartedAndStartedStatusIds = statuses
+      .filter(
+        (status) =>
+          status.category === "started" ||
+          status.category === "unstarted" ||
+          status.category === "backlog",
+      )
+      .map((s) => s.id);
+
+    return subStories
+      .filter((subStory) =>
+        unstartedAndStartedStatusIds.includes(subStory.statusId),
+      )
+      .map((s) => s.id);
+  };
+
+  const handleStatusUpdate = (statusId: string) => {
+    if (isDoneStatus(statusId)) {
+      const undoneChildrenIds = getUndoneChildren();
+      if (undoneChildrenIds.length > 0) {
+        setPendingStatusId(statusId);
+        setShowChildrenDialog(true);
+        return; // Don't update yet
+      }
+    }
+
+    // Normal update if no confirmation needed
+    handleUpdate({ statusId });
+  };
+
+  const handleConfirmStatusChange = (markChildrenAsDone: boolean) => {
+    if (!pendingStatusId) return;
+
+    // Update the main story
+    handleUpdate({ statusId: pendingStatusId });
+
+    if (markChildrenAsDone) {
+      const undoneChildrenIds = getUndoneChildren();
+      for (const childId of undoneChildrenIds) {
+        handleUpdate({ id: childId, statusId: pendingStatusId });
+      }
+    }
+
+    // Reset dialog state
+    setShowChildrenDialog(false);
+    setPendingStatusId(null);
+  };
+
   return (
     <>
       {isColumnVisible("Status") && (
@@ -109,9 +169,7 @@ export const StoryProperties = ({
             )}
           </StatusesMenu.Trigger>
           <StatusesMenu.Items
-            setStatusId={(statusId) => {
-              handleUpdate({ statusId });
-            }}
+            setStatusId={handleStatusUpdate}
             statusId={statusId}
             teamId={teamId}
           />
@@ -395,6 +453,31 @@ export const StoryProperties = ({
           </span>
         </Tooltip>
       )}
+      <ConfirmDialog
+        cancelText="No, leave as is"
+        confirmText="Yes, mark as done"
+        description={`You're about to mark this ${getTermDisplay(
+          "storyTerm",
+        )} as done. This ${getTermDisplay(
+          "storyTerm",
+        )} has sub-${getTermDisplay("storyTerm", {
+          variant: subStories.length > 1 ? "plural" : "singular",
+        })} that are still in progress. Would you like to mark all sub-${getTermDisplay(
+          "storyTerm",
+          { variant: subStories.length > 1 ? "plural" : "singular" },
+        )} as done as well?`}
+        hideClose
+        isOpen={showChildrenDialog}
+        onCancel={() => {
+          handleConfirmStatusChange(false);
+        }}
+        onConfirm={() => {
+          handleConfirmStatusChange(true);
+        }}
+        title={`Mark sub-${getTermDisplay("storyTerm", {
+          variant: subStories.length > 1 ? "plural" : "singular",
+        })} as done too?`}
+      />
     </>
   );
 };

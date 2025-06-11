@@ -57,10 +57,17 @@ export const StoryRow = ({
   const { mutate } = useUpdateStoryMutation();
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
-    mutate({
-      storyId: story.id,
-      payload: data,
-    });
+    if ("id" in data) {
+      mutate({
+        storyId: data.id!,
+        payload: data,
+      });
+    } else {
+      mutate({
+        storyId: story.id,
+        payload: data,
+      });
+    }
   };
 
   return (

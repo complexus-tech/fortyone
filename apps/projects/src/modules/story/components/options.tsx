@@ -161,7 +161,7 @@ export const Options = ({
 
   const isDoneStatus = (statusId: string) => {
     const status = statuses.find((s) => s.id === statusId);
-    return status?.category === "completed" || status?.category === "cancelled";
+    return status?.category === "completed";
   };
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
@@ -186,6 +186,9 @@ export const Options = ({
   const handleConfirmStatusChange = (markChildrenAsDone: boolean) => {
     if (!pendingStatusId) return;
 
+    // Update the main story
+    mutate({ storyId, payload: { statusId: pendingStatusId } });
+
     if (markChildrenAsDone) {
       const undoneChildrenIds = getUndoneChildren();
       // Update all undone children to the same status
@@ -193,10 +196,6 @@ export const Options = ({
         mutate({ storyId: childId, payload: { statusId: pendingStatusId } });
       }
     }
-
-    // Update the main story
-    mutate({ storyId, payload: { statusId: pendingStatusId } });
-
     // Reset dialog state
     setShowChildrenDialog(false);
     setPendingStatusId(null);
