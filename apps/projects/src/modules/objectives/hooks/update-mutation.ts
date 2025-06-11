@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAnalytics } from "@/hooks";
+import type { SearchResponse } from "@/modules/search/types";
 import { objectiveKeys } from "../constants";
 import { updateObjective } from "../actions/update-objective";
 import type { Objective, ObjectiveUpdate } from "../types";
@@ -61,6 +62,33 @@ export const useUpdateObjectiveMutation = () => {
           ),
         );
       }
+
+      // Update search results if any exist
+      queryClient
+        .getQueriesData<SearchResponse>({ queryKey: ["search"] })
+        .forEach(([queryKey, searchData]) => {
+          if (searchData?.objectives) {
+            queryClient.setQueryData<SearchResponse>(queryKey, {
+              ...searchData,
+              objectives: searchData.objectives.map((objective) =>
+                objective.id === objectiveId
+                  ? {
+                      ...objective,
+                      name: data.name ?? objective.name,
+                      description: data.description ?? objective.description,
+                      leadUser: data.leadUser ?? objective.leadUser,
+                      startDate: data.startDate ?? objective.startDate,
+                      endDate: data.endDate ?? objective.endDate,
+                      statusId: data.statusId ?? objective.statusId,
+                      priority: data.priority ?? objective.priority,
+                      health: data.health ?? objective.health,
+                    }
+                  : objective,
+              ),
+            });
+          }
+        });
+
       return { prevObjective, prevTeamObjectives };
     },
     onError: (error, variables, context) => {
