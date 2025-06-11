@@ -21,7 +21,7 @@ export const useUpdateStateMutation = () => {
 
     onMutate: (newState) => {
       const previousStates = queryClient.getQueryData<State[]>(
-        statusKeys.lists(),
+        statusKeys.team(teamId),
       );
       if (previousStates) {
         const updatedStates = previousStates.map((state) => {
@@ -43,13 +43,10 @@ export const useUpdateStateMutation = () => {
           // Return other statuses unchanged
           return state;
         });
-        queryClient.setQueryData<State[]>(statusKeys.lists(), updatedStates);
-        if (teamId) {
-          queryClient.setQueryData<State[]>(
-            statusKeys.team(teamId),
-            updatedStates.filter((state) => state.teamId === teamId),
-          );
-        }
+        queryClient.setQueryData<State[]>(
+          statusKeys.team(teamId),
+          updatedStates,
+        );
       }
 
       return { previousStates };
@@ -57,7 +54,7 @@ export const useUpdateStateMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.lists(),
+          statusKeys.team(teamId),
           context.previousStates,
         );
       }
@@ -78,9 +75,11 @@ export const useUpdateStateMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: statusKeys.team(teamId),
       });
     },
   });

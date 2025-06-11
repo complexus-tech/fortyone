@@ -147,6 +147,36 @@ export const WorkflowSettings = () => {
 
     const { minOrderIndex, maxOrderIndex } = categoryConfig;
 
+    // Check if any existing statuses are outside the expected range (legacy statuses)
+    const hasLegacyStatuses = categoryStates.some(
+      (state) =>
+        state.orderIndex < minOrderIndex || state.orderIndex > maxOrderIndex,
+    );
+
+    // If there are legacy statuses, always do full reorder to fix them
+    if (hasLegacyStatuses) {
+      const reorderedStates = arrayMove(categoryStates, oldIndex, newIndex);
+      const range = maxOrderIndex - minOrderIndex;
+      const idealStep = Math.floor(range / (reorderedStates.length + 1));
+      const step = Math.max(50, idealStep);
+
+      reorderedStates.forEach((state, index) => {
+        const newOrderIndex = minOrderIndex + (index + 1) * step;
+        const clampedOrderIndex = Math.min(
+          newOrderIndex,
+          maxOrderIndex - (reorderedStates.length - index - 1) * 50,
+        );
+
+        if (state.orderIndex !== clampedOrderIndex) {
+          updateMutation.mutate({
+            stateId: state.id,
+            payload: { orderIndex: clampedOrderIndex },
+          });
+        }
+      });
+      return;
+    }
+
     // Create a copy without the dragged item to check positions
     const otherStates = categoryStates.filter(
       (state) => state.id !== activeState.id,
