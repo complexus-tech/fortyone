@@ -48,16 +48,18 @@ export const useUpdateStoryMutation = () => {
               });
             }
           } else {
-            queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-              stories?.map((story) =>
-                story.id === storyId ? { ...story, ...payload } : story,
-              ),
-            );
+            queryClient.setQueryData<Story[]>(query.queryKey, (stories) => {
+              if (stories && stories.length > 0) {
+                return stories.map((story) =>
+                  story.id === storyId ? { ...story, ...payload } : story,
+                );
+              }
+            });
           }
         }
       });
 
-      // Update search results if any exist
+      // // Update search results if any exist
       queryClient
         .getQueriesData<SearchResponse>({ queryKey: ["search"] })
         .forEach(([queryKey, data]) => {
