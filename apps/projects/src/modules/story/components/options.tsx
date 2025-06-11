@@ -35,7 +35,12 @@ import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useFeatures, useMediaQuery, useUserRole } from "@/hooks";
+import {
+  useFeatures,
+  useMediaQuery,
+  useTerminology,
+  useUserRole,
+} from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
@@ -102,9 +107,11 @@ export const Options = ({
     deletedAt,
     subStories,
   } = data!;
+  const { getTermDisplay } = useTerminology();
   const features = useFeatures();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [isOpen, setIsOpen] = useState(false);
+  const [showChildrenDialog, setShowChildrenDialog] = useState(false);
+  const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: sprints = [] } = useTeamSprints(teamId);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -152,12 +159,47 @@ export const Options = ({
       .map((s) => s.id);
   };
 
+  const isDoneStatus = (statusId: string) => {
+    const status = statuses.find((s) => s.id === statusId);
+    return status?.category === "completed" || status?.category === "cancelled";
+  };
+
   const handleUpdate = (data: Partial<DetailedStory>) => {
+    // If updating status to a "done" state and has undone children
+    if (data.statusId && isDoneStatus(data.statusId)) {
+      const undoneChildrenIds = getUndoneChildren();
+      if (undoneChildrenIds.length > 0) {
+        setPendingStatusId(data.statusId);
+        setShowChildrenDialog(true);
+        return; // Don't update yet, wait for user confirmation
+      }
+    }
+
+    // Normal update if no confirmation needed
     mutate({ storyId, payload: data });
   };
 
   const handleUpdateLabels = (labels: string[] = []) => {
     updateLabels({ storyId, labels });
+  };
+
+  const handleConfirmStatusChange = (markChildrenAsDone: boolean) => {
+    if (!pendingStatusId) return;
+
+    if (markChildrenAsDone) {
+      const undoneChildrenIds = getUndoneChildren();
+      // Update all undone children to the same status
+      for (const childId of undoneChildrenIds) {
+        mutate({ storyId: childId, payload: { statusId: pendingStatusId } });
+      }
+    }
+
+    // Update the main story
+    mutate({ storyId, payload: { statusId: pendingStatusId } });
+
+    // Reset dialog state
+    setShowChildrenDialog(false);
+    setPendingStatusId(null);
   };
 
   useHotkeys("s", (e) => {
@@ -704,13 +746,27 @@ export const Options = ({
       <ConfirmDialog
         cancelText="No, leave as is"
         confirmText="Yes, mark as done"
-        description="You're about to mark this story as done. This story has sub-stories that are still in progress. Would you like to mark all sub-stories as done as well, or leave them in their current status?"
-        isOpen={!isOpen}
-        onClose={() => {
-          setIsOpen(false);
+        description={`You're about to mark this ${getTermDisplay(
+          "storyTerm",
+        )} as done. This ${getTermDisplay(
+          "storyTerm",
+        )} has sub-${getTermDisplay("storyTerm", {
+          variant: subStories.length > 1 ? "plural" : "singular",
+        })} that are still in progress. Would you like to mark all sub-${getTermDisplay(
+          "storyTerm",
+          { variant: subStories.length > 1 ? "plural" : "singular" },
+        )} as done as well?`}
+        hideClose
+        isOpen={showChildrenDialog}
+        onCancel={() => {
+          handleConfirmStatusChange(false);
         }}
-        onConfirm={() => {}}
-        title="Mark sub-stories as done too?"
+        onConfirm={() => {
+          handleConfirmStatusChange(true);
+        }}
+        title={`Mark sub-${getTermDisplay("storyTerm", {
+          variant: subStories.length > 1 ? "plural" : "singular",
+        })} as done too?`}
       />
     </Box>
   );
