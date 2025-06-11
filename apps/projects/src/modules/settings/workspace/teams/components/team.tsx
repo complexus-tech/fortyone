@@ -25,15 +25,15 @@ export const WorkspaceTeam = ({
   return (
     <RowWrapper className="last-of-type:border-b-0 md:px-6">
       <Flex align="center" gap={3}>
-        <Box className="flex size-8 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-dark-100/80">
+        <Box className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-100/80 dark:bg-dark-100/80">
           <TeamColor color={color} />
         </Box>
-        <Box>
+        <Link href={`/settings/workspace/teams/${id}`}>
           <Text className="font-medium">{name}</Text>
           <Text className="text-[0.95rem]" color="muted">
             {code}
           </Text>
-        </Box>
+        </Link>
       </Flex>
       <Flex align="center" gap={3}>
         <Text className="md:w-32" color="muted">
