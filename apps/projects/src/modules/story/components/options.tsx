@@ -11,7 +11,7 @@ import {
   Tooltip,
   Badge,
 } from "ui";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
@@ -28,15 +28,16 @@ import {
   PriorityIcon,
   LabelsMenu,
   StoryLabel,
+  ConfirmDialog,
 } from "@/components/ui";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useFeatures, useMediaQuery, useUserRole } from "@/hooks";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { useMembers } from "@/lib/hooks/members";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -99,13 +100,15 @@ export const Options = ({
     labels: storyLabels,
     sprintId,
     deletedAt,
+    subStories,
   } = data!;
   const features = useFeatures();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { data: sprints = [] } = useSprints();
+  const [isOpen, setIsOpen] = useState(false);
+  const { data: sprints = [] } = useTeamSprints(teamId);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
-  const { data: objectives = [] } = useObjectives();
+  const { data: objectives = [] } = useTeamObjectives(teamId);
   const sprint = sprints.find((s) => s.id === sprintId);
   const objective = objectives.find((o) => o.id === objectiveId);
   const { name } = (statuses.find((state) => state.id === statusId) ||
@@ -131,6 +134,23 @@ export const Options = ({
   const emptyLabelsButtonRef = useRef<HTMLButtonElement>(null);
   const objectiveButtonRef = useRef<HTMLButtonElement>(null);
   const sprintButtonRef = useRef<HTMLButtonElement>(null);
+
+  const getUndoneChildren = () => {
+    const unstartedAndStartedStatusIds = statuses
+      .filter(
+        (status) =>
+          status.category === "started" ||
+          status.category === "unstarted" ||
+          status.category === "backlog",
+      )
+      .map((s) => s.id);
+
+    return subStories
+      .filter((subStory) =>
+        unstartedAndStartedStatusIds.includes(subStory.statusId),
+      )
+      .map((s) => s.id);
+  };
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
     mutate({ storyId, payload: data });
@@ -680,6 +700,18 @@ export const Options = ({
         <Divider className="my-4" />
         <AddLinks storyId={storyId} />
       </Container>
+
+      <ConfirmDialog
+        cancelText="No, leave as is"
+        confirmText="Yes, mark as done"
+        description="You're about to mark this story as done. This story has sub-stories that are still in progress. Would you like to mark all sub-stories as done as well, or leave them in their current status?"
+        isOpen={!isOpen}
+        onClose={() => {
+          setIsOpen(false);
+        }}
+        onConfirm={() => {}}
+        title="Mark sub-stories as done too?"
+      />
     </Box>
   );
 };
