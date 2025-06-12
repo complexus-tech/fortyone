@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type FormEvent } from "react";
 import { useState } from "react";
-import { Box, Button, Flex, Menu, Text } from "ui";
+import { Box, Button, Flex, Menu, Text, ColorPicker } from "ui";
 import {
   CheckIcon,
   CloseIcon,
@@ -113,9 +113,20 @@ export const StateRow = ({
         >
           <DragIcon strokeWidth={4} />
         </button>
-        <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
-          <ObjectiveStatusIcon statusId={status.id} />
-        </Box>
+
+        {isEditing ? (
+          <ColorPicker
+            onChange={(value) => {
+              setForm({ ...form, color: value });
+            }}
+            value={form.color}
+          />
+        ) : (
+          <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
+            <ObjectiveStatusIcon statusId={status.id} />
+          </Box>
+        )}
+
         <Box>
           <input
             className="w-max bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
