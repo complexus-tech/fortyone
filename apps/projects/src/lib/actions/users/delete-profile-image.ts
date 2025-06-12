@@ -7,14 +7,11 @@ import { auth } from "@/auth";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-export const uploadProfileImageAction = async (file: File) => {
+export const deleteProfileImageAction = async () => {
   try {
-    const formData = new FormData();
-    formData.append("image", file);
     const session = await auth();
     const res = await ky
-      .post(`${apiURL}/users/profile/image`, {
-        body: formData,
+      .delete(`${apiURL}/users/profile/image`, {
         headers: {
           Authorization: `Bearer ${session?.token}`,
         },
