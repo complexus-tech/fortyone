@@ -12,7 +12,7 @@ export type User = {
   username: string;
   email: string;
   fullName: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   isActive: boolean;
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
