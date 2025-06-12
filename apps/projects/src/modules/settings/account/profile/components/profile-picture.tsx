@@ -9,21 +9,14 @@ export const ProfilePicture = () => {
   const { data: profile } = useProfile();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | undefined>();
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = (file: File) => {
-    // In a real app, you would upload the file to your server
-    // For this example, we'll just create a local URL
-    const imageUrl = URL.createObjectURL(file);
-    setProfileImage(imageUrl);
+    setIsUploading(true);
     // console.log("Uploading file:", file.name, file.size, file.type);
   };
 
   const handleRemove = () => {
-    if (profileImage) {
-      URL.revokeObjectURL(profileImage);
-      setProfileImage(undefined);
-    }
     // console.log("Removing profile image");
   };
 
@@ -45,6 +38,7 @@ export const ProfilePicture = () => {
       <ProfileUploadDialog
         currentImage={profile?.avatarUrl}
         isOpen={isDialogOpen}
+        isUploading={isUploading}
         maxSizeInMB={5}
         onOpenChange={setIsDialogOpen}
         onRemove={handleRemove}

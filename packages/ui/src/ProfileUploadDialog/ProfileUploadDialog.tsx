@@ -16,6 +16,7 @@ interface ProfileUploadDialogProps {
   onRemove: () => void;
   currentImage?: string;
   maxSizeInMB?: number;
+  isUploading?: boolean;
   title?: string;
 }
 
@@ -33,6 +34,7 @@ export const ProfileUploadDialog = ({
   onUpload,
   onRemove,
   currentImage,
+  isUploading,
   maxSizeInMB = 5,
   title = "Upload Image",
 }: ProfileUploadDialogProps) => {
@@ -194,7 +196,12 @@ export const ProfileUploadDialog = ({
             <Button variant="naked" color="tertiary" onClick={handleClose}>
               Cancel
             </Button>
-            <Button onClick={handleUpload} disabled={!selectedFile}>
+            <Button
+              onClick={handleUpload}
+              disabled={!selectedFile}
+              loading={isUploading}
+              loadingText="Uploading..."
+            >
               Upload & Save
             </Button>
           </Flex>
