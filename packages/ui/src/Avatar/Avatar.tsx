@@ -89,6 +89,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
             "rounded-md": rounded === "md",
             "rounded-lg": rounded === "lg",
           })}
+          imageClassName="object-top object-cover"
         />
       )}
       {!src && name && <span title={name}>{getInitials(name)}</span>}
