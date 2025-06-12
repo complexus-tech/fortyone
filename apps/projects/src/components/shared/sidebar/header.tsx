@@ -133,6 +133,7 @@ export const Header = () => {
                   className="h-[1.6rem] text-sm"
                   name={workspace?.name}
                   rounded="md"
+                  src={workspace?.avatarUrl}
                   style={{
                     backgroundColor: workspace?.color,
                   }}
@@ -151,36 +152,39 @@ export const Header = () => {
           </Menu.Button>
           <Menu.Items align="start" className="min-w-72 pt-0">
             <Menu.Group className="space-y-1 pt-1.5">
-              {workspaces.map(({ id, name, color, slug, userRole }) => (
-                <Menu.Item
-                  className="justify-between gap-6"
-                  key={id}
-                  onSelect={() => handleChangeWorkspace(id, slug)}
-                >
-                  <span className="flex items-center gap-2">
-                    <Avatar
-                      className="h-[1.6rem] text-xs font-semibold tracking-wide"
-                      name={name}
-                      rounded="md"
-                      style={{
-                        backgroundColor: color,
-                      }}
-                    />
-                    <span className="inline-block max-w-[20ch] truncate">
-                      {name}
+              {workspaces.map(
+                ({ id, name, color, slug, userRole, avatarUrl }) => (
+                  <Menu.Item
+                    className="justify-between gap-6"
+                    key={id}
+                    onSelect={() => handleChangeWorkspace(id, slug)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Avatar
+                        className="h-[1.6rem] text-xs font-semibold tracking-wide"
+                        name={name}
+                        rounded="md"
+                        src={avatarUrl}
+                        style={{
+                          backgroundColor: color,
+                        }}
+                      />
+                      <span className="inline-block max-w-[20ch] truncate">
+                        {name}
+                      </span>
+                      <Badge
+                        className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
+                        color="tertiary"
+                      >
+                        {userRole}
+                      </Badge>
                     </span>
-                    <Badge
-                      className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
-                      color="tertiary"
-                    >
-                      {userRole}
-                    </Badge>
-                  </span>
-                  {id === workspace?.id ? (
-                    <CheckIcon className="shrink-0" strokeWidth={2.1} />
-                  ) : null}
-                </Menu.Item>
-              ))}
+                    {id === workspace?.id ? (
+                      <CheckIcon className="shrink-0" strokeWidth={2.1} />
+                    ) : null}
+                  </Menu.Item>
+                ),
+              )}
             </Menu.Group>
             <Menu.Separator className="my-2" />
             <Menu.Group>
