@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Box, Button, Flex, Menu, Text } from "ui";
+import { Box, Button, Flex, Menu, Text, ColorPicker } from "ui";
 import {
   CheckIcon,
   CloseIcon,
@@ -123,12 +123,28 @@ export const StateRow = ({
           {...attributes}
           {...listeners}
         />
-        <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
-          <StoryStatusIcon category={state.category} />
-        </Box>
+        {isEditing ? (
+          <ColorPicker
+            onChange={(value) => {
+              setForm({ ...form, color: value });
+            }}
+            value={form.color}
+          />
+        ) : (
+          <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
+            <StoryStatusIcon category={state.category} statusId={state.id} />
+          </Box>
+        )}
+
         <Box>
           <input
-            className="bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
+            className={cn(
+              "bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300",
+              {
+                "my-0.5 rounded-lg border border-gray-100 bg-white/50 px-3 py-1 dark:border-gray-300/20 dark:bg-dark/10":
+                  isEditing,
+              },
+            )}
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}
@@ -137,7 +153,7 @@ export const StateRow = ({
             ref={inputRef}
             value={form.name}
           />
-          {storyCount ? (
+          {storyCount && !isEditing ? (
             <Text color="muted" fontSize="sm">
               {storyCount} {storyCount === 1 ? "story" : "stories"}
             </Text>

@@ -14,13 +14,10 @@ export const ObjectiveStatusIcon = ({
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const { category } = state!;
   return (
-    <>
+    <span style={{ color: state?.color }}>
       {category === "backlog" && (
         <svg
-          className={cn(
-            "h-[1.15rem] w-auto text-gray dark:text-gray-300",
-            className,
-          )}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -43,10 +40,7 @@ export const ObjectiveStatusIcon = ({
       )}
       {category === "unstarted" && (
         <svg
-          className={cn(
-            "h-[1.15rem] w-auto text-gray dark:text-gray-300",
-            className,
-          )}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -62,7 +56,7 @@ export const ObjectiveStatusIcon = ({
       )}
       {category === "started" && (
         <svg
-          className={cn("h-[1.15rem] w-auto text-warning", className)}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -78,10 +72,7 @@ export const ObjectiveStatusIcon = ({
       )}
       {category === "paused" && (
         <svg
-          className={cn(
-            "h-[1.15rem] w-auto text-dark-50 dark:text-gray-200",
-            className,
-          )}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -99,7 +90,7 @@ export const ObjectiveStatusIcon = ({
       )}
       {category === "completed" && (
         <svg
-          className={cn("h-[1.15rem] w-auto text-success", className)}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -116,7 +107,7 @@ export const ObjectiveStatusIcon = ({
       )}
       {category === "cancelled" && (
         <svg
-          className={cn("h-[1.15rem] w-auto text-danger", className)}
+          className={cn("h-[1.15rem] w-auto", className)}
           fill="none"
           height="24"
           stroke="currentColor"
@@ -132,6 +123,6 @@ export const ObjectiveStatusIcon = ({
           <path d="m9 9 6 6" />
         </svg>
       )}
-    </>
+    </span>
   );
 };

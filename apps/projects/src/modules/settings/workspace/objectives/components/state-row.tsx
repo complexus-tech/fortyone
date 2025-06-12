@@ -14,8 +14,8 @@ import {
 } from "icons";
 import { useSortable } from "@dnd-kit/sortable";
 import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
-import { StoryStatusIcon } from "@/components/ui";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
+import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 
 type StateRowProps = {
   status: ObjectiveStatus;
@@ -34,7 +34,7 @@ export const StateRow = ({
 }: StateRowProps) => {
   const updateMutation = useUpdateObjectiveStatusMutation();
   const [isEditing, setIsEditing] = useState(isNew);
-  const [form, setForm] = useState({ name: status.name });
+  const [form, setForm] = useState({ name: status.name, color: status.color });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -63,7 +63,7 @@ export const StateRow = ({
       onCreate?.({
         ...status,
         name: form.name,
-        // color: form.color,
+        color: form.color,
       });
       return;
     }
@@ -86,7 +86,7 @@ export const StateRow = ({
     if (isNew) {
       onCreateCancel?.();
     } else {
-      setForm({ name: status.name });
+      setForm({ name: status.name, color: status.color });
     }
   };
 
@@ -114,7 +114,7 @@ export const StateRow = ({
           <DragIcon strokeWidth={4} />
         </button>
         <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
-          <StoryStatusIcon category={status.category} />
+          <ObjectiveStatusIcon statusId={status.id} />
         </Box>
         <Box>
           <input

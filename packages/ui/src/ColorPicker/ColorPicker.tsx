@@ -31,7 +31,6 @@ export const ColorPicker = ({
           color="tertiary"
           onClick={onClick}
           rounded="full"
-          variant="naked"
           size="sm"
         >
           <span
