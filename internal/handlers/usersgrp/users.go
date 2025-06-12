@@ -72,11 +72,20 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	updates := users.CoreUpdateUser{
-		Username:           req.Username,
-		FullName:           req.FullName,
-		AvatarURL:          req.AvatarURL,
-		HasSeenWalkthrough: req.HasSeenWalkthrough,
+	updates := users.CoreUpdateUser{}
+
+	// Only set pointers for fields that were provided and are not empty
+	if req.Username != "" {
+		updates.Username = &req.Username
+	}
+	if req.FullName != nil {
+		updates.FullName = req.FullName
+	}
+	if req.AvatarURL != nil {
+		updates.AvatarURL = req.AvatarURL
+	}
+	if req.HasSeenWalkthrough != nil {
+		updates.HasSeenWalkthrough = req.HasSeenWalkthrough
 	}
 
 	if err := h.users.UpdateUser(ctx, userID, updates); err != nil {

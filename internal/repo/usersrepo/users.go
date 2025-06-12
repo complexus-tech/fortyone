@@ -145,25 +145,36 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUser")
 	defer span.End()
 
-	// Build SET clauses dynamically based on provided fields
+	// Build SET clauses dynamically based on provided fields (not nil)
 	var setClauses []string
 	params := map[string]any{
 		"user_id": userID,
 	}
 
-	// Always include basic fields (they can be empty strings to keep existing values)
-	setClauses = append(setClauses, "username = CASE WHEN :username = '' THEN username ELSE :username END")
-	setClauses = append(setClauses, "full_name = CASE WHEN :full_name = '' THEN full_name ELSE :full_name END")
-	setClauses = append(setClauses, "avatar_url = CASE WHEN :avatar_url = '' THEN avatar_url ELSE :avatar_url END")
+	// Only update fields that are provided (not nil)
+	if updates.Username != nil {
+		setClauses = append(setClauses, "username = :username")
+		params["username"] = *updates.Username
+	}
 
-	params["username"] = updates.Username
-	params["full_name"] = updates.FullName
-	params["avatar_url"] = updates.AvatarURL
+	if updates.FullName != nil {
+		setClauses = append(setClauses, "full_name = :full_name")
+		params["full_name"] = *updates.FullName
+	}
 
-	// Only include has_seen_walkthrough if it's provided (not nil)
+	if updates.AvatarURL != nil {
+		setClauses = append(setClauses, "avatar_url = :avatar_url")
+		params["avatar_url"] = *updates.AvatarURL // Can be empty string to clear
+	}
+
 	if updates.HasSeenWalkthrough != nil {
 		setClauses = append(setClauses, "has_seen_walkthrough = :has_seen_walkthrough")
 		params["has_seen_walkthrough"] = *updates.HasSeenWalkthrough
+	}
+
+	// If no fields to update, just return the current user
+	if len(setClauses) == 0 {
+		return r.GetUser(ctx, userID)
 	}
 
 	// Always update the timestamp
@@ -208,6 +219,11 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		span.RecordError(errors.New("failed to update user"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return users.CoreUser{}, err
 	}
+
+	span.AddEvent("user updated", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.Int("fields_updated", len(setClauses)-1), // -1 for updated_at
+	))
 
 	return toCoreUser(dbUser), nil
 }

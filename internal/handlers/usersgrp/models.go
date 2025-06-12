@@ -28,10 +28,10 @@ type AppFilter struct {
 }
 
 type UpdateProfileRequest struct {
-	Username           string `json:"username"`
-	FullName           string `json:"fullName"`
-	AvatarURL          string `json:"avatarUrl"`
-	HasSeenWalkthrough *bool  `json:"hasSeenWalkthrough,omitempty"`
+	Username           string  `json:"username"`
+	FullName           *string `json:"fullName,omitempty"`
+	AvatarURL          *string `json:"avatarUrl,omitempty"`
+	HasSeenWalkthrough *bool   `json:"hasSeenWalkthrough,omitempty"`
 }
 
 type SwitchWorkspaceRequest struct {

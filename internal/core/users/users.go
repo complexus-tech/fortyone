@@ -419,9 +419,9 @@ func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file
 		_ = attachmentsService.DeleteProfileImage(ctx, user.AvatarURL)
 	}
 
-	// Update user's avatar URL
+	// Update user's avatar URL using pointer-based update
 	updates := CoreUpdateUser{
-		AvatarURL: imageURL,
+		AvatarURL: &imageURL,
 	}
 
 	_, err = s.repo.UpdateUser(ctx, userID, updates)
@@ -458,9 +458,10 @@ func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, atta
 		_ = attachmentsService.DeleteProfileImage(ctx, user.AvatarURL)
 	}
 
-	// Clear avatar URL in database
+	// Clear avatar URL in database using pointer-based update
+	avatarURL := ""
 	updates := CoreUpdateUser{
-		AvatarURL: "",
+		AvatarURL: &avatarURL,
 	}
 
 	_, err = s.repo.UpdateUser(ctx, userID, updates)
