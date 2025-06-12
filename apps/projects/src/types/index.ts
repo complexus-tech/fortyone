@@ -90,7 +90,7 @@ export type Workspace = {
   name: string;
   slug: string;
   color: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   userRole: UserRole;
   trialEndsOn: string | null;
   isActive: boolean;

@@ -40,7 +40,7 @@ const avatar = cva(
 export interface AvatarProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "color">,
     VariantProps<typeof avatar> {
-  src?: string;
+  src?: string | null;
   name?: string;
 }
 

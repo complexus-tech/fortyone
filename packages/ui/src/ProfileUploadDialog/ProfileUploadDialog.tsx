@@ -14,7 +14,7 @@ interface ProfileUploadDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpload: (file: File) => void;
   onRemove: () => void;
-  currentImage?: string;
+  currentImage?: string | null;
   maxSizeInMB?: number;
   isUploading?: boolean;
   title?: string;
