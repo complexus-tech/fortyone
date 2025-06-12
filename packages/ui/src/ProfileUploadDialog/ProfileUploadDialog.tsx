@@ -118,7 +118,6 @@ export const ProfileUploadDialog = ({
     setSelectedFile(null);
     setPreviewUrl(null);
     setError(null);
-    onOpenChange(false);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }

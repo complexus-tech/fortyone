@@ -11,7 +11,7 @@ export const ProfilePicture = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleUpload = (file: File) => {
+  const handleUpload = (_: File) => {
     setIsUploading(true);
     // console.log("Uploading file:", file.name, file.size, file.type);
   };

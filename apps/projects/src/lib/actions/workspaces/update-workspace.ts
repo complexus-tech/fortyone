@@ -6,7 +6,8 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
 export type UpdateWorkspaceInput = {
-  name: string;
+  name?: string;
+  avatarUrl?: string;
 };
 
 export const updateWorkspaceAction = async (input: UpdateWorkspaceInput) => {

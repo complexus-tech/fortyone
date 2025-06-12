@@ -1,9 +1,10 @@
 "use client";
 
-import { Box, Text, Button, Avatar } from "ui";
+import { Box, Text, Button } from "ui";
 import { SectionHeader } from "../../components";
 import { WorkspaceForm } from "./components/form";
 import { WorkspaceFeatures } from "./components/features";
+import { Logo } from "./components/logo";
 
 export const WorkspaceGeneralSettings = () => {
   return (
@@ -13,7 +14,7 @@ export const WorkspaceGeneralSettings = () => {
       </Text>
       <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
-          action={<Avatar name="Complexus Tech" />}
+          action={<Logo />}
           description="Basic information about your workspace."
           title="General Information"
         />
