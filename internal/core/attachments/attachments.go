@@ -339,3 +339,55 @@ func (s *Service) DeleteProfileImage(ctx context.Context, avatarURL string) erro
 
 	return nil
 }
+
+func (s *Service) UploadWorkspaceLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, workspaceID uuid.UUID) (string, error) {
+	s.log.Info(ctx, "business.core.attachments.upload_workspace_logo")
+	ctx, span := web.AddSpan(ctx, "business.core.attachments.UploadWorkspaceLogo")
+	defer span.End()
+
+	if err := validate.WorkspaceLogo(file, fileHeader); err != nil {
+		return "", fmt.Errorf("workspace logo validation failed: %w", err)
+	}
+
+	blobName := fmt.Sprintf("%s/%s", workspaceID.String(), fileHeader.Filename)
+	url, err := s.azureBlob.UploadBlob(ctx, s.config.WorkspaceLogosContainer, blobName, file, fileHeader.Header.Get("Content-Type"))
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to upload workspace logo: %w", err)
+	}
+
+	span.AddEvent("workspace logo uploaded.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("url", url),
+	))
+
+	return url, nil
+}
+
+func (s *Service) DeleteWorkspaceLogo(ctx context.Context, logoURL string) error {
+	s.log.Info(ctx, "business.core.attachments.delete_workspace_logo")
+	ctx, span := web.AddSpan(ctx, "business.core.attachments.DeleteWorkspaceLogo")
+	defer span.End()
+
+	if logoURL == "" {
+		return nil // Nothing to delete
+	}
+
+	// Extract blob name from URL (same logic as profile images)
+	urlParts := strings.Split(logoURL, s.config.WorkspaceLogosContainer+"/")
+	if len(urlParts) < 2 {
+		return fmt.Errorf("invalid workspace logo URL format")
+	}
+	blobName := urlParts[1]
+
+	if err := s.azureBlob.DeleteBlob(ctx, s.config.WorkspaceLogosContainer, blobName); err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to delete workspace logo: %w", err)
+	}
+
+	span.AddEvent("workspace logo deleted.", trace.WithAttributes(
+		attribute.String("blob_name", blobName),
+	))
+
+	return nil
+}

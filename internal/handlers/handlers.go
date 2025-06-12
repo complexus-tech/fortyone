@@ -142,6 +142,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		WebhookSecret: cfg.WebhookSecret,
 		TasksService:  cfg.TasksService,
 		SystemUserID:  cfg.SystemUserID,
+		AzureConfig:   cfg.AzureConfig,
 	}, app)
 
 	// register the comments routes

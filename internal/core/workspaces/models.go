@@ -13,6 +13,7 @@ type CoreWorkspace struct {
 	Name        string
 	Color       string
 	TeamSize    string
+	AvatarURL   *string
 	IsActive    bool
 	UserRole    string
 	CreatedAt   time.Time

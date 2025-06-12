@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"mime/multipart"
+
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
@@ -35,6 +37,12 @@ var restrictedSlugs = []string{
 	"product", "auth",
 }
 
+// AttachmentsService provides workspace logo operations.
+type AttachmentsService interface {
+	UploadWorkspaceLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, workspaceID uuid.UUID) (string, error)
+	DeleteWorkspaceLogo(ctx context.Context, logoURL string) error
+}
+
 // Repository provides access to the users storage.
 type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
@@ -63,11 +71,12 @@ type Service struct {
 	users           *users.Service
 	objectivestatus *objectivestatus.Service
 	subscriptions   *subscriptions.Service
+	attachments     AttachmentsService
 	systemUserID    uuid.UUID
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, systemUserID uuid.UUID) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, systemUserID uuid.UUID) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -78,6 +87,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		users:           users,
 		objectivestatus: objectivestatus,
 		subscriptions:   subscriptions,
+		attachments:     attachments,
 		systemUserID:    systemUserID,
 	}
 }
@@ -433,4 +443,87 @@ func (s *Service) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.
 		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return updated, nil
+}
+
+// UploadWorkspaceLogo uploads a new logo for a workspace
+func (s *Service) UploadWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader, attachmentsService AttachmentsService) error {
+	s.log.Info(ctx, "business.core.workspaces.uploadWorkspaceLogo")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.UploadWorkspaceLogo")
+	defer span.End()
+
+	// Get current workspace to check for existing logo
+	workspace, err := s.repo.Get(ctx, workspaceID, s.systemUserID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Upload new logo
+	logoURL, err := attachmentsService.UploadWorkspaceLogo(ctx, file, fileHeader, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delete old logo if exists
+	if workspace.AvatarURL != nil && *workspace.AvatarURL != "" {
+		_ = attachmentsService.DeleteWorkspaceLogo(ctx, *workspace.AvatarURL)
+	}
+
+	// Update workspace's avatar URL using pointer-based update
+	updates := CoreWorkspace{
+		AvatarURL: &logoURL,
+	}
+
+	_, err = s.repo.Update(ctx, workspaceID, updates)
+	if err != nil {
+		span.RecordError(err)
+		// Try to cleanup uploaded logo since DB update failed
+		_ = attachmentsService.DeleteWorkspaceLogo(ctx, logoURL)
+		return err
+	}
+
+	span.AddEvent("workspace logo updated", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("logo_url", logoURL),
+	))
+
+	return nil
+}
+
+// DeleteWorkspaceLogo removes the current workspace logo
+func (s *Service) DeleteWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID, attachmentsService AttachmentsService) error {
+	s.log.Info(ctx, "business.core.workspaces.deleteWorkspaceLogo")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.DeleteWorkspaceLogo")
+	defer span.End()
+
+	// Get current workspace
+	workspace, err := s.repo.Get(ctx, workspaceID, s.systemUserID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delete from Azure if exists
+	if workspace.AvatarURL != nil && *workspace.AvatarURL != "" {
+		_ = attachmentsService.DeleteWorkspaceLogo(ctx, *workspace.AvatarURL)
+	}
+
+	// Clear avatar URL in database using pointer-based update
+	avatarURL := ""
+	updates := CoreWorkspace{
+		AvatarURL: &avatarURL,
+	}
+
+	_, err = s.repo.Update(ctx, workspaceID, updates)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace logo deleted", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return nil
 }
