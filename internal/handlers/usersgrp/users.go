@@ -432,8 +432,8 @@ func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Parse multipart form, limit to 2MB for profile images
-	if err := r.ParseMultipartForm(2 << 20); err != nil {
+	// Parse multipart form, limit to 6MB for profile images
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 

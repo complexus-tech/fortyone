@@ -13,8 +13,8 @@ import (
 
 const (
 	// Maximum file sizes
-	MaxProfileImageSize  = 2 * 1024 * 1024  // 2MB
-	MaxWorkspaceLogoSize = 2 * 1024 * 1024  // 2MB
+	MaxProfileImageSize  = 6 * 1024 * 1024  // 6MB
+	MaxWorkspaceLogoSize = 6 * 1024 * 1024  // 6MB
 	MaxAttachmentSize    = 10 * 1024 * 1024 // 10MB
 )
 

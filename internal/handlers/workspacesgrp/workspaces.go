@@ -536,8 +536,8 @@ func (h *Handlers) UploadWorkspaceLogo(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 	}
 
-	// Parse multipart form, limit to 2MB for workspace logos
-	if err := r.ParseMultipartForm(2 << 20); err != nil {
+	// Parse multipart form, limit to 6MB for workspace logos
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
