@@ -3,7 +3,10 @@
 import { Avatar } from "ui";
 import { ProfileUploadDialog } from "ui/src/ProfileUploadDialog/ProfileUploadDialog";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useProfile } from "@/lib/hooks/profile";
+import { useUploadProfileImageMutation } from "@/lib/hooks/user/upload-profile-image-mutation";
+import { useDeleteProfileImageMutation } from "@/lib/hooks/user/delete-profile-image-mutation";
 
 export const ProfilePicture = () => {
   const { data: profile } = useProfile();
@@ -11,13 +14,34 @@ export const ProfilePicture = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleUpload = (_: File) => {
+  const { mutate: uploadProfileImage } = useUploadProfileImageMutation();
+  const { mutate: deleteProfileImage } = useDeleteProfileImageMutation();
+
+  const handleUpload = (file: File) => {
     setIsUploading(true);
-    // console.log("Uploading file:", file.name, file.size, file.type);
+    uploadProfileImage(file, {
+      onSuccess: () => {
+        setIsDialogOpen(false);
+        setIsUploading(false);
+        toast.info("Upload complete", {
+          description: "Your profile image has been updated",
+        });
+      },
+      onError: () => {
+        setIsUploading(false);
+      },
+    });
   };
 
   const handleRemove = () => {
-    // console.log("Removing profile image");
+    deleteProfileImage(undefined, {
+      onSuccess: () => {
+        setIsDialogOpen(false);
+        toast.info("Profile image removed", {
+          description: "Your profile image has been removed",
+        });
+      },
+    });
   };
 
   return (
