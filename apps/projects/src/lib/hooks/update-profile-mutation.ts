@@ -42,7 +42,11 @@ export const useUpdateProfileMutation = () => {
       });
     },
 
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      if (res.error?.message) {
+        throw new Error(res.error.message);
+      }
+
       if ("hasSeenWalkthrough" in variables) {
         return;
       }
