@@ -3,27 +3,32 @@ import { toast } from "sonner";
 import { updateWorkspaceAction } from "@/lib/actions/workspaces/update-workspace";
 import type { UpdateWorkspaceInput } from "@/lib/actions/workspaces/update-workspace";
 import { workspaceKeys } from "@/constants/keys";
+import type { Workspace } from "@/types";
+import { useCurrentWorkspace } from "./workspaces";
 
 export const useUpdateWorkspaceMutation = () => {
   const queryClient = useQueryClient();
+  const { workspace: currentWorkspace } = useCurrentWorkspace();
 
   const mutation = useMutation({
     mutationFn: (input: UpdateWorkspaceInput) => updateWorkspaceAction(input),
-    // onMutate: async (input) => {
-    //   await queryClient.cancelQueries({ queryKey: workspaceKeys.detail() });
-    //   const previousWorkspace = queryClient.getQueryData<Workspace>(
-    //     workspaceKeys.detail(),
-    //   );
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
+      const previousWorkspaces = queryClient.getQueryData<Workspace[]>(
+        workspaceKeys.lists(),
+      );
 
-    //   if (previousWorkspace) {
-    //     queryClient.setQueryData<Workspace>(workspaceKeys.detail(), {
-    //       ...previousWorkspace,
-    //       ...input,
-    //     });
-    //   }
-
-    //   return { previousWorkspace };
-    // },
+      if (previousWorkspaces) {
+        queryClient.setQueryData(workspaceKeys.lists(), (old: Workspace[]) => {
+          return old.map((workspace) =>
+            workspace.id === currentWorkspace?.id
+              ? { ...workspace, ...input }
+              : workspace,
+          );
+        });
+      }
+      return { previousWorkspaces };
+    },
     onError: (error, variables) => {
       toast.error("Failed to update workspace", {
         description: error.message || "Your changes were not saved",
