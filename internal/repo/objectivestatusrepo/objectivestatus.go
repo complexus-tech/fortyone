@@ -31,7 +31,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]objectivestat
 	ctx, span := web.AddSpan(ctx, "business.repository.objectivestatus.List")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
 
@@ -98,7 +98,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 			WHERE workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"workspace_id": workspaceId,
 		}
 
@@ -122,7 +122,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 	}
 
 	// Get the next order index based on category
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"category":     ns.Category,
 	}
@@ -163,7 +163,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns objectivest
 		Color:      ns.Color,
 	}
 
-	params = map[string]interface{}{
+	params = map[string]any{
 		"name":         status.Name,
 		"category":     status.Category,
 		"order_index":  status.OrderIndex,
@@ -234,7 +234,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 			WHERE workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"workspace_id": workspaceId,
 		}
 
@@ -257,7 +257,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us o
 		}
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    statusId,
 		"workspace_id": workspaceId,
 	}
@@ -330,7 +330,7 @@ func (r *repo) Delete(ctx context.Context, workspaceId, statusId uuid.UUID) erro
 	ctx, span := web.AddSpan(ctx, "business.repository.objectivestatus.Delete")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    statusId,
 		"workspace_id": workspaceId,
 	}
@@ -377,7 +377,7 @@ func (r *repo) CountObjectivesWithStatus(ctx context.Context, statusID uuid.UUID
 	ctx, span := web.AddSpan(ctx, "business.repository.objectivestatus.CountObjectivesWithStatus")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    statusID,
 		"workspace_id": workspaceID,
 	}
@@ -413,7 +413,7 @@ func (r *repo) CountStatusesInCategory(ctx context.Context, workspaceID uuid.UUI
 	ctx, span := web.AddSpan(ctx, "business.repository.objectivestatus.CountStatusesInCategory")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceID,
 		"category":     category,
 	}
@@ -449,7 +449,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, statusId uuid.UUID) (object
 	ctx, span := web.AddSpan(ctx, "business.repository.objectivestatus.Get")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    statusId,
 		"workspace_id": workspaceId,
 	}
