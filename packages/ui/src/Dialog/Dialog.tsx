@@ -105,7 +105,7 @@ const DialogFooter = ({
     className={cn(
       "flex px-6 pb-[0.8rem]",
       {
-        "border-t-[0.5px] border-gray-100 pt-[0.8rem] dark:border-dark-100":
+        "border-t-[0.5px] border-gray-100 pt-[0.8rem] dark:border-dark-50":
           variant !== "bordered",
         "justify-start": justify === "start",
         "justify-end": justify === "end",
