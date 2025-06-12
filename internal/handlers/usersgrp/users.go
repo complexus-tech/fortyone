@@ -25,15 +25,17 @@ var (
 
 type Handlers struct {
 	users         *users.Service
+	attachments   users.AttachmentsService
 	secretKey     string
 	googleService *google.Service
 	publisher     *publisher.Publisher
 }
 
 // New constructs a new users handlers instance.
-func New(users *users.Service, secretKey string, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
+func New(users *users.Service, attachments users.AttachmentsService, secretKey string, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
+		attachments:   attachments,
 		secretKey:     secretKey,
 		googleService: googleService,
 		publisher:     publisher,
@@ -412,4 +414,67 @@ func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.Respo
 
 	span.AddEvent("automation preferences updated")
 	return web.Respond(ctx, w, toAppAutomationPreferences(preferences), http.StatusOK)
+}
+
+// UploadProfileImage handles profile image upload
+func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Parse multipart form, limit to 2MB for profile images
+	if err := r.ParseMultipartForm(2 << 20); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Get file from form
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("error getting image file: %w", err), http.StatusBadRequest)
+	}
+	defer file.Close()
+
+	// Upload profile image
+	err = h.users.UploadProfileImage(ctx, userID, file, header, h.attachments)
+	if err != nil {
+		switch {
+		case errors.Is(err, validate.ErrFileTooLarge), errors.Is(err, validate.ErrInvalidFileType):
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		default:
+			return fmt.Errorf("error uploading profile image: %w", err)
+		}
+	}
+
+	// Get updated user profile
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+// DeleteProfileImage handles profile image deletion
+func (h *Handlers) DeleteProfileImage(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	err = h.users.DeleteProfileImage(ctx, userID, h.attachments)
+	if err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get updated user profile
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }

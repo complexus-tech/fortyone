@@ -128,6 +128,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		GoogleService: cfg.GoogleService,
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
+		AzureConfig:   cfg.AzureConfig,
 	}, app)
 
 	// register the workspaces routes

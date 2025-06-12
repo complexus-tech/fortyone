@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"mime/multipart"
+
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -57,6 +59,12 @@ type Repository interface {
 	// Automation preferences methods
 	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
 	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
+}
+
+// AttachmentsService interface for profile image operations
+type AttachmentsService interface {
+	UploadProfileImage(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID) (string, error)
+	DeleteProfileImage(ctx context.Context, avatarURL string) error
 }
 
 // Service provides user-related operations.
@@ -381,6 +389,88 @@ func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, works
 	span.AddEvent("automation preferences updated", trace.WithAttributes(
 		attribute.String("user.id", userID.String()),
 		attribute.String("workspace.id", workspaceID.String()),
+	))
+
+	return nil
+}
+
+// UploadProfileImage uploads a new profile image for a user
+func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader, attachmentsService AttachmentsService) error {
+	s.log.Info(ctx, "business.core.users.uploadProfileImage")
+	ctx, span := web.AddSpan(ctx, "business.core.users.UploadProfileImage")
+	defer span.End()
+
+	// Get current user to check for existing avatar
+	user, err := s.repo.GetUser(ctx, userID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Upload new image
+	imageURL, err := attachmentsService.UploadProfileImage(ctx, file, fileHeader, userID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delete old image if exists
+	if user.AvatarURL != "" {
+		_ = attachmentsService.DeleteProfileImage(ctx, user.AvatarURL)
+	}
+
+	// Update user's avatar URL
+	updates := CoreUpdateUser{
+		AvatarURL: imageURL,
+	}
+
+	_, err = s.repo.UpdateUser(ctx, userID, updates)
+	if err != nil {
+		span.RecordError(err)
+		// Try to cleanup uploaded image since DB update failed
+		_ = attachmentsService.DeleteProfileImage(ctx, imageURL)
+		return err
+	}
+
+	span.AddEvent("profile image updated", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.String("image_url", imageURL),
+	))
+
+	return nil
+}
+
+// DeleteProfileImage removes the current profile image
+func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, attachmentsService AttachmentsService) error {
+	s.log.Info(ctx, "business.core.users.deleteProfileImage")
+	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteProfileImage")
+	defer span.End()
+
+	// Get current user
+	user, err := s.repo.GetUser(ctx, userID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delete from Azure if exists
+	if user.AvatarURL != "" {
+		_ = attachmentsService.DeleteProfileImage(ctx, user.AvatarURL)
+	}
+
+	// Clear avatar URL in database
+	updates := CoreUpdateUser{
+		AvatarURL: "",
+	}
+
+	_, err = s.repo.UpdateUser(ctx, userID, updates)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("profile image deleted", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
 	))
 
 	return nil
