@@ -120,8 +120,9 @@ export const Options = ({
   const { data: objectives = [] } = useTeamObjectives(teamId);
   const sprint = sprints.find((s) => s.id === sprintId);
   const objective = objectives.find((o) => o.id === objectiveId);
-  const { name } = (statuses.find((state) => state.id === statusId) ||
-    statuses.at(0))!;
+  const status =
+    statuses.find((state) => state.id === statusId) || statuses.at(0);
+  const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = members.find((m) => m.id === assigneeId);
   const reporter = members.find((m) => m.id === reporterId);
@@ -275,6 +276,7 @@ export const Options = ({
       <Box className="hidden md:block">
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
+          isDialog={isDialog}
           isNotifications={isNotifications}
           storyId={storyId}
         />

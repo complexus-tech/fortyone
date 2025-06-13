@@ -7,10 +7,14 @@ import {
   CloseIcon,
   MaximizeIcon,
 } from "icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useStoryById } from "@/modules/story/hooks/story";
+import { storyKeys } from "@/modules/stories/constants";
+import { getStory } from "@/modules/story/queries/get-story";
 import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
-// eslint-disable-next-line import/no-cycle -- this is a circular dependency will be fixed in the future
 import { StoryPage } from "../../../modules/story";
 
 export const StoryDialog = ({
@@ -27,57 +31,80 @@ export const StoryDialog = ({
   onNavigate?: (storyId: string) => void;
 }) => {
   const { data: story } = useStoryById(storyId);
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   // Memoized navigation state
   const navigationState = useMemo(() => {
     const currentIndex = stories.findIndex((s) => s.id === storyId);
     const hasPrev = currentIndex > 0;
     const hasNext = currentIndex < stories.length - 1;
-    return { currentIndex, hasPrev, hasNext };
+    const prevStoryId = hasPrev ? stories[currentIndex - 1]?.id : null;
+    const nextStoryId = hasNext ? stories[currentIndex + 1]?.id : null;
+    return { hasPrev, hasNext, prevStoryId, nextStoryId };
   }, [stories, storyId]);
 
-  const { currentIndex, hasPrev, hasNext } = navigationState;
+  const { hasPrev, hasNext, prevStoryId, nextStoryId } = navigationState;
+
+  // Prefetch adjacent stories
+  useEffect(() => {
+    if (!session || !isOpen) return;
+
+    const prefetchStory = async (storyId: string) => {
+      // Only prefetch if the story isn't already cached
+      const cachedStory = queryClient.getQueryData(storyKeys.detail(storyId));
+      if (!cachedStory) {
+        await queryClient.prefetchQuery({
+          queryKey: storyKeys.detail(storyId),
+          queryFn: () => getStory(storyId, session),
+          staleTime: 3 * 60 * 1000, // 3 minutes
+        });
+      }
+    };
+
+    // Prefetch previous story
+    if (prevStoryId) {
+      prefetchStory(prevStoryId);
+    }
+
+    // Prefetch next story
+    if (nextStoryId) {
+      prefetchStory(nextStoryId);
+    }
+  }, [queryClient, session, isOpen, prevStoryId, nextStoryId]);
 
   const handlePrev = () => {
-    if (hasPrev && onNavigate) {
-      onNavigate(stories[currentIndex - 1].id);
+    if (hasPrev && onNavigate && prevStoryId) {
+      onNavigate(prevStoryId);
     }
   };
 
   const handleNext = () => {
-    if (hasNext && onNavigate) {
-      onNavigate(stories[currentIndex + 1].id);
+    if (hasNext && onNavigate && nextStoryId) {
+      onNavigate(nextStoryId);
     }
   };
 
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isOpen || !onNavigate) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle navigation if no input elements are focused
-      const activeElement = document.activeElement;
-      const isInputFocused =
-        activeElement?.tagName === "INPUT" ||
-        activeElement?.tagName === "TEXTAREA" ||
-        (activeElement as HTMLElement).contentEditable === "true";
-
-      if (isInputFocused) return;
-
-      if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-        event.preventDefault();
+  // Keyboard navigation using react-hotkeys-hook
+  useHotkeys(
+    "up, left",
+    () => {
+      if (isOpen && onNavigate) {
         handlePrev();
-      } else if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-        event.preventDefault();
+      }
+    },
+    [isOpen, onNavigate, handlePrev],
+  );
+
+  useHotkeys(
+    "down, right",
+    () => {
+      if (isOpen && onNavigate) {
         handleNext();
       }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onNavigate, hasPrev, hasNext, handlePrev, handleNext]);
+    },
+    [isOpen, onNavigate, handleNext],
+  );
 
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -101,13 +128,13 @@ export const StoryDialog = ({
               >
                 <Flex align="center" gap={2}>
                   <Button
+                    className="pr-3 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon className="h-[1.1rem]" />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
                     size="sm"
-                    variant="naked"
                   >
                     Go back
                   </Button>
@@ -146,7 +173,7 @@ export const StoryDialog = ({
                     </Button>
                   </Tooltip>
                 </Flex>
-                <Flex align="center" gap={2}>
+                <Flex align="center" className="hidden" gap={2}>
                   <Tooltip side="bottom" title="Fullscreen">
                     <span>
                       <Button

@@ -234,6 +234,26 @@ export const KeyboardShortcuts = ({
           name: `Create child ${getTermDisplay("storyTerm")}`,
           shortcut: <Kbd>c</Kbd>,
         },
+        {
+          name: `Previous ${getTermDisplay("storyTerm")} (in dialog)`,
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>↑</Kbd>
+              <Text color="muted">or</Text>
+              <Kbd>←</Kbd>
+            </Flex>
+          ),
+        },
+        {
+          name: `Next ${getTermDisplay("storyTerm")} (in dialog)`,
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>↓</Kbd>
+              <Text color="muted">or</Text>
+              <Kbd>→</Kbd>
+            </Flex>
+          ),
+        },
       ],
     },
   ];

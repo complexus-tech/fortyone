@@ -16,5 +16,6 @@ module.exports = {
     "@typescript-eslint/no-shadow": "off",
     "@typescript-eslint/no-empty-function": "off",
     "react/no-array-index-key": "off",
+    "import/no-cycle": "off",
   },
 };

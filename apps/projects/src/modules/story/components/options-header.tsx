@@ -1,6 +1,6 @@
 "use client";
 import { Button, Container, Dialog, Flex, Text, Tooltip } from "ui";
-import { CopyIcon, DeleteIcon, GitIcon, UndoIcon } from "icons";
+import { CopyIcon, DeleteIcon, GitIcon, MaximizeIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -20,10 +20,12 @@ export const OptionsHeader = ({
   isAdminOrOwner,
   storyId,
   isNotifications,
+  isDialog,
 }: {
   isAdminOrOwner: boolean;
   storyId: string;
   isNotifications?: boolean;
+  isDialog?: boolean;
 }) => {
   const { data: currentUser } = useProfile();
   const { data } = useStoryById(storyId);
@@ -108,7 +110,25 @@ export const OptionsHeader = ({
             ) : null}
           </Text>
         </Flex>
-        <Flex gap={2}>
+        <Flex align="center" gap={2}>
+          {isDialog ? (
+            <Tooltip side="bottom" title="Fullscreen">
+              <span>
+                <Button
+                  asIcon
+                  color="tertiary"
+                  href={`/story/${id}/${slugify(title)}`}
+                  leftIcon={
+                    <MaximizeIcon className="h-[1.25rem]" strokeWidth={2.5} />
+                  }
+                  variant="naked"
+                >
+                  <span className="sr-only">Fullscreen</span>
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null}
+
           <Tooltip
             title={`Copy ${getTermDisplay("storyTerm", { capitalize: true })} link`}
           >
@@ -143,7 +163,7 @@ export const OptionsHeader = ({
             </Tooltip>
           )}
 
-          {!isNotifications ? (
+          {!isNotifications && !isDialog ? (
             <>
               {isDeleted ? (
                 <Tooltip

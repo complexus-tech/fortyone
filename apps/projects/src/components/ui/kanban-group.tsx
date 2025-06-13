@@ -12,7 +12,6 @@ import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
 import { useBoard } from "./board-context";
-// eslint-disable-next-line import/no-cycle -- this is a circular dependency will be fixed in the future
 import { StoryDialog } from "./story-dialog";
 
 const List = ({
