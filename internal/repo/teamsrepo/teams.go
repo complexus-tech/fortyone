@@ -337,7 +337,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			return teams.CoreTeam{}, errors.New("team not found")
 		}
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			errMsg := fmt.Sprintf("team code %s already exists", updates.Code)
+			errMsg := fmt.Sprintf("team code %s already used by another team", updates.Code)
 			r.log.Error(ctx, errMsg)
 			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
 			return teams.CoreTeam{}, teams.ErrTeamCodeExists
