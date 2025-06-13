@@ -128,7 +128,7 @@ export const StoryDialog = ({
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="pr-3 dark:border-dark-100 dark:bg-dark-100/30"
+                    className="shrink-0 pr-3 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon className="h-[1.1rem]" />}
                     onClick={() => {
