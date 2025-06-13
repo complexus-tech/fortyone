@@ -12,6 +12,68 @@ import { Box } from "../Box/Box";
 import { cn } from "lib";
 import { CloseIcon } from "icons";
 
+// Custom styles for dialog animations
+const dialogAnimationStyles = `
+  @keyframes dialog-overlay-show {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes dialog-overlay-hide {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  @keyframes dialog-content-show {
+    from { 
+      opacity: 0; 
+      transform: translateY(-16px) scale(0.95); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0px) scale(1); 
+    }
+  }
+  
+  @keyframes dialog-content-hide {
+    from { 
+      opacity: 1; 
+      transform: translateY(0px) scale(1); 
+    }
+    to { 
+      opacity: 0; 
+      transform: translateY(-16px) scale(0.95); 
+    }
+  }
+  
+  .dialog-overlay-animate[data-state="open"] {
+    animation: dialog-overlay-show 300ms ease-out;
+  }
+  
+  .dialog-overlay-animate[data-state="closed"] {
+    animation: dialog-overlay-hide 300ms ease-in;
+  }
+  
+  .dialog-content-animate[data-state="open"] {
+    animation: dialog-content-show 300ms ease-out;
+  }
+  
+  .dialog-content-animate[data-state="closed"] {
+    animation: dialog-content-hide 300ms ease-in;
+  }
+`;
+
+// Inject styles if they don't exist
+if (
+  typeof document !== "undefined" &&
+  !document.getElementById("dialog-animations")
+) {
+  const style = document.createElement("style");
+  style.id = "dialog-animations";
+  style.textContent = dialogAnimationStyles;
+  document.head.appendChild(style);
+}
+
 const DialogTrigger = DialogPrimitive.Trigger;
 
 const DialogPortal = ({ ...props }: DialogPrimitive.DialogPortalProps) => (
@@ -27,6 +89,7 @@ const DialogOverlay = forwardRef<
     ref={ref}
     className={cn(
       "fixed inset-0 z-50 flex items-start justify-center bg-black/30 dark:bg-black/60 backdrop-blur-[0.5px] dark:backdrop-blur-[0.7px]",
+      "dialog-overlay-animate",
       className
     )}
     {...props}
@@ -65,6 +128,7 @@ const DialogContent = forwardRef<
           ref={ref}
           className={cn(
             "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl overflow-hidden rounded-2xl border-[0.5px] border-gray-200 bg-white dark:border-dark-50 dark:bg-dark-200",
+            "dialog-content-animate",
             {
               "max-w-md": size === "sm",
               "max-w-xl": size === "md",
