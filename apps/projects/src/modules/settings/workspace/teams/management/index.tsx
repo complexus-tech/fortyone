@@ -9,6 +9,7 @@ import {
   WarningIcon,
   WorkflowIcon,
 } from "icons";
+import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
@@ -18,8 +19,19 @@ import { DeleteTeam } from "./components/delete";
 import { Automations } from "./components/automations";
 
 export const TeamManagement = () => {
+  const tabs = [
+    "general",
+    "members",
+    "workflows",
+    "automations",
+    "delete",
+  ] as const;
   const { teamId } = useParams<{ teamId: string }>();
   const { data: team } = useTeam(teamId);
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault("general"),
+  );
 
   if (!team) return null;
 
@@ -33,7 +45,11 @@ export const TeamManagement = () => {
         {team.name}
       </Text>
 
-      <Tabs defaultValue="general">
+      <Tabs
+        defaultValue="general"
+        onValueChange={(v) => setTab(v as typeof tab)}
+        value={tab}
+      >
         <Box className="overflow-x-auto">
           <Tabs.List className="mx-0 md:mx-0">
             <Tabs.Tab
