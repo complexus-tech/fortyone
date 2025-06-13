@@ -114,3 +114,4 @@ export * from "./crown";
 export * from "./blog";
 export * from "./at";
 export * from "./gantt";
+export * from "./grid";

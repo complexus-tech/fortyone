@@ -29,8 +29,10 @@ export const Team = ({
   color,
   isPrivate,
   totalTeams,
+  idx,
 }: TeamType & {
   totalTeams: number;
+  idx: number;
 }) => {
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
@@ -38,7 +40,7 @@ export const Team = ({
   const [isLeaving, setIsLeaving] = useState(false);
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
     `teams:${id}:dropdown`,
-    false,
+    idx === 0,
   );
   const pathname = usePathname();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();

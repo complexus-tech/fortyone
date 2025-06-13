@@ -3,11 +3,10 @@ import { Badge, Flex } from "ui";
 import { cn } from "lib";
 import {
   AnalyticsIcon,
-  // AnalyticsIcon,
   DashboardIcon,
+  GridIcon,
   NotificationsIcon,
   RoadmapIcon,
-  SprintsIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -36,8 +35,8 @@ export const Navigation = () => {
     if (runningSprints.length === 0) return null;
     const sprint = runningSprints[0];
     return {
-      name: `Current ${getTermDisplay("sprintTerm", { capitalize: true, variant: runningSprints.length > 1 ? "plural" : "singular" })}`,
-      icon: <SprintsIcon />,
+      name: `Current Board${runningSprints.length > 1 ? "s" : ""}`,
+      icon: <GridIcon />,
       href:
         runningSprints.length > 1
           ? "/sprints"

@@ -61,8 +61,8 @@ export const Teams = () => {
         )}
       </Flex>
       <Flex direction="column" gap={1}>
-        {teams.map((team) => (
-          <Team {...team} key={team.id} totalTeams={teams.length} />
+        {teams.map((team, idx) => (
+          <Team {...team} idx={idx} key={team.id} totalTeams={teams.length} />
         ))}
       </Flex>
 
