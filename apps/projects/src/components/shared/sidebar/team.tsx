@@ -47,6 +47,11 @@ export const Team = ({
   const { userRole } = useUserRole();
 
   const links = [
+    // {
+    //   name: "Backlog",
+    //   icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
+    //   href: `/teams/${id}/stories`,
+    // },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
