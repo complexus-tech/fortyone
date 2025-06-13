@@ -337,7 +337,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 		if err == sql.ErrNoRows {
 			return teams.CoreTeam{}, errors.New("team not found")
 		}
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "teams_code_key" {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "teams_workspace_id_code_key" {
 			errMsg := fmt.Sprintf("team code %s already exists", updates.Code)
 			r.log.Error(ctx, errMsg)
 			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
