@@ -22,6 +22,7 @@ import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
+// import { StoryDialog } from "../story-dialog";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
@@ -253,6 +254,12 @@ export const StoryRow = ({
           ))}
         </>
       ) : null}
+
+      {/* <StoryDialog
+        isOpen
+        setIsOpen={() => {}}
+        storyId="3f13377f-8245-4768-a798-063c7f4466c1"
+      /> */}
     </Box>
   );
 };

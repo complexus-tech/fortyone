@@ -11,6 +11,7 @@ import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
@@ -37,9 +38,13 @@ const DEBOUNCE_DELAY = 1000; // 1000ms delay
 export const MainDetails = ({
   storyId,
   isNotifications,
+  isDialog,
+  mainHeader,
 }: {
   storyId: string;
   isNotifications: boolean;
+  isDialog?: boolean;
+  mainHeader?: ReactNode;
 }) => {
   const { data } = useStoryById(storyId);
   const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
@@ -134,7 +139,12 @@ export const MainDetails = ({
   }, [title, titleEditor]);
 
   return (
-    <BodyContainer className="h-dvh overflow-y-auto pb-8">
+    <BodyContainer
+      className={cn("h-dvh overflow-y-auto pb-8", {
+        "h-[85dvh]": isDialog,
+      })}
+    >
+      {mainHeader}
       <Box className="md:hidden">
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
@@ -143,7 +153,11 @@ export const MainDetails = ({
         />
       </Box>
 
-      <Container className="pt-4 md:pt-7">
+      <Container
+        className={cn("pt-4 md:pt-7", {
+          "md:pt-2": isDialog,
+        })}
+      >
         <TextEditor
           asTitle
           className="relative -left-1 text-3xl font-medium md:text-4xl"
