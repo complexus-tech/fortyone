@@ -12,7 +12,7 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useMembers } from "@/lib/hooks/members";
-import { useUserRole } from "@/hooks";
+import { useMediaQuery, useUserRole } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
@@ -26,14 +26,17 @@ import { StoryProperties } from "./properties";
 export const StoryCard = ({
   story,
   className,
+  handleStoryClick,
 }: {
   story: StoryProps;
   className?: string;
+  handleStoryClick: (storyId: string) => void;
 }) => {
   const router = useRouter();
   const { data: session } = useSession();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { userRole } = useUserRole();
   const queryClient = useQueryClient();
 
@@ -101,6 +104,10 @@ export const StoryCard = ({
               onClick={(e) => {
                 if (isDragging) {
                   e.preventDefault();
+                }
+                if (isDesktop) {
+                  e.preventDefault();
+                  handleStoryClick(story.id);
                 }
               }}
             >

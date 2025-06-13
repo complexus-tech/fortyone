@@ -12,6 +12,8 @@ import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
 import { useBoard } from "./board-context";
+// eslint-disable-next-line import/no-cycle -- this is a circular dependency will be fixed in the future
+import { StoryDialog } from "./story-dialog";
 
 const List = ({
   children,
@@ -83,11 +85,20 @@ export const KanbanGroup = ({
   };
 
   const id = getId() || "";
+  const [storyId, setStoryId] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <List id={id} key={id} totalStories={filteredStories.length}>
       {filteredStories.map((story) => (
-        <StoryCard key={story.id} story={story} />
+        <StoryCard
+          handleStoryClick={(storyId) => {
+            setStoryId(storyId);
+            setIsDialogOpen(true);
+          }}
+          key={story.id}
+          story={story}
+        />
       ))}
       <Button
         align="center"
@@ -109,6 +120,13 @@ export const KanbanGroup = ({
         setIsOpen={setIsOpen}
         statusId={status?.id}
       />
+      {storyId ? (
+        <StoryDialog
+          isOpen={isDialogOpen}
+          setIsOpen={setIsDialogOpen}
+          storyId={storyId}
+        />
+      ) : null}
     </List>
   );
 };
