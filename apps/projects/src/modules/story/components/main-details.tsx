@@ -136,7 +136,14 @@ export const MainDetails = ({
     if (titleEditor && title && titleEditor.getText() !== title) {
       titleEditor.commands.setContent(title);
     }
-  }, [title, titleEditor]);
+    if (
+      descriptionEditor &&
+      descriptionHTML &&
+      descriptionEditor.getHTML() !== descriptionHTML
+    ) {
+      descriptionEditor.commands.setContent(descriptionHTML);
+    }
+  }, [title, titleEditor, descriptionEditor, descriptionHTML]);
 
   return (
     <BodyContainer
