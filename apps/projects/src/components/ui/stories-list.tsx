@@ -15,6 +15,11 @@ export const StoriesList = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [storyId, setStoryId] = useState<string | null>(null);
+
+  const handleNavigate = (newStoryId: string) => {
+    setStoryId(newStoryId);
+  };
+
   return (
     <Box>
       {stories.map((story) => (
@@ -31,7 +36,9 @@ export const StoriesList = ({
       {storyId ? (
         <StoryDialog
           isOpen={isDialogOpen}
+          onNavigate={handleNavigate}
           setIsOpen={setIsDialogOpen}
+          stories={stories}
           storyId={storyId}
         />
       ) : null}

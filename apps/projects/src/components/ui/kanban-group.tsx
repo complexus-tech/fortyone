@@ -88,6 +88,10 @@ export const KanbanGroup = ({
   const [storyId, setStoryId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const handleNavigate = (newStoryId: string) => {
+    setStoryId(newStoryId);
+  };
+
   return (
     <List id={id} key={id} totalStories={filteredStories.length}>
       {filteredStories.map((story) => (
@@ -123,7 +127,9 @@ export const KanbanGroup = ({
       {storyId ? (
         <StoryDialog
           isOpen={isDialogOpen}
+          onNavigate={handleNavigate}
           setIsOpen={setIsDialogOpen}
+          stories={filteredStories}
           storyId={storyId}
         />
       ) : null}
