@@ -2,11 +2,12 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const MaximizeIcon = (props: Icon) => {
-  const { className, ...rest } = props;
+  const { className, strokeWidth = 2.5, ...rest } = props;
   return (
     <svg
       {...rest}
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      strokeWidth={strokeWidth}
       fill="none"
       height="24"
       viewBox="0 0 24 24"
