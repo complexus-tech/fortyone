@@ -11,5 +11,6 @@ export const useSubscription = () => {
     queryFn: () => getSubscription(session!),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
     refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 };
