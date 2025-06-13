@@ -12,7 +12,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -337,7 +336,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 		if err == sql.ErrNoRows {
 			return teams.CoreTeam{}, errors.New("team not found")
 		}
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "teams_workspace_id_code_key" {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			errMsg := fmt.Sprintf("team code %s already exists", updates.Code)
 			r.log.Error(ctx, errMsg)
 			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
