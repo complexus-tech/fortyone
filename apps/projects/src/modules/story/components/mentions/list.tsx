@@ -69,14 +69,14 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
 
     if (props.items.length === 0) {
       return (
-        <Box className="w-56 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[0.95rem] shadow-lg dark:border-dark-100 dark:bg-dark-200">
+        <Box className="w-56 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-lg dark:border-dark-100 dark:bg-dark-200">
           <Text color="muted">No users found</Text>
         </Box>
       );
     }
 
     return (
-      <Box className="z-50 w-max min-w-64 space-y-1 rounded-lg border border-gray-50 bg-white p-2 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
+      <Box className="z-50 w-max min-w-64 space-y-1 rounded-xl border border-gray-50 bg-white p-2 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
         {props.items.map((item, index) => (
           <button
             className="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1 outline-none hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
