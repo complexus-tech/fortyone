@@ -30,7 +30,7 @@ export const Navigation = () => {
     if (runningSprints.length === 0) return null;
     const sprint = runningSprints[0];
     return {
-      name: `Current Board${runningSprints.length > 1 ? "s" : ""}`,
+      name: `Active Board${runningSprints.length > 1 ? "s" : ""}`,
       icon: <GridIcon />,
       href:
         runningSprints.length > 1
@@ -50,19 +50,19 @@ export const Navigation = () => {
       icon: <UserIcon />,
       href: "/my-work",
     },
-    {
-      name: "Roadmap",
-      icon: <RoadmapIcon strokeWidth={2} />,
-      href: "/roadmaps",
-      disabled: !features.objectiveEnabled,
-    },
+    ...(getSprintsItem() ? [getSprintsItem()!] : []),
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
       href: "/analytics",
       disabled: !isAnalyticsEnabled,
     },
-    ...(getSprintsItem() ? [getSprintsItem()!] : []),
+    {
+      name: "Roadmap",
+      icon: <RoadmapIcon strokeWidth={2} />,
+      href: "/roadmaps",
+      disabled: !features.objectiveEnabled,
+    },
   ];
 
   return (

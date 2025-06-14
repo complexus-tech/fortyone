@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Box, ContextMenu, Flex } from "ui";
 import {
-  ArrowDownIcon,
+  ArrowRight2Icon,
   LogoutIcon,
   ObjectiveIcon,
   SettingsIcon,
@@ -94,13 +94,10 @@ export const Team = ({
               <TeamColor color={color} />
               <span className="block max-w-[15ch] truncate">{teamName}</span>
             </span>
-            <ArrowDownIcon
-              className={cn(
-                "h-3.5 w-auto -rotate-90 text-gray dark:text-gray-300",
-                {
-                  "rotate-0": isOpen,
-                },
-              )}
+            <ArrowRight2Icon
+              className={cn("h-4", {
+                "rotate-90": isOpen,
+              })}
               strokeWidth={3.5}
               suppressHydrationWarning
             />
