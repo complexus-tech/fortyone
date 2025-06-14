@@ -76,30 +76,46 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
     }
 
     return (
-      <Box className="z-50 w-max min-w-64 space-y-1 rounded-xl border border-gray-50 bg-white p-2 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
-        {props.items.map((item, index) => (
-          <button
-            className="flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1 outline-none hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
-            key={item.id}
-            onClick={() => {
-              selectItem(index);
-            }}
-            onMouseEnter={() => {
-              setSelectedIndex(index);
-            }}
-            type="button"
-          >
-            <Avatar name={item.label} size="sm" src={item.avatar} />
-            <Text className="max-w-[12rem] truncate">
-              {item.label}
-              {item.id === session?.user?.id && (
-                <Text as="span" color="muted">
-                  (You)
-                </Text>
-              )}
-            </Text>
-          </button>
-        ))}
+      <Box
+        className="z-50 w-max min-w-64 space-y-1 rounded-xl border border-gray-50 bg-white p-2 shadow shadow-gray-100 backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20"
+        style={{ pointerEvents: "auto" }}
+      >
+        {props.items.map((item, index) => {
+          const isSelected = index === selectedIndex;
+          return (
+            <button
+              className={`flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1 outline-none transition-colors duration-150 ${
+                isSelected
+                  ? "bg-gray-100 dark:bg-dark-50/80"
+                  : "hover:bg-gray-100/70 focus:bg-gray-50 hover:dark:bg-dark-50 focus:dark:bg-dark-100/70"
+              }`}
+              key={item.id}
+              onClick={() => {
+                selectItem(index);
+              }}
+              onMouseDown={() => {
+                selectItem(index);
+              }}
+              onMouseEnter={() => {
+                setSelectedIndex(index);
+              }}
+              onPointerEnter={() => {
+                setSelectedIndex(index);
+              }}
+              type="button"
+            >
+              <Avatar name={item.label} size="sm" src={item.avatar} />
+              <Text className="max-w-[12rem] truncate">
+                {item.label}
+                {item.id === session?.user?.id && (
+                  <Text as="span" color="muted">
+                    (You)
+                  </Text>
+                )}
+              </Text>
+            </button>
+          );
+        })}
       </Box>
     );
   },
