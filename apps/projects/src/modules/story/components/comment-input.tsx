@@ -82,7 +82,7 @@ export const CommentInput = ({
       Mention.configure({
         HTMLAttributes: {
           class:
-            "mention bg-gray-50 text-[0.95rem] px-1.5 py-1 rounded-md font-semibold dark:bg-dark-200",
+            "mention bg-gray-100 text-[0.95rem] px-1.5 py-1 rounded-md font-semibold dark:bg-dark-100",
         },
         renderText({ options, node }) {
           return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
