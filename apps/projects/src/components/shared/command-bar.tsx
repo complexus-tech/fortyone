@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
-import { Dialog, Command, Text, Divider, Kbd, Flex, Box } from "ui";
+import { Dialog, Command, Text, Divider, Flex, Box, Kbd } from "ui";
 import {
   PlusIcon,
   NotificationsIcon,
@@ -17,9 +13,11 @@ import {
   MoonIcon,
   UsersAddIcon,
 } from "icons";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTerminology, useAnalytics, useUserRole } from "@/hooks";
+import { logOut } from "@/components/shared/sidebar/actions";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
   NewObjectiveDialog,
@@ -27,25 +25,15 @@ import {
   InviteMembersDialog,
 } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
-import { logOut } from "@/components/shared/sidebar/actions";
+import { clearAllStorage } from "./sidebar/utils";
 
-const clearAllStorage = () => {
-  document.cookie.split(";").forEach((c) => {
-    document.cookie = c
-      .replace(/^ +/, "")
-      .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-  });
-
-  if ("caches" in window) {
-    caches.keys().then((names) => {
-      names.forEach((name) => {
-        caches.delete(name);
-      });
-    });
-  }
-};
-
-export const CommandMenu = () => {
+export const CommandBar = ({
+  isOpen,
+  setIsOpen,
+}: {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}) => {
   const { userRole } = useUserRole();
   const { analytics } = useAnalytics();
   const { getTermDisplay } = useTerminology();
@@ -53,7 +41,6 @@ export const CommandMenu = () => {
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
-  const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme: theme, setTheme } = useTheme();
@@ -73,57 +60,6 @@ export const CommandMenu = () => {
     }
   };
 
-  useHotkeys("mod+k", (e) => {
-    e.preventDefault();
-    setOpen((prev) => !prev);
-  });
-
-  useHotkeys("g+i", () => {
-    if (pathname !== "/notifications") {
-      router.push("/notifications");
-    }
-  });
-  useHotkeys("g+m", () => {
-    if (pathname !== "/my-work") {
-      router.push("/my-work");
-    }
-  });
-
-  useHotkeys("g+s", () => {
-    if (pathname !== "/summary") {
-      router.push("/summary");
-    }
-  });
-  useHotkeys("g+o", () => {
-    if (pathname !== "/objectives") {
-      router.push("/objectives");
-    }
-  });
-
-  useHotkeys("alt+shift+s", () => {
-    if (pathname !== "/settings") {
-      router.push("/settings");
-    }
-  });
-
-  useHotkeys("alt+shift+t", () => {});
-
-  useHotkeys("mod+/", () => {
-    setIsKeyboardShortcutsOpen((prev) => !prev);
-  });
-  useHotkeys("mod+i", () => {
-    if (userRole === "admin") {
-      setIsInviteMembersOpen((prev) => !prev);
-      setOpen(false);
-    }
-  });
-
-  useHotkeys("/", () => {
-    if (pathname !== "search") {
-      router.push("/search");
-    }
-  });
-
   const commands = [
     {
       group: "Quick Actions",
@@ -139,7 +75,7 @@ export const CommandMenu = () => {
           ),
           action: () => {
             setIsStoryOpen(true);
-            setOpen(false);
+            setIsOpen(false);
           },
         },
         {
@@ -153,7 +89,7 @@ export const CommandMenu = () => {
           ),
           action: () => {
             setIsObjectivesOpen(true);
-            setOpen(false);
+            setIsOpen(false);
           },
         },
         {
@@ -167,7 +103,7 @@ export const CommandMenu = () => {
           ),
           action: () => {
             setIsSprintsOpen(true);
-            setOpen(false);
+            setIsOpen(false);
           },
         },
         ...(userRole === "admin"
@@ -183,7 +119,7 @@ export const CommandMenu = () => {
                 ),
                 action: () => {
                   setIsInviteMembersOpen(true);
-                  setOpen(false);
+                  setIsOpen(false);
                 },
               },
             ]
@@ -203,7 +139,7 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "/my-work") {
               router.push("/my-work");
             }
@@ -219,7 +155,7 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "/notifications") {
               router.push("/notifications");
             }
@@ -235,7 +171,7 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "/summary") {
               router.push("/summary");
             }
@@ -254,7 +190,7 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "/objectives") {
               router.push("/objectives");
             }
@@ -265,7 +201,7 @@ export const CommandMenu = () => {
           icon: <SearchIcon className="h-[1.15rem]" />,
           shortcut: <Kbd>/</Kbd>,
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "search") {
               router.push("/search");
             }
@@ -287,7 +223,7 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: () => {
-            setOpen(false);
+            setIsOpen(false);
             if (pathname !== "/settings") {
               router.push("/settings");
             }
@@ -305,7 +241,7 @@ export const CommandMenu = () => {
           ),
           action: () => {
             toggleTheme();
-            setOpen(false);
+            setIsOpen(false);
           },
         },
         {
@@ -319,7 +255,7 @@ export const CommandMenu = () => {
           ),
           action: () => {
             setIsKeyboardShortcutsOpen((prev) => !prev);
-            setOpen(false);
+            setIsOpen(false);
           },
         },
         {
@@ -333,17 +269,16 @@ export const CommandMenu = () => {
             </Flex>
           ),
           action: async () => {
-            setOpen(false);
+            setIsOpen(false);
             await handleLogout();
           },
         },
       ],
     },
   ];
-
   return (
     <>
-      <Dialog onOpenChange={setOpen} open={open}>
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content className="max-w-3xl" hideClose>
           <Dialog.Header className="sr-only">
             <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
@@ -399,7 +334,6 @@ export const CommandMenu = () => {
           </Dialog.Body>
         </Dialog.Content>
       </Dialog>
-
       <KeyboardShortcuts
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}

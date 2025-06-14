@@ -218,9 +218,9 @@ export const InviteMembersDialog = ({
                   <WarningIcon className="shrink-0 text-warning dark:text-warning" />
                   <Text>
                     You&apos;ve reached the limit of {getLimit("maxMembers")}{" "}
-                    members on your {tier.replace("free", "hobby")} plan.
+                    members on your {tier.replace("free", "hobby")} plan.{" "}
                     {userRole === "admin"
-                      ? "Upgrade to invite more members."
+                      ? `Upgrade ${tier === "pro" ? "to business" : ""} to invite more members.`
                       : "Ask your admin to upgrade to invite more members."}
                   </Text>
                 </Flex>

@@ -6,7 +6,8 @@ import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole } from "@/hooks";
-import { CommandMenu } from "../command-menu";
+import { Commands } from "../commands";
+import { CommandBar } from "../command-bar";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
@@ -15,6 +16,8 @@ import { ProfileMenu } from "./profile-menu";
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
 
@@ -87,7 +90,15 @@ export const Sidebar = () => {
                 Invite members
               </button>
             ) : (
-              <Box />
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsCommandBarOpen(true);
+                }}
+                size="xs"
+              >
+                <CommandIcon className="h-4" /> K
+              </Button>
             )}
 
             <Menu>
@@ -142,7 +153,8 @@ export const Sidebar = () => {
         setIsOpen={setIsKeyboardShortcutsOpen}
       />
       <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
-      <CommandMenu />
+      <Commands />
+      <CommandBar isOpen={isCommandBarOpen} setIsOpen={setIsCommandBarOpen} />
     </Box>
   );
 };
