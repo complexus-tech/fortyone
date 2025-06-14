@@ -291,6 +291,28 @@ type GroupStoriesResponse struct {
 	Pagination GroupPagination `json:"pagination"`
 }
 
+// CategoryPagination represents pagination info for category stories
+type CategoryPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+// CategoryMeta represents metadata for category stories response
+type CategoryMeta struct {
+	Category    string    `json:"category"`
+	TeamID      uuid.UUID `json:"teamId"`
+	TotalLoaded int       `json:"totalLoaded"`
+}
+
+// CategoryStoriesResponse represents the response for stories filtered by category
+type CategoryStoriesResponse struct {
+	Stories    []AppStoryList     `json:"stories"`
+	Pagination CategoryPagination `json:"pagination"`
+	Meta       CategoryMeta       `json:"meta"`
+}
+
 func toAppComment(i comments.CoreComment) AppComment {
 	return AppComment{
 		ID:          i.ID,

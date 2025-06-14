@@ -46,6 +46,7 @@ type Repository interface {
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
 	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
+	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -496,6 +497,27 @@ func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query C
 	if err != nil {
 		return nil, false, fmt.Errorf("listing group stories: %w", err)
 	}
+
+	return stories, hasMore, nil
+}
+
+// ListByCategory returns stories filtered by category with pagination
+func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListByCategory")
+	defer span.End()
+
+	stories, hasMore, err := s.repo.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
+	if err != nil {
+		return nil, false, fmt.Errorf("listing stories by category: %w", err)
+	}
+
+	span.AddEvent("category stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(stories)),
+		attribute.String("category", category),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
 
 	return stories, hasMore, nil
 }

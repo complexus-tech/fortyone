@@ -1958,3 +1958,85 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	return query
 }
+
+// ListByCategory returns stories filtered by category with pagination
+func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]stories.CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListByCategory")
+	defer span.End()
+
+	// Build simplified query with status join for category filtering
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			CAST('[]' AS json) AS sub_stories,
+			CAST('[]' AS json) AS labels
+		FROM
+			stories s
+		INNER JOIN statuses stat ON s.status_id = stat.status_id
+		WHERE
+			s.workspace_id = :workspace_id
+			AND s.team_id = :team_id
+			AND s.deleted_at IS NULL
+			AND s.archived_at IS NULL
+			AND s.parent_id IS NULL
+			AND stat.category = :category
+		ORDER BY s.created_at DESC
+		LIMIT :limit OFFSET :offset
+	`
+
+	// Calculate offset and fetch one extra to check if there are more
+	offset := (page - 1) * pageSize
+	limit := pageSize + 1
+
+	params := map[string]any{
+		"workspace_id": workspaceId,
+		"team_id":      teamId,
+		"category":     category,
+		"limit":        limit,
+		"offset":       offset,
+	}
+
+	var dbStories []dbStory
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to prepare category stories query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
+		return nil, false, fmt.Errorf("failed to get stories by category: %w", err)
+	}
+
+	// Check if there are more stories
+	hasMore := len(dbStories) > pageSize
+	if hasMore {
+		// Remove the extra story we fetched
+		dbStories = dbStories[:pageSize]
+	}
+
+	coreStories := toCoreStories(dbStories)
+
+	span.AddEvent("category stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(coreStories)),
+		attribute.String("category", category),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return coreStories, hasMore, nil
+}

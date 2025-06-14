@@ -892,6 +892,89 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
+// ListByCategory returns stories filtered by category with pagination
+func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.ListByCategory")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	// Get required category parameter
+	category := r.URL.Query().Get("category")
+	if category == "" {
+		web.RespondError(ctx, w, fmt.Errorf("category parameter is required"), http.StatusBadRequest)
+		return nil
+	}
+
+	// Get required teamId parameter
+	teamIdParam := r.URL.Query().Get("teamId")
+	if teamIdParam == "" {
+		web.RespondError(ctx, w, fmt.Errorf("teamId parameter is required"), http.StatusBadRequest)
+		return nil
+	}
+
+	teamId, err := uuid.Parse(teamIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, fmt.Errorf("invalid teamId format"), http.StatusBadRequest)
+		return nil
+	}
+
+	// Parse pagination parameters
+	page := getIntParam(r, "page", 1)
+	pageSize := getIntParam(r, "pageSize", 20)
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	// Fetch stories by category and team
+	stories, hasMore, err := h.stories.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	// Convert to app stories
+	appStories := toAppStories(stories)
+
+	// Calculate pagination info
+	nextPage := page + 1
+	if !hasMore {
+		nextPage = 0
+	}
+
+	response := CategoryStoriesResponse{
+		Stories: appStories,
+		Pagination: CategoryPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+		Meta: CategoryMeta{
+			Category:    category,
+			TeamID:      teamId,
+			TotalLoaded: len(appStories),
+		},
+	}
+
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
 // parseStoryQuery parses URL query parameters into a StoryQuery struct
 func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery, error) {
 	query := StoryQuery{
