@@ -130,13 +130,13 @@ export const StoryDialog = ({
                   <Button
                     className="shrink-0 pr-3 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
-                    leftIcon={<ArrowLeft2Icon className="h-[1.1rem]" />}
+                    leftIcon={<ArrowLeft2Icon />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
                     size="sm"
                   >
-                    Go back
+                    Close
                   </Button>
 
                   <Tooltip
