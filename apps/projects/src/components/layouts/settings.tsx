@@ -11,6 +11,7 @@ import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { BodyContainer, MobileMenuButton } from "../shared";
 import { NavLink } from "../ui";
+import { Commands } from "../shared/commands";
 
 export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { userRole } = useUserRole();
@@ -221,6 +222,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           </ResizablePanel.Panel>
         </ResizablePanel>
       </Box>
+      <Commands />
     </>
   );
 };
