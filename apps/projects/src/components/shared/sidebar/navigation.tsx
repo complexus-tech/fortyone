@@ -9,7 +9,12 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
-import { useTerminology, useFeatures, useFeatureFlag } from "@/hooks";
+import {
+  useTerminology,
+  useFeatures,
+  useFeatureFlag,
+  useUserRole,
+} from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
@@ -22,12 +27,13 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { data: runningSprints = [] } = useRunningSprints();
+  const { userRole } = useUserRole();
   const isAnalyticsEnabled = useFeatureFlag("analytics_page");
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
 
   const getSprintsItem = (): MenuItem | null => {
-    if (runningSprints.length === 0) return null;
+    if (runningSprints.length === 0 || userRole !== "admin") return null;
     const sprint = runningSprints[0];
     return {
       name: `Active Board${runningSprints.length > 1 ? "s" : ""}`,
