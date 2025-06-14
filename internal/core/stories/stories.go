@@ -36,7 +36,6 @@ type Repository interface {
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
-	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
@@ -45,6 +44,10 @@ type Repository interface {
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
+	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
+	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
+	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
+	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -148,21 +151,6 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 }
 
 // List returns a list of stories for a workspace with additional filters.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
-	s.log.Info(ctx, "business.core.stories.List")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
-	defer span.End()
-
-	stories, err := s.repo.List(ctx, workspaceId, filters)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-	))
-	return stories, nil
-}
 
 // Get returns the story with the specified ID.
 func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error) {
@@ -177,6 +165,23 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	}
 
 	return story, nil
+}
+
+// List returns a list of stories for a workspace with additional filters.
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
+	s.log.Info(ctx, "business.core.stories.List")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
+	defer span.End()
+
+	stories, err := s.repo.List(ctx, workspaceId, filters)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(stories)),
+	))
+	return stories, nil
 }
 
 // Delete deletes the story with the specified ID.
@@ -477,18 +482,60 @@ func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID,
 
 // CountInWorkspace returns the count of stories in a workspace.
 func (s *Service) CountInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error) {
-	s.log.Info(ctx, "business.core.stories.CountInWorkspace")
-	ctx, span := web.AddSpan(ctx, "business.core.stories.CountInWorkspace")
+	ctx, span := web.AddSpan(ctx, "business.services.stories.CountInWorkspace")
 	defer span.End()
 
 	count, err := s.repo.CountStoriesInWorkspace(ctx, workspaceId)
 	if err != nil {
-		span.RecordError(err)
-		return 0, err
+		return 0, fmt.Errorf("counting stories in workspace: %w", err)
 	}
 
-	span.AddEvent("stories counted.", trace.WithAttributes(
-		attribute.Int("story.count", count),
-	))
 	return count, nil
+}
+
+// ListGroupedStories returns stories grouped by the specified field with limited stories per group
+func (s *Service) ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListGroupedStories")
+	defer span.End()
+
+	groups, err := s.repo.ListGroupedStories(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("listing grouped stories: %w", err)
+	}
+
+	return groups, nil
+}
+
+// ListGroupStories returns more stories for a specific group (for load more functionality)
+func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListGroupStories")
+	defer span.End()
+
+	stories, hasMore, err := s.repo.ListGroupStories(ctx, groupKey, query)
+	if err != nil {
+		return nil, false, fmt.Errorf("listing group stories: %w", err)
+	}
+
+	return stories, hasMore, nil
+}
+
+// ListByCategory returns stories filtered by category with pagination
+func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.services.stories.ListByCategory")
+	defer span.End()
+
+	stories, hasMore, err := s.repo.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
+	if err != nil {
+		return nil, false, fmt.Errorf("listing stories by category: %w", err)
+	}
+
+	span.AddEvent("category stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(stories)),
+		attribute.String("category", category),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return stories, hasMore, nil
 }

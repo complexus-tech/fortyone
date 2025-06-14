@@ -3,9 +3,11 @@ package storiesrepo
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
@@ -274,108 +276,6 @@ func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.
 }
 
 // List returns a list of stories for a workspace with additional filters.
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
-	defer span.End()
-
-	query := `
-		SELECT
-			s.id,
-			s.sequence_id,
-			s.title,
-			s.priority,
-			s.status_id,
-			s.start_date,
-			s.end_date,
-			s.sprint_id,
-			s.team_id,
-			s.objective_id,
-			s.workspace_id,
-			s.assignee_id,
-			s.reporter_id,
-			s.created_at,
-			s.updated_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'labels', '[]'
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id 
-						AND sub.deleted_at IS NULL
-				), '[]'
-			) AS sub_stories,
-			COALESCE(
-				(
-					SELECT
-						json_agg(l.label_id)
-					FROM
-						labels l
-						INNER JOIN story_labels sl ON sl.label_id = l.label_id
-					WHERE
-						sl.story_id = s.id
-				), '[]'
-			) AS labels
-		FROM
-			stories s
-	`
-	var setClauses []string
-
-	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
-	}
-
-	filters["workspace_id"] = workspaceId
-
-	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id AND parent_id IS NULL;"
-
-	var stories []dbStory
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-	defer stmt.Close()
-
-	r.log.Info(ctx, "fetching stories.")
-	if err := stmt.SelectContext(ctx, &stories, filters); err != nil {
-		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-
-	r.log.Info(ctx, "stories retrieved successfully.")
-	span.AddEvent("stories retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(stories)),
-		attribute.String("query", query),
-	))
-
-	return toCoreStories(stories), nil
-}
 
 // MyStories returns a list of stories.
 func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.CoreStoryList, error) {
@@ -604,6 +504,110 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	span.AddEvent("Story deleted.", trace.WithAttributes(attribute.String("story.id", id.String())))
 
 	return nil
+}
+
+// List returns a list of stories for a workspace with additional filters.
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
+	defer span.End()
+
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at,
+								'labels', '[]'
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), '[]'
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
+		FROM
+			stories s
+	`
+	var setClauses []string
+
+	for field := range filters {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+	}
+
+	filters["workspace_id"] = workspaceId
+
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id AND parent_id IS NULL;"
+
+	var stories []dbStory
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "fetching stories.")
+	if err := stmt.SelectContext(ctx, &stories, filters); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	r.log.Info(ctx, "stories retrieved successfully.")
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(stories)),
+		attribute.String("query", query),
+	))
+
+	return toCoreStories(stories), nil
 }
 
 // BulkDelete removes the stories with the specified IDs.
@@ -1276,4 +1280,867 @@ func (r *repo) CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUI
 	))
 
 	return count, nil
+}
+
+// ListGroupedStories returns stories grouped by the specified field with limited stories per group
+func (r *repo) ListGroupedStories(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListGroupedStories")
+	defer span.End()
+
+	// Use SQL-based grouping for better performance with large datasets
+	if r.shouldUseSQLGrouping(query) {
+		return r.listGroupedStoriesSQL(ctx, query)
+	}
+
+	// Fall back to Go-based grouping for complex cases
+	return r.listGroupedStoriesGo(ctx, query)
+}
+
+// shouldUseSQLGrouping determines whether to use SQL-based or Go-based grouping
+func (r *repo) shouldUseSQLGrouping(query stories.CoreStoryQuery) bool {
+	// Always use optimized SQL grouping for better performance
+	switch query.GroupBy {
+	case "status", "assignee", "priority", "team", "sprint":
+		return true
+	default:
+		return false
+	}
+}
+
+// listGroupedStoriesSQL performs grouping directly in SQL for optimal performance
+func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesSQL")
+	defer span.End()
+
+	// Build optimized query that fetches storiesPerGroup+1 to check if more exist
+	groupColumn := r.getGroupColumn(query.GroupBy)
+	limit := query.StoriesPerGroup + 1 // Fetch one extra to check if more exist
+
+	// Build the FROM clause with necessary joins
+	fromClause := "FROM stories s"
+
+	// Simplified query without expensive COUNT() operations
+	sqlQuery := fmt.Sprintf(`
+		WITH grouped_stories AS (
+			SELECT 
+				s.id,
+				s.sequence_id,
+				s.title,
+				s.priority,
+				s.status_id,
+				s.assignee_id,
+				s.team_id,
+				s.workspace_id,
+				s.created_at,
+				s.updated_at,
+				COALESCE(CAST(%s AS text), 'null') as group_key,
+				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY s.created_at DESC) as row_num
+			%s
+			%s
+		),
+		limited_stories AS (
+			SELECT *
+			FROM grouped_stories
+			WHERE row_num <= %d
+		)
+		SELECT 
+			group_key,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', id,
+						'sequence_id', sequence_id,
+						'title', title,
+						'priority', priority,
+						'status_id', status_id,
+						'assignee_id', assignee_id,
+						'team_id', team_id,
+						'workspace_id', workspace_id,
+						'created_at', created_at,
+						'updated_at', updated_at
+					) ORDER BY created_at DESC
+				) FILTER (WHERE id IS NOT NULL), 
+				CAST('[]' AS json)
+			) as stories_json
+		FROM limited_stories
+		GROUP BY group_key
+		ORDER BY group_key`,
+		groupColumn, groupColumn,
+		fromClause,
+		r.buildSimpleWhereClause(query.Filters),
+		limit)
+
+	params := r.buildQueryParams(query.Filters)
+
+	type groupResult struct {
+		GroupKey    string          `db:"group_key"`
+		StoriesJSON json.RawMessage `db:"stories_json"`
+	}
+
+	var results []groupResult
+	stmt, err := r.db.PrepareNamedContext(ctx, sqlQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare group query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &results, params); err != nil {
+		return nil, fmt.Errorf("failed to execute group query: %w", err)
+	}
+
+	// Convert results to CoreStoryGroup
+	var groups []stories.CoreStoryGroup
+	for _, result := range results {
+		var storyMaps []map[string]any
+		if err := json.Unmarshal(result.StoriesJSON, &storyMaps); err != nil {
+			r.log.Error(ctx, "failed to unmarshal stories JSON", "error", err)
+			continue
+		}
+
+		// Convert story maps to CoreStoryList
+		var coreStories []stories.CoreStoryList
+		for _, storyMap := range storyMaps {
+			coreStory := r.mapToStoryList(storyMap)
+			coreStories = append(coreStories, coreStory)
+		}
+
+		// Check if we have more stories (we fetched storiesPerGroup+1)
+		hasMore := len(coreStories) > query.StoriesPerGroup
+		if hasMore {
+			// Remove the extra story we fetched
+			coreStories = coreStories[:query.StoriesPerGroup]
+		}
+
+		loadedCount := len(coreStories)
+
+		group := stories.CoreStoryGroup{
+			Key:         result.GroupKey,
+			LoadedCount: loadedCount,
+			HasMore:     hasMore,
+			Stories:     coreStories,
+			NextPage:    2, // Next page for load more
+		}
+		groups = append(groups, group)
+	}
+
+	span.AddEvent("SQL grouped stories retrieved.", trace.WithAttributes(
+		attribute.Int("groups.count", len(groups)),
+		attribute.String("group.by", query.GroupBy),
+	))
+
+	return groups, nil
+}
+
+// buildSimpleWhereClause builds a simplified WHERE clause without subqueries
+func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
+	whereClauses := []string{
+		"s.workspace_id = :workspace_id",
+		"s.deleted_at IS NULL",
+		"s.archived_at IS NULL",
+	}
+
+	// Handle parent filtering
+	if filters.Parent != nil {
+		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	} else {
+		// Default: only show top-level stories (no parent)
+		whereClauses = append(whereClauses, "s.parent_id IS NULL")
+	}
+
+	// Add filter conditions
+	if len(filters.StatusIDs) > 0 {
+		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
+	}
+
+	if len(filters.AssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+
+	if len(filters.ReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
+	}
+
+	if len(filters.Priorities) > 0 {
+		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+
+	if len(filters.TeamIDs) > 0 {
+		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+
+	if filters.Objective != nil {
+		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
+	}
+
+	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+
+	if filters.AssignedToMe != nil && *filters.AssignedToMe {
+		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+	}
+
+	if filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+	}
+
+	return "WHERE " + strings.Join(whereClauses, " AND ")
+}
+
+// mapToStoryList converts a map to CoreStoryList
+func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
+	story := stories.CoreStoryList{
+		Labels:     []uuid.UUID{},
+		SubStories: []stories.CoreStoryList{},
+	}
+
+	// Helper function to safely convert values
+	if id, ok := storyMap["id"].(string); ok {
+		if parsed, err := uuid.Parse(id); err == nil {
+			story.ID = parsed
+		}
+	}
+
+	if seqID, ok := storyMap["sequence_id"].(float64); ok {
+		story.SequenceID = int(seqID)
+	}
+
+	if title, ok := storyMap["title"].(string); ok {
+		story.Title = title
+	}
+
+	if priority, ok := storyMap["priority"].(string); ok {
+		story.Priority = priority
+	}
+
+	if statusID, ok := storyMap["status_id"].(string); ok {
+		if parsed, err := uuid.Parse(statusID); err == nil {
+			story.Status = &parsed
+		}
+	}
+
+	if assigneeID, ok := storyMap["assignee_id"].(string); ok && assigneeID != "" {
+		if parsed, err := uuid.Parse(assigneeID); err == nil {
+			story.Assignee = &parsed
+		}
+	}
+
+	if reporterID, ok := storyMap["reporter_id"].(string); ok && reporterID != "" {
+		if parsed, err := uuid.Parse(reporterID); err == nil {
+			story.Reporter = &parsed
+		}
+	}
+
+	if objectiveID, ok := storyMap["objective_id"].(string); ok && objectiveID != "" {
+		if parsed, err := uuid.Parse(objectiveID); err == nil {
+			story.Objective = &parsed
+		}
+	}
+
+	if sprintID, ok := storyMap["sprint_id"].(string); ok && sprintID != "" {
+		if parsed, err := uuid.Parse(sprintID); err == nil {
+			story.Sprint = &parsed
+		}
+	}
+
+	if teamID, ok := storyMap["team_id"].(string); ok {
+		if parsed, err := uuid.Parse(teamID); err == nil {
+			story.Team = parsed
+		}
+	}
+
+	if workspaceID, ok := storyMap["workspace_id"].(string); ok {
+		if parsed, err := uuid.Parse(workspaceID); err == nil {
+			story.Workspace = parsed
+		}
+	}
+
+	// Handle time fields
+	if createdAt, ok := storyMap["created_at"].(string); ok {
+		if parsed, err := time.Parse(time.RFC3339, createdAt); err == nil {
+			story.CreatedAt = parsed
+		}
+	}
+
+	if updatedAt, ok := storyMap["updated_at"].(string); ok {
+		if parsed, err := time.Parse(time.RFC3339, updatedAt); err == nil {
+			story.UpdatedAt = parsed
+		}
+	}
+
+	// Handle nullable time fields
+	if startDate, ok := storyMap["start_date"].(string); ok && startDate != "" {
+		if parsed, err := time.Parse(time.RFC3339, startDate); err == nil {
+			story.StartDate = &parsed
+		}
+	}
+
+	if endDate, ok := storyMap["end_date"].(string); ok && endDate != "" {
+		if parsed, err := time.Parse(time.RFC3339, endDate); err == nil {
+			story.EndDate = &parsed
+		}
+	}
+
+	return story
+}
+
+// getGroupColumn returns the column name for grouping
+func (r *repo) getGroupColumn(groupBy string) string {
+	switch groupBy {
+	case "status":
+		return "s.status_id"
+	case "assignee":
+		return "s.assignee_id"
+	case "priority":
+		return "s.priority"
+	case "team":
+		return "s.team_id"
+	case "sprint":
+		return "s.sprint_id"
+	default:
+		return "s.id"
+	}
+}
+
+// buildQueryParams builds the parameter map for the SQL query
+func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any {
+	params := map[string]any{
+		"workspace_id":    filters.WorkspaceID,
+		"current_user_id": filters.CurrentUserID,
+	}
+
+	// Direct assignment - let database driver handle array conversion
+	if len(filters.StatusIDs) > 0 {
+		params["status_ids"] = filters.StatusIDs
+	}
+	if len(filters.AssigneeIDs) > 0 {
+		params["assignee_ids"] = filters.AssigneeIDs
+	}
+	if len(filters.ReporterIDs) > 0 {
+		params["reporter_ids"] = filters.ReporterIDs
+	}
+	if len(filters.Priorities) > 0 {
+		params["priorities"] = filters.Priorities
+	}
+	if len(filters.TeamIDs) > 0 {
+		params["team_ids"] = filters.TeamIDs
+	}
+	if len(filters.SprintIDs) > 0 {
+		params["sprint_ids"] = filters.SprintIDs
+	}
+	if len(filters.LabelIDs) > 0 {
+		params["label_ids"] = filters.LabelIDs
+	}
+
+	// Single value parameters
+	if filters.Parent != nil {
+		params["parent_id"] = *filters.Parent
+	}
+	if filters.Objective != nil {
+		params["objective_id"] = *filters.Objective
+	}
+	if filters.Epic != nil {
+		params["epic_id"] = *filters.Epic
+	}
+
+	return params
+}
+
+// buildStoriesQuery builds the base SQL query for stories with filters
+func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), CAST('[]' AS json)
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), CAST('[]' AS json)
+			) AS labels
+		FROM
+			stories s
+	`
+
+	// Add team member join if needed for assigned_to_me or created_by_me filters
+	needsTeamJoin := filters.AssignedToMe != nil || filters.CreatedByMe != nil
+	if needsTeamJoin {
+		query += `
+			INNER JOIN team_members tm ON 
+				tm.team_id = s.team_id 
+				AND tm.user_id = :current_user_id
+		`
+	}
+
+	// Build WHERE clauses
+	whereClauses := []string{
+		"s.workspace_id = :workspace_id",
+		"s.deleted_at IS NULL",
+		"s.parent_id IS NULL",
+	}
+
+	// Add filter conditions
+	if len(filters.StatusIDs) > 0 {
+		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
+	}
+
+	if len(filters.AssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+
+	if len(filters.ReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
+	}
+
+	if len(filters.Priorities) > 0 {
+		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+
+	if len(filters.TeamIDs) > 0 {
+		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+
+	if len(filters.LabelIDs) > 0 {
+		query += `
+			INNER JOIN story_labels sl_filter ON sl_filter.story_id = s.id
+		`
+		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
+	}
+
+	if filters.Parent != nil {
+		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	}
+
+	if filters.Objective != nil {
+		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
+	}
+
+	if filters.Epic != nil {
+		whereClauses = append(whereClauses, "s.epic_id = :epic_id")
+	}
+
+	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+
+	if filters.AssignedToMe != nil && *filters.AssignedToMe {
+		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+	}
+
+	if filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+	}
+
+	query += " WHERE " + strings.Join(whereClauses, " AND ")
+
+	return query
+}
+
+// listGroupedStoriesGo performs grouping in Go (original implementation)
+func (r *repo) listGroupedStoriesGo(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesGo")
+	defer span.End()
+
+	// For now, implement a simple approach - get all stories and group in Go
+	// TODO: Optimize with SQL-based grouping for better performance
+
+	baseQuery := r.buildStoriesQuery(query.Filters)
+	baseQuery += " ORDER BY s.created_at DESC"
+
+	params := r.buildQueryParams(query.Filters)
+
+	var allStories []dbStory
+	stmt, err := r.db.PrepareNamedContext(ctx, baseQuery)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &allStories, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	// Group stories in Go
+	groups := r.groupStories(allStories, query.GroupBy, query.StoriesPerGroup)
+
+	span.AddEvent("Go grouped stories retrieved.", trace.WithAttributes(
+		attribute.Int("groups.count", len(groups)),
+		attribute.String("group.by", query.GroupBy),
+	))
+
+	return groups, nil
+}
+
+// groupStories groups stories by the specified field and limits stories per group
+func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGroup int) []stories.CoreStoryGroup {
+	groupMap := make(map[string]*stories.CoreStoryGroup)
+
+	for _, story := range allStories {
+		key := r.getGroupKey(story, groupBy)
+
+		// Initialize group if not exists
+		if groupMap[key] == nil {
+			groupMap[key] = &stories.CoreStoryGroup{
+				Key:         key,
+				LoadedCount: 0,
+				HasMore:     false,
+				Stories:     []stories.CoreStoryList{},
+				NextPage:    2, // Next page for load more
+			}
+		}
+
+		group := groupMap[key]
+
+		// Only add to Stories slice if under the limit
+		if group.LoadedCount < storiesPerGroup {
+			coreStories := toCoreStories([]dbStory{story})
+			if len(coreStories) > 0 {
+				group.Stories = append(group.Stories, coreStories[0])
+				group.LoadedCount++
+			}
+		} else if group.LoadedCount == storiesPerGroup {
+			// We found one more story beyond the limit, so there are more
+			group.HasMore = true
+		}
+	}
+
+	// Convert map to slice
+	var groups []stories.CoreStoryGroup
+	for _, group := range groupMap {
+		groups = append(groups, *group)
+	}
+
+	return groups
+}
+
+// getGroupKey extracts the group key from a story
+func (r *repo) getGroupKey(story dbStory, groupBy string) string {
+	switch groupBy {
+	case "status":
+		if story.Status != nil {
+			return story.Status.String()
+		}
+		return "null"
+	case "assignee":
+		if story.Assignee != nil {
+			return story.Assignee.String()
+		}
+		return "null"
+	case "priority":
+		return story.Priority
+	case "team":
+		return story.Team.String()
+	case "sprint":
+		if story.Sprint != nil {
+			return story.Sprint.String()
+		}
+		return "null"
+	default:
+		return "all"
+	}
+}
+
+// ListGroupStories returns more stories for a specific group (for load more functionality)
+func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stories.CoreStoryQuery) ([]stories.CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListGroupStories")
+	defer span.End()
+
+	// Build simplified query for list view (no N+1 subqueries)
+	baseQuery := r.buildSimpleStoriesQuery(query.Filters)
+
+	// Add group-specific filter based on groupBy type
+	if groupKey == "null" || groupKey == "" {
+		// Handle NULL values specially
+		baseQuery += fmt.Sprintf(" AND %s IS NULL", r.getGroupColumn(query.GroupBy))
+	} else {
+		baseQuery += fmt.Sprintf(" AND %s = :group_key", r.getGroupColumn(query.GroupBy))
+	}
+
+	// Get paginated stories - fetch one extra to check if there are more
+	pageSize := query.PageSize
+	offset := (query.Page - 1) * pageSize
+	baseQuery += fmt.Sprintf(" ORDER BY s.created_at DESC LIMIT %d OFFSET %d", pageSize+1, offset)
+
+	params := r.buildQueryParams(query.Filters)
+	if groupKey != "null" && groupKey != "" {
+		params["group_key"] = groupKey
+	}
+
+	var dbStories []dbStory
+	stmt, err := r.db.PrepareNamedContext(ctx, baseQuery)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to prepare stories query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
+		return nil, false, fmt.Errorf("failed to get stories: %w", err)
+	}
+
+	// Check if there are more stories
+	hasMore := len(dbStories) > pageSize
+	if hasMore {
+		// Remove the extra story we fetched
+		dbStories = dbStories[:pageSize]
+	}
+
+	coreStories := toCoreStories(dbStories)
+
+	span.AddEvent("group stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(coreStories)),
+		attribute.String("group.key", groupKey),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return coreStories, hasMore, nil
+}
+
+// buildSimpleStoriesQuery builds a simplified query for list views without N+1 subqueries
+func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string {
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			CAST('[]' AS json) AS sub_stories,
+			CAST('[]' AS json) AS labels
+		FROM
+			stories s
+	`
+
+	// Add team member join if needed for assigned_to_me or created_by_me filters
+	needsTeamJoin := filters.AssignedToMe != nil || filters.CreatedByMe != nil
+	if needsTeamJoin {
+		query += `
+			INNER JOIN team_members tm ON 
+				tm.team_id = s.team_id 
+				AND tm.user_id = :current_user_id
+		`
+	}
+
+	// Add label join if needed for filtering (but don't fetch label data)
+	if len(filters.LabelIDs) > 0 {
+		query += `
+			INNER JOIN story_labels sl_filter ON sl_filter.story_id = s.id
+		`
+	}
+
+	// Build WHERE clauses (same as buildStoriesQuery)
+	whereClauses := []string{
+		"s.workspace_id = :workspace_id",
+		"s.deleted_at IS NULL",
+		"s.parent_id IS NULL",
+	}
+
+	// Add filter conditions
+	if len(filters.StatusIDs) > 0 {
+		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
+	}
+
+	if len(filters.AssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+
+	if len(filters.ReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
+	}
+
+	if len(filters.Priorities) > 0 {
+		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+
+	if len(filters.TeamIDs) > 0 {
+		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+
+	if len(filters.LabelIDs) > 0 {
+		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
+	}
+
+	if filters.Parent != nil {
+		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	}
+
+	if filters.Objective != nil {
+		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
+	}
+
+	if filters.Epic != nil {
+		whereClauses = append(whereClauses, "s.epic_id = :epic_id")
+	}
+
+	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+
+	if filters.AssignedToMe != nil && *filters.AssignedToMe {
+		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+	}
+
+	if filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+	}
+
+	query += " WHERE " + strings.Join(whereClauses, " AND ")
+
+	return query
+}
+
+// ListByCategory returns stories filtered by category with pagination
+func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]stories.CoreStoryList, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListByCategory")
+	defer span.End()
+
+	// Build simplified query with status join for category filtering
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			CAST('[]' AS json) AS sub_stories,
+			CAST('[]' AS json) AS labels
+		FROM
+			stories s
+		INNER JOIN statuses stat ON s.status_id = stat.status_id
+		WHERE
+			s.workspace_id = :workspace_id
+			AND s.team_id = :team_id
+			AND s.deleted_at IS NULL
+			AND s.archived_at IS NULL
+			AND s.parent_id IS NULL
+			AND stat.category = :category
+		ORDER BY s.created_at DESC
+		LIMIT :limit OFFSET :offset
+	`
+
+	// Calculate offset and fetch one extra to check if there are more
+	offset := (page - 1) * pageSize
+	limit := pageSize + 1
+
+	params := map[string]any{
+		"workspace_id": workspaceId,
+		"team_id":      teamId,
+		"category":     category,
+		"limit":        limit,
+		"offset":       offset,
+	}
+
+	var dbStories []dbStory
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to prepare category stories query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
+		return nil, false, fmt.Errorf("failed to get stories by category: %w", err)
+	}
+
+	// Check if there are more stories
+	hasMore := len(dbStories) > pageSize
+	if hasMore {
+		// Remove the extra story we fetched
+		dbStories = dbStories[:pageSize]
+	}
+
+	coreStories := toCoreStories(dbStories)
+
+	span.AddEvent("category stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(coreStories)),
+		attribute.String("category", category),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return coreStories, hasMore, nil
 }
