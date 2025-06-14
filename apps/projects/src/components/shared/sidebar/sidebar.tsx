@@ -10,6 +10,7 @@ import { CommandMenu } from "../command-menu";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
+import { ProfileMenu } from "./profile-menu";
 
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,115 +19,120 @@ export const Sidebar = () => {
   const { userRole } = useUserRole();
 
   return (
-    <Box className="flex h-dvh flex-col justify-between bg-gray-50/80 px-4 pb-6 dark:bg-[#000000]/45">
-      <Box>
+    <Box className="flex h-dvh flex-col justify-between bg-gray-50/80 pb-6 dark:bg-[#000000]/45">
+      <Box className="px-4">
         <Header />
         <Navigation />
         <Teams />
       </Box>
       <Box>
-        {tier === "free" && (
-          <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
-            <Text fontWeight="medium">You&apos;re on the free plan</Text>
-            <Text className="mt-2" color="muted">
-              {userRole === "admin"
-                ? "Upgrade to a paid plan to get more features."
-                : "Ask your admin to upgrade to a paid plan to get more features."}
-            </Text>
-            {userRole === "admin" && (
-              <Button
-                className="mt-3 px-3"
-                color="tertiary"
-                href="/settings/workspace/billing"
-                size="sm"
-              >
-                Upgrade plan
-              </Button>
-            )}
-          </Box>
-        )}
+        <Box className="mb-3 px-4">
+          {tier === "free" && (
+            <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
+              <Text fontWeight="medium">You&apos;re on the free plan</Text>
+              <Text className="mt-2" color="muted">
+                {userRole === "admin"
+                  ? "Upgrade to a paid plan to get more features."
+                  : "Ask your admin to upgrade to a paid plan to get more features."}
+              </Text>
+              {userRole === "admin" && (
+                <Button
+                  className="mt-3 px-3"
+                  color="tertiary"
+                  href="/settings/workspace/billing"
+                  size="sm"
+                >
+                  Upgrade plan
+                </Button>
+              )}
+            </Box>
+          )}
 
-        {tier === "trial" && (
-          <Tooltip
-            className="ml-2 max-w-56 py-3"
-            title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
-          >
-            <span>
-              <Button
-                className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
-                href={
-                  userRole === "admin"
-                    ? "/settings/workspace/billing"
-                    : undefined
-                }
-                rounded="lg"
-                size="sm"
-              >
-                {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
-                left in trial
-              </Button>
-            </span>
-          </Tooltip>
-        )}
-
-        <Flex align="center" className="mt-3 gap-3" justify="between">
-          {userRole === "admin" ? (
-            <button
-              className="flex items-center gap-2 px-1"
-              data-invite-button
-              onClick={() => {
-                setIsOpen(true);
-              }}
-              type="button"
+          {tier === "trial" && (
+            <Tooltip
+              className="ml-2 max-w-56 py-3"
+              title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
             >
-              <PlusIcon />
-              Invite members
-            </button>
-          ) : null}
+              <span>
+                <Button
+                  className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
+                  href={
+                    userRole === "admin"
+                      ? "/settings/workspace/billing"
+                      : undefined
+                  }
+                  rounded="lg"
+                  size="sm"
+                >
+                  {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
+                  left in trial
+                </Button>
+              </span>
+            </Tooltip>
+          )}
 
-          <Menu>
-            <Menu.Button>
-              <Button
-                asIcon
-                className="border-[0.5px]"
-                color="tertiary"
-                data-help-button
-                rounded="full"
+          <Flex align="center" className="mt-3 gap-3" justify="between">
+            {userRole === "admin" ? (
+              <button
+                className="flex items-center gap-2 px-1"
+                data-invite-button
+                onClick={() => {
+                  setIsOpen(true);
+                }}
+                type="button"
               >
-                <HelpIcon className="h-6" />
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    setIsKeyboardShortcutsOpen(true);
-                  }}
+                <PlusIcon />
+                Invite members
+              </button>
+            ) : null}
+
+            <Menu>
+              <Menu.Button>
+                <Button
+                  asIcon
+                  className="border-[0.5px]"
+                  color="tertiary"
+                  data-help-button
+                  rounded="full"
+                  variant="naked"
                 >
-                  <CommandIcon />
-                  Keyboard shortcuts
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    window.open("mailto:support@complexus.app", "_blank");
-                  }}
-                >
-                  <EmailIcon />
-                  Contact support
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    window.open("https://docs.complexus.app", "_blank");
-                  }}
-                >
-                  <DocsIcon />
-                  Documentation
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
+                  <HelpIcon className="h-6" />
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end">
+                <Menu.Group>
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsKeyboardShortcutsOpen(true);
+                    }}
+                  >
+                    <CommandIcon />
+                    Keyboard shortcuts
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      window.open("mailto:support@complexus.app", "_blank");
+                    }}
+                  >
+                    <EmailIcon />
+                    Contact support
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      window.open("https://docs.complexus.app", "_blank");
+                    }}
+                  >
+                    <DocsIcon />
+                    Documentation
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Flex>
+        </Box>
+        <ProfileMenu />
       </Box>
+
       <KeyboardShortcuts
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}

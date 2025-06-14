@@ -35,25 +35,9 @@ import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { useProfile } from "@/lib/hooks/profile";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { changeWorkspace, logOut } from "./actions";
+import { clearAllStorage } from "./utils";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
-const clearAllStorage = () => {
-  document.cookie.split(";").forEach((c) => {
-    document.cookie = c
-      .replace(/^ +/, "")
-      .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-  });
-  localStorage.clear();
-
-  if ("caches" in window) {
-    caches.keys().then((names) => {
-      names.forEach((name) => {
-        caches.delete(name);
-      });
-    });
-  }
-};
 
 export const Header = () => {
   const { getTermDisplay } = useTerminology();
