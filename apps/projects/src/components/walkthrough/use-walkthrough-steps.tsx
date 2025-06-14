@@ -30,6 +30,24 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           position: "bottom-start",
         },
         {
+          id: "my-notifications",
+          target: "[data-sidebar-notifications-button]",
+          title: "Stay Updated",
+          content: (
+            <Box className="space-y-3">
+              <Text color="muted">
+                Never miss important updates! The notifications section shows
+                you mentions, assignments, and team activity.
+              </Text>
+              <Text color="muted">
+                The badge shows unread notifications so you can stay on top of
+                what needs your attention.
+              </Text>
+            </Box>
+          ),
+          position: "bottom-start",
+        },
+        {
           id: "create-story",
           target: "[data-sidebar-create-story-button]",
           title: "Create Your First Story",
@@ -47,6 +65,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
+
         {
           id: "summary",
           target: "[data-nav-summary]",
@@ -84,24 +103,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "right",
         },
-        {
-          id: "notifications",
-          target: "[data-nav-notifications]",
-          title: "Stay Updated",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Never miss important updates! The notifications section shows
-                you mentions, assignments, and team activity.
-              </Text>
-              <Text color="muted">
-                The badge shows unread notifications so you can stay on top of
-                what needs your attention.
-              </Text>
-            </Box>
-          ),
-          position: "right",
-        },
+
         {
           id: "teams",
           target: "[data-teams-heading]",

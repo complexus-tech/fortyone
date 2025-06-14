@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button, Flex, Badge } from "ui";
+import { Button, Flex, Badge, Box } from "ui";
 import { NewStoryIcon, SearchIcon, BellIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
@@ -62,30 +62,31 @@ export const Header = () => {
     <>
       <Flex align="center" className="h-16" justify="between">
         <WorkspacesMenu />
-        <Button
-          asIcon
-          className="group relative"
-          color="tertiary"
-          data-nav-notifications
-          href="/notifications"
-          leftIcon={
-            <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
-          }
-          prefetch
-          size="sm"
-          variant="naked"
-        >
-          <span className="sr-only">Notifications</span>
-          {unreadNotifications ? (
-            <Badge
-              className="absolute -right-1 -top-1 shrink-0"
-              rounded="full"
-              size="sm"
-            >
-              {unreadNotifications > 9 ? "9+" : unreadNotifications}
-            </Badge>
-          ) : null}
-        </Button>
+        <Box data-sidebar-notifications-button>
+          <Button
+            asIcon
+            className="group relative"
+            color="tertiary"
+            href="/notifications"
+            leftIcon={
+              <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+            }
+            prefetch
+            size="sm"
+            variant="naked"
+          >
+            <span className="sr-only">Notifications</span>
+            {unreadNotifications ? (
+              <Badge
+                className="absolute -right-1 -top-1 shrink-0"
+                rounded="full"
+                size="sm"
+              >
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </Badge>
+            ) : null}
+          </Button>
+        </Box>
       </Flex>
       <Flex className="mb-4" gap={2}>
         <Button
