@@ -1332,8 +1332,15 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
 		"s.deleted_at IS NULL",
-		"s.parent_id IS NULL",
 		"s.archived_at IS NULL",
+	}
+
+	// Handle parent filtering
+	if filters.Parent != nil {
+		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	} else {
+		// Default: only show top-level stories (no parent)
+		whereClauses = append(whereClauses, "s.parent_id IS NULL")
 	}
 
 	// Add filter conditions
@@ -1359,10 +1366,6 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if len(filters.SprintIDs) > 0 {
 		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
-	}
-
-	if filters.Parent != nil {
-		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
 	}
 
 	if filters.Objective != nil {
