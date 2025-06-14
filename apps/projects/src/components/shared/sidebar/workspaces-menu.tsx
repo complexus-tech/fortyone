@@ -79,7 +79,7 @@ export const WorkspacesMenu = () => {
           <span className="max-w-[18ch] truncate">{workspace?.name}</span>
         </Button>
       </Menu.Button>
-      <Menu.Items align="start" className="min-w-72 pt-0">
+      <Menu.Items align="start" className="min-w-80 pt-0">
         <Menu.Group className="space-y-1 pt-1.5">
           {workspaces.map(({ id, name, color, slug, userRole, avatarUrl }) => (
             <Menu.Item

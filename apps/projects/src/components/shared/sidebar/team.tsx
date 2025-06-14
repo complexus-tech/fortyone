@@ -20,7 +20,12 @@ import {
   useUserRole,
 } from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
-import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
+import {
+  ConfirmDialog,
+  NavLink,
+  StoryStatusIcon,
+  TeamColor,
+} from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 
 export const Team = ({
@@ -47,11 +52,11 @@ export const Team = ({
   const { userRole } = useUserRole();
 
   const links = [
-    // {
-    //   name: "Backlog",
-    //   icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
-    //   href: `/teams/${id}/stories`,
-    // },
+    {
+      name: "Backlog",
+      icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
+      href: `/teams/${id}/backlog`,
+    },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
@@ -59,7 +64,7 @@ export const Team = ({
     },
     {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
-      icon: <ObjectiveIcon strokeWidth={2} />,
+      icon: <ObjectiveIcon />,
       href: `/teams/${id}/objectives`,
       disabled: !features.objectiveEnabled,
     },
