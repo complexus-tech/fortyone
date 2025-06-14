@@ -26,7 +26,7 @@ export const Sidebar = () => {
         <Teams />
       </Box>
       <Box>
-        <Box className="mb-3 px-4">
+        <Box className="mb-2.5 px-3.5">
           {tier === "free" && (
             <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
               <Text fontWeight="medium">You&apos;re on the free plan</Text>
@@ -40,6 +40,7 @@ export const Sidebar = () => {
                   className="mt-3 px-3"
                   color="tertiary"
                   href="/settings/workspace/billing"
+                  prefetch
                   size="sm"
                 >
                   Upgrade plan
@@ -61,6 +62,7 @@ export const Sidebar = () => {
                       ? "/settings/workspace/billing"
                       : undefined
                   }
+                  prefetch
                   rounded="lg"
                   size="sm"
                 >

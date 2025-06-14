@@ -2,7 +2,7 @@ import type { VariantProps } from "cva";
 import { cva } from "cva";
 import { LoadingIcon } from "icons";
 import { cn } from "lib";
-import Link from "next/link";
+import Link, { LinkProps } from "next/link";
 import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
@@ -147,6 +147,7 @@ export interface ButtonProps
   href?: string;
   loadingText?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
+  prefetch?: LinkProps["prefetch"];
   rightIcon?: ReactNode;
   leftIcon?: ReactNode;
 }
@@ -171,6 +172,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       disabled,
       children,
+      prefetch,
       ...rest
     } = props;
 
@@ -193,7 +195,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <>
         {href ? (
-          <Link className={classes} href={href} target={target}>
+          <Link
+            className={classes}
+            href={href}
+            target={target}
+            prefetch={prefetch}
+          >
             {leftIcon}
             {children}
             {rightIcon}

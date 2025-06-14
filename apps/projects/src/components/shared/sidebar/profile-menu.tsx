@@ -64,13 +64,13 @@ export const ProfileMenu = () => {
                   }}
                 />
                 <Text className="line-clamp-1 text-left">
-                  {profile?.fullName || profile?.username}
+                  {profile?.fullName || profile?.username}{" "}
                 </Text>
               </Flex>
               <ArrowRight2Icon className="shrink-0" />
             </Button>
             {myInvitations.length > 0 && (
-              <Box className="absolute right-1 top-0.5 z-[2] size-2 animate-pulse rounded-full bg-primary" />
+              <Box className="absolute right-1 top-0.5 z-[2] size-2.5 animate-pulse rounded-full bg-primary" />
             )}
           </Box>
         </Menu.Button>

@@ -1,59 +1,27 @@
-/* eslint-disable no-nested-ternary -- ok for the theme icons */
 "use client";
 import { useState } from "react";
-import { Avatar, Badge, Box, Button, Flex, Menu, Text } from "ui";
-import {
-  ArrowDownIcon,
-  CheckIcon,
-  LogoutIcon,
-  NewStoryIcon,
-  PlusIcon,
-  SettingsIcon,
-  UsersAddIcon,
-  SearchIcon,
-  SystemIcon,
-  MoonIcon,
-  SunIcon,
-  ArrowRightIcon,
-  InvitesIcon,
-} from "icons";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Button, Flex, Badge } from "ui";
+import { NewStoryIcon, SearchIcon, BellIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useSession } from "next-auth/react";
-import { useTheme } from "next-themes";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
-import {
-  useAnalytics,
-  useFeatures,
-  useLocalStorage,
-  useTerminology,
-} from "@/hooks";
+import { useAnalytics, useFeatures, useTerminology } from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
-import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
-import { useProfile } from "@/lib/hooks/profile";
-import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
-import { changeWorkspace, logOut } from "./actions";
+import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { clearAllStorage } from "./utils";
+import { WorkspacesMenu } from "./workspaces-menu";
+import { logOut } from "./actions";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const Header = () => {
   const { getTermDisplay } = useTerminology();
-  const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  const { data: session } = useSession();
-  const { data: profile } = useProfile();
   const { analytics } = useAnalytics();
   const [isOpen, setIsOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
-  const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+  const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { userRole } = useUserRole();
-  const { data: workspaces = [] } = useWorkspaces();
-  const { data: myInvitations = [] } = useMyInvitations();
-  const { workspace } = useCurrentWorkspace();
   const features = useFeatures();
 
   useHotkeys("shift+n", () => {
@@ -90,271 +58,34 @@ export const Header = () => {
     }
   };
 
-  const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
-    try {
-      await changeWorkspace(workspaceId);
-      window.location.href = `https://${slug}.${domain}/my-work`;
-    } catch (error) {
-      window.location.href = `https://${slug}.${domain}/my-work`;
-    }
-  };
-
-  const handleCreateWorkspace = () => {
-    window.location.href = `https://${domain}/onboarding/create`;
-  };
-
   return (
     <>
       <Flex align="center" className="h-16" justify="between">
-        <Menu>
-          <Menu.Button>
-            <Button
-              className="gap-2 pl-1"
-              color="tertiary"
-              data-workspace-switcher
-              leftIcon={
-                <Avatar
-                  className="h-[1.6rem] text-sm"
-                  name={workspace?.name}
-                  rounded="md"
-                  src={workspace?.avatarUrl}
-                  style={{
-                    backgroundColor: workspace?.color,
-                  }}
-                  suppressHydrationWarning
-                />
-              }
-              rightIcon={
-                <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto text-gray dark:text-gray-300" />
-              }
+        <WorkspacesMenu />
+        <Button
+          asIcon
+          className="group relative"
+          color="tertiary"
+          data-nav-notifications
+          href="/notifications"
+          leftIcon={
+            <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+          }
+          prefetch
+          size="sm"
+          variant="naked"
+        >
+          <span className="sr-only">Notifications</span>
+          {unreadNotifications ? (
+            <Badge
+              className="absolute -right-1 -top-1 shrink-0"
+              rounded="full"
               size="sm"
-              suppressHydrationWarning
-              variant="naked"
             >
-              <span className="max-w-[18ch] truncate">{workspace?.name}</span>
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="start" className="min-w-72 pt-0">
-            <Menu.Group className="space-y-1 pt-1.5">
-              {workspaces.map(
-                ({ id, name, color, slug, userRole, avatarUrl }) => (
-                  <Menu.Item
-                    className="justify-between gap-6"
-                    key={id}
-                    onSelect={() => handleChangeWorkspace(id, slug)}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Avatar
-                        className="h-[1.6rem] text-xs font-semibold tracking-wide"
-                        name={name}
-                        rounded="md"
-                        src={avatarUrl}
-                        style={{
-                          backgroundColor: color,
-                        }}
-                      />
-                      <span className="inline-block max-w-[20ch] truncate">
-                        {name}
-                      </span>
-                      <Badge
-                        className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
-                        color="tertiary"
-                      >
-                        {userRole}
-                      </Badge>
-                    </span>
-                    {id === workspace?.id ? (
-                      <CheckIcon className="shrink-0" strokeWidth={2.1} />
-                    ) : null}
-                  </Menu.Item>
-                ),
-              )}
-            </Menu.Group>
-            <Menu.Separator className="my-2" />
-            <Menu.Group>
-              <Menu.Item onSelect={handleCreateWorkspace}>
-                <PlusIcon />
-                Create workspace
-              </Menu.Item>
-              {userRole === "admin" && (
-                <>
-                  <Menu.Item>
-                    <Link
-                      className="flex w-full items-center gap-2"
-                      href="/settings"
-                      onClick={() => {
-                        setPathBeforeSettings(pathname);
-                      }}
-                      prefetch
-                    >
-                      <SettingsIcon className="h-[1.15rem]" />
-                      Workspace settings
-                    </Link>
-                  </Menu.Item>
-                  <Menu.Item>
-                    <Link
-                      className="flex w-full items-center gap-2"
-                      href="/settings/workspace/members"
-                      onClick={() => {
-                        setPathBeforeSettings(pathname);
-                      }}
-                    >
-                      <UsersAddIcon className="h-[1.3rem] w-auto" />
-                      Invite & manage members
-                    </Link>
-                  </Menu.Item>
-                </>
-              )}
-            </Menu.Group>
-            <Menu.Separator className="my-2" />
-            <Menu.Group>
-              <Menu.Item className="text-danger" onSelect={handleLogout}>
-                <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
-                Log out
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
-        <Menu>
-          <Menu.Button>
-            <Box className="relative">
-              <Button
-                asIcon
-                color="tertiary"
-                leftIcon={
-                  <Avatar
-                    className="relative h-[1.6rem] text-sm"
-                    name={profile?.fullName || profile?.username}
-                    src={profile?.avatarUrl}
-                    style={{
-                      backgroundColor: workspace?.color,
-                    }}
-                  />
-                }
-                size="sm"
-                variant="naked"
-              >
-                <span className="sr-only">Profile</span>
-              </Button>
-              {myInvitations.length > 0 && (
-                <Box className="absolute right-1 top-0.5 z-[2] size-2 animate-pulse rounded-full bg-primary" />
-              )}
-            </Box>
-          </Menu.Button>
-          <Menu.Items align="start" className="ml-4 mr-3 pt-0">
-            <Menu.Group className="px-4 pb-2 pt-2.5">
-              <Text className="line-clamp-1" color="muted">
-                {session?.user?.email}
-              </Text>
-            </Menu.Group>
-            <Menu.Separator className="mb-2" />
-            <Menu.Group>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href="/settings/account"
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                  prefetch
-                >
-                  <SettingsIcon />
-                  Account settings
-                </Link>
-              </Menu.Item>
-              <Menu.SubMenu>
-                <Menu.SubTrigger>
-                  <span className="flex w-full items-center justify-between gap-4">
-                    <span className="flex items-center gap-2">
-                      {theme === "system" ? (
-                        <SystemIcon className="h-[1.15rem]" />
-                      ) : theme === "light" ? (
-                        <SunIcon className="h-[1.15rem]" />
-                      ) : (
-                        <MoonIcon className="h-[1.15rem]" />
-                      )}
-                      Color theme
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Text
-                        className="hidden text-[0.95rem] first-letter:uppercase md:block"
-                        color="muted"
-                      >
-                        {theme === "system"
-                          ? "Sync with system"
-                          : theme === "light"
-                            ? "Day mode"
-                            : "Night mode"}
-                      </Text>
-                      <ArrowRightIcon className="h-4" />
-                    </span>
-                  </span>
-                </Menu.SubTrigger>
-                <Menu.SubItems className="rounded-xl pt-1.5 md:w-48">
-                  <Menu.Group>
-                    <Menu.Item
-                      active={theme === "light"}
-                      onSelect={() => {
-                        setTheme("light");
-                      }}
-                    >
-                      <SunIcon className="h-[1.15rem]" />
-                      Day mode
-                    </Menu.Item>
-                    <Menu.Item
-                      active={theme === "dark"}
-                      onSelect={() => {
-                        setTheme("dark");
-                      }}
-                    >
-                      <MoonIcon className="h-[1.15rem]" />
-                      Night mode
-                    </Menu.Item>
-                    <Menu.Item
-                      active={theme === "system"}
-                      onSelect={() => {
-                        setTheme("system");
-                      }}
-                    >
-                      <SystemIcon className="h-[1.15rem]" />
-                      Sync with system
-                    </Menu.Item>
-                  </Menu.Group>
-                </Menu.SubItems>
-              </Menu.SubMenu>
-              {myInvitations.length > 0 && (
-                <Menu.Item>
-                  <Link
-                    className="flex w-full items-center justify-between gap-2"
-                    href="/settings/invitations"
-                    onClick={() => {
-                      setPathBeforeSettings(pathname);
-                    }}
-                    prefetch
-                  >
-                    <Flex gap={2}>
-                      <InvitesIcon
-                        className="relative top-px"
-                        strokeWidth={2.5}
-                      />
-                      My invitations
-                    </Flex>
-                    <Badge rounded="full" size="sm">
-                      {myInvitations.length}
-                    </Badge>
-                  </Link>
-                </Menu.Item>
-              )}
-            </Menu.Group>
-            <Menu.Separator className="my-2" />
-            <Menu.Group>
-              <Menu.Item className="text-danger" onSelect={handleLogout}>
-                <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
-                Log out
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
+              {unreadNotifications > 9 ? "9+" : unreadNotifications}
+            </Badge>
+          ) : null}
+        </Button>
       </Flex>
       <Flex className="mb-4" gap={2}>
         <Button
@@ -384,6 +115,8 @@ export const Header = () => {
           <span className="sr-only">Search</span>
         </Button>
       </Flex>
+
+      {/* Dialogs */}
       <NewStoryDialog isOpen={isOpen} setIsOpen={setIsOpen} />
       <NewSprintDialog isOpen={isSprintsOpen} setIsOpen={setIsSprintsOpen} />
       <NewObjectiveDialog
