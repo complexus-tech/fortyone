@@ -44,6 +44,7 @@ type Repository interface {
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
+	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
 	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
 	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
@@ -164,6 +165,23 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	}
 
 	return story, nil
+}
+
+// List returns a list of stories for a workspace with additional filters.
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
+	s.log.Info(ctx, "business.core.stories.List")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.List")
+	defer span.End()
+
+	stories, err := s.repo.List(ctx, workspaceId, filters)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(stories)),
+	))
+	return stories, nil
 }
 
 // Delete deletes the story with the specified ID.

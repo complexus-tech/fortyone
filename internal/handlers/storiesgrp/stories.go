@@ -80,6 +80,62 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
+// List returns a list of stories.
+func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.List")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var af AppFilters
+	filters, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+
+	// Try to get from cache first
+	filtersStr := ""
+	if filters != nil {
+		// Convert filters to string representation for cache key
+		for k, v := range filters {
+			filtersStr += fmt.Sprintf("%s:%v;", k, v)
+		}
+	}
+	cacheKey := cache.StoryListCacheKey(workspaceId, filtersStr)
+	var cachedStories []stories.CoreStoryList
+
+	if err := h.cache.Get(ctx, cacheKey, &cachedStories); err == nil {
+		// Cache hit
+		span.AddEvent("cache hit", trace.WithAttributes(
+			attribute.String("cache_key", cacheKey),
+		))
+		web.Respond(ctx, w, toAppStories(cachedStories), http.StatusOK)
+		return nil
+	}
+
+	// Cache miss, get from database
+	storyList, err := h.stories.List(ctx, workspaceId, filters)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	// Store in cache
+	if err := h.cache.Set(ctx, cacheKey, storyList, cache.ListTTL); err != nil {
+		// Log error but continue
+		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	}
+
+	web.Respond(ctx, w, toAppStories(storyList), http.StatusOK)
+	return nil
+}
+
 // Delete removes the story with the specified ID.
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Delete")

@@ -506,6 +506,110 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	return nil
 }
 
+// List returns a list of stories for a workspace with additional filters.
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
+	defer span.End()
+
+	query := `
+		SELECT
+			s.id,
+			s.sequence_id,
+			s.title,
+			s.priority,
+			s.status_id,
+			s.start_date,
+			s.end_date,
+			s.sprint_id,
+			s.team_id,
+			s.objective_id,
+			s.workspace_id,
+			s.assignee_id,
+			s.reporter_id,
+			s.created_at,
+			s.updated_at,
+			COALESCE(
+				(
+					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at,
+								'labels', '[]'
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), '[]'
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
+		FROM
+			stories s
+	`
+	var setClauses []string
+
+	for field := range filters {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+	}
+
+	filters["workspace_id"] = workspaceId
+
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " AND deleted_at IS NULL AND workspace_id = :workspace_id AND parent_id IS NULL;"
+
+	var stories []dbStory
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	r.log.Info(ctx, "fetching stories.")
+	if err := stmt.SelectContext(ctx, &stories, filters); err != nil {
+		errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	r.log.Info(ctx, "stories retrieved successfully.")
+	span.AddEvent("stories retrieved.", trace.WithAttributes(
+		attribute.Int("story.count", len(stories)),
+		attribute.String("query", query),
+	))
+
+	return toCoreStories(stories), nil
+}
+
 // BulkDelete removes the stories with the specified IDs.
 func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkDelete")

@@ -313,6 +313,19 @@ type CategoryStoriesResponse struct {
 	Meta       CategoryMeta       `json:"meta"`
 }
 
+// AppFilters represents the filters for stories.
+type AppFilters struct {
+	Parent    *uuid.UUID `json:"parentId" db:"parent_id"`
+	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
+	Status    *uuid.UUID `json:"statusId" db:"status_id"`
+	Assignee  *uuid.UUID `json:"assigneeId" db:"assignee_id"`
+	Priority  *string    `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
+	Sprint    *uuid.UUID `json:"sprintId" db:"sprint_id"`
+	Team      *uuid.UUID `json:"teamId" db:"team_id"`
+	Epic      *uuid.UUID `json:"epicId" db:"epic_id"`
+	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
+}
+
 func toAppComment(i comments.CoreComment) AppComment {
 	return AppComment{
 		ID:          i.ID,
