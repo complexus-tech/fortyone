@@ -38,6 +38,7 @@ import {
 const Button = ({ active, className, ...props }: ButtonProps) => {
   return (
     <ButtonBase
+      asIcon
       active={active}
       className={cn(className, "dark:hover:bg-gray/30 hover:bg-gray-300/20", {
         "dark:bg-gray/50 bg-gray-300/30": active,
@@ -205,6 +206,19 @@ export const BubbleMenu = ({
           >
             <Text as="span" color="muted">
               H4
+            </Text>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Paragraph">
+          <Button
+            active={editor.isActive("paragraph")}
+            color="tertiary"
+            size="sm"
+            variant="naked"
+            onClick={() => editor.chain().focus().setParagraph().run()}
+          >
+            <Text as="span" color="muted">
+              P
             </Text>
           </Button>
         </Tooltip>
