@@ -14,6 +14,7 @@ type CoreState struct {
 	Team       uuid.UUID
 	Workspace  uuid.UUID
 	IsDefault  bool
+	Color      string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
@@ -23,10 +24,12 @@ type CoreNewState struct {
 	Category  string
 	Team      uuid.UUID
 	IsDefault bool
+	Color     string
 }
 
 type CoreUpdateState struct {
 	Name       *string
 	OrderIndex *int
 	IsDefault  *bool
+	Color      *string
 }

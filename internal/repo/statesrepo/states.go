@@ -27,30 +27,38 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 	}
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID) ([]states.CoreState, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]states.CoreState, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.states.List")
 	defer span.End()
 
 	params := map[string]any{
 		"workspace_id": workspaceId,
+		"user_id":      userID,
 	}
 
 	var statuses []dbState
 	q := `
 		SELECT
-			status_id,
-			name,
-			category,
-			order_index,
-			team_id,
-			workspace_id,
-			is_default,
-			created_at,
-			updated_at
+			s.status_id,
+			s.name,
+			s.category,
+			s.order_index,
+			s.team_id,
+			s.workspace_id,
+			s.is_default,
+			s.color,
+			s.created_at,
+			s.updated_at
 		FROM
-			statuses
-		WHERE workspace_id = :workspace_id
-		ORDER BY order_index ASC;
+			statuses s
+		WHERE s.workspace_id = :workspace_id
+		AND EXISTS (
+			SELECT 1 
+			FROM team_members tm 
+			WHERE tm.team_id = s.team_id 
+			AND tm.user_id = :user_id
+		)
+		ORDER BY s.order_index ASC;
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -82,7 +90,7 @@ func (r *repo) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.
 	ctx, span := web.AddSpan(ctx, "business.repository.states.TeamList")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"team_id":      teamId,
 	}
@@ -97,6 +105,7 @@ func (r *repo) TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.
 			team_id,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM
@@ -152,7 +161,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 			AND workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"team_id":      ns.Team,
 			"workspace_id": workspaceId,
 		}
@@ -177,7 +186,7 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	}
 
 	// Get the next order index based on category
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"category":     ns.Category,
 	}
@@ -212,30 +221,32 @@ func (r *repo) Create(ctx context.Context, workspaceId uuid.UUID, ns states.Core
 	state := dbState{
 		Name:       ns.Name,
 		Category:   ns.Category,
-		OrderIndex: maxOrder + 1,
+		OrderIndex: maxOrder + 10,
 		Team:       ns.Team,
 		Workspace:  workspaceId,
 		IsDefault:  ns.IsDefault,
+		Color:      ns.Color,
 	}
 
-	params = map[string]interface{}{
+	params = map[string]any{
 		"name":         state.Name,
 		"category":     state.Category,
 		"order_index":  state.OrderIndex,
 		"team_id":      state.Team,
 		"workspace_id": state.Workspace,
 		"is_default":   state.IsDefault,
+		"color":        state.Color,
 	}
 
 	q2 := `
 		INSERT INTO statuses (
-			name, category, order_index,
+			name, category, order_index, color,
 			team_id, workspace_id, is_default
 		) VALUES (
-			:name, :category, :order_index,
+			:name, :category, :order_index, :color,
 			:team_id, :workspace_id, :is_default
 		)
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, color, created_at, updated_at
 	`
 
 	stmt2, err := tx.PrepareNamedContext(ctx, q2)
@@ -289,7 +300,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 			WHERE status_id = :status_id 
 			AND workspace_id = :workspace_id
 		`
-		teamParams := map[string]interface{}{
+		teamParams := map[string]any{
 			"status_id":    stateId,
 			"workspace_id": workspaceId,
 		}
@@ -320,7 +331,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 			AND workspace_id = :workspace_id 
 			AND is_default = true
 		`
-		resetParams := map[string]interface{}{
+		resetParams := map[string]any{
 			"team_id":      teamID,
 			"workspace_id": workspaceId,
 		}
@@ -344,7 +355,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		}
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
@@ -363,6 +374,10 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		params["is_default"] = *us.IsDefault
 		setClauses = append(setClauses, "is_default = :is_default")
 	}
+	if us.Color != nil {
+		params["color"] = *us.Color
+		setClauses = append(setClauses, "color = :color")
+	}
 
 	if len(setClauses) == 0 {
 		tx.Rollback()
@@ -377,7 +392,7 @@ func (r *repo) Update(ctx context.Context, workspaceId, stateId uuid.UUID, us st
 		%s
 		WHERE status_id = :status_id
 		AND workspace_id = :workspace_id
-		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, created_at, updated_at
+		RETURNING status_id, name, category, order_index, team_id, workspace_id, is_default, color, created_at, updated_at
 	`, setClause)
 
 	stmt, err := tx.PrepareNamedContext(ctx, q)
@@ -413,7 +428,7 @@ func (r *repo) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Delete")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
@@ -460,7 +475,7 @@ func (r *repo) CountStoriesWithStatus(ctx context.Context, statusID uuid.UUID) (
 	ctx, span := web.AddSpan(ctx, "business.repository.states.CountStoriesWithStatus")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id": statusID,
 	}
 
@@ -531,7 +546,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, stateId uuid.UUID) (states.
 	ctx, span := web.AddSpan(ctx, "business.repository.states.Get")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"status_id":    stateId,
 		"workspace_id": workspaceId,
 	}
@@ -546,6 +561,7 @@ func (r *repo) Get(ctx context.Context, workspaceId, stateId uuid.UUID) (states.
 			team_id,
 			workspace_id,
 			is_default,
+			color,
 			created_at,
 			updated_at
 		FROM

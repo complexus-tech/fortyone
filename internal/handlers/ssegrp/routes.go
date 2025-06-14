@@ -24,5 +24,5 @@ func Routes(cfg Config, app *web.App) {
 
 	authMiddleware := mid.Auth(cfg.Log, cfg.SecretKey)
 
-	app.Get("/notifications/subscribe", handler.StreamNotifications, authMiddleware)
+	app.Get("/workspaces/{workspaceId}/notifications/subscribe", handler.StreamNotifications, authMiddleware)
 }

@@ -3,6 +3,7 @@ package workspacesgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,16 +38,18 @@ type Handlers struct {
 	log           *logger.Logger
 	secretKey     string
 	subscriptions *subscriptions.Service
+	attachments   workspaces.AttachmentsService
 }
 
 // New constructs a new workspaces andlers instance.
-func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, cacheService *cache.Service, log *logger.Logger, secretKey string) *Handlers {
+func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, cacheService *cache.Service, log *logger.Logger, secretKey string, attachments workspaces.AttachmentsService) *Handlers {
 	return &Handlers{
 		workspaces:    workspaces,
 		cache:         cacheService,
 		log:           log,
 		secretKey:     secretKey,
 		subscriptions: subscriptions,
+		attachments:   attachments,
 	}
 }
 
@@ -522,4 +526,83 @@ func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseW
 	))
 
 	return web.Respond(ctx, w, toAppWorkspaceSettings(updatedSettings), http.StatusOK)
+}
+
+// UploadWorkspaceLogo handles workspace logo upload
+func (h *Handlers) UploadWorkspaceLogo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	// Parse multipart form, limit to 6MB for workspace logos
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Get file from form
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("error getting image file: %w", err), http.StatusBadRequest)
+	}
+	defer file.Close()
+
+	// Upload workspace logo
+	err = h.workspaces.UploadWorkspaceLogo(ctx, workspaceID, file, header, h.attachments)
+	if err != nil {
+		switch {
+		case errors.Is(err, validate.ErrFileTooLarge), errors.Is(err, validate.ErrInvalidFileType):
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		case errors.Is(err, workspaces.ErrNotFound):
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		default:
+			return fmt.Errorf("error uploading workspace logo: %w", err)
+		}
+	}
+
+	// Get user ID for workspace access
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Get updated workspace
+	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+}
+
+// DeleteWorkspaceLogo handles workspace logo deletion
+func (h *Handlers) DeleteWorkspaceLogo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	err = h.workspaces.DeleteWorkspaceLogo(ctx, workspaceID, h.attachments)
+	if err != nil {
+		if errors.Is(err, workspaces.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Get user ID for workspace access
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Get updated workspace
+	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
 }

@@ -39,6 +39,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -91,6 +92,9 @@ type Config struct {
 	}
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
+	}
+	System struct {
+		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
 	}
 	Tracing struct {
 		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
@@ -269,6 +273,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}()
 
+	systemUserID, err := uuid.Parse(cfg.System.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid system user ID: %w", err)
+	}
+
 	shutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
@@ -325,6 +334,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		WebhookSecret: cfg.Stripe.WebhookSecret,
 		SSEHub:        sseHub,
 		CorsOrigin:    "*",
+		SystemUserID:  systemUserID,
 	}
 
 	// Create the mux

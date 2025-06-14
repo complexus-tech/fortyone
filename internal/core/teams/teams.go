@@ -24,6 +24,8 @@ type Repository interface {
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 }
 
+// TeamSettingsRepository provides access to the team settings storage.
+
 // Service provides team-related operations.
 type Service struct {
 	repo Repository

@@ -27,6 +27,7 @@ type CoreUser struct {
 	FullName            string
 	AvatarURL           string
 	IsActive            bool
+	HasSeenWalkthrough  bool
 	LastLoginAt         time.Time
 	LastUsedWorkspaceID *uuid.UUID
 	CreatedAt           time.Time
@@ -37,9 +38,10 @@ type CoreUser struct {
 
 // CoreUpdateUser represents the fields that can be updated for a user.
 type CoreUpdateUser struct {
-	Username  string
-	FullName  string
-	AvatarURL string
+	Username           *string
+	FullName           *string
+	AvatarURL          *string
+	HasSeenWalkthrough *bool
 }
 
 // CoreNewUser represents a new user to be created.

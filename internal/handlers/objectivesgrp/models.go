@@ -205,3 +205,103 @@ func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
 	}
 	return result
 }
+
+// Objective Analytics Models
+
+type AppObjectiveAnalytics struct {
+	ObjectiveID       uuid.UUID                       `json:"objectiveId"`
+	PriorityBreakdown []AppPriorityBreakdown          `json:"priorityBreakdown"`
+	ProgressBreakdown AppProgressBreakdown            `json:"progressBreakdown"`
+	TeamAllocation    []AppTeamMemberAllocation       `json:"teamAllocation"`
+	ProgressChart     []AppObjectiveProgressDataPoint `json:"progressChart"`
+}
+
+type AppPriorityBreakdown struct {
+	Priority string `json:"priority"`
+	Count    int    `json:"count"`
+}
+
+type AppProgressBreakdown struct {
+	Total      int `json:"total"`
+	Completed  int `json:"completed"`
+	InProgress int `json:"inProgress"`
+	Todo       int `json:"todo"`
+	Blocked    int `json:"blocked"`
+	Cancelled  int `json:"cancelled"`
+}
+
+type AppTeamMemberAllocation struct {
+	MemberID  uuid.UUID `json:"memberId"`
+	Username  string    `json:"username"`
+	AvatarURL *string   `json:"avatarUrl"`
+	Assigned  int       `json:"assigned"`
+	Completed int       `json:"completed"`
+}
+
+type AppObjectiveProgressDataPoint struct {
+	Date       time.Time `json:"date"`
+	Completed  int       `json:"completed"`
+	InProgress int       `json:"inProgress"`
+	Total      int       `json:"total"`
+}
+
+// Conversion functions
+
+func toAppObjectiveAnalytics(analytics objectives.CoreObjectiveAnalytics) AppObjectiveAnalytics {
+	return AppObjectiveAnalytics{
+		ObjectiveID:       analytics.ObjectiveID,
+		PriorityBreakdown: toAppPriorityBreakdown(analytics.PriorityBreakdown),
+		ProgressBreakdown: toAppProgressBreakdown(analytics.ProgressBreakdown),
+		TeamAllocation:    toAppTeamAllocation(analytics.TeamAllocation),
+		ProgressChart:     toAppProgressChart(analytics.ProgressChart),
+	}
+}
+
+func toAppPriorityBreakdown(breakdown []objectives.CorePriorityBreakdown) []AppPriorityBreakdown {
+	result := make([]AppPriorityBreakdown, len(breakdown))
+	for i, b := range breakdown {
+		result[i] = AppPriorityBreakdown{
+			Priority: b.Priority,
+			Count:    b.Count,
+		}
+	}
+	return result
+}
+
+func toAppProgressBreakdown(breakdown objectives.CoreProgressBreakdown) AppProgressBreakdown {
+	return AppProgressBreakdown{
+		Total:      breakdown.Total,
+		Completed:  breakdown.Completed,
+		InProgress: breakdown.InProgress,
+		Todo:       breakdown.Todo,
+		Blocked:    breakdown.Blocked,
+		Cancelled:  breakdown.Cancelled,
+	}
+}
+
+func toAppTeamAllocation(allocation []objectives.CoreTeamMemberAllocation) []AppTeamMemberAllocation {
+	result := make([]AppTeamMemberAllocation, len(allocation))
+	for i, a := range allocation {
+		result[i] = AppTeamMemberAllocation{
+			MemberID:  a.MemberID,
+			Username:  a.Username,
+			AvatarURL: a.AvatarURL,
+			Assigned:  a.Assigned,
+			Completed: a.Completed,
+		}
+	}
+	return result
+}
+
+func toAppProgressChart(progressChart []objectives.CoreObjectiveProgressDataPoint) []AppObjectiveProgressDataPoint {
+	result := make([]AppObjectiveProgressDataPoint, len(progressChart))
+	for i, p := range progressChart {
+		result[i] = AppObjectiveProgressDataPoint{
+			Date:       p.Date,
+			Completed:  p.Completed,
+			InProgress: p.InProgress,
+			Total:      p.Total,
+		}
+	}
+	return result
+}

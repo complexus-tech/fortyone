@@ -15,12 +15,12 @@ type dbState struct {
 	Team       uuid.UUID  `db:"team_id"`
 	Workspace  uuid.UUID  `db:"workspace_id"`
 	IsDefault  bool       `db:"is_default"`
+	Color      string     `db:"color"`
 	CreatedAt  time.Time  `db:"created_at"`
 	UpdatedAt  time.Time  `db:"updated_at"`
 	DeletedAt  *time.Time `db:"deleted_at"`
 }
 
-// group can be backlog, not started, in progress, done, closed
 func toCoreState(p dbState) states.CoreState {
 	return states.CoreState{
 		ID:         p.ID,
@@ -30,6 +30,7 @@ func toCoreState(p dbState) states.CoreState {
 		Team:       p.Team,
 		Workspace:  p.Workspace,
 		IsDefault:  p.IsDefault,
+		Color:      p.Color,
 		CreatedAt:  p.CreatedAt,
 		UpdatedAt:  p.UpdatedAt,
 	}

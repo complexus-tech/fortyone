@@ -17,7 +17,7 @@ type Repository interface {
 	Create(ctx context.Context, workspaceId uuid.UUID, state CoreNewState) (CoreState, error)
 	Update(ctx context.Context, workspaceId, stateId uuid.UUID, state CoreUpdateState) (CoreState, error)
 	Delete(ctx context.Context, workspaceId, stateId uuid.UUID) error
-	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error)
+	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]CoreState, error)
 	TeamList(ctx context.Context, workspaceId uuid.UUID, teamId uuid.UUID) ([]CoreState, error)
 	Get(ctx context.Context, workspaceId, stateId uuid.UUID) (CoreState, error)
 	CountStoriesWithStatus(ctx context.Context, statusID uuid.UUID) (int, error)
@@ -127,12 +127,12 @@ func (s *Service) Delete(ctx context.Context, workspaceId, stateId uuid.UUID) er
 }
 
 // List returns a list of states.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreState, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]CoreState, error) {
 	s.log.Info(ctx, "business.core.states.List")
 	ctx, span := web.AddSpan(ctx, "business.core.states.List")
 	defer span.End()
 
-	states, err := s.repo.List(ctx, workspaceId)
+	states, err := s.repo.List(ctx, workspaceId, userID)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

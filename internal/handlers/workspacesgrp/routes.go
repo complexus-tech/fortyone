@@ -1,6 +1,9 @@
 package workspacesgrp
 
 import (
+	"context"
+
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
@@ -8,6 +11,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/core/workspaces"
+	"github.com/complexus-tech/projects-api/internal/repo/attachmentsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
@@ -17,11 +21,13 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stripe/stripe-go/v82/client"
 )
@@ -35,10 +41,11 @@ type Config struct {
 	StripeClient  *client.API
 	WebhookSecret string
 	TasksService  *tasks.Service
+	SystemUserID  uuid.UUID
+	AzureConfig   azure.Config
 }
 
 func Routes(cfg Config, app *web.App) {
-
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
 	mentionsRepo := mentionsrepo.New(cfg.Log, cfg.DB)
 	storiesService := stories.New(cfg.Log, storiesrepo.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
@@ -46,12 +53,22 @@ func Routes(cfg Config, app *web.App) {
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
 	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepo.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.WebhookSecret)
+
+	// Create attachments service for workspace logos
+	attachmentsRepo := attachmentsrepo.New(cfg.Log, cfg.DB)
+	azureBlobService, err := azure.New(cfg.AzureConfig, cfg.Log)
+	if err != nil {
+		cfg.Log.Error(context.Background(), "failed to initialize Azure blob service", "error", err)
+		return
+	}
+	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
+
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.SystemUserID)
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,
-		cfg.Cache, cfg.Log, cfg.SecretKey)
+		cfg.Cache, cfg.Log, cfg.SecretKey, attachmentsService)
 
 	app.Get("/workspaces/{workspaceId}", h.Get, auth)
 	app.Put("/workspaces/{workspaceId}", h.Update, auth)
@@ -64,4 +81,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/check-availability", h.CheckSlugAvailability)
 	app.Get("/workspaces/{workspaceId}/settings", h.GetWorkspaceSettings, auth)
 	app.Put("/workspaces/{workspaceId}/settings", h.UpdateWorkspaceSettings, auth)
+
+	// Workspace logo endpoints
+	app.Post("/workspaces/{workspaceId}/logo", h.UploadWorkspaceLogo, auth)
+	app.Delete("/workspaces/{workspaceId}/logo", h.DeleteWorkspaceLogo, auth)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -40,10 +41,13 @@ type WorkerConfig struct {
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
 	}
+	System struct {
+		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
+	}
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4"`
+	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4,automation:3"`
 }
 
 func main() {
@@ -63,7 +67,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing worker configuration: %w", err)
 	}
 	if cfg.Queues == nil {
-		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2, "notifications": 4}
+		cfg.Queues = map[string]int{"critical": 6, "default": 3, "low": 1, "onboarding": 5, "cleanup": 2, "notifications": 4, "automation": 3}
 	}
 
 	// Initialize database connection
@@ -108,7 +112,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"@weekly", // Sunday 00:00 AM
 		asynq.NewTask(tasks.TypeTokenCleanup, nil),
 		asynq.Queue("cleanup"),
 	)
@@ -117,12 +121,48 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"@weekly",
+		"0 3 * * 3", // Wednesday 3:00 AM
 		asynq.NewTask(tasks.TypeWebhookCleanup, nil),
 		asynq.Queue("cleanup"),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register webhook cleanup task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 1 * * *", // Every day at 1:00 AM (avoids Sunday collision)
+		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register sprint auto-creation task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 4 * * 5", // Friday 4:00 AM
+		asynq.NewTask(tasks.TypeStoryAutoArchive, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-archive task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 5 * * 6", // Saturday 5:00 AM
+		asynq.NewTask(tasks.TypeStoryAutoClose, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register story auto-close task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 6 * * *", // Daily at 6:00 AM
+		asynq.NewTask(tasks.TypeSprintStoryMigration, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register sprint story migration task: %w", err)
 	}
 
 	srv := asynq.NewServer(
@@ -141,9 +181,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error initializing brevo service: %w", err)
 	}
 
+	systemUserID, err := uuid.Parse(cfg.System.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid system user ID: %w", err)
+	}
+
 	// Set up task handlers
 	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, systemUserID)
 
 	mux := asynq.NewServeMux()
 	// Register existing handlers
@@ -154,6 +199,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
+	// Register automation handlers
+	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
+	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
+	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
+	mux.HandleFunc(tasks.TypeSprintStoryMigration, cleanupHandlers.HandleSprintStoryMigration)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",

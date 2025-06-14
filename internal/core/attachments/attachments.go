@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/azure"
@@ -260,4 +261,133 @@ func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File,
 	))
 
 	return fileInfo, nil
+}
+
+// UploadProfileImage uploads a profile image and returns the image URL
+func (s *Service) UploadProfileImage(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID) (string, error) {
+	s.log.Info(ctx, "core.attachments.uploadProfileImage")
+	ctx, span := web.AddSpan(ctx, "core.attachments.UploadProfileImage")
+	defer span.End()
+
+	// Validate file using your existing validator
+	if err := validate.ProfileImage(file, fileHeader); err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("invalid profile image: %w", err)
+	}
+
+	// Generate a unique filename for profile images
+	blobName := fmt.Sprintf("profile_%s_%s", userID.String(), validate.GenerateFileName(fileHeader.Filename))
+
+	// Upload to Azure profile images container
+	_, err := s.azureBlob.UploadBlob(
+		ctx,
+		s.config.ProfileImagesContainer,
+		blobName,
+		file,
+		fileHeader.Header.Get("Content-Type"),
+	)
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to upload profile image to Azure: %w", err)
+	}
+
+	// Generate permanent URL (container must be set to public access)
+	imageURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
+		s.config.StorageAccountName,
+		s.config.ProfileImagesContainer,
+		blobName)
+
+	span.AddEvent("profile image uploaded", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.String("filename", fileHeader.Filename),
+		attribute.String("image_url", imageURL),
+	))
+
+	return imageURL, nil
+}
+
+// DeleteProfileImage deletes a profile image from Azure
+func (s *Service) DeleteProfileImage(ctx context.Context, avatarURL string) error {
+	s.log.Info(ctx, "core.attachments.deleteProfileImage")
+	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteProfileImage")
+	defer span.End()
+
+	if avatarURL == "" {
+		return nil // Nothing to delete
+	}
+
+	// Extract blob name from URL
+	// URL format: https://account.blob.core.windows.net/container/blobname
+	parts := strings.Split(avatarURL, "/")
+	if len(parts) < 2 {
+		return fmt.Errorf("invalid avatar URL format")
+	}
+	blobName := parts[len(parts)-1]
+
+	// Delete from Azure
+	err := s.azureBlob.DeleteBlob(ctx, s.config.ProfileImagesContainer, blobName)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "failed to delete profile image from Azure", "error", err)
+		// Don't return error as this is not critical
+	}
+
+	span.AddEvent("profile image deleted", trace.WithAttributes(
+		attribute.String("avatar_url", avatarURL),
+		attribute.String("blob_name", blobName),
+	))
+
+	return nil
+}
+
+func (s *Service) UploadWorkspaceLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, workspaceID uuid.UUID) (string, error) {
+	s.log.Info(ctx, "business.core.attachments.upload_workspace_logo")
+	ctx, span := web.AddSpan(ctx, "business.core.attachments.UploadWorkspaceLogo")
+	defer span.End()
+
+	if err := validate.WorkspaceLogo(file, fileHeader); err != nil {
+		return "", fmt.Errorf("workspace logo validation failed: %w", err)
+	}
+
+	blobName := fmt.Sprintf("%s/%s", workspaceID.String(), fileHeader.Filename)
+	url, err := s.azureBlob.UploadBlob(ctx, s.config.WorkspaceLogosContainer, blobName, file, fileHeader.Header.Get("Content-Type"))
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to upload workspace logo: %w", err)
+	}
+
+	span.AddEvent("workspace logo uploaded.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("url", url),
+	))
+
+	return url, nil
+}
+
+func (s *Service) DeleteWorkspaceLogo(ctx context.Context, logoURL string) error {
+	s.log.Info(ctx, "business.core.attachments.delete_workspace_logo")
+	ctx, span := web.AddSpan(ctx, "business.core.attachments.DeleteWorkspaceLogo")
+	defer span.End()
+
+	if logoURL == "" {
+		return nil // Nothing to delete
+	}
+
+	// Extract blob name from URL (same logic as profile images)
+	urlParts := strings.Split(logoURL, s.config.WorkspaceLogosContainer+"/")
+	if len(urlParts) < 2 {
+		return fmt.Errorf("invalid workspace logo URL format")
+	}
+	blobName := urlParts[1]
+
+	if err := s.azureBlob.DeleteBlob(ctx, s.config.WorkspaceLogosContainer, blobName); err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to delete workspace logo: %w", err)
+	}
+
+	span.AddEvent("workspace logo deleted.", trace.WithAttributes(
+		attribute.String("blob_name", blobName),
+	))
+
+	return nil
 }

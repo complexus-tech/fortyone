@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/reports"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
@@ -191,4 +193,275 @@ func (h *Handlers) GetPriorityStats(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	return web.Respond(ctx, w, toAppPriorityStats(stats), http.StatusOK)
+}
+
+// Workspace Reports Handlers
+
+// parseReportFilters parses query parameters into ReportFilters
+// If no teamIds are provided, empty array means "include all teams in workspace"
+// If no sprintIds are provided, empty array means "include all sprints in workspace"
+// If no objectiveIds are provided, empty array means "include all objectives in workspace"
+func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, error) {
+	filters := reports.ReportFilters{}
+
+	// Parse multiple team IDs (empty = all teams in workspace)
+	if teamIds, ok := query["teamIds"]; ok {
+		if teamIdsStr, ok := teamIds.(string); ok && teamIdsStr != "" {
+			teamIDStrings := strings.Split(teamIdsStr, ",")
+			for _, idStr := range teamIDStrings {
+				idStr = strings.TrimSpace(idStr)
+				if idStr != "" {
+					if id, err := uuid.Parse(idStr); err == nil {
+						filters.TeamIDs = append(filters.TeamIDs, id)
+					}
+				}
+			}
+		}
+	}
+	// Note: Empty TeamIDs slice means "include all teams in workspace"
+
+	// Parse multiple sprint IDs (empty = all sprints in workspace)
+	if sprintIds, ok := query["sprintIds"]; ok {
+		if sprintIdsStr, ok := sprintIds.(string); ok && sprintIdsStr != "" {
+			sprintIDStrings := strings.Split(sprintIdsStr, ",")
+			for _, idStr := range sprintIDStrings {
+				idStr = strings.TrimSpace(idStr)
+				if idStr != "" {
+					if id, err := uuid.Parse(idStr); err == nil {
+						filters.SprintIDs = append(filters.SprintIDs, id)
+					}
+				}
+			}
+		}
+	}
+	// Note: Empty SprintIDs slice means "include all sprints in workspace"
+
+	// Parse multiple objective IDs (empty = all objectives in workspace)
+	if objectiveIds, ok := query["objectiveIds"]; ok {
+		if objectiveIdsStr, ok := objectiveIds.(string); ok && objectiveIdsStr != "" {
+			objectiveIDStrings := strings.Split(objectiveIdsStr, ",")
+			for _, idStr := range objectiveIDStrings {
+				idStr = strings.TrimSpace(idStr)
+				if idStr != "" {
+					if id, err := uuid.Parse(idStr); err == nil {
+						filters.ObjectiveIDs = append(filters.ObjectiveIDs, id)
+					}
+				}
+			}
+		}
+	}
+	// Note: Empty ObjectiveIDs slice means "include all objectives in workspace"
+
+	// Set default dates: current date as end, 60 days before as start
+	now := time.Now()
+	defaultEndDate := now
+	defaultStartDate := now.AddDate(0, 0, -60) // 60 days ago
+
+	// Parse start date or use default
+	if startDate, ok := query["startDate"]; ok {
+		if startDateStr, ok := startDate.(string); ok {
+			if parsedDate, err := time.Parse(time.RFC3339, startDateStr); err == nil {
+				filters.StartDate = &parsedDate
+			} else {
+				filters.StartDate = &defaultStartDate
+			}
+		}
+	} else {
+		filters.StartDate = &defaultStartDate
+	}
+
+	// Parse end date or use default
+	if endDate, ok := query["endDate"]; ok {
+		if endDateStr, ok := endDate.(string); ok {
+			if parsedDate, err := time.Parse(time.RFC3339, endDateStr); err == nil {
+				filters.EndDate = &parsedDate
+			} else {
+				filters.EndDate = &defaultEndDate
+			}
+		}
+	} else {
+		filters.EndDate = &defaultEndDate
+	}
+
+	return filters, nil
+}
+
+// GetWorkspaceOverview returns workspace overview with key metrics and trends
+func (h *Handlers) GetWorkspaceOverview(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetWorkspaceOverview")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	overview, err := h.reports.GetWorkspaceOverview(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting workspace overview: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppWorkspaceOverview(overview), http.StatusOK)
+}
+
+// GetStoryAnalytics returns story analytics including status breakdown and burndown
+func (h *Handlers) GetStoryAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetStoryAnalytics")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	analytics, err := h.reports.GetStoryAnalytics(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting story analytics: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppStoryAnalytics(analytics), http.StatusOK)
+}
+
+// GetObjectiveProgress returns objective progress including health and key results
+func (h *Handlers) GetObjectiveProgress(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetObjectiveProgress")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	progress, err := h.reports.GetObjectiveProgress(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting objective progress: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppObjectiveProgress(progress), http.StatusOK)
+}
+
+// GetTeamPerformance returns team performance including workload and velocity
+func (h *Handlers) GetTeamPerformance(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetTeamPerformance")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	performance, err := h.reports.GetTeamPerformance(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting team performance: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppTeamPerformance(performance), http.StatusOK)
+}
+
+// GetSprintAnalytics returns sprint analytics including progress and burndown
+func (h *Handlers) GetSprintAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetSprintAnalytics")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	analytics, err := h.reports.GetSprintAnalytics(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting sprint analytics: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppSprintAnalyticsWorkspace(analytics), http.StatusOK)
+}
+
+// GetTimelineTrends returns timeline trends for all key metrics
+func (h *Handlers) GetTimelineTrends(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetTimelineTrends")
+	defer span.End()
+
+	workspaceIDParam := web.Params(r, "workspaceId")
+	workspaceID, err := uuid.Parse(workspaceIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	trends, err := h.reports.GetTimelineTrends(ctx, workspaceID, filters)
+	if err != nil {
+		return fmt.Errorf("getting timeline trends: %w", err)
+	}
+
+	return web.Respond(ctx, w, toAppTimelineTrends(trends), http.StatusOK)
 }

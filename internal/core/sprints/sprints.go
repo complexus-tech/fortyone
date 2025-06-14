@@ -12,11 +12,13 @@ import (
 
 // Repository provides access to the sprints storage.
 type Repository interface {
-	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error)
-	Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSprint, error)
+	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error)
+	Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error)
+	GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error)
 	Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error)
 	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint) (CoreSprint, error)
 	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error
+	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error)
 }
 
 // Service provides story-related operations.
@@ -34,12 +36,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // List returns a list of sprints.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
+func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
 	s.log.Info(ctx, "business.core.sprints.list")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.List")
 	defer span.End()
 
-	sprints, err := s.repo.List(ctx, workspaceId, filters)
+	sprints, err := s.repo.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -51,12 +53,12 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[s
 }
 
 // Running returns a list of running sprints.
-func (s *Service) Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSprint, error) {
+func (s *Service) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error) {
 	s.log.Info(ctx, "business.core.sprints.running")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.Running")
 	defer span.End()
 
-	sprints, err := s.repo.Running(ctx, workspaceId)
+	sprints, err := s.repo.Running(ctx, workspaceId, userID)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -65,6 +67,23 @@ func (s *Service) Running(ctx context.Context, workspaceId uuid.UUID) ([]CoreSpr
 		attribute.Int("story.count", len(sprints)),
 	))
 	return sprints, nil
+}
+
+// GetByID returns a single sprint by ID.
+func (s *Service) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error) {
+	s.log.Info(ctx, "business.core.sprints.getByID")
+	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetByID")
+	defer span.End()
+
+	sprint, err := s.repo.GetByID(ctx, sprintID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprint{}, err
+	}
+	span.AddEvent("sprint retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", sprint.ID.String()),
+	))
+	return sprint, nil
 }
 
 // Create creates a new sprint.
@@ -121,4 +140,21 @@ func (s *Service) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uu
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 	return nil
+}
+
+// GetAnalytics returns analytics data for a sprint.
+func (s *Service) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error) {
+	s.log.Info(ctx, "business.core.sprints.getAnalytics")
+	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetAnalytics")
+	defer span.End()
+
+	analytics, err := s.repo.GetAnalytics(ctx, sprintID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprintAnalytics{}, err
+	}
+	span.AddEvent("sprint analytics retrieved.", trace.WithAttributes(
+		attribute.String("sprint.id", analytics.SprintID.String()),
+	))
+	return analytics, nil
 }

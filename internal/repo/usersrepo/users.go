@@ -50,6 +50,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.has_seen_walkthrough,
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
@@ -101,6 +102,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.has_seen_walkthrough,
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
@@ -143,13 +145,44 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUser")
 	defer span.End()
 
-	q := `
+	// Build SET clauses dynamically based on provided fields (not nil)
+	var setClauses []string
+	params := map[string]any{
+		"user_id": userID,
+	}
+
+	// Only update fields that are provided (not nil)
+	if updates.Username != nil {
+		setClauses = append(setClauses, "username = :username")
+		params["username"] = *updates.Username
+	}
+
+	if updates.FullName != nil {
+		setClauses = append(setClauses, "full_name = :full_name")
+		params["full_name"] = *updates.FullName
+	}
+
+	if updates.AvatarURL != nil {
+		setClauses = append(setClauses, "avatar_url = :avatar_url")
+		params["avatar_url"] = *updates.AvatarURL // Can be empty string to clear
+	}
+
+	if updates.HasSeenWalkthrough != nil {
+		setClauses = append(setClauses, "has_seen_walkthrough = :has_seen_walkthrough")
+		params["has_seen_walkthrough"] = *updates.HasSeenWalkthrough
+	}
+
+	// If no fields to update, just return the current user
+	if len(setClauses) == 0 {
+		return r.GetUser(ctx, userID)
+	}
+
+	// Always update the timestamp
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	q := fmt.Sprintf(`
 		UPDATE users
-		SET 
-			username = CASE WHEN :username = '' THEN username ELSE :username END,
-			full_name = CASE WHEN :full_name = '' THEN full_name ELSE :full_name END,
-			avatar_url = CASE WHEN :avatar_url = '' THEN avatar_url ELSE :avatar_url END,
-			updated_at = NOW()
+		SET %s
 		WHERE 
 			user_id = :user_id
 			AND is_active = true
@@ -160,18 +193,12 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 			full_name,
 			avatar_url,
 			is_active,
+			has_seen_walkthrough,
 			last_login_at,
 			last_used_workspace_id,
 			created_at,
 			updated_at
-	`
-
-	params := map[string]any{
-		"user_id":    userID,
-		"username":   updates.Username,
-		"full_name":  updates.FullName,
-		"avatar_url": updates.AvatarURL,
-	}
+	`, strings.Join(setClauses, ", "))
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -192,6 +219,11 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		span.RecordError(errors.New("failed to update user"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return users.CoreUser{}, err
 	}
+
+	span.AddEvent("user updated", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.Int("fields_updated", len(setClauses)-1), // -1 for updated_at
+	))
 
 	return toCoreUser(dbUser), nil
 }

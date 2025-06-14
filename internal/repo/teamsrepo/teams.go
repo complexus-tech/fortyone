@@ -12,7 +12,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -97,7 +96,7 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.ListPublicTeams")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id": workspaceId,
 		"user_id":      userID,
 	}
@@ -173,7 +172,7 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 	}
 	defer tx.Rollback()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":         team.Name,
 		"code":         team.Code,
 		"color":        team.Color,
@@ -186,6 +185,24 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		VALUES (:name, :code, :color, :is_private, :workspace_id)
 		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
+
+	defaultStoryAutomationSettingsQuery := `
+	INSERT INTO team_story_automation_settings (
+		team_id,
+		workspace_id,
+		auto_close_inactive_enabled,
+		auto_close_inactive_months,
+		auto_archive_enabled,
+		auto_archive_months
+	) VALUES (
+		:team_id,
+		:workspace_id,
+		true,
+		3,
+		true,
+		3
+	)
+`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -218,6 +235,16 @@ func (r *repo) Create(ctx context.Context, team teams.CoreTeam) (teams.CoreTeam,
 		return teams.CoreTeam{}, err
 	}
 
+	defaultStoryAutomationSettingsParams := map[string]any{
+		"team_id":      dbTeam.ID,
+		"workspace_id": dbTeam.Workspace,
+	}
+	if _, err := tx.NamedExecContext(ctx, defaultStoryAutomationSettingsQuery, defaultStoryAutomationSettingsParams); err != nil {
+		errMsg := fmt.Sprintf("failed to create default story automation settings: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default story automation settings"), trace.WithAttributes(attribute.String("error", errMsg)))
+	}
+
 	if err := tx.Commit(); err != nil {
 		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -235,20 +262,21 @@ func (r *repo) createDefaultStoryStatuses(ctx context.Context, tx *sqlx.Tx, team
 
 	// Build values for story statuses batch insert
 	storyValues := make([]string, len(teams.DefaultStoryStatuses))
-	storyParams := make(map[string]interface{})
+	storyParams := make(map[string]any)
 	for i, status := range teams.DefaultStoryStatuses {
 		paramPrefix := fmt.Sprintf("s%d_", i)
-		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		storyValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :%scolor, :team_id, :workspace_id)", paramPrefix, paramPrefix, paramPrefix, paramPrefix)
 		storyParams[paramPrefix+"name"] = status.Name
 		storyParams[paramPrefix+"category"] = status.Category
 		storyParams[paramPrefix+"order_index"] = status.OrderIndex
+		storyParams[paramPrefix+"color"] = status.Color
 	}
 	storyParams["team_id"] = teamID
 	storyParams["workspace_id"] = workspaceID
 
 	// Batch insert story statuses
 	storyQuery := fmt.Sprintf(`
-		INSERT INTO statuses (name, category, order_index, team_id, workspace_id)
+		INSERT INTO statuses (name, category, order_index, color, team_id, workspace_id)
 		VALUES %s
 	`, strings.Join(storyValues, ","))
 
@@ -286,7 +314,7 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 			updated_at
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": updates.Workspace,
 		"name":         updates.Name,
@@ -308,8 +336,8 @@ func (r *repo) Update(ctx context.Context, teamID uuid.UUID, updates teams.CoreT
 		if err == sql.ErrNoRows {
 			return teams.CoreTeam{}, errors.New("team not found")
 		}
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "teams_code_key" {
-			errMsg := fmt.Sprintf("team code %s already exists", updates.Code)
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			errMsg := fmt.Sprintf("team code %s already used by another team", updates.Code)
 			r.log.Error(ctx, errMsg)
 			span.RecordError(teams.ErrTeamCodeExists, trace.WithAttributes(attribute.String("error", errMsg)))
 			return teams.CoreTeam{}, teams.ErrTeamCodeExists
@@ -334,7 +362,7 @@ func (r *repo) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UU
 			AND workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": workspaceID,
 	}
@@ -471,7 +499,7 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 	ctx, span := web.AddSpan(ctx, "teamsrepo.CreateTx")
 	defer span.End()
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":         team.Name,
 		"code":         team.Code,
 		"color":        team.Color,
@@ -484,6 +512,24 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		VALUES (:name, :code, :color, :is_private, :workspace_id)
 		RETURNING team_id, name, code, color, is_private, workspace_id, created_at, updated_at, 1 as member_count
 	`
+
+	defaultStoryAutomationSettingsQuery := `
+	INSERT INTO team_story_automation_settings (
+		team_id,
+		workspace_id,
+		auto_close_inactive_enabled,
+		auto_close_inactive_months,
+		auto_archive_enabled,
+		auto_archive_months
+	) VALUES (
+		:team_id,
+		:workspace_id,
+		true,
+		3,
+		true,
+		3
+	)
+`
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -507,6 +553,17 @@ func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to execute query"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return teams.CoreTeam{}, err
+	}
+
+	defaultStoryAutomationSettingsParams := map[string]any{
+		"team_id":      dbTeam.ID,
+		"workspace_id": dbTeam.Workspace,
+	}
+
+	if _, err := tx.NamedExecContext(ctx, defaultStoryAutomationSettingsQuery, defaultStoryAutomationSettingsParams); err != nil {
+		errMsg := fmt.Sprintf("failed to create default story automation settings: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to create default story automation settings"), trace.WithAttributes(attribute.String("error", errMsg)))
 	}
 
 	if err := r.createDefaultStoryStatuses(ctx, tx, dbTeam.ID, dbTeam.Workspace); err != nil {

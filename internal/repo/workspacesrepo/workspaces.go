@@ -59,6 +59,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			w.workspace_id,
 			w.slug,
 			w.name,
+			w.avatar_url,
 			CASE 
 				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
 				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (
@@ -176,12 +177,33 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Update")
 	defer span.End()
 
-	var result dbWorkspace
-	query := `
+	// Build SET clauses dynamically based on provided fields
+	var setClauses []string
+	params := map[string]any{
+		"workspace_id": workspaceID,
+	}
+
+	// Only update fields that are provided (not empty/nil)
+	if updates.Name != "" {
+		setClauses = append(setClauses, "name = :name")
+		params["name"] = updates.Name
+	}
+
+	if updates.AvatarURL != nil {
+		setClauses = append(setClauses, "avatar_url = :avatar_url")
+		params["avatar_url"] = *updates.AvatarURL
+	}
+
+	if len(setClauses) == 0 {
+		return workspaces.CoreWorkspace{}, fmt.Errorf("no fields to update")
+	}
+
+	// Always update the timestamp
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query := fmt.Sprintf(`
 		UPDATE workspaces
-		SET 
-			name = CASE WHEN :name = '' THEN name ELSE :name END,
-			updated_at = NOW()
+		SET %s
 		WHERE 
 			workspace_id = :workspace_id
 		RETURNING
@@ -189,15 +211,11 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 			name,
 			color,
 			slug,
+			avatar_url,
 			created_at,
 			updated_at,
 			trial_ends_on
-	`
-
-	params := map[string]any{
-		"workspace_id": workspaceID,
-		"name":         updates.Name,
-	}
+	`, strings.Join(setClauses, ", "))
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -208,6 +226,7 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 	}
 	defer stmt.Close()
 
+	var result dbWorkspace
 	if err := stmt.GetContext(ctx, &result, params); err != nil {
 		if err == sql.ErrNoRows {
 			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
@@ -217,6 +236,11 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 		span.RecordError(errors.New("failed to update workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return workspaces.CoreWorkspace{}, err
 	}
+
+	span.AddEvent("workspace updated", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.Int("fields_updated", len(setClauses)-1), // -1 for updated_at
+	))
 
 	return toCoreWorkspace(result), nil
 }
@@ -275,16 +299,17 @@ func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, 
 
 	for i, status := range workspaces.DefaultObjectiveStatuses {
 		paramPrefix := fmt.Sprintf("o%d_", i)
-		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :workspace_id)", paramPrefix, paramPrefix, paramPrefix)
+		objectiveValues[i] = fmt.Sprintf("(:%sname, :%scategory, :%sorder_index, :%scolor, :workspace_id)", paramPrefix, paramPrefix, paramPrefix, paramPrefix)
 		objectiveParams[paramPrefix+"name"] = status.Name
 		objectiveParams[paramPrefix+"category"] = status.Category
 		objectiveParams[paramPrefix+"order_index"] = status.OrderIndex
+		objectiveParams[paramPrefix+"color"] = status.Color
 	}
 	objectiveParams["workspace_id"] = workspaceID
 
 	// Batch insert objective statuses
 	objectiveQuery := fmt.Sprintf(`
-		INSERT INTO objective_statuses (name, category, order_index, workspace_id)
+		INSERT INTO objective_statuses (name, category, order_index, color, workspace_id)
 		VALUES %s
 	`, strings.Join(objectiveValues, ","))
 
@@ -377,6 +402,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 			w.name,
 			w.slug,
 			w.color,
+			w.avatar_url,
 			CASE 
 				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
 				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (

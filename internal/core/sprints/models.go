@@ -42,3 +42,43 @@ type CoreUpdateSprint struct {
 	StartDate *time.Time
 	EndDate   *time.Time
 }
+
+// Sprint Analytics Models
+
+type CoreSprintAnalytics struct {
+	SprintID       uuid.UUID
+	Overview       CoreSprintOverview
+	StoryBreakdown CoreStoryBreakdown
+	Burndown       []CoreBurndownDataPoint
+	TeamAllocation []CoreTeamMemberAllocation
+}
+
+type CoreSprintOverview struct {
+	CompletionPercentage int
+	DaysElapsed          int
+	DaysRemaining        int
+	Status               string // "not_started", "on_track", "at_risk", "behind", "completed"
+}
+
+type CoreStoryBreakdown struct {
+	Total      int `db:"total"`
+	Completed  int `db:"completed"`
+	InProgress int `db:"in_progress"`
+	Todo       int `db:"todo"`
+	Blocked    int `db:"blocked"`
+	Cancelled  int `db:"cancelled"`
+}
+
+type CoreBurndownDataPoint struct {
+	Date      time.Time `db:"date"`
+	Remaining int       `db:"remaining"`
+	Ideal     int       `db:"ideal"`
+}
+
+type CoreTeamMemberAllocation struct {
+	MemberID  uuid.UUID `db:"user_id"`
+	Username  string    `db:"username"`
+	AvatarURL string    `db:"avatar_url"`
+	Assigned  int       `db:"assigned"`
+	Completed int       `db:"completed"`
+}

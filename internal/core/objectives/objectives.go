@@ -25,6 +25,7 @@ type Repository interface {
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Create(ctx context.Context, objective CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (CoreObjective, []keyresults.CoreKeyResult, error)
+	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (CoreObjectiveAnalytics, error)
 }
 
 // Service provides story-related operations.
@@ -137,4 +138,25 @@ func (s *Service) Create(ctx context.Context, newObjective CoreNewObjective, wor
 	))
 
 	return createdObj, createdKRs, nil
+}
+
+// GetAnalytics returns analytics data for an objective.
+func (s *Service) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (CoreObjectiveAnalytics, error) {
+	s.log.Info(ctx, "business.core.objectives.GetAnalytics")
+	ctx, span := web.AddSpan(ctx, "business.core.objectives.GetAnalytics")
+	defer span.End()
+
+	analytics, err := s.repo.GetAnalytics(ctx, objectiveID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjectiveAnalytics{}, err
+	}
+
+	span.AddEvent("objective analytics retrieved.", trace.WithAttributes(
+		attribute.String("objective.id", objectiveID.String()),
+		attribute.Int("priority_breakdown.count", len(analytics.PriorityBreakdown)),
+		attribute.Int("team_allocation.count", len(analytics.TeamAllocation)),
+	))
+
+	return analytics, nil
 }

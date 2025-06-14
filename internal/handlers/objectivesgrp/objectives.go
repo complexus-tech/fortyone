@@ -387,3 +387,33 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	web.Respond(ctx, w, response, http.StatusCreated)
 	return nil
 }
+
+// GetAnalytics returns analytics data for an objective.
+func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.GetAnalytics")
+	defer span.End()
+
+	objectiveID := web.Params(r, "id")
+	workspaceID := web.Params(r, "workspaceId")
+
+	objID, err := uuid.Parse(objectiveID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
+		return nil
+	}
+
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	analytics, err := h.objectives.GetAnalytics(ctx, objID, wsID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	web.Respond(ctx, w, toAppObjectiveAnalytics(analytics), http.StatusOK)
+	return nil
+}

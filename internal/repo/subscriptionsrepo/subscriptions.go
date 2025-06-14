@@ -142,7 +142,8 @@ func (r *repo) GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID)
 	query := `
         SELECT COUNT(*) 
         FROM workspace_members
-        WHERE workspace_id = :workspace_id AND role != 'guest'
+        WHERE workspace_id = :workspace_id
+        AND role IN ('admin', 'member')
     `
 
 	params := map[string]any{

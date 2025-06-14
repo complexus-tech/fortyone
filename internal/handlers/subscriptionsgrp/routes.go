@@ -21,6 +21,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stripe/stripe-go/v82/client"
 )
@@ -33,6 +34,7 @@ type Config struct {
 	WebhookSecret string
 	Publisher     *publisher.Publisher
 	TasksService  *tasks.Service
+	SystemUserID  uuid.UUID
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -51,7 +53,7 @@ func Routes(cfg Config, app *web.App) {
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subsService)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subsService, nil, cfg.SystemUserID)
 
 	h := New(subsService, usersService, workspacesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)

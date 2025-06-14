@@ -20,6 +20,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/handlers/statesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/storiesgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/subscriptionsgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/teamsettingsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/teamsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/usersgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/workspacesgrp"
@@ -85,9 +86,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	// register the sprints routes
 	sprintsgrp.Routes(sprintsgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 	// register epics routes
@@ -127,6 +128,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		GoogleService: cfg.GoogleService,
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
+		AzureConfig:   cfg.AzureConfig,
 	}, app)
 
 	// register the workspaces routes
@@ -139,6 +141,8 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient:  cfg.StripeClient,
 		WebhookSecret: cfg.WebhookSecret,
 		TasksService:  cfg.TasksService,
+		SystemUserID:  cfg.SystemUserID,
+		AzureConfig:   cfg.AzureConfig,
 	}, app)
 
 	// register the comments routes
@@ -188,6 +192,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient: cfg.StripeClient,
 		StripeSecret: cfg.WebhookSecret,
 		TasksService: cfg.TasksService,
+		SystemUserID: cfg.SystemUserID,
 	}, app)
 
 	// register the search routes
@@ -206,6 +211,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		WebhookSecret: cfg.WebhookSecret,
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
+		SystemUserID:  cfg.SystemUserID,
 	}, app)
 
 	// register the sse routes
@@ -214,6 +220,14 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:  cfg.SecretKey,
 		SSEHub:     cfg.SSEHub,
 		CorsOrigin: cfg.CorsOrigin,
+	}, app)
+
+	// register the team settings routes
+	teamsettingsgrp.Routes(teamsettingsgrp.Config{
+		DB:           cfg.DB,
+		Log:          cfg.Log,
+		SecretKey:    cfg.SecretKey,
+		TasksService: cfg.TasksService,
 	}, app)
 
 }

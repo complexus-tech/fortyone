@@ -11,6 +11,7 @@ type AppWorkspace struct {
 	ID          uuid.UUID  `json:"id"`
 	Slug        string     `json:"slug"`
 	Name        string     `json:"name"`
+	AvatarURL   *string    `json:"avatarUrl"`
 	IsActive    bool       `json:"isActive"`
 	Color       string     `json:"color"`
 	UserRole    string     `json:"userRole"`
@@ -24,6 +25,7 @@ func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 		ID:          workspace.ID,
 		Slug:        workspace.Slug,
 		Name:        workspace.Name,
+		AvatarURL:   workspace.AvatarURL,
 		IsActive:    workspace.IsActive,
 		Color:       workspace.Color,
 		UserRole:    workspace.UserRole,

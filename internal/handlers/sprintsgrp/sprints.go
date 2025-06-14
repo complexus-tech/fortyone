@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -41,7 +42,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	sprints, err := h.sprints.List(ctx, workspaceId, filters)
+	userID, _ := mid.GetUserID(ctx)
+
+	sprints, err := h.sprints.List(ctx, workspaceId, userID, filters)
 	if err != nil {
 		return err
 	}
@@ -57,11 +60,59 @@ func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.R
 		return ErrInvalidWorkspaceID
 	}
 
-	sprints, err := h.sprints.Running(ctx, workspaceId)
+	userID, _ := mid.GetUserID(ctx)
+
+	sprints, err := h.sprints.Running(ctx, workspaceId, userID)
 	if err != nil {
 		return err
 	}
 	web.Respond(ctx, w, toAppSprints(sprints), http.StatusOK)
+	return nil
+}
+
+// GetByID returns a single sprint by ID without stats.
+func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return ErrInvalidWorkspaceID
+	}
+
+	sprintIdParam := web.Params(r, "sprintId")
+	sprintId, err := uuid.Parse(sprintIdParam)
+	if err != nil {
+		return errors.New("sprint id is not in its proper form")
+	}
+
+	sprint, err := h.sprints.GetByID(ctx, sprintId, workspaceId)
+	if err != nil {
+		return err
+	}
+
+	web.Respond(ctx, w, toAppSprint(sprint), http.StatusOK)
+	return nil
+}
+
+// GetAnalytics returns analytics data for a sprint.
+func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		return ErrInvalidWorkspaceID
+	}
+
+	sprintIdParam := web.Params(r, "sprintId")
+	sprintId, err := uuid.Parse(sprintIdParam)
+	if err != nil {
+		return errors.New("sprint id is not in its proper form")
+	}
+
+	analytics, err := h.sprints.GetAnalytics(ctx, sprintId, workspaceId)
+	if err != nil {
+		return err
+	}
+
+	web.Respond(ctx, w, toAppSprintAnalytics(analytics), http.StatusOK)
 	return nil
 }
 
@@ -116,8 +167,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	userID, _ := mid.GetUserID(ctx)
+
 	// First get the sprint to verify it belongs to the workspace
-	existingSprints, err := h.sprints.List(ctx, workspaceId, map[string]any{"sprint_id": sprintId})
+	existingSprints, err := h.sprints.List(ctx, workspaceId, userID, map[string]any{"sprint_id": sprintId})
 	if err != nil {
 		return err
 	}
