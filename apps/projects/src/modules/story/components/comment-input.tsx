@@ -126,10 +126,6 @@ export const CommentInput = ({
                   interactive: true,
                   trigger: "manual",
                   placement: "bottom-start",
-                  zIndex: 9999,
-                  hideOnClick: false,
-                  arrow: false,
-                  offset: [0, 8],
                 });
               },
 
