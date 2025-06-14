@@ -86,7 +86,9 @@ export const Sidebar = () => {
                 <PlusIcon />
                 Invite members
               </button>
-            ) : null}
+            ) : (
+              <Box />
+            )}
 
             <Menu>
               <Menu.Button>
