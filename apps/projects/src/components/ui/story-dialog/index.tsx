@@ -122,7 +122,7 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-[2] bg-white/80 px-10 py-4 backdrop-blur dark:bg-dark-300/80"
+                className="sticky top-0 z-[2] bg-white/80 px-10 py-5 backdrop-blur dark:bg-dark-300/80"
                 gap={2}
                 justify="between"
               >
