@@ -45,7 +45,7 @@ type Repository interface {
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
-	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, int, error)
+	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -488,14 +488,14 @@ func (s *Service) ListGroupedStories(ctx context.Context, query CoreStoryQuery) 
 }
 
 // ListGroupStories returns more stories for a specific group (for load more functionality)
-func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, int, error) {
+func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.services.stories.ListGroupStories")
 	defer span.End()
 
-	stories, total, err := s.repo.ListGroupStories(ctx, groupKey, query)
+	stories, hasMore, err := s.repo.ListGroupStories(ctx, groupKey, query)
 	if err != nil {
-		return nil, 0, fmt.Errorf("listing group stories: %w", err)
+		return nil, false, fmt.Errorf("listing group stories: %w", err)
 	}
 
-	return stories, total, nil
+	return stories, hasMore, nil
 }

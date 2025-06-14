@@ -863,7 +863,7 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 	coreQuery.Filters.WorkspaceID = workspaceId
 
 	// Fetch stories for the specific group
-	stories, total, err := h.stories.ListGroupStories(ctx, groupKey, coreQuery)
+	stories, hasMore, err := h.stories.ListGroupStories(ctx, groupKey, coreQuery)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -873,7 +873,6 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 	appStories := toAppStories(stories)
 
 	// Calculate pagination info
-	hasMore := total > (query.Page * query.PageSize)
 	nextPage := query.Page + 1
 	if !hasMore {
 		nextPage = 0
@@ -899,129 +898,104 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 		Filters: StoryFilters{},
 	}
 
-	// Parse group by
-	query.GroupBy = r.URL.Query().Get("groupBy")
-	if query.GroupBy == "" {
-		query.GroupBy = "status" // Default grouping
-	}
-
-	// Parse stories per group
-	if spg := r.URL.Query().Get("storiesPerGroup"); spg != "" {
-		if val, err := strconv.Atoi(spg); err == nil {
-			query.StoriesPerGroup = val
-		}
-	}
-
-	// Parse page
-	if page := r.URL.Query().Get("page"); page != "" {
-		if val, err := strconv.Atoi(page); err == nil {
-			query.Page = val
-		}
-	}
-	if query.Page == 0 {
-		query.Page = 1
-	}
-
-	// Parse page size
-	if pageSize := r.URL.Query().Get("pageSize"); pageSize != "" {
-		if val, err := strconv.Atoi(pageSize); err == nil {
-			query.PageSize = val
-		}
-	}
-
-	// Parse group key
+	// Parse simple string parameters
+	query.GroupBy = getStringParam(r, "groupBy", "status")
 	query.GroupKey = r.URL.Query().Get("groupKey")
 
-	// Parse filters
-	if statusIds := r.URL.Query()["statusIds"]; len(statusIds) > 0 {
-		for _, id := range statusIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.StatusIDs = append(query.Filters.StatusIDs, parsed)
-			}
-		}
-	}
+	// Parse integer parameters
+	query.StoriesPerGroup = getIntParam(r, "storiesPerGroup", 0)
+	query.Page = getIntParam(r, "page", 1)
+	query.PageSize = getIntParam(r, "pageSize", 0)
 
-	if assigneeIds := r.URL.Query()["assigneeIds"]; len(assigneeIds) > 0 {
-		for _, id := range assigneeIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.AssigneeIDs = append(query.Filters.AssigneeIDs, parsed)
-			}
-		}
-	}
+	// Parse array filters using helper functions
+	query.Filters.StatusIDs = parseUUIDArray(r, "statusIds")
+	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
+	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
+	query.Filters.TeamIDs = parseUUIDArray(r, "teamIds")
+	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
+	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
 
-	if reporterIds := r.URL.Query()["reporterIds"]; len(reporterIds) > 0 {
-		for _, id := range reporterIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.ReporterIDs = append(query.Filters.ReporterIDs, parsed)
-			}
-		}
-	}
+	// Parse string arrays (comma-separated)
+	query.Filters.Priorities = parseStringArray(r, "priorities")
 
-	if priorities := r.URL.Query()["priorities"]; len(priorities) > 0 {
-		query.Filters.Priorities = priorities
-	}
+	// Parse single UUID parameters
+	query.Filters.Parent = parseUUIDParam(r, "parentId")
+	query.Filters.Objective = parseUUIDParam(r, "objectiveId")
+	query.Filters.Epic = parseUUIDParam(r, "epicId")
 
-	if teamIds := r.URL.Query()["teamIds"]; len(teamIds) > 0 {
-		for _, id := range teamIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.TeamIDs = append(query.Filters.TeamIDs, parsed)
-			}
-		}
-	}
-
-	if sprintIds := r.URL.Query()["sprintIds"]; len(sprintIds) > 0 {
-		for _, id := range sprintIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.SprintIDs = append(query.Filters.SprintIDs, parsed)
-			}
-		}
-	}
-
-	if labelIds := r.URL.Query()["labelIds"]; len(labelIds) > 0 {
-		for _, id := range labelIds {
-			if parsed, err := uuid.Parse(id); err == nil {
-				query.Filters.LabelIDs = append(query.Filters.LabelIDs, parsed)
-			}
-		}
-	}
-
-	if parentId := r.URL.Query().Get("parentId"); parentId != "" {
-		if parsed, err := uuid.Parse(parentId); err == nil {
-			query.Filters.Parent = &parsed
-		}
-	}
-
-	if objectiveId := r.URL.Query().Get("objectiveId"); objectiveId != "" {
-		if parsed, err := uuid.Parse(objectiveId); err == nil {
-			query.Filters.Objective = &parsed
-		}
-	}
-
-	if epicId := r.URL.Query().Get("epicId"); epicId != "" {
-		if parsed, err := uuid.Parse(epicId); err == nil {
-			query.Filters.Epic = &parsed
-		}
-	}
-
-	if hasNoAssignee := r.URL.Query().Get("hasNoAssignee"); hasNoAssignee != "" {
-		if val, err := strconv.ParseBool(hasNoAssignee); err == nil {
-			query.Filters.HasNoAssignee = &val
-		}
-	}
-
-	if assignedToMe := r.URL.Query().Get("assignedToMe"); assignedToMe != "" {
-		if val, err := strconv.ParseBool(assignedToMe); err == nil {
-			query.Filters.AssignedToMe = &val
-		}
-	}
-
-	if createdByMe := r.URL.Query().Get("createdByMe"); createdByMe != "" {
-		if val, err := strconv.ParseBool(createdByMe); err == nil {
-			query.Filters.CreatedByMe = &val
-		}
-	}
+	// Parse boolean parameters
+	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
+	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
+	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 
 	return query, nil
+}
+
+// Helper functions for parameter parsing
+func getStringParam(r *http.Request, key, defaultValue string) string {
+	if value := r.URL.Query().Get(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getIntParam(r *http.Request, key string, defaultValue int) int {
+	if value := r.URL.Query().Get(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
+	}
+	return defaultValue
+}
+
+func parseUUIDArray(r *http.Request, key string) []uuid.UUID {
+	values := r.URL.Query()[key]
+	if len(values) == 0 {
+		return nil
+	}
+
+	var result []uuid.UUID
+	for _, value := range values {
+		if parsed, err := uuid.Parse(value); err == nil {
+			result = append(result, parsed)
+		}
+	}
+	return result
+}
+
+func parseStringArray(r *http.Request, key string) []string {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return nil
+	}
+
+	// Support comma-separated format: priorities=high,medium,low
+	parts := strings.Split(value, ",")
+	var result []string
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
+func parseUUIDParam(r *http.Request, key string) *uuid.UUID {
+	if value := r.URL.Query().Get(key); value != "" {
+		if parsed, err := uuid.Parse(value); err == nil {
+			return &parsed
+		}
+	}
+	return nil
+}
+
+func parseBoolParam(r *http.Request, key string) *bool {
+	if value := r.URL.Query().Get(key); value != "" {
+		if parsed, err := strconv.ParseBool(value); err == nil {
+			return &parsed
+		}
+	}
+	return nil
 }
 
 // toCoreStoryQuery converts a handler StoryQuery to a core CoreStoryQuery

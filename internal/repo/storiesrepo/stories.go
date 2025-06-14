@@ -1212,6 +1212,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	groupColumn := r.getGroupColumn(query.GroupBy)
 	limit := query.StoriesPerGroup + 1 // Fetch one extra to check if more exist
 
+	// Build the FROM clause with necessary joins
+	fromClause := "FROM stories s"
+
 	// Simplified query without expensive COUNT() operations
 	sqlQuery := fmt.Sprintf(`
 		WITH grouped_stories AS (
@@ -1228,7 +1231,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.updated_at,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY s.created_at DESC) as row_num
-			FROM stories s
+			%s
 			%s
 		),
 		limited_stories AS (
@@ -1259,6 +1262,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		GROUP BY group_key
 		ORDER BY group_key`,
 		groupColumn, groupColumn,
+		fromClause,
 		r.buildSimpleWhereClause(query.Filters),
 		limit)
 
@@ -1283,7 +1287,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	// Convert results to CoreStoryGroup
 	var groups []stories.CoreStoryGroup
 	for _, result := range results {
-		var storyMaps []map[string]interface{}
+		var storyMaps []map[string]any
 		if err := json.Unmarshal(result.StoriesJSON, &storyMaps); err != nil {
 			r.log.Error(ctx, "failed to unmarshal stories JSON", "error", err)
 			continue
@@ -1329,6 +1333,7 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		"s.workspace_id = :workspace_id",
 		"s.deleted_at IS NULL",
 		"s.parent_id IS NULL",
+		"s.archived_at IS NULL",
 	}
 
 	// Add filter conditions
@@ -1364,10 +1369,6 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
 	}
 
-	if filters.Epic != nil {
-		whereClauses = append(whereClauses, "s.epic_id = :epic_id")
-	}
-
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
@@ -1384,10 +1385,10 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 }
 
 // mapToStoryList converts a map to CoreStoryList
-func (r *repo) mapToStoryList(storyMap map[string]interface{}) stories.CoreStoryList {
+func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	story := stories.CoreStoryList{
-		Labels:     []uuid.UUID{},             // Empty for now since we're focusing on performance
-		SubStories: []stories.CoreStoryList{}, // Empty for now since we're focusing on performance
+		Labels:     []uuid.UUID{},
+		SubStories: []stories.CoreStoryList{},
 	}
 
 	// Helper function to safely convert values
@@ -1505,99 +1506,36 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 		"current_user_id": filters.CurrentUserID,
 	}
 
+	// Direct assignment - let database driver handle array conversion
 	if len(filters.StatusIDs) > 0 {
-		// Convert to PostgreSQL array format
-		statusArray := "{"
-		for i, id := range filters.StatusIDs {
-			if i > 0 {
-				statusArray += ","
-			}
-			statusArray += id.String()
-		}
-		statusArray += "}"
-		params["status_ids"] = statusArray
+		params["status_ids"] = filters.StatusIDs
 	}
-
 	if len(filters.AssigneeIDs) > 0 {
-		assigneeArray := "{"
-		for i, id := range filters.AssigneeIDs {
-			if i > 0 {
-				assigneeArray += ","
-			}
-			assigneeArray += id.String()
-		}
-		assigneeArray += "}"
-		params["assignee_ids"] = assigneeArray
+		params["assignee_ids"] = filters.AssigneeIDs
 	}
-
 	if len(filters.ReporterIDs) > 0 {
-		reporterArray := "{"
-		for i, id := range filters.ReporterIDs {
-			if i > 0 {
-				reporterArray += ","
-			}
-			reporterArray += id.String()
-		}
-		reporterArray += "}"
-		params["reporter_ids"] = reporterArray
+		params["reporter_ids"] = filters.ReporterIDs
 	}
-
 	if len(filters.Priorities) > 0 {
-		priorityArray := "{"
-		for i, priority := range filters.Priorities {
-			if i > 0 {
-				priorityArray += ","
-			}
-			priorityArray += "\"" + priority + "\""
-		}
-		priorityArray += "}"
-		params["priorities"] = priorityArray
+		params["priorities"] = filters.Priorities
 	}
-
 	if len(filters.TeamIDs) > 0 {
-		teamArray := "{"
-		for i, id := range filters.TeamIDs {
-			if i > 0 {
-				teamArray += ","
-			}
-			teamArray += id.String()
-		}
-		teamArray += "}"
-		params["team_ids"] = teamArray
+		params["team_ids"] = filters.TeamIDs
 	}
-
 	if len(filters.SprintIDs) > 0 {
-		sprintArray := "{"
-		for i, id := range filters.SprintIDs {
-			if i > 0 {
-				sprintArray += ","
-			}
-			sprintArray += id.String()
-		}
-		sprintArray += "}"
-		params["sprint_ids"] = sprintArray
+		params["sprint_ids"] = filters.SprintIDs
 	}
-
 	if len(filters.LabelIDs) > 0 {
-		labelArray := "{"
-		for i, id := range filters.LabelIDs {
-			if i > 0 {
-				labelArray += ","
-			}
-			labelArray += id.String()
-		}
-		labelArray += "}"
-		params["label_ids"] = labelArray
+		params["label_ids"] = filters.LabelIDs
 	}
 
+	// Single value parameters
 	if filters.Parent != nil {
 		params["parent_id"] = *filters.Parent
 	}
-
 	if filters.Objective != nil {
 		params["objective_id"] = *filters.Objective
 	}
-
 	if filters.Epic != nil {
 		params["epic_id"] = *filters.Epic
 	}
@@ -1857,7 +1795,7 @@ func (r *repo) getGroupKey(story dbStory, groupBy string) string {
 }
 
 // ListGroupStories returns more stories for a specific group (for load more functionality)
-func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stories.CoreStoryQuery) ([]stories.CoreStoryList, int, error) {
+func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stories.CoreStoryQuery) ([]stories.CoreStoryList, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListGroupStories")
 	defer span.End()
 
@@ -1885,12 +1823,12 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 	var dbStories []dbStory
 	stmt, err := r.db.PrepareNamedContext(ctx, baseQuery)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to prepare stories query: %w", err)
+		return nil, false, fmt.Errorf("failed to prepare stories query: %w", err)
 	}
 	defer stmt.Close()
 
 	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
-		return nil, 0, fmt.Errorf("failed to get stories: %w", err)
+		return nil, false, fmt.Errorf("failed to get stories: %w", err)
 	}
 
 	// Check if there are more stories
@@ -1902,16 +1840,13 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 
 	coreStories := toCoreStories(dbStories)
 
-	// For load more, we return -1 as total count to indicate we don't need exact count
-	totalCount := -1
-
 	span.AddEvent("group stories retrieved.", trace.WithAttributes(
 		attribute.Int("stories.count", len(coreStories)),
 		attribute.String("group.key", groupKey),
 		attribute.Bool("has.more", hasMore),
 	))
 
-	return coreStories, totalCount, nil
+	return coreStories, hasMore, nil
 }
 
 // buildSimpleStoriesQuery builds a simplified query for list views without N+1 subqueries
@@ -2020,4 +1955,3 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	return query
 }
-
