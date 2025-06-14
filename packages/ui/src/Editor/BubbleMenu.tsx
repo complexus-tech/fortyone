@@ -12,11 +12,13 @@ import "@tiptap/extension-underline";
 import "@tiptap/extension-task-item";
 import "@tiptap/extension-task-list";
 import "@tiptap/extension-link";
+import "@tiptap/extension-heading";
 import { Editor } from "@tiptap/react";
 import { Flex } from "../Flex/Flex";
 import { Tooltip } from "../Tooltip/Tooltip";
 import { Button } from "../Button/Button";
 import { Box } from "../Box/Box";
+import { Text } from "../Text/Text";
 import { cn } from "lib";
 import {
   BoldIcon,
@@ -71,7 +73,7 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-lg border border-gray-100 bg-white/80 px-2 py-1.5 backdrop-blur dark:border-dark-100 dark:bg-dark-200/80",
+          "w-max rounded-xl border border-gray-100 bg-white/90 px-2 py-1.5 backdrop-blur dark:border-dark-50 dark:bg-dark-200/95",
           {
             hidden: isLinkOpen,
           }
@@ -86,7 +88,11 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
-            <BoldIcon className="h-5 w-auto" />
+            <BoldIcon
+              className={cn("h-5 w-auto", {
+                "text-dark dark:text-gray-200": editor.isActive("bold"),
+              })}
+            />
           </Button>
         </Tooltip>
         <Tooltip title="Italic">
@@ -97,7 +103,11 @@ export const BubbleMenu = ({
             variant="naked"
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
-            <ItalicIcon className="h-5 w-auto" />
+            <ItalicIcon
+              className={cn("h-5 w-auto", {
+                "text-dark dark:text-gray-200": editor.isActive("italic"),
+              })}
+            />
           </Button>
         </Tooltip>
         <Tooltip title="Underline">
@@ -131,6 +141,67 @@ export const BubbleMenu = ({
             onClick={() => setIsLinkOpen(true)}
           >
             <LinkIcon className="h-5 w-auto" />
+          </Button>
+        </Tooltip>
+        <span className="opacity-30">|</span>
+        <Tooltip title="Heading 1">
+          <Button
+            active={editor.isActive("heading", { level: 1 })}
+            color="tertiary"
+            size="sm"
+            variant="naked"
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
+          >
+            <Text as="span" color="muted">
+              H1
+            </Text>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Heading 2">
+          <Button
+            active={editor.isActive("heading", { level: 2 })}
+            color="tertiary"
+            size="sm"
+            variant="naked"
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
+          >
+            <Text as="span" color="muted">
+              H2
+            </Text>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Heading 3">
+          <Button
+            active={editor.isActive("heading", { level: 3 })}
+            color="tertiary"
+            size="sm"
+            variant="naked"
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+          >
+            <Text as="span" color="muted">
+              H3
+            </Text>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Heading 4">
+          <Button
+            active={editor.isActive("heading", { level: 4 })}
+            color="tertiary"
+            size="sm"
+            variant="naked"
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 4 }).run()
+            }
+          >
+            <Text as="span" color="muted">
+              H4
+            </Text>
           </Button>
         </Tooltip>
         <span className="opacity-30">|</span>
