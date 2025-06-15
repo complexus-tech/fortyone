@@ -1466,6 +1466,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if len(filters.TeamIDs) > 0 {
 		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	} else {
+		// If no specific teams are provided, only show stories from teams user is a member of
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
 
 	if len(filters.SprintIDs) > 0 {
@@ -1749,6 +1752,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if len(filters.TeamIDs) > 0 {
 		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	} else {
+		// If no specific teams are provided, only show stories from teams user is a member of
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
 
 	if len(filters.SprintIDs) > 0 {
@@ -2024,6 +2030,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if len(filters.TeamIDs) > 0 {
 		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
+	} else {
+		// If no specific teams are provided, only show stories from teams user is a member of
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
 
 	if len(filters.SprintIDs) > 0 {
