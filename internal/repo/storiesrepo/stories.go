@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -1977,13 +1978,59 @@ func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGrou
 		}
 	}
 
-	// Convert map to slice
+	// Convert map to slice and sort according to group type
 	var groups []stories.CoreStoryGroup
 	for _, group := range groupMap {
 		groups = append(groups, *group)
 	}
 
+	// Sort groups according to the same logic as SQL-based grouping
+	r.sortGroups(groups, groupBy)
+
 	return groups
+}
+
+// sortGroups sorts groups according to the same logic as SQL-based grouping
+func (r *repo) sortGroups(groups []stories.CoreStoryGroup, groupBy string) {
+	sort.Slice(groups, func(i, j int) bool {
+		sortOrderI := r.getGroupSortOrder(groups[i].Key, groupBy)
+		sortOrderJ := r.getGroupSortOrder(groups[j].Key, groupBy)
+
+		// First sort by sort order, then by group key for consistent ordering
+		if sortOrderI != sortOrderJ {
+			return sortOrderI < sortOrderJ
+		}
+		return groups[i].Key < groups[j].Key
+	})
+}
+
+// getGroupSortOrder returns the sort order for a group key based on group type
+func (r *repo) getGroupSortOrder(groupKey, groupBy string) int {
+	switch groupBy {
+	case "priority":
+		switch groupKey {
+		case "Urgent":
+			return 1
+		case "High":
+			return 2
+		case "Medium":
+			return 3
+		case "Low":
+			return 4
+		case "No Priority":
+			return 5
+		default:
+			return 6
+		}
+	case "status":
+		// For status, we can't easily get order_index in Go grouping without additional DB call
+		// So we'll just use alphabetical for now (SQL grouping will still use proper order_index)
+		// This fallback is only used for complex grouping scenarios anyway
+		return 0
+	default:
+		// For assignee, team, sprint - use alphabetical ordering
+		return 0
+	}
 }
 
 // getGroupKey extracts the group key from a story
