@@ -9,7 +9,10 @@ import { useSprintOptions } from "./provider";
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { sprintId } = useParams<{ sprintId: string }>();
   const { viewOptions } = useSprintOptions();
-  const { data: groupedStories, isPending } = useSprintStoriesGrouped(sprintId);
+  const { data: groupedStories, isPending } = useSprintStoriesGrouped(
+    sprintId,
+    viewOptions.groupBy,
+  );
 
   if (isPending) {
     return <StoriesSkeleton layout={layout} />;
@@ -19,7 +22,6 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     <StoriesBoard
       groupedStories={groupedStories}
       layout={layout}
-      stories={[]}
       viewOptions={viewOptions}
     />
   );

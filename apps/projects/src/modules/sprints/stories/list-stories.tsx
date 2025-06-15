@@ -3,7 +3,6 @@
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
-import { useSprintStories } from "@/modules/stories/hooks/sprint-stories";
 import { useSprint } from "../hooks/sprint-details";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
@@ -20,10 +19,9 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
     "team:sprints:stories:isExpanded",
     true,
   );
-  const { isPending: isSprintStoriesPending } = useSprintStories(sprintId);
   const { isPending: isSprintPending } = useSprint(sprintId);
 
-  if (isSprintStoriesPending || isSprintPending) {
+  if (isSprintPending) {
     return <StoriesSkeleton layout={layout} />;
   }
 

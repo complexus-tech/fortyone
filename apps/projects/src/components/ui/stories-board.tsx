@@ -127,14 +127,12 @@ const EmptyState = ({
 export const StoriesBoard = ({
   isInSearch,
   layout,
-  stories,
   groupedStories,
   className,
   viewOptions,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
-  stories: Story[];
   groupedStories?: GroupedStoriesResponse;
   className?: string;
   viewOptions: StoriesViewOptions;
@@ -166,8 +164,12 @@ export const StoriesBoard = ({
   );
 
   const handleDragStart = (e: DragStartEvent) => {
-    const story = stories.find(({ id }) => id === e.active.id)!;
-    setActiveStory(story);
+    const storyId = e.active.id.toString();
+    // get the story from groupedStories
+    const story = groupedStories?.groups
+      .flatMap((group) => group.stories)
+      .find((story) => story.id === storyId);
+    setActiveStory(story!);
   };
 
   const handleDragEnd = useCallback(

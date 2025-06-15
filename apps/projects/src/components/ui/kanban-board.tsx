@@ -39,7 +39,7 @@ const GroupedKanbanHeader = ({
       case "status":
         return { status: statuses.find((status) => status.id === group.key) };
       case "assignee":
-        return { assignee: members.find((member) => member.id === group.key) };
+        return { member: members.find((member) => member.id === group.key) };
     }
   };
 
@@ -73,7 +73,7 @@ const GroupedKanbanStories = ({
       case "status":
         return { status: statuses.find((status) => status.id === group.key) };
       case "assignee":
-        return { assignee: members.find((member) => member.id === group.key) };
+        return { member: members.find((member) => member.id === group.key) };
     }
   };
 
