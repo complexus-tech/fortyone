@@ -35,7 +35,7 @@ export const useSprintStoriesGrouped = (
   return useQuery({
     queryKey,
     queryFn: () => getGroupedStories(session!, params),
-    enabled: Boolean(session && sprintId),
+    enabled: Boolean(sprintId),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };

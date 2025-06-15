@@ -1,7 +1,7 @@
 "use client";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
-import { useObjectiveStories } from "@/modules/stories/hooks/objective-stories";
+import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objective-stories-grouped";
 import { useObjective } from "../hooks";
 import { ObjectiveOptionsProvider } from "./provider";
 import { AllStories } from "./all-stories";
@@ -14,7 +14,8 @@ export const ListStories = ({ objectiveId }: { objectiveId: string }) => {
     "list",
   );
   const { isPending: isObjectivePending } = useObjective(objectiveId);
-  const { isPending: isStoriesPending } = useObjectiveStories(objectiveId);
+  const { isPending: isStoriesPending, data: groupedStories } =
+    useObjectiveStoriesGrouped(objectiveId);
 
   if (isObjectivePending || isStoriesPending) {
     return <ObjectivePageSkeleton layout={layout} />;
@@ -23,7 +24,7 @@ export const ListStories = ({ objectiveId }: { objectiveId: string }) => {
   return (
     <ObjectiveOptionsProvider>
       <Header layout={layout} setLayout={setLayout} />
-      <AllStories layout={layout} />
+      <AllStories groupedStories={groupedStories} layout={layout} />
     </ObjectiveOptionsProvider>
   );
 };

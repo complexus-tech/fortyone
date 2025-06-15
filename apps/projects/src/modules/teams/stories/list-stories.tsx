@@ -2,14 +2,12 @@
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
 import { Sidebar } from "./sidebar";
 import { TeamOptionsProvider } from "./provider";
 import { Header } from "./header";
 import { AllStories } from "./all-stories";
-import { StoriesSkeleton } from "./stories-skeleton";
 
-export const ListStories = ({ teamId }: { teamId: string }) => {
+export const ListStories = () => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:stories:layout",
     "list",
@@ -18,10 +16,6 @@ export const ListStories = ({ teamId }: { teamId: string }) => {
     "teams:stories:expanded",
     false,
   );
-  const { isPending } = useTeamStories(teamId);
-  if (isPending) {
-    return <StoriesSkeleton layout={layout} />;
-  }
 
   return (
     <TeamOptionsProvider>

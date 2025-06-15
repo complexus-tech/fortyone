@@ -19,8 +19,8 @@ export const SprintStoriesProvider = ({
   children: ReactNode;
 }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
+    groupBy: "status",
+    orderBy: "priority",
     showEmptyGroups: true,
     displayColumns: [
       "ID",
