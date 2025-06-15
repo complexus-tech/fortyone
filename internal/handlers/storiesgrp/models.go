@@ -247,6 +247,8 @@ type StoryFilters struct {
 type StoryQuery struct {
 	Filters         StoryFilters `json:"filters"`
 	GroupBy         string       `json:"groupBy"`
+	OrderBy         string       `json:"orderBy"`
+	OrderDirection  string       `json:"orderDirection"`
 	StoriesPerGroup int          `json:"storiesPerGroup"`
 	GroupKey        string       `json:"groupKey"`
 	Page            int          `json:"page"`
@@ -264,9 +266,11 @@ type StoryGroup struct {
 
 // GroupsMeta represents metadata for grouped stories response
 type GroupsMeta struct {
-	TotalGroups int          `json:"totalGroups"`
-	Filters     StoryFilters `json:"filters"`
-	GroupBy     string       `json:"groupBy"`
+	TotalGroups    int          `json:"totalGroups"`
+	Filters        StoryFilters `json:"filters"`
+	GroupBy        string       `json:"groupBy"`
+	OrderBy        string       `json:"orderBy"`
+	OrderDirection string       `json:"orderDirection"`
 }
 
 // StoriesResponse represents the response for stories (grouped or regular)
@@ -286,10 +290,12 @@ type GroupPagination struct {
 
 // GroupStoriesResponse represents the response for loading more stories in a group
 type GroupStoriesResponse struct {
-	GroupKey   string          `json:"groupKey"`
-	Stories    []AppStoryList  `json:"stories"`
-	Pagination GroupPagination `json:"pagination"`
-	Filters    StoryFilters    `json:"filters"`
+	GroupKey       string          `json:"groupKey"`
+	Stories        []AppStoryList  `json:"stories"`
+	Pagination     GroupPagination `json:"pagination"`
+	Filters        StoryFilters    `json:"filters"`
+	OrderBy        string          `json:"orderBy"`
+	OrderDirection string          `json:"orderDirection"`
 }
 
 // CategoryPagination represents pagination info for category stories

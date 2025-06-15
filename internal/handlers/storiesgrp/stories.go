@@ -943,7 +943,9 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 			HasMore:  hasMore,
 			NextPage: nextPage,
 		},
-		Filters: query.Filters,
+		Filters:        query.Filters,
+		OrderBy:        query.OrderBy,
+		OrderDirection: query.OrderDirection,
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
@@ -1040,7 +1042,19 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 
 	// Parse simple string parameters
 	query.GroupBy = getStringParam(r, "groupBy", "status")
+	query.OrderBy = getStringParam(r, "orderBy", "created")
+	query.OrderDirection = getStringParam(r, "orderDirection", "desc")
 	query.GroupKey = r.URL.Query().Get("groupKey")
+
+	// Validate orderBy values
+	if !isValidOrderBy(query.OrderBy) {
+		return query, fmt.Errorf("invalid orderBy value: %s. Must be one of: created, updated, priority, deadline", query.OrderBy)
+	}
+
+	// Validate orderDirection values
+	if !isValidOrderDirection(query.OrderDirection) {
+		return query, fmt.Errorf("invalid orderDirection value: %s. Must be asc or desc", query.OrderDirection)
+	}
 
 	// Parse integer parameters
 	query.StoriesPerGroup = getIntParam(r, "storiesPerGroup", 0)
@@ -1138,6 +1152,22 @@ func parseBoolParam(r *http.Request, key string) *bool {
 	return nil
 }
 
+// isValidOrderBy validates the orderBy parameter
+func isValidOrderBy(orderBy string) bool {
+	validValues := []string{"created", "updated", "priority", "deadline"}
+	for _, v := range validValues {
+		if v == orderBy {
+			return true
+		}
+	}
+	return false
+}
+
+// isValidOrderDirection validates the orderDirection parameter
+func isValidOrderDirection(direction string) bool {
+	return direction == "asc" || direction == "desc"
+}
+
 // toCoreStoryQuery converts a handler StoryQuery to a core CoreStoryQuery
 func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	return stories.CoreStoryQuery{
@@ -1159,6 +1189,8 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			WorkspaceID:   uuid.Nil, // Will be set in handler
 		},
 		GroupBy:         query.GroupBy,
+		OrderBy:         query.OrderBy,
+		OrderDirection:  query.OrderDirection,
 		StoriesPerGroup: query.StoriesPerGroup,
 		GroupKey:        query.GroupKey,
 		Page:            query.Page,
@@ -1184,9 +1216,11 @@ func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) 
 	return StoriesResponse{
 		Groups: appGroups,
 		Meta: GroupsMeta{
-			TotalGroups: len(appGroups),
-			Filters:     query.Filters,
-			GroupBy:     query.GroupBy,
+			TotalGroups:    len(appGroups),
+			Filters:        query.Filters,
+			GroupBy:        query.GroupBy,
+			OrderBy:        query.OrderBy,
+			OrderDirection: query.OrderDirection,
 		},
 	}
 }

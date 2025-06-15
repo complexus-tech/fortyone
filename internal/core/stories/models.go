@@ -174,6 +174,8 @@ type CoreStoryFilters struct {
 type CoreStoryQuery struct {
 	Filters         CoreStoryFilters `json:"filters"`
 	GroupBy         string           `json:"groupBy"`
+	OrderBy         string           `json:"orderBy"`
+	OrderDirection  string           `json:"orderDirection"`
 	StoriesPerGroup int              `json:"storiesPerGroup"`
 	GroupKey        string           `json:"groupKey"`
 	Page            int              `json:"page"`

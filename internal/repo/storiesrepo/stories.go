@@ -1308,6 +1308,12 @@ func (r *repo) shouldUseSQLGrouping(query stories.CoreStoryQuery) bool {
 	}
 }
 
+// shouldUseSimpleOrdering determines if we can use a simpler ordering approach
+func (r *repo) shouldUseSimpleOrdering(orderBy string) bool {
+	// Simple orderings that can use indexes efficiently
+	return orderBy == "created" || orderBy == "updated"
+}
+
 // listGroupedStoriesSQL performs grouping directly in SQL for optimal performance
 func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesSQL")
@@ -1319,6 +1325,36 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	// Build the all groups CTE based on group type
 	allGroupsCTE := r.buildAllGroupsCTE(query.GroupBy, query.Filters)
 	groupColumn := r.getGroupColumn(query.GroupBy)
+	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
+
+	// For simple ordering (created, updated), we can use a more efficient approach
+	var rowNumberOrder string
+	var jsonAggOrder string
+
+	if query.OrderBy == "created" || query.OrderBy == "updated" {
+		// Use simple column ordering for better performance
+		if query.OrderBy == "created" {
+			if query.OrderDirection == "asc" {
+				rowNumberOrder = "s.created_at ASC"
+				jsonAggOrder = "ls.created_at ASC"
+			} else {
+				rowNumberOrder = "s.created_at DESC"
+				jsonAggOrder = "ls.created_at DESC"
+			}
+		} else {
+			if query.OrderDirection == "asc" {
+				rowNumberOrder = "s.updated_at ASC"
+				jsonAggOrder = "ls.updated_at ASC"
+			} else {
+				rowNumberOrder = "s.updated_at DESC"
+				jsonAggOrder = "ls.updated_at DESC"
+			}
+		}
+	} else {
+		// Use complex ordering for priority and deadline
+		rowNumberOrder = orderByClause
+		jsonAggOrder = r.buildOrderByClauseWithAlias(query.OrderBy, query.OrderDirection, "ls")
+	}
 
 	// Simplified query that includes all possible groups
 	sqlQuery := fmt.Sprintf(`
@@ -1337,8 +1373,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.workspace_id,
 				s.created_at,
 				s.updated_at,
+				s.end_date,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
-				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY s.created_at DESC) as row_num
+				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
 			FROM stories s
 			%s
 		),
@@ -1361,8 +1398,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'team_id', ls.team_id,
 						'workspace_id', ls.workspace_id,
 						'created_at', ls.created_at,
-						'updated_at', ls.updated_at
-					) ORDER BY ls.created_at DESC
+						'updated_at', ls.updated_at,
+						'end_date', ls.end_date
+					) ORDER BY %s
 				) FILTER (WHERE ls.id IS NOT NULL), 
 				CAST('[]' AS json)
 			) as stories_json
@@ -1371,9 +1409,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		GROUP BY ag.group_key, ag.sort_order
 		ORDER BY ag.sort_order, ag.group_key`,
 		allGroupsCTE,
-		groupColumn, groupColumn,
+		groupColumn, groupColumn, rowNumberOrder,
 		r.buildSimpleWhereClause(query.Filters),
-		limit)
+		limit, jsonAggOrder)
 
 	params := r.buildQueryParams(query.Filters)
 
@@ -1734,6 +1772,53 @@ func (r *repo) getGroupColumn(groupBy string) string {
 	}
 }
 
+// buildOrderByClause builds the ORDER BY clause based on orderBy and orderDirection
+func (r *repo) buildOrderByClause(orderBy, orderDirection string) string {
+	return r.buildOrderByClauseWithAlias(orderBy, orderDirection, "s")
+}
+
+// buildOrderByClauseWithAlias builds the ORDER BY clause with a specific table alias
+func (r *repo) buildOrderByClauseWithAlias(orderBy, orderDirection, tableAlias string) string {
+	var column string
+	switch orderBy {
+	case "created":
+		column = fmt.Sprintf("%s.created_at", tableAlias)
+	case "updated":
+		column = fmt.Sprintf("%s.updated_at", tableAlias)
+	case "priority":
+		// Use a more efficient approach for priority ordering
+		// First sort by priority using a simple mapping, then by created_at for consistency
+		direction := "ASC"
+		if orderDirection == "desc" {
+			direction = "DESC"
+		}
+		return fmt.Sprintf(`CASE %s.priority
+			WHEN 'Urgent' THEN 1
+			WHEN 'High' THEN 2
+			WHEN 'Medium' THEN 3
+			WHEN 'Low' THEN 4
+			WHEN 'No Priority' THEN 5
+			ELSE 6
+		END %s, %s.created_at DESC`, tableAlias, direction, tableAlias)
+	case "deadline":
+		// Handle NULL values efficiently - put them last for both ASC and DESC
+		direction := "ASC"
+		if orderDirection == "desc" {
+			direction = "DESC"
+		}
+		return fmt.Sprintf("%s.end_date %s NULLS LAST, %s.created_at DESC", tableAlias, direction, tableAlias)
+	default:
+		column = fmt.Sprintf("%s.created_at", tableAlias)
+	}
+
+	direction := "DESC"
+	if orderDirection == "asc" {
+		direction = "ASC"
+	}
+
+	return fmt.Sprintf("%s %s", column, direction)
+}
+
 // buildQueryParams builds the parameter map for the SQL query
 func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any {
 	params := map[string]any{
@@ -1936,7 +2021,8 @@ func (r *repo) listGroupedStoriesGo(ctx context.Context, query stories.CoreStory
 	// TODO: Optimize with SQL-based grouping for better performance
 
 	baseQuery := r.buildStoriesQuery(query.Filters)
-	baseQuery += " ORDER BY s.created_at DESC"
+	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
+	baseQuery += fmt.Sprintf(" ORDER BY %s", orderByClause)
 
 	params := r.buildQueryParams(query.Filters)
 
@@ -1958,7 +2044,7 @@ func (r *repo) listGroupedStoriesGo(ctx context.Context, query stories.CoreStory
 	}
 
 	// Group stories in Go
-	groups := r.groupStories(allStories, query.GroupBy, query.StoriesPerGroup)
+	groups := r.groupStories(allStories, query.GroupBy, query.StoriesPerGroup, query.OrderBy, query.OrderDirection)
 
 	span.AddEvent("Go grouped stories retrieved.", trace.WithAttributes(
 		attribute.Int("groups.count", len(groups)),
@@ -1969,7 +2055,7 @@ func (r *repo) listGroupedStoriesGo(ctx context.Context, query stories.CoreStory
 }
 
 // groupStories groups stories by the specified field and limits stories per group
-func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGroup int) []stories.CoreStoryGroup {
+func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGroup int, orderBy, orderDirection string) []stories.CoreStoryGroup {
 	groupMap := make(map[string]*stories.CoreStoryGroup)
 
 	for _, story := range allStories {
@@ -2009,6 +2095,13 @@ func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGrou
 
 	// Sort groups according to the same logic as SQL-based grouping
 	r.sortGroups(groups, groupBy)
+
+	// Sort stories within each group (only if not using default ordering)
+	if orderBy != "created" || orderDirection != "desc" {
+		for i := range groups {
+			r.sortStoriesInGroup(&groups[i], orderBy, orderDirection)
+		}
+	}
 
 	return groups
 }
@@ -2053,6 +2146,79 @@ func (r *repo) getGroupSortOrder(groupKey, groupBy string) int {
 	default:
 		// For assignee, team, sprint - use alphabetical ordering
 		return 0
+	}
+}
+
+// sortStoriesInGroup sorts stories within a group based on orderBy and orderDirection
+func (r *repo) sortStoriesInGroup(group *stories.CoreStoryGroup, orderBy, orderDirection string) {
+	// Skip sorting if group is empty or has only one story
+	if len(group.Stories) <= 1 {
+		return
+	}
+
+	isAsc := orderDirection == "asc"
+
+	sort.Slice(group.Stories, func(i, j int) bool {
+		var compareResult int
+
+		switch orderBy {
+		case "created":
+			compareResult = group.Stories[i].CreatedAt.Compare(group.Stories[j].CreatedAt)
+		case "updated":
+			compareResult = group.Stories[i].UpdatedAt.Compare(group.Stories[j].UpdatedAt)
+		case "priority":
+			priorityOrderI := r.getPrioritySortOrder(group.Stories[i].Priority)
+			priorityOrderJ := r.getPrioritySortOrder(group.Stories[j].Priority)
+			compareResult = priorityOrderI - priorityOrderJ
+			// If priorities are equal, sort by created_at DESC for consistency
+			if compareResult == 0 {
+				compareResult = -group.Stories[i].CreatedAt.Compare(group.Stories[j].CreatedAt)
+			}
+		case "deadline":
+			// Handle nil end dates efficiently - put them last for both ASC and DESC
+			if group.Stories[i].EndDate == nil && group.Stories[j].EndDate == nil {
+				// Both nil, sort by created_at DESC for consistency
+				compareResult = -group.Stories[i].CreatedAt.Compare(group.Stories[j].CreatedAt)
+			} else if group.Stories[i].EndDate == nil {
+				compareResult = 1 // nil goes to end
+			} else if group.Stories[j].EndDate == nil {
+				compareResult = -1 // nil goes to end
+			} else {
+				compareResult = group.Stories[i].EndDate.Compare(*group.Stories[j].EndDate)
+				// If deadlines are equal, sort by created_at DESC for consistency
+				if compareResult == 0 {
+					compareResult = -group.Stories[i].CreatedAt.Compare(group.Stories[j].CreatedAt)
+				}
+			}
+		default:
+			// Default to created date
+			compareResult = group.Stories[i].CreatedAt.Compare(group.Stories[j].CreatedAt)
+		}
+
+		// Apply direction
+		if isAsc {
+			return compareResult < 0
+		} else {
+			return compareResult > 0
+		}
+	})
+}
+
+// getPrioritySortOrder returns the sort order for a priority value
+func (r *repo) getPrioritySortOrder(priority string) int {
+	switch priority {
+	case "Urgent":
+		return 1
+	case "High":
+		return 2
+	case "Medium":
+		return 3
+	case "Low":
+		return 4
+	case "No Priority":
+		return 5
+	default:
+		return 6
 	}
 }
 
@@ -2102,7 +2268,8 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 	// Get paginated stories - fetch one extra to check if there are more
 	pageSize := query.PageSize
 	offset := (query.Page - 1) * pageSize
-	baseQuery += fmt.Sprintf(" ORDER BY s.created_at DESC LIMIT %d OFFSET %d", pageSize+1, offset)
+	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
+	baseQuery += fmt.Sprintf(" ORDER BY %s LIMIT %d OFFSET %d", orderByClause, pageSize+1, offset)
 
 	params := r.buildQueryParams(query.Filters)
 	if groupKey != "null" && groupKey != "" {
