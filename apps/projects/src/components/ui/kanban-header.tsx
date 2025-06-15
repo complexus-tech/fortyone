@@ -32,21 +32,10 @@ export const StoriesKanbanHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
 
-  let filteredStories: Story[] = [];
-  if (groupBy === "Status") {
-    filteredStories = stories.filter((story) => story.statusId === status?.id);
-  } else if (groupBy === "Priority") {
-    filteredStories = stories.filter((story) => story.priority === priority);
-  } else if (groupBy === "Assignee") {
-    filteredStories = stories.filter(
-      (story) => story.assigneeId === member?.id,
-    );
-  }
-
   return (
     <Box
       className={cn({
-        hidden: filteredStories.length === 0 && !showEmptyGroups,
+        hidden: stories.length === 0 && !showEmptyGroups,
       })}
     >
       <Flex
@@ -57,19 +46,19 @@ export const StoriesKanbanHeader = ({
         key={status?.id}
       >
         <Flex align="center" gap={2}>
-          {groupBy === "Status" && (
+          {groupBy === "status" && (
             <>
               <StoryStatusIcon statusId={status?.id} />
               {status?.name}
             </>
           )}
-          {groupBy === "Priority" && (
+          {groupBy === "priority" && (
             <>
               <PriorityIcon priority={priority} />
               {priority}
             </>
           )}
-          {groupBy === "Assignee" && (
+          {groupBy === "assignee" && (
             <>
               <Avatar
                 className={cn({
@@ -88,7 +77,7 @@ export const StoriesKanbanHeader = ({
             </span>
           </Tooltip>
           <Text color="muted">
-            {filteredStories.length}{" "}
+            {stories.length}{" "}
             {getTermDisplay("storyTerm", { variant: "plural" })}
           </Text>
         </Flex>

@@ -165,13 +165,17 @@ export const StoriesViewOptionsButton = ({
             }}
             value={groupBy}
           >
-            <Select.Trigger className="w-32">
+            <Select.Trigger className="w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
             <Select.Content>
               <Select.Group>
                 {groupByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
+                  <Select.Option
+                    className="capitalize"
+                    key={option}
+                    value={option}
+                  >
                     {option}
                   </Select.Option>
                 ))}
@@ -190,13 +194,17 @@ export const StoriesViewOptionsButton = ({
             }}
             value={orderBy}
           >
-            <Select.Trigger className="w-32">
+            <Select.Trigger className="w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
             <Select.Content>
               <Select.Group>
                 {orderByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
+                  <Select.Option
+                    className="capitalize"
+                    key={option}
+                    value={option}
+                  >
                     {option}
                   </Select.Option>
                 ))}

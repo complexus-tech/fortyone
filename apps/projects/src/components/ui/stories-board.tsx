@@ -331,7 +331,10 @@ export const StoriesBoard = ({
             sensors={sensors}
           >
             {layout === "kanban" && (
-              <KanbanBoard className={className} stories={orderedStories} />
+              <KanbanBoard
+                className={className}
+                groupedStories={groupedStories!}
+              />
             )}
             {layout === "gantt" && (
               <GanttBoard className={className} stories={orderedStories} />

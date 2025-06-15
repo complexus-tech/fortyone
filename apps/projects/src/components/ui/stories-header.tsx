@@ -92,7 +92,7 @@ export const StoriesHeader = ({
             size="sm"
             variant="naked"
           >
-            {groupBy === "Assignee" && (
+            {groupBy === "assignee" && (
               <Flex align="center" className="gap-1.5">
                 <Avatar
                   className={cn({
@@ -112,13 +112,13 @@ export const StoriesHeader = ({
                 </Text>
               </Flex>
             )}
-            {groupBy === "Status" && (
+            {groupBy === "status" && (
               <>
                 <StoryStatusIcon statusId={status?.id} />
                 <Text fontWeight="medium">{status?.name}</Text>
               </>
             )}
-            {groupBy === "Priority" && (
+            {groupBy === "priority" && (
               <>
                 <PriorityIcon priority={priority} />
                 <Text fontWeight="medium">{priority}</Text>

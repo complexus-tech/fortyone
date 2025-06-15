@@ -55,7 +55,7 @@ export const KanbanGroup = ({
   status,
   priority,
   member,
-  groupBy = "Status",
+  groupBy = "status",
 }: {
   stories: Story[];
   status?: State;
@@ -66,20 +66,9 @@ export const KanbanGroup = ({
   const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
 
-  let filteredStories: Story[] = [];
-  if (groupBy === "Status") {
-    filteredStories = stories.filter((story) => story.statusId === status?.id);
-  } else if (groupBy === "Priority") {
-    filteredStories = stories.filter((story) => story.priority === priority);
-  } else if (groupBy === "Assignee") {
-    filteredStories = stories.filter(
-      (story) => story.assigneeId === member?.id,
-    );
-  }
-
   const getId = () => {
-    if (groupBy === "Status") return status?.id;
-    if (groupBy === "Assignee") return member?.id;
+    if (groupBy === "status") return status?.id;
+    if (groupBy === "assignee") return member?.id;
     return priority;
   };
 
@@ -92,8 +81,8 @@ export const KanbanGroup = ({
   };
 
   return (
-    <List id={id} key={id} totalStories={filteredStories.length}>
-      {filteredStories.map((story) => (
+    <List id={id} key={id} totalStories={stories.length}>
+      {stories.map((story) => (
         <StoryCard
           handleStoryClick={(storyId) => {
             setStoryId(storyId);
@@ -128,7 +117,7 @@ export const KanbanGroup = ({
           isOpen={isDialogOpen}
           onNavigate={handleNavigate}
           setIsOpen={setIsDialogOpen}
-          stories={filteredStories}
+          stories={stories}
           storyId={storyId}
         />
       ) : null}
