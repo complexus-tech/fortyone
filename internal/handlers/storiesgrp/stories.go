@@ -943,6 +943,7 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 			HasMore:  hasMore,
 			NextPage: nextPage,
 		},
+		Filters: query.Filters,
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)

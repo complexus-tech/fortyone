@@ -289,6 +289,7 @@ type GroupStoriesResponse struct {
 	GroupKey   string          `json:"groupKey"`
 	Stories    []AppStoryList  `json:"stories"`
 	Pagination GroupPagination `json:"pagination"`
+	Filters    StoryFilters    `json:"filters"`
 }
 
 // CategoryPagination represents pagination info for category stories
