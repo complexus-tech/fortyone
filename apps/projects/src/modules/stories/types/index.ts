@@ -36,3 +36,86 @@ export type StoryActivity = {
   currentValue: string;
   createdAt: string;
 };
+
+export type StoryGroup = {
+  key: string;
+  loadedCount: number;
+  hasMore: boolean;
+  stories: Story[];
+  nextPage: number;
+};
+
+export type StoryFilters = {
+  statusIds?: string[] | null;
+  assigneeIds?: string[] | null;
+  reporterIds?: string[] | null;
+  priorities?: string[] | null;
+  teamIds?: string[] | null;
+  sprintIds?: string[] | null;
+  labelIds?: string[] | null;
+  parentId?: string | null;
+  objectiveId?: string | null;
+  epicId?: string | null;
+  hasNoAssignee?: boolean | null;
+  assignedToMe?: boolean;
+  createdByMe?: boolean;
+};
+
+export type GroupedStoriesResponse = {
+  groups: StoryGroup[];
+  meta: {
+    totalGroups: number;
+    filters: StoryFilters;
+    groupBy: string;
+  };
+};
+
+export type GroupStoriesResponse = {
+  groupKey: string;
+  stories: Story[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+  filters: StoryFilters;
+};
+
+export type GroupedStoryParams = {
+  groupBy: "priority" | "status" | "assignee";
+  teamIds?: string[];
+  assignedToMe?: boolean;
+  createdByMe?: boolean;
+  storiesPerGroup?: number;
+  statusIds?: string[];
+  assigneeIds?: string[];
+  reporterIds?: string[];
+  priorities?: string[];
+  sprintIds?: string[];
+  labelIds?: string[];
+  parentId?: string;
+  objectiveId?: string;
+  epicId?: string;
+  hasNoAssignee?: boolean;
+};
+
+export type GroupStoryParams = {
+  groupKey: string;
+  groupBy: "priority" | "status" | "assignee";
+  page?: number;
+  pageSize?: number;
+  assignedToMe?: boolean;
+  createdByMe?: boolean;
+  statusIds?: string[];
+  assigneeIds?: string[];
+  reporterIds?: string[];
+  priorities?: string[];
+  teamIds?: string[];
+  sprintIds?: string[];
+  labelIds?: string[];
+  parentId?: string;
+  objectiveId?: string;
+  epicId?: string;
+  hasNoAssignee?: boolean;
+};

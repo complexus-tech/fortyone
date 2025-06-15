@@ -17,6 +17,18 @@ export const storyKeys = {
   attachments: (id: string) =>
     [...storyKeys.detail(id), "attachments"] as const,
   total: () => ["totalSories"] as const,
+  // Grouped stories
+  grouped: () => [...storyKeys.all, "grouped"] as const,
+  mineGrouped: (filter: string) =>
+    [...storyKeys.mine(), "grouped", filter] as const,
+  teamGrouped: (teamId: string, filter: string) =>
+    [...storyKeys.team(teamId), "grouped", filter] as const,
+  objectiveGrouped: (objectiveId: string, filter: string) =>
+    [...storyKeys.objective(objectiveId), "grouped", filter] as const,
+  sprintGrouped: (sprintId: string, filter: string) =>
+    [...storyKeys.sprint(sprintId), "grouped", filter] as const,
+  groupStories: (groupKey: string, filter: string) =>
+    [...storyKeys.all, "group", groupKey, filter] as const,
 };
 
 export const storyTags = {
