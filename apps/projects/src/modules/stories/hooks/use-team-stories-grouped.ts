@@ -15,7 +15,7 @@ export const useTeamStoriesGrouped = (
   const params: GroupedStoryParams = {
     groupBy,
     teamIds: [teamId],
-    storiesPerGroup: 10,
+    storiesPerGroup: 30,
     ...options,
   };
 

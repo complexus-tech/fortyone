@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import type { GroupedStoryParams } from "../types/grouped";
+import type { GroupedStoryParams } from "../types";
 import { storyKeys } from "../constants";
 import { getGroupedStories } from "../queries/get-grouped-stories";
 import { buildQueryKey } from "../utils/query-builders";
@@ -15,7 +15,7 @@ export const useObjectiveStoriesGrouped = (
   const params: GroupedStoryParams = {
     groupBy,
     objectiveId,
-    storiesPerGroup: 10,
+    storiesPerGroup: 30,
     ...options,
   };
 
