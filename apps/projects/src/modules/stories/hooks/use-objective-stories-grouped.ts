@@ -15,7 +15,6 @@ export const useObjectiveStoriesGrouped = (
   const params: GroupedStoryParams = {
     groupBy,
     objectiveId,
-    storiesPerGroup: 30,
     ...options,
   };
 

@@ -23,7 +23,7 @@ import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mut
 import {
   ConfirmDialog,
   NavLink,
-  // StoryStatusIcon,
+  StoryStatusIcon,
   TeamColor,
 } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
@@ -52,11 +52,11 @@ export const Team = ({
   const { userRole } = useUserRole();
 
   const links = [
-    // {
-    //   name: "Backlog",
-    //   icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
-    //   href: `/teams/${id}/backlog`,
-    // },
+    {
+      name: "Backlog",
+      icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
+      href: `/teams/${id}/backlog`,
+    },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,

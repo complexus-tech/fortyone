@@ -15,7 +15,6 @@ export const useSprintStoriesGrouped = (
   const params: GroupedStoryParams = {
     groupBy,
     sprintIds: [sprintId],
-    storiesPerGroup: 30,
     ...options,
   };
 

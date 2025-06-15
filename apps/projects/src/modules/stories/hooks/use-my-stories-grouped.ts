@@ -13,9 +13,6 @@ export const useMyStoriesGrouped = (
 
   const params: GroupedStoryParams = {
     groupBy,
-    // assignedToMe: true,
-    createdByMe: true,
-    storiesPerGroup: 15,
     ...options,
   };
 
