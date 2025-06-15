@@ -1487,12 +1487,17 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
 
-	if filters.AssignedToMe != nil && *filters.AssignedToMe {
-		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-	}
+	// Handle createdByMe and assignedToMe with OR logic when both are true
+	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
+	} else {
+		if filters.AssignedToMe != nil && *filters.AssignedToMe {
+			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+		}
 
-	if filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		if filters.CreatedByMe != nil && *filters.CreatedByMe {
+			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		}
 	}
 
 	return "WHERE " + strings.Join(whereClauses, " AND ")
@@ -1880,12 +1885,17 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
 
-	if filters.AssignedToMe != nil && *filters.AssignedToMe {
-		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-	}
+	// Handle createdByMe and assignedToMe with OR logic when both are true
+	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
+	} else {
+		if filters.AssignedToMe != nil && *filters.AssignedToMe {
+			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+		}
 
-	if filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		if filters.CreatedByMe != nil && *filters.CreatedByMe {
+			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		}
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
@@ -2155,12 +2165,17 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
 
-	if filters.AssignedToMe != nil && *filters.AssignedToMe {
-		whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-	}
+	// Handle createdByMe and assignedToMe with OR logic when both are true
+	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
+		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
+	} else {
+		if filters.AssignedToMe != nil && *filters.AssignedToMe {
+			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
+		}
 
-	if filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		if filters.CreatedByMe != nil && *filters.CreatedByMe {
+			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
+		}
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
