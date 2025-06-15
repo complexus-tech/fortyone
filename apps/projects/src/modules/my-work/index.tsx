@@ -7,8 +7,6 @@ import { useLocalStorage } from "@/hooks";
 import { Header } from "./components/header";
 import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
-import { MyWorkSkeleton } from "./components/my-work-skeleton";
-import { useMyStories } from "./hooks/my-stories";
 
 export const ListMyStories = () => {
   const searchParams = useSearchParams();
@@ -16,7 +14,6 @@ export const ListMyStories = () => {
     "my-stories:stories:layout",
     "kanban",
   );
-  const { isPending } = useMyStories();
 
   useEffect(() => {
     if (
@@ -29,8 +26,6 @@ export const ListMyStories = () => {
       sessionStorage.setItem("stripeSession", searchParams.get("session_id")!);
     }
   }, [searchParams]);
-
-  if (isPending) return <MyWorkSkeleton layout={layout} />;
 
   return (
     <MyWorkProvider>

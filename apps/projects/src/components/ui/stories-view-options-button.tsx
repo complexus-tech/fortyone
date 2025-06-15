@@ -5,7 +5,7 @@ import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
-export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
+export type ViewOptionsGroupBy = "status" | "assignee" | "priority";
 export type DisplayColumn =
   | "ID"
   | "Status"
@@ -19,10 +19,10 @@ export type DisplayColumn =
   | "Epic"
   | "Labels";
 export type ViewOptionsOrderBy =
-  | "Priority"
-  | "Deadline"
-  | "Created"
-  | "Updated";
+  | "priority"
+  | "deadline"
+  | "created"
+  | "updated";
 
 export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
@@ -32,8 +32,8 @@ export type StoriesViewOptions = {
 };
 
 const initialViewOptions: StoriesViewOptions = {
-  groupBy: "Status",
-  orderBy: "Priority",
+  groupBy: "status",
+  orderBy: "priority",
   showEmptyGroups: true,
   displayColumns: [
     "ID",
@@ -52,8 +52,8 @@ const initialViewOptions: StoriesViewOptions = {
 export const StoriesViewOptionsButton = ({
   viewOptions,
   setViewOptions,
-  groupByOptions = ["Status", "Assignee", "Priority"],
-  orderByOptions = ["Priority", "Deadline", "Created", "Updated"],
+  groupByOptions = ["status", "assignee", "priority"],
+  orderByOptions = ["priority", "deadline", "created", "updated"],
   layout,
   disabled,
 }: {

@@ -6,6 +6,8 @@ import { useMemo } from "react";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useTerminology } from "@/hooks";
+import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
+import { MyWorkSkeleton } from "@/modules/my-work/components/my-work-skeleton";
 import { useMyStories } from "../hooks/my-stories";
 import { useMyWork } from "./provider";
 
@@ -16,6 +18,10 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
 
   const user = session?.user;
   const { data: stories = [] } = useMyStories();
+  const { data: groupedStories, isPending } = useMyStoriesGrouped(
+    viewOptions.groupBy,
+    {},
+  );
   const tabs = ["all", "assigned", "created"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
@@ -30,6 +36,8 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       return stories.filter((story) => story.reporterId === user?.id);
     return stories;
   }, [stories, tab, user?.id]);
+
+  if (isPending) return <MyWorkSkeleton layout={layout} />;
 
   return (
     <Box className="h-[calc(100dvh-4rem)]">
@@ -46,6 +54,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         <Tabs.Panel value="all">
           <StoriesBoard
             className="h-[calc(100dvh-7.7rem)]"
+            groupedStories={groupedStories}
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}
@@ -54,6 +63,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         <Tabs.Panel value="assigned">
           <StoriesBoard
             className="h-[calc(100dvh-7.7rem)]"
+            groupedStories={groupedStories}
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}
@@ -62,6 +72,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         <Tabs.Panel value="created">
           <StoriesBoard
             className="h-[calc(100dvh-7.7rem)]"
+            groupedStories={groupedStories}
             layout={layout}
             stories={filteredStories}
             viewOptions={viewOptions}

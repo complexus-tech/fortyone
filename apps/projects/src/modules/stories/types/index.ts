@@ -66,7 +66,7 @@ export type GroupedStoriesResponse = {
   meta: {
     totalGroups: number;
     filters: StoryFilters;
-    groupBy: string;
+    groupBy: "priority" | "status" | "assignee";
   };
 };
 

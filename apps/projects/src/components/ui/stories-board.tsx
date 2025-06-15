@@ -14,7 +14,11 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  GroupedStoriesResponse,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -161,12 +165,14 @@ export const StoriesBoard = ({
   isInSearch,
   layout,
   stories,
+  groupedStories,
   className,
   viewOptions,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
   stories: Story[];
+  groupedStories?: GroupedStoriesResponse;
   className?: string;
   viewOptions: StoriesViewOptions;
 }) => {
@@ -217,7 +223,7 @@ export const StoriesBoard = ({
         const storyId = e.active.id.toString();
         const updatePayload: Partial<DetailedStory> = {};
 
-        if (groupBy === "Status") {
+        if (groupBy === "status") {
           const newStatus = e.over.id.toString();
           updatePayload.statusId = newStatus;
 
@@ -228,7 +234,7 @@ export const StoriesBoard = ({
           );
         }
 
-        if (groupBy === "Priority") {
+        if (groupBy === "priority") {
           const newPriority = e.over.id as StoryPriority;
           updatePayload.priority = newPriority;
 
@@ -241,7 +247,7 @@ export const StoriesBoard = ({
           );
         }
 
-        if (groupBy === "Assignee") {
+        if (groupBy === "assignee") {
           const newAssignee = e.over.id as string;
           updatePayload.assigneeId = newAssignee;
 
@@ -333,8 +339,8 @@ export const StoriesBoard = ({
             {(layout === "list" || !layout) && (
               <ListBoard
                 className={className}
+                groupedStories={groupedStories!}
                 isInSearch={isInSearch}
-                stories={orderedStories}
                 viewOptions={viewOptions}
               />
             )}

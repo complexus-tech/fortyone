@@ -13,9 +13,9 @@ export const useMyStoriesGrouped = (
 
   const params: GroupedStoryParams = {
     groupBy,
-    assignedToMe: true,
+    // assignedToMe: true,
     createdByMe: true,
-    storiesPerGroup: 30,
+    storiesPerGroup: 15,
     ...options,
   };
 
@@ -33,6 +33,6 @@ export const useMyStoriesGrouped = (
   return useQuery({
     queryKey,
     queryFn: () => getGroupedStories(session!, params),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
   });
 };
