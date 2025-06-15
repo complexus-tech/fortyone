@@ -1312,16 +1312,19 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesSQL")
 	defer span.End()
 
-	// Build optimized query that fetches storiesPerGroup+1 to check if more exist
-	groupColumn := r.getGroupColumn(query.GroupBy)
+	// Build optimized query that gets all possible groups and their stories
 	limit := query.StoriesPerGroup + 1 // Fetch one extra to check if more exist
 
-	// Build the FROM clause with necessary joins
-	fromClause := "FROM stories s"
+	// Build the all groups CTE based on group type
+	allGroupsCTE := r.buildAllGroupsCTE(query.GroupBy, query.Filters)
+	groupColumn := r.getGroupColumn(query.GroupBy)
 
-	// Simplified query without expensive COUNT() operations
+	// Simplified query that includes all possible groups
 	sqlQuery := fmt.Sprintf(`
-		WITH grouped_stories AS (
+		WITH all_groups AS (
+			%s
+		),
+		grouped_stories AS (
 			SELECT 
 				s.id,
 				s.sequence_id,
@@ -1335,7 +1338,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.updated_at,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY s.created_at DESC) as row_num
-			%s
+			FROM stories s
 			%s
 		),
 		limited_stories AS (
@@ -1344,29 +1347,30 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 			WHERE row_num <= %d
 		)
 		SELECT 
-			group_key,
+			ag.group_key,
 			COALESCE(
 				json_agg(
 					json_build_object(
-						'id', id,
-						'sequence_id', sequence_id,
-						'title', title,
-						'priority', priority,
-						'status_id', status_id,
-						'assignee_id', assignee_id,
-						'team_id', team_id,
-						'workspace_id', workspace_id,
-						'created_at', created_at,
-						'updated_at', updated_at
-					) ORDER BY created_at DESC
-				) FILTER (WHERE id IS NOT NULL), 
+						'id', ls.id,
+						'sequence_id', ls.sequence_id,
+						'title', ls.title,
+						'priority', ls.priority,
+						'status_id', ls.status_id,
+						'assignee_id', ls.assignee_id,
+						'team_id', ls.team_id,
+						'workspace_id', ls.workspace_id,
+						'created_at', ls.created_at,
+						'updated_at', ls.updated_at
+					) ORDER BY ls.created_at DESC
+				) FILTER (WHERE ls.id IS NOT NULL), 
 				CAST('[]' AS json)
 			) as stories_json
-		FROM limited_stories
-		GROUP BY group_key
-		ORDER BY group_key`,
+		FROM all_groups ag
+		LEFT JOIN limited_stories ls ON ag.group_key = ls.group_key
+		GROUP BY ag.group_key, ag.sort_order
+		ORDER BY ag.sort_order, ag.group_key`,
+		allGroupsCTE,
 		groupColumn, groupColumn,
-		fromClause,
 		r.buildSimpleWhereClause(query.Filters),
 		limit)
 
@@ -1589,6 +1593,98 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	}
 
 	return story
+}
+
+// buildAllGroupsCTE builds a CTE that returns all possible group values
+func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilters) string {
+	switch groupBy {
+	case "status":
+		return `
+			SELECT CAST(status_id AS text) as group_key, order_index as sort_order
+			FROM statuses 
+			WHERE workspace_id = :workspace_id
+		`
+	case "team":
+		if len(filters.TeamIDs) > 0 {
+			// If specific teams are filtered, only include those
+			return `
+				SELECT CAST(team_id AS text) as group_key, name as sort_order
+				FROM teams 
+				WHERE workspace_id = :workspace_id 
+				AND team_id = ANY(:team_ids)
+			`
+		} else {
+			// If no team filter, only include teams user belongs to
+			return `
+				SELECT CAST(t.team_id AS text) as group_key, t.name as sort_order
+				FROM teams t
+				INNER JOIN team_members tm ON tm.team_id = t.team_id
+				WHERE t.workspace_id = :workspace_id 
+				AND tm.user_id = :current_user_id
+			`
+		}
+	case "priority":
+		return `
+			SELECT priority as group_key, 
+				CASE priority
+					WHEN 'Urgent' THEN 1
+					WHEN 'High' THEN 2
+					WHEN 'Medium' THEN 3
+					WHEN 'Low' THEN 4
+					WHEN 'No Priority' THEN 5
+					ELSE 6
+				END as sort_order
+			FROM (VALUES ('Urgent'), ('High'), ('Medium'), ('Low'), ('No Priority')) AS priorities(priority)
+		`
+	case "assignee":
+		if len(filters.TeamIDs) > 0 {
+			return `
+				SELECT CAST(u.user_id AS text) as group_key, u.username as sort_order
+				FROM users u
+				INNER JOIN team_members tm ON tm.user_id = u.user_id
+				WHERE tm.team_id = ANY(:team_ids)
+				AND u.is_active = true
+				UNION ALL
+				SELECT 'null' as group_key, 'Unassigned' as sort_order
+			`
+		} else {
+			return `
+				SELECT CAST(u.user_id AS text) as group_key, u.username as sort_order
+				FROM users u
+				INNER JOIN team_members tm ON tm.user_id = u.user_id
+				INNER JOIN teams t ON t.team_id = tm.team_id
+				INNER JOIN team_members tm2 ON tm2.team_id = t.team_id
+				WHERE t.workspace_id = :workspace_id
+				AND tm2.user_id = :current_user_id
+				AND u.is_active = true
+				UNION ALL
+				SELECT 'null' as group_key, 'Unassigned' as sort_order
+			`
+		}
+	case "sprint":
+		if len(filters.TeamIDs) > 0 {
+			return `
+				SELECT CAST(sprint_id AS text) as group_key, name as sort_order
+				FROM sprints 
+				WHERE workspace_id = :workspace_id
+				AND team_id = ANY(:team_ids)
+				UNION ALL
+				SELECT 'null' as group_key, 'No Sprint' as sort_order
+			`
+		} else {
+			return `
+				SELECT CAST(s.sprint_id AS text) as group_key, s.name as sort_order
+				FROM sprints s
+				INNER JOIN team_members tm ON tm.team_id = s.team_id
+				WHERE s.workspace_id = :workspace_id
+				AND tm.user_id = :current_user_id
+				UNION ALL
+				SELECT 'null' as group_key, 'No Sprint' as sort_order
+			`
+		}
+	default:
+		return `SELECT 'all' as group_key, 0 as sort_order`
+	}
 }
 
 // getGroupColumn returns the column name for grouping
