@@ -148,7 +148,8 @@ export const Navigation = () => {
                       className={cn(
                         "rounded-lg py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 dark:hover:bg-dark-200",
                         {
-                          "bg-dark-200": pathname?.startsWith("/product"),
+                          "bg-gray-100 dark:bg-dark-200":
+                            pathname?.startsWith("/product"),
                         },
                       )}
                       hideArrow
@@ -178,7 +179,7 @@ export const Navigation = () => {
                   className={cn(
                     "rounded-lg px-3 py-1.5 transition hover:bg-gray-100 hover:dark:bg-dark-200",
                     {
-                      "bg-dark-200": pathname === href,
+                      "bg-gray-100 dark:bg-dark-200": pathname === href,
                     },
                   )}
                   href={href}
