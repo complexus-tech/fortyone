@@ -86,8 +86,8 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 font-semibold md:pl-5 md:pr-4"
-                color="white"
+                className="px-3 md:pl-5 md:pr-4"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"

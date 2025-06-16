@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid bg-gradient-to-r from-dark via-black to-black py-20 md:grid-cols-2 md:py-0">
+    <Box className="dark relative grid bg-gradient-to-r from-dark via-black to-black py-20 md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
@@ -18,7 +18,7 @@ export const Transform = () => {
           quality={100}
           src="/images/login.webp"
         />
-        <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-25% " />
+        <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-25%" />
       </Box>
       {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
       <Box className="z-[3] md:absolute md:inset-0">
