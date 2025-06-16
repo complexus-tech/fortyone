@@ -102,12 +102,11 @@ export const StoryCard = ({
               className="flex justify-between gap-2"
               href={`/story/${story.id}/${slugify(story.title)}`}
               onClick={(e) => {
-                if (isDragging) {
-                  e.preventDefault();
-                }
                 if (isDesktop) {
                   e.preventDefault();
-                  handleStoryClick(story.id);
+                  if (!isDragging) {
+                    handleStoryClick(story.id);
+                  }
                 }
               }}
             >
