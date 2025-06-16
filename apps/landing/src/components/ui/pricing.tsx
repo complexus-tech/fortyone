@@ -251,7 +251,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             </motion.p>
           </Box>
         </Flex>
-        <Box className="grid grid-cols-1 divide-y divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-white dark:bg-dark md:grid-cols-4 md:divide-x md:divide-y-0">
+        <Box className="grid grid-cols-1 divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-100 bg-white dark:divide-dark-100 dark:border-dark-100 dark:bg-dark md:grid-cols-4 md:divide-x md:divide-y-0">
           {packages.map((pkg) => (
             <Package
               billing={billing}

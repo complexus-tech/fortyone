@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="dark relative bg-gradient-to-b from-dark-300 via-black via-40% to-dark dark:to-dark/50">
+    <Box className="relative bg-gradient-to-b from-gray-50 via-40% to-gray-50 dark:bg-gray-50 dark:from-dark-300 dark:via-black dark:to-dark/50">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -66,7 +66,7 @@ export const CallToAction = () => {
             >
               <Button
                 className="md:px-4"
-                color="white"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"

@@ -103,7 +103,7 @@ export const Testimonials = () => {
           <Text
             as="span"
             className="3xl:mb-4 relative mb-2 block text-2xl md:text-3xl"
-            fontWeight="normal"
+            fontWeight="medium"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
             <span className="absolute -left-7 text-primary">//</span>
@@ -198,7 +198,7 @@ export const Testimonials = () => {
           <Flex className="gap-5">
             <Button
               asIcon
-              className="ml-auto md:h-[3.5rem]"
+              className="ml-auto border-dark-50 md:h-[3.5rem]"
               color="tertiary"
               leftIcon={<ArrowLeft2Icon className="text-dark" />}
               onClick={prevSlide}
@@ -209,7 +209,7 @@ export const Testimonials = () => {
 
             <Button
               asIcon
-              className="ml-auto md:h-[3.5rem]"
+              className="ml-auto border-dark-50 md:h-[3.5rem]"
               color="tertiary"
               leftIcon={<ArrowRight2Icon className="text-dark" />}
               onClick={nextSlide}
