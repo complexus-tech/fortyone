@@ -700,7 +700,6 @@ export const NewObjectiveDialog = ({
               Discard
             </Button>
             <Button
-              disabled={editingKeyResult !== null}
               leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
               loading={createMutation.isPending}
               loadingText="Creating..."
