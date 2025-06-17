@@ -39,7 +39,7 @@ export const ColorPicker = ({
           />
         </Button>
       </Popover.Trigger>
-      <Popover.Content className="p-2 rounded-xl">
+      <Popover.Content className="p-2.5 rounded-2xl">
         <Box className="grid grid-cols-6 gap-1.5">
           {colors.map((color) => (
             <Box

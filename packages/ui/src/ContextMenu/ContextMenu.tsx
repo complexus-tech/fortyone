@@ -28,7 +28,7 @@ const contentClasses = cva(
       rounded: {
         sm: "rounded",
         md: "rounded-lg",
-        lg: "rounded-xl",
+        lg: "rounded-2xl",
       },
     },
     defaultVariants: {
@@ -92,7 +92,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
       {
         "bg-gray-100/80 dark:bg-dark-50": active,
       },
@@ -113,7 +113,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
       {
         "bg-gray-50/80 dark:bg-dark-100": active,
       },

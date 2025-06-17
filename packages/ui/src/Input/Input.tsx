@@ -19,7 +19,7 @@ const inputVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded-md",
-        md: "rounded-[0.45rem]", // default from original
+        md: "rounded-[0.6rem]", // default from original
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",
