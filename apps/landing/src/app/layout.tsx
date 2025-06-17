@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { instrumentSans } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
@@ -63,24 +64,26 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html className="dark" lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
       </head>
       <body className={cn(instrumentSans.variable)}>
-        <SessionProvider>
-          <PostHogProvider>
-            <CursorProvider>{children}</CursorProvider>
-          </PostHogProvider>
-          <Suspense>
-            {isProduction ? (
-              <>
-                <GoogleOneTap />
-                <PostHogPageView />
-              </>
-            ) : null}
-          </Suspense>
-        </SessionProvider>
+        <ThemeProvider attribute="class" enableSystem>
+          <SessionProvider>
+            <PostHogProvider>
+              <CursorProvider>{children}</CursorProvider>
+            </PostHogProvider>
+            <Suspense>
+              {isProduction ? (
+                <>
+                  <GoogleOneTap />
+                  <PostHogPageView />
+                </>
+              ) : null}
+            </Suspense>
+          </SessionProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
       {isProduction ? (
