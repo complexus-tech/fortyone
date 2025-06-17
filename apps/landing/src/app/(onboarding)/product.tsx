@@ -25,7 +25,7 @@ export const ProductImage = () => {
         quality={100}
         src="/images/login-light.webp"
       />
-      <Container className="absolute inset-0 z-10 flex flex-col items-center justify-end bg-gradient-to-t from-white via-white via-30% py-28 dark:from-black dark:via-black">
+      <Container className="absolute inset-0 z-10 flex flex-col items-center justify-end bg-gradient-to-t from-gray-50 via-gray-50 via-30% py-28 dark:from-black dark:via-black">
         <Text align="center" className="mb-8 opacity-80" color="muted">
           Connect with us
         </Text>

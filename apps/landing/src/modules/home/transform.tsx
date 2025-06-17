@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid bg-gradient-to-r from-gray-50 via-white to-white py-20 dark:from-dark dark:via-black dark:to-black md:grid-cols-2 md:py-0">
+    <Box className="relative grid bg-gradient-to-r from-gray-100 via-gray-50 to-gray-50 py-20 dark:from-dark dark:via-black dark:to-black md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
@@ -25,9 +25,9 @@ export const Transform = () => {
           quality={100}
           src="/images/login.webp"
         />
-        <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-25% dark:from-black dark:via-black" />
+        <Box className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50 via-25% dark:from-black dark:via-black" />
       </Box>
-      <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-70" />
+      {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-70" /> */}
       <Box className="z-[3] md:absolute md:inset-0">
         <Container className="grid-cols-2 gap-10 md:grid md:h-full">
           <Flex direction="column" justify="center">
@@ -41,7 +41,7 @@ export const Transform = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="mx-auto px-3 text-sm md:mx-0 md:text-base"
+                className="mx-auto border-gray-200 px-3 text-sm md:mx-0 md:text-base"
                 color="tertiary"
                 href="/signup"
                 rounded="lg"
