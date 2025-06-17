@@ -199,7 +199,7 @@ const GanttLayoutSkeleton = () => {
               {/* Gantt bar */}
               <Box className="relative z-10 h-full px-2">
                 <Skeleton
-                  className="absolute h-10 rounded-lg border-[0.5px] border-gray-200/60 bg-gray-100 dark:border-dark-50/80 dark:bg-dark-200"
+                  className="absolute h-10 rounded-[0.6rem] border-[0.5px] border-gray-200/60 bg-gray-100 dark:border-dark-50/80 dark:bg-dark-200"
                   style={{
                     left: `${Math.random() * 50 + 10}%`,
                     width: `${15 + Math.random() * 25}%`,

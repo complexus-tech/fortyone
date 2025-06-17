@@ -102,7 +102,7 @@ export const StateRow = ({
   return (
     <form
       className={cn(
-        "flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70",
+        "flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-gray-50 px-3 dark:bg-dark-100/70",
         {
           "opacity-80 backdrop-blur": isDragging,
           "shadow-lg": isDragging,
@@ -141,7 +141,7 @@ export const StateRow = ({
             className={cn(
               "bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300",
               {
-                "my-0.5 rounded-lg border border-gray-100 bg-white/50 px-3 py-1 dark:border-gray-300/20 dark:bg-dark/10":
+                "my-0.5 rounded-[0.6rem] border border-gray-100 bg-white/50 px-3 py-1 dark:border-gray-300/20 dark:bg-dark/10":
                   isEditing,
               },
             )}

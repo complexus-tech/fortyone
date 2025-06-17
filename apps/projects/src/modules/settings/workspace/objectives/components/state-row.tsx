@@ -98,7 +98,7 @@ export const StateRow = ({
 
   return (
     <form
-      className="flex h-16 w-full items-center justify-between rounded-[0.45rem] bg-gray-50 px-3 dark:bg-dark-100/70"
+      className="flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-gray-50 px-3 dark:bg-dark-100/70"
       onSubmit={handleSubmit}
       ref={setNodeRef}
       style={style}

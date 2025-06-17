@@ -47,7 +47,7 @@ const contentClasses = cva(
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-lg",
+        md: "rounded-[0.6rem]",
         lg: "rounded-xl",
       },
     },
@@ -115,7 +115,7 @@ const CommandItem = ({
 }) => (
   <CommandPrimitive.Item
     className={cn(
-      "flex aria-selected:bg-gray-100/50 aria-selected:dark:bg-dark-50/50 gap-2 items-center select-none focus:dark:bg-dark-100/70 hover:dark:bg-dark-50 hover:bg-gray-100/70 focus:bg-gray-50 rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
+      "flex aria-selected:bg-gray-100/50 aria-selected:dark:bg-dark-50/50 gap-2 items-center select-none focus:dark:bg-dark-100/70 hover:dark:bg-dark-50 hover:bg-gray-100/70 focus:bg-gray-50 rounded-[0.6rem] w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none",
       {
         "bg-gray-100/70 dark:bg-dark-50": active,
       },

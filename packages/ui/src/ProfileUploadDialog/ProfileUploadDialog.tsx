@@ -146,7 +146,7 @@ export const ProfileUploadDialog = ({
                   onClick={handleEditClick}
                   color="white"
                   size="xs"
-                  className="absolute right-2 top-2 rounded-lg tracking-wide"
+                  className="absolute right-2 top-2 rounded-[0.6rem] tracking-wide"
                 >
                   Change
                 </Button>

@@ -25,7 +25,7 @@ export const TeamsList = () => {
         </Text>
         {teams.length > 1 && (
           <Input
-            className="w-72 rounded-lg"
+            className="w-72 rounded-[0.6rem]"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -37,7 +37,7 @@ export const TeamsList = () => {
           />
         )}
       </Flex>
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
             <Button

@@ -64,7 +64,7 @@ export const ConfirmDialog = ({
                 <Text as="span">&ldquo;{confirmPhrase}&rdquo;</Text> to confirm
               </Text>
               <Input
-                className="rounded-lg"
+                className="rounded-[0.6rem]"
                 onChange={(e) => {
                   setPhrase(e.target.value);
                 }}

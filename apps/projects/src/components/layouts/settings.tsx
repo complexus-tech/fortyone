@@ -126,7 +126,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
               onClick={goBack}
               type="button"
             >
-              <ArrowLeft2Icon className="h-[1.1rem] w-auto opacity-50 transition group-hover:opacity-100" />
+              <ArrowLeft2Icon
+                className="opacity-80 transition group-hover:opacity-100"
+                strokeWidth={3}
+              />
               Settings
             </button>
           </Flex>

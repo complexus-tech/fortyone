@@ -44,7 +44,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
   };
 
   return (
-    <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
         description="Basic information about your team."
         title="General Information"
@@ -113,7 +113,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
         <FeatureGuard
           fallback={
             <Box className="px-6 py-4">
-              <Wrapper className="flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
                 <Flex align="center" gap={2}>
                   <WarningIcon className="text-warning dark:text-warning" />
                   <Text>

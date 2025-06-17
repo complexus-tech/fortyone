@@ -53,7 +53,7 @@ export const LoginPage = () => {
         <form onSubmit={handleSubmit}>
           <Input
             autoFocus
-            className="mb-4 h-12 rounded-lg"
+            className="mb-4 h-12 rounded-[0.6rem]"
             label="Email"
             name="email"
             placeholder="e.g john@example.com"
@@ -61,7 +61,7 @@ export const LoginPage = () => {
             type="email"
           />
           <Input
-            className="mb-5 h-12 rounded-lg"
+            className="mb-5 h-12 rounded-[0.6rem]"
             label="Password"
             name="password"
             required

@@ -20,7 +20,7 @@ export const Automations = () => {
   return (
     <>
       {/* Sprint Configuration Section */}
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           description={`Configure ${getTermDisplay("sprintTerm", { variant: "plural" })} and automation settings for your team.`}
           title={getTermDisplay("sprintTerm", {
@@ -206,7 +206,7 @@ export const Automations = () => {
       </Box>
 
       {/* Story Automations Section */}
-      <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           description={`Automate cleanup and management of ${getTermDisplay("storyTerm", { variant: "plural" })}.`}
           title={`${getTermDisplay("storyTerm", { capitalize: true, variant: "plural" })} automations`}

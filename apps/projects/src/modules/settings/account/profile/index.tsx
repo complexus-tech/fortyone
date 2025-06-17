@@ -19,7 +19,7 @@ export const ProfileSettings = () => {
         Profile Settings
       </Text>
       <Form />
-      <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           description="Leave your current workspace. This action cannot be undone."
           title="Leave Workspace"

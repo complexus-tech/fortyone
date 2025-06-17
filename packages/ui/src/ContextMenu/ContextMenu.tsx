@@ -27,7 +27,7 @@ const contentClasses = cva(
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-lg",
+        md: "rounded-[0.6rem]",
         lg: "rounded-2xl",
       },
     },

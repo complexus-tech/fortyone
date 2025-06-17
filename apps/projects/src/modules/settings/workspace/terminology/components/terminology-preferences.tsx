@@ -131,7 +131,7 @@ export const TerminologyPreferences = () => {
     <>
       <FeatureGuard
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-[0.6rem] border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -148,7 +148,7 @@ export const TerminologyPreferences = () => {
         }
         feature="customTerminology"
       >
-        <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="mb-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
           <SectionHeader
             description="Customize the terminology used throughout your workspace."
             title="Terminology Preferences"
@@ -164,7 +164,7 @@ export const TerminologyPreferences = () => {
                   <Flex align="center" gap={2}>
                     <Flex
                       align="center"
-                      className="size-8 shrink-0 rounded-lg bg-gray-100/50 dark:bg-dark-100"
+                      className="size-8 shrink-0 rounded-[0.6rem] bg-gray-100/50 dark:bg-dark-100"
                       justify="center"
                     >
                       {entity.icon}
@@ -210,7 +210,7 @@ export const TerminologyPreferences = () => {
       </FeatureGuard>
 
       {/* Preview Section */}
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           description="See how your selected terminology will appear throughout the application."
           title="Terminology Preview"

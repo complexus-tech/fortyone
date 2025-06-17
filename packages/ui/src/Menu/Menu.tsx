@@ -29,7 +29,7 @@ const contentClasses = cva(
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-lg",
+        md: "rounded-[0.6rem]",
         lg: "rounded-2xl",
       },
     },
@@ -113,7 +113,7 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50/80",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50/80",
       {
         "bg-gray-50/80 dark:bg-dark-50/60": checked,
       },

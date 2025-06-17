@@ -215,7 +215,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-[0.7rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
+            <Box className="flex w-max gap-1 rounded-[0.8rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-2.5 capitalize", {

@@ -80,7 +80,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           <form onSubmit={handleSubmit}>
             <Input
               autoFocus
-              className="rounded-lg"
+              className="rounded-[0.6rem]"
               hasError={Boolean(error) && !email && !isTouched}
               helpText={error && !isTouched ? error : undefined}
               label="Enter your email"
