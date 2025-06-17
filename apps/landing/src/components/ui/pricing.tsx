@@ -78,7 +78,7 @@ const packages = [
 
 const Feature = ({ feature }: { feature: string }) => (
   <Flex align="center" gap={2} key={feature}>
-    <SuccessIcon className="h-[1.35rem] dark:text-primary" />
+    <SuccessIcon className="h-[1.35rem] text-primary dark:text-primary" />
     <Text className="opacity-90">{feature}</Text>
   </Flex>
 );
