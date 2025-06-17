@@ -76,7 +76,14 @@ export const HeroCards = () => {
             >
               <Image
                 alt={card.title}
-                className="relative rounded border border-gray-200/80 dark:border-dark-100 md:rounded-[1.2rem]"
+                className="relative hidden rounded border border-gray-200/80 dark:block dark:border-dark-100 md:rounded-[1.2rem]"
+                placeholder="blur"
+                priority
+                src={card.image.src}
+              />
+              <Image
+                alt={card.title}
+                className="relative rounded border border-gray-200/80 dark:hidden dark:border-dark-100 md:rounded-[1.2rem]"
                 placeholder="blur"
                 priority
                 src={card.image.srcLight}

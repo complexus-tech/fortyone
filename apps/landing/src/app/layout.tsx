@@ -63,7 +63,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html className="light" lang="en" suppressHydrationWarning>
+    <html className="dark" lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
       </head>

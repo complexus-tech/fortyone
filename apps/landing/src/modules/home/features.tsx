@@ -41,11 +41,7 @@ const Intro = () => (
         viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Text
-          className="mt-6 max-w-xl opacity-80 md:mt-0"
-          fontSize="xl"
-          fontWeight="normal"
-        >
+        <Text className="mt-6 max-w-xl opacity-80 md:mt-0" fontSize="xl">
           Complexus is so simple to use, it&apos;s easy to overlook the wealth
           of complex technologies packed under the hood that keep it robust,
           safe, and blazing fast.
@@ -75,7 +71,7 @@ const Card = ({
     >
       <Box
         className={cn(
-          "dark relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8 md:h-[420px]",
+          "relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 p-6 pb-8 dark:border-dark-50 dark:bg-dark md:h-[420px]",
         )}
         onMouseEnter={() => {
           setIsActive(true);
@@ -105,7 +101,7 @@ const Card = ({
               quality={100}
               src={src}
             />
-            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-dark/90 to-dark" />
+            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-gray-50/90 to-gray-50 dark:via-dark/90 dark:to-dark" />
           </Box>
           <Text className="mt-4 opacity-80">{description}</Text>
         </Box>
@@ -164,15 +160,17 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100 pb-20 dark:from-dark-200 dark:via-black dark:to-black md:pb-48">
-      <Container as="section">
-        <Intro />
-        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
-          {features.map((feature) => (
-            <Card key={feature.id} {...feature} />
-          ))}
-        </Box>
-      </Container>
+    <Box className="dark">
+      <Box className="bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100 pb-20 dark:from-dark-200 dark:via-black dark:to-black md:pb-48">
+        <Container as="section">
+          <Intro />
+          <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
+            {features.map((feature) => (
+              <Card key={feature.id} {...feature} />
+            ))}
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 };
