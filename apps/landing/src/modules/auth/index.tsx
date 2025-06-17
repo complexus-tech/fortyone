@@ -46,8 +46,8 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
             A secure sign-in link has been sent to{" "}
-            <span className="font-semibold text-white/70">{email}</span>. ✨
-            Please check your inbox to continue.
+            <span className="font-semibold dark:text-white/70">{email}</span>.
+            ✨ Please check your inbox to continue.
           </Text>
         </>
       ) : (
