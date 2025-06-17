@@ -7,7 +7,7 @@ type MarkdownProps = {
 
 export function Markdown({ content }: MarkdownProps) {
   return (
-    <Box className="prose prose-invert max-w-none">
+    <Box className="max-w-none">
       <ReactMarkdown>{content}</ReactMarkdown>
     </Box>
   );

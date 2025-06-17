@@ -8,7 +8,7 @@ const Brand = ({ logo }: { logo: string }) => {
   return (
     <img
       alt="brand logo"
-      className="3xl:h-20 mr-8 block h-8 w-auto grayscale invert md:mr-16 md:h-12 md:justify-self-center"
+      className="3xl:h-20 mr-8 block h-8 w-auto grayscale dark:invert md:mr-16 md:h-12 md:justify-self-center"
       key={logo}
       loading="lazy"
       src={logo}
@@ -29,12 +29,12 @@ export const SampleClients = () => {
     <Container className="relative md:mt-16">
       <img
         alt="Arrow pointing to the right"
-        className="absolute left-0 top-0 hidden h-20 w-auto -rotate-12 opacity-20 invert md:-bottom-28 md:inline-block"
+        className="absolute left-0 top-0 hidden h-20 w-auto -rotate-12 opacity-20 dark:invert md:-bottom-28 md:inline-block"
         src="/svgs/xx.svg"
       />
       <img
         alt="Arrow pointing to the left"
-        className="absolute right-0 top-0 hidden h-24 w-auto -rotate-[40deg] opacity-20 invert md:-bottom-28 md:inline-block"
+        className="absolute right-0 top-0 hidden h-24 w-auto -rotate-[40deg] opacity-20 dark:invert md:-bottom-28 md:inline-block"
         src="/svgs/arrow-2.svg"
       />
       <Box className="py-16 md:py-28">
@@ -80,7 +80,7 @@ export const SampleClients = () => {
       </Box>
       <Box className="absolute bottom-0 right-0 opacity-5">
         <svg
-          className="3xl:w-40 h-auto w-20 rotate-6 text-white xl:w-32 2xl:w-36"
+          className="3xl:w-40 h-auto w-20 rotate-6 dark:text-white xl:w-32 2xl:w-36"
           fill="none"
           height="470"
           viewBox="0 0 266 470"

@@ -6,7 +6,7 @@ import { Container } from "@/components/ui";
 
 export const Integrations = () => {
   return (
-    <Box className="relative bg-gradient-to-b from-black via-dark to-black py-16 md:py-40">
+    <Box className="relative bg-gradient-to-b from-white to-white py-16 dark:from-black dark:via-dark dark:to-black md:py-40">
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute left-16 top-24 hidden rotate-6 md:block"
@@ -97,13 +97,7 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button
-              className="font-semibold"
-              color="white"
-              href="/product"
-              rounded="lg"
-              size="lg"
-            >
+            <Button color="invert" href="/product" rounded="lg" size="lg">
               View all integrations
             </Button>
           </motion.div>
