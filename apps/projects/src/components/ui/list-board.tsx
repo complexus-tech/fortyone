@@ -28,7 +28,9 @@ export const ListBoard = ({
   const statuses = teamId ? teamStatuses : allStatuses;
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
-  const members = teamId ? teamMembers : allMembers;
+  const members = (teamId ? teamMembers : allMembers).filter(
+    ({ role }) => role !== "system",
+  );
 
   const priorities: StoryPriority[] = [
     "Urgent",
