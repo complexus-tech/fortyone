@@ -55,7 +55,7 @@ export const StoryPage = ({
   return (
     <Box
       className={cn("h-dvh", {
-        "h-[85dvh]": isDialog,
+        "h-[85dvh] overflow-y-auto": isDialog,
       })}
     >
       <Box className="md:hidden">
