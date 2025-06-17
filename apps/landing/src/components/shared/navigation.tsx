@@ -222,10 +222,9 @@ export const Navigation = () => {
               <RequestDemo />
               <Button
                 className={cn("hidden px-5 text-[0.93rem] md:flex", {
-                  "flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:focus:bg-white":
-                    session,
+                  flex: session,
                 })}
-                color="tertiary"
+                color={session ? "invert" : "tertiary"}
                 href={getNextUrl()}
                 rounded="lg"
               >
