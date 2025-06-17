@@ -78,7 +78,9 @@ export const ListBoard = ({
   const { teamId } = useParams<{ teamId: string }>();
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
-  const members = teamId ? teamMembers : allMembers;
+  const members = (teamId ? teamMembers : allMembers).filter(
+    ({ role }) => role !== "system",
+  );
   const { data: teamStatuses = [] } = useTeamStatuses(teamId);
   const { data: allStatuses = [] } = useStatuses();
   const statuses = teamId ? teamStatuses : allStatuses;
