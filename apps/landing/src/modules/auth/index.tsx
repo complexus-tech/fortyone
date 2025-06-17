@@ -113,7 +113,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             </Flex>
             <Button
               align="center"
-              className="mb-3 md:h-[2.6rem]"
+              className="mb-3 border-gray-200 md:h-[2.6rem]"
               color="tertiary"
               fullWidth
               leftIcon={<GoogleIcon />}

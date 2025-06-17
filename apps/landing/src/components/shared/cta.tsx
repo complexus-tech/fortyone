@@ -84,7 +84,7 @@ export const CallToAction = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-4 md:pl-3.5 md:pr-4"
+                className="border-gray-200 px-4 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {
