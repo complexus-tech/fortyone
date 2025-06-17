@@ -57,10 +57,7 @@ export const Transform = () => {
               <span className="text-stroke-white">Transform</span> how your team
               works <span className="text-stroke-white relative">today.</span>
             </Text>
-            <Text
-              className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl"
-              fontWeight="normal"
-            >
+            <Text className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl">
               Join innovative teams who use complexus to deliver projects faster
               and with better results.
             </Text>

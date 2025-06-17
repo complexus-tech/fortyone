@@ -78,12 +78,7 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="my-10 max-w-[600px]"
-              color="muted"
-              fontSize="2xl"
-              fontWeight="normal"
-            >
+            <Text className="my-10 max-w-[600px]" color="muted" fontSize="2xl">
               Connect your entire stack with GitHub, GitLab, Figma, Slack, and
               more. Keep development, design, and communication unified.
             </Text>

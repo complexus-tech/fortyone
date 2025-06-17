@@ -47,7 +47,6 @@ export const CallToAction = () => {
               className="mt-4 max-w-[650px] md:mt-16"
               color="muted"
               fontSize="2xl"
-              fontWeight="normal"
             >
               Bring your objectives, OKRs, and sprints together. The modern way
               to align teams and deliver meaningful outcomes.

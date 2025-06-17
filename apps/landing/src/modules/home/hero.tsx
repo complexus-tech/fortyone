@@ -62,10 +62,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl"
-              fontWeight="normal"
-            >
+            <Text className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl">
               Connect strategy with execution. Align engineering, product, and
               business goals to track and achieve team objectives.
             </Text>
