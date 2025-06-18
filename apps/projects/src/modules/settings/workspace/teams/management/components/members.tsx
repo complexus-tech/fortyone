@@ -52,7 +52,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
                   className="shrink-0"
                   color="tertiary"
                   disabled={isAllMembersAdded}
-                  leftIcon={<PlusIcon className="text-white dark:text-white" />}
+                  leftIcon={<PlusIcon />}
                 >
                   Add Member
                 </Button>

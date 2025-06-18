@@ -213,7 +213,7 @@ export const InviteMembersDialog = ({
           count={members.length}
           fallback={
             <Dialog.Body className="mt-2 pb-6">
-              <Wrapper className="flex items-center justify-between gap-3 rounded-[0.6rem] border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Wrapper className="flex items-center justify-between gap-3 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
                 <Flex align="center" gap={3}>
                   <WarningIcon className="shrink-0 text-warning dark:text-warning" />
                   <Text>
