@@ -122,19 +122,18 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-[2] bg-white/80 px-10 py-5 backdrop-blur dark:bg-dark-300/80"
+                className="sticky top-0 z-[2] bg-white/80 px-10 py-4 backdrop-blur dark:bg-dark-300/80"
                 gap={2}
                 justify="between"
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="shrink-0 pr-3 dark:border-dark-100 dark:bg-dark-100/30"
+                    className="shrink-0 pl-2.5 pr-4 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    size="sm"
                   >
                     Close
                   </Button>
