@@ -131,7 +131,7 @@ export const TerminologyPreferences = () => {
     <>
       <FeatureGuard
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-[0.6rem] border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
