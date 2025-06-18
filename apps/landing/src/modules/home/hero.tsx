@@ -48,8 +48,8 @@ export const Hero = () => {
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Project</span> Management That
-              Adapts To Your Workflow
+              <span className="text-stroke-white">Project</span> Management &
+              OKR Software for Teams
             </Text>
           </motion.span>
 
