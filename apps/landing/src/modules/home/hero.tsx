@@ -63,8 +63,9 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl">
-              Connect strategy with execution. Align engineering, product, and
-              business goals to track and achieve team objectives.
+              Complexus is the project management and OKR platform that helps
+              engineering, product, and business teams align goals, track
+              progress, and deliver faster.
             </Text>
           </motion.span>
 
