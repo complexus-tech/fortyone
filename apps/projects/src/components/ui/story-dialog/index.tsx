@@ -116,7 +116,7 @@ export const StoryDialog = ({
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>
         </Dialog.Title>
-        <Dialog.Body className="h-[85.5dvh] max-h-[85.5dvh] overflow-y-hidden px-0 pt-0">
+        <Dialog.Body className="h-[85dvh] max-h-[85dvh] overflow-y-hidden px-0 pt-0">
           <StoryPage
             isDialog
             isNotifications={false}
