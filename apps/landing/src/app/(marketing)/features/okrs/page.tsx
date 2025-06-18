@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CallToAction } from "@/components/shared";
-import { Hero, Features } from "@/modules/product/okrs";
+import { Hero, Features } from "@/modules/features/okrs";
 
 export const metadata: Metadata = {
   title: "OKRs | Objectives and Key Results Framework | Complexus",

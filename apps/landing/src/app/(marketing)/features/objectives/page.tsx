@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CallToAction } from "@/components/shared";
-import { Hero, Features } from "@/modules/product/objectives";
+import { Hero, Features } from "@/modules/features/objectives";
 
 export const metadata: Metadata = {
   title: "Objectives | Strategic Goal Setting & Management | Complexus",

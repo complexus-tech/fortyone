@@ -56,11 +56,11 @@ export const Navigation = () => {
     { title: "Docs", href: "https://docs.complexus.app" },
   ];
 
-  const product = [
+  const features = [
     {
       id: 1,
       name: "Stories",
-      href: "/product/stories",
+      href: "/features/stories",
       description: "Manage and Track Tasks",
       icon: (
         <StoryIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -69,7 +69,7 @@ export const Navigation = () => {
     {
       id: 2,
       name: "Objectives",
-      href: "/product/objectives",
+      href: "/features/objectives",
       description: "Set and Achieve Goals",
       icon: (
         <ObjectiveIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -78,7 +78,7 @@ export const Navigation = () => {
     {
       id: 3,
       name: "OKRs",
-      href: "/product/okrs",
+      href: "/features/okrs",
       description: "Align and Achieve",
       icon: (
         <OKRIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -87,7 +87,7 @@ export const Navigation = () => {
     {
       id: 4,
       name: "Sprints",
-      href: "/product/sprints",
+      href: "/features/sprints",
       description: "Iterate and Deliver",
       icon: (
         <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
@@ -149,7 +149,7 @@ export const Navigation = () => {
                         "rounded-[0.6rem] py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 dark:hover:bg-dark-200",
                         {
                           "bg-gray-100 dark:bg-dark-200":
-                            pathname?.startsWith("/product"),
+                            pathname?.startsWith("/features"),
                         },
                       )}
                       hideArrow
@@ -158,7 +158,7 @@ export const Navigation = () => {
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content>
                       <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-3 pr-2.5">
-                        {product.map(
+                        {features.map(
                           ({ id, name, description, icon, href }) => (
                             <MenuItem
                               description={description}
@@ -288,7 +288,7 @@ export const Navigation = () => {
                       <Text color="muted">Features</Text>
                     </Menu.Group>
                     <Menu.Group>
-                      {product.map(({ id, name, href }) => (
+                      {features.map(({ id, name, href }) => (
                         <Menu.Item
                           className="block rounded-xl py-2.5"
                           key={id}
