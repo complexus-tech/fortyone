@@ -12,6 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
+    "@ai-sdk/react": "^1.2.12",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@tanstack/react-query": "^5.69.0",
@@ -36,6 +38,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/qs": "^6.9.15",
     "@uiw/react-heat-map": "^2.2.2",
+    "ai": "^4.3.16",
     "babel-plugin-react-compiler": "19.0.0-beta-21e868a-20250216",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^2.30.0",
@@ -65,7 +68,8 @@
     "sonner": "^1.5.0",
     "tailwind-config": "workspace:*",
     "tippy.js": "^6.3.7",
-    "ui": "workspace:*"
+    "ui": "workspace:*",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.3.2",
