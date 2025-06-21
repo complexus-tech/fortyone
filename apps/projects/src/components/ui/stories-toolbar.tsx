@@ -1,18 +1,37 @@
 "use client";
-import { Button, Flex, Text, Tooltip, Dialog, Command, Divider, Box } from "ui";
-import { CloseIcon, DeleteIcon, SprintsIcon } from "icons";
+import { Button, Flex, Text, Tooltip, Dialog, DatePicker } from "ui";
+import {
+  AssigneeIcon,
+  CalendarIcon,
+  CloseIcon,
+  DeleteIcon,
+  ObjectiveIcon,
+  SprintsIcon,
+} from "icons";
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
+import { useTerminology } from "@/hooks";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { useBoard } from "./board-context";
+import { StoryStatusIcon } from "./story-status-icon";
+import { PriorityIcon } from "./priority-icon";
+import { SprintsMenu } from "./story/sprints-menu";
+import { ObjectivesMenu } from "./story/objectives-menu";
+import { StatusesMenu } from "./story/statuses-menu";
+import { PrioritiesMenu } from "./story/priorities-menu";
+import { AssigneesMenu } from "./story/assignees-menu";
 
 export const StoriesToolbar = () => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSprintsOpen, setIsSprintsOpen] = useState(false);
-  const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
-
-  const { data: sprints = [] } = useSprints();
+  const { data: teams = [] } = useTeams();
+  let finalTeamId = teamId;
+  if (teams.length === 1) {
+    finalTeamId = teams[0].id;
+  }
 
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
 
@@ -26,8 +45,8 @@ export const StoriesToolbar = () => {
     <>
       <Flex
         align="center"
-        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-xl border border-gray-100 bg-white/60 px-2.5 py-2 shadow-lg shadow-dark/10 backdrop-blur dark:border-dark-100 dark:bg-dark-300/70 dark:shadow-dark/20"
-        gap={2}
+        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-2xl border-[0.5px] border-gray-200/70 bg-gray-50/70 px-2.5 py-2 shadow-lg shadow-gray-200 backdrop-blur dark:border-dark-50 dark:bg-dark-200/70 dark:shadow-dark/20"
+        gap={1}
       >
         <Text
           as="span"
@@ -40,7 +59,7 @@ export const StoriesToolbar = () => {
               onClick={() => {
                 setSelectedStories([]);
               }}
-              size="xs"
+              size="sm"
               variant="outline"
             >
               <span className="sr-only">Clear</span>
@@ -48,30 +67,105 @@ export const StoriesToolbar = () => {
           </Tooltip>
           {selectedStories.length} selected
         </Text>
-        {/* <Button
-          color="tertiary"
-          disabled
-          leftIcon={<SprintsIcon className="h-[1.15rem]" />}
-          onClick={() => {
-            setIsSprintsOpen(true);
-          }}
-          title="This is not available yet"
-          variant="outline"
-        >
-          Add to sprint
-        </Button>
-        <Button
-          color="tertiary"
-          disabled
-          leftIcon={<ObjectiveIcon className="h-[1.15rem]" />}
-          onClick={() => {
-            setIsObjectivesOpen(true);
-          }}
-          title="This is not available yet"
-          variant="outline"
-        >
-          Add to objective
-        </Button> */}
+        {finalTeamId ? (
+          <>
+            <SprintsMenu>
+              <SprintsMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<SprintsIcon className="h-[1.15rem]" />}
+                  variant="naked"
+                >
+                  {getTermDisplay("sprintTerm", { capitalize: true })}
+                </Button>
+              </SprintsMenu.Trigger>
+              <SprintsMenu.Items setSprintId={() => {}} teamId={finalTeamId} />
+            </SprintsMenu>
+            <ObjectivesMenu>
+              <ObjectivesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={<ObjectiveIcon className="h-[1.15rem]" />}
+                  variant="naked"
+                >
+                  {getTermDisplay("objectiveTerm", { capitalize: true })}
+                </Button>
+              </ObjectivesMenu.Trigger>
+              <ObjectivesMenu.Items
+                setObjectiveId={() => {}}
+                teamId={finalTeamId}
+              />
+            </ObjectivesMenu>
+            <StatusesMenu>
+              <StatusesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  leftIcon={
+                    <StoryStatusIcon
+                      category="started"
+                      className="h-[1.15rem] text-warning dark:text-warning"
+                    />
+                  }
+                  variant="naked"
+                >
+                  Status
+                </Button>
+              </StatusesMenu.Trigger>
+              <StatusesMenu.Items setStatusId={() => {}} teamId={finalTeamId} />
+            </StatusesMenu>
+          </>
+        ) : null}
+
+        <PrioritiesMenu>
+          <PrioritiesMenu.Trigger>
+            <Button
+              color="tertiary"
+              leftIcon={
+                <PriorityIcon
+                  className="h-[1.15rem] text-success dark:text-success"
+                  priority="High"
+                />
+              }
+              variant="naked"
+            >
+              Priority
+            </Button>
+          </PrioritiesMenu.Trigger>
+          <PrioritiesMenu.Items setPriority={() => {}} />
+        </PrioritiesMenu>
+
+        <DatePicker>
+          <DatePicker.Trigger>
+            <Button
+              color="tertiary"
+              leftIcon={
+                <CalendarIcon className="h-[1.15rem] text-primary dark:text-primary" />
+              }
+              variant="naked"
+            >
+              Deadline
+            </Button>
+          </DatePicker.Trigger>
+          <DatePicker.Calendar />
+        </DatePicker>
+
+        {finalTeamId ? (
+          <AssigneesMenu>
+            <AssigneesMenu.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={<AssigneeIcon className="h-[1.15rem]" />}
+                variant="naked"
+              >
+                Assign to...
+              </Button>
+            </AssigneesMenu.Trigger>
+            <AssigneesMenu.Items
+              onAssigneeSelected={() => {}}
+              teamId={finalTeamId}
+            />
+          </AssigneesMenu>
+        ) : null}
         <Button
           leftIcon={
             <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
@@ -113,87 +207,7 @@ export const StoriesToolbar = () => {
                   <DeleteIcon className="text-white dark:text-gray-200" />
                 }
                 loading={isPending}
-                loadingText="Deleting stories..."
-                onClick={handleBulkDelete}
-              >
-                Delete
-              </Button>
-            </Flex>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog>
-
-      {/* Add to sprint dialog */}
-      <Dialog onOpenChange={setIsSprintsOpen} open={isSprintsOpen}>
-        <Dialog.Content hideClose={false}>
-          <Dialog.Header className="sr-only">
-            <Dialog.Title>
-              Add {selectedStories.length} stories to sprint
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body className="px-4 pt-4">
-            <Command>
-              <Command.Input
-                autoFocus
-                className="text-lg"
-                placeholder="Choose sprint..."
-              />
-              <Divider className="mb-2 mt-3" />
-              <Command.Empty className="py-2">
-                <Text color="muted">No sprint found.</Text>
-              </Command.Empty>
-              <Command.Group className="px-0">
-                {sprints.map(({ id, name }, idx) => (
-                  <Command.Item
-                    className="justify-between py-2.5"
-                    key={id}
-                    onSelect={() => {
-                      setIsSprintsOpen(false);
-                    }}
-                    value={name}
-                  >
-                    <Box className="grid grid-cols-[24px_auto] items-center">
-                      <SprintsIcon />
-                      <Text>{name}</Text>
-                    </Box>
-                    <Flex align="center" gap={2}>
-                      <Text color="muted">{idx}</Text>
-                    </Flex>
-                  </Command.Item>
-                ))}
-              </Command.Group>
-            </Command>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog>
-
-      {/* Add to objective dialog */}
-      <Dialog onOpenChange={setIsObjectivesOpen} open={isObjectivesOpen}>
-        <Dialog.Content>
-          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
-            <Dialog.Title className="flex items-center gap-1 text-lg">
-              Delete {selectedStories.length} stories?
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body className="pt-0">
-            <Text color="muted">
-              These stories will be moved to the recycle bin and will be
-              permanently deleted after 30 days. You can restore them at any
-              time before that.
-            </Text>
-            <Flex align="center" className="mt-4" gap={2} justify="end">
-              <Button
-                color="tertiary"
-                onClick={() => {
-                  setIsOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                leftIcon={
-                  <DeleteIcon className="text-white dark:text-gray-200" />
-                }
+                loadingText="Deleting..."
                 onClick={handleBulkDelete}
               >
                 Delete

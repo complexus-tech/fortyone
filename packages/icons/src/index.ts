@@ -115,3 +115,4 @@ export * from "./blog";
 export * from "./at";
 export * from "./gantt";
 export * from "./grid";
+export * from "./ai";
