@@ -333,14 +333,41 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	var req AppBulkUpdateRequest
-	if err := web.Decode(r, &req); err != nil {
+	// Decode as raw JSON
+	var requestData map[string]json.RawMessage
+	if err := web.Decode(r, &requestData); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	// Extract and validate storyIds
+	var storyIDs []uuid.UUID
+	if err := json.Unmarshal(requestData["storyIds"], &storyIDs); err != nil {
+		web.RespondError(ctx, w, errors.New("invalid storyIds"), http.StatusBadRequest)
+		return nil
+	}
+
+	if len(storyIDs) == 0 {
+		web.RespondError(ctx, w, errors.New("storyIds cannot be empty"), http.StatusBadRequest)
+		return nil
+	}
+
+	// Extract updates and convert to format getUpdates expects
+	var updatesRaw map[string]json.RawMessage
+	if err := json.Unmarshal(requestData["updates"], &updatesRaw); err != nil {
+		web.RespondError(ctx, w, errors.New("invalid updates"), http.StatusBadRequest)
+		return nil
+	}
+
+	// Reuse existing getUpdates function (same as Update handler)
+	updates, err := getUpdates(updatesRaw)
+	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
 	// Invalidate cache for all affected stories
-	for _, storyId := range req.StoryIDs {
+	for _, storyId := range storyIDs {
 		cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
@@ -359,7 +386,7 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.BulkUpdate(ctx, req.StoryIDs, workspaceId, req.Updates); err != nil {
+	if err := h.stories.BulkUpdate(ctx, storyIDs, workspaceId, updates); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
