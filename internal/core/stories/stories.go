@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
@@ -264,6 +265,61 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		s.log.Error(ctx, "failed to publish story updated event", "error", err)
 		// Don't return error as this is not critical
 	}
+
+	return nil
+}
+
+// BulkUpdate updates multiple stories with the same updates in parallel.
+func (s *Service) BulkUpdate(ctx context.Context, storyIDs []uuid.UUID, workspaceID uuid.UUID, updates map[string]any) error {
+	s.log.Info(ctx, "business.core.stories.BulkUpdate")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkUpdate")
+	defer span.End()
+
+	if len(storyIDs) == 0 {
+		return fmt.Errorf("no story IDs provided")
+	}
+
+	span.AddEvent("bulk update started", trace.WithAttributes(
+		attribute.Int("story.count", len(storyIDs)),
+		attribute.String("workspace.id", workspaceID.String()),
+	))
+	var wg sync.WaitGroup
+
+	// Channel to collect errors from goroutines
+	errChan := make(chan error, len(storyIDs))
+	for _, storyID := range storyIDs {
+		wg.Add(1)
+		go func(id uuid.UUID) {
+			defer wg.Done()
+			if err := s.Update(ctx, id, workspaceID, updates); err != nil {
+				errChan <- fmt.Errorf("failed to update story %s: %w", id, err)
+			}
+		}(storyID)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+	close(errChan)
+
+	// Collect all errors
+	var errors []error
+	for err := range errChan {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		span.RecordError(fmt.Errorf("bulk update completed with %d errors", len(errors)))
+
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
+		}
+		return fmt.Errorf("bulk update errors: %s", strings.Join(errorMessages, "; "))
+	}
+
+	span.AddEvent("bulk update completed successfully", trace.WithAttributes(
+		attribute.Int("stories.updated", len(storyIDs)),
+	))
 
 	return nil
 }
