@@ -61,6 +61,12 @@ type AppBulkRestoreRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`
 }
 
+// AppBulkUpdateRequest represents a request to update multiple stories.
+type AppBulkUpdateRequest struct {
+	StoryIDs []uuid.UUID    `json:"storyIds" validate:"required,min=1"`
+	Updates  map[string]any `json:"updates" validate:"required"`
+}
+
 type AppLabel struct {
 	ID          uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`

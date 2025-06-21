@@ -59,6 +59,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceId}/stories/{id}", h.Get, auth, gzip)
 	app.Post("/workspaces/{workspaceId}/stories", h.Create, auth)
 	app.Put("/workspaces/{workspaceId}/stories/{id}", h.Update, auth)
+	app.Put("/workspaces/{workspaceId}/stories", h.BulkUpdate, auth)
 	app.Delete("/workspaces/{workspaceId}/stories/{id}", h.Delete, auth)
 	app.Post("/workspaces/{workspaceId}/stories/{id}/restore", h.Restore, auth)
 	app.Post("/workspaces/{workspaceId}/stories/restore", h.BulkRestore, auth)

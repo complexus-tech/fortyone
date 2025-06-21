@@ -321,6 +321,53 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
+// BulkUpdate updates multiple stories with the same updates.
+func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkUpdate")
+	defer span.End()
+
+	workspaceIdParam := web.Params(r, "workspaceId")
+	workspaceId, err := uuid.Parse(workspaceIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	var req AppBulkUpdateRequest
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	// Invalidate cache for all affected stories
+	for _, storyId := range req.StoryIDs {
+		cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+		for _, key := range cacheKeys {
+			if strings.Contains(key, "*") {
+				h.cache.DeleteByPattern(ctx, key)
+			} else {
+				h.cache.Delete(ctx, key)
+			}
+		}
+	}
+
+	// Then invalidate the list cache
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	h.cache.DeleteByPattern(ctx, listCachePattern)
+
+	// Also invalidate my-stories cache pattern
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
+
+	if err := h.stories.BulkUpdate(ctx, req.StoryIDs, workspaceId, req.Updates); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
 // Create creates a new story.
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Create")
