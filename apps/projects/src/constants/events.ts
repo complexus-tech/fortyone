@@ -4,6 +4,7 @@ const stories = [
   "story_updated",
   "story_deleted",
   "story_duplicated",
+  "stories_bulk_updated",
 ] as const;
 const objectives = [
   "objective_created",

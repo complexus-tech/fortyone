@@ -101,14 +101,12 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
               Used to identify the team in the workspace
             </Text>
           </Box>
-          <Box className="rounded-full border border-gray-100 bg-gray-50 dark:border-dark-50 dark:bg-dark-100">
-            <ColorPicker
-              onChange={(value) => {
-                setForm({ ...form, color: value });
-              }}
-              value={form.color}
-            />
-          </Box>
+          <ColorPicker
+            onChange={(value) => {
+              setForm({ ...form, color: value });
+            }}
+            value={form.color}
+          />
         </Flex>
         <FeatureGuard
           fallback={

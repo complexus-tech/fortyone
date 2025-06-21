@@ -10,9 +10,12 @@ import {
 } from "icons";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { formatISO } from "date-fns";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useTerminology } from "@/hooks";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useBulkUpdateStoriesMutation } from "@/modules/stories/hooks/update-mutation";
+import type { DetailedStory } from "@/modules/story/types";
 import { useBoard } from "./board-context";
 import { StoryStatusIcon } from "./story-status-icon";
 import { PriorityIcon } from "./priority-icon";
@@ -34,11 +37,19 @@ export const StoriesToolbar = () => {
   }
 
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
+  const { mutate: bulkUpdateMutate } = useBulkUpdateStoriesMutation();
 
   const handleBulkDelete = () => {
     bulkDeleteMutate(selectedStories);
     setSelectedStories([]);
     setIsOpen(false);
+  };
+
+  const handleBulkUpdate = (updates: Partial<DetailedStory>) => {
+    bulkUpdateMutate({
+      storyIds: selectedStories,
+      payload: updates,
+    });
   };
 
   return (
@@ -79,7 +90,12 @@ export const StoriesToolbar = () => {
                   {getTermDisplay("sprintTerm", { capitalize: true })}
                 </Button>
               </SprintsMenu.Trigger>
-              <SprintsMenu.Items setSprintId={() => {}} teamId={finalTeamId} />
+              <SprintsMenu.Items
+                setSprintId={(sprintId) => {
+                  handleBulkUpdate({ sprintId });
+                }}
+                teamId={finalTeamId}
+              />
             </SprintsMenu>
             <ObjectivesMenu>
               <ObjectivesMenu.Trigger>
@@ -92,7 +108,9 @@ export const StoriesToolbar = () => {
                 </Button>
               </ObjectivesMenu.Trigger>
               <ObjectivesMenu.Items
-                setObjectiveId={() => {}}
+                setObjectiveId={(objectiveId) => {
+                  handleBulkUpdate({ objectiveId });
+                }}
                 teamId={finalTeamId}
               />
             </ObjectivesMenu>
@@ -111,7 +129,12 @@ export const StoriesToolbar = () => {
                   Status
                 </Button>
               </StatusesMenu.Trigger>
-              <StatusesMenu.Items setStatusId={() => {}} teamId={finalTeamId} />
+              <StatusesMenu.Items
+                setStatusId={(statusId) => {
+                  handleBulkUpdate({ statusId });
+                }}
+                teamId={finalTeamId}
+              />
             </StatusesMenu>
           </>
         ) : null}
@@ -131,7 +154,11 @@ export const StoriesToolbar = () => {
               Priority
             </Button>
           </PrioritiesMenu.Trigger>
-          <PrioritiesMenu.Items setPriority={() => {}} />
+          <PrioritiesMenu.Items
+            setPriority={(priority) => {
+              handleBulkUpdate({ priority });
+            }}
+          />
         </PrioritiesMenu>
 
         <DatePicker>
@@ -146,7 +173,11 @@ export const StoriesToolbar = () => {
               Deadline
             </Button>
           </DatePicker.Trigger>
-          <DatePicker.Calendar />
+          <DatePicker.Calendar
+            onDayClick={(day) => {
+              handleBulkUpdate({ endDate: formatISO(day) });
+            }}
+          />
         </DatePicker>
 
         {finalTeamId ? (
@@ -161,7 +192,9 @@ export const StoriesToolbar = () => {
               </Button>
             </AssigneesMenu.Trigger>
             <AssigneesMenu.Items
-              onAssigneeSelected={() => {}}
+              onAssigneeSelected={(assigneeId) => {
+                handleBulkUpdate({ assigneeId });
+              }}
               teamId={finalTeamId}
             />
           </AssigneesMenu>

@@ -283,7 +283,7 @@ export const Automations = () => {
                 {getTermDisplay("storyTerm", { variant: "plural" })}
               </Text>
               <Text className="line-clamp-2" color="muted">
-                Automatically archive completed{" "}
+                Automatically archive completed and cancelled{" "}
                 {getTermDisplay("storyTerm", { variant: "plural" })} after a
                 period of time
               </Text>

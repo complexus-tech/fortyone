@@ -17,7 +17,7 @@ import { getStatuses } from "@/lib/queries/states/get-states";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
-import { Chat } from "@/components/ui/chat";
+// import { Chat } from "@/components/ui/chat";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -85,7 +85,7 @@ export default async function RootLayout({
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       {children}
-      <Chat />
+      {/* <Chat /> */}
       <ServerSentEvents />
       <IdentifyUser />
       <WalkthroughIntegration />
