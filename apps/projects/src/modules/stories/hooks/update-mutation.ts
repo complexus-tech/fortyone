@@ -34,32 +34,7 @@ export const useBulkUpdateStoriesMutation = () => {
           const previousData = queryClient.getQueryData(query.queryKey);
           previousQueryStates.set(queryKey, previousData);
 
-          if (queryKey.toLowerCase().includes("detail")) {
-            // Update detailed stories and sub-stories
-            const parentStory = queryClient.getQueryData<DetailedStory>(
-              query.queryKey,
-            );
-            if (parentStory) {
-              // If this story itself is being updated
-              if (storyIds.includes(parentStory.id)) {
-                queryClient.setQueryData<DetailedStory>(query.queryKey, {
-                  ...parentStory,
-                  ...payload,
-                });
-              }
-              // Update sub-stories if any are being updated
-              else if (parentStory.subStories.length > 0) {
-                queryClient.setQueryData<DetailedStory>(query.queryKey, {
-                  ...parentStory,
-                  subStories: parentStory.subStories.map((subStory) =>
-                    storyIds.includes(subStory.id)
-                      ? { ...subStory, ...payload }
-                      : subStory,
-                  ),
-                });
-              }
-            }
-          } else {
+          if (!queryKey.toLowerCase().includes("detail")) {
             // Update story lists
             queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
               stories?.map((story) =>
@@ -69,6 +44,24 @@ export const useBulkUpdateStoriesMutation = () => {
           }
         }
       });
+
+      if (storyId) {
+        // Update story's sub-stories
+        const parentStory = queryClient.getQueryData<DetailedStory>(
+          storyKeys.detail(storyId),
+        );
+        if (parentStory) {
+          // Update sub-stories if any are being updated
+          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+            ...parentStory,
+            subStories: parentStory.subStories.map((subStory) =>
+              storyIds.includes(subStory.id)
+                ? { ...subStory, ...payload }
+                : subStory,
+            ),
+          });
+        }
+      }
 
       return { previousQueryStates };
     },
