@@ -1,6 +1,12 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Text } from "ui";
-import { ArrowDownIcon, AvatarIcon, CheckIcon, FilterIcon } from "icons";
+import {
+  ArrowDownIcon,
+  AssigneeIcon,
+  CheckIcon,
+  FilterIcon,
+  UserIcon,
+} from "icons";
 import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -42,12 +48,12 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-200",
+        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-200",
       )}
       onClick={onClick}
       type="button"
     >
-      <span className="flex items-center gap-3">
+      <span className="flex items-center gap-2">
         {icon}
         {label}
       </span>
@@ -126,8 +132,8 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-[26rem] pb-5">
-        <Flex align="center" className="h-10 px-4" justify="between">
+      <Popover.Content align="end" className="w-[26rem] pb-2">
+        <Flex align="center" className="h-9 px-4" justify="between">
           <Text
             color="muted"
             fontSize="sm"
@@ -151,7 +157,7 @@ export const StoriesFilterButton = ({
         <Divider className="mt-1.5" />
         <Box>
           <ToggleButton
-            icon={<AvatarIcon className="h-5 w-auto" />}
+            icon={<AssigneeIcon />}
             isActive={filters.assignedToMe}
             label="Assigned to me"
             onClick={() => {
@@ -159,7 +165,7 @@ export const StoriesFilterButton = ({
             }}
           />
           <ToggleButton
-            icon={<AvatarIcon className="h-5 w-auto" />}
+            icon={<UserIcon />}
             isActive={filters.createdByMe}
             label="Created by me"
             onClick={() => {
@@ -167,7 +173,7 @@ export const StoriesFilterButton = ({
             }}
           />
           <ToggleButton
-            icon={<AvatarIcon className="h-5 w-auto" />}
+            icon={<AssigneeIcon />}
             isActive={filters.hasNoAssignee || false}
             label="Has no assignee"
             onClick={() => {
