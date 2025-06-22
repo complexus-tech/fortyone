@@ -9,6 +9,7 @@ import {
   LayoutSwitcher,
   NewStoryButton,
   SideDetailsSwitch,
+  StoriesFilterButton,
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
@@ -32,7 +33,8 @@ export const Header = ({
   }>();
   const { data: teams = [] } = useTeams();
   const { name, color } = teams.find((team) => team.id === teamId)!;
-  const { viewOptions, setViewOptions } = useTeamOptions();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useTeamOptions();
   const { getTermDisplay } = useTerminology();
 
   useHotkeys("v+l", () => {
@@ -74,11 +76,11 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        {/* <StoriesFilterButton
+        <StoriesFilterButton
           filters={filters}
           resetFilters={resetFilters}
           setFilters={setFilters}
-        /> */}
+        />
         <StoriesViewOptionsButton
           layout={layout}
           setViewOptions={setViewOptions}

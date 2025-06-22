@@ -7,8 +7,16 @@ import { useTeamOptions } from "./provider";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { data: groupedStories, isPending } = useTeamStoriesGrouped(teamId);
-  const { viewOptions } = useTeamOptions();
+  const { viewOptions, filters } = useTeamOptions();
+  const { data: groupedStories, isPending } = useTeamStoriesGrouped(
+    teamId,
+    viewOptions.groupBy,
+    {
+      statusIds: filters.statusIds ?? undefined,
+      priorities: filters.priorities ?? undefined,
+      assigneeIds: filters.assigneeIds ?? undefined,
+    },
+  );
 
   if (isPending) {
     return <StoriesSkeleton layout={layout} />;

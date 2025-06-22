@@ -26,6 +26,11 @@ export const useTeamStoriesGrouped = (
     params.storiesPerGroup,
     params.statusIds?.join(","),
     params.priorities?.join(","),
+    params.assigneeIds?.join(","),
+    params.sprintIds?.join(","),
+    params.objectiveIds?.join(","),
+    params.sprintIds?.join(","),
+    params.sprintIds?.join(","),
   ]);
 
   const queryKey = storyKeys.teamGrouped(teamId, paramsKey);
