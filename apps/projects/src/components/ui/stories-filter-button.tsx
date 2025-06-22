@@ -1,14 +1,5 @@
 "use client";
-import {
-  Avatar,
-  Box,
-  Button,
-  Checkbox,
-  Divider,
-  Flex,
-  Popover,
-  Text,
-} from "ui";
+import { Avatar, Box, Button, Divider, Flex, Popover, Text } from "ui";
 import {
   ArrowDownIcon,
   AssigneeIcon,
@@ -21,7 +12,6 @@ import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { StoryPriority } from "@/modules/stories/types";
-import { StoryStatusIcon } from "./story-status-icon";
 import { PriorityIcon } from "./priority-icon";
 
 export type StoriesFilter = {
@@ -133,23 +123,28 @@ const StatusSelector = ({
   };
 
   return (
-    <Box className="space-y-3">
+    <Flex gap={3} wrap>
       {statuses.map((status) => (
-        <label
-          className="flex cursor-pointer items-center gap-2"
+        <Button
+          className={cn("border-0 px-3 text-white", {
+            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
+              selected?.includes(status.id),
+          })}
+          color="tertiary"
           key={status.id}
+          onClick={() => {
+            toggleStatus(status.id);
+          }}
+          rounded="xl"
+          size="xs"
+          style={{
+            backgroundColor: status.color,
+          }}
         >
-          <Checkbox
-            checked={selected?.includes(status.id) || false}
-            onCheckedChange={() => {
-              toggleStatus(status.id);
-            }}
-          />
-          <StoryStatusIcon statusId={status.id} />
-          <Text>{status.name}</Text>
-        </label>
+          {status.name}
+        </Button>
       ))}
-    </Box>
+    </Flex>
   );
 };
 
