@@ -100,7 +100,7 @@ const Okr = ({
   };
 
   return (
-    <Wrapper className="flex flex-col gap-4 rounded-[0.65rem] py-3 md:flex-row md:items-center md:justify-between md:gap-2">
+    <Wrapper className="flex flex-col gap-4 py-3 md:flex-row md:items-center md:justify-between md:gap-2">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
