@@ -90,7 +90,7 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-200",
+        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-100/80",
       )}
       onClick={onClick}
       type="button"
@@ -123,10 +123,10 @@ const StatusSelector = ({
   };
 
   return (
-    <Flex gap={3} wrap>
+    <Flex gap={2} wrap>
       {statuses.map((status) => (
         <Button
-          className={cn("border-0 px-3 text-white", {
+          className={cn("border-0 px-3 text-white md:h-8", {
             "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
               selected?.includes(status.id),
           })}
@@ -136,7 +136,7 @@ const StatusSelector = ({
             toggleStatus(status.id);
           }}
           rounded="xl"
-          size="xs"
+          size="sm"
           style={{
             backgroundColor: status.color,
           }}
@@ -178,7 +178,7 @@ const UserSelector = ({
           type="button"
         >
           <Avatar
-            className="bg-gray-200 text-dark dark:bg-dark-50 dark:text-white"
+            className="h-9 bg-gray-200 text-dark dark:bg-dark-50 dark:text-white"
             name={user.name}
             src={user.avatar}
           />
@@ -214,10 +214,10 @@ const PrioritySelector = ({
   };
 
   return (
-    <Flex gap={3} wrap>
+    <Flex gap={2} wrap>
       {priorities.map((priority) => (
         <Button
-          className={cn("px-2", {
+          className={cn("px-2.5", {
             "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
               selected?.includes(priority),
           })}
@@ -379,9 +379,9 @@ export const StoriesFilterButton = ({
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="max-h-[85vh] w-[28rem] overflow-y-auto pb-2"
+        className="max-h-[85vh] w-80 overflow-y-auto pb-2 dark:bg-dark-200/70 md:w-[30rem]"
       >
-        <Flex align="center" className="h-9 px-4" justify="between">
+        <Flex align="center" className="h-10 px-4" justify="between">
           <Text
             color="muted"
             fontSize="sm"
