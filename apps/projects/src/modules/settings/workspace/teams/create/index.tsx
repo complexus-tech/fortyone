@@ -78,7 +78,7 @@ export const CreateTeam = () => {
       <FeatureGuard
         count={teams.length}
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -95,7 +95,7 @@ export const CreateTeam = () => {
         }
         feature="maxTeams"
       >
-        <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
           <SectionHeader
             description="Create a new team to group members, and collaborate on objectives."
             title="Create a new team"
@@ -162,7 +162,7 @@ export const CreateTeam = () => {
             <FeatureGuard
               fallback={
                 <Box className="px-6 py-4">
-                  <Wrapper className="flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                  <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
                     <Flex align="center" gap={2}>
                       <WarningIcon className="text-warning dark:text-warning" />
                       <Text>

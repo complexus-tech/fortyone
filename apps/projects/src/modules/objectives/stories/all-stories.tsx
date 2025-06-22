@@ -85,7 +85,6 @@ export const AllStories = ({
           className="h-[calc(100dvh-7.7rem)]"
           groupedStories={groupedStories}
           layout={layout}
-          stories={[]}
           viewOptions={viewOptions}
         />
       </Tabs.Panel>

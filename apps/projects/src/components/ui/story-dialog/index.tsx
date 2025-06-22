@@ -116,25 +116,24 @@ export const StoryDialog = ({
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>
         </Dialog.Title>
-        <Dialog.Body className="h-[85.5dvh] max-h-[85.5dvh] overflow-y-hidden px-0 pt-0">
+        <Dialog.Body className="h-[85dvh] max-h-[85dvh] overflow-y-hidden px-0 pt-0">
           <StoryPage
             isDialog
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-[2] bg-white/80 px-10 py-5 backdrop-blur dark:bg-dark-300/80"
+                className="sticky top-0 z-[2] bg-white/80 px-10 py-4 backdrop-blur dark:bg-dark-300/80"
                 gap={2}
                 justify="between"
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="shrink-0 pr-3 dark:border-dark-100 dark:bg-dark-100/30"
+                    className="shrink-0 pl-2.5 pr-4 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    size="sm"
                   >
                     Close
                   </Button>
@@ -150,7 +149,6 @@ export const StoryDialog = ({
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
                       onClick={handlePrev}
-                      size="sm"
                       variant="naked"
                     >
                       <span className="sr-only">Previous</span>
@@ -166,7 +164,6 @@ export const StoryDialog = ({
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
                       onClick={handleNext}
-                      size="sm"
                       variant="naked"
                     >
                       <span className="sr-only">Next</span>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CallToAction } from "@/components/shared";
-import { Hero, Features } from "@/modules/product/stories";
+import { Hero, Features } from "@/modules/features/stories";
 
 export const metadata: Metadata = {
   title: "Stories | Task Management & Project Tracking | Complexus",

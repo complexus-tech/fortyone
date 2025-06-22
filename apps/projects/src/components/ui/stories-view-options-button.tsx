@@ -150,10 +150,7 @@ export const StoriesViewOptionsButton = ({
           <span className="hidden md:inline">Customise</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content
-        align="end"
-        className="min-w-[20rem] rounded-[0.6rem] md:max-w-[24rem]"
-      >
+      <Popover.Content align="end" className="min-w-[20rem] md:max-w-[24rem]">
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select
@@ -244,7 +241,7 @@ export const StoriesViewOptionsButton = ({
               const isSelected = displayColumns.includes(column);
               return (
                 <Button
-                  className="pl-1.5"
+                  className="rounded-lg pl-1.5"
                   color={isSelected ? "primary" : "tertiary"}
                   key={column}
                   onClick={() => {
@@ -262,7 +259,6 @@ export const StoriesViewOptionsButton = ({
                       });
                     }
                   }}
-                  rounded="sm"
                   size="xs"
                   variant={isSelected ? "solid" : "outline"}
                 >

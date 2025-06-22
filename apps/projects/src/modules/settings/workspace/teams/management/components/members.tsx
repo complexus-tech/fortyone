@@ -43,7 +43,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
         </Box>
       )}
 
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
             <AssigneesMenu>
@@ -52,7 +52,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
                   className="shrink-0"
                   color="tertiary"
                   disabled={isAllMembersAdded}
-                  leftIcon={<PlusIcon className="text-white dark:text-white" />}
+                  leftIcon={<PlusIcon />}
                 >
                   Add Member
                 </Button>

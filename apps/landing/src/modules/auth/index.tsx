@@ -46,8 +46,8 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
             A secure sign-in link has been sent to{" "}
-            <span className="font-semibold text-white/70">{email}</span>. ✨
-            Please check your inbox to continue.
+            <span className="font-semibold dark:text-white/70">{email}</span>.
+            ✨ Please check your inbox to continue.
           </Text>
         </>
       ) : (
@@ -80,7 +80,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           <form onSubmit={handleSubmit}>
             <Input
               autoFocus
-              className="rounded-lg"
+              className="rounded-[0.6rem]"
               hasError={Boolean(error) && !email && !isTouched}
               helpText={error && !isTouched ? error : undefined}
               label="Enter your email"
@@ -105,15 +105,13 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               Continue
             </Button>
             <Flex align="center" className="my-4 gap-4" justify="between">
-              <Box className="h-px w-full bg-white/20" />
-              <Text className="text-[0.95rem] opacity-40" color="white">
-                OR
-              </Text>
-              <Box className="h-px w-full bg-white/20" />
+              <Box className="h-px w-full bg-gray-100 dark:bg-white/20" />
+              <Text className="text-[0.95rem] opacity-40">OR</Text>
+              <Box className="h-px w-full bg-gray-100 dark:bg-white/20" />
             </Flex>
             <Button
               align="center"
-              className="mb-3 md:h-[2.6rem]"
+              className="mb-3 border-gray-200 md:h-[2.6rem]"
               color="tertiary"
               fullWidth
               leftIcon={<GoogleIcon />}

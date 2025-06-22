@@ -8,19 +8,26 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Transform = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative grid bg-gradient-to-r from-dark via-black to-black py-20 md:grid-cols-2 md:py-0">
+    <Box className="relative grid bg-gradient-to-r from-gray-100 via-gray-50 to-gray-50 py-20 dark:from-dark dark:via-black dark:to-black md:grid-cols-2 md:py-0">
       <Box />
       <Box className="relative hidden md:block">
         <BlurImage
           alt="Login"
-          className="h-[85vh] w-full"
+          className="h-[85vh] w-full dark:hidden"
+          imageClassName="object-top"
+          quality={100}
+          src="/images/login-light.webp"
+        />
+        <BlurImage
+          alt="Login"
+          className="hidden h-[85vh] w-full dark:block"
           imageClassName="object-top"
           quality={100}
           src="/images/login.webp"
         />
-        <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-25% " />
+        <Box className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50 via-25% dark:from-black dark:via-black" />
       </Box>
-      {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-40" /> */}
+      {/* <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-70" /> */}
       <Box className="z-[3] md:absolute md:inset-0">
         <Container className="grid-cols-2 gap-10 md:grid md:h-full">
           <Flex direction="column" justify="center">
@@ -34,7 +41,7 @@ export const Transform = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="mx-auto px-3 text-sm md:mx-0 md:text-base"
+                className="mx-auto border-gray-200 px-3 text-sm md:mx-0 md:text-base"
                 color="tertiary"
                 href="/signup"
                 rounded="lg"
@@ -50,10 +57,7 @@ export const Transform = () => {
               <span className="text-stroke-white">Transform</span> how your team
               works <span className="text-stroke-white relative">today.</span>
             </Text>
-            <Text
-              className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl"
-              fontWeight="normal"
-            >
+            <Text className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-2xl">
               Join innovative teams who use complexus to deliver projects faster
               and with better results.
             </Text>
@@ -72,8 +76,8 @@ export const Transform = () => {
                 whileInView={{ y: 0, opacity: 1 }}
               >
                 <Button
-                  className="px-3 font-semibold md:px-5"
-                  color="white"
+                  className="px-3 md:px-5"
+                  color="invert"
                   href="/signup"
                   rounded="lg"
                   size="lg"
@@ -91,7 +95,7 @@ export const Transform = () => {
                 whileInView={{ y: 0, opacity: 1 }}
               >
                 <Button
-                  className="px-3 md:pl-3.5 md:pr-4"
+                  className="border-gray-200 px-3 md:pl-3.5 md:pr-4"
                   color="tertiary"
                   leftIcon={<GoogleIcon />}
                   onClick={async () => {

@@ -10,6 +10,6 @@ export const useTeamSprints = (teamId: string) => {
     queryKey: sprintKeys.team(teamId),
     queryFn: () => getTeamSprints(teamId, session!),
     enabled: Boolean(teamId),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
 };

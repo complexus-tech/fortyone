@@ -55,7 +55,7 @@ export const Testimonials = () => {
   }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-dark-300 via-black via-40% to-black py-28 text-white md:grid md:h-[95vh] xl:py-36 2xl:py-52">
+    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-gray-50 via-40% to-gray-50 py-28 text-white dark:from-dark-300 dark:via-black dark:to-black md:grid md:h-[95vh] xl:py-36 2xl:py-52">
       <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
@@ -103,7 +103,7 @@ export const Testimonials = () => {
           <Text
             as="span"
             className="3xl:mb-4 relative mb-2 block text-2xl md:text-3xl"
-            fontWeight="normal"
+            fontWeight="medium"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
             <span className="absolute -left-7 text-primary">//</span>
@@ -135,7 +135,7 @@ export const Testimonials = () => {
           </Text>
           <Text
             as="span"
-            className="mb-1 block text-gray-100 md:mb-2 md:text-xl"
+            className="mb-1 block dark:text-gray-100 md:mb-2 md:text-xl"
           >
             <motion.div
               animate="animateState"
@@ -198,9 +198,9 @@ export const Testimonials = () => {
           <Flex className="gap-5">
             <Button
               asIcon
-              className="ml-auto md:h-[3.5rem]"
+              className="ml-auto border-dark-50 md:h-[3.5rem]"
               color="tertiary"
-              leftIcon={<ArrowLeft2Icon className="md:h-6" />}
+              leftIcon={<ArrowLeft2Icon className="text-dark" />}
               onClick={prevSlide}
               rounded="full"
             >
@@ -209,9 +209,9 @@ export const Testimonials = () => {
 
             <Button
               asIcon
-              className="ml-auto md:h-[3.5rem]"
+              className="ml-auto border-dark-50 md:h-[3.5rem]"
               color="tertiary"
-              leftIcon={<ArrowRight2Icon className="md:h-6" />}
+              leftIcon={<ArrowRight2Icon className="text-dark" />}
               onClick={nextSlide}
               rounded="full"
             >

@@ -113,7 +113,7 @@ export const StoryAttachmentPreview = ({
               setIsOpen(true);
             }}
           >
-            <Box className="rounded-lg bg-gray-100/50 p-2 dark:bg-dark-200/80">
+            <Box className="rounded-[0.6rem] bg-gray-100/50 p-2 dark:bg-dark-200/80">
               {isUploading ? (
                 <LoadingIcon className="h-5 animate-spin md:h-6" />
               ) : (
@@ -198,7 +198,7 @@ export const StoryAttachmentPreview = ({
             <Dialog.Title className="mb-0 px-6">{file.filename}</Dialog.Title>
           </Dialog.Header>
           {isImage ? (
-            <Box className="flex h-[50dvh] items-center justify-center overflow-y-auto rounded-lg md:h-[70dvh]">
+            <Box className="flex h-[50dvh] items-center justify-center overflow-y-auto rounded-[0.6rem] md:h-[70dvh]">
               <BlurImage
                 alt={file.filename}
                 className="h-full bg-dark dark:bg-dark"
@@ -211,7 +211,7 @@ export const StoryAttachmentPreview = ({
           {isVideo ? (
             <MediaThemeSutro
               className={cn(
-                "aspect-video h-[55dvh] w-full overflow-hidden rounded-lg",
+                "aspect-video h-[55dvh] w-full overflow-hidden rounded-[0.6rem]",
                 className,
               )}
               title={file.filename}
@@ -228,7 +228,7 @@ export const StoryAttachmentPreview = ({
 
           {isPdf ? (
             <ObjectViewer
-              className="min-h-[80dvh] overflow-hidden rounded-lg"
+              className="min-h-[80dvh] overflow-hidden rounded-[0.6rem]"
               data={file.url}
               type="application/pdf"
             />

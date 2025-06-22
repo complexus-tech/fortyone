@@ -2,7 +2,7 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const FilterIcon = (props: Icon) => {
-  const { className, strokeWidth = 2, ...rest } = props;
+  const { className, strokeWidth = 3, ...rest } = props;
   return (
     <svg
       {...rest}
@@ -20,21 +20,18 @@ export const FilterIcon = (props: Icon) => {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2.5"
       />
       <path
         d="M18 12L6 12"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2.5"
       />
       <path
         d="M8 19L16 19"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2.5"
       />
     </svg>
   );

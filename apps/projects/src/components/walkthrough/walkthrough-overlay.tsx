@@ -89,7 +89,7 @@ export const WalkthroughOverlay = () => {
         {/* Spotlight cutout - only for non-body targets */}
         {currentStepData.target !== "body" && (
           <div
-            className="absolute rounded-lg border-2 border-primary/50 bg-transparent shadow-xl"
+            className="absolute rounded-[0.6rem] border-2 border-primary/50 bg-transparent shadow-xl"
             style={{
               top: targetPosition.top - 8,
               left: targetPosition.left - 8,

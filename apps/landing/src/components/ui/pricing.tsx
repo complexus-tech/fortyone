@@ -78,7 +78,7 @@ const packages = [
 
 const Feature = ({ feature }: { feature: string }) => (
   <Flex align="center" gap={2} key={feature}>
-    <SuccessIcon className="h-[1.35rem] dark:text-primary" />
+    <SuccessIcon className="h-[1.35rem] text-primary dark:text-primary" />
     <Text className="opacity-90">{feature}</Text>
   </Flex>
 );
@@ -215,7 +215,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-[0.7rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
+            <Box className="flex w-max gap-1 rounded-[0.8rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-2.5 capitalize", {
@@ -251,7 +251,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             </motion.p>
           </Box>
         </Flex>
-        <Box className="grid grid-cols-1 divide-y divide-dark-100 overflow-hidden rounded-3xl border border-dark-100 bg-white dark:bg-dark md:grid-cols-4 md:divide-x md:divide-y-0">
+        <Box className="grid grid-cols-1 divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-100 bg-white dark:divide-dark-100 dark:border-dark-100 dark:bg-dark md:grid-cols-4 md:divide-x md:divide-y-0">
           {packages.map((pkg) => (
             <Package
               billing={billing}

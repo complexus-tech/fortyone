@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative bg-gradient-to-b from-dark-300 via-black via-40% to-dark/50">
+    <Box className="relative bg-gradient-to-b from-gray-50 via-40% to-gray-50 dark:bg-gray-50 dark:from-dark-300 dark:via-black dark:to-dark">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -47,7 +47,6 @@ export const CallToAction = () => {
               className="mt-4 max-w-[650px] md:mt-16"
               color="muted"
               fontSize="2xl"
-              fontWeight="normal"
             >
               Bring your objectives, OKRs, and sprints together. The modern way
               to align teams and deliver meaningful outcomes.
@@ -66,7 +65,7 @@ export const CallToAction = () => {
             >
               <Button
                 className="md:px-4"
-                color="white"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"
@@ -84,7 +83,7 @@ export const CallToAction = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-4 md:pl-3.5 md:pr-4"
+                className="border-gray-200 px-4 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {

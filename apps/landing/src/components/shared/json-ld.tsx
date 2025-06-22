@@ -50,7 +50,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "User Stories",
   ],
   description:
-    "Complexus is an advanced project management platform that integrates OKR frameworks with agile methodologies, helping teams align objectives, track progress, and deliver consistent results through collaborative workflows.",
+    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
 };
 
 const organization: WithContext<Organization> = {
@@ -71,9 +71,9 @@ const organization: WithContext<Organization> = {
 const product: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Complexus: Project Management & OKR Software for Teams",
+  name: "Project Management & OKR Software for Teams | Complexus",
   description:
-    "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
+    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
   category: "Software",
   brand: {
     "@type": "Brand",

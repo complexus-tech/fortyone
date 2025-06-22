@@ -261,7 +261,7 @@ export const WorkflowSettings = () => {
       </Text>
       <FeatureGuard
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-lg border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="mb-6 flex items-center justify-between gap-2 rounded-[0.6rem] border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -278,7 +278,7 @@ export const WorkflowSettings = () => {
         }
         feature="customWorkflows"
       >
-        <Box className="mb-6 rounded-lg border border-gray-100 bg-white pb-6 dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="mb-6 rounded-2xl border border-gray-100 bg-white pb-6 dark:border-dark-100 dark:bg-dark-100/40">
           <SectionHeader
             className="mb-4"
             description={`Configure custom workflow states to track the progress of ${getTermDisplay(

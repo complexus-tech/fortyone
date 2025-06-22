@@ -24,13 +24,13 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white dark:bg-dark-200 backdrop-blur z-50 border border-gray-100 dark:border-dark-50 w-max shadow-lg shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
+  "bg-white dark:bg-dark-200 backdrop-blur z-50 border border-gray-100 dark:border-dark-50 w-max shadow-lg shadow-gray-100 dark:shadow-dark/20 mt-1 py-2",
   {
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-lg",
-        lg: "rounded-xl",
+        md: "rounded-[0.6rem]",
+        lg: "rounded-2xl",
       },
     },
     defaultVariants: {
@@ -47,7 +47,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
       {
         "bg-gray-50/80 dark:bg-dark-100": active,
       },
@@ -94,7 +94,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
       {
         "bg-gray-100/80 dark:bg-dark-50": active,
       },
@@ -113,7 +113,7 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50/80",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50/80",
       {
         "bg-gray-50/80 dark:bg-dark-50/60": checked,
       },

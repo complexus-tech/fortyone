@@ -82,7 +82,7 @@ export const Team = ({
         <Box>
           <Flex
             align="center"
-            className="group h-[2.5rem] select-none rounded-lg pl-3 pr-2 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/60 focus:dark:bg-dark-50/60"
+            className="group h-[2.5rem] select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/60 focus:dark:bg-dark-50/60"
             justify="between"
             onClick={() => {
               setIsOpen(!isOpen);

@@ -14,7 +14,7 @@ export const NotificationsSettings = () => {
 
       <Suspense
         fallback={
-          <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+          <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
             <SectionHeader
               description="Choose what updates you want to receive via email."
               title="Email Notifications"
@@ -42,7 +42,7 @@ export const NotificationsSettings = () => {
         <Tabs.Panel value="email">
           <Suspense
             fallback={
-              <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+              <Box className="rounded-[0.6rem] border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
                 <SectionHeader
                   description="Choose what updates you want to receive via email."
                   title="Email Notifications"
@@ -61,7 +61,7 @@ export const NotificationsSettings = () => {
         <Tabs.Panel value="inApp">
           <Suspense
             fallback={
-              <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+              <Box className="rounded-[0.6rem] border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
                 <SectionHeader
                   description="Choose what updates you want to receive via in-app notifications."
                   title="In-App Notifications"

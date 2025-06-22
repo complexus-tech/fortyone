@@ -81,7 +81,7 @@ export const StoryCard = ({
       <StoryContextMenu story={story}>
         <Box
           className={cn(
-            "w-[340px] select-none rounded-[0.6rem] border-[0.5px] border-gray-100 bg-white px-4 pb-4 shadow-lg shadow-gray-100/50 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-50 dark:bg-dark-200/60 dark:shadow-none dark:hover:bg-dark-200/90",
+            "w-[340px] select-none rounded-[0.9rem] border-[0.5px] border-gray-100 bg-white px-4 pb-4 shadow-lg shadow-gray-100/50 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:border-dark-50 dark:bg-dark-200/60 dark:shadow-none dark:hover:bg-dark-200/90",
             {
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,
@@ -102,12 +102,11 @@ export const StoryCard = ({
               className="flex justify-between gap-2"
               href={`/story/${story.id}/${slugify(story.title)}`}
               onClick={(e) => {
-                if (isDragging) {
-                  e.preventDefault();
-                }
                 if (isDesktop) {
                   e.preventDefault();
-                  handleStoryClick(story.id);
+                  if (!isDragging) {
+                    handleStoryClick(story.id);
+                  }
                 }
               }}
             >

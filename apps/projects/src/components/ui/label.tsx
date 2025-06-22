@@ -27,7 +27,7 @@ export const StoryLabel = ({
         className={cn(
           "h-[1.85rem] cursor-pointer select-none gap-1.5 px-2 text-[0.95rem]",
           {
-            "rounded-lg px-1.5": isRectangular,
+            "rounded-[0.6rem] px-1.5": isRectangular,
             "h-[2.3rem] rounded-[0.6rem] px-2 text-base": size === "md",
           },
         )}

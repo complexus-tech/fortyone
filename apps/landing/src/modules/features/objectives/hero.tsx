@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
-import kanbanImg from "../../../../public/images/product/kanban.webp";
+import objectivesImg from "../../../../public/images/product/objective.webp";
+import objectivesImgLight from "../../../../public/images/product/objective-light.webp";
 
 export const Hero = () => {
   const { data: session } = useSession();
@@ -33,7 +34,7 @@ export const Hero = () => {
               rounded="lg"
               size="sm"
             >
-              Stories
+              Objectives
             </Button>
           </motion.span>
           <motion.span
@@ -49,8 +50,8 @@ export const Hero = () => {
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Manage</span> Tasks with User
-              Stories
+              <span className="text-stroke-white">Define</span> and Track
+              Strategic Objectives
             </Text>
           </motion.span>
 
@@ -67,9 +68,9 @@ export const Hero = () => {
               className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl"
               fontWeight="normal"
             >
-              Transform your project management with our intuitive story-based
-              workflow system. Create, track, and manage tasks efficiently while
-              keeping your team aligned and productive.
+              Transform your organization with clear, measurable objectives that
+              drive action. Create alignment between your teams and your
+              strategic vision with powerful objective management.
             </Text>
           </motion.span>
 
@@ -88,14 +89,14 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 font-semibold md:pl-5 md:pr-4"
-                color="white"
+                className="px-3 md:pl-5 md:pr-4"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"
               >
                 <span className="hidden md:inline">
-                  Create Your First Story
+                  Create Strategic Objectives
                 </span>
                 <span className="md:hidden">Get Started</span>
               </Button>
@@ -124,14 +125,23 @@ export const Hero = () => {
             </motion.span>
           </Flex>
         </Flex>
-        <Box className="relative mx-auto mt-16 max-w-6xl">
+        <Box className="relative mx-auto mt-16 max-w-6xl dark:hidden">
           <Image
-            alt="Kanban"
+            alt="Objectives Dashboard - Strategic goal setting and tracking"
+            className="rounded border-[6px] border-gray-100 md:rounded-2xl"
+            placeholder="blur"
+            src={objectivesImgLight}
+          />
+          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+        </Box>
+        <Box className="relative mx-auto mt-16 hidden max-w-6xl dark:block">
+          <Image
+            alt="Objectives Dashboard - Strategic goal setting and tracking"
             className="rounded border-[6px] dark:border-dark-100 md:rounded-2xl"
             placeholder="blur"
-            src={kanbanImg}
+            src={objectivesImg}
           />
-          <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-20%" />
+          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
         </Box>
       </Container>
     </Box>

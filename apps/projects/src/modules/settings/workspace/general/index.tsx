@@ -12,7 +12,7 @@ export const WorkspaceGeneralSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Settings
       </Text>
-      <Box className="mb-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="mb-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={<Logo />}
           description="Basic information about your workspace."
@@ -25,7 +25,7 @@ export const WorkspaceGeneralSettings = () => {
         <WorkspaceFeatures />
       </Box>
 
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
             <Button

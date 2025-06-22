@@ -54,7 +54,7 @@ export const MemberContributions = () => {
       </Box>
 
       {contributionsData.length > 0 ? (
-        <Box className="overflow-hidden rounded-lg border border-gray-200 dark:border-dark-50">
+        <Box className="overflow-hidden rounded-[0.6rem] border border-gray-200 dark:border-dark-50">
           {/* Compact Rows */}
           <Box className="bg-white dark:bg-dark-200">
             {contributionsData.map((member, index) => {

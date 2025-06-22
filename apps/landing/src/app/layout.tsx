@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { instrumentSans } from "@/styles/fonts";
 import "../styles/global.css";
 import { CursorProvider } from "@/context";
@@ -13,9 +14,9 @@ import PostHogPageView from "./posthog-page-view";
 import GoogleOneTap from "./one-tap";
 
 export const metadata: Metadata = {
-  title: "Complexus: Project Management & OKR Software for Teams",
+  title: "Project Management & OKR Software for Teams | Complexus",
   description:
-    "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
+    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
   metadataBase: new URL("https://www.complexus.app"),
   keywords: [
     "project management",
@@ -37,9 +38,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Complexus: Project Management & OKR Software for Teams",
+    title: "Project Management & OKR Software for Teams | Complexus",
     description:
-      "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
+      "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
     siteName: "Complexus",
     url: "/",
   },
@@ -47,9 +48,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@complexus_app",
     creator: "@complexus_app",
-    title: "Complexus: Project Management & OKR Software for Teams",
+    title: "Project Management & OKR Software for Teams | Complexus",
     description:
-      "Streamline project planning, task management, and achieve your goals with Complexus. Modern, collaborative, and built for results.",
+      "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
   },
   alternates: {
     canonical: "/",
@@ -63,24 +64,26 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html className="dark" lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
       </head>
       <body className={cn(instrumentSans.variable)}>
-        <SessionProvider>
-          <PostHogProvider>
-            <CursorProvider>{children}</CursorProvider>
-          </PostHogProvider>
-          <Suspense>
-            {isProduction ? (
-              <>
-                <GoogleOneTap />
-                <PostHogPageView />
-              </>
-            ) : null}
-          </Suspense>
-        </SessionProvider>
+        <ThemeProvider attribute="class" enableSystem>
+          <SessionProvider>
+            <PostHogProvider>
+              <CursorProvider>{children}</CursorProvider>
+            </PostHogProvider>
+            <Suspense>
+              {isProduction ? (
+                <>
+                  <GoogleOneTap />
+                  <PostHogPageView />
+                </>
+              ) : null}
+            </Suspense>
+          </SessionProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
       {isProduction ? (

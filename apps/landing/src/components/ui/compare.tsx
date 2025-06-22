@@ -7,7 +7,7 @@ import { Container } from "./container";
 const FeatureCheck = ({ available }: { available: boolean }) => (
   <Box className="flex">
     {available ? (
-      <SuccessIcon className="dark:text-primary" />
+      <SuccessIcon className="text-primary dark:text-primary" />
     ) : (
       <ErrorIcon className="dark:text-white" />
     )}
@@ -41,7 +41,7 @@ export const ComparePlans = () => {
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/6 px-4 py-5", {
-                  "rounded-t-2xl border border-b-0 border-dark-100 bg-dark-300":
+                  "rounded-t-2xl border border-b-0 border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                     plan.highlighted,
                 })}
                 key={plan.name}
@@ -53,21 +53,21 @@ export const ComparePlans = () => {
 
           {/* Limits section */}
           <Box>
-            <Flex className="border-b border-dark-100 bg-dark-300/50">
+            <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
               <Box className="w-1/3 px-4 py-4">
                 <Text fontWeight="semibold">Limits</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-4", {
-                    "border-x border-dark-100 bg-dark-300":
+                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.name === "Business",
                   })}
                   key={plan.name}
                 />
               ))}
             </Flex>
-            <Flex className="border-b border-dark-100">
+            <Flex className="border-b border-gray-100 dark:border-dark-100">
               <Box className="w-1/3 px-4 py-4">
                 <Text>Members</Text>
               </Box>
@@ -75,7 +75,8 @@ export const ComparePlans = () => {
                 <Box
                   className={cn(
                     "w-1/6 px-4 py-4",
-                    plan.highlighted && "border-x border-dark-100 bg-dark-300",
+                    plan.highlighted &&
+                      "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300",
                   )}
                   key={`${plan.name}-members`}
                 >
@@ -84,14 +85,15 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-dark-100">
+            <Flex className="border-b border-gray-100 dark:border-dark-100">
               <Box className="w-1/3 px-4 py-4">
                 <Text>File uploads</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-4", {
-                    "border-x border-dark-100 bg-dark-300": plan.highlighted,
+                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                      plan.highlighted,
                   })}
                   key={`${plan.name}-files`}
                 >
@@ -100,14 +102,15 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-dark-100">
+            <Flex className="border-b border-gray-100 dark:border-dark-100">
               <Box className="w-1/3 px-4 py-4">
                 <Text>Stories</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-4", {
-                    "border-x border-dark-100 bg-dark-300": plan.highlighted,
+                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                      plan.highlighted,
                   })}
                   key={`${plan.name}stories`}
                 >
@@ -119,14 +122,14 @@ export const ComparePlans = () => {
 
           {/* Features section */}
           <Box>
-            <Flex className="border-b border-dark-100 bg-dark-300/50">
+            <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
               <Box className="w-1/3 px-4 py-4">
                 <Text fontWeight="semibold">Features</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-4", {
-                    "border-x border-dark-100 bg-dark-300":
+                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.name === "Business",
                   })}
                   key={plan.name}
@@ -144,7 +147,11 @@ export const ComparePlans = () => {
 
                 return (
                   <Flex
-                    className={!isLastItem ? "border-b border-dark-100" : ""}
+                    className={
+                      !isLastItem
+                        ? "border-b border-gray-100 dark:border-dark-100"
+                        : ""
+                    }
                     key={featureKey}
                   >
                     <Box className="w-1/3 px-4 py-4">
@@ -157,7 +164,7 @@ export const ComparePlans = () => {
                       return (
                         <Box
                           className={cn("w-1/6 px-4 py-4", {
-                            "border-x border-dark-100 bg-dark-300":
+                            "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                               isHighlighted,
                           })}
                           key={`${plan.name}-${featureKey}`}
@@ -171,7 +178,7 @@ export const ComparePlans = () => {
               },
             )}
           </Box>
-          <Flex className="border-t border-dark-100">
+          <Flex className="border-t border-gray-100 dark:border-dark-100">
             <Box className="w-1/3" />
             <Box className="w-1/6 px-4 py-4">
               <Button align="center" color="tertiary" fullWidth href="/signup">
@@ -183,7 +190,7 @@ export const ComparePlans = () => {
                 Upgrade now
               </Button>
             </Box>
-            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-dark-100 bg-dark-300 px-4 py-4">
+            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-gray-100 bg-gray-50 px-4 py-4 dark:border-dark-100 dark:bg-dark-300">
               <Button align="center" fullWidth href="/signup">
                 Upgrade now
               </Button>

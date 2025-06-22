@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
-import sprintsImg from "../../../../public/images/product/kanban.webp";
+import kanbanImg from "../../../../public/images/product/kanban.webp";
+import kanbanImgLight from "../../../../public/images/product/kanban-light.webp";
 
 export const Hero = () => {
   const { data: session } = useSession();
@@ -33,7 +34,7 @@ export const Hero = () => {
               rounded="lg"
               size="sm"
             >
-              Sprints
+              Stories
             </Button>
           </motion.span>
           <motion.span
@@ -49,8 +50,8 @@ export const Hero = () => {
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Deliver</span> Value with
-              Agile Sprints
+              <span className="text-stroke-white">Manage</span> Tasks with User
+              Stories
             </Text>
           </motion.span>
 
@@ -67,9 +68,9 @@ export const Hero = () => {
               className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl"
               fontWeight="normal"
             >
-              Streamline your development cycles with our powerful sprint
-              management tools. Plan, execute, and track sprint progress to
-              deliver value consistently and predictably.
+              Transform your project management with our intuitive story-based
+              workflow system. Create, track, and manage tasks efficiently while
+              keeping your team aligned and productive.
             </Text>
           </motion.span>
 
@@ -88,14 +89,14 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 font-semibold md:pl-5 md:pr-4"
-                color="white"
+                className="px-3 md:pl-5 md:pr-4"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"
               >
                 <span className="hidden md:inline">
-                  Start Your First Sprint
+                  Create Your First Story
                 </span>
                 <span className="md:hidden">Get Started</span>
               </Button>
@@ -124,12 +125,21 @@ export const Hero = () => {
             </motion.span>
           </Flex>
         </Flex>
-        <Box className="relative mx-auto mt-16 max-w-6xl">
+        <Box className="relative mx-auto mt-16 max-w-6xl dark:hidden">
           <Image
-            alt="Sprint Management Dashboard - Agile sprint planning and tracking"
+            alt="Kanban"
+            className="rounded border-[6px] border-gray-100 md:rounded-2xl"
+            placeholder="blur"
+            src={kanbanImgLight}
+          />
+          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+        </Box>
+        <Box className="relative mx-auto mt-16 hidden max-w-6xl dark:block">
+          <Image
+            alt="Kanban"
             className="rounded border-[6px] dark:border-dark-100 md:rounded-2xl"
             placeholder="blur"
-            src={sprintsImg}
+            src={kanbanImg}
           />
           <Box className="absolute inset-0 bg-gradient-to-t from-black via-black via-20%" />
         </Box>

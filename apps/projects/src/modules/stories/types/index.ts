@@ -12,6 +12,7 @@ export type Story = {
   statusId: string;
   sprintId: string | null;
   objectiveId: string | null;
+  keyResultId: string | null;
   teamId: string;
   workspaceId: string;
   assigneeId: string | null;

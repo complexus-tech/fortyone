@@ -10,6 +10,7 @@ export type DetailedStory = {
   teamId: string;
   workspaceId: string;
   objectiveId: string | null;
+  keyResultId: string | null;
   statusId: string;
   assigneeId: string | null;
   blockedById: string | null;

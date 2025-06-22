@@ -14,7 +14,7 @@ const avatar = cva(
         none: "rounded-none",
         sm: "rounded-sm",
         md: "rounded-md",
-        lg: "rounded-lg",
+        lg: "rounded-[0.6rem]",
       },
       color: {
         primary: "text-white bg-primary",
@@ -87,7 +87,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
             "rounded-full": rounded === "full",
             "rounded-sm": rounded === "sm",
             "rounded-md": rounded === "md",
-            "rounded-lg": rounded === "lg",
+            "rounded-[0.6rem]": rounded === "lg",
           })}
           imageClassName="object-top object-cover"
         />

@@ -1,50 +1,34 @@
 "use client";
-import {
-  Avatar,
-  Box,
-  Button,
-  DatePicker,
-  Divider,
-  Flex,
-  Popover,
-  Text,
-} from "ui";
+import { Avatar, Box, Button, Divider, Flex, Popover, Text } from "ui";
 import {
   ArrowDownIcon,
-  ArrowRightIcon,
-  AvatarIcon,
-  CalendarIcon,
+  AssigneeIcon,
   CheckIcon,
   FilterIcon,
-  SprintsIcon,
+  UserIcon,
 } from "icons";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
-import type { DateRange } from "react-day-picker";
-import { format } from "date-fns";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { StoryStatusIcon } from "./story-status-icon";
+import type { StoryPriority } from "@/modules/stories/types";
+import { PriorityIcon } from "./priority-icon";
 
 export type StoriesFilter = {
-  activeSprints: boolean;
+  statusIds: string[] | null;
+  assigneeIds: string[] | null;
+  reporterIds: string[] | null;
+  priorities: string[] | null;
+  teamIds: string[] | null;
+  sprintIds: string[] | null;
+  labelIds: string[] | null;
+  parentId: string | null;
+  objectiveId: string | null;
+  epicId: string | null;
+  keyResultId: string | null;
+  hasNoAssignee: boolean | null;
   assignedToMe: boolean;
-  dueToday: boolean;
-  dueThisWeek: boolean;
-  completed: boolean;
-  startDate: Date | null;
-  endDate: Date | null;
-  assingee: string[];
-  createdFrom: Date | null;
-  createdTo: Date | null;
-  issueType: string[];
-  labels: string[];
-  priority: string[];
-  createdBy: string[];
-  sprint: string[];
-  status: string[];
-  updatedFrom: Date | null;
-  updatedTo: Date | null;
+  createdByMe: boolean;
 };
 
 type StoriesFilterButtonProps = {
@@ -52,6 +36,45 @@ type StoriesFilterButtonProps = {
   setFilters: (v: StoriesFilter) => void;
   resetFilters: () => void;
 };
+
+// Dummy data
+const dummyUsers = [
+  { id: "1", name: "John Doe", avatar: null },
+  { id: "2", name: "Jane Smith", avatar: null },
+  { id: "3", name: "Mike Johnson", avatar: null },
+  { id: "4", name: "Sarah Wilson", avatar: null },
+  { id: "5", name: "Tom Brown", avatar: null },
+  { id: "6", name: "Lisa Davis", avatar: null },
+];
+
+const dummyTeams = [
+  { id: "1", name: "Engineering" },
+  { id: "2", name: "Design" },
+  { id: "3", name: "Product" },
+  { id: "4", name: "Marketing" },
+];
+
+const dummySprints = [
+  { id: "1", name: "Sprint 23" },
+  { id: "2", name: "Sprint 24" },
+  { id: "3", name: "Sprint 25" },
+  { id: "4", name: "Backlog" },
+];
+
+const FilterSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) => (
+  <Box className="px-4 py-3">
+    <Text className="mb-2.5" fontWeight="medium">
+      {title}
+    </Text>
+    {children}
+  </Box>
+);
 
 const ToggleButton = ({
   label,
@@ -67,12 +90,12 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-200",
+        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-100/80",
       )}
       onClick={onClick}
       type="button"
     >
-      <span className="flex items-center gap-3">
+      <span className="flex items-center gap-2">
         {icon}
         {label}
       </span>
@@ -81,34 +104,250 @@ const ToggleButton = ({
   );
 };
 
+const StatusSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (ids: string[]) => void;
+}) => {
+  const { data: statuses = [] } = useStatuses();
+
+  const toggleStatus = (statusId: string) => {
+    const current = selected || [];
+    if (current.includes(statusId)) {
+      onChange(current.filter((id) => id !== statusId));
+    } else {
+      onChange([...current, statusId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {statuses.map((status) => (
+        <Button
+          className={cn("border-0 px-3 text-white md:h-8", {
+            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
+              selected?.includes(status.id),
+          })}
+          color="tertiary"
+          key={status.id}
+          onClick={() => {
+            toggleStatus(status.id);
+          }}
+          rounded="xl"
+          size="sm"
+          style={{
+            backgroundColor: status.color,
+          }}
+        >
+          {status.name}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
+const UserSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (ids: string[]) => void;
+}) => {
+  const toggleUser = (userId: string) => {
+    const current = selected || [];
+    if (current.includes(userId)) {
+      onChange(current.filter((id) => id !== userId));
+    } else {
+      onChange([...current, userId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummyUsers.map((user) => (
+        <button
+          className={cn("relative", {
+            "rounded-full ring-2 ring-primary": selected?.includes(user.id),
+          })}
+          key={user.id}
+          onClick={() => {
+            toggleUser(user.id);
+          }}
+          type="button"
+        >
+          <Avatar
+            className="h-9 bg-gray-200 text-dark dark:bg-dark-50 dark:text-white"
+            name={user.name}
+            src={user.avatar}
+          />
+          <span className="sr-only">{user.name}</span>
+        </button>
+      ))}
+    </Flex>
+  );
+};
+
+const PrioritySelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (priorities: string[]) => void;
+}) => {
+  const priorities = [
+    "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
+  ] as StoryPriority[];
+
+  const togglePriority = (priority: string) => {
+    const current = selected || [];
+    if (current.includes(priority)) {
+      onChange(current.filter((p) => p !== priority));
+    } else {
+      onChange([...current, priority]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {priorities.map((priority) => (
+        <Button
+          className={cn("px-2.5", {
+            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
+              selected?.includes(priority),
+          })}
+          color="tertiary"
+          key={priority}
+          leftIcon={<PriorityIcon priority={priority} />}
+          onClick={() => {
+            togglePriority(priority);
+          }}
+          rounded="xl"
+          size="sm"
+        >
+          {priority}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
+const TeamSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (teamIds: string[]) => void;
+}) => {
+  const toggleTeam = (teamId: string) => {
+    const current = selected || [];
+    if (current.includes(teamId)) {
+      onChange(current.filter((id) => id !== teamId));
+    } else {
+      onChange([...current, teamId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummyTeams.map((team) => (
+        <Button
+          className="h-7 rounded-full px-3"
+          key={team.id}
+          onClick={() => {
+            toggleTeam(team.id);
+          }}
+          size="sm"
+          variant={selected?.includes(team.id) ? "solid" : "outline"}
+        >
+          {team.name}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
+const SprintSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (sprintIds: string[]) => void;
+}) => {
+  const toggleSprint = (sprintId: string) => {
+    const current = selected || [];
+    if (current.includes(sprintId)) {
+      onChange(current.filter((id) => id !== sprintId));
+    } else {
+      onChange([...current, sprintId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummySprints.map((sprint) => (
+        <Button
+          className="h-7 rounded-full px-3"
+          key={sprint.id}
+          onClick={() => {
+            toggleSprint(sprint.id);
+          }}
+          size="sm"
+          variant={selected?.includes(sprint.id) ? "solid" : "outline"}
+        >
+          {sprint.name}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
 export const StoriesFilterButton = ({
   filters,
   setFilters,
   resetFilters,
 }: StoriesFilterButtonProps) => {
-  // eslint-disable-next-line react/hook-use-state -- ok for now
-  const [date, _] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date(),
-  });
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { data: statuses = [] } = useStatuses();
-  const doneStatusId = statuses.find(
-    (state) => state.category === "completed",
-  )?.id;
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
     let count = 0;
-    type StoriesFilterKey = keyof StoriesFilter;
-    for (const key in filters) {
-      const typedKey = key as StoriesFilterKey;
-      if (Array.isArray(filters[typedKey])) {
-        count += (filters[typedKey] as unknown[]).length > 0 ? 1 : 0;
-      } else {
-        count += filters[typedKey] ? 1 : 0;
-      }
-    }
+
+    // Count array filters
+    const arrayFilters = [
+      "statusIds",
+      "assigneeIds",
+      "reporterIds",
+      "priorities",
+      "teamIds",
+      "sprintIds",
+      "labelIds",
+    ] as const;
+    arrayFilters.forEach((key) => {
+      if (filters[key] && filters[key].length > 0) count++;
+    });
+
+    // Count string filters
+    const stringFilters = [
+      "parentId",
+      "objectiveId",
+      "epicId",
+      "keyResultId",
+    ] as const;
+    stringFilters.forEach((key) => {
+      if (filters[key]) count++;
+    });
+
+    // Count boolean filters
+    if (filters.hasNoAssignee) count++;
+    if (filters.assignedToMe) count++;
+    if (filters.createdByMe) count++;
+
     return count;
   };
 
@@ -138,7 +377,10 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-[26rem] rounded-[0.6rem] pb-5">
+      <Popover.Content
+        align="end"
+        className="max-h-[85vh] w-80 overflow-y-auto pb-2 dark:bg-dark-200/70 md:w-[30rem]"
+      >
         <Flex align="center" className="h-10 px-4" justify="between">
           <Text
             color="muted"
@@ -163,15 +405,7 @@ export const StoriesFilterButton = ({
         <Divider className="mt-1.5" />
         <Box>
           <ToggleButton
-            icon={<SprintsIcon className="h-5 w-auto" />}
-            isActive={filters.activeSprints}
-            label="Active sprints"
-            onClick={() => {
-              setFilters({ ...filters, activeSprints: !filters.activeSprints });
-            }}
-          />
-          <ToggleButton
-            icon={<AvatarIcon className="h-5 w-auto" />}
+            icon={<AssigneeIcon />}
             isActive={filters.assignedToMe}
             label="Assigned to me"
             onClick={() => {
@@ -179,176 +413,75 @@ export const StoriesFilterButton = ({
             }}
           />
           <ToggleButton
-            icon={<CalendarIcon className="h-5 w-auto" />}
-            isActive={filters.dueToday}
-            label="Due today"
+            icon={<UserIcon />}
+            isActive={filters.createdByMe}
+            label="Created by me"
             onClick={() => {
-              setFilters({ ...filters, dueToday: !filters.dueToday });
+              setFilters({ ...filters, createdByMe: !filters.createdByMe });
             }}
           />
           <ToggleButton
-            icon={<CalendarIcon className="h-5 w-auto" />}
-            isActive={filters.dueThisWeek}
-            label="Due this week"
+            icon={<AssigneeIcon />}
+            isActive={filters.hasNoAssignee || false}
+            label="Has no assignee"
             onClick={() => {
-              setFilters({ ...filters, dueThisWeek: !filters.dueThisWeek });
+              setFilters({ ...filters, hasNoAssignee: !filters.hasNoAssignee });
             }}
           />
-          <ToggleButton
-            icon={
-              <StoryStatusIcon
-                className="h-5 w-auto text-dark dark:text-gray-200"
-                statusId={doneStatusId}
-              />
-            }
-            isActive={filters.completed}
-            label="Completed"
-            onClick={() => {
-              setFilters({ ...filters, completed: !filters.completed });
-            }}
-          />
-          <Divider />
-
-          <Box className="mt-4 px-4">
-            <Text
-              color="muted"
-              fontSize="sm"
-              fontWeight="semibold"
-              transform="uppercase"
-            >
-              Date Range
-            </Text>
-            <Flex align="end" className="mt-2">
-              <Box className="w-full">
-                <Text className="mb-1">Start date</Text>
-                <DatePicker>
-                  <DatePicker.Trigger>
-                    <Button
-                      color="tertiary"
-                      fullWidth
-                      leftIcon={
-                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
-                      }
-                      variant="outline"
-                    >
-                      {format(new Date(), "LLL dd, y")}
-                    </Button>
-                  </DatePicker.Trigger>
-                  <DatePicker.Calendar
-                    defaultMonth={date?.from}
-                    initialFocus
-                    // onSelect={handleSearch}
-                    selected={new Date()}
-                  />
-                </DatePicker>
-              </Box>
-              <Box className="flex h-[2.4rem] items-center px-2 md:h-[2.5rem]">
-                <ArrowRightIcon className="h-[1.15rem] w-auto" />
-              </Box>
-              <Box className="w-full">
-                <Text className="mb-1">Deadline</Text>
-                <DatePicker>
-                  <DatePicker.Trigger>
-                    <Button
-                      color="tertiary"
-                      fullWidth
-                      leftIcon={
-                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
-                      }
-                      variant="outline"
-                    >
-                      {format(new Date(), "LLL dd, y")}
-                    </Button>
-                  </DatePicker.Trigger>
-                  <DatePicker.Calendar
-                    initialFocus
-                    mode="range"
-                    // selected={date}
-
-                    numberOfMonths={2}
-                  />
-                </DatePicker>
-              </Box>
-            </Flex>
-
-            <Box className="my-6">
-              <Text
-                className="mb-2"
-                color="muted"
-                fontSize="sm"
-                fontWeight="semibold"
-                transform="uppercase"
-              >
-                Assignee
-              </Text>
-
-              <Flex className="gap-x-1.5 gap-y-2" justify="center" wrap>
-                {new Array(20).fill(0).map((_, i) => (
-                  <Avatar key={i} name="John Doe" />
-                ))}
-              </Flex>
-            </Box>
-            <Text
-              color="muted"
-              fontSize="sm"
-              fontWeight="semibold"
-              transform="uppercase"
-            >
-              Created
-            </Text>
-            <Flex align="end" className="mt-2">
-              <Box className="w-full">
-                <Text className="mb-1">From</Text>
-                <DatePicker>
-                  <DatePicker.Trigger>
-                    <Button
-                      color="tertiary"
-                      fullWidth
-                      leftIcon={
-                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
-                      }
-                      variant="outline"
-                    >
-                      {format(new Date(), "LLL dd, y")}
-                    </Button>
-                  </DatePicker.Trigger>
-                  <DatePicker.Calendar
-                    defaultMonth={date?.from}
-                    initialFocus
-                    // onSelect={handleSearch}
-                    selected={new Date()}
-                  />
-                </DatePicker>
-              </Box>
-              <Box className="flex h-[2.4rem] items-center px-2 md:h-[2.5rem]">
-                <ArrowRightIcon className="h-[1.15rem] w-auto" />
-              </Box>
-              <Box className="w-full">
-                <Text className="mb-1">To</Text>
-                <DatePicker>
-                  <DatePicker.Trigger>
-                    <Button
-                      color="tertiary"
-                      fullWidth
-                      leftIcon={
-                        <CalendarIcon className="relative -top-[0.5px] h-[1.1rem] w-auto" />
-                      }
-                      variant="outline"
-                    >
-                      {format(new Date(), "LLL dd, y")}
-                    </Button>
-                  </DatePicker.Trigger>
-                  <DatePicker.Calendar
-                    defaultMonth={date?.from}
-                    initialFocus
-                    // onSelect={handleSearch}
-                    selected={new Date()}
-                  />
-                </DatePicker>
-              </Box>
-            </Flex>
-          </Box>
         </Box>
+        <Divider />
+        <FilterSection title="Status">
+          <StatusSelector
+            onChange={(statusIds) => {
+              setFilters({ ...filters, statusIds });
+            }}
+            selected={filters.statusIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Assignee">
+          <UserSelector
+            onChange={(assigneeIds) => {
+              setFilters({ ...filters, assigneeIds });
+            }}
+            selected={filters.assigneeIds}
+          />
+        </FilterSection>
+        <FilterSection title="Reporter">
+          <UserSelector
+            onChange={(reporterIds) => {
+              setFilters({ ...filters, reporterIds });
+            }}
+            selected={filters.reporterIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Priority">
+          <PrioritySelector
+            onChange={(priorities) => {
+              setFilters({ ...filters, priorities });
+            }}
+            selected={filters.priorities}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Team">
+          <TeamSelector
+            onChange={(teamIds) => {
+              setFilters({ ...filters, teamIds });
+            }}
+            selected={filters.teamIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Sprint">
+          <SprintSelector
+            onChange={(sprintIds) => {
+              setFilters({ ...filters, sprintIds });
+            }}
+            selected={filters.sprintIds}
+          />
+        </FilterSection>
       </Popover.Content>
     </Popover>
   );

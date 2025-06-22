@@ -34,7 +34,7 @@ export const Calendar = ({
         caption_label: "text-base font-medium",
         nav: "space-x-1 flex items-center",
         nav_button:
-          "h-9 aspect-square rounded-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-dark-100",
+          "h-9 aspect-square rounded-[0.6rem] flex items-center justify-center hover:bg-gray-50 dark:hover:bg-dark-100",
         nav_button_previous: "absolute -left-1",
         nav_button_next: "absolute -right-1",
         table: "w-full border-collapse space-y-1",

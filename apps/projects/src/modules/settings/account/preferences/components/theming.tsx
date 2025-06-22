@@ -6,7 +6,7 @@ import { SectionHeader } from "@/modules/settings/components";
 export const Theming = () => {
   const { theme, setTheme } = useTheme();
   return (
-    <Box className="mt-6 rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
         description="Customize the application theme."
         title="Appearance"

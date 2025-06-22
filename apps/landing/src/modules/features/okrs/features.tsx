@@ -21,10 +21,10 @@ const Intro = () => (
       >
         <Text
           as="h2"
-          className="text-5xl font-semibold md:max-w-3xl md:text-7xl"
+          className="text-5xl font-semibold md:max-w-2xl md:text-7xl"
         >
-          Accelerate delivery with{" "}
-          <span className="text-stroke-white">agile sprints</span>
+          Strategic goal setting{" "}
+          <span className="text-stroke-white">framework</span>
         </Text>
       </motion.div>
       <motion.div
@@ -41,9 +41,9 @@ const Intro = () => (
           fontSize="xl"
           fontWeight="normal"
         >
-          Optimize your agile development process with our intuitive sprint
-          management system. Plan iterations, track progress, and deliver value
-          efficiently with every cycle.
+          Drive strategic success with our comprehensive OKR system. Set
+          ambitious objectives, track measurable results, and achieve your
+          organizational goals.
         </Text>
       </motion.div>
     </Box>
@@ -96,36 +96,36 @@ export const Features = () => {
   const features = [
     {
       id: 1,
-      name: "Sprint Planning",
+      name: "Strategic Objective Setting",
       description:
-        "Plan sprints with precision. Allocate tasks, set capacity, and prioritize work items to maximize team efficiency and delivery.",
-      icon: <SprintsIcon className="h-6" />,
-    },
-    {
-      id: 2,
-      name: "Progress Tracking",
-      description:
-        "Monitor sprint progress with real-time burndown charts and velocity metrics. Identify bottlenecks early to ensure on-time delivery.",
-      icon: <StoryIcon className="h-6" />,
-    },
-    {
-      id: 3,
-      name: "Sprint Reviews",
-      description:
-        "Conduct effective sprint reviews with comprehensive retrospective tools. Identify improvements and refine your agile process.",
+        "Define clear, ambitious objectives that align with your company's mission. Connect every team goal to your strategic vision.",
       icon: <OKRIcon className="h-6" />,
     },
     {
-      id: 4,
-      name: "Sprint Forecasting",
+      id: 2,
+      name: "Measurable Key Results",
       description:
-        "Predict sprint outcomes using historical data. Forecast completion dates and capacity needs for better planning.",
+        "Create quantifiable key results that track progress toward objectives. Set specific metrics and monitor completion in real-time.",
       icon: <ObjectiveIcon className="h-6" />,
+    },
+    {
+      id: 3,
+      name: "Team Alignment",
+      description:
+        "Cascade objectives throughout your organization. Ensure every team and individual understands how their work contributes to company goals.",
+      icon: <StoryIcon className="h-6" />,
+    },
+    {
+      id: 4,
+      name: "Performance Analytics",
+      description:
+        "Track goal progress with intuitive dashboards and visualizations. Make data-driven decisions to improve outcomes.",
+      icon: <SprintsIcon className="h-6" />,
     },
   ];
 
   return (
-    <Box className="bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
+    <Box className="dark bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">

@@ -13,7 +13,7 @@ export const InvitationsPage = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Invitations
       </Text>
-      <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-[0.6rem] border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
             invitations.length > 1 && (

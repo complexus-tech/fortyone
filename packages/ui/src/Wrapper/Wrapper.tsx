@@ -5,7 +5,7 @@ export const Wrapper = ({ children, className, ...rest }: BoxProps) => {
   return (
     <Box
       className={cn(
-        "rounded-xl border bg-gray-50/10 border-gray-100/70 py-4 px-4 md:px-5 shadow-lg shadow-gray-50 dark:shadow-none dark:border-dark-100 dark:bg-dark-300/80",
+        "rounded-2xl border bg-gray-50/10 border-gray-100/70 py-4 px-4 md:px-5 shadow-lg shadow-gray-50 dark:shadow-none dark:border-dark-100 dark:bg-dark-300/80",
         className
       )}
       {...rest}

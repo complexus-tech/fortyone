@@ -48,8 +48,8 @@ export const Hero = () => {
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Project</span> Management That
-              Adapts To Your Workflow
+              <span className="text-stroke-white">Project</span> Management &
+              OKR Software for Teams
             </Text>
           </motion.span>
 
@@ -62,12 +62,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl"
-              fontWeight="normal"
-            >
-              Connect strategy with execution. Align engineering, product, and
-              business goals to track and achieve team objectives.
+            <Text className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl">
+              Complexus is the project management and OKR platform that helps
+              engineering, product, and business teams align goals, track
+              progress, and deliver faster.
             </Text>
           </motion.span>
 
@@ -86,8 +84,8 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 font-semibold md:pl-5 md:pr-4"
-                color="white"
+                className="px-3 md:pl-5 md:pr-4"
+                color="invert"
                 href="/signup"
                 rounded="lg"
                 size="lg"
@@ -106,7 +104,7 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 md:pl-3.5 md:pr-4"
+                className="border-gray-200 px-3 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {

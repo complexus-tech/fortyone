@@ -123,7 +123,7 @@ export const CreateWorkspaceForm = () => {
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
-        className="rounded-lg"
+        className="rounded-[0.6rem]"
         label="Your Workspace"
         name="name"
         onBlur={() => {
@@ -135,7 +135,7 @@ export const CreateWorkspaceForm = () => {
         value={form.name}
       />
       <Input
-        className="rounded-lg"
+        className="rounded-[0.6rem]"
         hasError={!isAvailable}
         helpText={
           !isAvailable
@@ -184,37 +184,37 @@ export const CreateWorkspaceForm = () => {
           }}
           value={form.teamSize}
         >
-          <Select.Trigger className="h-[2.7rem] w-full rounded-lg border-gray-100 bg-white/70 text-base dark:border-dark-100 dark:bg-dark/20">
+          <Select.Trigger className="h-[2.7rem] w-full rounded-[0.6rem] border-gray-100 bg-white/70 text-base dark:border-dark-100 dark:bg-dark/20">
             <Select.Input />
           </Select.Trigger>
           <Select.Content>
             <Select.Group>
               <Select.Option
-                className="h-[2.5rem] rounded-lg text-[0.9rem]"
+                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
                 value="2-10"
               >
                 2-10
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-lg text-[0.9rem]"
+                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
                 value="11-50"
               >
                 11-50
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-lg text-[0.9rem]"
+                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
                 value="51-200"
               >
                 51-200
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-lg text-[0.9rem]"
+                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
                 value="201-500"
               >
                 201-500
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-lg text-[0.9rem]"
+                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
                 value="500+"
               >
                 500+

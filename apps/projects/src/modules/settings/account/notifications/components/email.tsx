@@ -23,7 +23,7 @@ export const EmailNotifications = () => {
   };
 
   return (
-    <Box className="rounded-lg border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
         description="Choose what updates you want to receive via email."
         title="Email Notifications"
