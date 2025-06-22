@@ -18,6 +18,7 @@ type CoreSearchStory struct {
 	Reporter   *uuid.UUID
 	Priority   string
 	Sprint     *uuid.UUID
+	KeyResult  *uuid.UUID
 	Team       uuid.UUID
 	Workspace  uuid.UUID
 	StartDate  *time.Time

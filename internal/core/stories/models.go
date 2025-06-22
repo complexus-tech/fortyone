@@ -30,6 +30,7 @@ type CoreStoryList struct {
 	Reporter   *uuid.UUID      `json:"reporter_id"`
 	Priority   string          `json:"priority"`
 	Sprint     *uuid.UUID      `json:"sprint_id"`
+	KeyResult  *uuid.UUID      `json:"key_result_id"`
 	Team       uuid.UUID       `json:"team_id"`
 	Workspace  uuid.UUID       `json:"workspace_id"`
 	StartDate  *time.Time      `json:"start_date"`
@@ -58,6 +59,7 @@ type CoreSingleStory struct {
 	Priority        string
 	Sprint          *uuid.UUID
 	Epic            *uuid.UUID
+	KeyResult       *uuid.UUID
 	Team            uuid.UUID
 	Workspace       uuid.UUID
 	StartDate       *time.Time
@@ -83,6 +85,7 @@ type CoreNewStory struct {
 	Reporter        *uuid.UUID `json:"reporterId"`
 	Priority        string     `json:"priority"`
 	Sprint          *uuid.UUID `json:"sprintId"`
+	KeyResult       *uuid.UUID `json:"keyResultId"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
 	Team            uuid.UUID  `json:"teamId"`
@@ -98,6 +101,7 @@ type CoreUpdateStory struct {
 	Assignee        *uuid.UUID
 	Priority        *string
 	Sprint          *uuid.UUID
+	KeyResult       *uuid.UUID
 	StartDate       *time.Time
 	EndDate         *time.Time
 }
@@ -123,6 +127,7 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 		Reporter:        ns.Reporter,
 		Priority:        ns.Priority,
 		Sprint:          ns.Sprint,
+		KeyResult:       ns.KeyResult,
 		StartDate:       ns.StartDate,
 		EndDate:         ns.EndDate,
 		Team:            ns.Team,
@@ -163,6 +168,7 @@ type CoreStoryFilters struct {
 	Parent        *uuid.UUID  `json:"parentId"`
 	Objective     *uuid.UUID  `json:"objectiveId"`
 	Epic          *uuid.UUID  `json:"epicId"`
+	KeyResult     *uuid.UUID  `json:"keyResultId"`
 	HasNoAssignee *bool       `json:"hasNoAssignee"`
 	AssignedToMe  *bool       `json:"assignedToMe"`
 	CreatedByMe   *bool       `json:"createdByMe"`

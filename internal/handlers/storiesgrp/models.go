@@ -96,6 +96,7 @@ type AppSingleStory struct {
 	Sprint          *uuid.UUID     `json:"sprintId"`
 	Epic            *uuid.UUID     `json:"epicId"`
 	Objective       *uuid.UUID     `json:"objectiveId"`
+	KeyResult       *uuid.UUID     `json:"keyResultId"`
 	Team            uuid.UUID      `json:"teamId"`
 	Workspace       uuid.UUID      `json:"workspaceId"`
 	StartDate       *time.Time     `json:"startDate"`
@@ -118,6 +119,7 @@ type AppStoryList struct {
 	Reporter   *uuid.UUID     `json:"reporterId"`
 	Priority   string         `json:"priority"`
 	Sprint     *uuid.UUID     `json:"sprintId"`
+	KeyResult  *uuid.UUID     `json:"keyResultId"`
 	Workspace  uuid.UUID      `json:"workspaceId"`
 	Team       uuid.UUID      `json:"teamId"`
 	StartDate  *time.Time     `json:"startDate"`
@@ -142,6 +144,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
 		Epic:            i.Epic,
+		KeyResult:       i.KeyResult,
 		Team:            i.Team,
 		Workspace:       i.Workspace,
 		StartDate:       i.StartDate,
@@ -173,6 +176,7 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 			Reporter:   story.Reporter,
 			Priority:   story.Priority,
 			Sprint:     story.Sprint,
+			KeyResult:  story.KeyResult,
 			StartDate:  story.StartDate,
 			EndDate:    story.EndDate,
 			CreatedAt:  story.CreatedAt,
@@ -195,6 +199,7 @@ type AppUpdateStory struct {
 	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
 	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
 	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
+	KeyResult       uuid.UUID  `json:"keyResultId" db:"key_result_id"`
 	StartDate       *time.Time `json:"startDate" db:"start_date"`
 	EndDate         *time.Time `json:"endDate" db:"end_date"`
 }
@@ -210,6 +215,7 @@ type AppNewStory struct {
 	Reporter        *uuid.UUID `json:"reporterId"`
 	Priority        string     `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId"`
+	KeyResult       *uuid.UUID `json:"keyResultId"`
 	Team            uuid.UUID  `json:"teamId" validate:"required"`
 	StartDate       *time.Time `json:"startDate"`
 	EndDate         *time.Time `json:"endDate"`
@@ -244,6 +250,7 @@ type StoryFilters struct {
 	Parent        *uuid.UUID  `json:"parentId"`
 	Objective     *uuid.UUID  `json:"objectiveId"`
 	Epic          *uuid.UUID  `json:"epicId"`
+	KeyResult     *uuid.UUID  `json:"keyResultId"`
 	HasNoAssignee *bool       `json:"hasNoAssignee"`
 	AssignedToMe  *bool       `json:"assignedToMe"`
 	CreatedByMe   *bool       `json:"createdByMe"`
@@ -337,6 +344,7 @@ type AppFilters struct {
 	Team      *uuid.UUID `json:"teamId" db:"team_id"`
 	Epic      *uuid.UUID `json:"epicId" db:"epic_id"`
 	Reporter  *uuid.UUID `json:"reporterId" db:"reporter_id"`
+	KeyResult *uuid.UUID `json:"keyResultId" db:"key_result_id"`
 }
 
 func toAppComment(i comments.CoreComment) AppComment {
@@ -372,6 +380,7 @@ func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
 		Reporter:        a.Reporter,
 		Priority:        a.Priority,
 		Sprint:          a.Sprint,
+		KeyResult:       a.KeyResult,
 		StartDate:       a.StartDate,
 		EndDate:         a.EndDate,
 		Team:            a.Team,

@@ -33,6 +33,7 @@ type dbStory struct {
 	Reporter        *uuid.UUID       `db:"reporter_id"`
 	Priority        string           `db:"priority"`
 	Sprint          *uuid.UUID       `db:"sprint_id"`
+	KeyResult       *uuid.UUID       `db:"key_result_id"`
 	StartDate       *time.Time       `db:"start_date"`
 	EndDate         *time.Time       `db:"end_date"`
 	CreatedAt       time.Time        `db:"created_at"`
@@ -80,6 +81,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		DescriptionHTML: i.DescriptionHTML,
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
+		KeyResult:       i.KeyResult,
 		StartDate:       i.StartDate,
 		EndDate:         i.EndDate,
 		CreatedAt:       i.CreatedAt,
@@ -126,6 +128,7 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			Status:     story.Status,
 			Assignee:   story.Assignee,
 			Reporter:   story.Reporter,
+			KeyResult:  story.KeyResult,
 			StartDate:  story.StartDate,
 			EndDate:    story.EndDate,
 			Priority:   story.Priority,
@@ -157,6 +160,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		DescriptionHTML: i.DescriptionHTML,
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
+		KeyResult:       i.KeyResult,
 		StartDate:       i.StartDate,
 		EndDate:         i.EndDate,
 		CreatedAt:       i.CreatedAt,

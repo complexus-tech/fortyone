@@ -138,14 +138,14 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 					sequence_id, title, description, description_html,
 					parent_id, objective_id, status_id, assignee_id, 
 					blocked_by_id, blocking_id, related_id, reporter_id,
-					priority, sprint_id, team_id, workspace_id, start_date, 
+					priority, sprint_id, key_result_id, team_id, workspace_id, start_date, 
 					end_date, created_at, updated_at
 			) VALUES (
 					:sequence_id, :title, :description, :description_html,
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
 					:blocking_id, :related_id, :reporter_id, :priority, :sprint_id,
-					:team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
-			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
+			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 		`
 
 	var cs dbStory
@@ -414,6 +414,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.team_id,
 					s.objective_id,
 					s.sprint_id,
+					s.key_result_id,
 					s.workspace_id,
 					s.assignee_id,
 					s.reporter_id,

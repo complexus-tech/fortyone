@@ -20,6 +20,7 @@ type dbStory struct {
 	Reporter   *uuid.UUID       `db:"reporter_id"`
 	Priority   string           `db:"priority"`
 	Sprint     *uuid.UUID       `db:"sprint_id"`
+	KeyResult  *uuid.UUID       `db:"key_result_id"`
 	Team       uuid.UUID        `db:"team_id"`
 	Workspace  uuid.UUID        `db:"workspace_id"`
 	StartDate  *time.Time       `db:"start_date"`
@@ -65,6 +66,7 @@ func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 		Reporter:   story.Reporter,
 		Priority:   story.Priority,
 		Sprint:     story.Sprint,
+		KeyResult:  story.KeyResult,
 		Team:       story.Team,
 		Workspace:  story.Workspace,
 		StartDate:  story.StartDate,
