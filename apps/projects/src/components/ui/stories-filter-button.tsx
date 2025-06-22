@@ -1,5 +1,14 @@
 "use client";
-import { Box, Button, Divider, Flex, Popover, Text } from "ui";
+import {
+  Avatar,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  Flex,
+  Popover,
+  Text,
+} from "ui";
 import {
   ArrowDownIcon,
   AssigneeIcon,
@@ -10,6 +19,10 @@ import {
 import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useStatuses } from "@/lib/hooks/statuses";
+import type { StoryPriority } from "@/modules/stories/types";
+import { StoryStatusIcon } from "./story-status-icon";
+import { PriorityIcon } from "./priority-icon";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -33,6 +46,45 @@ type StoriesFilterButtonProps = {
   setFilters: (v: StoriesFilter) => void;
   resetFilters: () => void;
 };
+
+// Dummy data
+const dummyUsers = [
+  { id: "1", name: "John Doe", avatar: null },
+  { id: "2", name: "Jane Smith", avatar: null },
+  { id: "3", name: "Mike Johnson", avatar: null },
+  { id: "4", name: "Sarah Wilson", avatar: null },
+  { id: "5", name: "Tom Brown", avatar: null },
+  { id: "6", name: "Lisa Davis", avatar: null },
+];
+
+const dummyTeams = [
+  { id: "1", name: "Engineering" },
+  { id: "2", name: "Design" },
+  { id: "3", name: "Product" },
+  { id: "4", name: "Marketing" },
+];
+
+const dummySprints = [
+  { id: "1", name: "Sprint 23" },
+  { id: "2", name: "Sprint 24" },
+  { id: "3", name: "Sprint 25" },
+  { id: "4", name: "Backlog" },
+];
+
+const FilterSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) => (
+  <Box className="px-4 py-3">
+    <Text className="mb-2.5" fontWeight="medium">
+      {title}
+    </Text>
+    {children}
+  </Box>
+);
 
 const ToggleButton = ({
   label,
@@ -59,6 +111,204 @@ const ToggleButton = ({
       </span>
       {isActive ? <CheckIcon className="h-5 w-auto text-primary" /> : null}
     </button>
+  );
+};
+
+const StatusSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (ids: string[]) => void;
+}) => {
+  const { data: statuses = [] } = useStatuses();
+
+  const toggleStatus = (statusId: string) => {
+    const current = selected || [];
+    if (current.includes(statusId)) {
+      onChange(current.filter((id) => id !== statusId));
+    } else {
+      onChange([...current, statusId]);
+    }
+  };
+
+  return (
+    <Box className="space-y-3">
+      {statuses.map((status) => (
+        <label
+          className="flex cursor-pointer items-center gap-2"
+          key={status.id}
+        >
+          <Checkbox
+            checked={selected?.includes(status.id) || false}
+            onCheckedChange={() => {
+              toggleStatus(status.id);
+            }}
+          />
+          <StoryStatusIcon statusId={status.id} />
+          <Text>{status.name}</Text>
+        </label>
+      ))}
+    </Box>
+  );
+};
+
+const UserSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (ids: string[]) => void;
+}) => {
+  const toggleUser = (userId: string) => {
+    const current = selected || [];
+    if (current.includes(userId)) {
+      onChange(current.filter((id) => id !== userId));
+    } else {
+      onChange([...current, userId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummyUsers.map((user) => (
+        <button
+          className={cn("relative", {
+            "rounded-full ring-2 ring-primary": selected?.includes(user.id),
+          })}
+          key={user.id}
+          onClick={() => {
+            toggleUser(user.id);
+          }}
+          type="button"
+        >
+          <Avatar
+            className="bg-gray-200 text-dark dark:bg-dark-50 dark:text-white"
+            name={user.name}
+            src={user.avatar}
+          />
+          <span className="sr-only">{user.name}</span>
+        </button>
+      ))}
+    </Flex>
+  );
+};
+
+const PrioritySelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (priorities: string[]) => void;
+}) => {
+  const priorities = [
+    "Urgent",
+    "High",
+    "Medium",
+    "Low",
+    "No Priority",
+  ] as StoryPriority[];
+
+  const togglePriority = (priority: string) => {
+    const current = selected || [];
+    if (current.includes(priority)) {
+      onChange(current.filter((p) => p !== priority));
+    } else {
+      onChange([...current, priority]);
+    }
+  };
+
+  return (
+    <Flex gap={3} wrap>
+      {priorities.map((priority) => (
+        <Button
+          className={cn("px-2", {
+            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
+              selected?.includes(priority),
+          })}
+          color="tertiary"
+          key={priority}
+          leftIcon={<PriorityIcon priority={priority} />}
+          onClick={() => {
+            togglePriority(priority);
+          }}
+          rounded="xl"
+          size="sm"
+        >
+          {priority}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
+const TeamSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (teamIds: string[]) => void;
+}) => {
+  const toggleTeam = (teamId: string) => {
+    const current = selected || [];
+    if (current.includes(teamId)) {
+      onChange(current.filter((id) => id !== teamId));
+    } else {
+      onChange([...current, teamId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummyTeams.map((team) => (
+        <Button
+          className="h-7 rounded-full px-3"
+          key={team.id}
+          onClick={() => {
+            toggleTeam(team.id);
+          }}
+          size="sm"
+          variant={selected?.includes(team.id) ? "solid" : "outline"}
+        >
+          {team.name}
+        </Button>
+      ))}
+    </Flex>
+  );
+};
+
+const SprintSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: string[] | null;
+  onChange: (sprintIds: string[]) => void;
+}) => {
+  const toggleSprint = (sprintId: string) => {
+    const current = selected || [];
+    if (current.includes(sprintId)) {
+      onChange(current.filter((id) => id !== sprintId));
+    } else {
+      onChange([...current, sprintId]);
+    }
+  };
+
+  return (
+    <Flex gap={2} wrap>
+      {dummySprints.map((sprint) => (
+        <Button
+          className="h-7 rounded-full px-3"
+          key={sprint.id}
+          onClick={() => {
+            toggleSprint(sprint.id);
+          }}
+          size="sm"
+          variant={selected?.includes(sprint.id) ? "solid" : "outline"}
+        >
+          {sprint.name}
+        </Button>
+      ))}
+    </Flex>
   );
 };
 
@@ -132,7 +382,10 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-[26rem] pb-2">
+      <Popover.Content
+        align="end"
+        className="max-h-[85vh] w-[28rem] overflow-y-auto pb-2"
+      >
         <Flex align="center" className="h-9 px-4" justify="between">
           <Text
             color="muted"
@@ -181,6 +434,59 @@ export const StoriesFilterButton = ({
             }}
           />
         </Box>
+        <Divider />
+        <FilterSection title="Status">
+          <StatusSelector
+            onChange={(statusIds) => {
+              setFilters({ ...filters, statusIds });
+            }}
+            selected={filters.statusIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Assignee">
+          <UserSelector
+            onChange={(assigneeIds) => {
+              setFilters({ ...filters, assigneeIds });
+            }}
+            selected={filters.assigneeIds}
+          />
+        </FilterSection>
+        <FilterSection title="Reporter">
+          <UserSelector
+            onChange={(reporterIds) => {
+              setFilters({ ...filters, reporterIds });
+            }}
+            selected={filters.reporterIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Priority">
+          <PrioritySelector
+            onChange={(priorities) => {
+              setFilters({ ...filters, priorities });
+            }}
+            selected={filters.priorities}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Team">
+          <TeamSelector
+            onChange={(teamIds) => {
+              setFilters({ ...filters, teamIds });
+            }}
+            selected={filters.teamIds}
+          />
+        </FilterSection>
+        <Divider />
+        <FilterSection title="Sprint">
+          <SprintSelector
+            onChange={(sprintIds) => {
+              setFilters({ ...filters, sprintIds });
+            }}
+            selected={filters.sprintIds}
+          />
+        </FilterSection>
       </Popover.Content>
     </Popover>
   );
