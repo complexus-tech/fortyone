@@ -157,7 +157,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"0 6 * * *", // Daily at 6:00 AM
+		"5 1 * * *", // Daily at 1:05 AM
 		asynq.NewTask(tasks.TypeSprintStoryMigration, nil),
 		asynq.Queue("automation"),
 	)
