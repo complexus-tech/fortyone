@@ -380,9 +380,10 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 				ns.sprint_id as next_sprint_id
 			FROM ended_sprints es
 			LEFT JOIN sprints ns ON es.team_id = ns.team_id 
-				AND ns.start_date >= CURRENT_DATE
+				AND ns.start_date <= CURRENT_DATE 
+				AND ns.end_date >= CURRENT_DATE
 			WHERE ns.sprint_id IS NOT NULL
-			ORDER BY es.team_id, ns.start_date ASC
+			ORDER BY es.team_id, ns.sprint_id
 		)
 		UPDATE stories 
 		SET 
