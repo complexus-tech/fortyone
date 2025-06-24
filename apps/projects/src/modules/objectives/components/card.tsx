@@ -28,6 +28,7 @@ import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { hexToRgba } from "@/utils";
 import { useUpdateObjectiveMutation } from "../hooks";
 import type { Objective, ObjectiveUpdate } from "../types";
 
@@ -152,8 +153,11 @@ export const ObjectiveCard = ({
                 disabled={!canUpdate}
                 leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
                 size="sm"
+                style={{
+                  backgroundColor: hexToRgba(status?.color),
+                  borderColor: hexToRgba(status?.color),
+                }}
                 type="button"
-                variant="naked"
               >
                 <span className="hidden max-w-[7ch] truncate md:inline-block">
                   {status?.name ?? "Backlog"}
