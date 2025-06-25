@@ -95,7 +95,7 @@ const Items = ({
               }}
               value={name}
             >
-              <Box className="grid grid-cols-[24px_auto] items-center">
+              <Box className="grid grid-cols-[16px_auto] items-center">
                 <StoryStatusIcon statusId={id} />
                 <Text>{name}</Text>
               </Box>

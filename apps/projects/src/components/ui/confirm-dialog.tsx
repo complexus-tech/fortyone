@@ -76,7 +76,14 @@ export const ConfirmDialog = ({
           ) : null}
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-          <Button className="px-4" color="tertiary" onClick={onCancel}>
+          <Button
+            className="px-4"
+            color="tertiary"
+            onClick={() => {
+              onCancel?.();
+              onClose?.();
+            }}
+          >
             {cancelText}
           </Button>
           <Button

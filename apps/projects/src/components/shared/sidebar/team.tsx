@@ -169,7 +169,7 @@ export const Team = ({
         isLoading={isPending}
         isOpen={isLeaving}
         loadingText="Leaving team..."
-        onClose={() => {
+        onCancel={() => {
           setIsLeaving(false);
         }}
         onConfirm={() => {

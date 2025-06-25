@@ -35,7 +35,7 @@ import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { slugify } from "@/utils";
+import { hexToRgba, slugify } from "@/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RowWrapper } from "../row-wrapper";
 
@@ -145,28 +145,21 @@ export const StoryProperties = ({
       {isColumnVisible("Status") && (
         <StatusesMenu>
           <StatusesMenu.Trigger>
-            {asKanban ? (
-              <Button
-                className="gap-1 pr-2"
-                color="tertiary"
-                disabled={isGuest}
-                size="xs"
-                type="button"
-                variant="outline"
-              >
-                <StoryStatusIcon className="h-[1.15rem]" statusId={statusId} />
-                {status?.name}
-              </Button>
-            ) : (
-              <button
-                className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isGuest}
-                type="button"
-              >
-                <StoryStatusIcon statusId={statusId} />
-                <span className="hidden md:inline">{status?.name}</span>
-              </button>
-            )}
+            <Button
+              className="gap-1 pr-2"
+              disabled={isGuest}
+              rounded={asKanban ? "md" : "xl"}
+              size="xs"
+              style={{
+                backgroundColor: hexToRgba(status?.color),
+                borderColor: hexToRgba(status?.color),
+              }}
+              type="button"
+              variant="outline"
+            >
+              <StoryStatusIcon statusId={statusId} />
+              {status?.name}
+            </Button>
           </StatusesMenu.Trigger>
           <StatusesMenu.Items
             setStatusId={handleStatusUpdate}
