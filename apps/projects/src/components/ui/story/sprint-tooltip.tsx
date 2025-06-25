@@ -29,7 +29,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
     if (inProgress && daysLeft < 8) {
       return "warning";
     }
-    return "info";
+    return "success";
   };
 
   const getBadgeText = () => {
@@ -60,7 +60,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
             className={cn("h-5 w-auto", {
               "text-primary dark:text-primary": getBadgeColor() === "primary",
               "text-warning dark:text-warning": getBadgeColor() === "warning",
-              "text-info dark:text-info": getBadgeColor() === "info",
+              "text-success dark:text-success": getBadgeColor() === "success",
             })}
           />{" "}
           {format(new Date(selectedSprint.startDate), "MMM dd")} -{" "}
@@ -69,7 +69,6 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
         <Badge
           className="h-7 text-[0.95rem] font-medium capitalize"
           color={getBadgeColor()}
-          rounded="sm"
         >
           {getBadgeText()}
         </Badge>
