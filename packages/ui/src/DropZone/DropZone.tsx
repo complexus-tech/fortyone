@@ -40,7 +40,7 @@ const Root = (props: RootProps) => {
   return (
     <div
       className={cn(
-        "flex h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-4 transition hover:border-primary/80 dark:border-dark-100 dark:bg-dark-200/40 dark:hover:border-primary/40",
+        "flex h-24 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 p-4 transition hover:border-primary/80 dark:border-dark-100 dark:bg-dark-200/40 dark:hover:border-primary/40",
         {
           "bg-gray-50 transition hover:border-primary/40 dark:bg-dark-200/80 dark:hover:border-primary/40":
             isDragActive,
@@ -53,10 +53,6 @@ const Root = (props: RootProps) => {
     </div>
   );
 };
-
-<Box className="mb-4 mt-3 flex h-24 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-dashed border-gray-200 bg-gray-50/50 dark:border-dark-100 dark:bg-dark-200/40">
-  <Text color="muted">Click or drag files here</Text>
-</Box>;
 
 type InputProps = {
   inputProps: DropzoneInputProps;

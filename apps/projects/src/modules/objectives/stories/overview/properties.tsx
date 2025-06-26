@@ -10,6 +10,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useMediaQuery } from "@/hooks";
+import { hexToRgba } from "@/utils";
 import type { ObjectiveUpdate } from "../../types";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
@@ -47,10 +48,14 @@ export const Properties = () => {
             disabled={!canUpdate}
             leftIcon={<ObjectiveStatusIcon statusId={objective?.statusId} />}
             size="sm"
+            style={{
+              backgroundColor: hexToRgba(status?.color),
+              borderColor: hexToRgba(status?.color),
+            }}
             type="button"
             variant={isMobile ? "solid" : "naked"}
           >
-            {status?.name ?? "Backlog"}
+            {status?.name}
           </Button>
         </ObjectiveStatusesMenu.Trigger>
         <ObjectiveStatusesMenu.Items
