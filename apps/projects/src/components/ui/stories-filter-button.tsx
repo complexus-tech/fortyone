@@ -12,7 +12,9 @@ import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { StoryPriority } from "@/modules/stories/types";
+import { hexToRgba } from "@/utils";
 import { PriorityIcon } from "./priority-icon";
+import { StoryStatusIcon } from "./story-status-icon";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -126,19 +128,21 @@ const StatusSelector = ({
     <Flex gap={2} wrap>
       {statuses.map((status) => (
         <Button
-          className={cn("border-0 px-3 text-white md:h-8", {
+          className={cn("px-3 md:h-8", {
             "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
               selected?.includes(status.id),
           })}
           color="tertiary"
           key={status.id}
+          leftIcon={<StoryStatusIcon statusId={status.id} />}
           onClick={() => {
             toggleStatus(status.id);
           }}
           rounded="xl"
           size="sm"
           style={{
-            backgroundColor: status.color,
+            backgroundColor: hexToRgba(status.color, 0.1),
+            borderColor: hexToRgba(status.color, 0.2),
           }}
         >
           {status.name}
