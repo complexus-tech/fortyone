@@ -1,5 +1,6 @@
-import { ArrowRightIcon } from "icons";
-import { Button, Box, Input, Text, Flex } from "ui";
+import { ArrowRight2Icon } from "icons";
+import { Button, Box, Flex } from "ui";
+import { useRef, useEffect } from "react";
 
 type ChatInputProps = {
   value: string;
@@ -14,7 +15,17 @@ export const ChatInput = ({
   onSend,
   isLoading,
 }: ChatInputProps) => {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -23,32 +34,29 @@ export const ChatInput = ({
 
   return (
     <Box className="border-t border-gray-100 p-6 dark:border-dark-100">
-      <Flex align="end" gap={3}>
-        <Box className="flex-1">
-          <Input
-            disabled={isLoading}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Maya anything about your projects..."
-            rounded="lg"
-            size="lg"
-            value={value}
-          />
-        </Box>
+      <Flex className="items-end gap-0 rounded-[1.25rem] border border-gray-100 bg-gray-50/50 px-4 py-3 dark:border-dark-50 dark:bg-dark-200">
+        <textarea
+          className="max-h-40 min-h-9 flex-1 resize-none border-none bg-transparent py-2 pr-2 text-xl shadow-none placeholder:text-gray focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-gray-200/60"
+          disabled={isLoading}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask, suggest, or request for anything..."
+          ref={textareaRef}
+          rows={1}
+          value={value}
+        />
         <Button
-          className="h-[3.2rem] w-[3.2rem] p-0"
-          disabled={!value.trim() || isLoading}
+          asIcon
+          className="mb-0.5 ml-1 md:h-11"
+          color="invert"
           onClick={onSend}
           rounded="full"
         >
-          <ArrowRightIcon />
+          <ArrowRight2Icon className="text-white dark:text-dark" />
         </Button>
       </Flex>
-      <Text className="mt-3" color="muted" fontSize="sm">
-        Press Enter to send, Shift+Enter for new line
-      </Text>
     </Box>
   );
 };

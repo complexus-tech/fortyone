@@ -69,7 +69,7 @@ export const Chat = () => {
 
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[42rem] rounded-[2rem] md:mb-[2.6vh] md:mt-auto"
+          className="max-w-[37rem] rounded-[2rem] antialiased md:mb-[2.6vh] md:mt-auto"
           overlayClassName="justify-end pr-[1.5vh]"
         >
           <Dialog.Header className="border-b border-gray-100 px-6 py-4 dark:border-dark-100">
