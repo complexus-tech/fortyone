@@ -151,8 +151,8 @@ export const StoryProperties = ({
               rounded={asKanban ? "md" : "xl"}
               size="xs"
               style={{
-                backgroundColor: hexToRgba(status?.color),
-                borderColor: hexToRgba(status?.color),
+                backgroundColor: hexToRgba(status?.color, 0.1),
+                borderColor: hexToRgba(status?.color, 0.2),
               }}
               type="button"
               variant="outline"
