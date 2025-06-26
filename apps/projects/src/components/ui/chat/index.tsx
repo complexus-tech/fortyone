@@ -66,7 +66,6 @@ export const Chat = () => {
           setIsOpen(true);
         }}
       />
-
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className="max-w-[37rem] rounded-[2rem] antialiased md:mb-[2.6vh] md:mt-auto"
