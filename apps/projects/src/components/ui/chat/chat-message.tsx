@@ -1,6 +1,7 @@
-import { AiIcon } from "icons";
+import { AiIcon, UserIcon } from "icons";
 import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
+import Markdown from "react-markdown";
 import type { Message } from "./types";
 
 type ChatMessageProps = {
@@ -15,17 +16,14 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
       })}
       gap={3}
     >
-      <Avatar
-        className={cn({
-          "bg-gradient-to-br from-primary to-secondary":
-            message.sender === "ai",
-        })}
-        color={message.sender === "ai" ? "primary" : "secondary"}
-        name={message.sender === "user" ? "You" : "Maya"}
-        size="md"
-      >
-        {message.sender === "ai" && <AiIcon />}
-      </Avatar>
+      <Flex align="center" className="size-8" justify="center">
+        {message.sender === "ai" ? (
+          <AiIcon className="h-6" />
+        ) : (
+          <UserIcon className="h-6" />
+        )}
+      </Flex>
+
       <Flex
         className={cn("max-w-[75%] flex-1", {
           "items-end": message.sender === "user",
@@ -33,18 +31,18 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         direction="column"
       >
         <Box
-          className={cn("rounded-2xl rounded-tl-none p-4", {
+          className={cn("rounded-2xl p-4", {
             "bg-primary text-white": message.sender === "user",
-            "bg-gray-50 dark:bg-dark-50": message.sender === "ai",
+            "bg-gray-50 dark:bg-dark-100": message.sender === "ai",
           })}
         >
           <Text
+            as="div"
             className={cn({
               "text-white": message.sender === "user",
             })}
-            fontSize="md"
           >
-            {message.content}
+            <Markdown>{message.content}</Markdown>
           </Text>
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">

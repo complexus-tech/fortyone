@@ -1,10 +1,11 @@
 import { ArrowRight2Icon } from "icons";
 import { Button, Box, Flex } from "ui";
+import type { ChangeEvent } from "react";
 import { useRef, useEffect } from "react";
 
 type ChatInputProps = {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
   isLoading: boolean;
 };
@@ -38,9 +39,7 @@ export const ChatInput = ({
         <textarea
           className="max-h-40 min-h-9 flex-1 resize-none border-none bg-transparent py-2 pr-2 text-xl shadow-none placeholder:text-gray focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-gray-200/60"
           disabled={isLoading}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
+          onChange={onChange}
           onKeyDown={handleKeyDown}
           placeholder="Ask, suggest, or request for anything..."
           ref={textareaRef}

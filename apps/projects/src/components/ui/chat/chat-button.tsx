@@ -9,7 +9,7 @@ type ChatButtonProps = {
 
 export const ChatButton = ({ onOpen }: ChatButtonProps) => {
   return (
-    <Box className="fixed bottom-8 right-8">
+    <Box className="fixed bottom-8 right-8 z-50">
       <Button
         className="bg-gray-50/70 backdrop-blur dark:bg-dark-200/70"
         color="tertiary"

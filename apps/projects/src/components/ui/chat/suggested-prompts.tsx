@@ -1,12 +1,12 @@
 import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
-  "Summarize the current sprint progress",
-  "What are the highest priority tasks?",
-  "Show me blocked stories and their blockers",
-  "Generate a status report for the team",
-  "What's the team velocity this sprint?",
-  "Help me plan the next sprint",
+  "Show me my assigned stories",
+  "Get current sprint summary",
+  "Navigate to analytics",
+  "Create a new story",
+  "What's the team velocity?",
+  "List active sprints",
 ];
 
 type SuggestedPromptsProps = {
