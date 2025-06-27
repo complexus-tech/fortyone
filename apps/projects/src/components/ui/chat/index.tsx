@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { Dialog, Flex } from "ui";
-import { toast } from "sonner";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
