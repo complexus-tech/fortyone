@@ -4,7 +4,7 @@ export const ChatHeader = () => {
   return (
     <Flex align="center" gap={3}>
       <Text fontSize="lg" fontWeight="medium">
-        Maya AI Assistant
+        Ask Maya
       </Text>
     </Flex>
   );

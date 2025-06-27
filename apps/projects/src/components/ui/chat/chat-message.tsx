@@ -2,13 +2,15 @@ import { AiIcon, UserIcon } from "icons";
 import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
+import type { User } from "@/types";
 import type { Message } from "./types";
 
 type ChatMessageProps = {
   message: Message;
+  profile: User | undefined;
 };
 
-export const ChatMessage = ({ message }: ChatMessageProps) => {
+export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
   return (
     <Flex
       className={cn({
@@ -20,7 +22,13 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         {message.sender === "ai" ? (
           <AiIcon className="h-6" />
         ) : (
-          <UserIcon className="h-6" />
+          <Avatar
+            className=""
+            color="primary"
+            name={profile?.fullName || profile?.username}
+            size="sm"
+            src={profile?.avatarUrl}
+          />
         )}
       </Flex>
 

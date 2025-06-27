@@ -1,12 +1,12 @@
+import { toast } from "sonner";
 import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
   "Show me my assigned stories",
-  "Get current sprint summary",
-  "Navigate to analytics",
+  "Take to settings",
   "Create a new story",
-  "What's the team velocity?",
-  "List active sprints",
+  "Change system theme",
+  "Create a new objective",
 ];
 
 type SuggestedPromptsProps = {
@@ -15,7 +15,7 @@ type SuggestedPromptsProps = {
 
 export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
-    <Box className="border-t border-gray-100 px-6 py-6 dark:border-dark-100">
+    <Box className="border-tt-[0.5px] border-gray-100 px-6 pt-6 dark:border-dark-100">
       <Text className="mb-4" fontSize="md" fontWeight="medium">
         Try asking:
       </Text>
@@ -28,7 +28,6 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
               onPromptSelect(prompt);
             }}
             rounded="full"
-            variant="outline"
           >
             {prompt}
           </Button>
