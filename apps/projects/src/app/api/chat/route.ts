@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import type { NextRequest } from "next/server";
 import { allTools } from "@/lib/ai/tools";
+import { systemPrompt } from "./system";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,16 +12,7 @@ export async function POST(req: NextRequest) {
       model: openai("gpt-4o-mini"),
       messages,
       tools: allTools,
-      system: `You are Maya, an AI assistant for Complexus, a project management platform. You help users navigate the application, manage stories, get sprint insights, and provide project management assistance.
-
-Available capabilities:
-- Navigation: Help users navigate to different sections of the app
-- Stories: List, search, create, and manage stories/tasks
-- Sprints: Get sprint summaries, burndown charts, velocity data, and planning recommendations
-
-Be helpful, concise, and friendly. When users want to navigate somewhere, use the navigation tool. When they ask about stories or sprints, use the appropriate tools to provide detailed information.
-
-Always provide context and explanations for your responses. If a user asks to navigate, explain why you're taking them there and what they can expect to find.`,
+      system: systemPrompt,
     });
 
     return new Response(result.toDataStream(), {

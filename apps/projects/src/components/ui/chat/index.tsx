@@ -78,7 +78,7 @@ export const Chat = () => {
       />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[2rem] font-normal dark:bg-dark-300 md:mb-[2.6vh] md:mt-auto"
+          className="max-w-[36rem] rounded-[2rem] font-medium dark:bg-dark-300 md:mb-[2.6vh] md:mt-auto"
           overlayClassName="justify-end pr-[1.5vh]"
           tabIndex={0}
         >
