@@ -1,6 +1,7 @@
 import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import type { User } from "@/types";
@@ -28,7 +29,7 @@ const RenderMessage = ({ message }: { message: Message }) => {
               className="prose prose-stone dark:prose-invert prose-a:text-primary"
               key={part.text}
             >
-              <Markdown>{part.text}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]}>{part.text}</Markdown>
             </Box>
           );
         } else if (part.type === "step-start") {
