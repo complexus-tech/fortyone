@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import type { NextRequest } from "next/server";
-import { navigation } from "@/lib/ai/tools";
+import { navigation, theme } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
 export async function POST(req: NextRequest) {
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     maxSteps: 5,
     tools: {
       navigation,
+      theme,
     },
     system: systemPrompt,
   });

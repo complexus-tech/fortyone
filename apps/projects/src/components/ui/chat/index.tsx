@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { Dialog, Flex } from "ui";
 import { ChatButton } from "./chat-button";
@@ -12,6 +13,7 @@ import { SuggestedPrompts } from "./suggested-prompts";
 
 export const Chat = () => {
   const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const { messages, input, status, setInput, append } = useChat({
@@ -23,6 +25,17 @@ export const Chat = () => {
               router.push(part.toolInvocation.result.route as string);
             }
           }
+          if (part.toolInvocation.toolName === "theme") {
+            if (part.toolInvocation.state === "result") {
+              const requestedTheme = part.toolInvocation.result.theme as string;
+              if (requestedTheme === "toggle") {
+                const newTheme = resolvedTheme === "dark" ? "light" : "dark";
+                setTheme(newTheme);
+              } else {
+                setTheme(requestedTheme);
+              }
+            }
+          }
         }
       });
     },
@@ -30,7 +43,7 @@ export const Chat = () => {
       {
         id: "1",
         content:
-          "Hi! I'm Maya, your AI assistant. I can help you navigate the app, manage stories, get sprint insights, and provide project management assistance. How can I help you today?",
+          "Hi! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, manage stories, get sprint insights, and provide project management assistance. How can I help you today?",
         role: "assistant",
       },
     ],
