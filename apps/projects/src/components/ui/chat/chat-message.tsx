@@ -23,7 +23,11 @@ const RenderMessage = ({ message }: { message: Message }) => {
     <>
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
-          return <Markdown key={part.text}>{part.text}</Markdown>;
+          return (
+            <Box className="prose" key={part.text}>
+              <Markdown>{part.text}</Markdown>
+            </Box>
+          );
         } else if (part.type === "step-start") {
           return hasText ? null : <Text key={index}>Thinking…</Text>;
         }
