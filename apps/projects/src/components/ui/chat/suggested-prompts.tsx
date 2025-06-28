@@ -1,9 +1,8 @@
-import { toast } from "sonner";
 import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
   "Show me my assigned stories",
-  "Take to settings",
+  "Take me to settings",
   "Create a new story",
   "Change system theme",
   "Create a new objective",

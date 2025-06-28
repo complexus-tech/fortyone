@@ -46,7 +46,7 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
         <AiIcon />
       ) : (
         <Avatar
-          color="primary"
+          color="tertiary"
           name={profile?.fullName || profile?.username}
           size="sm"
           src={profile?.avatarUrl}

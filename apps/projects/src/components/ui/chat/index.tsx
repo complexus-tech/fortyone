@@ -14,13 +14,10 @@ export const Chat = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  const { messages, input, handleInputChange, handleSubmit, status } = useChat({
+  const { messages, input, status, setInput, append } = useChat({
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
-          // eslint-disable-next-line no-console -- debug
-          console.log(part.toolInvocation);
-
           if (part.toolInvocation.toolName === "navigation") {
             if (part.toolInvocation.state === "result") {
               router.push(part.toolInvocation.result.route as string);
@@ -43,7 +40,10 @@ export const Chat = () => {
 
   const handleSendMessage = (content: string) => {
     if (!content.trim()) return;
-    handleSubmit(new Event("submit") as any);
+    append({
+      role: "user",
+      content,
+    });
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
@@ -80,7 +80,9 @@ export const Chat = () => {
               )}
               <ChatInput
                 isLoading={isLoading}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                }}
                 onSend={handleSend}
                 value={input}
               />

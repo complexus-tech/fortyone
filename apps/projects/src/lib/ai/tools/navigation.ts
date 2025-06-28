@@ -12,23 +12,13 @@ export const navigation = tool({
         "sprints",
         "notifications",
         "settings",
-        "roadmap",
+        "roadmaps",
       ])
       .describe("The destination to navigate to"),
   }),
   execute: async ({ destination }: { destination: string }) => {
-    const routes = {
-      "my-work": "/my-work",
-      summary: "/summary",
-      analytics: "/analytics",
-      sprints: "/sprints",
-      notifications: "/notifications",
-      settings: "/settings",
-      roadmap: "/roadmap",
-    } as const;
-
     return {
-      route: routes[destination as keyof typeof routes],
+      route: destination,
     };
   },
 });
