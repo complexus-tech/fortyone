@@ -14,7 +14,7 @@ type SuggestedPromptsProps = {
 
 export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
-    <Box className="border-tt-[0.5px] border-gray-100 px-6 pt-6 dark:border-dark-100">
+    <Box className="px-6 pt-6">
       <Text className="mb-4" fontSize="md" fontWeight="medium">
         Try asking:
       </Text>
