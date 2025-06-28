@@ -64,11 +64,10 @@ export const Chat = () => {
       />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[2rem] font-medium dark:bg-dark-300 md:mb-[2.6vh] md:mt-auto"
+          className="max-w-[36rem] rounded-[2rem] bg-white/85 font-medium backdrop-blur dark:bg-dark-300/80 md:mb-[2.6vh] md:mt-auto"
           overlayClassName="justify-end pr-[1.5vh]"
-          tabIndex={0}
         >
-          <Dialog.Header className="border-b-[0.5px] border-gray-100 px-6 py-5 dark:border-dark-100">
+          <Dialog.Header className="px-6 py-5">
             <Dialog.Title className="text-lg">
               <ChatHeader />
             </Dialog.Title>

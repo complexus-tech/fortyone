@@ -128,13 +128,14 @@ export const StoryDialog = ({
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="shrink-0 gap-1 pl-2.5 pr-4 dark:border-dark-100 dark:bg-dark-100/30"
+                    className="shrink-0 gap-1 pl-2.5 pr-4 font-semibold tracking-wide text-dark/80 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
-                    leftIcon={<ArrowLeft2Icon />}
+                    leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    rounded="full"
+                    // rounded="full"
+                    variant="naked"
                   >
                     Close
                   </Button>

@@ -140,7 +140,7 @@ export const NewSubStory = ({
   return (
     <Box>
       {isOpen ? (
-        <Box className="mt-2 rounded-[0.6rem] border border-gray-100/60 bg-gray-50/40 p-3 dark:border-dark-100 dark:bg-dark-300">
+        <Box className="mt-2 rounded-2xl border border-gray-100/60 bg-gray-50/40 px-4 py-3 dark:border-dark-100 dark:bg-dark-300">
           <TextEditor
             asTitle
             className="text-xl font-medium"
@@ -148,7 +148,7 @@ export const NewSubStory = ({
           />
           <TextEditor editor={editor} />
           <Box className="items-center justify-between space-y-2 md:flex">
-            <Flex gap={1} wrap>
+            <Flex className="gap-1.5" wrap>
               <StatusesMenu>
                 <StatusesMenu.Trigger>
                   <Button
@@ -159,7 +159,7 @@ export const NewSubStory = ({
                         statusId={storyForm.statusId}
                       />
                     }
-                    size="xs"
+                    size="sm"
                     type="button"
                     variant="outline"
                   >
@@ -187,7 +187,7 @@ export const NewSubStory = ({
                         priority={storyForm.priority}
                       />
                     }
-                    size="xs"
+                    size="sm"
                     type="button"
                     variant="outline"
                   >
@@ -204,7 +204,7 @@ export const NewSubStory = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="px-2 text-sm"
+                    className="px-2"
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
@@ -222,7 +222,7 @@ export const NewSubStory = ({
                         />
                       ) : null
                     }
-                    size="xs"
+                    size="sm"
                     variant="outline"
                   >
                     {storyForm.startDate
@@ -242,7 +242,7 @@ export const NewSubStory = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className={cn("px-2 text-sm", {
+                    className={cn("px-2", {
                       "text-primary dark:text-primary": storyForm.endDate
                         ? new Date(storyForm.endDate) < new Date()
                         : false,
@@ -269,7 +269,7 @@ export const NewSubStory = ({
                         />
                       ) : null
                     }
-                    size="xs"
+                    size="sm"
                     variant="outline"
                   >
                     {storyForm.endDate
@@ -309,7 +309,7 @@ export const NewSubStory = ({
                         }
                       />
                     }
-                    size="xs"
+                    size="sm"
                     variant="outline"
                   >
                     {members.find(
@@ -325,7 +325,7 @@ export const NewSubStory = ({
                 />
               </AssigneesMenu>
             </Flex>
-            <Flex gap={1} justify="end">
+            <Flex className="gap-1.5" justify="end">
               <Button
                 className="px-2"
                 color="tertiary"
@@ -334,7 +334,7 @@ export const NewSubStory = ({
                   titleEditor?.commands.setContent("");
                   editor?.commands.setContent("");
                 }}
-                size="xs"
+                size="sm"
                 variant="naked"
               >
                 Cancel
@@ -343,7 +343,7 @@ export const NewSubStory = ({
                 color="tertiary"
                 leftIcon={<PlusIcon className="h-4 w-auto" />}
                 onClick={handleCreateStory}
-                size="xs"
+                size="sm"
               >
                 Create
               </Button>

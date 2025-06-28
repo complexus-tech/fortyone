@@ -1,13 +1,36 @@
-import { AiIcon } from "icons";
 import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
 import type { Message } from "@ai-sdk/react";
+import { useEffect, useState } from "react";
 import type { User } from "@/types";
+import { AiIcon } from "./ai";
 
 type ChatMessageProps = {
   message: Message;
   profile: User | undefined;
+};
+
+const RenderMessage = ({ message }: { message: Message }) => {
+  const [hasText, setHasText] = useState(false);
+
+  useEffect(() => {
+    if (message.parts?.some((p) => p.type === "text")) {
+      setHasText(true);
+    }
+  }, [message.parts]);
+  return (
+    <>
+      {message.parts?.map((part, index) => {
+        if (part.type === "text") {
+          return <Markdown key={part.text}>{part.text}</Markdown>;
+        } else if (part.type === "step-start") {
+          return hasText ? null : <Text key={index}>Thinking…</Text>;
+        }
+        return null;
+      })}
+    </>
+  );
 };
 
 export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
@@ -19,20 +42,16 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
       })}
       gap={3}
     >
-      <Flex align="center" className="size-8" justify="center">
-        {message.role === "assistant" ? (
-          <AiIcon className="h-6" />
-        ) : (
-          <Avatar
-            className=""
-            color="primary"
-            name={profile?.fullName || profile?.username}
-            size="sm"
-            src={profile?.avatarUrl}
-          />
-        )}
-      </Flex>
-
+      {message.role === "assistant" ? (
+        <AiIcon />
+      ) : (
+        <Avatar
+          color="primary"
+          name={profile?.fullName || profile?.username}
+          size="sm"
+          src={profile?.avatarUrl}
+        />
+      )}
       <Flex
         className={cn("max-w-[75%] flex-1", {
           "items-end": message.role === "user",
@@ -42,17 +61,10 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
         <Box
           className={cn("rounded-2xl p-4", {
             "bg-primary text-white": message.role === "user",
-            "bg-gray-50 dark:bg-dark-100": message.role === "assistant",
+            "bg-transparent p-0": message.role === "assistant",
           })}
         >
-          <Text
-            as="div"
-            className={cn({
-              "text-white": message.role === "user",
-            })}
-          >
-            <Markdown>{message.content}</Markdown>
-          </Text>
+          <RenderMessage message={message} />
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">
           {createdAt.toLocaleTimeString([], {
