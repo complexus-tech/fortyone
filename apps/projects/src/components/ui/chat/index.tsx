@@ -25,12 +25,12 @@ export const Chat = () => {
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
+          // console.log(part.toolInvocation., "tool invocation");
           if (part.toolInvocation.toolName === "navigation") {
             if (part.toolInvocation.state === "result") {
               router.push(part.toolInvocation.result.route as string);
             }
-          }
-          if (part.toolInvocation.toolName === "theme") {
+          } else if (part.toolInvocation.toolName === "theme") {
             if (part.toolInvocation.state === "result") {
               const requestedTheme = part.toolInvocation.result.theme as string;
               if (requestedTheme === "toggle") {
@@ -40,8 +40,7 @@ export const Chat = () => {
                 setTheme(requestedTheme);
               }
             }
-          }
-          if (part.toolInvocation.toolName === "quickCreate") {
+          } else if (part.toolInvocation.toolName === "quickCreate") {
             if (part.toolInvocation.state === "result") {
               const action = part.toolInvocation.result.action as string;
               switch (action) {
@@ -97,6 +96,12 @@ export const Chat = () => {
           setIsOpen(true);
         }}
       />
+      <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
+      <NewObjectiveDialog
+        isOpen={isObjectiveOpen}
+        setIsOpen={setIsObjectiveOpen}
+      />
+      <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className="max-w-[36rem] rounded-[2rem] bg-white/85 font-medium backdrop-blur dark:bg-dark-300/80 md:mb-[2.6vh] md:mt-auto"
@@ -107,6 +112,9 @@ export const Chat = () => {
               <ChatHeader />
             </Dialog.Title>
           </Dialog.Header>
+          <Dialog.Description className="sr-only">
+            Maya is your AI assistant.
+          </Dialog.Description>
           <Dialog.Body className="h-[80dvh] max-h-[80dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages isLoading={isLoading} messages={messages} />
@@ -125,13 +133,6 @@ export const Chat = () => {
           </Dialog.Body>
         </Dialog.Content>
       </Dialog>
-
-      <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
-      <NewObjectiveDialog
-        isOpen={isObjectiveOpen}
-        setIsOpen={setIsObjectiveOpen}
-      />
-      <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
     </>
   );
 };

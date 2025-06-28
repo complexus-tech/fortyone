@@ -88,7 +88,7 @@ Terminology
 - Sprints can also be called iterations, timeboxes, cycles.
 - Objectives can also be called goals, projects.
 - Key Results can also be called metrics, indicators, or measures.
-- My work can be called something like tasks, my issues, my work items, or my user stories, my assigned work
+- My work can be called something like tasks, my issues, my work items, or my stories, my assigned work
 
 
 

@@ -1,10 +1,10 @@
 import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
-  "Show me my assigned stories",
+  "Show me my stories",
   "Take me to settings",
   "Create a new story",
-  "Change system theme",
+  "Toggle color theme",
   "Create a new objective",
 ];
 
