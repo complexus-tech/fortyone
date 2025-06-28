@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 
-export const navigationTool = tool({
+export const navigation = tool({
   description: "Navigate to different pages of the application",
   parameters: z.object({
     destination: z

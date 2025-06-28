@@ -21,7 +21,7 @@ export const Chat = () => {
           // eslint-disable-next-line no-console -- debug
           console.log(part.toolInvocation);
 
-          if (part.toolInvocation.toolName === "navigate") {
+          if (part.toolInvocation.toolName === "navigation") {
             if (part.toolInvocation.state === "result") {
               router.push(part.toolInvocation.result.route as string);
             }
