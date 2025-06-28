@@ -26,7 +26,7 @@ const RenderMessage = ({ message }: { message: Message }) => {
         if (part.type === "text") {
           return (
             <Box
-              className="prose prose-stone dark:prose-invert prose-a:text-primary"
+              className="chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary"
               key={part.text}
             >
               <Markdown remarkPlugins={[remarkGfm]}>{part.text}</Markdown>
