@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { Dialog, Flex } from "ui";
+import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
+import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -15,6 +17,9 @@ export const Chat = () => {
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
+  const [isSprintOpen, setIsSprintOpen] = useState(false);
 
   const { messages, input, status, setInput, append } = useChat({
     onFinish: (message) => {
@@ -36,6 +41,22 @@ export const Chat = () => {
               }
             }
           }
+          if (part.toolInvocation.toolName === "quickCreate") {
+            if (part.toolInvocation.state === "result") {
+              const action = part.toolInvocation.result.action as string;
+              switch (action) {
+                case "story":
+                  setIsStoryOpen(true);
+                  break;
+                case "objective":
+                  setIsObjectiveOpen(true);
+                  break;
+                case "sprint":
+                  setIsSprintOpen(true);
+                  break;
+              }
+            }
+          }
         }
       });
     },
@@ -43,7 +64,7 @@ export const Chat = () => {
       {
         id: "1",
         content:
-          "Hi! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, manage stories, get sprint insights, and provide project management assistance. How can I help you today?",
+          "Hi! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, create new items, manage stories, get sprint insights, and provide project management assistance. How can I help you today?",
         role: "assistant",
       },
     ],
@@ -104,6 +125,13 @@ export const Chat = () => {
           </Dialog.Body>
         </Dialog.Content>
       </Dialog>
+
+      <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
+      <NewObjectiveDialog
+        isOpen={isObjectiveOpen}
+        setIsOpen={setIsObjectiveOpen}
+      />
+      <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
     </>
   );
 };
