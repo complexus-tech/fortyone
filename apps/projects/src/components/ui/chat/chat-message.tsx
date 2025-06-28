@@ -24,7 +24,10 @@ const RenderMessage = ({ message }: { message: Message }) => {
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
           return (
-            <Box className="prose" key={part.text}>
+            <Box
+              className="prose prose-stone dark:prose-invert prose-a:text-primary"
+              key={part.text}
+            >
               <Markdown>{part.text}</Markdown>
             </Box>
           );
