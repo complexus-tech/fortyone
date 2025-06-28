@@ -57,6 +57,7 @@ export const Chat = () => {
       role: "user",
       content,
     });
+    setInput("");
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
