@@ -1,9 +1,9 @@
 import { useRef, useEffect } from "react";
 import { Box, Flex } from "ui";
+import type { Message } from "@ai-sdk/react";
 import { useProfile } from "@/lib/hooks/profile";
 import { ChatMessage } from "./chat-message";
 import { ChatLoading } from "./chat-loading";
-import type { Message } from "./types";
 
 type ChatMessagesProps = {
   messages: Message[];

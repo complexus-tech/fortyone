@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 export const navigationTool = {
-  name: "navigate",
-  description: "Navigate to different sections of the application",
+  description: "Navigate to different pages of the application",
   parameters: z.object({
     destination: z
       .enum([

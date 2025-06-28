@@ -1,9 +1,9 @@
-import { AiIcon, UserIcon } from "icons";
+import { AiIcon } from "icons";
 import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
+import type { Message } from "@ai-sdk/react";
 import type { User } from "@/types";
-import type { Message } from "./types";
 
 type ChatMessageProps = {
   message: Message;
@@ -11,15 +11,16 @@ type ChatMessageProps = {
 };
 
 export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
+  const createdAt = message.createdAt || new Date();
   return (
     <Flex
       className={cn({
-        "flex-row-reverse": message.sender === "user",
+        "flex-row-reverse": message.role === "user",
       })}
       gap={3}
     >
       <Flex align="center" className="size-8" justify="center">
-        {message.sender === "ai" ? (
+        {message.role === "assistant" ? (
           <AiIcon className="h-6" />
         ) : (
           <Avatar
@@ -34,27 +35,27 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
 
       <Flex
         className={cn("max-w-[75%] flex-1", {
-          "items-end": message.sender === "user",
+          "items-end": message.role === "user",
         })}
         direction="column"
       >
         <Box
           className={cn("rounded-2xl p-4", {
-            "bg-primary text-white": message.sender === "user",
-            "bg-gray-50 dark:bg-dark-100": message.sender === "ai",
+            "bg-primary text-white": message.role === "user",
+            "bg-gray-50 dark:bg-dark-100": message.role === "assistant",
           })}
         >
           <Text
             as="div"
             className={cn({
-              "text-white": message.sender === "user",
+              "text-white": message.role === "user",
             })}
           >
             <Markdown>{message.content}</Markdown>
           </Text>
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">
-          {message.timestamp.toLocaleTimeString([], {
+          {createdAt.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
