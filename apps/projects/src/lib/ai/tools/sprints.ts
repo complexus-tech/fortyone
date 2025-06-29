@@ -1,266 +1,617 @@
 import { z } from "zod";
+import { headers } from "next/headers";
+import { auth } from "@/auth";
+import { getSprints } from "@/modules/sprints/queries/get-sprints";
+import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
+import { getTeamSprints } from "@/modules/sprints/queries/get-team-sprints";
+import { getSprintDetails } from "@/modules/sprints/queries/get-sprint-details";
+import { getSprintAnalytics } from "@/modules/sprints/queries/get-sprint-analytics";
+import { createSprintAction } from "@/modules/sprints/actions/create-sprint";
+import { updateSprintAction } from "@/modules/sprints/actions/update-sprint";
+import { deleteSprintAction } from "@/modules/sprints/actions/delete-sprint";
+import { getTeams } from "@/modules/teams/queries/get-teams";
+import { getStories } from "@/modules/stories/queries/get-stories";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
 
 export const sprintsTool = {
   name: "sprints",
   description:
-    "Manage and query sprints, get sprint summaries and planning information",
+    "Comprehensive sprint management: list, create, update, delete sprints, manage sprint stories, get analytics and burndown data. Supports team name resolution and role-based permissions.",
   parameters: z.object({
     action: z
       .enum([
-        "list-active",
-        "list-all",
-        "get-summary",
-        "get-burndown",
-        "get-velocity",
-        "plan-next",
-        "get-details",
+        "list-sprints",
+        "list-running-sprints",
+        "list-team-sprints",
+        "get-sprint-details",
+        "create-sprint",
+        "update-sprint",
+        "delete-sprint",
+        "get-sprint-analytics",
+        "list-sprint-stories",
+        "add-stories-to-sprint",
+        "remove-stories-from-sprint",
+        "get-available-stories",
       ])
-      .describe("The action to perform on sprints"),
+      .describe("The sprint action to perform"),
+
+    // Team identification
+    teamName: z
+      .string()
+      .optional()
+      .describe(
+        "Team name (e.g., 'Product Team', 'Frontend') - will be converted to team ID",
+      ),
+
+    // Sprint identification
     sprintId: z
       .string()
       .optional()
-      .describe("Sprint ID for specific sprint actions"),
-    teamId: z.string().optional().describe("Team ID to filter sprints"),
-    includeStories: z
+      .describe("Sprint ID for single sprint operations"),
+
+    sprintIds: z
+      .array(z.string())
+      .optional()
+      .describe("Array of sprint IDs for bulk operations"),
+
+    // Story identification
+    storyIds: z
+      .array(z.string())
+      .optional()
+      .describe("Array of story IDs for sprint story operations"),
+
+    // For creating sprints
+    sprintData: z
+      .object({
+        name: z.string().describe("Sprint name"),
+        goal: z.string().optional().describe("Sprint goal or description"),
+        teamId: z
+          .string()
+          .optional()
+          .describe(
+            "Team ID (optional - will auto-select if user has only one team)",
+          ),
+        objectiveId: z
+          .string()
+          .optional()
+          .describe("Objective ID to link sprint"),
+        startDate: z.string().describe("Sprint start date (ISO string)"),
+        endDate: z.string().describe("Sprint end date (ISO string)"),
+      })
+      .optional()
+      .describe("Sprint data for creation"),
+
+    // For updating sprints
+    updateData: z
+      .object({
+        name: z.string().optional().describe("Updated sprint name"),
+        goal: z.string().optional().describe("Updated sprint goal"),
+        objectiveId: z.string().optional().describe("Updated objective ID"),
+        startDate: z.string().optional().describe("Updated start date"),
+        endDate: z.string().optional().describe("Updated end date"),
+      })
+      .optional()
+      .describe("Sprint update data"),
+
+    // Filtering and options
+    includeStats: z
       .boolean()
       .optional()
-      .describe("Include story details in response"),
+      .describe("Include story statistics in sprint responses"),
+
+    includeAnalytics: z
+      .boolean()
+      .optional()
+      .describe("Include analytics data in sprint responses"),
   }),
-  execute: ({
+
+  execute: async ({
     action,
+    teamName,
     sprintId,
-    teamId,
-    includeStories,
+    sprintIds: _sprintIds,
+    storyIds,
+    sprintData,
+    updateData,
+    includeStats = true,
+    includeAnalytics = false,
   }: {
     action: string;
+    teamName?: string;
     sprintId?: string;
-    teamId?: string;
-    includeStories?: boolean;
+    sprintIds?: string[];
+    storyIds?: string[];
+    sprintData?: {
+      name: string;
+      goal?: string;
+      teamId?: string;
+      objectiveId?: string;
+      startDate: string;
+      endDate: string;
+    };
+    updateData?: {
+      name?: string;
+      goal?: string;
+      objectiveId?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    includeStats?: boolean;
+    includeAnalytics?: boolean;
   }) => {
-    // This would integrate with your actual sprint management system
-    // For now, returning mock data structure
+    try {
+      const session = await auth();
 
-    switch (action) {
-      case "list-active":
+      if (!session) {
         return {
-          success: true,
-          sprints: [
-            {
-              id: "sprint-1",
-              name: "Sprint 15 - User Authentication",
-              team: "Frontend Team",
-              startDate: "2024-02-01",
-              endDate: "2024-02-14",
-              status: "active",
-              progress: 65,
-              totalPoints: 21,
-              completedPoints: 14,
-            },
-            {
-              id: "sprint-2",
-              name: "Sprint 16 - Dashboard Features",
-              team: "Backend Team",
-              startDate: "2024-02-01",
-              endDate: "2024-02-14",
-              status: "active",
-              progress: 45,
-              totalPoints: 18,
-              completedPoints: 8,
-            },
-          ],
-          count: 2,
-          message: "Here are the currently active sprints.",
-        };
-
-      case "list-all":
-        return {
-          success: true,
-          sprints: [
-            {
-              id: "sprint-1",
-              name: "Sprint 15 - User Authentication",
-              team: "Frontend Team",
-              startDate: "2024-02-01",
-              endDate: "2024-02-14",
-              status: "active",
-              progress: 65,
-            },
-            {
-              id: "sprint-0",
-              name: "Sprint 14 - Initial Setup",
-              team: "Frontend Team",
-              startDate: "2024-01-15",
-              endDate: "2024-01-31",
-              status: "completed",
-              progress: 100,
-            },
-          ],
-          count: 2,
-          message: "Here are all sprints for the current view.",
-        };
-
-      case "get-summary": {
-        const targetSprintId = sprintId || "sprint-1";
-        return {
-          success: true,
-          sprint: {
-            id: targetSprintId,
-            name: "Sprint 15 - User Authentication",
-            team: "Frontend Team",
-            startDate: "2024-02-01",
-            endDate: "2024-02-14",
-            status: "active",
-            progress: 65,
-            totalPoints: 21,
-            completedPoints: 14,
-            remainingPoints: 7,
-            daysRemaining: 3,
-            velocity: 2.3,
-            stories: includeStories
-              ? [
-                  {
-                    id: "story-1",
-                    title: "Implement login form",
-                    status: "completed",
-                    points: 5,
-                    assignee: "John Doe",
-                  },
-                  {
-                    id: "story-2",
-                    title: "Add password reset functionality",
-                    status: "in-progress",
-                    points: 8,
-                    assignee: "Jane Smith",
-                  },
-                  {
-                    id: "story-3",
-                    title: "Setup OAuth integration",
-                    status: "todo",
-                    points: 8,
-                    assignee: "Mike Johnson",
-                  },
-                ]
-              : undefined,
-          },
-          message: `Here's the summary for ${targetSprintId}.`,
+          success: false,
+          error: "Authentication required to access sprints",
         };
       }
 
-      case "get-burndown":
-        return {
-          success: true,
-          burndown: {
-            sprintId: sprintId || "sprint-1",
-            data: [
-              { day: 1, remainingPoints: 21 },
-              { day: 2, remainingPoints: 19 },
-              { day: 3, remainingPoints: 18 },
-              { day: 4, remainingPoints: 16 },
-              { day: 5, remainingPoints: 14 },
-              { day: 6, remainingPoints: 12 },
-              { day: 7, remainingPoints: 10 },
-              { day: 8, remainingPoints: 8 },
-              { day: 9, remainingPoints: 7 },
-              { day: 10, remainingPoints: 7 },
-            ],
-            idealLine: [
-              { day: 1, remainingPoints: 21 },
-              { day: 10, remainingPoints: 0 },
-            ],
-          },
-          message: "Here is the burndown chart data for the sprint.",
-        };
+      // Get user's workspace and role for permissions
+      const headersList = await headers();
+      const subdomain = headersList.get("host")?.split(".")[0] || "";
+      const workspace = session.workspaces.find(
+        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+      );
+      const userRole = workspace?.userRole;
 
-      case "get-velocity":
-        return {
-          success: true,
-          velocity: {
-            team: teamId || "Frontend Team",
-            lastSprints: [
-              { sprintId: "sprint-14", name: "Sprint 14", velocity: 2.1 },
-              { sprintId: "sprint-13", name: "Sprint 13", velocity: 2.4 },
-              { sprintId: "sprint-12", name: "Sprint 12", velocity: 2.0 },
-              { sprintId: "sprint-11", name: "Sprint 11", velocity: 2.3 },
-            ],
-            averageVelocity: 2.2,
-            trend: "stable",
-          },
-          message: "Here is the velocity data for the team.",
-        };
-
-      case "plan-next":
-        return {
-          success: true,
-          planning: {
-            suggestedSprintName: "Sprint 16 - Dashboard Enhancements",
-            suggestedDuration: "2 weeks",
-            availableStories: [
-              {
-                id: "story-4",
-                title: "Add analytics dashboard",
-                points: 13,
-                priority: "high",
-              },
-              {
-                id: "story-5",
-                title: "Implement data export",
-                points: 8,
-                priority: "medium",
-              },
-              {
-                id: "story-6",
-                title: "Add user preferences",
-                points: 5,
-                priority: "low",
-              },
-            ],
-            recommendedStories: ["story-4", "story-5"],
-            estimatedVelocity: 2.2,
-            recommendedPoints: 21,
-          },
-          message: "Here are my recommendations for the next sprint planning.",
-        };
-
-      case "get-details":
-        if (!sprintId) {
-          return {
-            success: false,
-            error: "Sprint ID is required for get-details action",
-          };
-        }
-        return {
-          success: true,
-          sprint: {
-            id: sprintId,
-            name: "Sprint 15 - User Authentication",
-            team: "Frontend Team",
-            startDate: "2024-02-01",
-            endDate: "2024-02-14",
-            status: "active",
-            progress: 65,
-            totalPoints: 21,
-            completedPoints: 14,
-            remainingPoints: 7,
-            daysRemaining: 3,
-            velocity: 2.3,
-            goals: [
-              "Complete user authentication flow",
-              "Implement password reset functionality",
-              "Setup OAuth integration",
-            ],
-            risks: [
-              "OAuth provider integration complexity",
-              "Security review requirements",
-            ],
-          },
-          message: `Here are the detailed information for sprint ${sprintId}.`,
-        };
-
-      default:
+      if (!userRole) {
         return {
           success: false,
-          error: `Unknown action: ${action}`,
+          error: "Unable to determine user permissions",
         };
+      }
+
+      // Convert team name to ID if provided
+      let teamId: string | undefined;
+      if (teamName) {
+        const allTeams = await getTeams(session);
+        const team = allTeams.find(
+          (t) => t.name.toLowerCase() === teamName.toLowerCase(),
+        );
+        if (!team) {
+          return {
+            success: false,
+            error: `Team "${teamName}" not found. Available teams: ${allTeams.map((t) => t.name).join(", ")}`,
+          };
+        }
+        teamId = team.id;
+      }
+
+      switch (action) {
+        case "list-sprints": {
+          const sprints = await getSprints(session);
+
+          return {
+            success: true,
+            sprints: sprints.map((sprint) => ({
+              id: sprint.id,
+              name: sprint.name,
+              goal: sprint.goal,
+              teamId: sprint.teamId,
+              objectiveId: sprint.objectiveId,
+              startDate: sprint.startDate,
+              endDate: sprint.endDate,
+              createdAt: sprint.createdAt,
+              updatedAt: sprint.updatedAt,
+              ...(includeStats && { stats: sprint.stats }),
+            })),
+            count: sprints.length,
+            message: `Found ${sprints.length} sprints across all teams.`,
+          };
+        }
+
+        case "list-running-sprints": {
+          const runningSprints = await getRunningSprints(session);
+
+          return {
+            success: true,
+            sprints: runningSprints.map((sprint) => ({
+              id: sprint.id,
+              name: sprint.name,
+              goal: sprint.goal,
+              teamId: sprint.teamId,
+              objectiveId: sprint.objectiveId,
+              startDate: sprint.startDate,
+              endDate: sprint.endDate,
+              ...(includeStats && { stats: sprint.stats }),
+            })),
+            count: runningSprints.length,
+            message: `Found ${runningSprints.length} currently running sprints.`,
+          };
+        }
+
+        case "list-team-sprints": {
+          if (!teamId) {
+            return {
+              success: false,
+              error: "Team name is required for list-team-sprints action",
+            };
+          }
+
+          const teamSprints = await getTeamSprints(teamId, session);
+
+          return {
+            success: true,
+            sprints: teamSprints.map((sprint) => ({
+              id: sprint.id,
+              name: sprint.name,
+              goal: sprint.goal,
+              teamId: sprint.teamId,
+              objectiveId: sprint.objectiveId,
+              startDate: sprint.startDate,
+              endDate: sprint.endDate,
+              ...(includeStats && { stats: sprint.stats }),
+            })),
+            count: teamSprints.length,
+            message: `Found ${teamSprints.length} sprints for team "${teamName}".`,
+          };
+        }
+
+        case "get-sprint-details": {
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for get-sprint-details action",
+            };
+          }
+
+          const [sprintDetails, analytics] = await Promise.all([
+            getSprintDetails(sprintId, session),
+            includeAnalytics ? getSprintAnalytics(sprintId, session) : null,
+          ]);
+
+          return {
+            success: true,
+            sprint: {
+              id: sprintDetails.id,
+              name: sprintDetails.name,
+              goal: sprintDetails.goal,
+              teamId: sprintDetails.teamId,
+              objectiveId: sprintDetails.objectiveId,
+              startDate: sprintDetails.startDate,
+              endDate: sprintDetails.endDate,
+              createdAt: sprintDetails.createdAt,
+              updatedAt: sprintDetails.updatedAt,
+              ...(analytics && { analytics }),
+            },
+            message: `Retrieved details for sprint "${sprintDetails.name}".`,
+          };
+        }
+
+        case "create-sprint": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot create sprints",
+            };
+          }
+
+          if (!sprintData) {
+            return {
+              success: false,
+              error: "Sprint data is required to create a sprint",
+            };
+          }
+
+          // Handle team selection
+          let finalTeamId = sprintData.teamId;
+
+          if (!finalTeamId) {
+            // Get user's teams
+            const userTeams = await getTeams(session);
+
+            if (userTeams.length === 0) {
+              return {
+                success: false,
+                error:
+                  "You don't belong to any teams. Please join a team first.",
+              };
+            }
+
+            if (userTeams.length === 1) {
+              finalTeamId = userTeams[0].id;
+            } else {
+              // Ask user to specify team
+              return {
+                success: false,
+                error: `Please specify which team to create the sprint for. Available teams: ${userTeams.map((t) => t.name).join(", ")}`,
+              };
+            }
+          }
+
+          const result = await createSprintAction({
+            name: sprintData.name,
+            goal: sprintData.goal || "",
+            teamId: finalTeamId,
+            objectiveId: sprintData.objectiveId || null,
+            startDate: sprintData.startDate,
+            endDate: sprintData.endDate,
+          });
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to create sprint",
+            };
+          }
+
+          const createdSprint = result.data!;
+
+          return {
+            success: true,
+            sprint: {
+              id: createdSprint.id,
+              name: createdSprint.name,
+              goal: createdSprint.goal,
+              teamId: createdSprint.teamId,
+              objectiveId: createdSprint.objectiveId,
+              startDate: createdSprint.startDate,
+              endDate: createdSprint.endDate,
+            },
+            message: `Successfully created sprint "${sprintData.name}".`,
+          };
+        }
+
+        case "update-sprint": {
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for update-sprint action",
+            };
+          }
+
+          if (!updateData) {
+            return {
+              success: false,
+              error: "Update data is required for update-sprint action",
+            };
+          }
+
+          // Check permissions - users can only update sprints for their teams
+          // (unless they're admins)
+          if (userRole !== "admin") {
+            const sprintDetails = await getSprintDetails(sprintId, session);
+
+            const userTeams = await getTeams(session);
+            const hasAccess = userTeams.some(
+              (team) => team.id === sprintDetails.teamId,
+            );
+
+            if (!hasAccess) {
+              return {
+                success: false,
+                error: "You can only update sprints for teams you belong to",
+              };
+            }
+          }
+
+          const result = await updateSprintAction(sprintId, updateData);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to update sprint",
+            };
+          }
+
+          return {
+            success: true,
+            message: "Successfully updated sprint.",
+          };
+        }
+
+        case "delete-sprint": {
+          if (userRole !== "admin") {
+            return {
+              success: false,
+              error: "Only admins can delete sprints",
+            };
+          }
+
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for delete-sprint action",
+            };
+          }
+
+          const sprintDetails = await getSprintDetails(sprintId, session);
+
+          const result = await deleteSprintAction(sprintId);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to delete sprint",
+            };
+          }
+
+          return {
+            success: true,
+            message: `Successfully deleted sprint "${sprintDetails.name}".`,
+          };
+        }
+
+        case "get-sprint-analytics": {
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for get-sprint-analytics action",
+            };
+          }
+
+          const analytics = await getSprintAnalytics(sprintId, session);
+
+          return {
+            success: true,
+            analytics: {
+              sprintId: analytics.sprintId,
+              overview: analytics.overview,
+              storyBreakdown: analytics.storyBreakdown,
+              burndown: analytics.burndown,
+              teamAllocation: analytics.teamAllocation,
+            },
+            message: "Retrieved sprint analytics data.",
+          };
+        }
+
+        case "list-sprint-stories": {
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for list-sprint-stories action",
+            };
+          }
+
+          const stories = await getStories(session, { sprintId });
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              sprintId: story.sprintId,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+            })),
+            count: stories.length,
+            message: `Found ${stories.length} stories in this sprint.`,
+          };
+        }
+
+        case "add-stories-to-sprint": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot modify sprint stories",
+            };
+          }
+
+          if (!sprintId) {
+            return {
+              success: false,
+              error: "Sprint ID is required for add-stories-to-sprint action",
+            };
+          }
+
+          if (!storyIds || storyIds.length === 0) {
+            return {
+              success: false,
+              error: "Story IDs are required for add-stories-to-sprint action",
+            };
+          }
+
+          // Update each story to add them to the sprint
+          const results = await Promise.allSettled(
+            storyIds.map((storyId: string) =>
+              updateStoryAction(storyId, { sprintId }),
+            ),
+          );
+
+          const successful = results.filter(
+            (result) => result.status === "fulfilled" && !result.value.error,
+          ).length;
+
+          const failed = results.length - successful;
+
+          if (failed === 0) {
+            return {
+              success: true,
+              message: `Successfully added ${successful} stories to sprint.`,
+            };
+          }
+          return {
+            success: successful > 0,
+            message: `Added ${successful} stories to sprint. ${failed} failed to update.`,
+          };
+        }
+
+        case "remove-stories-from-sprint": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot modify sprint stories",
+            };
+          }
+
+          if (!storyIds || storyIds.length === 0) {
+            return {
+              success: false,
+              error:
+                "Story IDs are required for remove-stories-from-sprint action",
+            };
+          }
+
+          // Update each story to remove them from sprint
+          const results = await Promise.allSettled(
+            storyIds.map((storyId: string) =>
+              updateStoryAction(storyId, { sprintId: undefined }),
+            ),
+          );
+
+          const successful = results.filter(
+            (result) => result.status === "fulfilled" && !result.value.error,
+          ).length;
+
+          const failed = results.length - successful;
+
+          if (failed === 0) {
+            return {
+              success: true,
+              message: `Successfully removed ${successful} stories from sprint.`,
+            };
+          }
+          return {
+            success: successful > 0,
+            message: `Removed ${successful} stories from sprint. ${failed} failed to update.`,
+          };
+        }
+
+        case "get-available-stories": {
+          if (!teamId) {
+            return {
+              success: false,
+              error: "Team name is required for get-available-stories action",
+            };
+          }
+
+          // Get stories for the team that are not assigned to any sprint
+          const stories = await getStories(session, {
+            teamId,
+            sprintId: undefined, // This should get unassigned stories
+          });
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              createdAt: story.createdAt,
+            })),
+            count: stories.length,
+            message: `Found ${stories.length} available stories for team "${teamName}" that can be added to sprints.`,
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred while performing sprint operation",
+      };
     }
   },
 };

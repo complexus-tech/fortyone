@@ -2,8 +2,9 @@ import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
   "Show me my stories",
+  "Show me running sprints",
   "How many statuses are in the Product team",
-  "Create a story",
+  "Create a new sprint",
   "Toggle color theme",
   "Create a new objective",
 ];
