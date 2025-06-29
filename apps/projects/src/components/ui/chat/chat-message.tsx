@@ -76,6 +76,12 @@ const RenderMessage = ({
               if (result?.analytics?.burndown && !isStreaming) {
                 return (
                   <Box className="mb-3" key={index}>
+                    <Text
+                      as="h3"
+                      className="mb-2 text-lg font-semibold antialiased"
+                    >
+                      Burndown graph
+                    </Text>
                     <BurndownChart burndownData={result?.analytics?.burndown} />
                   </Box>
                 );
