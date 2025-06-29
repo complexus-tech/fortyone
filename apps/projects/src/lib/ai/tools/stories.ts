@@ -12,6 +12,7 @@ import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories"
 import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
 import { duplicateStoryAction } from "@/modules/story/actions/duplicate-story";
 import { restoreStoryAction } from "@/modules/story/actions/restore-story";
+import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
 
 export const storiesTool = tool({
   description:
@@ -335,12 +336,34 @@ export const storiesTool = tool({
             };
           }
 
+          // Get default status if none provided
+          let finalStatusId = storyData.statusId;
+          if (!finalStatusId) {
+            const teamStatuses = await getTeamStatuses(
+              storyData.teamId,
+              session,
+            );
+
+            if (teamStatuses.length === 0) {
+              return {
+                success: false,
+                error:
+                  "No statuses found for this team. Please contact an admin.",
+              };
+            }
+
+            const defaultStatus =
+              teamStatuses.find((status) => status.isDefault) ||
+              teamStatuses[0];
+            finalStatusId = defaultStatus.id;
+          }
+
           const result = await createStoryAction({
             title: storyData.title,
             description: storyData.description || "",
             descriptionHTML: storyData.descriptionHTML || "",
             teamId: storyData.teamId,
-            statusId: storyData.statusId,
+            statusId: finalStatusId,
             assigneeId: storyData.assigneeId || undefined,
             priority: storyData.priority || "No Priority",
             sprintId: storyData.sprintId || undefined,
