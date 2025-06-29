@@ -4,6 +4,8 @@ import type { NextRequest } from "next/server";
 import { navigation, theme, quickCreate } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
+export const maxDuration = 30;
+
 export async function POST(req: NextRequest) {
   const { messages } = await req.json();
 

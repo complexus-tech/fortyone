@@ -26,7 +26,12 @@ const RenderMessage = ({ message }: { message: Message }) => {
         if (part.type === "text") {
           return (
             <Box
-              className="chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary"
+              className={cn(
+                "chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary",
+                {
+                  "text-white": message.role === "user",
+                },
+              )}
               key={part.text}
             >
               <Markdown remarkPlugins={[remarkGfm]}>{part.text}</Markdown>
@@ -67,8 +72,8 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
         direction="column"
       >
         <Box
-          className={cn("rounded-2xl p-4", {
-            "bg-primary text-white": message.role === "user",
+          className={cn("rounded-full p-4", {
+            "bg-primary": message.role === "user",
             "bg-transparent p-0": message.role === "assistant",
           })}
         >
