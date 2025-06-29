@@ -8,7 +8,14 @@ import { Dialog, Flex } from "ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
-import { teamKeys } from "@/constants/keys";
+import {
+  notificationKeys,
+  sprintKeys,
+  statusKeys,
+  teamKeys,
+} from "@/constants/keys";
+import { storyKeys } from "@/modules/stories/constants";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -61,6 +68,36 @@ export const Chat = () => {
             if (part.toolInvocation.state === "result") {
               queryClient.invalidateQueries({
                 queryKey: teamKeys.all,
+              });
+            }
+          } else if (part.toolInvocation.toolName === "notifications") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: notificationKeys.all,
+              });
+            }
+          } else if (part.toolInvocation.toolName === "statuses") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: statusKeys.all,
+              });
+            }
+          } else if (part.toolInvocation.toolName === "stories") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: storyKeys.all,
+              });
+            }
+          } else if (part.toolInvocation.toolName === "sprints") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: sprintKeys.all,
+              });
+            }
+          } else if (part.toolInvocation.toolName === "objectives") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: objectiveKeys.all,
               });
             }
           }
