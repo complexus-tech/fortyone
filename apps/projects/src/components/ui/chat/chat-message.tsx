@@ -42,7 +42,7 @@ const RenderMessage = ({ message }: { message: Message }) => {
           return (
             <Box
               className={cn(
-                "chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary",
+                "chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary prose-table:border prose-table:border-gray-100 dark:prose-table:border-dark-100",
                 {
                   "text-white": message.role === "user",
                 },
