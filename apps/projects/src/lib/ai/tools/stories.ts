@@ -14,6 +14,10 @@ import { duplicateStoryAction } from "@/modules/story/actions/duplicate-story";
 import { restoreStoryAction } from "@/modules/story/actions/restore-story";
 import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
 import { getStatuses } from "@/lib/queries/states/get-states";
+import { searchQuery } from "@/modules/search/queries/search";
+import type { SearchQueryParams } from "@/modules/search/types";
+import { getTeams } from "@/modules/teams/queries/get-teams";
+import { getMembers } from "@/lib/queries/members/get-members";
 
 export const storiesTool = tool({
   description:
@@ -37,7 +41,35 @@ export const storiesTool = tool({
       .describe("The story operation to perform"),
 
     // For filtering and searching
-    teamId: z.string().optional().describe("Team ID to filter stories"),
+    teamName: z
+      .string()
+      .optional()
+      .describe(
+        "Team name to filter stories (e.g., 'Product Team', 'Backend Team') - will be converted to team ID",
+      ),
+    searchQuery: z
+      .string()
+      .optional()
+      .describe(
+        "Full text search query to search story titles and descriptions",
+      ),
+    // For search-stories action
+    statusName: z
+      .string()
+      .optional()
+      .describe(
+        "Filter by status name (e.g., 'In Progress', 'Done', 'Backlog') - will be converted to UUID",
+      ),
+    assigneeId: z
+      .string()
+      .optional()
+      .describe("Filter by single assignee ID (for search only)"),
+    priority: z
+      .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+      .optional()
+      .describe("Filter by single priority (for search only)"),
+
+    // For other list actions
     filters: z
       .object({
         statusIds: z
@@ -67,7 +99,7 @@ export const storiesTool = tool({
           .describe("Show only stories created by me"),
       })
       .optional()
-      .describe("Optional filters for story queries"),
+      .describe("Optional filters for story queries (not used for search)"),
 
     // For single story operations
     storyId: z
@@ -92,7 +124,19 @@ export const storiesTool = tool({
           .describe("Story description HTML"),
         teamId: z.string().describe("Team ID where story belongs"),
         statusId: z.string().optional().describe("Initial status ID"),
+        statusName: z
+          .string()
+          .optional()
+          .describe(
+            "Initial status name (e.g., 'In Progress', 'Done') - will be converted to UUID",
+          ),
         assigneeId: z.string().optional().describe("Assignee user ID"),
+        assigneeName: z
+          .string()
+          .optional()
+          .describe(
+            "Assignee name (e.g., 'John Doe', 'greatwin') - will be converted to user ID",
+          ),
         priority: z
           .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
           .optional()
@@ -141,7 +185,11 @@ export const storiesTool = tool({
 
   execute: async ({
     action,
-    teamId,
+    teamName,
+    searchQuery: query,
+    statusName,
+    assigneeId,
+    priority,
     filters,
     storyId,
     storyIds,
@@ -172,6 +220,22 @@ export const storiesTool = tool({
           success: false,
           error: "Unable to determine user permissions",
         };
+      }
+
+      // Convert team name to ID if provided (used across multiple actions)
+      let teamId: string | undefined;
+      if (teamName) {
+        const allTeams = await getTeams(session);
+        const team = allTeams.find(
+          (t) => t.name.toLowerCase() === teamName.toLowerCase(),
+        );
+        if (!team) {
+          return {
+            success: false,
+            error: `Team "${teamName}" not found. Available teams: ${allTeams.map((t) => t.name).join(", ")}`,
+          };
+        }
+        teamId = team.id;
       }
 
       switch (action) {
@@ -313,15 +377,36 @@ export const storiesTool = tool({
         }
 
         case "search-stories": {
-          const queryParams = {
-            ...filters,
+          // First get all statuses to convert status name to UUID
+          const allStatuses = await getStatuses(session);
+
+          // Convert status name to UUID if provided
+          let statusId: string | undefined;
+          if (statusName) {
+            const status = allStatuses.find(
+              (s) => s.name.toLowerCase() === statusName.toLowerCase(),
+            );
+            if (!status) {
+              return {
+                success: false,
+                error: `Status "${statusName}" not found. Available statuses: ${allStatuses.map((s) => s.name).join(", ")}`,
+              };
+            }
+            statusId = status.id;
+          }
+
+          // Build search parameters using single values (as the search API expects)
+          const searchParams: SearchQueryParams = {
+            query,
+            type: "stories",
             ...(teamId && { teamId }),
+            ...(statusId && { statusId }),
+            ...(assigneeId && { assigneeId }),
+            ...(priority && { priority }),
+            sortBy: "relevance",
           };
 
-          const [stories, allStatuses] = await Promise.all([
-            getStories(session, queryParams),
-            getStatuses(session),
-          ]);
+          const searchResults = await searchQuery(session, searchParams);
 
           // Create status lookup map
           const statusMap = new Map(
@@ -330,7 +415,7 @@ export const storiesTool = tool({
 
           return {
             success: true,
-            stories: stories.map((story) => {
+            stories: searchResults.stories.map((story) => {
               const status = statusMap.get(story.statusId);
               return {
                 id: story.id,
@@ -351,8 +436,10 @@ export const storiesTool = tool({
                 updatedAt: story.updatedAt,
               };
             }),
-            count: stories.length,
-            message: `Search returned ${stories.length} stories.`,
+            count: searchResults.totalStories,
+            message: query
+              ? `Search for "${query}" returned ${searchResults.totalStories} stories.`
+              : `Found ${searchResults.totalStories} stories.`,
           };
         }
 
@@ -423,8 +510,49 @@ export const storiesTool = tool({
             };
           }
 
-          // Get default status if none provided
+          // Convert names to UUIDs if provided
+          let finalAssigneeId = storyData.assigneeId;
           let finalStatusId = storyData.statusId;
+
+          // Convert assignee name to UUID if provided
+          if (storyData.assigneeName) {
+            const allMembers = await getMembers(session);
+            const assignee = allMembers.find(
+              (member) =>
+                member.fullName.toLowerCase() ===
+                  storyData.assigneeName!.toLowerCase() ||
+                member.username.toLowerCase() ===
+                  storyData.assigneeName!.toLowerCase(),
+            );
+            if (!assignee) {
+              return {
+                success: false,
+                error: `User "${storyData.assigneeName}" not found. Available users: ${allMembers.map((m) => `${m.fullName} (${m.username})`).join(", ")}`,
+              };
+            }
+            finalAssigneeId = assignee.id;
+          }
+
+          // Convert status name to UUID if provided
+          if (storyData.statusName) {
+            const teamStatuses = await getTeamStatuses(
+              storyData.teamId,
+              session,
+            );
+            const status = teamStatuses.find(
+              (s) =>
+                s.name.toLowerCase() === storyData.statusName!.toLowerCase(),
+            );
+            if (!status) {
+              return {
+                success: false,
+                error: `Status "${storyData.statusName}" not found for this team. Available statuses: ${teamStatuses.map((s) => s.name).join(", ")}`,
+              };
+            }
+            finalStatusId = status.id;
+          }
+
+          // Get default status if none provided
           if (!finalStatusId) {
             const teamStatuses = await getTeamStatuses(
               storyData.teamId,
@@ -451,7 +579,7 @@ export const storiesTool = tool({
             descriptionHTML: storyData.descriptionHTML || "",
             teamId: storyData.teamId,
             statusId: finalStatusId,
-            assigneeId: storyData.assigneeId || undefined,
+            assigneeId: finalAssigneeId || undefined,
             priority: storyData.priority || "No Priority",
             sprintId: storyData.sprintId || undefined,
             objectiveId: storyData.objectiveId || undefined,

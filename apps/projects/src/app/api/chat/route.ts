@@ -7,6 +7,7 @@ import {
   quickCreate,
   teamsTool,
   storiesTool,
+  statusesTool,
 } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
       quickCreate,
       teams: teamsTool,
       stories: storiesTool,
+      statuses: statusesTool,
     },
     system: systemPrompt,
   });
