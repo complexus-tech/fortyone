@@ -39,6 +39,7 @@ export const Chat = () => {
     append,
     stop: handleStop,
   } = useChat({
+    experimental_throttle: 100,
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
@@ -178,7 +179,7 @@ export const Chat = () => {
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
               <ChatInput
-                isLoading={isLoading}
+                isLoading={false}
                 onChange={(e) => {
                   setInput(e.target.value);
                 }}
