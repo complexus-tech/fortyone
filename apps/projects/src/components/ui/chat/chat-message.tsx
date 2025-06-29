@@ -42,7 +42,7 @@ const RenderMessage = ({
     <>
       {isProcessing ? (
         <Flex align="center" className="gap-1.5">
-          <BrainIcon className="h-4 animate-pulse" />
+          <BrainIcon className="animate-pulse" />
           <Text>Thinking…</Text>
         </Flex>
       ) : null}
@@ -52,7 +52,7 @@ const RenderMessage = ({
             <>
               {isStreaming ? (
                 <Flex align="center" className="gap-1.5" key={index}>
-                  <BrainIcon className="h-4 animate-pulse" />
+                  <BrainIcon className="animate-pulse" />
                   <Text>Thinking...</Text>
                 </Flex>
               ) : null}
@@ -79,7 +79,7 @@ const RenderMessage = ({
           if (toolInvocation.state === "call") {
             return (
               <Flex align="center" className="gap-1.5" key={index}>
-                <BrainIcon className="h-4 animate-pulse" />
+                <BrainIcon className="animate-pulse" />
                 <Text>Using {toolInvocation.toolName} tool...</Text>
               </Flex>
             );
