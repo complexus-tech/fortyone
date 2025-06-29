@@ -6,6 +6,7 @@ import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { BrainIcon } from "icons";
 import type { User } from "@/types";
+import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { AiIcon } from "./ai";
 
 type ChatMessageProps = {
@@ -67,12 +68,9 @@ const RenderMessage = ({ message }: { message: Message }) => {
               const { result } = toolInvocation;
               if (result?.analytics?.burndown) {
                 return (
-                  <div key={index}>
-                    <Text>Sprint ID: {result.sprintId}</Text>
-                    <Text>
-                      Overview: {JSON.stringify(result?.analytics?.burndown)}
-                    </Text>
-                  </div>
+                  <Box className="mb-3" key={index}>
+                    <BurndownChart burndownData={result?.analytics?.burndown} />
+                  </Box>
                 );
               }
             }
