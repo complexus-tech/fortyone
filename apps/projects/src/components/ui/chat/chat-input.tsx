@@ -43,6 +43,14 @@ export const ChatInput = ({
     }
   }, [value]);
 
+  useEffect(() => {
+    if (value === "" && !isLoading) {
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 0);
+    }
+  }, [value, isLoading]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
