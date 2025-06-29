@@ -13,6 +13,7 @@ import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories"
 import { duplicateStoryAction } from "@/modules/story/actions/duplicate-story";
 import { restoreStoryAction } from "@/modules/story/actions/restore-story";
 import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
+import { getStatuses } from "@/lib/queries/states/get-states";
 
 export const storiesTool = tool({
   description:
@@ -164,6 +165,7 @@ export const storiesTool = tool({
         (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
       );
       const userRole = workspace?.userRole;
+      const userId = session.user!.id;
 
       if (!userRole) {
         return {
@@ -174,45 +176,81 @@ export const storiesTool = tool({
 
       switch (action) {
         case "list-my-stories": {
-          const stories = await getMyStories(session);
+          const [stories, allStatuses] = await Promise.all([
+            getMyStories(session),
+            getStatuses(session),
+          ]);
+
+          // Create status lookup map
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
 
           return {
             success: true,
-            stories: stories.map((story) => ({
-              id: story.id,
-              title: story.title,
-              priority: story.priority,
-              statusId: story.statusId,
-              assigneeId: story.assigneeId,
-              teamId: story.teamId,
-              endDate: story.endDate,
-              createdAt: story.createdAt,
-              updatedAt: story.updatedAt,
-            })),
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
             count: stories.length,
             message: `Found ${stories.length} stories assigned to you.`,
           };
         }
 
         case "list-created-stories": {
-          const stories = await getStories(session, {
-            reporterId: session.user!.id,
-            ...filters,
-          });
+          const [stories, allStatuses] = await Promise.all([
+            getStories(session, {
+              reporterId: session.user!.id,
+              ...filters,
+            }),
+            getStatuses(session),
+          ]);
+
+          // Create status lookup map
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
 
           return {
             success: true,
-            stories: stories.map((story) => ({
-              id: story.id,
-              title: story.title,
-              priority: story.priority,
-              statusId: story.statusId,
-              assigneeId: story.assigneeId,
-              teamId: story.teamId,
-              endDate: story.endDate,
-              createdAt: story.createdAt,
-              updatedAt: story.updatedAt,
-            })),
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
             count: stories.length,
             message: `Found ${stories.length} stories created by you.`,
           };
@@ -233,24 +271,42 @@ export const storiesTool = tool({
             };
           }
 
-          const stories = await getStories(session, {
-            teamId,
-            ...filters,
-          });
+          const [stories, allStatuses] = await Promise.all([
+            getStories(session, {
+              teamId,
+              ...filters,
+            }),
+            getStatuses(session),
+          ]);
+
+          // Create status lookup map
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
 
           return {
             success: true,
-            stories: stories.map((story) => ({
-              id: story.id,
-              title: story.title,
-              priority: story.priority,
-              statusId: story.statusId,
-              assigneeId: story.assigneeId,
-              teamId: story.teamId,
-              endDate: story.endDate,
-              createdAt: story.createdAt,
-              updatedAt: story.updatedAt,
-            })),
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
             count: stories.length,
             message: `Found ${stories.length} stories in the team.`,
           };
@@ -262,21 +318,39 @@ export const storiesTool = tool({
             ...(teamId && { teamId }),
           };
 
-          const stories = await getStories(session, queryParams);
+          const [stories, allStatuses] = await Promise.all([
+            getStories(session, queryParams),
+            getStatuses(session),
+          ]);
+
+          // Create status lookup map
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
 
           return {
             success: true,
-            stories: stories.map((story) => ({
-              id: story.id,
-              title: story.title,
-              priority: story.priority,
-              statusId: story.statusId,
-              assigneeId: story.assigneeId,
-              teamId: story.teamId,
-              endDate: story.endDate,
-              createdAt: story.createdAt,
-              updatedAt: story.updatedAt,
-            })),
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
             count: stories.length,
             message: `Search returned ${stories.length} stories.`,
           };
@@ -290,7 +364,10 @@ export const storiesTool = tool({
             };
           }
 
-          const story = await getStory(storyId, session);
+          const [story, allStatuses] = await Promise.all([
+            getStory(storyId, session),
+            getStatuses(session),
+          ]);
 
           if (!story) {
             return {
@@ -298,6 +375,9 @@ export const storiesTool = tool({
               error: "Story not found or access denied",
             };
           }
+
+          // Find the status for this story
+          const status = allStatuses.find((s) => s.id === story.statusId);
 
           return {
             success: true,
@@ -307,6 +387,13 @@ export const storiesTool = tool({
               description: story.description,
               priority: story.priority,
               statusId: story.statusId,
+              status: status
+                ? {
+                    name: status.name,
+                    color: status.color,
+                    category: status.category,
+                  }
+                : null,
               assigneeId: story.assigneeId,
               teamId: story.teamId,
               sprintId: story.sprintId,
@@ -371,6 +458,7 @@ export const storiesTool = tool({
             parentId: storyData.parentId || undefined,
             startDate: storyData.startDate || undefined,
             endDate: storyData.endDate || undefined,
+            reporterId: userId,
           });
 
           if (result.error) {
@@ -382,6 +470,12 @@ export const storiesTool = tool({
 
           const createdStory = result.data!;
 
+          // Get the status information for the created story
+          const allStatuses = await getStatuses(session);
+          const status = allStatuses.find(
+            (s) => s.id === createdStory.statusId,
+          );
+
           return {
             success: true,
             story: {
@@ -390,6 +484,13 @@ export const storiesTool = tool({
               teamId: createdStory.teamId,
               priority: createdStory.priority,
               statusId: createdStory.statusId,
+              status: status
+                ? {
+                    name: status.name,
+                    color: status.color,
+                    category: status.category,
+                  }
+                : null,
               assigneeId: createdStory.assigneeId,
             },
             message: `Successfully created story "${createdStory.title}".`,
