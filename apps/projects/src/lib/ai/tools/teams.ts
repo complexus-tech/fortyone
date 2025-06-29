@@ -193,13 +193,13 @@ export const teamsTool = tool({
           };
         }
         case "create-team": {
-          if (userRole === "guest") {
+          if (userRole !== "admin") {
             return {
               success: false,
-              error:
-                "Guests cannot create teams. Only admins and members can create teams.",
+              error: "Only admins can create teams.",
             };
           }
+
           if (!teamData) {
             return {
               success: false,

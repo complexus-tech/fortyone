@@ -17,7 +17,7 @@ Quick Create: Open creation dialogs for stories, objectives, or sprints when use
 Teams: Manage team membership and view team information based on user permissions:
 - List user's teams and public teams available to join
 - View team details and member lists  
-- Create new teams (admins and members only, guests cannot create teams)
+- Create new teams (admins only)
 - Update team settings (admins only)
 - Delete teams (admins only)
 - Join public teams (members only, guests cannot join teams)
