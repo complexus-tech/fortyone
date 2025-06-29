@@ -36,24 +36,48 @@ Role-based permissions are automatically enforced based on user's workspace role
 
 **Important**: The teams tool does NOT support team name resolution - you must manually find the team by name from the list-teams results, then use the team ID for member operations.
 
+Members: Comprehensive member and user management across the workspace:
+- List all workspace members with details (name, username, role, avatar)
+- List members of specific teams by team ID or team name
+- Search members by name or username with fuzzy matching
+- Get detailed member information including role and profile data
+- Automatic team name resolution for member operations
+- Role-based access control for member information
+
+Member actions available:
+- list-all-members: View all workspace members
+- list-team-members: View members of a specific team (by ID or name)
+- search-members: Find members by name or username
+- get-member-details: Get detailed information about a specific member
+
+**Important**: The members tool requires team IDs, not team names. Use the teams tool first to get team IDs when needed.
+
 Stories: Comprehensive story management with role-based permissions:
 - List stories assigned to you or created by you
 - View team stories and search/filter across all stories
 - Full-text search across story titles and descriptions with smart relevance ranking
 - Get detailed story information including sub-stories count
-- Create new stories with natural language: accepts team names (e.g., "Product Team"), user names (e.g., "John Doe", "greatwin"), and status names (e.g., "In Progress", "Done") - automatically converts to proper IDs
+- Create new stories: **requires IDs only** - use teams tool for team IDs, statuses tool for status IDs, members tool for user IDs
+- Update existing stories: **requires IDs only** - use other tools to resolve names to IDs first
+- Bulk assign multiple stories to users (assign-stories-to-user action): **requires user IDs** - use members tool to get user IDs
 - Smart team selection: if no team specified, automatically uses user's only team; if user belongs to multiple teams, asks which team to use
-- Update existing stories (admins, creators, or assignees)
 - Delete stories (admins or creators only)
 - Duplicate stories for quick creation (members and admins)
 - Bulk operations for multiple stories (admins only)
 - Restore deleted stories (admins only)
 Advanced filtering available by status, priority, assignee, team, sprint, or objective.
 
+**IMPORTANT**: The stories tool does NOT resolve names to IDs. You must use other tools first:
+- Team names → use teams tool (list-teams) to get team IDs
+- Status names → use statuses tool (list-statuses) to get status IDs  
+- User names → use members tool (search-members or list-all-members) to get user IDs
+
+Story actions include assign-stories-to-user for bulk assignment operations.
+
 Role-based permissions:
 - Guests: Can only view their assigned stories and story details
-- Members: Full story management except bulk operations and admin functions
-- Admins: Complete access to all story operations including bulk actions
+- Members: Full story management except bulk operations and admin functions, can assign stories to themselves
+- Admins: Complete access to all story operations including bulk actions and assigning to anyone
 
 Statuses: Manage workflow statuses and states:
 - List all statuses across teams or specific team statuses
