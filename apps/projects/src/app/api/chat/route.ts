@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import type { NextRequest } from "next/server";
-import { navigation, theme, quickCreate } from "@/lib/ai/tools";
+import { navigation, theme, quickCreate, teamsTool } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
 export const maxDuration = 30;
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       navigation,
       theme,
       quickCreate,
+      teams: teamsTool,
     },
     system: systemPrompt,
   });

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { Dialog, Flex } from "ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
+import { teamKeys } from "@/constants/keys";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -15,6 +17,7 @@ import { SuggestedPrompts } from "./suggested-prompts";
 
 export const Chat = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -25,7 +28,6 @@ export const Chat = () => {
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
-          // console.log(part.toolInvocation., "tool invocation");
           if (part.toolInvocation.toolName === "navigation") {
             if (part.toolInvocation.state === "result") {
               router.push(part.toolInvocation.result.route as string);
@@ -54,6 +56,12 @@ export const Chat = () => {
                   setIsSprintOpen(true);
                   break;
               }
+            }
+          } else if (part.toolInvocation.toolName === "teams") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: teamKeys.all,
+              });
             }
           }
         }
