@@ -49,19 +49,30 @@ const RenderMessage = ({
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
           return (
-            <Box
-              className={cn(
-                "chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
-                {
-                  "text-white": message.role === "user",
-                },
-              )}
-              key={part.text}
-            >
-              <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
-                {part.text}
-              </Markdown>
-            </Box>
+            <>
+              {isStreaming ? (
+                <Flex align="center" className="gap-1.5" key={index}>
+                  <BrainIcon className="h-4 animate-pulse" />
+                  <Text>Thinking...</Text>
+                </Flex>
+              ) : null}
+              <Box
+                className={cn(
+                  "chat-tables prose prose-stone leading-normal dark:prose-invert prose-a:text-primary prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
+                  {
+                    "text-white": message.role === "user",
+                  },
+                )}
+                key={part.text}
+              >
+                <Markdown
+                  rehypePlugins={[rehypeRaw]}
+                  remarkPlugins={[remarkGfm]}
+                >
+                  {part.text}
+                </Markdown>
+              </Box>
+            </>
           );
         } else if (part.type === "tool-invocation") {
           const toolInvocation = part.toolInvocation;

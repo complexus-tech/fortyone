@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
 import type { Message } from "@ai-sdk/react";
 import { useProfile } from "@/lib/hooks/profile";
@@ -19,18 +19,35 @@ export const ChatMessages = ({
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Smart scroll state management
+  const [prevMessageCount, setPrevMessageCount] = useState(0);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Handle scroll position detection
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const threshold = 100; // 100px threshold
+
+    const isNearBottom = distanceFromBottom < threshold;
+    setShouldAutoScroll(isNearBottom);
+  }, []);
+
+  // Only scroll on new messages when user is near bottom
   useEffect(() => {
-    if (!isStreaming) {
+    const hasNewMessage = messages.length > prevMessageCount;
+    if (hasNewMessage && shouldAutoScroll) {
       scrollToBottom();
     }
-  }, [messages, isStreaming]);
+    setPrevMessageCount(messages.length);
+  }, [messages.length, shouldAutoScroll, prevMessageCount]);
 
   return (
-    <Box className="flex-1 overflow-y-auto px-6 py-6">
+    <Box className="flex-1 overflow-y-auto px-6 py-6" onScroll={handleScroll}>
       <Flex direction="column" gap={6}>
         {messages.map((message) => (
           <ChatMessage
@@ -41,6 +58,7 @@ export const ChatMessages = ({
           />
         ))}
         {isLoading ? <ChatLoading /> : null}
+        {isStreaming ? <div className="h-32" /> : null}
         <div ref={messagesEndRef} />
       </Flex>
     </Box>
