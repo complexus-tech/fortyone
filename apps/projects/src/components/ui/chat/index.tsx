@@ -68,12 +68,15 @@ export const Chat = () => {
               switch (action) {
                 case "story":
                   setIsStoryOpen(true);
+                  setIsOpen(false);
                   break;
                 case "objective":
                   setIsObjectiveOpen(true);
+                  setIsOpen(false);
                   break;
                 case "sprint":
                   setIsSprintOpen(true);
+                  setIsOpen(false);
                   break;
               }
             }
