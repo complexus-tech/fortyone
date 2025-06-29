@@ -9,6 +9,7 @@ import { createTeam } from "@/modules/teams/actions";
 import { updateTeamAction } from "@/modules/teams/actions/update-team";
 import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
 import { removeTeamMemberAction } from "@/modules/teams/actions/remove-team-member";
+import { deleteTeamAction } from "@/modules/teams/actions/delete-team";
 
 export const teamsTool = tool({
   description:
@@ -25,17 +26,12 @@ export const teamsTool = tool({
         "join-team",
         "delete-team",
         "leave-team",
-        "search-teams",
       ])
       .describe("The action to perform on teams"),
     teamId: z
       .string()
       .optional()
       .describe("Team ID for specific team operations"),
-    searchQuery: z
-      .string()
-      .optional()
-      .describe("Search query for finding teams"),
     teamData: z
       .object({
         name: z.string().describe("Team name"),
@@ -54,7 +50,7 @@ export const teamsTool = tool({
       .optional()
       .describe("Data for updating team"),
   }),
-  execute: async ({ action, teamId, searchQuery, teamData, updateData }) => {
+  execute: async ({ action, teamId, teamData, updateData }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -347,59 +343,43 @@ export const teamsTool = tool({
             message: `Successfully left "${team.name}".`,
           };
         }
-
-        case "search-teams": {
-          if (!searchQuery) {
+        case "delete-team": {
+          if (userRole !== "admin") {
             return {
               success: false,
-              error: "Search query is required for search-teams action",
+              error: "Only admins can delete teams.",
             };
           }
 
-          const [userTeams, publicTeams] = await Promise.all([
-            getTeams(session),
-            getPublicTeams(session),
-          ]);
+          if (!teamId) {
+            return {
+              success: false,
+              error: "Team ID is required for delete-team action",
+            };
+          }
 
-          const query = searchQuery.toLowerCase();
+          const teams = await getTeams(session);
+          const team = teams.find((t) => t.id === teamId);
 
-          const matchingUserTeams = userTeams.filter(
-            (team) =>
-              team.name.toLowerCase().includes(query) ||
-              team.code.toLowerCase().includes(query),
-          );
+          if (!team) {
+            return {
+              success: false,
+              error: "Team not found or you don't have access to this team",
+            };
+          }
 
-          const matchingPublicTeams = publicTeams.filter(
-            (team) =>
-              (team.name.toLowerCase().includes(query) ||
-                team.code.toLowerCase().includes(query)) &&
-              !userTeams.some((ut) => ut.id === team.id),
-          );
+          const result = await deleteTeamAction(teamId);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to delete team",
+            };
+          }
 
           return {
             success: true,
-            userTeams: matchingUserTeams.map((team) => ({
-              id: team.id,
-              name: team.name,
-              code: team.code,
-              memberCount: team.memberCount,
-              color: team.color,
-              status: "member",
-            })),
-            availableTeams: matchingPublicTeams.map((team) => ({
-              id: team.id,
-              name: team.name,
-              code: team.code,
-              memberCount: team.memberCount,
-              color: team.color,
-              status: "available",
-            })),
-            message: (() => {
-              const totalCount =
-                matchingUserTeams.length + matchingPublicTeams.length;
-              const searchTerm = String(searchQuery);
-              return `Found ${totalCount} team${totalCount !== 1 ? "s" : ""} matching "${searchTerm}".`;
-            })(),
+            message: `Successfully deleted team "${team.name}".`,
           };
         }
       }
