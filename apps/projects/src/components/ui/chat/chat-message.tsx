@@ -20,6 +20,7 @@ const RenderMessage = ({ message }: { message: Message }) => {
       setHasText(true);
     }
   }, [message.parts]);
+
   return (
     <>
       {message.parts?.map((part, index) => {
@@ -39,6 +40,13 @@ const RenderMessage = ({ message }: { message: Message }) => {
           );
         } else if (part.type === "step-start") {
           return hasText ? null : <Text key={index}>Thinking…</Text>;
+        } else if (part.type === "tool-invocation") {
+          const toolInvocation = part.toolInvocation;
+          if (toolInvocation.state === "call") {
+            return (
+              <Text key={index}>Using {toolInvocation.toolName} tool...</Text>
+            );
+          }
         }
         return null;
       })}
