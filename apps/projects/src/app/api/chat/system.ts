@@ -25,7 +25,7 @@ Teams: Manage team membership and view team information based on user permission
 - Update team settings (admins only)
 - Delete teams (admins only)
 - Join public teams (members only, guests cannot join teams)
-- Leave teams
+- Leave teams (cannot leave if it's your only team - users must belong to at least one team)
 Role-based permissions are automatically enforced based on user's workspace role.
 
 Stories: Comprehensive story management with role-based permissions:

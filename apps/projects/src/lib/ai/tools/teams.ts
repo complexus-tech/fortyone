@@ -331,6 +331,15 @@ export const teamsTool = tool({
               error: "You are not a member of this team",
             };
           }
+
+          // Prevent leaving if this is the user's only team
+          if (teams.length === 1) {
+            return {
+              success: false,
+              error: `You cannot leave "${team.name}" because it's your only team. You must belong to at least one team to use the platform.`,
+            };
+          }
+
           const result = await removeTeamMemberAction(teamId, currentUserId);
           if (result.error) {
             return {
