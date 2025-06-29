@@ -12,11 +12,15 @@ import {
   objectivesTool,
 } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
+import { getUserContext } from "./user-context";
 
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const { messages } = await req.json();
+
+  // Get user context for "me" resolution
+  const userContext = await getUserContext();
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
       sprints: sprintsTool,
       objectives: objectivesTool,
     },
-    system: systemPrompt,
+    system: systemPrompt + userContext,
   });
   return result.toDataStreamResponse({
     getErrorMessage: () => {
