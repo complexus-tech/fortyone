@@ -1,213 +1,617 @@
 import { z } from "zod";
+import { tool } from "ai";
+import { headers } from "next/headers";
+import { auth } from "@/auth";
+import { getStories } from "@/modules/stories/queries/get-stories";
+import { getMyStories } from "@/modules/my-work/queries/get-stories";
+import { getStory } from "@/modules/story/queries/get-story";
+import { createStoryAction } from "@/modules/story/actions/create-story";
+import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { deleteStoryAction } from "@/modules/story/actions/delete-story";
+import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories";
+import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
+import { duplicateStoryAction } from "@/modules/story/actions/duplicate-story";
+import { restoreStoryAction } from "@/modules/story/actions/restore-story";
 
-export const storiesTool = {
-  name: "stories",
-  description: "Manage and query stories/tasks in the application",
+export const storiesTool = tool({
+  description:
+    "Manage stories, view assignments, and handle story operations based on user permissions",
   parameters: z.object({
     action: z
       .enum([
-        "list-assigned",
-        "list-created",
-        "list-all",
-        "get-details",
-        "create",
-        "search",
+        "list-my-stories",
+        "list-created-stories",
+        "list-team-stories",
+        "search-stories",
+        "get-story-details",
+        "create-story",
+        "update-story",
+        "delete-story",
+        "bulk-update-stories",
+        "bulk-delete-stories",
+        "duplicate-story",
+        "restore-story",
       ])
-      .describe("The action to perform on stories"),
+      .describe("The story operation to perform"),
+
+    // For filtering and searching
+    teamId: z.string().optional().describe("Team ID to filter stories"),
     filters: z
       .object({
-        status: z.string().optional().describe("Filter by status"),
-        priority: z.string().optional().describe("Filter by priority"),
-        assignee: z.string().optional().describe("Filter by assignee"),
-        team: z.string().optional().describe("Filter by team"),
+        statusIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by status IDs"),
+        assigneeIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by assignee IDs"),
+        priorities: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by priorities"),
+        sprintIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by sprint IDs"),
+        objectiveId: z.string().optional().describe("Filter by objective ID"),
+        assignedToMe: z
+          .boolean()
+          .optional()
+          .describe("Show only stories assigned to me"),
+        createdByMe: z
+          .boolean()
+          .optional()
+          .describe("Show only stories created by me"),
       })
       .optional()
-      .describe("Optional filters to apply"),
-    storyId: z.string().optional().describe("Story ID for get-details action"),
-    searchQuery: z
+      .describe("Optional filters for story queries"),
+
+    // For single story operations
+    storyId: z
       .string()
       .optional()
-      .describe("Search query for search action"),
+      .describe("Story ID for single story operations"),
+
+    // For bulk operations
+    storyIds: z
+      .array(z.string())
+      .optional()
+      .describe("Array of story IDs for bulk operations"),
+
+    // For creating stories
     storyData: z
       .object({
         title: z.string().describe("Story title"),
         description: z.string().optional().describe("Story description"),
+        descriptionHTML: z
+          .string()
+          .optional()
+          .describe("Story description HTML"),
+        teamId: z.string().describe("Team ID where story belongs"),
+        statusId: z.string().optional().describe("Initial status ID"),
+        assigneeId: z.string().optional().describe("Assignee user ID"),
         priority: z
-          .enum(["low", "medium", "high", "urgent"])
+          .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
           .optional()
           .describe("Story priority"),
-        assignee: z.string().optional().describe("Assignee ID"),
-        team: z.string().optional().describe("Team ID"),
-        status: z.string().optional().describe("Initial status"),
+        sprintId: z.string().optional().describe("Sprint ID to assign story"),
+        objectiveId: z
+          .string()
+          .optional()
+          .describe("Objective ID to assign story"),
+        parentId: z
+          .string()
+          .optional()
+          .describe("Parent story ID for sub-stories"),
+        startDate: z
+          .string()
+          .optional()
+          .describe("Story start date (ISO string)"),
+        endDate: z.string().optional().describe("Story end date (ISO string)"),
       })
       .optional()
-      .describe("Story data for create action"),
+      .describe("Story data for creation"),
+
+    // For updating stories
+    updateData: z
+      .object({
+        title: z.string().optional().describe("Updated title"),
+        description: z.string().optional().describe("Updated description"),
+        descriptionHTML: z
+          .string()
+          .optional()
+          .describe("Updated description HTML"),
+        statusId: z.string().optional().describe("Updated status ID"),
+        assigneeId: z.string().optional().describe("Updated assignee ID"),
+        priority: z
+          .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+          .optional()
+          .describe("Updated priority"),
+        sprintId: z.string().optional().describe("Updated sprint ID"),
+        objectiveId: z.string().optional().describe("Updated objective ID"),
+        startDate: z.string().optional().describe("Updated start date"),
+        endDate: z.string().optional().describe("Updated end date"),
+      })
+      .optional()
+      .describe("Story update data"),
   }),
+
   execute: async ({
     action,
+    teamId,
     filters,
     storyId,
-    searchQuery,
+    storyIds,
     storyData,
-  }: {
-    action: string;
-    filters?: any;
-    storyId?: string;
-    searchQuery?: string;
-    storyData?: any;
+    updateData,
   }) => {
-    // This would integrate with your actual story management system
-    // For now, returning mock data structure
+    try {
+      const session = await auth();
 
-    switch (action) {
-      case "list-assigned":
-        return {
-          success: true,
-          stories: [
-            {
-              id: "1",
-              title: "Implement user authentication",
-              status: "in-progress",
-              priority: "high",
-              assignee: "current-user",
-              dueDate: "2024-02-15",
-            },
-            {
-              id: "2",
-              title: "Design dashboard layout",
-              status: "todo",
-              priority: "medium",
-              assignee: "current-user",
-              dueDate: "2024-02-20",
-            },
-          ],
-          count: 2,
-          message: "Here are the stories assigned to you.",
-        };
-
-      case "list-created":
-        return {
-          success: true,
-          stories: [
-            {
-              id: "3",
-              title: "Setup CI/CD pipeline",
-              status: "completed",
-              priority: "high",
-              creator: "current-user",
-              completedDate: "2024-02-10",
-            },
-          ],
-          count: 1,
-          message: "Here are the stories you created.",
-        };
-
-      case "list-all":
-        return {
-          success: true,
-          stories: [
-            {
-              id: "1",
-              title: "Implement user authentication",
-              status: "in-progress",
-              priority: "high",
-              assignee: "current-user",
-            },
-            {
-              id: "2",
-              title: "Design dashboard layout",
-              status: "todo",
-              priority: "medium",
-              assignee: "current-user",
-            },
-            {
-              id: "3",
-              title: "Setup CI/CD pipeline",
-              status: "completed",
-              priority: "high",
-              creator: "current-user",
-            },
-          ],
-          count: 3,
-          message: "Here are all the stories in the current view.",
-        };
-
-      case "get-details":
-        if (!storyId) {
-          return {
-            success: false,
-            error: "Story ID is required for get-details action",
-          };
-        }
-        return {
-          success: true,
-          story: {
-            id: storyId,
-            title: "Sample Story",
-            description: "This is a detailed description of the story",
-            status: "in-progress",
-            priority: "high",
-            assignee: "current-user",
-            createdDate: "2024-02-01",
-            updatedDate: "2024-02-12",
-            comments: [
-              {
-                id: "1",
-                author: "John Doe",
-                content: "Started working on this",
-                timestamp: "2024-02-12T10:00:00Z",
-              },
-            ],
-          },
-          message: `Here are the details for story ${storyId}.`,
-        };
-
-      case "create":
-        if (!storyData) {
-          return {
-            success: false,
-            error: "Story data is required for create action",
-          };
-        }
-        return {
-          success: true,
-          story: {
-            id: "new-story-id",
-            ...storyData,
-            createdDate: new Date().toISOString(),
-            status: storyData.status || "todo",
-          },
-          message: `Successfully created story: ${storyData.title}`,
-        };
-
-      case "search":
-        if (!searchQuery) {
-          return {
-            success: false,
-            error: "Search query is required for search action",
-          };
-        }
-        return {
-          success: true,
-          stories: [
-            {
-              id: "1",
-              title: "Implement user authentication",
-              status: "in-progress",
-              priority: "high",
-              assignee: "current-user",
-            },
-          ],
-          count: 1,
-          query: searchQuery,
-          message: `Found 1 story matching "${searchQuery}".`,
-        };
-
-      default:
+      if (!session) {
         return {
           success: false,
-          error: `Unknown action: ${action}`,
+          error: "Authentication required to access stories",
         };
+      }
+
+      // Get user's workspace and role for permissions
+      const headersList = await headers();
+      const subdomain = headersList.get("host")?.split(".")[0] || "";
+      const workspace = session.workspaces.find(
+        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+      );
+      const userRole = workspace?.userRole;
+
+      if (!userRole) {
+        return {
+          success: false,
+          error: "Unable to determine user permissions",
+        };
+      }
+
+      switch (action) {
+        case "list-my-stories": {
+          const stories = await getMyStories(session);
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              endDate: story.endDate,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+            })),
+            count: stories.length,
+            message: `Found ${stories.length} stories assigned to you.`,
+          };
+        }
+
+        case "list-created-stories": {
+          const stories = await getStories(session, {
+            reporterId: session.user!.id,
+            ...filters,
+          });
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              endDate: story.endDate,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+            })),
+            count: stories.length,
+            message: `Found ${stories.length} stories created by you.`,
+          };
+        }
+
+        case "list-team-stories": {
+          if (!teamId) {
+            return {
+              success: false,
+              error: "Team ID is required for listing team stories",
+            };
+          }
+
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot view team stories",
+            };
+          }
+
+          const stories = await getStories(session, {
+            teamId,
+            ...filters,
+          });
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              endDate: story.endDate,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+            })),
+            count: stories.length,
+            message: `Found ${stories.length} stories in the team.`,
+          };
+        }
+
+        case "search-stories": {
+          const queryParams = {
+            ...filters,
+            ...(teamId && { teamId }),
+          };
+
+          const stories = await getStories(session, queryParams);
+
+          return {
+            success: true,
+            stories: stories.map((story) => ({
+              id: story.id,
+              title: story.title,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              endDate: story.endDate,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+            })),
+            count: stories.length,
+            message: `Search returned ${stories.length} stories.`,
+          };
+        }
+
+        case "get-story-details": {
+          if (!storyId) {
+            return {
+              success: false,
+              error: "Story ID is required to get story details",
+            };
+          }
+
+          const story = await getStory(storyId, session);
+
+          if (!story) {
+            return {
+              success: false,
+              error: "Story not found or access denied",
+            };
+          }
+
+          return {
+            success: true,
+            story: {
+              id: story.id,
+              title: story.title,
+              description: story.description,
+              priority: story.priority,
+              statusId: story.statusId,
+              assigneeId: story.assigneeId,
+              teamId: story.teamId,
+              sprintId: story.sprintId,
+              objectiveId: story.objectiveId,
+              startDate: story.startDate,
+              endDate: story.endDate,
+              createdAt: story.createdAt,
+              updatedAt: story.updatedAt,
+              subStories: story.subStories.length || 0,
+            },
+            message: `Retrieved details for story "${story.title}".`,
+          };
+        }
+
+        case "create-story": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot create stories",
+            };
+          }
+
+          if (!storyData) {
+            return {
+              success: false,
+              error: "Story data is required to create a story",
+            };
+          }
+
+          const result = await createStoryAction({
+            title: storyData.title,
+            description: storyData.description || "",
+            descriptionHTML: storyData.descriptionHTML || "",
+            teamId: storyData.teamId,
+            statusId: storyData.statusId,
+            assigneeId: storyData.assigneeId || undefined,
+            priority: storyData.priority || "No Priority",
+            sprintId: storyData.sprintId || undefined,
+            objectiveId: storyData.objectiveId || undefined,
+            parentId: storyData.parentId || undefined,
+            startDate: storyData.startDate || undefined,
+            endDate: storyData.endDate || undefined,
+          });
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to create story",
+            };
+          }
+
+          const createdStory = result.data!;
+
+          return {
+            success: true,
+            story: {
+              id: createdStory.id,
+              title: createdStory.title,
+              teamId: createdStory.teamId,
+              priority: createdStory.priority,
+              statusId: createdStory.statusId,
+              assigneeId: createdStory.assigneeId,
+            },
+            message: `Successfully created story "${createdStory.title}".`,
+          };
+        }
+
+        case "update-story": {
+          if (!storyId) {
+            return {
+              success: false,
+              error: "Story ID is required to update a story",
+            };
+          }
+
+          if (!updateData) {
+            return {
+              success: false,
+              error: "Update data is required to update a story",
+            };
+          }
+
+          // Check if user can update this story
+          const story = await getStory(storyId, session);
+          if (!story) {
+            return {
+              success: false,
+              error: "Story not found or access denied",
+            };
+          }
+
+          const canUpdate =
+            userRole === "admin" ||
+            story.reporterId === session.user!.id ||
+            story.assigneeId === session.user!.id;
+
+          if (!canUpdate) {
+            return {
+              success: false,
+              error: "You don't have permission to update this story",
+            };
+          }
+
+          const result = await updateStoryAction(storyId, updateData);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to update story",
+            };
+          }
+
+          return {
+            success: true,
+            message: `Successfully updated story "${story.title}".`,
+          };
+        }
+
+        case "delete-story": {
+          if (!storyId) {
+            return {
+              success: false,
+              error: "Story ID is required to delete a story",
+            };
+          }
+
+          // Check permissions
+          const story = await getStory(storyId, session);
+          if (!story) {
+            return {
+              success: false,
+              error: "Story not found or access denied",
+            };
+          }
+
+          const canDelete =
+            userRole === "admin" || story.reporterId === session.user?.id;
+
+          if (!canDelete) {
+            return {
+              success: false,
+              error: "Only admins or story creators can delete stories",
+            };
+          }
+
+          const result = await deleteStoryAction(storyId);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to delete story",
+            };
+          }
+
+          const storyTitle = String(story.title);
+
+          return {
+            success: true,
+            message: `Successfully deleted story "${storyTitle}".`,
+          };
+        }
+
+        case "bulk-update-stories": {
+          if (userRole !== "admin") {
+            return {
+              success: false,
+              error: "Only admins can perform bulk story updates",
+            };
+          }
+
+          if (!storyIds || storyIds.length === 0) {
+            return {
+              success: false,
+              error: "Story IDs are required for bulk update",
+            };
+          }
+
+          if (!updateData) {
+            return {
+              success: false,
+              error: "Update data is required for bulk update",
+            };
+          }
+
+          const result = await bulkUpdateAction({
+            storyIds,
+            updates: updateData,
+          });
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to bulk update stories",
+            };
+          }
+
+          return {
+            success: true,
+            message: `Successfully updated ${storyIds.length} stories.`,
+          };
+        }
+
+        case "bulk-delete-stories": {
+          if (userRole !== "admin") {
+            return {
+              success: false,
+              error: "Only admins can perform bulk story deletion",
+            };
+          }
+
+          if (!storyIds || storyIds.length === 0) {
+            return {
+              success: false,
+              error: "Story IDs are required for bulk delete",
+            };
+          }
+
+          const result = await bulkDeleteAction(storyIds);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to bulk delete stories",
+            };
+          }
+
+          return {
+            success: true,
+            message: `Successfully deleted ${storyIds.length} stories.`,
+          };
+        }
+
+        case "duplicate-story": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot duplicate stories",
+            };
+          }
+
+          if (!storyId) {
+            return {
+              success: false,
+              error: "Story ID is required to duplicate a story",
+            };
+          }
+
+          const result = await duplicateStoryAction(storyId);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to duplicate story",
+            };
+          }
+
+          const duplicatedStory = result.data!;
+
+          return {
+            success: true,
+            story: {
+              id: duplicatedStory.id,
+              title: duplicatedStory.title,
+            },
+            message: `Successfully duplicated story as "${duplicatedStory.title}".`,
+          };
+        }
+
+        case "restore-story": {
+          if (userRole !== "admin") {
+            return {
+              success: false,
+              error: "Only admins can restore deleted stories",
+            };
+          }
+
+          if (!storyId) {
+            return {
+              success: false,
+              error: "Story ID is required to restore a story",
+            };
+          }
+
+          const result = await restoreStoryAction(storyId);
+
+          if (result.error) {
+            return {
+              success: false,
+              error: result.error.message || "Failed to restore story",
+            };
+          }
+
+          return {
+            success: true,
+            message: "Successfully restored the story.",
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred while performing story operation",
+      };
     }
   },
-};
+});

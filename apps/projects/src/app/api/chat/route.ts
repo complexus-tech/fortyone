@@ -1,7 +1,13 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import type { NextRequest } from "next/server";
-import { navigation, theme, quickCreate, teamsTool } from "@/lib/ai/tools";
+import {
+  navigation,
+  theme,
+  quickCreate,
+  teamsTool,
+  storiesTool,
+} from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
 export const maxDuration = 30;
@@ -18,12 +24,13 @@ export async function POST(req: NextRequest) {
       theme,
       quickCreate,
       teams: teamsTool,
+      stories: storiesTool,
     },
     system: systemPrompt,
   });
   return result.toDataStreamResponse({
     getErrorMessage: () => {
-      return "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide project management assistance.";
+      return "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.";
     },
   });
 }
