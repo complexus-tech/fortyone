@@ -31,7 +31,14 @@ export const Chat = () => {
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
 
-  const { messages, input, status, setInput, append } = useChat({
+  const {
+    messages,
+    input,
+    status,
+    setInput,
+    append,
+    stop: handleStop,
+  } = useChat({
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
@@ -176,6 +183,7 @@ export const Chat = () => {
                   setInput(e.target.value);
                 }}
                 onSend={handleSend}
+                onStop={handleStop}
                 value={input}
               />
             </Flex>
