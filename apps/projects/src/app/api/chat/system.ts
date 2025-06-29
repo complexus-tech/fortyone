@@ -20,13 +20,21 @@ Quick Create: Open creation dialogs for stories, objectives, or sprints when use
 
 Teams: Manage team membership and view team information based on user permissions:
 - List user's teams and public teams available to join
-- View team details and member lists  
+- View team details and member lists for specific teams
 - Create new teams (admins only)
 - Update team settings (admins only)
 - Delete teams (admins only)
 - Join public teams (members only, guests cannot join teams)
 - Leave teams (cannot leave if it's your only team - users must belong to at least one team)
+
+Team member workflow:
+- When users ask for team members by name (e.g., "who's on the Product team"), first use list-teams to find the team ID by name
+- Then use list-members with that team ID to get the member list
+- For team details, use get-team-details which includes both team info and member list
+
 Role-based permissions are automatically enforced based on user's workspace role.
+
+**Important**: The teams tool does NOT support team name resolution - you must manually find the team by name from the list-teams results, then use the team ID for member operations.
 
 Stories: Comprehensive story management with role-based permissions:
 - List stories assigned to you or created by you
