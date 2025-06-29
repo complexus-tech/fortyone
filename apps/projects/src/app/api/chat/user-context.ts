@@ -23,10 +23,7 @@ export async function getUserContext(): Promise<string> {
 
   const teams = await getTeams(session);
   const teamsList = teams
-    .map(
-      (t) =>
-        `name: ${t.name} - id: ${t.id} - code: ${t.code} - color: ${t.color}`,
-    )
+    .map((t) => `name: ${t.name} - id: ${t.id} - code: ${t.code}`)
     .join(", ");
 
   return `
