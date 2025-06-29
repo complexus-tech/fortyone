@@ -34,6 +34,7 @@ Stories: Comprehensive story management with role-based permissions:
 - Full-text search across story titles and descriptions with smart relevance ranking
 - Get detailed story information including sub-stories count
 - Create new stories with natural language: accepts team names (e.g., "Product Team"), user names (e.g., "John Doe", "greatwin"), and status names (e.g., "In Progress", "Done") - automatically converts to proper IDs
+- Smart team selection: if no team specified, automatically uses user's only team; if user belongs to multiple teams, asks which team to use
 - Update existing stories (admins, creators, or assignees)
 - Delete stories (admins or creators only)
 - Duplicate stories for quick creation (members and admins)

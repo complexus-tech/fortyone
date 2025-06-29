@@ -122,7 +122,12 @@ export const storiesTool = tool({
           .string()
           .optional()
           .describe("Story description HTML"),
-        teamId: z.string().describe("Team ID where story belongs"),
+        teamId: z
+          .string()
+          .optional()
+          .describe(
+            "Team ID where story belongs (optional - will auto-select if user has only one team)",
+          ),
         statusId: z.string().optional().describe("Initial status ID"),
         statusName: z
           .string()
@@ -510,6 +515,33 @@ export const storiesTool = tool({
             };
           }
 
+          // Handle team selection
+          let finalTeamId = storyData.teamId;
+
+          if (!finalTeamId) {
+            // Get user's teams
+            const userTeams = await getTeams(session);
+
+            if (userTeams.length === 0) {
+              return {
+                success: false,
+                error:
+                  "You don't belong to any teams. Please join a team first.",
+              };
+            }
+
+            if (userTeams.length === 1) {
+              // Auto-select the only team
+              finalTeamId = userTeams[0].id;
+            } else {
+              // Ask user to specify team
+              return {
+                success: false,
+                error: `Please specify which team to create the story in. Available teams: ${userTeams.map((t) => t.name).join(", ")}`,
+              };
+            }
+          }
+
           // Convert names to UUIDs if provided
           let finalAssigneeId = storyData.assigneeId;
           let finalStatusId = storyData.statusId;
@@ -535,10 +567,7 @@ export const storiesTool = tool({
 
           // Convert status name to UUID if provided
           if (storyData.statusName) {
-            const teamStatuses = await getTeamStatuses(
-              storyData.teamId,
-              session,
-            );
+            const teamStatuses = await getTeamStatuses(finalTeamId, session);
             const status = teamStatuses.find(
               (s) =>
                 s.name.toLowerCase() === storyData.statusName!.toLowerCase(),
@@ -554,10 +583,7 @@ export const storiesTool = tool({
 
           // Get default status if none provided
           if (!finalStatusId) {
-            const teamStatuses = await getTeamStatuses(
-              storyData.teamId,
-              session,
-            );
+            const teamStatuses = await getTeamStatuses(finalTeamId, session);
 
             if (teamStatuses.length === 0) {
               return {
@@ -577,7 +603,7 @@ export const storiesTool = tool({
             title: storyData.title,
             description: storyData.description || "",
             descriptionHTML: storyData.descriptionHTML || "",
-            teamId: storyData.teamId,
+            teamId: finalTeamId,
             statusId: finalStatusId,
             assigneeId: finalAssigneeId || undefined,
             priority: storyData.priority || "No Priority",
