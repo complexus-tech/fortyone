@@ -21,8 +21,12 @@ const RenderMessage = ({ message }: { message: Message }) => {
     }
   }, [message.parts]);
 
+  const isProcessing =
+    !hasText && message.parts?.some((p) => p.type === "step-start");
+
   return (
     <>
+      {isProcessing ? <Text>Processing…</Text> : null}
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -38,8 +42,6 @@ const RenderMessage = ({ message }: { message: Message }) => {
               <Markdown remarkPlugins={[remarkGfm]}>{part.text}</Markdown>
             </Box>
           );
-        } else if (part.type === "step-start") {
-          return hasText ? null : <Text key={index}>Thinking…</Text>;
         } else if (part.type === "tool-invocation") {
           const toolInvocation = part.toolInvocation;
           if (toolInvocation.state === "call") {
