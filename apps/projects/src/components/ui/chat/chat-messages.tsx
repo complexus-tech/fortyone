@@ -9,12 +9,14 @@ type ChatMessagesProps = {
   messages: Message[];
   isLoading: boolean;
   isStreaming?: boolean;
+  value: string;
 };
 
 export const ChatMessages = ({
   messages,
   isLoading,
   isStreaming,
+  value,
 }: ChatMessagesProps) => {
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,12 @@ export const ChatMessages = ({
     }
     setPrevMessageCount(messages.length);
   }, [messages.length, shouldAutoScroll, prevMessageCount]);
+
+  useEffect(() => {
+    if (value === "") {
+      scrollToBottom();
+    }
+  }, [value]);
 
   return (
     <Box className="flex-1 overflow-y-auto px-6 py-6" onScroll={handleScroll}>

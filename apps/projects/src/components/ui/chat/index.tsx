@@ -178,6 +178,7 @@ export const Chat = () => {
                 isLoading={isLoading}
                 isStreaming={status === "streaming"}
                 messages={messages}
+                value={input}
               />
               {messages.length === 1 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
