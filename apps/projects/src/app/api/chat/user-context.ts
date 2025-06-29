@@ -18,6 +18,7 @@ export async function getUserContext(): Promise<string> {
     - User ID: ${session.user.id}
     - Name: ${session.user.name}
     - Role: ${userRole}
+    - Workspace: ${workspace?.name}
 
     **"Me" Resolution:**
     When the user says "me", "my", "assign to me", "show my work", etc., use:
