@@ -40,7 +40,6 @@ export const ChatMessages = ({
             profile={profile}
           />
         ))}
-
         {isLoading ? <ChatLoading /> : null}
         <div ref={messagesEndRef} />
       </Flex>
