@@ -2,7 +2,7 @@ import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
   "Show me my stories",
-  "Take me to settings",
+  "How many statuses are in the Product team",
   "Create a story",
   "Toggle color theme",
   "Create a new objective",

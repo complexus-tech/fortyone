@@ -13,7 +13,7 @@ import type { UpdateState } from "@/lib/actions/states/update";
 
 export const statusesTool = tool({
   description:
-    "View, create, update, and manage workflow statuses for teams. Use this tool to answer questions about statuses, count statuses, list team statuses, create new workflow states, or modify existing statuses.",
+    "View, create, update, and manage workflow statuses for teams. Use this tool to answer questions about statuses, count statuses, list team statuses, create new workflow states, or modify existing statuses. For team-specific operations, get the team ID from the teams tool first.",
   parameters: z.object({
     action: z
       .enum([
@@ -29,11 +29,11 @@ export const statusesTool = tool({
         "Action to perform: list-all-statuses (show all statuses across teams), list-team-statuses (show statuses for a specific team, use this to count team statuses), get-status-details (get info about a specific status), create-status (make new status), update-status (modify existing), delete-status (remove), set-default-status (make default)",
       ),
     // For team-specific operations
-    teamName: z
+    teamId: z
       .string()
       .optional()
       .describe(
-        "Team name for team-specific operations like listing team statuses or creating statuses for a team. Examples: 'Product Team', 'Frontend', 'Backend'",
+        "Team ID for team-specific operations like listing team statuses or creating statuses for a team. Get this from the teams tool first.",
       ),
     // For status operations
     statusId: z
@@ -62,7 +62,7 @@ export const statusesTool = tool({
   }),
   execute: async ({
     action,
-    teamName,
+    teamId,
     statusId,
     statusName,
     name,
@@ -94,24 +94,11 @@ export const statusesTool = tool({
         };
       }
 
-      // Helper function to convert team name to team ID
-      const getTeamId = async (
-        teamName: string,
-      ): Promise<
-        { success: true; teamId: string } | { success: false; error: string }
-      > => {
+      // Helper function to get team name from team ID
+      const getTeamName = async (teamId: string): Promise<string | null> => {
         const teams = await getTeams(session);
-        const team = teams.find(
-          (t) => t.name.toLowerCase() === teamName.toLowerCase(),
-        );
-        if (!team) {
-          const availableTeams = teams.map((t) => t.name).join(", ");
-          return {
-            success: false,
-            error: `Team "${teamName}" not found. Available teams: ${availableTeams}`,
-          };
-        }
-        return { success: true, teamId: team.id };
+        const team = teams.find((t) => t.id === teamId);
+        return team ? team.name : null;
       };
 
       // Helper function to find status by name within a team
@@ -153,21 +140,22 @@ export const statusesTool = tool({
         }
 
         case "list-team-statuses": {
-          if (!teamName) {
+          if (!teamId) {
             return {
               success: false,
-              error: "Team name is required for list-team-statuses",
+              error: "Team ID is required for list-team-statuses",
             };
           }
 
-          const teamResult = await getTeamId(teamName);
-          if (!teamResult.success) {
+          const teamName = await getTeamName(teamId);
+          if (!teamName) {
             return {
               success: false,
-              error: teamResult.error,
+              error: `Team with ID "${teamId}" not found`,
             };
           }
-          const statuses = await getTeamStatuses(teamResult.teamId, session);
+
+          const statuses = await getTeamStatuses(teamId, session);
 
           return {
             success: true,
@@ -198,17 +186,6 @@ export const statusesTool = tool({
               };
             }
           } else if (statusName) {
-            let teamId: string | undefined;
-            if (teamName) {
-              const teamResult = await getTeamId(teamName);
-              if (!teamResult.success) {
-                return {
-                  success: false,
-                  error: teamResult.error,
-                };
-              }
-              teamId = teamResult.teamId;
-            }
             status = await findStatusByName(statusName, teamId);
           } else {
             return {
@@ -245,26 +222,26 @@ export const statusesTool = tool({
             };
           }
 
-          if (!teamName || !name || !category || !color) {
+          if (!teamId || !name || !category || !color) {
             return {
               success: false,
               error:
-                "Team name, status name, category, and color are required for creating a status",
+                "Team ID, status name, category, and color are required for creating a status",
             };
           }
 
-          const teamResult = await getTeamId(teamName);
-          if (!teamResult.success) {
+          const teamName = await getTeamName(teamId);
+          if (!teamName) {
             return {
               success: false,
-              error: teamResult.error,
+              error: `Team with ID "${teamId}" not found`,
             };
           }
 
           const newStatusData: NewState = {
             name,
             category,
-            teamId: teamResult.teamId,
+            teamId,
             color,
           };
 
@@ -297,17 +274,6 @@ export const statusesTool = tool({
           let targetStatusId = statusId;
 
           if (!targetStatusId && statusName) {
-            let teamId: string | undefined;
-            if (teamName) {
-              const teamResult = await getTeamId(teamName);
-              if (!teamResult.success) {
-                return {
-                  success: false,
-                  error: teamResult.error,
-                };
-              }
-              teamId = teamResult.teamId;
-            }
             const status = await findStatusByName(statusName, teamId);
             targetStatusId = status.id;
           }
@@ -351,17 +317,6 @@ export const statusesTool = tool({
           let targetStatusId = statusId;
 
           if (!targetStatusId && statusName) {
-            let teamId: string | undefined;
-            if (teamName) {
-              const teamResult = await getTeamId(teamName);
-              if (!teamResult.success) {
-                return {
-                  success: false,
-                  error: teamResult.error,
-                };
-              }
-              teamId = teamResult.teamId;
-            }
             const status = await findStatusByName(statusName, teamId);
             targetStatusId = status.id;
           }
@@ -401,17 +356,6 @@ export const statusesTool = tool({
           let targetStatusId = statusId;
 
           if (!targetStatusId && statusName) {
-            let teamId: string | undefined;
-            if (teamName) {
-              const teamResult = await getTeamId(teamName);
-              if (!teamResult.success) {
-                return {
-                  success: false,
-                  error: teamResult.error,
-                };
-              }
-              teamId = teamResult.teamId;
-            }
             const status = await findStatusByName(statusName, teamId);
             targetStatusId = status.id;
           }
