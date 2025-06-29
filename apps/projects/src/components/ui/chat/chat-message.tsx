@@ -50,7 +50,7 @@ const RenderMessage = ({
         if (part.type === "text") {
           return (
             <>
-              {isStreaming ? (
+              {isStreaming && message.role === "assistant" ? (
                 <Flex align="center" className="gap-1.5" key={index}>
                   <BrainIcon className="animate-pulse" />
                   <Text>Thinking...</Text>
