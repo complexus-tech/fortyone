@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
+import { BrainIcon } from "icons";
 import type { User } from "@/types";
 import { AiIcon } from "./ai";
 
@@ -22,11 +23,20 @@ const RenderMessage = ({ message }: { message: Message }) => {
   }, [message.parts]);
 
   const isProcessing =
-    !hasText && message.parts?.some((p) => p.type === "step-start");
+    !hasText &&
+    message.parts?.some((p) => p.type === "step-start") &&
+    !message.parts.some(
+      (p) => p.type === "tool-invocation" && p.toolInvocation.state === "call",
+    );
 
   return (
     <>
-      {isProcessing ? <Text>Processing…</Text> : null}
+      {isProcessing ? (
+        <Flex align="center" className="gap-1.5">
+          <BrainIcon className="h-4 animate-pulse" />
+          <Text>Thinking…</Text>
+        </Flex>
+      ) : null}
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -46,7 +56,10 @@ const RenderMessage = ({ message }: { message: Message }) => {
           const toolInvocation = part.toolInvocation;
           if (toolInvocation.state === "call") {
             return (
-              <Text key={index}>Using {toolInvocation.toolName} tool...</Text>
+              <Flex align="center" className="gap-1.5" key={index}>
+                <BrainIcon className="h-4 animate-pulse" />
+                <Text>Using {toolInvocation.toolName} tool...</Text>
+              </Flex>
             );
           }
         }
