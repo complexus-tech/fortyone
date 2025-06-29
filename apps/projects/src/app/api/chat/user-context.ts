@@ -22,7 +22,12 @@ export async function getUserContext(): Promise<string> {
   });
 
   const teams = await getTeams(session);
-  const teamsList = teams.map((t) => `${t.name} (${t.id})`).join(", ");
+  const teamsList = teams
+    .map(
+      (t) =>
+        `name: ${t.name} - id: ${t.id} - code: ${t.code} - color: ${t.color}`,
+    )
+    .join(", ");
 
   return `
     **Current User Context:**
