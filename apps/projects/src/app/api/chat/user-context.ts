@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/auth";
+import { getTeams } from "@/modules/teams/queries/get-teams";
 
 export async function getUserContext(): Promise<string> {
   const session = await auth();
@@ -13,12 +14,26 @@ export async function getUserContext(): Promise<string> {
   );
   const userRole = workspace?.userRole;
 
+  const now = new Date();
+  const currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
+  const currentTime = now.toLocaleTimeString("en-US", {
+    hour12: false,
+    timeZone: "UTC",
+  });
+
+  // Get user's teams
+  const teams = await getTeams(session);
+  const teamsList = teams.map((t) => `${t.name} (${t.id})`).join(", ");
+
   return `
     **Current User Context:**
     - User ID: ${session.user.id}
     - Name: ${session.user.name}
     - Role: ${userRole}
     - Workspace: ${workspace?.name}
+    - Current Date: ${currentDate}
+    - Current Time: ${currentTime} UTC
+    - Teams: ${teamsList}
 
     **"Me" Resolution:**
     When the user says "me", "my", "assign to me", "show my work", etc., use:
@@ -32,10 +47,14 @@ export async function getUserContext(): Promise<string> {
     - When confirming actions they requested
     - When providing status updates about their work
 
+    **Smart Team Selection:**
+    The user belongs to these teams: ${teamsList}
+    ${teams.length === 1 ? "- Since user has only one team, auto-select it for story/objective creation" : '- When user says "my team" or doesn\'t specify team, ask which team or suggest based on context'}
+
     Examples:
     - "assign story to me" → "Assigned story to ${session.user.name}."
     - "show my stories" → "Here are your current stories, ${session.user.name}:" 
     - "create objective for me" → "Created objective with you as the lead, ${session.user.name}."
     - "what's my workload" → "${session.user.name}, you have 5 stories assigned to you."
-    - General confirmations → "Done, ${session.user.name}!" or "Got it, ${session.user.name}!"`;
+    - "create story for my team" → ${teams.length === 1 ? `auto-select ${teams[0]?.name}` : "ask which team"}`;
 }
