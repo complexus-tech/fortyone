@@ -10,6 +10,8 @@ import {
   statusesTool,
   sprintsTool,
   objectivesTool,
+  searchTool,
+  notificationsTool,
 } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
@@ -35,6 +37,8 @@ export async function POST(req: NextRequest) {
       statuses: statusesTool,
       sprints: sprintsTool,
       objectives: objectivesTool,
+      search: searchTool,
+      notifications: notificationsTool,
     },
     system: systemPrompt + userContext,
   });
