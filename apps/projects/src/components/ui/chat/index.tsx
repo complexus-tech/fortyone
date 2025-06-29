@@ -16,6 +16,7 @@ import {
 } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
+import { useProfile } from "@/lib/hooks/profile";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -25,11 +26,15 @@ import { SuggestedPrompts } from "./suggested-prompts";
 export const Chat = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
+
+  // remove last name from profile full name
+  const name = profile?.fullName.split(" ")[0] || profile?.username;
 
   const {
     messages,
@@ -115,8 +120,7 @@ export const Chat = () => {
     initialMessages: [
       {
         id: "1",
-        content:
-          "Hi! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, create new items, manage stories, get sprint insights, and provide project management assistance. How can I help you today?",
+        content: `Hi ${name}! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, create new items, manage stories, get sprint insights, and provide project management assistance. How can I help you today?`,
         role: "assistant",
       },
     ],
