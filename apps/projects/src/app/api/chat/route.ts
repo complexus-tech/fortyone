@@ -9,6 +9,7 @@ import {
   storiesTool,
   statusesTool,
   sprintsTool,
+  objectivesTool,
 } from "@/lib/ai/tools";
 import { systemPrompt } from "./system";
 
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
       stories: storiesTool,
       statuses: statusesTool,
       sprints: sprintsTool,
+      objectives: objectivesTool,
     },
     system: systemPrompt,
   });
