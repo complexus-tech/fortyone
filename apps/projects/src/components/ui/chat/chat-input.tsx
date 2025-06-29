@@ -76,7 +76,6 @@ export const ChatInput = ({
         <textarea
           autoFocus
           className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-lg shadow-none placeholder:text-gray focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-gray-200/60"
-          disabled={isLoading}
           onChange={onChange}
           onKeyDown={handleKeyDown}
           placeholder="Ask, suggest, or request for anything..."

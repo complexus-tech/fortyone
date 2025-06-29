@@ -179,7 +179,7 @@ export const Chat = () => {
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
               <ChatInput
-                isLoading={false}
+                isLoading={isLoading}
                 onChange={(e) => {
                   setInput(e.target.value);
                 }}
