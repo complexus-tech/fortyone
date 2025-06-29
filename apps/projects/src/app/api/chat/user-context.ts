@@ -21,7 +21,6 @@ export async function getUserContext(): Promise<string> {
     timeZone: "UTC",
   });
 
-  // Get user's teams
   const teams = await getTeams(session);
   const teamsList = teams.map((t) => `${t.name} (${t.id})`).join(", ");
 
