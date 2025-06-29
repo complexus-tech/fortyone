@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tool } from "ai";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
@@ -13,10 +14,9 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 
-export const sprintsTool = {
-  name: "sprints",
+export const sprintsTool = tool({
   description:
-    "Comprehensive sprint management: list, create, update, delete sprints, manage sprint stories, get analytics and burndown data. Supports team name resolution and role-based permissions.",
+    "Comprehensive sprint management: list, create, update, delete sprints, manage sprint stories, get analytics and burndown data. Uses team IDs directly and supports role-based permissions.",
   parameters: z.object({
     action: z
       .enum([
@@ -36,12 +36,10 @@ export const sprintsTool = {
       .describe("The sprint action to perform"),
 
     // Team identification
-    teamName: z
+    teamId: z
       .string()
       .optional()
-      .describe(
-        "Team name (e.g., 'Product Team', 'Frontend') - will be converted to team ID",
-      ),
+      .describe("Team ID for filtering sprints by team"),
 
     // Sprint identification
     sprintId: z
@@ -107,7 +105,7 @@ export const sprintsTool = {
 
   execute: async ({
     action,
-    teamName,
+    teamId,
     sprintId,
     sprintIds: _sprintIds,
     storyIds,
@@ -115,29 +113,6 @@ export const sprintsTool = {
     updateData,
     includeStats = true,
     includeAnalytics = false,
-  }: {
-    action: string;
-    teamName?: string;
-    sprintId?: string;
-    sprintIds?: string[];
-    storyIds?: string[];
-    sprintData?: {
-      name: string;
-      goal?: string;
-      teamId?: string;
-      objectiveId?: string;
-      startDate: string;
-      endDate: string;
-    };
-    updateData?: {
-      name?: string;
-      goal?: string;
-      objectiveId?: string;
-      startDate?: string;
-      endDate?: string;
-    };
-    includeStats?: boolean;
-    includeAnalytics?: boolean;
   }) => {
     try {
       const session = await auth();
@@ -164,21 +139,7 @@ export const sprintsTool = {
         };
       }
 
-      // Convert team name to ID if provided
-      let teamId: string | undefined;
-      if (teamName) {
-        const allTeams = await getTeams(session);
-        const team = allTeams.find(
-          (t) => t.name.toLowerCase() === teamName.toLowerCase(),
-        );
-        if (!team) {
-          return {
-            success: false,
-            error: `Team "${teamName}" not found. Available teams: ${allTeams.map((t) => t.name).join(", ")}`,
-          };
-        }
-        teamId = team.id;
-      }
+      // teamId is passed directly - no name resolution needed
 
       switch (action) {
         case "list-sprints": {
@@ -227,7 +188,7 @@ export const sprintsTool = {
           if (!teamId) {
             return {
               success: false,
-              error: "Team name is required for list-team-sprints action",
+              error: "Team ID is required for list-team-sprints action",
             };
           }
 
@@ -246,7 +207,7 @@ export const sprintsTool = {
               ...(includeStats && { stats: sprint.stats }),
             })),
             count: teamSprints.length,
-            message: `Found ${teamSprints.length} sprints for team "${teamName}".`,
+            message: `Found ${teamSprints.length} sprints for the specified team.`,
           };
         }
 
@@ -578,7 +539,7 @@ export const sprintsTool = {
           if (!teamId) {
             return {
               success: false,
-              error: "Team name is required for get-available-stories action",
+              error: "Team ID is required for get-available-stories action",
             };
           }
 
@@ -600,7 +561,7 @@ export const sprintsTool = {
               createdAt: story.createdAt,
             })),
             count: stories.length,
-            message: `Found ${stories.length} available stories for team "${teamName}" that can be added to sprints.`,
+            message: `Found ${stories.length} available stories for the specified team that can be added to sprints.`,
           };
         }
       }
@@ -614,4 +575,4 @@ export const sprintsTool = {
       };
     }
   },
-};
+});

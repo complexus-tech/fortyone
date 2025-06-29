@@ -76,14 +76,14 @@ Sprints: Comprehensive sprint management with role-based permissions:
 - Get available unassigned stories for sprint planning
 - Access sprint analytics including burndown charts and team allocation
 - Sprint story management with bulk operations
-- Natural language team name support (converts "Product Team" to proper team ID)
+- Uses team IDs directly (no team name resolution)
 
 Role-based permissions:
 - Guests: Can only view sprint stories they're assigned to
 - Members: Full sprint management for their teams, including story operations
 - Admins: Complete access including sprint deletion
 
-**Important**: Sprint creation follows the same smart team selection as stories - automatically uses user's only team or asks for team selection if multiple teams.
+**Important**: Sprint creation follows smart team selection - automatically uses user's only team or asks for team selection if multiple teams. Sprint operations use team IDs directly.
 
 Objectives: Comprehensive OKR (Objectives and Key Results) management with role-based permissions:
 - List all objectives or team-specific objectives with progress tracking

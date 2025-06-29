@@ -24,8 +24,10 @@ export const ChatMessages = ({
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isStreaming) {
+      scrollToBottom();
+    }
+  }, [messages, isStreaming]);
 
   return (
     <Box className="flex-1 overflow-y-auto px-6 py-6">
