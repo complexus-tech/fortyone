@@ -12,9 +12,16 @@ import { AiIcon } from "./ai";
 type ChatMessageProps = {
   message: Message;
   profile: User | undefined;
+  isStreaming?: boolean;
 };
 
-const RenderMessage = ({ message }: { message: Message }) => {
+const RenderMessage = ({
+  message,
+  isStreaming,
+}: {
+  message: Message;
+  isStreaming?: boolean;
+}) => {
   const [hasText, setHasText] = useState(false);
 
   useEffect(() => {
@@ -66,7 +73,7 @@ const RenderMessage = ({ message }: { message: Message }) => {
           if (toolInvocation.state === "result") {
             if (toolInvocation.toolName === "sprints") {
               const { result } = toolInvocation;
-              if (result?.analytics?.burndown) {
+              if (result?.analytics?.burndown && !isStreaming) {
                 return (
                   <Box className="mb-3" key={index}>
                     <BurndownChart burndownData={result?.analytics?.burndown} />
@@ -82,7 +89,11 @@ const RenderMessage = ({ message }: { message: Message }) => {
   );
 };
 
-export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
+export const ChatMessage = ({
+  message,
+  profile,
+  isStreaming,
+}: ChatMessageProps) => {
   const createdAt = message.createdAt || new Date();
   return (
     <Flex
@@ -113,7 +124,7 @@ export const ChatMessage = ({ message, profile }: ChatMessageProps) => {
             "bg-transparent p-0": message.role === "assistant",
           })}
         >
-          <RenderMessage message={message} />
+          <RenderMessage isStreaming={isStreaming} message={message} />
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">
           {createdAt.toLocaleTimeString([], {

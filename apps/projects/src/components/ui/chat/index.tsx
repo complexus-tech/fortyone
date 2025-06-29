@@ -125,7 +125,11 @@ export const Chat = () => {
           </Dialog.Description>
           <Dialog.Body className="h-[85dvh] max-h-[85dvh] p-0">
             <Flex className="h-full" direction="column">
-              <ChatMessages isLoading={isLoading} messages={messages} />
+              <ChatMessages
+                isLoading={isLoading}
+                isStreaming={status === "streaming"}
+                messages={messages}
+              />
               {messages.length === 1 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}

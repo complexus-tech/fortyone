@@ -8,9 +8,14 @@ import { ChatLoading } from "./chat-loading";
 type ChatMessagesProps = {
   messages: Message[];
   isLoading: boolean;
+  isStreaming?: boolean;
 };
 
-export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
+export const ChatMessages = ({
+  messages,
+  isLoading,
+  isStreaming,
+}: ChatMessagesProps) => {
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +31,12 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
     <Box className="flex-1 overflow-y-auto px-6 py-6">
       <Flex direction="column" gap={6}>
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} profile={profile} />
+          <ChatMessage
+            isStreaming={isStreaming}
+            key={message.id}
+            message={message}
+            profile={profile}
+          />
         ))}
 
         {isLoading ? <ChatLoading /> : null}
