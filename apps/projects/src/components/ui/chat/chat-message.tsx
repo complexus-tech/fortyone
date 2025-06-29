@@ -62,6 +62,21 @@ const RenderMessage = ({ message }: { message: Message }) => {
               </Flex>
             );
           }
+          if (toolInvocation.state === "result") {
+            if (toolInvocation.toolName === "sprints") {
+              const { result } = toolInvocation;
+              if (result?.analytics?.burndown) {
+                return (
+                  <div key={index}>
+                    <Text>Sprint ID: {result.sprintId}</Text>
+                    <Text>
+                      Overview: {JSON.stringify(result?.analytics?.burndown)}
+                    </Text>
+                  </div>
+                );
+              }
+            }
+          }
         }
         return null;
       })}

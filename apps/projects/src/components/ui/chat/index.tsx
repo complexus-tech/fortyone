@@ -123,7 +123,7 @@ export const Chat = () => {
           <Dialog.Description className="sr-only">
             Maya is your AI assistant.
           </Dialog.Description>
-          <Dialog.Body className="h-[80dvh] max-h-[80dvh] p-0">
+          <Dialog.Body className="h-[85dvh] max-h-[85dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages isLoading={isLoading} messages={messages} />
               {messages.length === 1 && (
