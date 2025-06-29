@@ -2,6 +2,7 @@ import { Avatar, Box, Text, Flex } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { BrainIcon } from "icons";
@@ -57,7 +58,9 @@ const RenderMessage = ({
               )}
               key={part.text}
             >
-              <Markdown remarkPlugins={[remarkGfm]}>{part.text}</Markdown>
+              <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+                {part.text}
+              </Markdown>
             </Box>
           );
         } else if (part.type === "tool-invocation") {
