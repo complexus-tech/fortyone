@@ -32,10 +32,12 @@ export const StoryRow = ({
   isSubStory = false,
   isInSearch = false,
   handleStoryClick,
+  className,
 }: {
   story: StoryProps;
   isSubStory?: boolean;
   isInSearch?: boolean;
+  className?: string;
   handleStoryClick: (storyId: string) => void;
 }) => {
   const router = useRouter();
@@ -94,12 +96,17 @@ export const StoryRow = ({
       <div ref={setNodeRef}>
         <StoryContextMenu story={story}>
           <RowWrapper
-            className={cn("gap-4", {
-              "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
-                isDragging,
-              "pointer-events-none opacity-40": story.id === "123",
-              "bg-gray-50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]": isSubStory,
-            })}
+            className={cn(
+              "gap-4",
+              {
+                "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
+                  isDragging,
+                "pointer-events-none opacity-40": story.id === "123",
+                "bg-gray-50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]":
+                  isSubStory,
+              },
+              className,
+            )}
           >
             <Flex
               align="center"

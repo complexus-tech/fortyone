@@ -33,6 +33,7 @@ const GroupedStories = ({
   viewOptions,
   members,
   statuses,
+  rowClassName,
 }: {
   group: StoryGroup;
   groupBy: GroupedStoriesResponse["meta"]["groupBy"];
@@ -40,6 +41,7 @@ const GroupedStories = ({
   viewOptions: StoriesViewOptions;
   members: Member[];
   statuses: State[];
+  rowClassName?: string;
 }) => {
   const getGroupProps = () => {
     switch (groupBy) {
@@ -49,6 +51,8 @@ const GroupedStories = ({
         return { status: statuses.find((status) => status.id === group.key) };
       case "assignee":
         return { assignee: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
     }
   };
 
@@ -58,6 +62,7 @@ const GroupedStories = ({
       isInSearch={isInSearch}
       key={group.key}
       {...getGroupProps()}
+      rowClassName={rowClassName}
       stories={group.stories}
       viewOptions={viewOptions}
     />
@@ -69,11 +74,13 @@ export const ListBoard = ({
   className,
   viewOptions,
   isInSearch,
+  rowClassName,
 }: {
   className?: string;
   groupedStories: GroupedStoriesResponse;
   viewOptions: StoriesViewOptions;
   isInSearch?: boolean;
+  rowClassName?: string;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { data: allMembers = [] } = useMembers();
@@ -102,13 +109,11 @@ export const ListBoard = ({
           isInSearch={isInSearch}
           key={group.key}
           members={members}
+          rowClassName={rowClassName}
           statuses={statuses}
           viewOptions={viewOptions}
         />
       ))}
-      {/* {groupBy === "none" && (
-        <StoriesList isInSearch={isInSearch} stories={stories} />
-      )} */}
     </BodyContainer>
   );
 };

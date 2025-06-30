@@ -52,6 +52,7 @@ export const StoriesGroup = ({
   className,
   viewOptions,
   assignee,
+  rowClassName,
 }: {
   isInSearch?: boolean;
   stories: Story[];
@@ -60,6 +61,7 @@ export const StoriesGroup = ({
   assignee?: Member;
   className?: string;
   viewOptions: StoriesViewOptions;
+  rowClassName?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
   const pathname = usePathname();
@@ -111,7 +113,11 @@ export const StoriesGroup = ({
         stories={stories}
       />
       {!isCollapsed && (
-        <StoriesList isInSearch={isInSearch} stories={stories} />
+        <StoriesList
+          isInSearch={isInSearch}
+          rowClassName={rowClassName}
+          stories={stories}
+        />
       )}
       {!isCollapsed && (
         <RowWrapper>

@@ -114,10 +114,11 @@ export const SubStories = ({
             meta: {
               totalGroups: 1,
               filters: {},
-              groupBy: "status",
+              groupBy: "none",
             },
           }}
           layout="list"
+          rowClassName="pr-0 md:pr-0.5 md:pl-7"
           viewOptions={{
             groupBy: "none",
             orderBy: "priority",

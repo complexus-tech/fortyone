@@ -14,6 +14,7 @@ import { useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
+import { cn } from "lib";
 import type { GroupedStoriesResponse, Story } from "@/modules/stories/types";
 import type {
   DisplayColumn,
@@ -23,6 +24,8 @@ import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useFeatures, useTerminology } from "@/hooks";
+import { StoriesList } from "@/components/ui/stories-list";
+import { BodyContainer } from "@/components/shared/body";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -130,12 +133,14 @@ export const StoriesBoard = ({
   groupedStories,
   className,
   viewOptions,
+  rowClassName,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
   groupedStories?: GroupedStoriesResponse;
   className?: string;
   viewOptions: StoriesViewOptions;
+  rowClassName?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId, sprintId, teamId } = useParams<{
@@ -248,24 +253,44 @@ export const StoriesBoard = ({
             onDragStart={handleDragStart}
             sensors={sensors}
           >
-            {layout === "kanban" && (
-              <KanbanBoard
-                className={className}
-                groupedStories={groupedStories!}
-              />
-            )}
             {layout === "gantt" && (
               <GanttBoard className={className} stories={[]} />
             )}
-            {(layout === "list" || !layout) && (
-              <ListBoard
-                className={className}
-                groupedStories={groupedStories!}
-                isInSearch={isInSearch}
-                viewOptions={viewOptions}
-              />
+            {groupedStories?.meta.groupBy === "none" ? (
+              <BodyContainer
+                className={cn(
+                  "overflow-x-auto pb-6",
+                  {
+                    "h-auto pb-0": isInSearch,
+                  },
+                  className,
+                )}
+              >
+                <StoriesList
+                  isInSearch={isInSearch}
+                  rowClassName={rowClassName}
+                  stories={groupedStories.groups[0].stories}
+                />
+              </BodyContainer>
+            ) : (
+              <>
+                {layout === "kanban" && (
+                  <KanbanBoard
+                    className={className}
+                    groupedStories={groupedStories!}
+                  />
+                )}
+                {(layout === "list" || !layout) && (
+                  <ListBoard
+                    className={className}
+                    groupedStories={groupedStories!}
+                    isInSearch={isInSearch}
+                    rowClassName={rowClassName}
+                    viewOptions={viewOptions}
+                  />
+                )}
+              </>
             )}
-
             {activeStory && typeof window !== "undefined"
               ? createPortal(
                   <StoryOverlay

@@ -8,9 +8,11 @@ import { StoryDialog } from "./story-dialog";
 export const StoriesList = ({
   isInSearch,
   stories,
+  rowClassName,
 }: {
   isInSearch?: boolean;
   stories: StoryType[];
+  rowClassName?: string;
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [storyId, setStoryId] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export const StoriesList = ({
     <Box>
       {stories.map((story) => (
         <StoryRow
+          className={rowClassName}
           handleStoryClick={(storyId) => {
             setStoryId(storyId);
             setIsDialogOpen(true);
