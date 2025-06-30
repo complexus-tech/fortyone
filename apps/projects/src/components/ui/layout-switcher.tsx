@@ -5,7 +5,7 @@ import type { StoriesLayout } from "@/components/ui";
 
 export const LayoutSwitcher = ({
   layout = "list",
-  options = ["list", "kanban", "gantt"],
+  options = ["list", "kanban"],
   setLayout,
   className,
   disabled,
