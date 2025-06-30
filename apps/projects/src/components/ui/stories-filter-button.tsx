@@ -92,7 +92,7 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-100/80",
+        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-50/40",
       )}
       onClick={onClick}
       type="button"
@@ -381,11 +381,8 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content
-        align="end"
-        className="max-h-[85vh] w-80 overflow-y-auto pb-2 dark:bg-dark-200/70 md:w-[30rem]"
-      >
-        <Flex align="center" className="h-10 px-4" justify="between">
+      <Popover.Content className="max-h-[85vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-[35rem]">
+        <Flex align="center" className="h-12 px-4" justify="between">
           <Text
             color="muted"
             fontSize="sm"
