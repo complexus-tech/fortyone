@@ -84,7 +84,7 @@ export type GroupStoriesResponse = {
 };
 
 export type GroupedStoryParams = {
-  groupBy: "priority" | "status" | "assignee";
+  groupBy: "priority" | "status" | "assignee" | "none";
   teamIds?: string[];
   assignedToMe?: boolean;
   createdByMe?: boolean;

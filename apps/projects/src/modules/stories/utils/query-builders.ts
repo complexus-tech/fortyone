@@ -20,7 +20,3 @@ export const buildGroupStoriesQuery = (params: GroupStoryParams) => {
 };
 
 export const getStoriesUrl = (type: "grouped" | "group") => `stories/${type}`;
-
-export const buildQueryKey = (
-  parts: (string | number | boolean | undefined | null)[],
-) => parts.filter(Boolean).join("-");

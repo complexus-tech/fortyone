@@ -101,11 +101,26 @@ export const SubStories = ({
       {isSubStoriesOpen && subStories.length > 0 ? (
         <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
+          groupedStories={{
+            groups: [
+              {
+                key: "none",
+                stories: subStories,
+                loadedCount: subStories.length,
+                hasMore: false,
+                nextPage: 1,
+              },
+            ],
+            meta: {
+              totalGroups: 1,
+              filters: {},
+              groupBy: "status",
+            },
+          }}
           layout="list"
-          stories={subStories}
           viewOptions={{
-            groupBy: "None",
-            orderBy: "Priority",
+            groupBy: "none",
+            orderBy: "priority",
             showEmptyGroups: false,
             displayColumns: ["ID", "Status", "Priority", "Assignee"],
           }}

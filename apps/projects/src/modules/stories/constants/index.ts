@@ -19,16 +19,16 @@ export const storyKeys = {
   total: () => ["totalSories"] as const,
   // Grouped stories
   grouped: () => [...storyKeys.all, "grouped"] as const,
-  mineGrouped: (filter: string) =>
-    [...storyKeys.mine(), "grouped", filter] as const,
-  teamGrouped: (teamId: string, filter: string) =>
-    [...storyKeys.team(teamId), "grouped", filter] as const,
-  objectiveGrouped: (objectiveId: string, filter: string) =>
-    [...storyKeys.objective(objectiveId), "grouped", filter] as const,
-  sprintGrouped: (sprintId: string, filter: string) =>
-    [...storyKeys.sprint(sprintId), "grouped", filter] as const,
-  groupStories: (groupKey: string, filter: string) =>
-    [...storyKeys.all, "group", groupKey, filter] as const,
+  mineGrouped: (params: Record<string, unknown>) =>
+    [...storyKeys.mine(), "grouped", params] as const,
+  teamGrouped: (teamId: string, params: Record<string, unknown>) =>
+    [...storyKeys.team(teamId), "grouped", params] as const,
+  objectiveGrouped: (objectiveId: string, params: Record<string, unknown>) =>
+    [...storyKeys.objective(objectiveId), "grouped", params] as const,
+  sprintGrouped: (sprintId: string, params: Record<string, unknown>) =>
+    [...storyKeys.sprint(sprintId), "grouped", params] as const,
+  groupStories: (groupKey: string, params: Record<string, unknown>) =>
+    [...storyKeys.all, "group", groupKey, params] as const,
 };
 
 export const storyTags = {

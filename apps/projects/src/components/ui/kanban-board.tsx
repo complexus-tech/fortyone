@@ -26,7 +26,7 @@ const GroupedKanbanHeader = ({
   statuses,
 }: {
   group: StoryGroup;
-  groupBy: GroupedStoriesResponse["meta"]["groupBy"];
+  groupBy: StoriesViewOptions["groupBy"];
   isInSearch?: boolean;
   viewOptions: StoriesViewOptions;
   members: Member[];
@@ -40,6 +40,8 @@ const GroupedKanbanHeader = ({
         return { status: statuses.find((status) => status.id === group.key) };
       case "assignee":
         return { member: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
     }
   };
 
@@ -60,7 +62,7 @@ const GroupedKanbanStories = ({
   statuses,
 }: {
   group: StoryGroup;
-  groupBy: GroupedStoriesResponse["meta"]["groupBy"];
+  groupBy: StoriesViewOptions["groupBy"];
   isInSearch?: boolean;
   viewOptions: StoriesViewOptions;
   members: Member[];
@@ -74,6 +76,8 @@ const GroupedKanbanStories = ({
         return { status: statuses.find((status) => status.id === group.key) };
       case "assignee":
         return { member: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
     }
   };
 

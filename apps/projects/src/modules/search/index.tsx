@@ -42,12 +42,6 @@ export const SearchPage = () => {
     setSearchParams(params);
   };
 
-  const mappedStories = results?.stories.map((story) => ({
-    ...story,
-    subStories: [],
-    labels: [],
-  }));
-
   return (
     <>
       <Header onSearch={handleSearch} />
@@ -94,10 +88,9 @@ export const SearchPage = () => {
                 <StoriesBoard
                   isInSearch
                   layout="list"
-                  stories={mappedStories || []}
                   viewOptions={{
-                    groupBy: "None",
-                    orderBy: "Priority",
+                    groupBy: "none",
+                    orderBy: "priority",
                     showEmptyGroups: true,
                     displayColumns: ["Status", "Assignee", "Priority"],
                   }}
@@ -120,10 +113,9 @@ export const SearchPage = () => {
                 <StoriesBoard
                   isInSearch
                   layout="list"
-                  stories={mappedStories || []}
                   viewOptions={{
-                    groupBy: "None",
-                    orderBy: "Priority",
+                    groupBy: "none",
+                    orderBy: "priority",
                     showEmptyGroups: true,
                     displayColumns: ["Status", "Assignee", "Priority"],
                   }}

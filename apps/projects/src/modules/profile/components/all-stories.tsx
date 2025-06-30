@@ -1,27 +1,17 @@
 "use client";
 import { Box, Tabs } from "ui";
-import { useSession } from "next-auth/react";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import type { Story } from "@/modules/stories/types";
 import { useProfile } from "./provider";
 
 export const AllStories = ({
-  stories,
   layout,
 }: {
   stories: Story[];
   layout: StoriesLayout;
 }) => {
   const { viewOptions } = useProfile();
-  const session = useSession();
-
-  const createdStories = stories.filter(
-    (story) => story.reporterId === session.data?.user?.id,
-  );
-  const assignedStories = stories.filter(
-    (story) => story.assigneeId === session.data?.user?.id,
-  );
 
   return (
     <Box className="h-[calc(100vh-4rem)]">
@@ -35,16 +25,16 @@ export const AllStories = ({
         <Tabs.Panel value="assigned">
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
+            groupedStories={undefined}
             layout={layout}
-            stories={assignedStories}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
           <StoriesBoard
             className="h-[calc(100vh-7.7rem)]"
+            groupedStories={undefined}
             layout={layout}
-            stories={createdStories}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>

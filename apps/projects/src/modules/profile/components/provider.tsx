@@ -13,8 +13,8 @@ const ProfileContext = createContext<Profile | undefined>(undefined);
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
+    groupBy: "status",
+    orderBy: "priority",
     showEmptyGroups: false,
     displayColumns: [
       "Status",

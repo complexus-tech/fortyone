@@ -3,7 +3,6 @@ import { useSession } from "next-auth/react";
 import type { GroupedStoryParams } from "../types";
 import { storyKeys } from "../constants";
 import { getGroupedStories } from "../queries/get-grouped-stories";
-import { buildQueryKey } from "../utils/query-builders";
 
 export const useTeamStoriesGrouped = (
   teamId: string,
@@ -18,22 +17,7 @@ export const useTeamStoriesGrouped = (
     ...options,
   };
 
-  const paramsKey = buildQueryKey([
-    params.groupBy,
-    params.teamIds?.join(","),
-    params.assignedToMe,
-    params.createdByMe,
-    params.storiesPerGroup,
-    params.statusIds?.join(","),
-    params.priorities?.join(","),
-    params.assigneeIds?.join(","),
-    params.sprintIds?.join(","),
-    params.objectiveIds?.join(","),
-    params.sprintIds?.join(","),
-    params.sprintIds?.join(","),
-  ]);
-
-  const queryKey = storyKeys.teamGrouped(teamId, paramsKey);
+  const queryKey = storyKeys.teamGrouped(teamId, params);
 
   return useQuery({
     queryKey,

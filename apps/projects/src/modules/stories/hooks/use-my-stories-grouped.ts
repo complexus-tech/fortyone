@@ -3,7 +3,6 @@ import { useSession } from "next-auth/react";
 import type { GroupedStoryParams } from "../types";
 import { storyKeys } from "../constants";
 import { getGroupedStories } from "../queries/get-grouped-stories";
-import { buildQueryKey } from "../utils/query-builders";
 
 export const useMyStoriesGrouped = (
   groupBy: GroupedStoryParams["groupBy"] = "status",
@@ -16,16 +15,7 @@ export const useMyStoriesGrouped = (
     ...options,
   };
 
-  const paramsKey = buildQueryKey([
-    params.groupBy,
-    params.assignedToMe,
-    params.createdByMe,
-    params.storiesPerGroup,
-    params.statusIds?.join(","),
-    params.priorities?.join(","),
-  ]);
-
-  const queryKey = storyKeys.mineGrouped(paramsKey);
+  const queryKey = storyKeys.mineGrouped(params);
 
   return useQuery({
     queryKey,

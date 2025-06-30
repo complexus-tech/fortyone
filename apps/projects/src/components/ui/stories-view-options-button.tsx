@@ -5,7 +5,7 @@ import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
-export type ViewOptionsGroupBy = "status" | "assignee" | "priority";
+export type ViewOptionsGroupBy = "status" | "assignee" | "priority" | "none";
 export type DisplayColumn =
   | "ID"
   | "Status"
