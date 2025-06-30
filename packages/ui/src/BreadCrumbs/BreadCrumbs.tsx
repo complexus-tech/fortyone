@@ -3,7 +3,7 @@ import Link from "next/link";
 import { cn } from "lib";
 import { Flex } from "../Flex/Flex";
 import { ReactNode } from "react";
-import { ArrowRightIcon } from "icons";
+import { ArrowRight2Icon } from "icons";
 interface BreadCrumb {
   name: string;
   url?: string;
@@ -38,8 +38,9 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
             <span className="group-hover:text-primary line-clamp-1">
               {name}
             </span>
-            <ArrowRightIcon
-              className={cn("h-[0.8rem] w-auto opacity-80", {
+            <ArrowRight2Icon
+              strokeWidth={3}
+              className={cn("h-4 opacity-80", {
                 hidden: idx + 1 === breadCrumbs.length,
               })}
             />

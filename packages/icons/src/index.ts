@@ -117,3 +117,4 @@ export * from "./gantt";
 export * from "./grid";
 export * from "./ai";
 export * from "./brain";
+export * from "./backlog";
