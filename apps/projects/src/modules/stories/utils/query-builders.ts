@@ -6,6 +6,7 @@ export const buildGroupedStoriesQuery = (params: GroupedStoryParams) => {
     skipNulls: true,
     addQueryPrefix: true,
     encodeValuesOnly: true,
+    arrayFormat: "comma",
   });
   return query;
 };
@@ -15,6 +16,7 @@ export const buildGroupStoriesQuery = (params: GroupStoryParams) => {
     skipNulls: true,
     addQueryPrefix: true,
     encodeValuesOnly: true,
+    arrayFormat: "comma",
   });
   return query;
 };

@@ -15,7 +15,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "priority",
-    showEmptyGroups: false,
+    showEmptyGroups: true,
     displayColumns: [
       "Status",
       "Assignee",
