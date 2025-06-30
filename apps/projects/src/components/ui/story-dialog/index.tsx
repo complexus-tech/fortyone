@@ -116,13 +116,13 @@ export const StoryDialog = ({
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>
         </Dialog.Title>
-        <Dialog.Body className="h-[85dvh] max-h-[85dvh] overflow-y-hidden px-0 pt-0">
+        <Dialog.Body className="h-[90dvh] max-h-[90dvh] overflow-y-hidden px-0 pt-0">
           <StoryPage
             isDialog
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-[2] bg-white/80 px-10 py-4 backdrop-blur dark:bg-dark-300/80"
+                className="sticky top-0 z-[2] bg-white/80 px-6 py-4 backdrop-blur dark:bg-dark-300/80"
                 gap={2}
                 justify="between"
               >
