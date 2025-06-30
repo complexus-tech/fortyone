@@ -1,5 +1,5 @@
 "use client";
-import { Box, BreadCrumbs, Flex } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -8,7 +8,6 @@ import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
   NewStoryButton,
-  SideDetailsSwitch,
   StoriesFilterButton,
   StoriesViewOptionsButton,
   TeamColor,
@@ -18,13 +17,9 @@ import { useTerminology } from "@/hooks";
 import { useTeamOptions } from "./provider";
 
 export const Header = ({
-  isExpanded,
-  setIsExpanded,
   layout,
   setLayout,
 }: {
-  isExpanded: boolean | null;
-  setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
@@ -89,12 +84,6 @@ export const Header = ({
         <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
           |
         </span>
-        <Box className="hidden md:block">
-          <SideDetailsSwitch
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-          />
-        </Box>
         <NewStoryButton className="hidden md:flex" teamId={teamId} />
       </Flex>
     </HeaderContainer>
