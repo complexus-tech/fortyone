@@ -27,7 +27,8 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
             onClick={() => {
               onPromptSelect(prompt);
             }}
-            rounded="full"
+            rounded="lg"
+            variant="naked"
           >
             {prompt}
           </Button>
