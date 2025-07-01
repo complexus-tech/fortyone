@@ -1,12 +1,11 @@
 import { Button, Box, Text, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
-  "Show me my stories",
-  "Show me running sprints",
-  "How many statuses are in the Product team",
-  "Create a new sprint",
+  "Show me my assigned stories",
+  "Show me high priority items",
+  "Show me unread notifications",
+  "List all team members",
   "Toggle color theme",
-  "Create a new objective",
 ];
 
 type SuggestedPromptsProps = {
@@ -28,7 +27,6 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
               onPromptSelect(prompt);
             }}
             rounded="lg"
-            variant="naked"
           >
             {prompt}
           </Button>
