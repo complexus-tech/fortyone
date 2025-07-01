@@ -90,14 +90,14 @@ export const StoriesGroup = ({
     collapseKey,
     getDefaultCollapsed(),
   );
-  const { isOver, setNodeRef } = useDroppable({
+  const { isOver, setNodeRef, active } = useDroppable({
     id,
   });
 
   return (
     <div
       className={cn("border-0 border-transparent transition", {
-        "border border-primary": isOver,
+        "border border-primary": isOver && active?.id,
         hidden: !showEmptyGroups && stories.length === 0,
       })}
       ref={setNodeRef}
