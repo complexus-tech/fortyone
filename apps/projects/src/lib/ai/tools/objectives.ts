@@ -47,8 +47,6 @@ export const objectivesTool = tool({
       .optional()
       .describe("Objective ID for single objective operations"),
 
-    objectiveName: z.string().optional().describe("Objective name for lookups"),
-
     keyResultId: z
       .string()
       .optional()
@@ -72,12 +70,6 @@ export const objectivesTool = tool({
           .optional()
           .describe("Objective priority"),
         statusId: z.string().optional().describe("Status ID"),
-        statusName: z
-          .string()
-          .optional()
-          .describe(
-            "Status name (e.g., 'In Progress', 'Done') - will be converted to UUID",
-          ),
         keyResults: z
           .array(
             z.object({
@@ -147,7 +139,6 @@ export const objectivesTool = tool({
     action,
     teamId,
     objectiveId,
-    objectiveName,
     keyResultId,
     objectiveData,
     updateData,
@@ -257,22 +248,15 @@ export const objectivesTool = tool({
         }
 
         case "get-objective-details": {
-          if (!objectiveId && !objectiveName) {
+          if (!objectiveId) {
             return {
               success: false,
-              error: "Either objectiveId or objectiveName is required",
+              error:
+                "Objective ID is required for get-objective-details action",
             };
           }
 
-          let objective;
-          if (objectiveId) {
-            objective = await getObjective(objectiveId, session);
-          } else if (objectiveName) {
-            const objectives = await getObjectives(session);
-            objective = objectives.find(
-              (obj) => obj.name.toLowerCase() === objectiveName.toLowerCase(),
-            );
-          }
+          const objective = await getObjective(objectiveId, session);
 
           if (!objective) {
             return {
@@ -388,12 +372,13 @@ export const objectivesTool = tool({
           // Get default status
           const statuses = await getObjectiveStatuses(session);
           const defaultStatus = statuses.find((status) => status.isDefault);
-          const statusId = defaultStatus?.id || statuses[0]?.id;
+          const statusId =
+            objectiveData.statusId || defaultStatus?.id || statuses[0]?.id;
 
           if (!statusId) {
             return {
               success: false,
-              error: "No valid status found",
+              error: "No valid objective status found",
             };
           }
 

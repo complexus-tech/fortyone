@@ -11,6 +11,7 @@ import {
   statusesTool,
   sprintsTool,
   objectivesTool,
+  objectiveStatusesTool,
   searchTool,
   notificationsTool,
 } from "@/lib/ai/tools";
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
       statuses: statusesTool,
       sprints: sprintsTool,
       objectives: objectivesTool,
+      objectiveStatuses: objectiveStatusesTool,
       search: searchTool,
       notifications: notificationsTool,
     },

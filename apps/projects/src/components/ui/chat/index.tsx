@@ -115,6 +115,12 @@ export const Chat = () => {
                 queryKey: objectiveKeys.all,
               });
             }
+          } else if (part.toolInvocation.toolName === "objectiveStatuses") {
+            if (part.toolInvocation.state === "result") {
+              queryClient.invalidateQueries({
+                queryKey: objectiveKeys.statuses(),
+              });
+            }
           }
         }
       });

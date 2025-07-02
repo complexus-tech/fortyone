@@ -5,6 +5,7 @@ export { teamsTool } from "./teams";
 export { statusesTool } from "./statuses";
 export { sprintsTool } from "./sprints";
 export { objectivesTool } from "./objectives";
+export { objectiveStatusesTool } from "./objective-statuses";
 export { searchTool } from "./search";
 export { notificationsTool } from "./notifications";
 export { theme } from "./theme";
