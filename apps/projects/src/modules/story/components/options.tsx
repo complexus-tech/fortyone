@@ -267,7 +267,7 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "from-white via-gray-50/50 to-gray-50 pb-2 dark:from-dark-200/50 dark:to-dark md:h-dvh md:overflow-y-auto md:bg-gradient-to-br md:pb-6",
+        "from-gray-50/10 via-gray-50/50 to-gray-50 pb-2 dark:from-dark-200/50 dark:to-dark md:h-dvh md:overflow-y-auto md:bg-gradient-to-br md:pb-6",
         {
           "h-[85dvh] dark:from-transparent dark:to-transparent": isDialog,
         },

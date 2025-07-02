@@ -469,7 +469,7 @@ export const NewStoryDialog = ({
               editor={titleEditor}
             />
             <TextEditor
-              className={cn({
+              className={cn("min-h-28", {
                 "min-h-96": isExpanded,
               })}
               editor={editor}

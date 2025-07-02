@@ -109,14 +109,13 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="dark:bg-dark-300 md:mb-auto md:mt-auto"
+        className="max-w-[90rem] dark:bg-dark-300 md:mb-auto md:mt-auto"
         hideClose
-        size="xl"
       >
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>
         </Dialog.Title>
-        <Dialog.Body className="h-[90dvh] max-h-[90dvh] overflow-y-hidden px-0 pt-0">
+        <Dialog.Body className="h-[92dvh] max-h-[92dvh] overflow-y-hidden px-0 pt-0">
           <StoryPage
             isDialog
             isNotifications={false}

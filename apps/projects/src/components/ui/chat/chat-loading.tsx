@@ -1,23 +1,12 @@
-import { Box, Flex } from "ui";
+import { Flex } from "ui";
 import { AiIcon } from "./ai";
+import { Thinking } from "./thinking";
 
 export const ChatLoading = () => {
   return (
     <Flex gap={3}>
       <AiIcon />
-      <Box className="rounded-2xl bg-gray-50 p-4 dark:bg-dark-100">
-        <Flex gap={1}>
-          <Box className="size-2 animate-bounce rounded-full bg-gray" />
-          <Box
-            className="size-2 animate-bounce rounded-full bg-gray"
-            style={{ animationDelay: "0.1s" }}
-          />
-          <Box
-            className="size-2 animate-bounce rounded-full bg-gray"
-            style={{ animationDelay: "0.2s" }}
-          />
-        </Flex>
-      </Box>
+      <Thinking />
     </Flex>
   );
 };

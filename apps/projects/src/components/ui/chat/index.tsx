@@ -33,7 +33,6 @@ export const Chat = () => {
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
 
-  // remove last name from profile full name
   const name = profile?.fullName.split(" ")[0] || profile?.username;
 
   const {
@@ -164,7 +163,7 @@ export const Chat = () => {
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[2rem] bg-white/85 font-medium outline-none backdrop-blur dark:bg-dark-300/80 md:mb-[2.6vh] md:mt-auto"
+          className="max-w-[36rem] rounded-[2rem] bg-white/85 font-medium outline-none backdrop-blur dark:bg-dark-200/90 md:mb-[2.6vh] md:mt-auto"
           overlayClassName="justify-end pr-[1.5vh]"
         >
           <Dialog.Header className="px-6 py-5">

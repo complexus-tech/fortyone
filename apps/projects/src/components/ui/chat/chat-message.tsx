@@ -5,10 +5,10 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
-import { BrainIcon } from "icons";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { AiIcon } from "./ai";
+import { Thinking } from "./thinking";
 
 type ChatMessageProps = {
   message: Message;
@@ -40,12 +40,7 @@ const RenderMessage = ({
 
   return (
     <>
-      {isProcessing ? (
-        <Flex align="center" className="gap-1.5">
-          <BrainIcon className="animate-pulse" />
-          <Text>Thinking…</Text>
-        </Flex>
-      ) : null}
+      {isProcessing ? <Thinking /> : null}
       {message.parts?.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -67,10 +62,10 @@ const RenderMessage = ({
           const toolInvocation = part.toolInvocation;
           if (toolInvocation.state === "call") {
             return (
-              <Flex align="center" className="gap-1.5" key={index}>
-                <BrainIcon className="animate-pulse" />
-                <Text>Using {toolInvocation.toolName} tool...</Text>
-              </Flex>
+              <Thinking
+                key={index}
+                message={`Using ${toolInvocation.toolName} tool...`}
+              />
             );
           }
           if (toolInvocation.state === "result") {
@@ -129,7 +124,7 @@ export const ChatMessage = ({
       >
         <Box
           className={cn("rounded-3xl p-4", {
-            "bg-primary": message.role === "user",
+            "rounded-tr-lg bg-primary": message.role === "user",
             "bg-transparent p-0": message.role === "assistant",
           })}
         >

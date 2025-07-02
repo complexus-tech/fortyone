@@ -1,11 +1,11 @@
-import { Button, Box, Text, Flex } from "ui";
+import { Button, Box, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
+  "Toggle color theme",
+  "List all team members",
   "Show me my assigned stories",
   "Show me high priority items",
   "Show me unread notifications",
-  "List all team members",
-  "Toggle color theme",
 ];
 
 type SuggestedPromptsProps = {
@@ -15,10 +15,7 @@ type SuggestedPromptsProps = {
 export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
     <Box className="px-6 pt-6">
-      <Text className="mb-4" fontSize="md" fontWeight="medium">
-        Try asking:
-      </Text>
-      <Flex gap={3} wrap>
+      <Flex gap={3} justify="center" wrap>
         {SUGGESTED_PROMPTS.map((prompt, index) => (
           <Button
             color="tertiary"
