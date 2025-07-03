@@ -206,8 +206,8 @@ export const Chat = () => {
             })}
           >
             <Flex
-              className={cn("h-full pt-16", {
-                "mx-auto h-dvh max-w-3xl": isFullScreen,
+              className={cn("h-full", {
+                "mx-auto h-dvh max-w-3xl pt-16": isFullScreen,
               })}
               direction="column"
             >
