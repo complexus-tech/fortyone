@@ -938,6 +938,23 @@ func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *ht
 	coreQuery.Filters.CurrentUserID = userID
 	coreQuery.Filters.WorkspaceID = workspaceId
 
+	// Handle "none" groupBy case - create a single group with key "none"
+	if query.GroupBy == "none" {
+		// Use the grouped stories method but force groupBy to be handled as a single group
+		coreQuery.GroupBy = "none"
+
+		// Fetch grouped stories (which will handle "none" as a special case)
+		groups, err := h.stories.ListGroupedStories(ctx, coreQuery)
+		if err != nil {
+			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			return nil
+		}
+
+		// Convert to app response (same format as other grouped responses)
+		response := convertGroupsToResponse(groups, query)
+		return web.Respond(ctx, w, response, http.StatusOK)
+	}
+
 	// Fetch grouped stories
 	groups, err := h.stories.ListGroupedStories(ctx, coreQuery)
 	if err != nil {
@@ -1121,6 +1138,11 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.OrderDirection = getStringParam(r, "orderDirection", "desc")
 	query.GroupKey = r.URL.Query().Get("groupKey")
 
+	// Validate groupBy values
+	if !isValidGroupBy(query.GroupBy) {
+		return query, fmt.Errorf("invalid groupBy value: %s. Must be one of: status, assignee, priority, team, sprint, none", query.GroupBy)
+	}
+
 	// Validate orderBy values
 	if !isValidOrderBy(query.OrderBy) {
 		return query, fmt.Errorf("invalid orderBy value: %s. Must be one of: created, updated, priority, deadline", query.OrderBy)
@@ -1269,6 +1291,17 @@ func isValidOrderDirection(direction string) bool {
 	return direction == "asc" || direction == "desc"
 }
 
+// isValidGroupBy validates the groupBy parameter
+func isValidGroupBy(groupBy string) bool {
+	validValues := []string{"status", "assignee", "priority", "team", "sprint", "none"}
+	for _, v := range validValues {
+		if v == groupBy {
+			return true
+		}
+	}
+	return false
+}
+
 // toCoreStoryQuery converts a handler StoryQuery to a core CoreStoryQuery
 func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	return stories.CoreStoryQuery{
@@ -1303,6 +1336,76 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 		Page:            query.Page,
 		PageSize:        query.PageSize,
 	}
+}
+
+// coreFiltersToMap converts CoreStoryFilters to map[string]any format for the List method
+func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
+	result := make(map[string]any)
+
+	// Always include CurrentUserID and WorkspaceID as they're needed for user-specific filters
+	result["current_user_id"] = filters.CurrentUserID
+	result["workspace_id"] = filters.WorkspaceID
+
+	// Only add non-empty/non-nil filters
+	if len(filters.StatusIDs) > 0 {
+		result["status_ids"] = filters.StatusIDs
+	}
+	if len(filters.AssigneeIDs) > 0 {
+		result["assignee_ids"] = filters.AssigneeIDs
+	}
+	if len(filters.ReporterIDs) > 0 {
+		result["reporter_ids"] = filters.ReporterIDs
+	}
+	if len(filters.Priorities) > 0 {
+		result["priorities"] = filters.Priorities
+	}
+	if len(filters.TeamIDs) > 0 {
+		result["team_ids"] = filters.TeamIDs
+	}
+	if len(filters.SprintIDs) > 0 {
+		result["sprint_ids"] = filters.SprintIDs
+	}
+	if len(filters.LabelIDs) > 0 {
+		result["label_ids"] = filters.LabelIDs
+	}
+	if filters.Parent != nil {
+		result["parent_id"] = *filters.Parent
+	}
+	if filters.Objective != nil {
+		result["objective_id"] = *filters.Objective
+	}
+	if filters.Epic != nil {
+		result["epic_id"] = *filters.Epic
+	}
+	if filters.HasNoAssignee != nil {
+		result["has_no_assignee"] = *filters.HasNoAssignee
+	}
+	if filters.AssignedToMe != nil {
+		result["assigned_to_me"] = *filters.AssignedToMe
+	}
+	if filters.CreatedByMe != nil {
+		result["created_by_me"] = *filters.CreatedByMe
+	}
+	if filters.CreatedAfter != nil {
+		result["created_after"] = *filters.CreatedAfter
+	}
+	if filters.CreatedBefore != nil {
+		result["created_before"] = *filters.CreatedBefore
+	}
+	if filters.UpdatedAfter != nil {
+		result["updated_after"] = *filters.UpdatedAfter
+	}
+	if filters.UpdatedBefore != nil {
+		result["updated_before"] = *filters.UpdatedBefore
+	}
+	if filters.DeadlineAfter != nil {
+		result["deadline_after"] = *filters.DeadlineAfter
+	}
+	if filters.DeadlineBefore != nil {
+		result["deadline_before"] = *filters.DeadlineBefore
+	}
+
+	return result
 }
 
 // convertGroupsToResponse converts core story groups to handler response

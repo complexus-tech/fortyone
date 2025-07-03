@@ -513,6 +513,55 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.List")
 	defer span.End()
 
+	// Legacy method - for backwards compatibility, convert map filters to CoreStoryFilters if needed
+	// If it's a simple filter map (old style), use the simple approach
+	// If it contains complex filters (new style from coreFiltersToMap), use the advanced approach
+
+	// Check if this is a complex filter (contains date filters or advanced filters)
+	hasComplexFilters := false
+	for key := range filters {
+		if key == "created_after" || key == "created_before" || key == "updated_after" ||
+			key == "updated_before" || key == "deadline_after" || key == "deadline_before" ||
+			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
+			key == "current_user_id" {
+			hasComplexFilters = true
+			break
+		}
+	}
+
+	if hasComplexFilters {
+		// Use the advanced filtering approach - convert back to CoreStoryFilters
+		coreFilters := mapToCoreFilters(filters, workspaceId)
+		query := r.buildSimpleStoriesQuery(coreFilters)
+		query += " ORDER BY s.created_at DESC"
+
+		params := r.buildQueryParams(coreFilters)
+
+		var stories []dbStory
+		stmt, err := r.db.PrepareNamedContext(ctx, query)
+		if err != nil {
+			errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return nil, err
+		}
+		defer stmt.Close()
+
+		if err := stmt.SelectContext(ctx, &stories, params); err != nil {
+			errMsg := fmt.Sprintf("Failed to retrieve stories from the database: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("stories not found"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return nil, err
+		}
+
+		span.AddEvent("stories retrieved.", trace.WithAttributes(
+			attribute.Int("story.count", len(stories)),
+		))
+
+		return toCoreStories(stories), nil
+	}
+
+	// Legacy simple filtering approach for backwards compatibility
 	query := `
 		SELECT
 			s.id,
@@ -610,6 +659,78 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	))
 
 	return toCoreStories(stories), nil
+}
+
+// mapToCoreFilters converts map[string]any filters back to CoreStoryFilters
+func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.CoreStoryFilters {
+	coreFilters := stories.CoreStoryFilters{
+		WorkspaceID: workspaceId,
+	}
+
+	// Handle CurrentUserID
+	if currentUserId, ok := filters["current_user_id"].(uuid.UUID); ok {
+		coreFilters.CurrentUserID = currentUserId
+	}
+
+	if statusIds, ok := filters["status_ids"].([]uuid.UUID); ok {
+		coreFilters.StatusIDs = statusIds
+	}
+	if assigneeIds, ok := filters["assignee_ids"].([]uuid.UUID); ok {
+		coreFilters.AssigneeIDs = assigneeIds
+	}
+	if reporterIds, ok := filters["reporter_ids"].([]uuid.UUID); ok {
+		coreFilters.ReporterIDs = reporterIds
+	}
+	if priorities, ok := filters["priorities"].([]string); ok {
+		coreFilters.Priorities = priorities
+	}
+	if teamIds, ok := filters["team_ids"].([]uuid.UUID); ok {
+		coreFilters.TeamIDs = teamIds
+	}
+	if sprintIds, ok := filters["sprint_ids"].([]uuid.UUID); ok {
+		coreFilters.SprintIDs = sprintIds
+	}
+	if labelIds, ok := filters["label_ids"].([]uuid.UUID); ok {
+		coreFilters.LabelIDs = labelIds
+	}
+	if parentId, ok := filters["parent_id"].(uuid.UUID); ok {
+		coreFilters.Parent = &parentId
+	}
+	if objectiveId, ok := filters["objective_id"].(uuid.UUID); ok {
+		coreFilters.Objective = &objectiveId
+	}
+	if epicId, ok := filters["epic_id"].(uuid.UUID); ok {
+		coreFilters.Epic = &epicId
+	}
+	if hasNoAssignee, ok := filters["has_no_assignee"].(bool); ok {
+		coreFilters.HasNoAssignee = &hasNoAssignee
+	}
+	if assignedToMe, ok := filters["assigned_to_me"].(bool); ok {
+		coreFilters.AssignedToMe = &assignedToMe
+	}
+	if createdByMe, ok := filters["created_by_me"].(bool); ok {
+		coreFilters.CreatedByMe = &createdByMe
+	}
+	if createdAfter, ok := filters["created_after"].(time.Time); ok {
+		coreFilters.CreatedAfter = &createdAfter
+	}
+	if createdBefore, ok := filters["created_before"].(time.Time); ok {
+		coreFilters.CreatedBefore = &createdBefore
+	}
+	if updatedAfter, ok := filters["updated_after"].(time.Time); ok {
+		coreFilters.UpdatedAfter = &updatedAfter
+	}
+	if updatedBefore, ok := filters["updated_before"].(time.Time); ok {
+		coreFilters.UpdatedBefore = &updatedBefore
+	}
+	if deadlineAfter, ok := filters["deadline_after"].(time.Time); ok {
+		coreFilters.DeadlineAfter = &deadlineAfter
+	}
+	if deadlineBefore, ok := filters["deadline_before"].(time.Time); ok {
+		coreFilters.DeadlineBefore = &deadlineBefore
+	}
+
+	return coreFilters
 }
 
 // BulkDelete removes the stories with the specified IDs.
@@ -1289,6 +1410,11 @@ func (r *repo) ListGroupedStories(ctx context.Context, query stories.CoreStoryQu
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListGroupedStories")
 	defer span.End()
 
+	// Handle "none" groupBy case - create a single group with all stories
+	if query.GroupBy == "none" {
+		return r.listGroupedStoriesNone(ctx, query)
+	}
+
 	// Use SQL-based grouping for better performance with large datasets
 	if r.shouldUseSQLGrouping(query) {
 		return r.listGroupedStoriesSQL(ctx, query)
@@ -1473,6 +1599,80 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	))
 
 	return groups, nil
+}
+
+// listGroupedStoriesNone handles the special case of groupBy=none - creates a single group with all stories
+func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesNone")
+	defer span.End()
+
+	// Use StoriesPerGroup as page size for pagination
+	pageSize := query.StoriesPerGroup
+	if pageSize == 0 {
+		pageSize = 15 // Default page size
+	}
+
+	// Calculate offset based on page (page 1 = offset 0)
+	page := query.Page
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	// Fetch one extra story to check if there are more
+	limit := pageSize + 1
+
+	// Build query with pagination
+	baseQuery := r.buildSimpleStoriesQuery(query.Filters)
+	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
+
+	sqlQuery := fmt.Sprintf("%s ORDER BY %s LIMIT %d OFFSET %d", baseQuery, orderByClause, limit, offset)
+
+	params := r.buildQueryParams(query.Filters)
+
+	var dbStories []dbStory
+	stmt, err := r.db.PrepareNamedContext(ctx, sqlQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare none group query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
+		return nil, fmt.Errorf("failed to execute none group query: %w", err)
+	}
+
+	// Check if we have more stories
+	hasMore := len(dbStories) > pageSize
+	if hasMore {
+		// Remove the extra story we fetched
+		dbStories = dbStories[:pageSize]
+	}
+
+	// Convert to CoreStoryList
+	coreStories := toCoreStories(dbStories)
+
+	// Calculate next page
+	nextPage := page + 1
+	if !hasMore {
+		nextPage = 0 // No more pages
+	}
+
+	// Create single group with key "none"
+	group := stories.CoreStoryGroup{
+		Key:         "none",
+		LoadedCount: len(coreStories),
+		HasMore:     hasMore,
+		Stories:     coreStories,
+		NextPage:    nextPage,
+	}
+
+	span.AddEvent("none grouped stories retrieved.", trace.WithAttributes(
+		attribute.Int("stories.count", len(coreStories)),
+		attribute.Int("page", page),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return []stories.CoreStoryGroup{group}, nil
 }
 
 // buildSimpleWhereClause builds a simplified WHERE clause without subqueries
@@ -2328,13 +2528,16 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 	// Build simplified query for list view (no N+1 subqueries)
 	baseQuery := r.buildSimpleStoriesQuery(query.Filters)
 
-	// Add group-specific filter based on groupBy type
-	if groupKey == "null" || groupKey == "" {
-		// Handle NULL values specially
-		baseQuery += fmt.Sprintf(" AND %s IS NULL", r.getGroupColumn(query.GroupBy))
-	} else {
-		baseQuery += fmt.Sprintf(" AND %s = :group_key", r.getGroupColumn(query.GroupBy))
+	// Add group-specific filter based on groupBy type, unless groupKey is "none"
+	if groupKey != "none" {
+		if groupKey == "null" || groupKey == "" {
+			// Handle NULL values specially
+			baseQuery += fmt.Sprintf(" AND %s IS NULL", r.getGroupColumn(query.GroupBy))
+		} else {
+			baseQuery += fmt.Sprintf(" AND %s = :group_key", r.getGroupColumn(query.GroupBy))
+		}
 	}
+	// If groupKey is "none", don't add any group-specific filters - return all matching stories
 
 	// Get paginated stories - fetch one extra to check if there are more
 	pageSize := query.PageSize
@@ -2343,7 +2546,7 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 	baseQuery += fmt.Sprintf(" ORDER BY %s LIMIT %d OFFSET %d", orderByClause, pageSize+1, offset)
 
 	params := r.buildQueryParams(query.Filters)
-	if groupKey != "null" && groupKey != "" {
+	if groupKey != "null" && groupKey != "" && groupKey != "none" {
 		params["group_key"] = groupKey
 	}
 
