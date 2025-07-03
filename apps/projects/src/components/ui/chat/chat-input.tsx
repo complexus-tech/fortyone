@@ -1,6 +1,6 @@
 import { Button, Box, Flex } from "ui";
 import type { ChangeEvent } from "react";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { PlusIcon } from "icons";
 
 type ChatInputProps = {
@@ -10,6 +10,17 @@ type ChatInputProps = {
   onStop: () => void;
   isLoading: boolean;
 };
+
+const placeholderTexts = [
+  "Ask, suggest, or request for anything...",
+  "What would you like to work on today?",
+  "Need help with your tasks?",
+  "Ready to tackle your goals?",
+  "How can I assist you?",
+  "Let's get things done together...",
+  "What's on your mind?",
+  "Time to be productive!",
+];
 
 const SendIcon = () => {
   return (
@@ -55,6 +66,8 @@ export const ChatInput = ({
   onStop,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -62,6 +75,43 @@ export const ChatInput = ({
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [value]);
+
+  useEffect(() => {
+    const showDuration = 4000;
+    const animationDuration = 300;
+
+    const cycle = () => {
+      // Show text for 4 seconds
+      setTimeout(() => {
+        setIsAnimating(true);
+
+        // Change text at the midpoint of animation (when it's most faded)
+        setTimeout(() => {
+          setCurrentPlaceholderIndex(
+            (prev) => (prev + 1) % placeholderTexts.length,
+          );
+        }, animationDuration / 2);
+
+        // Stop animation after full duration
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, animationDuration);
+      }, showDuration);
+    };
+
+    // Start the first cycle
+    const timeout = setTimeout(cycle, showDuration);
+
+    // Set up repeating interval
+    const interval = setInterval(() => {
+      cycle();
+    }, showDuration + animationDuration);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -73,16 +123,29 @@ export const ChatInput = ({
   return (
     <Box className="px-6 pb-6">
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50 dark:bg-dark-100/70">
-        <textarea
-          autoFocus
-          className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-lg shadow-none placeholder:text-gray focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-gray-200/60"
-          onChange={onChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask, suggest, or request for anything..."
-          ref={textareaRef}
-          rows={1}
-          value={value}
-        />
+        <Box className="relative">
+          <textarea
+            autoFocus
+            className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-lg shadow-none focus:outline-none focus:ring-0 dark:text-white"
+            onChange={onChange}
+            onKeyDown={handleKeyDown}
+            placeholder=""
+            ref={textareaRef}
+            rows={1}
+            value={value}
+          />
+          {!value && (
+            <div
+              className={`pointer-events-none absolute left-5 top-2 text-lg text-gray transition-all duration-200 ease-in-out dark:text-gray-200/60 ${
+                isAnimating
+                  ? "translate-y-1 opacity-0"
+                  : "translate-y-0 opacity-100"
+              }`}
+            >
+              {placeholderTexts[currentPlaceholderIndex]}
+            </div>
+          )}
+        </Box>
         <Flex align="center" className="pl-2 pr-3" gap={2} justify="between">
           <Button
             asIcon
