@@ -1483,6 +1483,12 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		jsonAggOrder = r.buildOrderByClauseWithAlias(query.OrderBy, query.OrderDirection, "ls")
 	}
 
+	// Build the join clauses for categories filter
+	var joinClauses string
+	if len(query.Filters.Categories) > 0 {
+		joinClauses = "INNER JOIN statuses stat ON s.status_id = stat.status_id"
+	}
+
 	// Simplified query that includes all possible groups
 	sqlQuery := fmt.Sprintf(`
 		WITH all_groups AS (
@@ -1504,6 +1510,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
 			FROM stories s
+			%s
 			%s
 		),
 		limited_stories AS (
@@ -1537,6 +1544,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		ORDER BY ag.sort_order, ag.group_key`,
 		allGroupsCTE,
 		groupColumn, groupColumn, rowNumberOrder,
+		joinClauses,
 		r.buildSimpleWhereClause(query.Filters),
 		limit, jsonAggOrder)
 
