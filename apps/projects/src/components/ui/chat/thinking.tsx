@@ -7,7 +7,7 @@ export const Thinking = ({
   message?: string;
 }) => {
   return (
-    <Text className="flex items-baseline gap-0.5" color="muted">
+    <Text as="div" className="flex items-baseline gap-0.5" color="muted">
       {message}
       <Flex className="gap-0.5">
         <Box className="size-[2.5px] animate-bounce rounded-full bg-current" />

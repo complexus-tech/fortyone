@@ -3,6 +3,7 @@ module.exports = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
   transpilePackages: ["ui", "icons"],
+  devIndicators: false,
   experimental: {
     reactCompiler: true,
     staleTimes: {
