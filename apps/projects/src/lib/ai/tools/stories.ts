@@ -42,6 +42,7 @@ export const storiesTool = tool({
         "list-due-today",
         "list-due-tomorrow",
         "debug-statuses",
+        "debug-pagination",
       ])
       .describe("The story operation to perform"),
 
@@ -453,6 +454,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories in the team.`,
           };
         }
@@ -1006,6 +1014,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories due today.`,
           };
         }
@@ -1060,6 +1075,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories due in the next week.`,
           };
         }
@@ -1111,6 +1133,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} overdue stories.`,
           };
         }
@@ -1166,6 +1195,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories due tomorrow.`,
           };
         }
@@ -1191,6 +1227,33 @@ export const storiesTool = tool({
               teamId: status.teamId,
             })),
             message: `Found ${allStatuses.length} total statuses across all teams. Categories: ${Array.from(new Set(allStatuses.map((s) => s.category))).join(", ")}`,
+          };
+        }
+
+        case "debug-pagination": {
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            ...filters,
+          };
+
+          const groupedResult = await getGroupedStories(session, params);
+
+          return {
+            success: true,
+            debug: {
+              totalGroups: groupedResult.meta.totalGroups,
+              groupsCount: groupedResult.groups.length,
+              groups: groupedResult.groups.map((group) => ({
+                key: group.key,
+                storiesCount: group.stories.length,
+                loadedCount: group.loadedCount,
+                hasMore: group.hasMore,
+                nextPage: group.nextPage,
+              })),
+              rawMeta: groupedResult.meta,
+            },
+            message: `Debug: Found ${groupedResult.groups.length} groups with total ${groupedResult.groups.reduce((sum, g) => sum + g.stories.length, 0)} stories. Meta shows ${groupedResult.meta.totalGroups} total groups.`,
           };
         }
       }

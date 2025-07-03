@@ -43,6 +43,7 @@ export type StoryActivity = {
 export type StoryGroup = {
   key: string;
   loadedCount: number;
+  totalCount: number;
   hasMore: boolean;
   stories: Story[];
   nextPage: number;

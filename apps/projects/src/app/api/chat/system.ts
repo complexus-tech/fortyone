@@ -331,10 +331,19 @@ When presenting tool results to users, filter out technical fields unless specif
 - Statuses: Show "In Progress" not "In Progress (id: uuid-456, color: #blue, orderIndex: 2)"
 - Stories: Show "Fix login bug (High priority, assigned to John)" not full object with all metadata
 
-**Pagination Awareness**: When story responses include pagination information, adjust your language:
-- If hasMore is true: Say "Here are some of your stories" or "Here's a summary of your stories" 
-- If hasMore is false: Say "You have X total stories" or "Here are all your stories"
-- Always mention if there are more results available and offer to show more
+**CRITICAL - Pagination Awareness**: ALWAYS check the pagination object in story responses and adjust your language accordingly:
+
+**When pagination.hasMore is TRUE**:
+- ❌ NEVER say "You have X total stories" 
+- ✅ ALWAYS say "Here are some of your stories" or "Here's a summary of your stories"
+- ✅ ALWAYS mention there are more results and direct them to "My Work" for full list and filtering
+- ✅ Example: "Here are some of your stories (showing 15 results). For the complete list with advanced filtering, check out My Work."
+
+**When pagination.hasMore is FALSE**:
+- ✅ Say "You have X total stories" or "Here are all your stories"
+- ✅ This means you're showing the complete list
+
+**Always check the pagination object first before choosing your response language.**
 
 Formatting Guidelines
 
