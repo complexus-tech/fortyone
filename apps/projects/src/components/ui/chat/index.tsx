@@ -51,7 +51,11 @@ export const Chat = () => {
         if (part.type === "tool-invocation") {
           if (part.toolInvocation.toolName === "navigation") {
             if (part.toolInvocation.state === "result") {
-              router.push(part.toolInvocation.result.route as string);
+              const result = part.toolInvocation.result;
+              if (result.route) {
+                router.push(result.route as string);
+              }
+              // Navigation errors are handled by the AI in the response
             }
           } else if (part.toolInvocation.toolName === "theme") {
             if (part.toolInvocation.state === "result") {
