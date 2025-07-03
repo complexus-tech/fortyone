@@ -1708,6 +1708,10 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
 	}
 
+	if len(filters.Categories) > 0 {
+		whereClauses = append(whereClauses, "stat.category = ANY(:categories)")
+	}
+
 	if len(filters.TeamIDs) > 0 {
 		whereClauses = append(whereClauses, "s.team_id = ANY(:team_ids)")
 	} else {
@@ -2065,6 +2069,9 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.Priorities) > 0 {
 		params["priorities"] = filters.Priorities
 	}
+	if len(filters.Categories) > 0 {
+		params["categories"] = filters.Categories
+	}
 	if len(filters.TeamIDs) > 0 {
 		params["team_ids"] = filters.TeamIDs
 	}
@@ -2182,6 +2189,13 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		`
 	}
 
+	// Add status join if categories filter is present
+	if len(filters.Categories) > 0 {
+		query += `
+			INNER JOIN statuses stat ON s.status_id = stat.status_id
+		`
+	}
+
 	// Build WHERE clauses
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
@@ -2204,6 +2218,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+
+	if len(filters.Categories) > 0 {
+		whereClauses = append(whereClauses, "stat.category = ANY(:categories)")
 	}
 
 	if len(filters.TeamIDs) > 0 {
@@ -2614,6 +2632,13 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		`
 	}
 
+	// Add status join if categories filter is present
+	if len(filters.Categories) > 0 {
+		query += `
+			INNER JOIN statuses stat ON s.status_id = stat.status_id
+		`
+	}
+
 	// Add label join if needed for filtering (but don't fetch label data)
 	if len(filters.LabelIDs) > 0 {
 		query += `
@@ -2643,6 +2668,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+
+	if len(filters.Categories) > 0 {
+		whereClauses = append(whereClauses, "stat.category = ANY(:categories)")
 	}
 
 	if len(filters.TeamIDs) > 0 {

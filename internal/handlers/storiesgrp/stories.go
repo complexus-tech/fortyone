@@ -1168,6 +1168,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 
 	// Parse string arrays (comma-separated)
 	query.Filters.Priorities = parseStringArray(r, "priorities")
+	query.Filters.Categories = parseStringArray(r, "categories")
 
 	// Parse single UUID parameters
 	query.Filters.Parent = parseUUIDParam(r, "parentId")
@@ -1310,6 +1311,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			AssigneeIDs:    query.Filters.AssigneeIDs,
 			ReporterIDs:    query.Filters.ReporterIDs,
 			Priorities:     query.Filters.Priorities,
+			Categories:     query.Filters.Categories,
 			TeamIDs:        query.Filters.TeamIDs,
 			SprintIDs:      query.Filters.SprintIDs,
 			LabelIDs:       query.Filters.LabelIDs,

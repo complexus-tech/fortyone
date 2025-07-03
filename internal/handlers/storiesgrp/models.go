@@ -244,6 +244,7 @@ type StoryFilters struct {
 	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
 	ReporterIDs   []uuid.UUID `json:"reporterIds"`
 	Priorities    []string    `json:"priorities"`
+	Categories    []string    `json:"categories"`
 	TeamIDs       []uuid.UUID `json:"teamIds"`
 	SprintIDs     []uuid.UUID `json:"sprintIds"`
 	LabelIDs      []uuid.UUID `json:"labelIds"`
