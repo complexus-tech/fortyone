@@ -49,7 +49,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:stories:view-options",
+    "teams:stories:view-options-v2",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(

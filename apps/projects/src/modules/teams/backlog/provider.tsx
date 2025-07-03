@@ -50,7 +50,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:backlog:view-options",
+    "teams:backlog:view-options-v2",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(

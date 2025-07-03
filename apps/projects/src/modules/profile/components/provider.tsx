@@ -28,7 +28,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "profile:view-options",
+    "profile:view-options-v2",
     initialOptions,
   );
   return (

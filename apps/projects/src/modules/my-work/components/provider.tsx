@@ -30,7 +30,7 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "my-work:view-options",
+    "my-work:view-options-v2",
     initialOptions,
   );
   return (

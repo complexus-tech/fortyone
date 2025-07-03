@@ -35,7 +35,7 @@ export const SprintStoriesProvider = ({
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "sprints:stories:view-options",
+    "sprints:stories:view-options-v2",
     initialOptions,
   );
   return (

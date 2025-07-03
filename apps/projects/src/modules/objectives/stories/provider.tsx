@@ -55,7 +55,7 @@ export const ObjectiveOptionsProvider = ({
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:objectives:stories:view-options",
+    "teams:objectives:stories:view-options-v2",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(
