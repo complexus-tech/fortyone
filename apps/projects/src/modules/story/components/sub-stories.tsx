@@ -105,6 +105,7 @@ export const SubStories = ({
             groups: [
               {
                 key: "none",
+                totalCount: subStories.length,
                 stories: subStories,
                 loadedCount: subStories.length,
                 hasMore: false,
