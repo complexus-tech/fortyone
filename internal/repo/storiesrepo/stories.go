@@ -1805,11 +1805,11 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	}
 
 	if filters.DeadlineAfter != nil {
-		whereClauses = append(whereClauses, "(s.start_date >= :deadline_after OR s.end_date >= :deadline_after)")
+		whereClauses = append(whereClauses, "(s.end_date >= :deadline_after)")
 	}
 
 	if filters.DeadlineBefore != nil {
-		whereClauses = append(whereClauses, "(s.start_date <= :deadline_before OR s.end_date <= :deadline_before)")
+		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
 	}
 
 	return "WHERE " + strings.Join(whereClauses, " AND ")
