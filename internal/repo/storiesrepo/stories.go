@@ -1540,6 +1540,31 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		}
 	}
 
+	// Date range filters
+	if filters.CreatedAfter != nil {
+		whereClauses = append(whereClauses, "s.created_at >= :created_after")
+	}
+
+	if filters.CreatedBefore != nil {
+		whereClauses = append(whereClauses, "s.created_at <= :created_before")
+	}
+
+	if filters.UpdatedAfter != nil {
+		whereClauses = append(whereClauses, "s.updated_at >= :updated_after")
+	}
+
+	if filters.UpdatedBefore != nil {
+		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.DeadlineAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :deadline_after OR s.end_date >= :deadline_after)")
+	}
+
+	if filters.DeadlineBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :deadline_before OR s.end_date <= :deadline_before)")
+	}
+
 	return "WHERE " + strings.Join(whereClauses, " AND ")
 }
 
@@ -1861,6 +1886,26 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 		params["epic_id"] = *filters.Epic
 	}
 
+	// Date range parameters
+	if filters.CreatedAfter != nil {
+		params["created_after"] = *filters.CreatedAfter
+	}
+	if filters.CreatedBefore != nil {
+		params["created_before"] = *filters.CreatedBefore
+	}
+	if filters.UpdatedAfter != nil {
+		params["updated_after"] = *filters.UpdatedAfter
+	}
+	if filters.UpdatedBefore != nil {
+		params["updated_before"] = *filters.UpdatedBefore
+	}
+	if filters.DeadlineAfter != nil {
+		params["deadline_after"] = *filters.DeadlineAfter
+	}
+	if filters.DeadlineBefore != nil {
+		params["deadline_before"] = *filters.DeadlineBefore
+	}
+
 	return params
 }
 
@@ -2006,6 +2051,31 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		if filters.CreatedByMe != nil && *filters.CreatedByMe {
 			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
 		}
+	}
+
+	// Date range filters
+	if filters.CreatedAfter != nil {
+		whereClauses = append(whereClauses, "s.created_at >= :created_after")
+	}
+
+	if filters.CreatedBefore != nil {
+		whereClauses = append(whereClauses, "s.created_at <= :created_before")
+	}
+
+	if filters.UpdatedAfter != nil {
+		whereClauses = append(whereClauses, "s.updated_at >= :updated_after")
+	}
+
+	if filters.UpdatedBefore != nil {
+		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.DeadlineAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :deadline_after OR s.end_date >= :deadline_after)")
+	}
+
+	if filters.DeadlineBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :deadline_before OR s.end_date <= :deadline_before)")
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
@@ -2414,6 +2484,31 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		if filters.CreatedByMe != nil && *filters.CreatedByMe {
 			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
 		}
+	}
+
+	// Date range filters
+	if filters.CreatedAfter != nil {
+		whereClauses = append(whereClauses, "s.created_at >= :created_after")
+	}
+
+	if filters.CreatedBefore != nil {
+		whereClauses = append(whereClauses, "s.created_at <= :created_before")
+	}
+
+	if filters.UpdatedAfter != nil {
+		whereClauses = append(whereClauses, "s.updated_at >= :updated_after")
+	}
+
+	if filters.UpdatedBefore != nil {
+		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.DeadlineAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :deadline_after OR s.end_date >= :deadline_after)")
+	}
+
+	if filters.DeadlineBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :deadline_before OR s.end_date <= :deadline_before)")
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")

@@ -174,6 +174,13 @@ type CoreStoryFilters struct {
 	CreatedByMe   *bool       `json:"createdByMe"`
 	CurrentUserID uuid.UUID   `json:"currentUserId"`
 	WorkspaceID   uuid.UUID   `json:"workspaceId"`
+	// Date range filters
+	CreatedAfter   *time.Time `json:"createdAfter"`
+	CreatedBefore  *time.Time `json:"createdBefore"`
+	UpdatedAfter   *time.Time `json:"updatedAfter"`
+	UpdatedBefore  *time.Time `json:"updatedBefore"`
+	DeadlineAfter  *time.Time `json:"deadlineAfter"`
+	DeadlineBefore *time.Time `json:"deadlineBefore"`
 }
 
 // CoreStoryQuery represents query parameters for grouped stories

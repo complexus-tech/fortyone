@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/comments"
@@ -1156,6 +1157,14 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 
+	// Parse date range parameters
+	query.Filters.CreatedAfter = parseDateParam(r, "createdAfter")
+	query.Filters.CreatedBefore = parseDateParam(r, "createdBefore")
+	query.Filters.UpdatedAfter = parseDateParam(r, "updatedAfter")
+	query.Filters.UpdatedBefore = parseDateParam(r, "updatedBefore")
+	query.Filters.DeadlineAfter = parseDateParam(r, "deadlineAfter")
+	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
+
 	return query, nil
 }
 
@@ -1226,6 +1235,24 @@ func parseBoolParam(r *http.Request, key string) *bool {
 	return nil
 }
 
+func parseDateParam(r *http.Request, key string) *time.Time {
+	if value := r.URL.Query().Get(key); value != "" {
+		// Support multiple date formats
+		formats := []string{
+			time.RFC3339,          // "2006-01-02T15:04:05Z07:00"
+			"2006-01-02",          // "2024-06-02"
+			"2006-01-02T15:04:05", // "2024-06-02T15:04:05"
+		}
+
+		for _, format := range formats {
+			if parsed, err := time.Parse(format, value); err == nil {
+				return &parsed
+			}
+		}
+	}
+	return nil
+}
+
 // isValidOrderBy validates the orderBy parameter
 func isValidOrderBy(orderBy string) bool {
 	validValues := []string{"created", "updated", "priority", "deadline"}
@@ -1246,21 +1273,27 @@ func isValidOrderDirection(direction string) bool {
 func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	return stories.CoreStoryQuery{
 		Filters: stories.CoreStoryFilters{
-			StatusIDs:     query.Filters.StatusIDs,
-			AssigneeIDs:   query.Filters.AssigneeIDs,
-			ReporterIDs:   query.Filters.ReporterIDs,
-			Priorities:    query.Filters.Priorities,
-			TeamIDs:       query.Filters.TeamIDs,
-			SprintIDs:     query.Filters.SprintIDs,
-			LabelIDs:      query.Filters.LabelIDs,
-			Parent:        query.Filters.Parent,
-			Objective:     query.Filters.Objective,
-			Epic:          query.Filters.Epic,
-			HasNoAssignee: query.Filters.HasNoAssignee,
-			AssignedToMe:  query.Filters.AssignedToMe,
-			CreatedByMe:   query.Filters.CreatedByMe,
-			CurrentUserID: uuid.Nil, // Will be set in handler
-			WorkspaceID:   uuid.Nil, // Will be set in handler
+			StatusIDs:      query.Filters.StatusIDs,
+			AssigneeIDs:    query.Filters.AssigneeIDs,
+			ReporterIDs:    query.Filters.ReporterIDs,
+			Priorities:     query.Filters.Priorities,
+			TeamIDs:        query.Filters.TeamIDs,
+			SprintIDs:      query.Filters.SprintIDs,
+			LabelIDs:       query.Filters.LabelIDs,
+			Parent:         query.Filters.Parent,
+			Objective:      query.Filters.Objective,
+			Epic:           query.Filters.Epic,
+			HasNoAssignee:  query.Filters.HasNoAssignee,
+			AssignedToMe:   query.Filters.AssignedToMe,
+			CreatedByMe:    query.Filters.CreatedByMe,
+			CreatedAfter:   query.Filters.CreatedAfter,
+			CreatedBefore:  query.Filters.CreatedBefore,
+			UpdatedAfter:   query.Filters.UpdatedAfter,
+			UpdatedBefore:  query.Filters.UpdatedBefore,
+			DeadlineAfter:  query.Filters.DeadlineAfter,
+			DeadlineBefore: query.Filters.DeadlineBefore,
+			CurrentUserID:  uuid.Nil, // Will be set in handler
+			WorkspaceID:    uuid.Nil, // Will be set in handler
 		},
 		GroupBy:         query.GroupBy,
 		OrderBy:         query.OrderBy,
