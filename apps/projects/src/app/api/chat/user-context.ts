@@ -18,7 +18,6 @@ export async function getUserContext(): Promise<string> {
   const currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
   const currentTime = now.toLocaleTimeString("en-US", {
     hour12: false,
-    timeZone: "UTC",
   });
 
   const teams = await getTeams(session);
@@ -33,8 +32,14 @@ export async function getUserContext(): Promise<string> {
     - Role: ${userRole}
     - Workspace: ${workspace?.name}
     - Current Date: ${currentDate}
-    - Current Time: ${currentTime} UTC
+    - Current Time: ${currentTime}
     - Teams: ${teamsList}
+
+    **Timezone:**
+    - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+
+    **Time**
+    - Do not display seconds in the time
 
     **"Me" Resolution:**
     When the user says "me", "my", "assign to me", "show my work", etc., use:

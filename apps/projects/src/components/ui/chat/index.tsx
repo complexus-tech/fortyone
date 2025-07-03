@@ -169,18 +169,19 @@ export const Chat = () => {
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[2rem] bg-white/85 font-medium outline-none backdrop-blur dark:bg-dark-200/90 md:mb-[2.6vh] md:mt-auto"
+          className="max-w-[36rem] rounded-[2rem] border border-gray-200/80 bg-white/85 font-medium outline-none backdrop-blur dark:bg-dark-200/90 md:mb-[2.6vh] md:mt-auto"
+          hideClose
           overlayClassName="justify-end pr-[1.5vh]"
         >
           <Dialog.Header className="px-6 py-5">
             <Dialog.Title className="text-lg">
-              <ChatHeader />
+              <ChatHeader setIsOpen={setIsOpen} />
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Description className="sr-only">
             Maya is your AI assistant.
           </Dialog.Description>
-          <Dialog.Body className="h-[85dvh] max-h-[85dvh] p-0">
+          <Dialog.Body className="h-[82dvh] max-h-[82dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages
                 isLoading={isLoading}
@@ -188,7 +189,7 @@ export const Chat = () => {
                 messages={messages}
                 value={input}
               />
-              {messages.length === 1 && (
+              {messages.length <= 1 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
               <ChatInput

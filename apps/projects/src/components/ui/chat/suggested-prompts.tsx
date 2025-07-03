@@ -14,7 +14,7 @@ type SuggestedPromptsProps = {
 
 export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
-    <Box className="px-6 pt-6">
+    <Box className="p-6">
       <Flex gap={3} justify="center" wrap>
         {SUGGESTED_PROMPTS.map((prompt, index) => (
           <Button
