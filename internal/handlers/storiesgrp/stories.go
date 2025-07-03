@@ -1419,6 +1419,7 @@ func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) 
 		appGroups[i] = StoryGroup{
 			Key:         group.Key,
 			LoadedCount: group.LoadedCount,
+			TotalCount:  group.TotalCount,
 			HasMore:     group.HasMore,
 			Stories:     appStories,
 			NextPage:    group.NextPage,

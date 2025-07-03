@@ -1508,6 +1508,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.updated_at,
 				s.end_date,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
+				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
 			FROM stories s
 			%s
@@ -1520,6 +1521,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		)
 		SELECT 
 			ag.group_key,
+			MAX(ls.total_count) as total_count,
 			COALESCE(
 				json_agg(
 					json_build_object(
@@ -1543,7 +1545,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		GROUP BY ag.group_key, ag.sort_order
 		ORDER BY ag.sort_order, ag.group_key`,
 		allGroupsCTE,
-		groupColumn, groupColumn, rowNumberOrder,
+		groupColumn, groupColumn, groupColumn, rowNumberOrder,
 		joinClauses,
 		r.buildSimpleWhereClause(query.Filters),
 		limit, jsonAggOrder)
@@ -1552,6 +1554,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 
 	type groupResult struct {
 		GroupKey    string          `db:"group_key"`
+		TotalCount  *int            `db:"total_count"`
 		StoriesJSON json.RawMessage `db:"stories_json"`
 	}
 
@@ -1590,10 +1593,15 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		}
 
 		loadedCount := len(coreStories)
+		totalCount := 0
+		if result.TotalCount != nil {
+			totalCount = *result.TotalCount
+		}
 
 		group := stories.CoreStoryGroup{
 			Key:         result.GroupKey,
 			LoadedCount: loadedCount,
+			TotalCount:  totalCount,
 			HasMore:     hasMore,
 			Stories:     coreStories,
 			NextPage:    2, // Next page for load more
@@ -1669,6 +1677,7 @@ func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreSto
 	group := stories.CoreStoryGroup{
 		Key:         "none",
 		LoadedCount: len(coreStories),
+		TotalCount:  len(coreStories), // For "none" grouping, loaded count equals total count
 		HasMore:     hasMore,
 		Stories:     coreStories,
 		NextPage:    nextPage,
@@ -2363,6 +2372,7 @@ func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGrou
 			groupMap[key] = &stories.CoreStoryGroup{
 				Key:         key,
 				LoadedCount: 0,
+				TotalCount:  0, // Will be calculated after all stories are processed
 				HasMore:     false,
 				Stories:     []stories.CoreStoryList{},
 				NextPage:    2, // Next page for load more
@@ -2384,9 +2394,17 @@ func (r *repo) groupStories(allStories []dbStory, groupBy string, storiesPerGrou
 		}
 	}
 
-	// Convert map to slice and sort according to group type
+	// Calculate total count for each group by counting all stories in that group
+	groupCounts := make(map[string]int)
+	for _, story := range allStories {
+		key := r.getGroupKey(story, groupBy)
+		groupCounts[key]++
+	}
+
+	// Convert map to slice and set total counts
 	var groups []stories.CoreStoryGroup
 	for _, group := range groupMap {
+		group.TotalCount = groupCounts[group.Key]
 		groups = append(groups, *group)
 	}
 

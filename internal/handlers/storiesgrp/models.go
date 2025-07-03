@@ -280,6 +280,7 @@ type StoryQuery struct {
 type StoryGroup struct {
 	Key         string         `json:"key"`
 	LoadedCount int            `json:"loadedCount"`
+	TotalCount  int            `json:"totalCount"`
 	HasMore     bool           `json:"hasMore"`
 	Stories     []AppStoryList `json:"stories"`
 	NextPage    int            `json:"nextPage"`

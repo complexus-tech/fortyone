@@ -200,6 +200,7 @@ type CoreStoryQuery struct {
 type CoreStoryGroup struct {
 	Key         string          `json:"key"`
 	LoadedCount int             `json:"loadedCount"`
+	TotalCount  int             `json:"totalCount"`
 	HasMore     bool            `json:"hasMore"`
 	Stories     []CoreStoryList `json:"stories"`
 	NextPage    int             `json:"nextPage"`
