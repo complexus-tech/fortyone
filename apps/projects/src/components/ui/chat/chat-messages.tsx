@@ -55,7 +55,10 @@ export const ChatMessages = ({
   }, [value]);
 
   return (
-    <Box className="flex-1 overflow-y-auto px-6 py-6" onScroll={handleScroll}>
+    <Box
+      className="hide-scrollbar flex-1 overflow-y-auto p-6"
+      onScroll={handleScroll}
+    >
       <Flex direction="column" gap={6}>
         {messages.map((message) => (
           <ChatMessage

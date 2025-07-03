@@ -19,6 +19,17 @@ html {
   }
 }
 
+@layer utilities {
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* For Chrome, Safari, and Opera */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
 @layer base {
   input,
   textarea,

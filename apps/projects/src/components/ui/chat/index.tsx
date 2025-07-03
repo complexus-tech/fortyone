@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { Dialog, Flex } from "ui";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "lib";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import {
@@ -29,6 +30,7 @@ export const Chat = () => {
   const { data: profile } = useProfile();
   const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
@@ -169,20 +171,46 @@ export const Chat = () => {
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[2rem] border border-gray-200/80 bg-white/85 font-medium outline-none backdrop-blur dark:bg-dark-200/90 md:mb-[2.6vh] md:mt-auto"
+          className={cn(
+            "max-w-[36rem] rounded-[2rem] border border-gray-200/80 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
+            {
+              "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 md:mb-0 md:mt-0":
+                isFullScreen,
+            },
+          )}
           hideClose
-          overlayClassName="justify-end pr-[1.5vh]"
+          overlayClassName={cn("justify-end pr-[1.5vh]", {
+            "pr-0 justify-center": isFullScreen,
+          })}
         >
-          <Dialog.Header className="px-6 py-5">
-            <Dialog.Title className="text-lg">
-              <ChatHeader setIsOpen={setIsOpen} />
+          <Dialog.Header
+            className={cn("flex h-[4.5rem] items-center px-6", {
+              "absolute left-0 right-0 top-0 bg-white/40 backdrop-blur dark:bg-dark-200/30":
+                isFullScreen,
+            })}
+          >
+            <Dialog.Title className="w-full text-lg">
+              <ChatHeader
+                isFullScreen={isFullScreen}
+                setIsFullScreen={setIsFullScreen}
+                setIsOpen={setIsOpen}
+              />
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Description className="sr-only">
             Maya is your AI assistant.
           </Dialog.Description>
-          <Dialog.Body className="h-[82dvh] max-h-[82dvh] p-0">
-            <Flex className="h-full" direction="column">
+          <Dialog.Body
+            className={cn("h-[82dvh] max-h-[82dvh] p-0", {
+              "h-dvh max-h-dvh md:h-dvh md:max-h-dvh": isFullScreen,
+            })}
+          >
+            <Flex
+              className={cn("h-full pt-16", {
+                "mx-auto h-dvh max-w-3xl": isFullScreen,
+              })}
+              direction="column"
+            >
               <ChatMessages
                 isLoading={isLoading}
                 isStreaming={status === "streaming"}

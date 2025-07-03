@@ -1,10 +1,14 @@
-import { CloseIcon, MaximizeIcon, PlusIcon } from "icons";
+import { CloseIcon, MaximizeIcon, MinimizeIcon, PlusIcon } from "icons";
 import { Flex, Button } from "ui";
 
 export const ChatHeader = ({
   setIsOpen,
+  isFullScreen,
+  setIsFullScreen,
 }: {
   setIsOpen: (isOpen: boolean) => void;
+  isFullScreen: boolean;
+  setIsFullScreen: (isFullScreen: boolean) => void;
 }) => {
   return (
     <Flex align="center" justify="between">
@@ -27,11 +31,21 @@ export const ChatHeader = ({
           asIcon
           color="tertiary"
           leftIcon={
-            <MaximizeIcon
-              className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-              strokeWidth={2.8}
-            />
+            isFullScreen ? (
+              <MinimizeIcon
+                className="h-[1.4rem] text-dark/70 dark:text-gray-200"
+                strokeWidth={2.8}
+              />
+            ) : (
+              <MaximizeIcon
+                className="h-[1.4rem] text-dark/70 dark:text-gray-200"
+                strokeWidth={2.8}
+              />
+            )
           }
+          onClick={() => {
+            setIsFullScreen(!isFullScreen);
+          }}
           size="sm"
           variant="naked"
         >
