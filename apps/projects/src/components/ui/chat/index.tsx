@@ -54,8 +54,8 @@ export const Chat = () => {
               const result = part.toolInvocation.result;
               if (result.route) {
                 router.push(result.route as string);
+                setIsOpen(false);
               }
-              // Navigation errors are handled by the AI in the response
             }
           } else if (part.toolInvocation.toolName === "theme") {
             if (part.toolInvocation.state === "result") {

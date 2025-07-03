@@ -8,13 +8,13 @@ export const navigation = tool({
     // Simple navigation (existing functionality)
     destination: z
       .enum([
-        "my-work",
-        "summary",
-        "analytics",
-        "sprints",
-        "notifications",
-        "settings",
-        "roadmaps",
+        "/my-work",
+        "/summary",
+        "/analytics",
+        "/sprints",
+        "/notifications",
+        "/settings",
+        "/roadmaps",
       ])
       .optional()
       .describe("Simple destination to navigate to"),
