@@ -12,9 +12,9 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     teamId,
     viewOptions.groupBy,
     {
-      statusIds: filters.statusIds ?? undefined,
       priorities: filters.priorities ?? undefined,
       assigneeIds: filters.assigneeIds ?? undefined,
+      categories: ["backlog"],
     },
   );
 

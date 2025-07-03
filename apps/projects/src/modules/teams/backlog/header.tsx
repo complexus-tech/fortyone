@@ -72,7 +72,9 @@ export const Header = ({
       <Flex align="center" gap={2}>
         <LayoutSwitcher
           layout={layout}
-          options={["list", "kanban"]}
+          options={
+            viewOptions.groupBy === "none" ? ["list"] : ["list", "kanban"]
+          }
           setLayout={setLayout}
         />
         <StoriesFilterButton
@@ -81,6 +83,7 @@ export const Header = ({
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
+          groupByOptions={["assignee", "priority", "none"]}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
