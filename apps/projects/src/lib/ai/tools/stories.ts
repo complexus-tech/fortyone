@@ -982,15 +982,17 @@ export const storiesTool = tool({
 
         case "list-due-today": {
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const todayISO = today.toISOString().split("T")[0];
+
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowISO = tomorrow.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
             groupBy: "none",
             assignedToMe: true,
-            deadlineAfter: today.toISOString(),
-            deadlineBefore: tomorrow.toISOString(),
+            deadlineAfter: todayISO,
+            deadlineBefore: tomorrowISO,
             ...filters,
           };
 
@@ -1048,15 +1050,17 @@ export const storiesTool = tool({
 
         case "list-due-soon": {
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const nextWeek = new Date(today);
+          const todayISO = today.toISOString().split("T")[0];
+
+          const nextWeek = new Date();
           nextWeek.setDate(nextWeek.getDate() + 7);
+          const nextWeekISO = nextWeek.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
             groupBy: "none",
             assignedToMe: true,
-            deadlineAfter: today.toISOString(),
-            deadlineBefore: nextWeek.toISOString(),
+            deadlineAfter: todayISO,
+            deadlineBefore: nextWeekISO,
             ...filters,
           };
 
@@ -1114,12 +1118,12 @@ export const storiesTool = tool({
 
         case "list-overdue": {
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const todayISO = today.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
             groupBy: "none",
             assignedToMe: true,
-            deadlineBefore: today.toISOString(),
+            deadlineBefore: todayISO,
             ...filters,
           };
 
@@ -1178,15 +1182,19 @@ export const storiesTool = tool({
         case "list-due-tomorrow": {
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(0, 0, 0, 0);
-          const dayAfterTomorrow = new Date(tomorrow);
-          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+          const tomorrowISO = tomorrow.toISOString().split("T")[0];
+
+          const dayAfterTomorrow = new Date();
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+          const dayAfterTomorrowISO = dayAfterTomorrow
+            .toISOString()
+            .split("T")[0];
 
           const params: GroupedStoryParams = {
             groupBy: "none",
             assignedToMe: true,
-            deadlineAfter: tomorrow.toISOString(),
-            deadlineBefore: dayAfterTomorrow.toISOString(),
+            deadlineAfter: tomorrowISO,
+            deadlineBefore: dayAfterTomorrowISO,
             ...filters,
           };
 
