@@ -12,14 +12,14 @@ type ChatInputProps = {
 };
 
 const placeholderTexts = [
-  "Ask, suggest, or request for anything...",
-  "What would you like to work on today?",
-  "Need help with your tasks?",
-  "Ready to tackle your goals?",
-  "How can I assist you?",
-  "Let's get things done together...",
-  "What's on your mind?",
-  "Time to be productive!",
+  "Show me my stories...",
+  "Take me to my work...",
+  "Show me the current sprint...",
+  "Open my objectives...",
+  "Show team analytics...",
+  "Navigate to the roadmap...",
+  "Find stories in progress...",
+  "Show my key results...",
 ];
 
 const SendIcon = () => {
