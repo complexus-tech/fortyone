@@ -178,7 +178,7 @@ export const Chat = () => {
           className={cn(
             "max-w-[36rem] rounded-[2rem] border border-gray-200/80 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
             {
-              "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 dark:bg-dark md:mb-0 md:mt-0":
+              "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 bg-white/80 backdrop-blur-lg dark:bg-dark/80 md:mb-0 md:mt-0":
                 isFullScreen,
             },
           )}
@@ -189,8 +189,7 @@ export const Chat = () => {
         >
           <Dialog.Header
             className={cn("flex h-[4.5rem] items-center px-6", {
-              "absolute left-0 right-0 top-0 bg-white/40 backdrop-blur dark:bg-dark/30":
-                isFullScreen,
+              "absolute left-0 right-0 top-0": isFullScreen,
             })}
           >
             <Dialog.Title className="w-full text-lg">
