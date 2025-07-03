@@ -11,9 +11,8 @@ export const ChatButton = ({ onOpen }: ChatButtonProps) => {
   return (
     <Box className="fixed bottom-8 right-8 z-50">
       <Button
-        className="bg-white/70 backdrop-blur dark:bg-dark-200/70 md:px-5"
-        color="tertiary"
-        leftIcon={<AiIcon />}
+        className="border-0 bg-gradient-to-r from-primary to-secondary dark:bg-primary dark:text-white md:px-5"
+        leftIcon={<AiIcon className="text-white dark:text-white" />}
         onClick={onOpen}
         rounded="full"
         size="lg"
