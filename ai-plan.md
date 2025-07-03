@@ -62,13 +62,20 @@ github.com/sashabaranov/go-openai v1.20.4
 ### Configuration Updates
 
 ```go
-// Add to WorkerConfig and API Config
-AI struct {
-    OpenAIAPIKey string `env:"APP_OPENAI_API_KEY"`
-    Model        string `default:"gpt-4o-mini" env:"APP_AI_MODEL"`
-    Enabled      bool   `default:"true" env:"APP_AI_ENABLED"`
-    MaxTokens    int    `default:"2000" env:"APP_AI_MAX_TOKENS"`
+// Add to cmd/worker/main.go WorkerConfig struct
+type WorkerConfig struct {
+    // ... existing config fields ...
+    AI struct {
+        OpenAIAPIKey string `env:"APP_OPENAI_API_KEY"`
+        Model        string `default:"gpt-4o-mini" env:"APP_AI_MODEL"`
+        Enabled      bool   `default:"true" env:"APP_AI_ENABLED"`
+        MaxTokens    int    `default:"2000" env:"APP_AI_MAX_TOKENS"`
+    }
+    // Update queues to include ai-insights
+    Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4,automation:3,ai-insights:4"`
 }
+
+// Add to cmd/api/main.go Config struct (similar AI struct)
 ```
 
 ### New Package Structure
@@ -228,42 +235,112 @@ _, err = scheduler.Register(
 )
 ```
 
-## 🌐 API Endpoints
-
-### Endpoint Definitions
+### Worker Task Handler Registration
 
 ```go
-// GET /api/v1/ai/predictions/sprints/{sprintId}
-// Response: Sprint completion prediction with risk factors
+// Add to cmd/worker/main.go after existing handler setup
+aiHandlers := taskhandlers.NewAIHandlers(log, db, cfg.AI)
 
-// GET /api/v1/ai/predictions/objectives/{objectiveId}
-// Response: Objective health prediction with recommendations
+// Register AI task handlers in mux
+mux.HandleFunc(tasks.TypeSprintPrediction, aiHandlers.HandleSprintPrediction)
+mux.HandleFunc(tasks.TypeObjectiveHealthCheck, aiHandlers.HandleObjectiveHealthCheck)
+mux.HandleFunc(tasks.TypeTeamInsights, aiHandlers.HandleTeamInsights)
+mux.HandleFunc(tasks.TypeUserSkillAnalysis, aiHandlers.HandleUserSkillAnalysis)
+mux.HandleFunc(tasks.TypeBulkAssignment, aiHandlers.HandleBulkAssignment)
+```
 
-// GET /api/v1/ai/insights/teams/{teamId}
-// Response: Team performance insights and capacity recommendations
+## 🌐 API Endpoints
 
-// POST /api/v1/ai/predictions/refresh
-// Trigger: Manual refresh of predictions (for testing/urgent needs)
+### Handler Group Registration
+
+```go
+// Add to internal/handlers/handlers.go BuildAllRoutes function
+aiinsightsgrp.Routes(aiinsightsgrp.Config{
+    DB:        cfg.DB,
+    Log:       cfg.Log,
+    SecretKey: cfg.SecretKey,
+    AIService: cfg.AIService, // New AI service dependency
+}, app)
+```
+
+### AI Insights Handler Group Structure
+
+```go
+// internal/handlers/aiinsightsgrp/routes.go
+package aiinsightsgrp
+
+type Config struct {
+    DB        *sqlx.DB
+    Log       *logger.Logger
+    SecretKey string
+    AIService *ai.Service // New dependency
+}
+
+func Routes(cfg Config, app *web.App) {
+    aiInsightsService := aiinsights.New(cfg.Log, aiinsightsrepo.New(cfg.Log, cfg.DB), cfg.AIService)
+    auth := mid.Auth(cfg.Log, cfg.SecretKey)
+    gzip := mid.Gzip(cfg.Log)
+
+    h := New(aiInsightsService, cfg.Log)
+
+    // Sprint Predictions
+    app.Get("/workspaces/{workspaceId}/ai/predictions/sprints/{sprintId}", h.GetSprintPrediction, auth, gzip)
+
+    // Objective Health Predictions
+    app.Get("/workspaces/{workspaceId}/ai/predictions/objectives/{objectiveId}", h.GetObjectivePrediction, auth, gzip)
+
+    // Team Performance Insights
+    app.Get("/workspaces/{workspaceId}/ai/insights/teams/{teamId}", h.GetTeamInsights, auth, gzip)
+
+    // Manual prediction refresh
+    app.Post("/workspaces/{workspaceId}/ai/predictions/refresh", h.RefreshPredictions, auth)
+
+    // Story Assignment Endpoints
+    app.Post("/workspaces/{workspaceId}/ai/assignments/suggest-realtime", h.SuggestAssignmentRealtime, auth)
+    app.Post("/workspaces/{workspaceId}/ai/assignments/stories/{storyId}/suggest", h.SuggestAssignment, auth, gzip)
+    app.Post("/workspaces/{workspaceId}/ai/assignments/stories/{storyId}/auto-assign", h.AutoAssignStory, auth)
+    app.Post("/workspaces/{workspaceId}/ai/assignments/sprints/{sprintId}/bulk-assign", h.BulkAssignSprint, auth)
+
+    // Team Skills and Workload
+    app.Get("/workspaces/{workspaceId}/ai/assignments/teams/{teamId}/skills", h.GetTeamSkills, auth, gzip)
+
+    // Assignment Feedback
+    app.Post("/workspaces/{workspaceId}/ai/assignments/feedback", h.SubmitAssignmentFeedback, auth)
+}
+
+// Handler methods follow your existing pattern:
+// func (h *Handlers) GetSprintPrediction(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+//     sprintIdParam := web.Params(r, "sprintId")
+//     workspaceIdParam := web.Params(r, "workspaceId")
+//     // ... parse and validate UUIDs like your existing handlers
+//     // ... call service methods
+//     // web.Respond(ctx, w, response, http.StatusOK)
+//     return nil
+// }
+```
+
+### Actual API Endpoints (Following Your Workspace Pattern)
+
+```go
+// Sprint Predictions
+GET /workspaces/{workspaceId}/ai/predictions/sprints/{sprintId}
+
+// Objective Health Predictions
+GET /workspaces/{workspaceId}/ai/predictions/objectives/{objectiveId}
+
+// Team Performance Insights
+GET /workspaces/{workspaceId}/ai/insights/teams/{teamId}
+
+// Manual Refresh
+POST /workspaces/{workspaceId}/ai/predictions/refresh
 
 // Assignment Endpoints
-// POST /api/v1/ai/assignments/suggest-realtime
-// Response: Real-time assignment suggestion as user types story details
-
-// POST /api/v1/ai/assignments/stories/{storyId}/suggest
-// Response: Assignment recommendations for existing story
-
-// POST /api/v1/ai/assignments/stories/{storyId}/auto-assign
-// Response: Auto-assign story to optimal team member
-
-// POST /api/v1/ai/assignments/sprints/{sprintId}/bulk-assign
-// Response: Bulk auto-assign all unassigned stories in sprint
-
-// GET /api/v1/ai/assignments/teams/{teamId}/skills
-// Response: Team member skill profiles and current workload
-
-// POST /api/v1/ai/assignments/feedback
-// Request: Assignment feedback (rating, outcome)
-// Response: Success confirmation
+POST /workspaces/{workspaceId}/ai/assignments/suggest-realtime
+POST /workspaces/{workspaceId}/ai/assignments/stories/{storyId}/suggest
+POST /workspaces/{workspaceId}/ai/assignments/stories/{storyId}/auto-assign
+POST /workspaces/{workspaceId}/ai/assignments/sprints/{sprintId}/bulk-assign
+GET  /workspaces/{workspaceId}/ai/assignments/teams/{teamId}/skills
+POST /workspaces/{workspaceId}/ai/assignments/feedback
 ```
 
 ## 📱 Consumption Methods
@@ -330,7 +407,8 @@ templates/ai/
 
 - Working sprint completion predictions
 - Database schema for AI insights
-- Basic API endpoint: `GET /api/v1/ai/predictions/sprints/{sprintId}`
+- AI insights handler group (`aiinsightsgrp`)
+- Basic API endpoint: `GET /workspaces/{workspaceId}/ai/predictions/sprints/{sprintId}`
 
 ### Phase 2: Core Predictions (Week 3-4)
 
