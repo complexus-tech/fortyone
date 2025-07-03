@@ -1,11 +1,11 @@
 import { Button, Box, Flex } from "ui";
 
 const SUGGESTED_PROMPTS = [
-  "⚡ Show me high priority items",
-  "🌙 Toggle color theme",
-  "👥 List all team members",
-  "📋 Show me my assigned stories",
-  "🔔 Show me unread notifications",
+  "Show me high priority items",
+  "Toggle color theme",
+  "List all team members",
+  "Show me my assigned stories",
+  "Show me unread notifications",
 ];
 
 type SuggestedPromptsProps = {

@@ -150,6 +150,7 @@ export const storiesTool = tool({
           .number()
           .min(1)
           .max(100)
+          .default(10)
           .optional()
           .describe("Number of stories to return per group (default: 20)"),
         page: z
@@ -334,6 +335,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories assigned to you.`,
           };
@@ -391,6 +397,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories created by you.`,
           };
@@ -460,6 +471,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories in the team.`,
           };
@@ -1020,6 +1036,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories due today.`,
           };
@@ -1081,6 +1102,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories due in the next week.`,
           };
@@ -1139,6 +1165,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} overdue stories.`,
           };
@@ -1201,6 +1232,11 @@ export const storiesTool = tool({
               groupsWithMore: groupedResult.groups.filter(
                 (group) => group.hasMore,
               ).length,
+              totalCount: groupedResult.groups.reduce(
+                (sum, group) => sum + group.totalCount,
+                0,
+              ),
+              showingCount: stories.length,
             },
             message: `Found ${stories.length} stories due tomorrow.`,
           };
@@ -1248,6 +1284,7 @@ export const storiesTool = tool({
                 key: group.key,
                 storiesCount: group.stories.length,
                 loadedCount: group.loadedCount,
+                totalCount: group.totalCount,
                 hasMore: group.hasMore,
                 nextPage: group.nextPage,
               })),
