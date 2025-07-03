@@ -1638,23 +1638,49 @@ func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreSto
 	// Fetch one extra story to check if there are more
 	limit := pageSize + 1
 
-	// Build query with pagination
+	// Build query with pagination and total count using window function
 	baseQuery := r.buildSimpleStoriesQuery(query.Filters)
-	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
 
-	sqlQuery := fmt.Sprintf("%s ORDER BY %s LIMIT %d OFFSET %d", baseQuery, orderByClause, limit, offset)
+	// Modify the SELECT clause to include the window function
+	modifiedQuery := strings.Replace(baseQuery,
+		"CAST('[]' AS json) AS labels",
+		"CAST('[]' AS json) AS labels, COUNT(*) OVER() as total_count", 1)
+
+	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
+	sqlQuery := fmt.Sprintf("%s ORDER BY %s LIMIT %d OFFSET %d", modifiedQuery, orderByClause, limit, offset)
 
 	params := r.buildQueryParams(query.Filters)
 
-	var dbStories []dbStory
+	// Struct to capture both story data and total count
+	type storyWithCount struct {
+		dbStory
+		TotalCount int `db:"total_count"`
+	}
+
+	var storiesWithCount []storyWithCount
 	stmt, err := r.db.PrepareNamedContext(ctx, sqlQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare none group query: %w", err)
 	}
 	defer stmt.Close()
 
-	if err := stmt.SelectContext(ctx, &dbStories, params); err != nil {
+	if err := stmt.SelectContext(ctx, &storiesWithCount, params); err != nil {
 		return nil, fmt.Errorf("failed to execute none group query: %w", err)
+	}
+
+	// Extract dbStories and total count
+	dbStories := make([]dbStory, len(storiesWithCount))
+	var totalCount int
+	for i, swc := range storiesWithCount {
+		dbStories[i] = swc.dbStory
+		if i == 0 {
+			totalCount = swc.TotalCount // All rows will have the same total count
+		}
+	}
+
+	// Handle empty results case
+	if len(storiesWithCount) == 0 {
+		totalCount = 0
 	}
 
 	// Check if we have more stories
@@ -1677,7 +1703,7 @@ func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreSto
 	group := stories.CoreStoryGroup{
 		Key:         "none",
 		LoadedCount: len(coreStories),
-		TotalCount:  len(coreStories), // For "none" grouping, loaded count equals total count
+		TotalCount:  totalCount,
 		HasMore:     hasMore,
 		Stories:     coreStories,
 		NextPage:    nextPage,
