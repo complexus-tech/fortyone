@@ -15,7 +15,11 @@ import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
-import type { GroupedStoriesResponse, Story } from "@/modules/stories/types";
+import type {
+  GroupedStoriesResponse,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -186,9 +190,27 @@ export const StoriesBoard = ({
         mutate({ storyId, payload });
       };
 
+      const { groupBy } = viewOptions;
+
       if (e.over) {
         const storyId = e.active.id.toString();
         const updatePayload: Partial<DetailedStory> = {};
+
+        if (groupBy === "status") {
+          const newStatus = e.over.id.toString();
+          updatePayload.statusId = newStatus;
+        }
+
+        if (groupBy === "priority") {
+          const newPriority = e.over.id as StoryPriority;
+          updatePayload.priority = newPriority;
+        }
+
+        if (groupBy === "assignee") {
+          const newAssignee = e.over.id as string;
+          updatePayload.assigneeId = newAssignee;
+        }
+
         // Only call the API if we have updates
         if (Object.keys(updatePayload).length > 0) {
           updateStory(storyId, updatePayload);
@@ -197,7 +219,7 @@ export const StoriesBoard = ({
 
       setActiveStory(null);
     },
-    [mutate],
+    [mutate, viewOptions],
   );
 
   const mouseSensor = useSensor(MouseSensor, {

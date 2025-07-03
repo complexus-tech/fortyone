@@ -59,6 +59,7 @@ const GroupedStories = ({
   return (
     <StoriesGroup
       className="-top-[0.5px]"
+      id={group.key}
       isInSearch={isInSearch}
       key={group.key}
       {...getGroupProps()}

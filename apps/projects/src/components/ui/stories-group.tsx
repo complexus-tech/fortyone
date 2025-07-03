@@ -6,38 +6,22 @@ import { Text } from "ui";
 import type { Story, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage, useTerminology } from "@/hooks";
-import type { State, StateCategory } from "@/types/states";
 import type { Member } from "@/types";
+import type { State } from "@/types/states";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
 
-const getId = ({
-  groupBy,
-  status,
-  assignee,
-  priority,
-}: {
-  groupBy: StoriesViewOptions["groupBy"];
-  status?: State;
-  assignee?: Member;
-  priority?: StoryPriority;
-}) => {
-  if (groupBy === "status") return status?.id;
-  if (groupBy === "assignee") return assignee?.id;
-  return priority;
-};
-
 const getGroupLabel = ({
   groupBy,
-  status,
   assignee,
   priority,
+  status,
 }: {
   groupBy: StoriesViewOptions["groupBy"];
-  status?: State;
   assignee?: Member;
   priority?: StoryPriority;
+  status?: State;
 }) => {
   if (groupBy === "status") return status?.name;
   if (groupBy === "assignee") return assignee?.username || "Unassigned";
@@ -46,6 +30,7 @@ const getGroupLabel = ({
 
 export const StoriesGroup = ({
   isInSearch,
+  id,
   stories,
   status,
   priority,
@@ -54,6 +39,7 @@ export const StoriesGroup = ({
   assignee,
   rowClassName,
 }: {
+  id: string;
   isInSearch?: boolean;
   stories: Story[];
   status?: State;
@@ -66,30 +52,10 @@ export const StoriesGroup = ({
   const { getTermDisplay } = useTerminology();
   const pathname = usePathname();
   const { groupBy, showEmptyGroups } = viewOptions;
-  const id = getId({ groupBy, status, assignee, priority })!;
 
   const collapseKey = pathname + id;
-  const defaultClosedStatuses: StateCategory[] = [
-    "cancelled",
-    "completed",
-    "paused",
-  ];
 
-  const getDefaultCollapsed = () => {
-    if (
-      groupBy === "status" &&
-      status &&
-      defaultClosedStatuses.includes(status.category)
-    ) {
-      return true;
-    }
-    return false;
-  };
-
-  const [isCollapsed, setIsCollapsed] = useLocalStorage(
-    collapseKey,
-    getDefaultCollapsed(),
-  );
+  const [isCollapsed, setIsCollapsed] = useLocalStorage(collapseKey, false);
   const { isOver, setNodeRef, active } = useDroppable({
     id,
   });
