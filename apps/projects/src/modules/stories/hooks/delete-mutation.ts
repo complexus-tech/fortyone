@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
-import type { Story } from "../types";
+import type { GroupedStoriesResponse } from "../types";
 import { useBulkRestoreStoryMutation } from "./restore-mutation";
 
 export const useBulkDeleteStoryMutation = () => {
@@ -39,8 +39,32 @@ export const useBulkDeleteStoryMutation = () => {
           } else {
             queryClient.setQueriesData(
               { queryKey: query.queryKey },
-              (data: Story[] = []) => {
-                return data.filter((story) => !storyIds.includes(story.id));
+              (data: GroupedStoriesResponse | undefined) => {
+                if (!data) return data;
+
+                return {
+                  ...data,
+                  groups: data.groups.map((group) => ({
+                    ...group,
+                    stories: group.stories.filter(
+                      (story) => !storyIds.includes(story.id),
+                    ),
+                    totalCount: Math.max(
+                      0,
+                      group.totalCount -
+                        group.stories.filter((story) =>
+                          storyIds.includes(story.id),
+                        ).length,
+                    ),
+                    loadedCount: Math.max(
+                      0,
+                      group.loadedCount -
+                        group.stories.filter((story) =>
+                          storyIds.includes(story.id),
+                        ).length,
+                    ),
+                  })),
+                };
               },
             );
           }

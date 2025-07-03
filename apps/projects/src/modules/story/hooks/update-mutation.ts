@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAnalytics } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
-import type { Story } from "@/modules/stories/types";
+import type { GroupedStoriesResponse } from "@/modules/stories/types";
 import type { SearchResponse } from "@/modules/search/types";
 import type { DetailedStory } from "../types";
 import { updateStoryAction } from "../actions/update-story";
@@ -33,7 +33,7 @@ export const useUpdateStoryMutation = () => {
         if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
           queryClient.cancelQueries({ queryKey: query.queryKey });
           if (queryKey.toLowerCase().includes("detail")) {
-            // try to update sub stories if they exist
+            // Handle sub stories (flat array) - try to update sub stories if they exist
             const parentStory = queryClient.getQueryData<DetailedStory>(
               query.queryKey,
             );
@@ -48,18 +48,28 @@ export const useUpdateStoryMutation = () => {
               });
             }
           } else {
-            queryClient.setQueryData<Story[]>(query.queryKey, (stories) => {
-              if (stories && stories.length > 0) {
-                return stories.map((story) =>
-                  story.id === storyId ? { ...story, ...payload } : story,
-                );
-              }
-            });
+            // Handle grouped stories (main story lists)
+            queryClient.setQueryData<GroupedStoriesResponse>(
+              query.queryKey,
+              (data) => {
+                if (!data) return data;
+
+                return {
+                  ...data,
+                  groups: data.groups.map((group) => ({
+                    ...group,
+                    stories: group.stories.map((story) =>
+                      story.id === storyId ? { ...story, ...payload } : story,
+                    ),
+                  })),
+                };
+              },
+            );
           }
         }
       });
 
-      // // Update search results if any exist
+      // Update search results if any exist
       queryClient
         .getQueriesData<SearchResponse>({ queryKey: ["search"] })
         .forEach(([queryKey, data]) => {

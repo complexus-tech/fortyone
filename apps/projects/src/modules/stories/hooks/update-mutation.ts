@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useAnalytics } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
-import type { Story } from "../types";
+import type { GroupedStoriesResponse } from "../types";
 import { bulkUpdateAction } from "../actions/bulk-update-stories";
 
 export const useBulkUpdateStoriesMutation = () => {
@@ -35,18 +35,31 @@ export const useBulkUpdateStoriesMutation = () => {
           previousQueryStates.set(queryKey, previousData);
 
           if (!queryKey.toLowerCase().includes("detail")) {
-            // Update story lists
-            queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-              stories?.map((story) =>
-                storyIds.includes(story.id) ? { ...story, ...payload } : story,
-              ),
+            // Handle grouped stories (main story lists)
+            queryClient.setQueryData<GroupedStoriesResponse>(
+              query.queryKey,
+              (data) => {
+                if (!data) return data;
+
+                return {
+                  ...data,
+                  groups: data.groups.map((group) => ({
+                    ...group,
+                    stories: group.stories.map((story) =>
+                      storyIds.includes(story.id)
+                        ? { ...story, ...payload }
+                        : story,
+                    ),
+                  })),
+                };
+              },
             );
           }
         }
       });
 
       if (storyId) {
-        // Update story's sub-stories
+        // Handle sub stories (flat array) - Update story's sub-stories
         const parentStory = queryClient.getQueryData<DetailedStory>(
           storyKeys.detail(storyId),
         );

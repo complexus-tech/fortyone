@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { storyKeys } from "@/modules/stories/constants";
-import type { Story } from "@/modules/stories/types";
+import type { GroupedStoriesResponse } from "@/modules/stories/types";
 import { labelKeys } from "@/constants/keys";
 import type { DetailedStory } from "../types";
 import { updateLabelsAction } from "../actions/update-labels";
@@ -31,10 +31,21 @@ export const useUpdateLabelsMutation = () => {
           query.queryKey.includes("stories") &&
           query.queryKey.includes("list")
         ) {
-          queryClient.setQueryData<Story[]>(query.queryKey, (stories) =>
-            stories?.map((story) =>
-              story.id === storyId ? { ...story, labels } : story,
-            ),
+          queryClient.setQueryData<GroupedStoriesResponse>(
+            query.queryKey,
+            (data) => {
+              if (!data) return data;
+
+              return {
+                ...data,
+                groups: data.groups.map((group) => ({
+                  ...group,
+                  stories: group.stories.map((story) =>
+                    story.id === storyId ? { ...story, labels } : story,
+                  ),
+                })),
+              };
+            },
           );
         }
       });
