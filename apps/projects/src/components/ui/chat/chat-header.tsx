@@ -24,7 +24,7 @@ export const ChatHeader = ({
         size="sm"
         variant="naked"
       >
-        <span className="sr-only">New</span>
+        <span className="sr-only">New chat</span>
       </Button>
       <Flex align="center" gap={4}>
         <Button
