@@ -1,3 +1,5 @@
+import type { StateCategory } from "@/types/states";
+
 export type StoryPriority =
   | "No Priority"
   | "Urgent"
@@ -86,6 +88,7 @@ export type GroupStoriesResponse = {
 export type GroupedStoryParams = {
   groupBy: "priority" | "status" | "assignee" | "none";
   teamIds?: string[];
+  categories?: StateCategory[];
   assignedToMe?: boolean;
   createdByMe?: boolean;
   storiesPerGroup?: number;
@@ -99,6 +102,12 @@ export type GroupedStoryParams = {
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
+  deadlineAfter?: string;
+  deadlineBefore?: string;
 };
 
 export type GroupStoryParams = {

@@ -2,8 +2,8 @@ import { z } from "zod";
 import { tool } from "ai";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
-import { getStories } from "@/modules/stories/queries/get-stories";
-import { getMyStories } from "@/modules/my-work/queries/get-stories";
+import { getGroupedStories } from "@/modules/stories/queries/get-grouped-stories";
+import type { GroupedStoryParams } from "@/modules/stories/types";
 import { getStory } from "@/modules/story/queries/get-story";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
@@ -37,6 +37,11 @@ export const storiesTool = tool({
         "bulk-delete-stories",
         "duplicate-story",
         "restore-story",
+        "list-due-soon",
+        "list-overdue",
+        "list-due-today",
+        "list-due-tomorrow",
+        "debug-statuses",
       ])
       .describe("The story operation to perform"),
 
@@ -97,6 +102,66 @@ export const storiesTool = tool({
           .boolean()
           .optional()
           .describe("Show only stories created by me"),
+        createdAfter: z
+          .string()
+          .optional()
+          .describe("Filter stories created after this date (ISO string)"),
+        createdBefore: z
+          .string()
+          .optional()
+          .describe("Filter stories created before this date (ISO string)"),
+        updatedAfter: z
+          .string()
+          .optional()
+          .describe("Filter stories updated after this date (ISO string)"),
+        updatedBefore: z
+          .string()
+          .optional()
+          .describe("Filter stories updated before this date (ISO string)"),
+        deadlineAfter: z
+          .string()
+          .optional()
+          .describe(
+            "Filter stories with deadlines after this date (ISO string)",
+          ),
+        deadlineBefore: z
+          .string()
+          .optional()
+          .describe(
+            "Filter stories with deadlines before this date (ISO string)",
+          ),
+        categories: z
+          .array(
+            z.enum([
+              "backlog",
+              "unstarted",
+              "started",
+              "paused",
+              "completed",
+              "cancelled",
+            ]),
+          )
+          .optional()
+          .describe(
+            "Filter stories by status categories (broader than specific status IDs)",
+          ),
+        storiesPerGroup: z
+          .number()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("Number of stories to return per group (default: 20)"),
+        page: z
+          .number()
+          .min(1)
+          .optional()
+          .describe("Page number for pagination (default: 1)"),
+        limit: z
+          .number()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("Maximum number of stories to return (default: 20)"),
       })
       .optional()
       .describe("Optional filters for story queries (not used for search)"),
@@ -217,10 +282,21 @@ export const storiesTool = tool({
 
       switch (action) {
         case "list-my-stories": {
-          const [stories, allStatuses] = await Promise.all([
-            getMyStories(session),
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
             getStatuses(session),
           ]);
+
+          // Extract stories from grouped result
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
 
           // Create status lookup map
           const statusMap = new Map(
@@ -251,18 +327,33 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories assigned to you.`,
           };
         }
 
         case "list-created-stories": {
-          const [stories, allStatuses] = await Promise.all([
-            getStories(session, {
-              reporterId: session.user!.id,
-              ...filters,
-            }),
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            createdByMe: true,
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
             getStatuses(session),
           ]);
+
+          // Extract stories from grouped result
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
 
           // Create status lookup map
           const statusMap = new Map(
@@ -293,6 +384,13 @@ export const storiesTool = tool({
               };
             }),
             count: stories.length,
+            pagination: {
+              totalGroups: groupedResult.meta.totalGroups,
+              hasMore: groupedResult.groups.some((group) => group.hasMore),
+              groupsWithMore: groupedResult.groups.filter(
+                (group) => group.hasMore,
+              ).length,
+            },
             message: `Found ${stories.length} stories created by you.`,
           };
         }
@@ -312,13 +410,19 @@ export const storiesTool = tool({
             };
           }
 
-          const [stories, allStatuses] = await Promise.all([
-            getStories(session, {
-              teamId,
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, {
+              groupBy: "none",
+              teamIds: teamId ? [teamId] : undefined,
               ...filters,
             }),
             getStatuses(session),
           ]);
+
+          // Extract stories from grouped result
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
 
           // Create status lookup map
           const statusMap = new Map(
@@ -849,6 +953,244 @@ export const storiesTool = tool({
           return {
             success: true,
             message: "Successfully restored the story.",
+          };
+        }
+
+        case "list-due-today": {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            deadlineAfter: today.toISOString(),
+            deadlineBefore: tomorrow.toISOString(),
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
+            getStatuses(session),
+          ]);
+
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
+
+          return {
+            success: true,
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
+            count: stories.length,
+            message: `Found ${stories.length} stories due today.`,
+          };
+        }
+
+        case "list-due-soon": {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const nextWeek = new Date(today);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            deadlineAfter: today.toISOString(),
+            deadlineBefore: nextWeek.toISOString(),
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
+            getStatuses(session),
+          ]);
+
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
+
+          return {
+            success: true,
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
+            count: stories.length,
+            message: `Found ${stories.length} stories due in the next week.`,
+          };
+        }
+
+        case "list-overdue": {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            deadlineBefore: today.toISOString(),
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
+            getStatuses(session),
+          ]);
+
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
+
+          return {
+            success: true,
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
+            count: stories.length,
+            message: `Found ${stories.length} overdue stories.`,
+          };
+        }
+
+        case "list-due-tomorrow": {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(0, 0, 0, 0);
+          const dayAfterTomorrow = new Date(tomorrow);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+
+          const params: GroupedStoryParams = {
+            groupBy: "none",
+            assignedToMe: true,
+            deadlineAfter: tomorrow.toISOString(),
+            deadlineBefore: dayAfterTomorrow.toISOString(),
+            ...filters,
+          };
+
+          const [groupedResult, allStatuses] = await Promise.all([
+            getGroupedStories(session, params),
+            getStatuses(session),
+          ]);
+
+          const stories = groupedResult.groups.flatMap(
+            (group) => group.stories,
+          );
+          const statusMap = new Map(
+            allStatuses.map((status) => [status.id, status]),
+          );
+
+          return {
+            success: true,
+            stories: stories.map((story) => {
+              const status = statusMap.get(story.statusId);
+              return {
+                id: story.id,
+                title: story.title,
+                priority: story.priority,
+                statusId: story.statusId,
+                status: status
+                  ? {
+                      name: status.name,
+                      color: status.color,
+                      category: status.category,
+                    }
+                  : null,
+                assigneeId: story.assigneeId,
+                teamId: story.teamId,
+                endDate: story.endDate,
+                createdAt: story.createdAt,
+                updatedAt: story.updatedAt,
+              };
+            }),
+            count: stories.length,
+            message: `Found ${stories.length} stories due tomorrow.`,
+          };
+        }
+
+        case "debug-statuses": {
+          const [allStatuses, teamStatuses] = await Promise.all([
+            getStatuses(session),
+            teamId ? getTeamStatuses(teamId, session) : Promise.resolve([]),
+          ]);
+
+          return {
+            success: true,
+            allStatuses: allStatuses.map((status) => ({
+              id: status.id,
+              name: status.name,
+              category: status.category,
+              teamId: status.teamId,
+            })),
+            teamStatuses: teamStatuses.map((status) => ({
+              id: status.id,
+              name: status.name,
+              category: status.category,
+              teamId: status.teamId,
+            })),
+            message: `Found ${allStatuses.length} total statuses across all teams. Categories: ${Array.from(new Set(allStatuses.map((s) => s.category))).join(", ")}`,
           };
         }
       }
