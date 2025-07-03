@@ -31,7 +31,7 @@ export type StoriesViewOptions = {
   displayColumns: DisplayColumn[];
 };
 
-const initialViewOptions: StoriesViewOptions = {
+const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "priority",
   showEmptyGroups: true,
@@ -50,13 +50,15 @@ const initialViewOptions: StoriesViewOptions = {
 };
 
 export const StoriesViewOptionsButton = ({
+  initialViewOptions,
   viewOptions,
   setViewOptions,
-  groupByOptions = ["status", "assignee", "priority"],
+  groupByOptions = ["status", "assignee", "priority", "none"],
   orderByOptions = ["priority", "deadline", "created", "updated"],
   layout,
   disabled,
 }: {
+  initialViewOptions?: StoriesViewOptions;
   viewOptions: StoriesViewOptions;
   setViewOptions: (v: StoriesViewOptions) => void;
   groupByOptions?: ViewOptionsGroupBy[];
@@ -274,7 +276,7 @@ export const StoriesViewOptionsButton = ({
             className="text-primary dark:text-primary"
             color="tertiary"
             onClick={() => {
-              setViewOptions(initialViewOptions);
+              setViewOptions(initialViewOptions ?? defaultViewOptions);
             }}
             size="sm"
             variant="naked"

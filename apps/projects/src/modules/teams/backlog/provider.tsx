@@ -7,6 +7,7 @@ import type { StoriesFilter } from "@/components/ui/stories-filter-button";
 
 type TeamOptions = {
   viewOptions: StoriesViewOptions;
+  initialViewOptions: StoriesViewOptions;
   setViewOptions: (value: StoriesViewOptions) => void;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
@@ -28,8 +29,8 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
       "Deadline",
       "Created",
       "Updated",
-      // "Sprint",
-      // "Labels",
+      "Sprint",
+      "Labels",
     ],
   };
   const initialFilters: StoriesFilter = {
@@ -49,11 +50,11 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:stories:view-options",
+    "teams:backlog:view-options",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(
-    "teams:stories:filters",
+    "teams:backlog:filters",
     initialFilters,
   );
 
@@ -68,6 +69,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
         filters,
         setFilters,
         resetFilters,
+        initialViewOptions: initialOptions,
       }}
     >
       {children}
