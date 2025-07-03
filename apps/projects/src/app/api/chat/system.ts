@@ -123,6 +123,26 @@ Advanced filtering available by status, priority, assignee, team, sprint, object
 - Sprint names → use sprints tool to get sprint IDs
 - Objective names → use objectives tool to get objective IDs
 
+**STATUS vs CATEGORY DISAMBIGUATION**: When users reference workflow states, distinguish between:
+- **Status Names**: Specific status like "To Do", "In Progress", "Done" → use statusIds filter
+- **Categories**: Broader workflow categories like "backlog", "started", "completed" → use categories filter
+
+**Intent Detection Rules**:
+1. **Clear Category Terms**: "backlog", "unstarted", "started", "paused", "completed", "cancelled" → always treat as categories
+2. **Common Status Names**: "To Do", "In Progress", "Done", "Review" → always treat as status names
+3. **Ambiguous Terms**: "Backlog" (could be status or category) → ask for clarification
+4. **Context Clues**: "stories in backlog" (category), "move to Backlog status" (status name)
+
+**When to Ask for Clarification**:
+- User says "Backlog" and there's both a "Backlog" status and "backlog" category
+- Ambiguous phrasing that could mean either
+- Multiple matches across status names and categories
+
+**Examples**:
+- "show me backlog stories" → categories: ["backlog"]
+- "show me stories in To Do" → find "To Do" status ID, use statusIds
+- "move to Backlog" → ask: "Do you mean the 'Backlog' status or stories in the backlog category?"
+
 Story actions include assign-stories-to-user for bulk assignment operations.
 
 Role-based permissions:
@@ -270,14 +290,23 @@ Example: "What do I have due today?"
 → Use stories tool with "list-due-today" action
 
 ### Category-Based Story Filtering
-Example: "Show me all work in progress"
+Example: "Show me all work in progress" (category)
 → Use stories tool with categories: ["started"] filter
 
-Example: "What's completed this week?"
+Example: "What's completed this week?" (category)
 → Use stories tool with categories: ["completed"] and date filters
 
-Example: "Show me backlog and unstarted work"
-→ Use stories tool with categories: ["backlog", "unstarted"] filter
+Example: "Show me backlog stories" (category)
+→ Use stories tool with categories: ["backlog"] filter
+
+### Status-Based Story Filtering  
+Example: "Show me stories in To Do" (specific status)
+→ Step 1: Use statuses tool to find "To Do" status ID
+→ Step 2: Use stories tool with statusIds filter
+
+Example: "Move story to In Progress" (specific status)
+→ Step 1: Use statuses tool to find "In Progress" status ID  
+→ Step 2: Use stories tool to update with statusId
 
 ### Debugging Category Issues
 If category filtering returns unexpected results (e.g., asking for "backlog" but getting "todo" statuses):
