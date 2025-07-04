@@ -10,7 +10,7 @@ import {
   TouchSensor,
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -158,7 +158,7 @@ export const StoriesBoard = ({
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
   const [groupedStories, setGroupedStories] = useState<
     GroupedStoriesResponse | undefined
-  >(allStories);
+  >(undefined);
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -271,6 +271,10 @@ export const StoriesBoard = ({
   const hasStories = groupedStories?.groups.some(
     (group) => group.stories.length > 0,
   );
+
+  useEffect(() => {
+    setGroupedStories(allStories);
+  }, [allStories]);
 
   return (
     <BoardContext.Provider value={boardContextValue}>
