@@ -134,7 +134,7 @@ const EmptyState = ({
 export const StoriesBoard = ({
   isInSearch,
   layout,
-  groupedStories,
+  groupedStories: allStories,
   className,
   viewOptions,
   rowClassName,
@@ -152,9 +152,13 @@ export const StoriesBoard = ({
     sprintId: string;
     teamId: string;
   }>();
+
   const features = useFeatures();
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
+  const [groupedStories, setGroupedStories] = useState<
+    GroupedStoriesResponse | undefined
+  >(allStories);
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -210,16 +214,20 @@ export const StoriesBoard = ({
           const newAssignee = e.over.id as string;
           updatePayload.assigneeId = newAssignee;
         }
-
         // Only call the API if we have updates
         if (Object.keys(updatePayload).length > 0) {
           updateStory(storyId, updatePayload);
+          // find the story in the groupedStories and update the story
+
+          if (groupedStories) {
+            // find the story in the groupedStories and update the story
+          }
         }
       }
 
       setActiveStory(null);
     },
-    [mutate, viewOptions],
+    [mutate, viewOptions, groupedStories],
   );
 
   const mouseSensor = useSensor(MouseSensor, {
