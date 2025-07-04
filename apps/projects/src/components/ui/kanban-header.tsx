@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip, Avatar } from "ui";
 import { PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import { useUserRole, useTerminology } from "@/hooks";
 import type { Member } from "@/types";
@@ -16,14 +16,14 @@ import { useBoard } from "./board-context";
 export const StoriesKanbanHeader = ({
   status,
   priority,
-  stories,
+  group,
   groupBy,
   member,
 }: {
   status?: State;
   priority?: StoryPriority;
   member?: Member;
-  stories: Story[];
+  group: StoryGroup;
   groupBy: ViewOptionsGroupBy;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -35,7 +35,7 @@ export const StoriesKanbanHeader = ({
   return (
     <Box
       className={cn({
-        hidden: stories.length === 0 && !showEmptyGroups,
+        hidden: group.loadedCount === 0 && !showEmptyGroups,
       })}
     >
       <Flex
@@ -77,7 +77,7 @@ export const StoriesKanbanHeader = ({
             </span>
           </Tooltip>
           <Text color="muted">
-            {stories.length}{" "}
+            {group.totalCount}{" "}
             {getTermDisplay("storyTerm", { variant: "plural" })}
           </Text>
         </Flex>

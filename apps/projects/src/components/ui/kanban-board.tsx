@@ -49,8 +49,8 @@ const GroupedKanbanHeader = ({
     <StoriesKanbanHeader
       groupBy={groupBy}
       {...getGroupProps()}
+      group={group}
       key={group.key}
-      stories={group.stories}
     />
   );
 };
