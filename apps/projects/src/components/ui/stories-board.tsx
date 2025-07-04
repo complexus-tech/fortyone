@@ -217,17 +217,24 @@ export const StoriesBoard = ({
         // Only call the API if we have updates
         if (Object.keys(updatePayload).length > 0) {
           updateStory(storyId, updatePayload);
-          // find the story in the groupedStories and update the story
-
-          if (groupedStories) {
-            // find the story in the groupedStories and update the story
+          if (groupBy !== "none") {
+            setGroupedStories((prev) =>
+              prev
+                ? getOptimisticallyUpdatedGroups(
+                    prev,
+                    storyId,
+                    updatePayload,
+                    e.over!.id.toString(),
+                  )
+                : prev,
+            );
           }
         }
       }
 
       setActiveStory(null);
     },
-    [mutate, viewOptions, groupedStories],
+    [mutate, viewOptions],
   );
 
   const mouseSensor = useSensor(MouseSensor, {
@@ -339,4 +346,35 @@ export const StoriesBoard = ({
       </Box>
     </BoardContext.Provider>
   );
+};
+
+export const getOptimisticallyUpdatedGroups = (
+  prev: GroupedStoriesResponse,
+  storyId: string,
+  update: Partial<DetailedStory>,
+  groupKey: string,
+): GroupedStoriesResponse => {
+  let storyToMove: Story | undefined;
+
+  const newGroups = prev.groups.map((group) => {
+    const stories = group.stories.filter((story) => {
+      if (story.id === storyId) {
+        storyToMove = { ...story, ...update };
+        return false;
+      }
+      return true;
+    });
+    return { ...group, stories };
+  });
+
+  if (!storyToMove) return prev;
+
+  const finalGroups = newGroups.map((group) => {
+    if (group.key === groupKey) {
+      return { ...group, stories: [storyToMove!, ...group.stories] };
+    }
+    return group;
+  });
+
+  return { ...prev, groups: finalGroups };
 };
