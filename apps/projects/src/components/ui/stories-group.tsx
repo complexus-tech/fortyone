@@ -3,7 +3,7 @@ import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
 import { Text } from "ui";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage, useTerminology } from "@/hooks";
 import type { Member } from "@/types";
@@ -31,7 +31,7 @@ const getGroupLabel = ({
 export const StoriesGroup = ({
   isInSearch,
   id,
-  stories,
+  group,
   status,
   priority,
   className,
@@ -41,7 +41,7 @@ export const StoriesGroup = ({
 }: {
   id: string;
   isInSearch?: boolean;
-  stories: Story[];
+  group: StoryGroup;
   status?: State;
   priority?: StoryPriority;
   assignee?: Member;
@@ -64,25 +64,25 @@ export const StoriesGroup = ({
     <div
       className={cn("border-0 border-transparent transition", {
         "border border-primary": isOver && active?.id,
-        hidden: !showEmptyGroups && stories.length === 0,
+        hidden: !showEmptyGroups && group.loadedCount === 0,
       })}
       ref={setNodeRef}
     >
       <StoriesHeader
         assignee={assignee}
         className={className}
+        group={group}
         groupBy={groupBy}
         isCollapsed={isCollapsed}
         priority={priority}
         setIsCollapsed={setIsCollapsed}
         status={status}
-        stories={stories}
       />
       {!isCollapsed && (
         <StoriesList
           isInSearch={isInSearch}
           rowClassName={rowClassName}
-          stories={stories}
+          stories={group.stories}
         />
       )}
       {!isCollapsed && (
@@ -90,10 +90,10 @@ export const StoriesGroup = ({
           <Text color="muted">
             Showing{" "}
             <span className="font-semibold">
-              {stories.length}{" "}
+              {group.stories.length}{" "}
               {getTermDisplay("storyTerm", {
-                variant: stories.length === 1 ? "singular" : "plural",
-              })}
+                variant: group.stories.length === 1 ? "singular" : "plural",
+              })}{" "}
             </span>{" "}
             with {groupBy.toLowerCase()}{" "}
             <span className="font-semibold">

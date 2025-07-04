@@ -78,7 +78,9 @@ export const StoriesKanbanHeader = ({
           </Tooltip>
           <Text color="muted">
             {group.totalCount}{" "}
-            {getTermDisplay("storyTerm", { variant: "plural" })}
+            {getTermDisplay("storyTerm", {
+              variant: group.totalCount === 1 ? "singular" : "plural",
+            })}
           </Text>
         </Flex>
         <Button

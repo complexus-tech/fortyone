@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Avatar, Button, Checkbox, Container, Flex, Text, Tooltip } from "ui";
 import { cn } from "lib";
 import { ArrowDownIcon, PlusIcon, StoryIcon } from "icons";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { ViewOptionsGroupBy } from "@/components/ui/stories-view-options-button";
 import type { State } from "@/types/states";
 import { useBoard } from "@/components/ui/board-context";
@@ -18,14 +18,14 @@ type StoryHeaderProps = {
   className?: string;
   priority?: StoryPriority;
   groupBy: ViewOptionsGroupBy;
-  stories: Story[];
+  group: StoryGroup;
   isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
   assignee?: Member;
 };
 export const StoriesHeader = ({
   className,
-  stories,
+  group,
   status,
   priority,
   groupBy,
@@ -33,13 +33,12 @@ export const StoriesHeader = ({
   setIsCollapsed,
   assignee,
 }: StoryHeaderProps) => {
-  const count = stories.length;
   const [isOpen, setIsOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
 
-  const groupedStories = stories.map((s) => s.id);
+  const groupedStories = group.stories.map((s) => s.id);
 
   return (
     <Container
@@ -47,7 +46,7 @@ export const StoriesHeader = ({
         "sticky top-0 z-[1] select-none border-b-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/80 dark:bg-dark-200/90",
         {
           "border-b-[0.5px] border-gray-100 dark:border-dark-50/60":
-            count === 0,
+            group.loadedCount === 0,
         },
         className,
       )}
@@ -134,7 +133,10 @@ export const StoriesHeader = ({
             </span>
           </Tooltip>
           <Text color="muted">
-            {count} {getTermDisplay("storyTerm", { variant: "plural" })}
+            {group.totalCount}{" "}
+            {getTermDisplay("storyTerm", {
+              variant: group.totalCount === 1 ? "singular" : "plural",
+            })}
           </Text>
         </Flex>
         <Flex gap={2}>

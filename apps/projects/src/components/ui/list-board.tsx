@@ -63,8 +63,8 @@ const GroupedStories = ({
       isInSearch={isInSearch}
       key={group.key}
       {...getGroupProps()}
+      group={group}
       rowClassName={rowClassName}
-      stories={group.stories}
       viewOptions={viewOptions}
     />
   );
