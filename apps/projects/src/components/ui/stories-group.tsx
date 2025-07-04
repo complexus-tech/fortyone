@@ -2,7 +2,7 @@
 import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
-import { Text } from "ui";
+import { Button, Text } from "ui";
 import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage, useTerminology } from "@/hooks";
@@ -86,20 +86,34 @@ export const StoriesGroup = ({
         />
       )}
       {!isCollapsed && (
-        <RowWrapper>
-          <Text color="muted">
-            Showing{" "}
-            <span className="font-semibold">
-              {group.stories.length}{" "}
+        <RowWrapper className="grid h-12 grid-cols-3 py-0">
+          {group.hasMore ? (
+            <Button
+              className="hover:underline"
+              color="tertiary"
+              size="sm"
+              variant="naked"
+            >
+              Load more{" "}
               {getTermDisplay("storyTerm", {
-                variant: group.stories.length === 1 ? "singular" : "plural",
-              })}{" "}
-            </span>{" "}
-            with {groupBy.toLowerCase()}{" "}
-            <span className="font-semibold">
-              {getGroupLabel({ groupBy, status, assignee, priority })}
-            </span>
-          </Text>
+                variant: "plural",
+              })}
+            </Button>
+          ) : (
+            <Text color="muted">
+              Showing{" "}
+              <span className="font-semibold">
+                {group.stories.length}{" "}
+                {getTermDisplay("storyTerm", {
+                  variant: group.stories.length === 1 ? "singular" : "plural",
+                })}{" "}
+              </span>{" "}
+              with {groupBy.toLowerCase()}{" "}
+              <span className="font-semibold">
+                {getGroupLabel({ groupBy, status, assignee, priority })}
+              </span>
+            </Text>
+          )}
         </RowWrapper>
       )}
     </div>
