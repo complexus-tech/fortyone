@@ -2,12 +2,17 @@
 import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
-import { Button, Text } from "ui";
-import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
+import { Text } from "ui";
+import type {
+  StoryGroup,
+  StoryPriority,
+  GroupStoryParams,
+} from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage, useTerminology } from "@/hooks";
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
+import { useGroupStoriesInfinite } from "@/modules/stories/hooks/use-group-stories-infinite";
 import { StoriesHeader } from "./stories-header";
 import { StoriesList } from "./stories-list";
 import { RowWrapper } from "./row-wrapper";
@@ -54,11 +59,27 @@ export const StoriesGroup = ({
   const { groupBy, showEmptyGroups } = viewOptions;
 
   const collapseKey = pathname + id;
-
   const [isCollapsed, setIsCollapsed] = useLocalStorage(collapseKey, false);
-  const { isOver, setNodeRef, active } = useDroppable({
-    id,
-  });
+  const { isOver, setNodeRef, active } = useDroppable({ id });
+
+  const params: GroupStoryParams = {
+    groupKey: group.key,
+    groupBy,
+    // Add other params as needed from viewOptions/filters
+  };
+
+  const {
+    data: infiniteData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useGroupStoriesInfinite(params, group);
+
+  const allStories = infiniteData.pages.flatMap((page) => page.stories);
+
+  const handleLoadMore = () => {
+    fetchNextPage();
+  };
 
   return (
     <div
@@ -82,30 +103,29 @@ export const StoriesGroup = ({
         <StoriesList
           isInSearch={isInSearch}
           rowClassName={rowClassName}
-          stories={group.stories}
+          stories={allStories}
         />
       )}
       {!isCollapsed && (
         <RowWrapper className="grid h-12 grid-cols-3 py-0">
-          {group.hasMore ? (
-            <Button
-              className="hover:underline"
-              color="tertiary"
-              size="sm"
-              variant="naked"
+          {hasNextPage ? (
+            <button
+              className="flex hover:underline"
+              disabled={isFetchingNextPage}
+              onClick={handleLoadMore}
+              type="button"
             >
-              Load more{" "}
-              {getTermDisplay("storyTerm", {
-                variant: "plural",
-              })}
-            </Button>
+              {isFetchingNextPage
+                ? "Loading..."
+                : `Load more ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+            </button>
           ) : (
             <Text color="muted">
               Showing{" "}
               <span className="font-semibold">
-                {group.stories.length}{" "}
+                {allStories.length}{" "}
                 {getTermDisplay("storyTerm", {
-                  variant: group.stories.length === 1 ? "singular" : "plural",
+                  variant: allStories.length === 1 ? "singular" : "plural",
                 })}{" "}
               </span>{" "}
               with {groupBy.toLowerCase()}{" "}

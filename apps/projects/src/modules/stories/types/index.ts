@@ -113,7 +113,7 @@ export type GroupedStoryParams = {
 
 export type GroupStoryParams = {
   groupKey: string;
-  groupBy: "priority" | "status" | "assignee";
+  groupBy: "priority" | "status" | "assignee" | "none";
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;
