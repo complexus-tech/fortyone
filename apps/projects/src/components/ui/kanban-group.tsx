@@ -1,6 +1,7 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { cn } from "lib";
 import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
@@ -96,12 +97,19 @@ export const KanbanGroup = ({
 
   const allStories = infiniteData.pages.flatMap((page) => page.stories);
 
+  const [triggerRef, { entry }] = useIntersectionObserver({
+    threshold: 0,
+    rootMargin: "300px",
+  });
+
+  useEffect(() => {
+    if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const handleNavigate = (newStoryId: string) => {
     setStoryId(newStoryId);
-  };
-
-  const handleLoadMore = () => {
-    fetchNextPage();
   };
 
   return (
@@ -117,20 +125,12 @@ export const KanbanGroup = ({
         />
       ))}
 
-      {hasNextPage ? (
-        <Button
-          align="center"
-          className="relative min-h-[2.35rem] w-[340px] border-gray-100/80 dark:border-dark-200 dark:bg-dark-200/60"
-          color="tertiary"
-          disabled={isFetchingNextPage}
-          fullWidth
-          onClick={handleLoadMore}
-          size="sm"
-        >
-          {isFetchingNextPage
-            ? "Loading..."
-            : `Load more ${getTermDisplay("storyTerm", { variant: "plural" })}`}
-        </Button>
+      {hasNextPage ? <div className="h-1 w-full" ref={triggerRef} /> : null}
+
+      {isFetchingNextPage ? (
+        <div className="flex justify-center py-4">
+          <div className="dark:border-gray-600 h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary dark:border-t-primary" />
+        </div>
       ) : null}
 
       <Button
