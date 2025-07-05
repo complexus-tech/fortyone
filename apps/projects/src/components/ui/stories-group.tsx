@@ -2,7 +2,7 @@
 import { cn } from "lib";
 import { useDroppable } from "@dnd-kit/core";
 import { usePathname } from "next/navigation";
-import { Text } from "ui";
+import { Text, Checkbox, Flex, Skeleton } from "ui";
 import type {
   StoryGroup,
   StoryPriority,
@@ -106,6 +106,27 @@ export const StoriesGroup = ({
           stories={allStories}
         />
       )}
+      {isFetchingNextPage
+        ? Array.from({ length: 8 }).map((_, i) => (
+            <RowWrapper className="pointer-events-none relative gap-4" key={i}>
+              <Checkbox className="absolute left-6 hidden opacity-70 md:block" />
+              <Flex align="center" className="relative shrink pl-1" gap={3}>
+                <Skeleton className="h-5 w-10" />
+                <Skeleton
+                  className={cn("h-5 w-24 md:w-32", {
+                    "w-40 md:w-56": i % 2 === 0,
+                  })}
+                />
+              </Flex>
+              <Flex align="center" className="shrink-0" gap={4}>
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="hidden h-5 w-16 md:block" />
+                <Skeleton className="hidden h-5 w-20 md:block" />
+                <Skeleton className="size-8 rounded-full" />
+              </Flex>
+            </RowWrapper>
+          ))
+        : null}
       {!isCollapsed && (
         <RowWrapper className="grid h-12 grid-cols-3 py-0">
           {hasNextPage ? (
