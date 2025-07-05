@@ -36,5 +36,6 @@ export const useGroupStoriesInfinite = (
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     initialPageParam: initialGroup.nextPage,
     initialData,
+    enabled: initialGroup.hasMore,
   });
 };
