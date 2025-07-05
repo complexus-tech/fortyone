@@ -12,6 +12,9 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { data: groupedStories, isPending } = useSprintStoriesGrouped(
     sprintId,
     viewOptions.groupBy,
+    {
+      orderBy: viewOptions.orderBy,
+    },
   );
 
   if (isPending) {

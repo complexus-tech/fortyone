@@ -14,7 +14,7 @@ const MyWorkContext = createContext<MyWork | undefined>(undefined);
 export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
-    orderBy: "priority",
+    orderBy: "created",
     showEmptyGroups: true,
     displayColumns: [
       "ID",

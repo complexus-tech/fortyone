@@ -88,6 +88,8 @@ export type GroupStoriesResponse = {
 
 export type GroupedStoryParams = {
   groupBy: "priority" | "status" | "assignee" | "none";
+  orderBy?: "created" | "updated" | "deadline" | "priority";
+  orderDirection?: "asc" | "desc";
   teamIds?: string[];
   categories?: StateCategory[];
   assignedToMe?: boolean;
@@ -114,6 +116,8 @@ export type GroupedStoryParams = {
 export type GroupStoryParams = {
   groupKey: string;
   groupBy: "priority" | "status" | "assignee" | "none";
+  orderBy?: "created" | "updated" | "deadline" | "priority";
+  orderDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;

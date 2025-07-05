@@ -18,7 +18,7 @@ const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
 export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
-    orderBy: "priority",
+    orderBy: "created",
     showEmptyGroups: true,
     displayColumns: [
       "ID",

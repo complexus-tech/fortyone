@@ -22,6 +22,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     {
       createdByMe: tab === "created" || tab === "all" ? true : undefined,
       assignedToMe: tab === "assigned" || tab === "all" ? true : undefined,
+      orderBy: viewOptions.orderBy,
     },
   );
 
