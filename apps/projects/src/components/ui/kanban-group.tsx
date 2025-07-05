@@ -3,7 +3,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { cn } from "lib";
-import { Box, Button } from "ui";
+import { Box, Button, Skeleton } from "ui";
 import { PlusIcon } from "icons";
 import type {
   StoryGroup,
@@ -42,7 +42,7 @@ const List = ({
     >
       <div
         className={cn(
-          "flex h-full w-[340px] flex-col gap-4 overflow-y-auto rounded-[0.45rem] pb-6 transition",
+          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
             "bg-gray-100/20 dark:bg-dark-200/10": totalStories === 0,
             "bg-gray-100/40 dark:bg-dark-200/50": isOver,
@@ -125,12 +125,17 @@ export const KanbanGroup = ({
         />
       ))}
 
-      {hasNextPage ? <div className="h-1 w-full" ref={triggerRef} /> : null}
+      {hasNextPage ? <div className="h-6 w-full" ref={triggerRef} /> : null}
 
       {isFetchingNextPage ? (
-        <div className="flex justify-center py-4">
-          <div className="dark:border-gray-600 h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary dark:border-t-primary" />
-        </div>
+        <Box>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton
+              className="mb-2 h-28 shadow-sm dark:shadow-none"
+              key={index}
+            />
+          ))}
+        </Box>
       ) : null}
 
       <Button
