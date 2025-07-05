@@ -25,7 +25,7 @@ const placeholderTexts = [
 const SendIcon = () => {
   return (
     <svg
-      className="h-6 w-auto text-white"
+      className="h-6 w-auto text-white dark:text-dark"
       fill="none"
       height="24"
       viewBox="0 0 24 24"
@@ -43,7 +43,7 @@ const SendIcon = () => {
 const StopIcon = () => {
   return (
     <svg
-      className="h-5 w-auto text-white"
+      className="h-5 w-auto text-white dark:text-dark"
       fill="none"
       height="24"
       viewBox="0 0 24 24"
@@ -160,6 +160,7 @@ export const ChatInput = ({
           <Button
             asIcon
             className="mb-0.5 md:h-11"
+            color="invert"
             onClick={() => {
               if (isLoading) {
                 onStop();
