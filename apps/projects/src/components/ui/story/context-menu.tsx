@@ -16,6 +16,7 @@ import { useCopyToClipboard } from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useDuplicateStoryMutation } from "@/modules/story/hooks/duplicate-mutation";
+import type { DetailedStory } from "@/modules/story/types";
 import { ContextMenuItem } from "./context-menu-item";
 
 export const StoryContextMenu = ({
@@ -60,7 +61,7 @@ export const StoryContextMenu = ({
                 priority: story.priority,
                 startDate: story.startDate,
                 endDate: story.endDate,
-              },
+              } as DetailedStory,
             });
           },
         },
