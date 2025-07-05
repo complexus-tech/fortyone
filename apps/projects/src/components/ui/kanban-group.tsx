@@ -4,10 +4,15 @@ import { useDroppable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { Box, Button } from "ui";
 import { PlusIcon } from "icons";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  StoryGroup,
+  StoryPriority,
+  GroupStoryParams,
+} from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import type { Member } from "@/types";
 import { useTerminology } from "@/hooks";
+import { useGroupStoriesInfinite } from "@/modules/stories/hooks/use-group-stories-infinite";
 import { StoryCard } from "./story/card";
 import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
@@ -51,13 +56,13 @@ const List = ({
 };
 
 export const KanbanGroup = ({
-  stories,
+  group,
   status,
   priority,
   member,
   groupBy = "status",
 }: {
-  stories: Story[];
+  group: StoryGroup;
   status?: State;
   priority?: StoryPriority;
   member?: Member;
@@ -76,13 +81,32 @@ export const KanbanGroup = ({
   const [storyId, setStoryId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const params: GroupStoryParams = {
+    groupKey: group.key,
+    groupBy,
+    // Add other params as needed from viewOptions/filters
+  };
+
+  const {
+    data: infiniteData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useGroupStoriesInfinite(params, group);
+
+  const allStories = infiniteData.pages.flatMap((page) => page.stories);
+
   const handleNavigate = (newStoryId: string) => {
     setStoryId(newStoryId);
   };
 
+  const handleLoadMore = () => {
+    fetchNextPage();
+  };
+
   return (
-    <List id={id} key={id} totalStories={stories.length}>
-      {stories.map((story) => (
+    <List id={id} key={id} totalStories={allStories.length}>
+      {allStories.map((story) => (
         <StoryCard
           handleStoryClick={(storyId) => {
             setStoryId(storyId);
@@ -92,6 +116,23 @@ export const KanbanGroup = ({
           story={story}
         />
       ))}
+
+      {hasNextPage ? (
+        <Button
+          align="center"
+          className="relative min-h-[2.35rem] w-[340px] border-gray-100/80 dark:border-dark-200 dark:bg-dark-200/60"
+          color="tertiary"
+          disabled={isFetchingNextPage}
+          fullWidth
+          onClick={handleLoadMore}
+          size="sm"
+        >
+          {isFetchingNextPage
+            ? "Loading..."
+            : `Load more ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+        </Button>
+      ) : null}
+
       <Button
         align="center"
         className="relative min-h-[2.35rem] w-[340px] border-gray-100/80 dark:border-dark-200 dark:bg-dark-200/60"
@@ -105,6 +146,7 @@ export const KanbanGroup = ({
         <PlusIcon className="relative -top-[0.3px] h-[1.15rem] w-auto" /> New{" "}
         {getTermDisplay("storyTerm", { capitalize: true })}
       </Button>
+
       <NewStoryDialog
         assigneeId={member?.id}
         isOpen={isOpen}
@@ -117,7 +159,7 @@ export const KanbanGroup = ({
           isOpen={isDialogOpen}
           onNavigate={handleNavigate}
           setIsOpen={setIsDialogOpen}
-          stories={stories}
+          stories={allStories}
           storyId={storyId}
         />
       ) : null}
