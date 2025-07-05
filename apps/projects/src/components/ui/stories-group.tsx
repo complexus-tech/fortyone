@@ -141,7 +141,7 @@ export const StoriesGroup = ({
                 : `Load more ${getTermDisplay("storyTerm", { variant: "plural" })}`}
             </button>
           ) : (
-            <Text color="muted">
+            <Text color="muted" className="flex-1">
               Showing{" "}
               <span className="font-semibold">
                 {allStories.length}{" "}
