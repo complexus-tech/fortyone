@@ -18,6 +18,7 @@ import {
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useProfile } from "@/lib/hooks/profile";
+import { useMediaQuery } from "@/hooks";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -34,6 +35,7 @@ export const Chat = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const name = profile?.fullName.split(" ")[0] || profile?.username;
 
@@ -179,17 +181,17 @@ export const Chat = () => {
             "max-w-[36rem] rounded-[2rem] border border-gray-200/90 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
             {
               "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 bg-white/80 backdrop-blur-lg dark:bg-dark/80 md:mb-0 md:mt-0":
-                isFullScreen,
+                isFullScreen || isMobile,
             },
           )}
           hideClose
           overlayClassName={cn("justify-end pr-[1.5vh]", {
-            "pr-0 justify-center": isFullScreen,
+            "pr-0 justify-center": isFullScreen || isMobile,
           })}
         >
           <Dialog.Header
             className={cn("flex h-[4.5rem] items-center px-6", {
-              "absolute left-0 right-0 top-0": isFullScreen,
+              "absolute left-0 right-0 top-0": isFullScreen || isMobile,
             })}
           >
             <Dialog.Title className="w-full text-lg">
@@ -205,12 +207,12 @@ export const Chat = () => {
           </Dialog.Description>
           <Dialog.Body
             className={cn("h-[82dvh] max-h-[82dvh] p-0", {
-              "h-dvh max-h-dvh md:h-dvh md:max-h-dvh": isFullScreen,
+              "h-dvh max-h-dvh md:h-dvh md:max-h-dvh": isFullScreen || isMobile,
             })}
           >
             <Flex
               className={cn("h-full", {
-                "mx-auto h-dvh max-w-3xl pt-16": isFullScreen,
+                "mx-auto h-dvh max-w-3xl pt-16": isFullScreen || isMobile,
               })}
               direction="column"
             >

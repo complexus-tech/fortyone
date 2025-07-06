@@ -11,16 +11,16 @@ export const ChatButton = ({ onOpen }: ChatButtonProps) => {
   return (
     <Box className="fixed bottom-8 right-8 z-50">
       <Button
-        className="gap-1.5 md:px-5 md:pl-4"
+        className="gap-1.5 rounded-2xl px-3 md:rounded-full md:px-5 md:pl-4"
         color="invert"
         leftIcon={
           <AiIcon className="relative -top-[2px] h-6 text-white dark:text-dark" />
         }
         onClick={onOpen}
-        rounded="full"
         size="lg"
       >
-        Plan with Maya
+        <span className="hidden md:inline">Plan with Maya</span>
+        <span className="inline md:hidden">Ask Maya</span>
       </Button>
     </Box>
   );

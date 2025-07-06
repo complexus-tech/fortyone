@@ -128,7 +128,7 @@ export const StoriesGroup = ({
           ))
         : null}
       {!isCollapsed && (
-        <RowWrapper className="grid h-12 grid-cols-3 py-0">
+        <RowWrapper className="grid h-12 py-0 md:grid-cols-3">
           {hasNextPage ? (
             <button
               className="flex hover:underline"
@@ -141,7 +141,7 @@ export const StoriesGroup = ({
                 : `Load more ${getTermDisplay("storyTerm", { variant: "plural" })}`}
             </button>
           ) : (
-            <Text color="muted" className="flex-1">
+            <Text color="muted">
               Showing{" "}
               <span className="font-semibold">
                 {allStories.length}{" "}
