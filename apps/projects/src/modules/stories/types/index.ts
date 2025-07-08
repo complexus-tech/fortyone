@@ -63,6 +63,12 @@ export type StoryFilters = {
   hasNoAssignee?: boolean | null;
   assignedToMe?: boolean;
   createdByMe?: boolean;
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
+  deadlineAfter?: string;
+  deadlineBefore?: string;
 };
 
 export type GroupedStoriesResponse = {
@@ -71,6 +77,8 @@ export type GroupedStoriesResponse = {
     totalGroups: number;
     filters: StoryFilters;
     groupBy: "priority" | "status" | "assignee" | "none";
+    orderBy: "created" | "updated" | "deadline" | "priority";
+    orderDirection: "asc" | "desc";
   };
 };
 
@@ -84,6 +92,8 @@ export type GroupStoriesResponse = {
     nextPage: number;
   };
   filters: StoryFilters;
+  orderBy: "created" | "updated" | "deadline" | "priority";
+  orderDirection: "asc" | "desc";
 };
 
 export type GroupedStoryParams = {
