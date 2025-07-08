@@ -151,8 +151,8 @@ export const StoryProperties = ({
               rounded={asKanban ? "md" : "xl"}
               size="xs"
               style={{
-                backgroundColor: hexToRgba(status?.color),
-                borderColor: hexToRgba(status?.color),
+                backgroundColor: hexToRgba(status?.color, 0.1),
+                borderColor: hexToRgba(status?.color, 0.2),
               }}
               type="button"
               variant="outline"
@@ -328,7 +328,7 @@ export const StoryProperties = ({
           }
         >
           <Badge
-            className="h-[1.85rem] cursor-pointer text-[0.95rem]"
+            className="h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem]"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {
