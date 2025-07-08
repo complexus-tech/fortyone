@@ -239,7 +239,7 @@ const updateInfiniteQuery = (
     return {
       ...data,
       pages: [
-        { ...firstPage, stories: [...firstPage.stories, movedStory] },
+        { ...firstPage, stories: [movedStory, ...firstPage.stories] },
         ...data.pages.slice(1),
       ],
     };
