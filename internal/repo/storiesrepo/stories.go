@@ -1922,12 +1922,7 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 				SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
 				FROM statuses s
 				WHERE s.workspace_id = :workspace_id
-				AND EXISTS (
-					SELECT 1 FROM stories st 
-					WHERE st.status_id = s.status_id 
-					AND st.team_id = ANY(:team_ids)
-					AND st.deleted_at IS NULL
-				)
+				AND s.team_id = ANY(:team_ids)
 			`
 		} else {
 			// If no team filter, get statuses used by teams user belongs to
@@ -1936,11 +1931,10 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 				FROM statuses s
 				WHERE s.workspace_id = :workspace_id
 				AND EXISTS (
-					SELECT 1 FROM stories st 
-					INNER JOIN team_members tm ON tm.team_id = st.team_id
-					WHERE st.status_id = s.status_id 
+					SELECT 1
+					FROM team_members tm
+					WHERE tm.team_id = s.team_id
 					AND tm.user_id = :current_user_id
-					AND st.deleted_at IS NULL
 				)
 			`
 		}
