@@ -222,7 +222,7 @@ const updateInfiniteQuery = (
       pages: [
         {
           ...firstPage,
-          stories: [updatedStory, ...firstPage.stories],
+          stories: [...firstPage.stories, updatedStory],
         },
         ...data.pages.slice(1),
       ],
