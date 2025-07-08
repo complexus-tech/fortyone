@@ -9,7 +9,7 @@ import type {
   StoryGroup,
   StoryPriority,
   GroupStoryParams,
-  StoryFilters,
+  GroupedStoriesResponse,
 } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import type { Member } from "@/types";
@@ -60,14 +60,14 @@ const List = ({
 
 export const KanbanGroup = ({
   group,
-  filters,
+  meta,
   status,
   priority,
   member,
   groupBy = "status",
 }: {
   group: StoryGroup;
-  filters: StoryFilters;
+  meta: GroupedStoriesResponse["meta"];
   status?: State;
   priority?: StoryPriority;
   member?: Member;
@@ -88,7 +88,7 @@ export const KanbanGroup = ({
 
   const params: GroupStoryParams = {
     groupKey: group.key,
-    ...groupFilters(filters),
+    ...groupFilters(meta),
     groupBy,
   };
 

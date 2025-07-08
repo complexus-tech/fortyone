@@ -7,7 +7,7 @@ import type {
   StoryGroup,
   StoryPriority,
   GroupStoryParams,
-  StoryFilters,
+  GroupedStoriesResponse,
 } from "@/modules/stories/types";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage, useTerminology } from "@/hooks";
@@ -38,7 +38,7 @@ const getGroupLabel = ({
 export const StoriesGroup = ({
   isInSearch,
   id,
-  filters,
+  meta,
   group,
   status,
   priority,
@@ -48,7 +48,7 @@ export const StoriesGroup = ({
   rowClassName,
 }: {
   id: string;
-  filters: StoryFilters;
+  meta: GroupedStoriesResponse["meta"];
   isInSearch?: boolean;
   group: StoryGroup;
   status?: State;
@@ -68,7 +68,7 @@ export const StoriesGroup = ({
 
   const params: GroupStoryParams = {
     groupKey: group.key,
-    ...groupFilters(filters),
+    ...groupFilters(meta),
     groupBy,
   };
 

@@ -4,7 +4,6 @@ import type {
   GroupedStoriesResponse,
   StoryPriority,
   StoryGroup,
-  StoryFilters,
 } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
@@ -28,18 +27,16 @@ import { BodyContainer } from "../shared/body";
 // };
 
 const GroupedStories = ({
-  filters,
+  meta,
   group,
-  groupBy,
   isInSearch,
   viewOptions,
   members,
   statuses,
   rowClassName,
 }: {
-  filters: StoryFilters;
+  meta: GroupedStoriesResponse["meta"];
   group: StoryGroup;
-  groupBy: GroupedStoriesResponse["meta"]["groupBy"];
   isInSearch?: boolean;
   viewOptions: StoriesViewOptions;
   members: Member[];
@@ -47,7 +44,7 @@ const GroupedStories = ({
   rowClassName?: string;
 }) => {
   const getGroupProps = () => {
-    switch (groupBy) {
+    switch (meta.groupBy) {
       case "priority":
         return { priority: group.key as StoryPriority };
       case "status":
@@ -66,8 +63,8 @@ const GroupedStories = ({
       isInSearch={isInSearch}
       key={group.key}
       {...getGroupProps()}
-      filters={filters}
       group={group}
+      meta={meta}
       rowClassName={rowClassName}
       viewOptions={viewOptions}
     />
@@ -109,12 +106,11 @@ export const ListBoard = ({
     >
       {groupedStories.groups.map((group) => (
         <GroupedStories
-          filters={groupedStories.meta.filters}
           group={group}
-          groupBy={groupedStories.meta.groupBy}
           isInSearch={isInSearch}
           key={group.key}
           members={members}
+          meta={groupedStories.meta}
           rowClassName={rowClassName}
           statuses={statuses}
           viewOptions={viewOptions}

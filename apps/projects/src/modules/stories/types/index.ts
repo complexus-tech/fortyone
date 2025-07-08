@@ -143,4 +143,10 @@ export type GroupStoryParams = {
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
+  deadlineAfter?: string;
+  deadlineBefore?: string;
 };
