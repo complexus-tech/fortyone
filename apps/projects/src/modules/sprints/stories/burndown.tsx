@@ -10,11 +10,13 @@ import {
 } from "recharts";
 import { useTheme } from "next-themes";
 import { Box, Text } from "ui";
+import { cn } from "lib";
 import { useTerminology } from "@/hooks";
 import type { SprintAnalytics } from "../types";
 
 type BurndownChartProps = {
   burndownData: SprintAnalytics["burndown"];
+  className?: string;
 };
 
 const CustomTooltip = ({
@@ -96,7 +98,10 @@ const CustomXAxisTick = ({
   );
 };
 
-export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
+export const BurndownChart = ({
+  burndownData,
+  className,
+}: BurndownChartProps) => {
   const { resolvedTheme } = useTheme();
 
   // Memoized tick component to avoid recreation on every render
@@ -151,7 +156,7 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
   });
 
   return (
-    <div className="h-60 w-full">
+    <Box className={cn("h-64 w-full", className)}>
       <ResponsiveContainer height="100%" width="100%">
         <ComposedChart
           data={chartData}
@@ -231,6 +236,6 @@ export const BurndownChart = ({ burndownData }: BurndownChartProps) => {
           />
         </ComposedChart>
       </ResponsiveContainer>
-    </div>
+    </Box>
   );
 };

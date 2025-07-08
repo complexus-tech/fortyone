@@ -18,9 +18,11 @@ type ChatMessageProps = {
 };
 
 const RenderMessage = ({
+  isFullScreen,
   message,
   isStreaming,
 }: {
+  isFullScreen: boolean;
   message: Message;
   isStreaming?: boolean;
 }) => {
@@ -88,7 +90,12 @@ const RenderMessage = ({
                     >
                       Burndown graph
                     </Text>
-                    <BurndownChart burndownData={result?.analytics?.burndown} />
+                    <BurndownChart
+                      burndownData={result?.analytics?.burndown}
+                      className={cn("h-72", {
+                        "h-80": isFullScreen,
+                      })}
+                    />
                   </Box>
                 );
               }
@@ -140,7 +147,11 @@ export const ChatMessage = ({
             "bg-transparent p-0": message.role === "assistant",
           })}
         >
-          <RenderMessage isStreaming={isStreaming} message={message} />
+          <RenderMessage
+            isFullScreen={isFullScreen}
+            isStreaming={isStreaming}
+            message={message}
+          />
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">
           {createdAt.toLocaleTimeString([], {
