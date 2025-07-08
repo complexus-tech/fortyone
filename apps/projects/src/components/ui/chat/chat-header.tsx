@@ -1,5 +1,5 @@
 import { CloseIcon, MaximizeIcon, MinimizeIcon, PlusIcon } from "icons";
-import { Flex, Button } from "ui";
+import { Flex, Button, Badge, Tooltip } from "ui";
 import { useMediaQuery } from "@/hooks";
 
 export const ChatHeader = ({
@@ -14,21 +14,31 @@ export const ChatHeader = ({
   const isDesktop = useMediaQuery("(min-width: 768px)");
   return (
     <Flex align="center" justify="between">
-      <Button
-        asIcon
-        color="tertiary"
-        disabled
-        leftIcon={
-          <PlusIcon
-            className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-            strokeWidth={2.8}
-          />
-        }
-        size="sm"
-        variant="naked"
-      >
-        <span className="sr-only">New chat</span>
-      </Button>
+      <Flex align="center" gap={2}>
+        <Button
+          asIcon
+          color="tertiary"
+          disabled
+          leftIcon={
+            <PlusIcon
+              className="h-[1.4rem] text-dark/70 dark:text-gray-200"
+              strokeWidth={2.8}
+            />
+          }
+          size="sm"
+          variant="naked"
+        >
+          <span className="sr-only">New chat</span>
+        </Button>
+        <Tooltip
+          className="max-w-60"
+          title="
+        Maya is under beta testing, some responses may not be accurate.
+        "
+        >
+          <Badge className="px-1.5 text-base">Beta</Badge>
+        </Tooltip>
+      </Flex>
       <Flex align="center" gap={4}>
         {isDesktop ? (
           <Button
