@@ -9,6 +9,7 @@ import type {
   StoryGroup,
   StoryPriority,
   GroupStoryParams,
+  StoryFilters,
 } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import type { Member } from "@/types";
@@ -19,6 +20,7 @@ import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { NewStoryDialog } from "./new-story-dialog";
 import { useBoard } from "./board-context";
 import { StoryDialog } from "./story-dialog";
+import { groupFilters } from "./group-filters";
 
 const List = ({
   children,
@@ -58,12 +60,14 @@ const List = ({
 
 export const KanbanGroup = ({
   group,
+  filters,
   status,
   priority,
   member,
   groupBy = "status",
 }: {
   group: StoryGroup;
+  filters: StoryFilters;
   status?: State;
   priority?: StoryPriority;
   member?: Member;
@@ -84,8 +88,8 @@ export const KanbanGroup = ({
 
   const params: GroupStoryParams = {
     groupKey: group.key,
+    ...groupFilters(filters),
     groupBy,
-    // Add other params as needed from viewOptions/filters
   };
 
   const {

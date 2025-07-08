@@ -7,6 +7,7 @@ import type {
   GroupedStoriesResponse,
   StoryPriority,
   StoryGroup,
+  StoryFilters,
 } from "@/modules/stories/types";
 import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
@@ -56,12 +57,14 @@ const GroupedKanbanHeader = ({
 };
 
 const GroupedKanbanStories = ({
+  filters,
   group,
   groupBy,
   members,
   statuses,
 }: {
   group: StoryGroup;
+  filters: StoryFilters;
   groupBy: StoriesViewOptions["groupBy"];
   isInSearch?: boolean;
   viewOptions: StoriesViewOptions;
@@ -85,6 +88,7 @@ const GroupedKanbanStories = ({
     <KanbanGroup
       groupBy={groupBy}
       {...getGroupProps()}
+      filters={filters}
       group={group}
       key={group.key}
     />
@@ -138,6 +142,7 @@ export const KanbanBoard = ({
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
         {groupedStories.groups.map((group) => (
           <GroupedKanbanStories
+            filters={groupedStories.meta.filters}
             group={group}
             groupBy={groupBy}
             key={group.key}

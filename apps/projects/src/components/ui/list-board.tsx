@@ -4,6 +4,7 @@ import type {
   GroupedStoriesResponse,
   StoryPriority,
   StoryGroup,
+  StoryFilters,
 } from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
@@ -27,6 +28,7 @@ import { BodyContainer } from "../shared/body";
 // };
 
 const GroupedStories = ({
+  filters,
   group,
   groupBy,
   isInSearch,
@@ -35,6 +37,7 @@ const GroupedStories = ({
   statuses,
   rowClassName,
 }: {
+  filters: StoryFilters;
   group: StoryGroup;
   groupBy: GroupedStoriesResponse["meta"]["groupBy"];
   isInSearch?: boolean;
@@ -63,6 +66,7 @@ const GroupedStories = ({
       isInSearch={isInSearch}
       key={group.key}
       {...getGroupProps()}
+      filters={filters}
       group={group}
       rowClassName={rowClassName}
       viewOptions={viewOptions}
@@ -105,6 +109,7 @@ export const ListBoard = ({
     >
       {groupedStories.groups.map((group) => (
         <GroupedStories
+          filters={groupedStories.meta.filters}
           group={group}
           groupBy={groupedStories.meta.groupBy}
           isInSearch={isInSearch}
