@@ -159,7 +159,7 @@ const updateInfiniteQuery = (
         ? (queryKey[3] as Partial<GroupStoryParams>)
         : {};
 
-    const groupBy = paramsObject.groupBy ?? "none";
+    const groupBy = paramsObject.groupBy ?? "status";
 
     // Compute the story's new key after update
     let newKey: string | undefined;
