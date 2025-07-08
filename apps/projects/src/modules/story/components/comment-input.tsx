@@ -88,7 +88,9 @@ export const CommentInput = ({
           return [
             "a",
             mergeAttributes(
-              { href: `/profile/${node.attrs.id}` },
+              {
+                href: `/profile/${node.attrs.id}`,
+              },
               options.HTMLAttributes,
             ),
             `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
@@ -235,7 +237,7 @@ export const CommentInput = ({
       justify="between"
     >
       <TextEditor
-        className="prose-base leading-6 antialiased"
+        className="prose-base leading-6 antialiased prose-a:text-dark dark:prose-a:text-white"
         editor={editor}
       />
       <Flex gap={2} justify="end">
