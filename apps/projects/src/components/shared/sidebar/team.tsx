@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Box, ContextMenu, Flex } from "ui";
 import {
+  ArchiveIcon,
   ArrowRight2Icon,
   BacklogIcon,
   LogoutIcon,
@@ -140,6 +141,15 @@ export const Team = ({
             >
               <SettingsIcon />
               Team settings
+            </Link>
+          </ContextMenu.Item>
+          <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
+            <Link
+              className="flex items-center gap-1.5 py-1.5"
+              href={`/teams/${id}/archived`}
+            >
+              <ArchiveIcon />
+              Archived {getTermDisplay("storyTerm", { variant: "plural" })}
             </Link>
           </ContextMenu.Item>
         </ContextMenu.Group>
