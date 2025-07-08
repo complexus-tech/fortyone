@@ -256,12 +256,13 @@ type StoryFilters struct {
 	AssignedToMe  *bool       `json:"assignedToMe"`
 	CreatedByMe   *bool       `json:"createdByMe"`
 	// Date range filters
-	CreatedAfter   *time.Time `json:"createdAfter"`
-	CreatedBefore  *time.Time `json:"createdBefore"`
-	UpdatedAfter   *time.Time `json:"updatedAfter"`
-	UpdatedBefore  *time.Time `json:"updatedBefore"`
-	DeadlineAfter  *time.Time `json:"deadlineAfter"`
-	DeadlineBefore *time.Time `json:"deadlineBefore"`
+	CreatedAfter    *time.Time `json:"createdAfter"`
+	CreatedBefore   *time.Time `json:"createdBefore"`
+	UpdatedAfter    *time.Time `json:"updatedAfter"`
+	UpdatedBefore   *time.Time `json:"updatedBefore"`
+	DeadlineAfter   *time.Time `json:"deadlineAfter"`
+	DeadlineBefore  *time.Time `json:"deadlineBefore"`
+	IncludeArchived *bool      `json:"includeArchived"`
 }
 
 // StoryQuery represents query parameters for grouped stories at the handler level

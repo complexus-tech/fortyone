@@ -1723,7 +1723,12 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
 		"s.deleted_at IS NULL",
-		"s.archived_at IS NULL",
+		"s.parent_id IS NULL",
+	}
+
+	// Exclude archived unless explicitly included
+	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NULL")
 	}
 
 	// Handle parent filtering
@@ -2240,6 +2245,11 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		"s.parent_id IS NULL",
 	}
 
+	// Exclude archived unless explicitly included
+	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NULL")
+	}
+
 	// Add filter conditions
 	if len(filters.StatusIDs) > 0 {
 		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
@@ -2697,6 +2707,11 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		"s.workspace_id = :workspace_id",
 		"s.deleted_at IS NULL",
 		"s.parent_id IS NULL",
+	}
+
+	// Exclude archived unless explicitly included
+	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NULL")
 	}
 
 	// Add filter conditions
