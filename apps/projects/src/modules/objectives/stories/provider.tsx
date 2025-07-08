@@ -85,7 +85,7 @@ export const useObjectiveOptions = () => {
   const context = useContext(ObjectiveOptionsContext);
   if (!context) {
     throw new Error(
-      "useObjectiveStories must be used within a ObjectiveStoriesProvider",
+      "useObjectiveOptions must be used within a ObjectiveOptionsProvider",
     );
   }
   return context;
