@@ -116,6 +116,8 @@ export const SubStories = ({
               totalGroups: 1,
               filters: {},
               groupBy: "none",
+              orderBy: "priority",
+              orderDirection: "desc",
             },
           }}
           layout="list"
