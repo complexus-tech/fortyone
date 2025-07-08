@@ -1726,8 +1726,11 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		"s.parent_id IS NULL",
 	}
 
-	// Exclude archived unless explicitly included
-	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+	// Archived filtering: If includeArchived=true return ONLY archived stories,
+	// otherwise return only active (non-archived) stories.
+	if filters.IncludeArchived != nil && *filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
+	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
 	}
 
@@ -2246,7 +2249,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	}
 
 	// Exclude archived unless explicitly included
-	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+	if filters.IncludeArchived != nil && *filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
+	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
 	}
 
@@ -2710,7 +2715,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	}
 
 	// Exclude archived unless explicitly included
-	if filters.IncludeArchived == nil || !*filters.IncludeArchived {
+	if filters.IncludeArchived != nil && *filters.IncludeArchived {
+		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
+	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
 	}
 
