@@ -11,15 +11,18 @@ import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 
 type ChatMessageProps = {
+  isFullScreen: boolean;
   message: Message;
   profile: User | undefined;
   isStreaming?: boolean;
 };
 
 const RenderMessage = ({
+  isFullScreen,
   message,
   isStreaming,
 }: {
+  isFullScreen: boolean;
   message: Message;
   isStreaming?: boolean;
 }) => {
@@ -87,7 +90,12 @@ const RenderMessage = ({
                     >
                       Burndown graph
                     </Text>
-                    <BurndownChart burndownData={result?.analytics?.burndown} />
+                    <BurndownChart
+                      burndownData={result?.analytics?.burndown}
+                      className={cn("h-72", {
+                        "h-80": isFullScreen,
+                      })}
+                    />
                   </Box>
                 );
               }
@@ -101,6 +109,7 @@ const RenderMessage = ({
 };
 
 export const ChatMessage = ({
+  isFullScreen,
   message,
   profile,
   isStreaming,
@@ -126,6 +135,8 @@ export const ChatMessage = ({
       <Flex
         className={cn("max-w-[75%] flex-1", {
           "items-end": message.role === "user",
+          "max-w-[85%]": message.role === "assistant",
+          "md:max-w-[90%]": isFullScreen,
         })}
         direction="column"
       >
@@ -136,7 +147,11 @@ export const ChatMessage = ({
             "bg-transparent p-0": message.role === "assistant",
           })}
         >
-          <RenderMessage isStreaming={isStreaming} message={message} />
+          <RenderMessage
+            isFullScreen={isFullScreen}
+            isStreaming={isStreaming}
+            message={message}
+          />
         </Box>
         <Text className="mt-2 px-1" color="muted" fontSize="sm">
           {createdAt.toLocaleTimeString([], {
