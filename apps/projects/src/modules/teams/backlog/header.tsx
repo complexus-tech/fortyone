@@ -87,7 +87,7 @@ export const Header = ({
           groupByOptions={
             layout === "kanban"
               ? ["assignee", "priority"]
-              : ["assignee", "priority", "none"]
+              : ["assignee", "priority"]
           }
           initialViewOptions={initialViewOptions}
           layout={layout}

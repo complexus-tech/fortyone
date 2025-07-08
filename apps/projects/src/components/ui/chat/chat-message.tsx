@@ -68,6 +68,13 @@ const RenderMessage = ({
               />
             );
           }
+        }
+        return null;
+      })}
+
+      {message.parts?.map((part, index) => {
+        if (part.type === "tool-invocation") {
+          const toolInvocation = part.toolInvocation;
           if (toolInvocation.state === "result") {
             if (toolInvocation.toolName === "sprints") {
               const { result } = toolInvocation;
@@ -76,7 +83,7 @@ const RenderMessage = ({
                   <Box className="mb-3" key={index}>
                     <Text
                       as="h3"
-                      className="mb-2 text-lg font-semibold antialiased"
+                      className="mb-1 mt-4 text-xl font-semibold antialiased"
                     >
                       Burndown graph
                     </Text>
