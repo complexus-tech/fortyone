@@ -30,6 +30,7 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useFeatures, useTerminology } from "@/hooks";
 import { StoriesList } from "@/components/ui/stories-list";
 import { BodyContainer } from "@/components/shared/body";
+import { moveStoryBetweenGroups } from "@/modules/stories/utils/optimistic";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -356,29 +357,13 @@ export const getOptimisticallyUpdatedGroups = (
   prev: GroupedStoriesResponse,
   storyId: string,
   update: Partial<DetailedStory>,
-  groupKey: string,
+  targetKey: string,
 ): GroupedStoriesResponse => {
-  let storyToMove: Story | undefined;
-
-  const newGroups = prev.groups.map((group) => {
-    const stories = group.stories.filter((story) => {
-      if (story.id === storyId) {
-        storyToMove = { ...story, ...update };
-        return false;
-      }
-      return true;
-    });
-    return { ...group, stories };
-  });
-
-  if (!storyToMove) return prev;
-
-  const finalGroups = newGroups.map((group) => {
-    if (group.key === groupKey) {
-      return { ...group, stories: [storyToMove!, ...group.stories] };
-    }
-    return group;
-  });
-
-  return { ...prev, groups: finalGroups };
+  const groups = moveStoryBetweenGroups(
+    prev.groups,
+    storyId,
+    targetKey,
+    update,
+  );
+  return { ...prev, groups };
 };

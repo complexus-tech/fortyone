@@ -77,6 +77,7 @@ export const Header = ({
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
+          groupByOptions={["status", "assignee", "priority"]}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
