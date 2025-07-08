@@ -9,6 +9,11 @@ import type {
   GroupStoryParams,
 } from "@/modules/stories/types";
 import type { SearchResponse } from "@/modules/search/types";
+import {
+  computeTargetKey,
+  moveStoryBetweenGroups,
+  parseGroupQueryKey,
+} from "@/modules/stories/utils/optimistic";
 import type { DetailedStory } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
@@ -133,95 +138,48 @@ const updateInfiniteQuery = (
   storyId: string,
   payload: Partial<DetailedStory>,
 ) => {
-  // Helper to update a single infinite query in place
   const patchInfiniteQuery = (
     key: readonly unknown[],
     updater: (
       data: InfiniteData<GroupStoriesResponse> | undefined,
     ) => InfiniteData<GroupStoriesResponse> | undefined,
-  ) => {
+  ) =>
     queryClient.setQueryData<InfiniteData<GroupStoriesResponse>>(key, updater);
-  };
 
-  // Update the current query (remove or edit)
+  // 1️⃣ patch current query (remove/update)
   patchInfiniteQuery(queryKey, (data) => {
     if (!data?.pages) return data;
+    const { groupKey, params } = parseGroupQueryKey(queryKey);
+    const target = computeTargetKey(params.groupBy ?? "none", payload);
 
-    // Find groupKey from queryKey structure ["stories","group",groupKey,{...params}]
-    const currentGroupKey =
-      (Array.isArray(queryKey) && queryKey.length > 2
-        ? (queryKey[2] as string)
-        : undefined) ?? "";
-
-    // Determine grouping field of this list from params object
-    const paramsObject =
-      Array.isArray(queryKey) && queryKey.length > 3
-        ? (queryKey[3] as Partial<GroupStoryParams>)
-        : {};
-
-    const groupBy = paramsObject.groupBy ?? "status";
-
-    // Compute the story's new key after update
-    let newKey: string | undefined;
-    switch (groupBy) {
-      case "status":
-        newKey = payload.statusId;
-        break;
-      case "priority":
-        newKey = payload.priority as string | undefined;
-        break;
-      case "assignee":
-        newKey = payload.assigneeId ?? undefined;
-        break;
-      default:
-        break;
-    }
-
-    // If story stays in the same group, just patch the fields
-    if (!newKey || newKey === currentGroupKey) {
+    // stays in same group → simple map
+    if (!target || target === groupKey) {
       return {
         ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          stories: page.stories.map((story) =>
-            story.id === storyId ? { ...story, ...payload } : story,
+        pages: data.pages.map((p) => ({
+          ...p,
+          stories: p.stories.map((s) =>
+            s.id === storyId ? { ...s, ...payload } : s,
           ),
         })),
       };
     }
 
-    // Otherwise, remove story from this query
+    // moved → filter story out
     return {
       ...data,
-      pages: data.pages.map((page) => ({
-        ...page,
-        stories: page.stories.filter((s) => s.id !== storyId),
+      pages: data.pages.map((p) => ({
+        ...p,
+        stories: p.stories.filter((s) => s.id !== storyId),
       })),
     };
   });
 
-  // If story moved to a different group, insert it in the target group's cache (if present)
-  const currentParams =
-    Array.isArray(queryKey) && queryKey.length > 3
-      ? (queryKey[3] as Partial<GroupStoryParams>)
-      : ({} as Partial<GroupStoryParams>);
-
-  const groupByField = currentParams.groupBy ?? "none";
-
-  let targetKeyValue: string | undefined;
-  switch (groupByField) {
-    case "status":
-      targetKeyValue = payload.statusId;
-      break;
-    case "priority":
-      targetKeyValue = payload.priority as string | undefined;
-      break;
-    case "assignee":
-      targetKeyValue = payload.assigneeId ?? undefined;
-      break;
-    default:
-      break;
-  }
+  const { params: currentParams } = parseGroupQueryKey(queryKey);
+  const targetKeyValue = computeTargetKey(
+    currentParams.groupBy ?? "none",
+    payload,
+  );
 
   if (!targetKeyValue) return;
 
@@ -276,57 +234,10 @@ const updateGroupedQuery = (
   queryClient.setQueryData<GroupedStoriesResponse>(queryKey, (data) => {
     if (!data) return data;
 
-    // Determine the grouping key used by this response
-    const groupBy = data.meta.groupBy;
-
-    let movedStory: DetailedStory | null = null;
-
-    // 1. Remove the story from its current group and collect it
-    const groupsWithoutStory = data.groups.map((group) => {
-      const remainingStories = group.stories.filter((story) => {
-        const isMatch = story.id === storyId;
-        if (isMatch) {
-          movedStory = { ...story, ...payload } as DetailedStory;
-        }
-        return !isMatch;
-      });
-
-      return {
-        ...group,
-        stories: remainingStories,
-      };
-    });
-
-    // 2. Figure out the target group key based on the payload
-    let targetKey: string | undefined;
-    switch (groupBy) {
-      case "status":
-        targetKey = payload.statusId;
-        break;
-      case "priority":
-        targetKey = (payload.priority as string | undefined) ?? undefined;
-        break;
-      case "assignee":
-        targetKey = payload.assigneeId ?? undefined;
-        break;
-      default:
-        break;
-    }
-
-    // 3. Insert the story into the target group (front of the list)
-    const finalGroups = groupsWithoutStory.map((group) => {
-      if (targetKey === group.key) {
-        return {
-          ...group,
-          stories: [movedStory!, ...group.stories],
-        };
-      }
-      return group;
-    });
-
+    const target = computeTargetKey(data.meta.groupBy, payload);
     return {
       ...data,
-      groups: finalGroups,
+      groups: moveStoryBetweenGroups(data.groups, storyId, target, payload),
     };
   });
 };
