@@ -1,4 +1,4 @@
-import { useEditor, ReactRenderer } from "@tiptap/react";
+import { useEditor, ReactRenderer, mergeAttributes } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TaskItem from "@tiptap/extension-task-item";
@@ -82,10 +82,17 @@ export const CommentInput = ({
       Mention.configure({
         HTMLAttributes: {
           class:
-            "mention bg-gray-100 text-[0.95rem] px-1.5 py-1 rounded-md font-semibold dark:bg-dark-100",
+            "mention bg-gray-100 text-[0.95rem] px-1.5 py-1 rounded-md font-semibold dark:bg-dark-100 hover:bg-gray-200 dark:hover:bg-dark-200 transition",
         },
-        renderText({ options, node }) {
-          return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
+        renderHTML({ options, node }) {
+          return [
+            "a",
+            mergeAttributes(
+              { href: `/profile/${node.attrs.id}` },
+              options.HTMLAttributes,
+            ),
+            `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
+          ];
         },
         suggestion: {
           items: ({ query }: { query: string }) => {
