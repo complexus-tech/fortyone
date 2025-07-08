@@ -1209,16 +1209,27 @@ func getIntParam(r *http.Request, key string, defaultValue int) int {
 }
 
 func parseUUIDArray(r *http.Request, key string) []uuid.UUID {
+	// Accept both repeated query params (e.g. ?id=a&id=b) and comma-separated lists (e.g. ?id=a,b)
 	values := r.URL.Query()[key]
 	if len(values) == 0 {
 		return nil
 	}
 
 	var result []uuid.UUID
-	for _, value := range values {
-		if parsed, err := uuid.Parse(value); err == nil {
-			result = append(result, parsed)
+	for _, raw := range values {
+		for _, part := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			if parsed, err := uuid.Parse(trimmed); err == nil {
+				result = append(result, parsed)
+			}
 		}
+	}
+
+	if len(result) == 0 {
+		return nil
 	}
 	return result
 }
