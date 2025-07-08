@@ -1,5 +1,5 @@
 "use client";
-import { Box, BreadCrumbs, Flex } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -8,7 +8,7 @@ import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
   NewStoryButton,
-  SideDetailsSwitch,
+  StoriesFilterButton,
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
@@ -17,13 +17,9 @@ import { useTerminology } from "@/hooks";
 import { useTeamOptions } from "./provider";
 
 export const Header = ({
-  isExpanded,
-  setIsExpanded,
   layout,
   setLayout,
 }: {
-  isExpanded: boolean | null;
-  setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
@@ -32,7 +28,8 @@ export const Header = ({
   }>();
   const { data: teams = [] } = useTeams();
   const { name, color } = teams.find((team) => team.id === teamId)!;
-  const { viewOptions, setViewOptions } = useTeamOptions();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useTeamOptions();
   const { getTermDisplay } = useTerminology();
 
   useHotkeys("v+l", () => {
@@ -74,12 +71,13 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        {/* <StoriesFilterButton
+        <StoriesFilterButton
           filters={filters}
           resetFilters={resetFilters}
           setFilters={setFilters}
-        /> */}
+        />
         <StoriesViewOptionsButton
+          groupByOptions={["status", "assignee", "priority"]}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
@@ -87,12 +85,6 @@ export const Header = ({
         <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
           |
         </span>
-        <Box className="hidden md:block">
-          <SideDetailsSwitch
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-          />
-        </Box>
         <NewStoryButton className="hidden md:flex" teamId={teamId} />
       </Flex>
     </HeaderContainer>

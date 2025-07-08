@@ -42,7 +42,7 @@ const CommandInput = ({
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
 const contentClasses = cva(
-  "bg-white dark:bg-dark-200 backdrop-blur z-50 border border-gray-50 dark:border-dark-50 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
+  "bg-white dark:bg-dark-200 backdrop-blur z-50 border border-gray-50 dark:border-dark-50 w-max shadow-xl shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
   {
     variants: {
       rounded: {

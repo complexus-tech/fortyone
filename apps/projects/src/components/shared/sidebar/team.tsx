@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Box, ContextMenu, Flex } from "ui";
 import {
   ArrowRight2Icon,
+  BacklogIcon,
   LogoutIcon,
   ObjectiveIcon,
   SettingsIcon,
@@ -20,12 +21,7 @@ import {
   useUserRole,
 } from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
-import {
-  ConfirmDialog,
-  NavLink,
-  // StoryStatusIcon,
-  TeamColor,
-} from "@/components/ui";
+import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 
 export const Team = ({
@@ -52,11 +48,11 @@ export const Team = ({
   const { userRole } = useUserRole();
 
   const links = [
-    // {
-    //   name: "Backlog",
-    //   icon: <StoryStatusIcon className="text-gray dark:text-gray-300" />,
-    //   href: `/teams/${id}/backlog`,
-    // },
+    {
+      name: "Backlog",
+      icon: <BacklogIcon className="h-[1.15rem]" />,
+      href: `/teams/${id}/backlog`,
+    },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,

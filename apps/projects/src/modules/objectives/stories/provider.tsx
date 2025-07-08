@@ -23,8 +23,8 @@ export const ObjectiveOptionsProvider = ({
   children: ReactNode;
 }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
+    groupBy: "status",
+    orderBy: "created",
     showEmptyGroups: true,
     displayColumns: [
       "ID",
@@ -55,7 +55,7 @@ export const ObjectiveOptionsProvider = ({
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:objectives:stories:view-options",
+    "teams:objectives:stories:view-options-v2",
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(
@@ -85,7 +85,7 @@ export const useObjectiveOptions = () => {
   const context = useContext(ObjectiveOptionsContext);
   if (!context) {
     throw new Error(
-      "useObjectiveStories must be used within a ObjectiveStoriesProvider",
+      "useObjectiveOptions must be used within a ObjectiveOptionsProvider",
     );
   }
   return context;

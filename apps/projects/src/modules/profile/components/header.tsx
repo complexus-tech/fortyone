@@ -1,28 +1,27 @@
 "use client";
-import { BreadCrumbs, Flex } from "ui";
+import { Avatar, BreadCrumbs, Flex } from "ui";
 import { UserIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
-import {
-  StoriesViewOptionsButton,
-  LayoutSwitcher,
-  SideDetailsSwitch,
-} from "@/components/ui";
+import { StoriesViewOptionsButton, LayoutSwitcher } from "@/components/ui";
+import { useMembers } from "@/lib/hooks/members";
 import { useProfile } from "./provider";
 
 export const Header = ({
-  isExpanded,
-  setIsExpanded,
   layout,
   setLayout,
 }: {
-  isExpanded: boolean | null;
-  setIsExpanded: (isExpanded: boolean) => void;
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { viewOptions, setViewOptions } = useProfile();
+  const { userId } = useParams<{
+    userId: string;
+  }>();
+  const { data: members = [] } = useMembers();
+  const member = members.find((member) => member.id === userId);
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -41,23 +40,29 @@ export const Header = ({
               icon: <UserIcon className="h-4 w-auto" />,
             },
             {
-              name: "Joseph Mukorivo",
+              name: member?.fullName || member?.username || "",
+              icon: (
+                <Avatar
+                  name={member?.fullName || member?.username}
+                  size="xs"
+                  src={member?.avatarUrl}
+                />
+              ),
             },
           ]}
         />
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
+        <LayoutSwitcher
+          layout={layout}
+          options={["list", "kanban"]}
+          setLayout={setLayout}
+        />
         <StoriesViewOptionsButton
-          groupByOptions={["Status", "Priority"]}
+          groupByOptions={["status", "priority"]}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
-        />
-        <span className="text-gray-200 dark:text-dark-100">|</span>
-        <SideDetailsSwitch
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
         />
       </Flex>
     </HeaderContainer>

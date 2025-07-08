@@ -9,7 +9,7 @@ export const useSubscription = () => {
   return useQuery({
     queryKey: subscriptionKeys.details,
     queryFn: () => getSubscription(session!),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     refetchOnMount: true,
     refetchOnReconnect: true,
   });

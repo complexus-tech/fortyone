@@ -5,7 +5,7 @@ import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
 
-export type ViewOptionsGroupBy = "Status" | "Assignee" | "Priority" | "None";
+export type ViewOptionsGroupBy = "status" | "assignee" | "priority" | "none";
 export type DisplayColumn =
   | "ID"
   | "Status"
@@ -19,10 +19,10 @@ export type DisplayColumn =
   | "Epic"
   | "Labels";
 export type ViewOptionsOrderBy =
-  | "Priority"
-  | "Deadline"
-  | "Created"
-  | "Updated";
+  | "priority"
+  | "deadline"
+  | "created"
+  | "updated";
 
 export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
@@ -31,9 +31,9 @@ export type StoriesViewOptions = {
   displayColumns: DisplayColumn[];
 };
 
-const initialViewOptions: StoriesViewOptions = {
-  groupBy: "Status",
-  orderBy: "Priority",
+const defaultViewOptions: StoriesViewOptions = {
+  groupBy: "status",
+  orderBy: "priority",
   showEmptyGroups: true,
   displayColumns: [
     "ID",
@@ -50,13 +50,15 @@ const initialViewOptions: StoriesViewOptions = {
 };
 
 export const StoriesViewOptionsButton = ({
+  initialViewOptions,
   viewOptions,
   setViewOptions,
-  groupByOptions = ["Status", "Assignee", "Priority"],
-  orderByOptions = ["Priority", "Deadline", "Created", "Updated"],
+  groupByOptions = ["status", "assignee", "priority", "none"],
+  orderByOptions = ["priority", "deadline", "created", "updated"],
   layout,
   disabled,
 }: {
+  initialViewOptions?: StoriesViewOptions;
   viewOptions: StoriesViewOptions;
   setViewOptions: (v: StoriesViewOptions) => void;
   groupByOptions?: ViewOptionsGroupBy[];
@@ -162,13 +164,17 @@ export const StoriesViewOptionsButton = ({
             }}
             value={groupBy}
           >
-            <Select.Trigger className="w-32">
+            <Select.Trigger className="w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
             <Select.Content>
               <Select.Group>
                 {groupByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
+                  <Select.Option
+                    className="capitalize"
+                    key={option}
+                    value={option}
+                  >
                     {option}
                   </Select.Option>
                 ))}
@@ -187,13 +193,17 @@ export const StoriesViewOptionsButton = ({
             }}
             value={orderBy}
           >
-            <Select.Trigger className="w-32">
+            <Select.Trigger className="w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
             <Select.Content>
               <Select.Group>
                 {orderByOptions.map((option) => (
-                  <Select.Option key={option} value={option}>
+                  <Select.Option
+                    className="capitalize"
+                    key={option}
+                    value={option}
+                  >
                     {option}
                   </Select.Option>
                 ))}
@@ -266,7 +276,7 @@ export const StoriesViewOptionsButton = ({
             className="text-primary dark:text-primary"
             color="tertiary"
             onClick={() => {
-              setViewOptions(initialViewOptions);
+              setViewOptions(initialViewOptions ?? defaultViewOptions);
             }}
             size="sm"
             variant="naked"

@@ -13,8 +13,8 @@ const MyWorkContext = createContext<MyWork | undefined>(undefined);
 
 export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
+    groupBy: "status",
+    orderBy: "created",
     showEmptyGroups: true,
     displayColumns: [
       "ID",
@@ -30,7 +30,7 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "my-work:view-options",
+    "my-work:view-options-v2",
     initialOptions,
   );
   return (

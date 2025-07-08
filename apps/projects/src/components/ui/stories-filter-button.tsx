@@ -1,5 +1,5 @@
 "use client";
-import { Avatar, Box, Button, Divider, Flex, Popover, Text } from "ui";
+import { Avatar, Box, Button, Divider, Flex, Popover, Text, Tooltip } from "ui";
 import {
   ArrowDownIcon,
   AssigneeIcon,
@@ -10,9 +10,18 @@ import {
 import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useParams, usePathname } from "next/navigation";
+import { format } from "date-fns";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { StoryPriority } from "@/modules/stories/types";
+import { hexToRgba } from "@/utils";
+import { useMembers } from "@/lib/hooks/members";
+import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { PriorityIcon } from "./priority-icon";
+import { StoryStatusIcon } from "./story-status-icon";
+import { TeamColor } from "./team-color";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -36,30 +45,6 @@ type StoriesFilterButtonProps = {
   setFilters: (v: StoriesFilter) => void;
   resetFilters: () => void;
 };
-
-// Dummy data
-const dummyUsers = [
-  { id: "1", name: "John Doe", avatar: null },
-  { id: "2", name: "Jane Smith", avatar: null },
-  { id: "3", name: "Mike Johnson", avatar: null },
-  { id: "4", name: "Sarah Wilson", avatar: null },
-  { id: "5", name: "Tom Brown", avatar: null },
-  { id: "6", name: "Lisa Davis", avatar: null },
-];
-
-const dummyTeams = [
-  { id: "1", name: "Engineering" },
-  { id: "2", name: "Design" },
-  { id: "3", name: "Product" },
-  { id: "4", name: "Marketing" },
-];
-
-const dummySprints = [
-  { id: "1", name: "Sprint 23" },
-  { id: "2", name: "Sprint 24" },
-  { id: "3", name: "Sprint 25" },
-  { id: "4", name: "Backlog" },
-];
 
 const FilterSection = ({
   title,
@@ -90,7 +75,7 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-gray-50 hover:dark:bg-dark-100/80",
+        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-50/40",
       )}
       onClick={onClick}
       type="button"
@@ -111,7 +96,11 @@ const StatusSelector = ({
   selected: string[] | null;
   onChange: (ids: string[]) => void;
 }) => {
-  const { data: statuses = [] } = useStatuses();
+  const { teamId } = useParams<{ teamId?: string }>();
+  const { data: allStatuses = [] } = useStatuses();
+  const statuses = teamId
+    ? allStatuses.filter((status) => status.teamId === teamId)
+    : allStatuses;
 
   const toggleStatus = (statusId: string) => {
     const current = selected || [];
@@ -126,19 +115,19 @@ const StatusSelector = ({
     <Flex gap={2} wrap>
       {statuses.map((status) => (
         <Button
-          className={cn("border-0 px-3 text-white md:h-8", {
-            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
-              selected?.includes(status.id),
+          className={cn("ring-2 ring-transparent", {
+            "ring-primary": selected?.includes(status.id),
           })}
           color="tertiary"
           key={status.id}
+          leftIcon={<StoryStatusIcon statusId={status.id} />}
           onClick={() => {
             toggleStatus(status.id);
           }}
-          rounded="xl"
           size="sm"
           style={{
-            backgroundColor: status.color,
+            backgroundColor: hexToRgba(status.color, 0.1),
+            borderColor: hexToRgba(status.color, 0.2),
           }}
         >
           {status.name}
@@ -155,6 +144,11 @@ const UserSelector = ({
   selected: string[] | null;
   onChange: (ids: string[]) => void;
 }) => {
+  const { teamId } = useParams<{ teamId?: string }>();
+  const { data: allUsers = [] } = useMembers();
+  const { data: teamMembers = [] } = useTeamMembers(teamId);
+  const users = teamId ? teamMembers : allUsers;
+
   const toggleUser = (userId: string) => {
     const current = selected || [];
     if (current.includes(userId)) {
@@ -166,10 +160,10 @@ const UserSelector = ({
 
   return (
     <Flex gap={2} wrap>
-      {dummyUsers.map((user) => (
+      {users.map((user) => (
         <button
-          className={cn("relative", {
-            "rounded-full ring-2 ring-primary": selected?.includes(user.id),
+          className={cn("relative rounded-full ring-2 ring-transparent", {
+            "ring-primary": selected?.includes(user.id),
           })}
           key={user.id}
           onClick={() => {
@@ -177,12 +171,8 @@ const UserSelector = ({
           }}
           type="button"
         >
-          <Avatar
-            className="h-9 bg-gray-200 text-dark dark:bg-dark-50 dark:text-white"
-            name={user.name}
-            src={user.avatar}
-          />
-          <span className="sr-only">{user.name}</span>
+          <Avatar className="h-10" name={user.fullName} src={user.avatarUrl} />
+          <span className="sr-only">{user.fullName || user.username}</span>
         </button>
       ))}
     </Flex>
@@ -217,9 +207,8 @@ const PrioritySelector = ({
     <Flex gap={2} wrap>
       {priorities.map((priority) => (
         <Button
-          className={cn("px-2.5", {
-            "ring-2 ring-primary ring-offset-1 dark:ring-offset-dark":
-              selected?.includes(priority),
+          className={cn("ring-2 ring-transparent", {
+            "ring-primary": selected?.includes(priority),
           })}
           color="tertiary"
           key={priority}
@@ -227,7 +216,6 @@ const PrioritySelector = ({
           onClick={() => {
             togglePriority(priority);
           }}
-          rounded="xl"
           size="sm"
         >
           {priority}
@@ -244,6 +232,8 @@ const TeamSelector = ({
   selected: string[] | null;
   onChange: (teamIds: string[]) => void;
 }) => {
+  const { data: teams = [] } = useTeams();
+
   const toggleTeam = (teamId: string) => {
     const current = selected || [];
     if (current.includes(teamId)) {
@@ -255,14 +245,22 @@ const TeamSelector = ({
 
   return (
     <Flex gap={2} wrap>
-      {dummyTeams.map((team) => (
+      {teams.map((team) => (
         <Button
-          className="h-7 rounded-full px-3"
+          className={cn({
+            "ring-2 ring-primary": selected?.includes(team.id),
+          })}
+          color="tertiary"
           key={team.id}
+          leftIcon={<TeamColor color={team.color} />}
           onClick={() => {
             toggleTeam(team.id);
           }}
           size="sm"
+          style={{
+            backgroundColor: hexToRgba(team.color, 0.1),
+            borderColor: hexToRgba(team.color, 0.2),
+          }}
           variant={selected?.includes(team.id) ? "solid" : "outline"}
         >
           {team.name}
@@ -279,6 +277,8 @@ const SprintSelector = ({
   selected: string[] | null;
   onChange: (sprintIds: string[]) => void;
 }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const { data: sprints = [] } = useTeamSprints(teamId);
   const toggleSprint = (sprintId: string) => {
     const current = selected || [];
     if (current.includes(sprintId)) {
@@ -290,19 +290,27 @@ const SprintSelector = ({
 
   return (
     <Flex gap={2} wrap>
-      {dummySprints.map((sprint) => (
-        <Button
-          className="h-7 rounded-full px-3"
-          key={sprint.id}
-          onClick={() => {
-            toggleSprint(sprint.id);
-          }}
-          size="sm"
-          variant={selected?.includes(sprint.id) ? "solid" : "outline"}
-        >
-          {sprint.name}
-        </Button>
-      ))}
+      {sprints.map((sprint) => {
+        const startDate = format(new Date(sprint.startDate), "MMM d");
+        const endDate = format(new Date(sprint.endDate), "MMM d");
+        const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
+        return (
+          <Tooltip key={sprint.id} title={sprintName}>
+            <Button
+              className={cn("ring-2 ring-transparent", {
+                "ring-primary": selected?.includes(sprint.id),
+              })}
+              color="tertiary"
+              onClick={() => {
+                toggleSprint(sprint.id);
+              }}
+              size="sm"
+            >
+              {sprint.name}
+            </Button>
+          </Tooltip>
+        );
+      })}
     </Flex>
   );
 };
@@ -313,6 +321,9 @@ export const StoriesFilterButton = ({
   resetFilters,
 }: StoriesFilterButtonProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
+  const { teamId } = useParams<{ teamId: string }>();
+  const isBacklog = pathname.includes("/backlog");
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
@@ -377,11 +388,8 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content
-        align="end"
-        className="max-h-[85vh] w-80 overflow-y-auto pb-2 dark:bg-dark-200/70 md:w-[30rem]"
-      >
-        <Flex align="center" className="h-10 px-4" justify="between">
+      <Popover.Content className="max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-[35rem]">
+        <Flex align="center" className="h-11 px-4" justify="between">
           <Text
             color="muted"
             fontSize="sm"
@@ -429,15 +437,20 @@ export const StoriesFilterButton = ({
             }}
           />
         </Box>
-        <Divider />
-        <FilterSection title="Status">
-          <StatusSelector
-            onChange={(statusIds) => {
-              setFilters({ ...filters, statusIds });
-            }}
-            selected={filters.statusIds}
-          />
-        </FilterSection>
+        {!isBacklog && (
+          <>
+            <Divider />
+            <FilterSection title="Status">
+              <StatusSelector
+                onChange={(statusIds) => {
+                  setFilters({ ...filters, statusIds });
+                }}
+                selected={filters.statusIds}
+              />
+            </FilterSection>
+          </>
+        )}
+
         <Divider />
         <FilterSection title="Assignee">
           <UserSelector
@@ -464,24 +477,33 @@ export const StoriesFilterButton = ({
             selected={filters.priorities}
           />
         </FilterSection>
-        <Divider />
-        <FilterSection title="Team">
-          <TeamSelector
-            onChange={(teamIds) => {
-              setFilters({ ...filters, teamIds });
-            }}
-            selected={filters.teamIds}
-          />
-        </FilterSection>
-        <Divider />
-        <FilterSection title="Sprint">
-          <SprintSelector
-            onChange={(sprintIds) => {
-              setFilters({ ...filters, sprintIds });
-            }}
-            selected={filters.sprintIds}
-          />
-        </FilterSection>
+        {!teamId ? (
+          <>
+            <Divider />
+            <FilterSection title="Team">
+              <TeamSelector
+                onChange={(teamIds) => {
+                  setFilters({ ...filters, teamIds });
+                }}
+                selected={filters.teamIds}
+              />
+            </FilterSection>
+          </>
+        ) : null}
+
+        {!isBacklog && (
+          <>
+            <Divider />
+            <FilterSection title="Sprint">
+              <SprintSelector
+                onChange={(sprintIds) => {
+                  setFilters({ ...filters, sprintIds });
+                }}
+                selected={filters.sprintIds}
+              />
+            </FilterSection>
+          </>
+        )}
       </Popover.Content>
     </Popover>
   );

@@ -19,8 +19,8 @@ export const SprintStoriesProvider = ({
   children: ReactNode;
 }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
+    groupBy: "status",
+    orderBy: "created",
     showEmptyGroups: true,
     displayColumns: [
       "ID",
@@ -35,7 +35,7 @@ export const SprintStoriesProvider = ({
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "sprints:stories:view-options",
+    "sprints:stories:view-options-v2",
     initialOptions,
   );
   return (

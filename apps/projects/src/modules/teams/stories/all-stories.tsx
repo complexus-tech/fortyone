@@ -1,22 +1,39 @@
 "use client";
-
 import { useParams } from "next/navigation";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
-import { useTeamOptions } from "@/modules/teams/stories/provider";
-import { StoriesBoard } from "@/components/ui";
-import type { StoriesLayout } from "@/components/ui";
+import { StoriesBoard, type StoriesLayout } from "@/components/ui";
+import { useTeamStoriesGrouped } from "@/modules/stories/hooks/use-team-stories-grouped";
+import { StoriesSkeleton } from "@/modules/teams/stories/stories-skeleton";
+import { useTeamOptions } from "./provider";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { data: stories = [] } = useTeamStories(teamId);
+  const { viewOptions, filters } = useTeamOptions();
+  const { data: groupedStories, isPending } = useTeamStoriesGrouped(
+    teamId,
+    viewOptions.groupBy,
+    {
+      orderBy: viewOptions.orderBy,
+      statusIds: filters.statusIds ?? undefined,
+      priorities: filters.priorities ?? undefined,
+      assigneeIds: filters.assigneeIds ?? undefined,
+      reporterIds: filters.reporterIds ?? undefined,
+      assignedToMe: filters.assignedToMe ? true : undefined,
+      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
+      createdByMe: filters.createdByMe ? true : undefined,
+      teamIds: filters.teamIds ?? undefined,
+      sprintIds: filters.sprintIds ?? undefined,
+    },
+  );
 
-  const { viewOptions } = useTeamOptions();
+  if (isPending) {
+    return <StoriesSkeleton layout={layout} />;
+  }
 
   return (
     <StoriesBoard
       className="h-[calc(100dvh-4rem)]"
+      groupedStories={groupedStories}
       layout={layout}
-      stories={stories}
       viewOptions={viewOptions}
     />
   );

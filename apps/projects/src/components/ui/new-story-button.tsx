@@ -10,7 +10,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 export const NewStoryButton = ({
   size = "sm",
   children,
-  leftIcon = <PlusIcon className="text-white dark:text-gray-200" />,
+  leftIcon = <PlusIcon className="text-current dark:text-current" />,
   teamId,
   sprintId,
   objectiveId,

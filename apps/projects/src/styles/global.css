@@ -19,6 +19,17 @@ html {
   }
 }
 
+@layer utilities {
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* For Chrome, Safari, and Opera */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
 @layer base {
   input,
   textarea,
@@ -209,4 +220,37 @@ th {
 .nprogress-custom-parent #nprogress .spinner,
 .nprogress-custom-parent #nprogress .bar {
   position: absolute;
+}
+
+/* Chat Table Styling */
+.chat-tables table {
+  @apply w-full rounded-lg;
+}
+
+.chat-tables th {
+  @apply border-b border-gray-100 bg-gray-50 px-3 py-2 text-left font-medium dark:border-dark-100 dark:bg-dark-100;
+}
+
+.chat-tables td {
+  @apply border-b border-r border-gray-100 px-3 py-2 dark:border-dark-50;
+}
+
+.chat-tables tr:last-child td {
+  @apply border-b-0;
+}
+
+.chat-tables tr:hover {
+  @apply bg-gray-50 dark:bg-dark-200/50;
+}
+
+.chat-tables ul[data-type="taskList"] {
+  @apply list-none pl-0;
+}
+
+.chat-tables ul[data-type="taskList"] li {
+  @apply flex items-center gap-2 py-1;
+}
+
+.chat-tables ul[data-type="taskList"] input[type="checkbox"] {
+  @apply accent-primary;
 }

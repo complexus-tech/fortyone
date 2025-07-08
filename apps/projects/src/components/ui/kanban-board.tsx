@@ -3,20 +3,102 @@
 import { Box, Flex } from "ui";
 import { cn } from "lib";
 import { useParams } from "next/navigation";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  GroupedStoriesResponse,
+  StoryPriority,
+  StoryGroup,
+} from "@/modules/stories/types";
 import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
+import type { Member } from "@/types";
+import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
 import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
 
-export const KanbanBoard = ({
-  stories,
-  className,
+const GroupedKanbanHeader = ({
+  group,
+  groupBy,
+  members,
+  statuses,
 }: {
-  stories: Story[];
+  group: StoryGroup;
+  groupBy: StoriesViewOptions["groupBy"];
+  isInSearch?: boolean;
+  viewOptions: StoriesViewOptions;
+  members: Member[];
+  statuses: State[];
+}) => {
+  const getGroupProps = () => {
+    switch (groupBy) {
+      case "priority":
+        return { priority: group.key as StoryPriority };
+      case "status":
+        return { status: statuses.find((status) => status.id === group.key) };
+      case "assignee":
+        return { member: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
+    }
+  };
+
+  return (
+    <StoriesKanbanHeader
+      groupBy={groupBy}
+      {...getGroupProps()}
+      group={group}
+      key={group.key}
+    />
+  );
+};
+
+const GroupedKanbanStories = ({
+  meta,
+  group,
+  groupBy,
+  members,
+  statuses,
+}: {
+  group: StoryGroup;
+  meta: GroupedStoriesResponse["meta"];
+  groupBy: StoriesViewOptions["groupBy"];
+  isInSearch?: boolean;
+  viewOptions: StoriesViewOptions;
+  members: Member[];
+  statuses: State[];
+}) => {
+  const getGroupProps = () => {
+    switch (groupBy) {
+      case "priority":
+        return { priority: group.key as StoryPriority };
+      case "status":
+        return { status: statuses.find((status) => status.id === group.key) };
+      case "assignee":
+        return { member: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
+    }
+  };
+
+  return (
+    <KanbanGroup
+      groupBy={groupBy}
+      {...getGroupProps()}
+      group={group}
+      key={group.key}
+      meta={meta}
+    />
+  );
+};
+
+export const KanbanBoard = ({
+  className,
+  groupedStories,
+}: {
+  groupedStories: GroupedStoriesResponse;
   className?: string;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -30,13 +112,6 @@ export const KanbanBoard = ({
     ({ role }) => role !== "system",
   );
   const statuses = teamId ? teamStatuses : allStatuses;
-  const priorities: StoryPriority[] = [
-    "Urgent",
-    "High",
-    "Medium",
-    "Low",
-    "No Priority",
-  ];
 
   return (
     <BodyContainer
@@ -51,63 +126,30 @@ export const KanbanBoard = ({
           className="h-full shrink-0 overflow-x-auto"
           gap={6}
         >
-          {groupBy === "Status" &&
-            statuses.map((status) => (
-              <StoriesKanbanHeader
-                groupBy={groupBy}
-                key={status.id}
-                status={status}
-                stories={stories}
-              />
-            ))}
-          {groupBy === "Priority" &&
-            priorities.map((priority) => (
-              <StoriesKanbanHeader
-                groupBy={groupBy}
-                key={priority}
-                priority={priority}
-                stories={stories}
-              />
-            ))}
-          {groupBy === "Assignee" &&
-            members.map((member) => (
-              <StoriesKanbanHeader
-                groupBy={groupBy}
-                key={member.id}
-                member={member}
-                stories={stories}
-              />
-            ))}
+          {groupedStories.groups.map((group) => (
+            <GroupedKanbanHeader
+              group={group}
+              groupBy={groupBy}
+              key={group.key}
+              members={members}
+              statuses={statuses}
+              viewOptions={viewOptions}
+            />
+          ))}
         </Flex>
       </Box>
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
-        {groupBy === "Status" &&
-          statuses.map((status) => (
-            <KanbanGroup
-              groupBy={groupBy}
-              key={status.id}
-              status={status}
-              stories={stories}
-            />
-          ))}
-        {groupBy === "Priority" &&
-          priorities.map((priority) => (
-            <KanbanGroup
-              groupBy={groupBy}
-              key={priority}
-              priority={priority}
-              stories={stories}
-            />
-          ))}
-        {groupBy === "Assignee" &&
-          members.map((member) => (
-            <KanbanGroup
-              groupBy={groupBy}
-              key={member.id}
-              member={member}
-              stories={stories}
-            />
-          ))}
+        {groupedStories.groups.map((group) => (
+          <GroupedKanbanStories
+            group={group}
+            groupBy={groupBy}
+            key={group.key}
+            members={members}
+            meta={groupedStories.meta}
+            statuses={statuses}
+            viewOptions={viewOptions}
+          />
+        ))}
       </Box>
     </BodyContainer>
   );

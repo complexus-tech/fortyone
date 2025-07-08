@@ -1,16 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useParams } from "next/navigation";
 import { storyKeys } from "../constants";
 import { bulkRestoreAction } from "../actions/bulk-restore-stories";
 
 export const useBulkRestoreStoryMutation = () => {
-  const { storyId } = useParams<{ storyId?: string }>();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: bulkRestoreAction,
+
+    onMutate: (storyIds) => {
+      // For restore operations, we rely on invalidation rather than optimistic updates
+      // since we don't have the full story data available at this point
+      return { storyIds };
+    },
+
     onError: (error, storyIds) => {
+      queryClient.invalidateQueries({ queryKey: storyKeys.all });
       toast.error("Failed to restore stories", {
         description:
           error.message || "An error occurred while restoring stories",
@@ -22,37 +28,18 @@ export const useBulkRestoreStoryMutation = () => {
         },
       });
     },
+
     onSuccess: (res, storyIds) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      if (storyId) {
-        queryClient.invalidateQueries({
-          queryKey: storyKeys.detail(storyId),
-        });
-      }
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail")
-        ) {
-          queryClient.invalidateQueries({ queryKey: query.queryKey });
-        }
-      });
       toast.success("Success", {
         description: `${storyIds.length} stories restored`,
       });
     },
-    onSettled: (_, __, storyIds) => {
-      storyIds.forEach((storyId) => {
-        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      });
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: storyKeys.all });
     },
   });
 

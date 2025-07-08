@@ -333,12 +333,7 @@ export const NewObjectiveDialog = ({
       feature="maxObjectives"
     >
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content
-          className={cn("max-w-4xl", {
-            "max-w-5xl": isExpanded,
-          })}
-          hideClose
-        >
+        <Dialog.Content hideClose size="lg">
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
             <Dialog.Title className="flex items-center gap-1 text-lg">
               <Menu>
@@ -387,14 +382,15 @@ export const NewObjectiveDialog = ({
                 New {getTermDisplay("objectiveTerm")}
               </Text>
             </Dialog.Title>
-            <Flex gap={2}>
+            <Flex gap={3}>
               <Button
-                className="px-[0.35rem] dark:hover:bg-dark-100"
+                asIcon
+                className="dark:hover:bg-dark-50"
                 color="tertiary"
                 onClick={() => {
                   setIsExpanded((prev) => !prev);
                 }}
-                size="xs"
+                size="sm"
                 variant="naked"
               >
                 {isExpanded ? (
@@ -416,7 +412,7 @@ export const NewObjectiveDialog = ({
               editor={titleEditor}
             />
             <TextEditor
-              className={cn({
+              className={cn("min-h-28", {
                 "min-h-96": isExpanded,
               })}
               editor={editor}
@@ -589,103 +585,100 @@ export const NewObjectiveDialog = ({
               </AssigneesMenu>
             </Flex>
             {features.keyResultEnabled ? (
-              <>
-                <Divider className="my-4" />
-                <Box>
-                  <Text className="mb-3 font-medium">
-                    {getTermDisplay("keyResultTerm", {
-                      variant: "plural",
-                      capitalize: true,
-                    })}
-                  </Text>
-                  {keyResultMode === null ? (
-                    <>
-                      <KeyResultsList
-                        keyResults={objectiveForm.keyResults || []}
-                        onEdit={(index) => {
-                          const kr = objectiveForm.keyResults?.[index];
-                          if (kr) {
-                            setEditingKeyResult(kr);
-                            setEditingIndex(index);
-                            setKeyResultMode("edit");
-                          }
-                        }}
-                        onRemove={(index) => {
-                          setObjectiveForm((prev) => ({
-                            ...prev,
-                            keyResults:
-                              prev.keyResults?.filter((_, i) => i !== index) ||
-                              [],
-                          }));
-                        }}
-                      />
-                      <Button
-                        color="tertiary"
-                        leftIcon={<PlusIcon />}
-                        onClick={() => {
-                          const newKr: NewKeyResult = {
-                            name: "",
-                            measurementType: "number",
-                            currentValue: 0,
-                            startValue: 0,
-                            targetValue: 0,
-                          };
-                          setEditingKeyResult(newKr);
-                          setEditingIndex(null);
-                          setKeyResultMode("add");
-                        }}
-                        variant="outline"
-                      >
-                        Add{" "}
-                        {getTermDisplay("keyResultTerm", { capitalize: true })}
-                      </Button>
-                    </>
-                  ) : (
-                    <KeyResultEditor
-                      keyResult={editingKeyResult}
-                      onCancel={() => {
-                        setKeyResultMode(null);
-                        setEditingKeyResult(null);
-                        setEditingIndex(null);
-                      }}
-                      onSave={() => {
-                        if (keyResultMode === "add") {
-                          setObjectiveForm((prev) => ({
-                            ...prev,
-                            keyResults: [
-                              ...(prev.keyResults || []),
-                              {
-                                ...editingKeyResult!,
-                                currentValue: editingKeyResult!.startValue,
-                              },
-                            ],
-                          }));
-                        } else if (editingIndex !== null) {
-                          setObjectiveForm((prev) => ({
-                            ...prev,
-                            keyResults:
-                              prev.keyResults?.map((kr, i) =>
-                                i === editingIndex ? editingKeyResult! : kr,
-                              ) || [],
-                          }));
+              <Box className="mt-3">
+                <Text className="mb-3 text-lg font-semibold antialiased">
+                  {getTermDisplay("keyResultTerm", {
+                    variant: "plural",
+                    capitalize: true,
+                  })}
+                </Text>
+                {keyResultMode === null ? (
+                  <>
+                    <KeyResultsList
+                      keyResults={objectiveForm.keyResults || []}
+                      onEdit={(index) => {
+                        const kr = objectiveForm.keyResults?.[index];
+                        if (kr) {
+                          setEditingKeyResult(kr);
+                          setEditingIndex(index);
+                          setKeyResultMode("edit");
                         }
-                        setKeyResultMode(null);
-                        setEditingKeyResult(null);
-                        setEditingIndex(null);
                       }}
-                      onUpdate={(_index: number, updates: KeyResultUpdate) => {
-                        setEditingKeyResult((prev) => {
-                          if (!prev) return null;
-                          return {
-                            ...prev,
-                            ...updates,
-                          };
-                        });
+                      onRemove={(index) => {
+                        setObjectiveForm((prev) => ({
+                          ...prev,
+                          keyResults:
+                            prev.keyResults?.filter((_, i) => i !== index) ||
+                            [],
+                        }));
                       }}
                     />
-                  )}
-                </Box>
-              </>
+                    <Button
+                      color="tertiary"
+                      leftIcon={<PlusIcon />}
+                      onClick={() => {
+                        const newKr: NewKeyResult = {
+                          name: "",
+                          measurementType: "number",
+                          currentValue: 0,
+                          startValue: 0,
+                          targetValue: 0,
+                        };
+                        setEditingKeyResult(newKr);
+                        setEditingIndex(null);
+                        setKeyResultMode("add");
+                      }}
+                      variant="outline"
+                    >
+                      Add{" "}
+                      {getTermDisplay("keyResultTerm", { capitalize: true })}
+                    </Button>
+                  </>
+                ) : (
+                  <KeyResultEditor
+                    keyResult={editingKeyResult}
+                    onCancel={() => {
+                      setKeyResultMode(null);
+                      setEditingKeyResult(null);
+                      setEditingIndex(null);
+                    }}
+                    onSave={() => {
+                      if (keyResultMode === "add") {
+                        setObjectiveForm((prev) => ({
+                          ...prev,
+                          keyResults: [
+                            ...(prev.keyResults || []),
+                            {
+                              ...editingKeyResult!,
+                              currentValue: editingKeyResult!.startValue,
+                            },
+                          ],
+                        }));
+                      } else if (editingIndex !== null) {
+                        setObjectiveForm((prev) => ({
+                          ...prev,
+                          keyResults:
+                            prev.keyResults?.map((kr, i) =>
+                              i === editingIndex ? editingKeyResult! : kr,
+                            ) || [],
+                        }));
+                      }
+                      setKeyResultMode(null);
+                      setEditingKeyResult(null);
+                      setEditingIndex(null);
+                    }}
+                    onUpdate={(_index: number, updates: KeyResultUpdate) => {
+                      setEditingKeyResult((prev) => {
+                        if (!prev) return null;
+                        return {
+                          ...prev,
+                          ...updates,
+                        };
+                      });
+                    }}
+                  />
+                )}
+              </Box>
             ) : null}
           </Dialog.Body>
           <Dialog.Footer className="flex items-center justify-end gap-2">

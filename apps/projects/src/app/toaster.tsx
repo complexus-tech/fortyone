@@ -12,6 +12,7 @@ export const Toaster = (_: ToasterProps) => {
 
   return (
     <Sonner
+      className="z-[99999]"
       closeButton
       duration={8000}
       icons={toasterIcons}

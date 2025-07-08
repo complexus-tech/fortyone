@@ -13,9 +13,9 @@ const ProfileContext = createContext<Profile | undefined>(undefined);
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const initialOptions: StoriesViewOptions = {
-    groupBy: "Status",
-    orderBy: "Priority",
-    showEmptyGroups: false,
+    groupBy: "status",
+    orderBy: "created",
+    showEmptyGroups: true,
     displayColumns: [
       "Status",
       "Assignee",
@@ -28,7 +28,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "profile:view-options",
+    "profile:view-options-v2",
     initialOptions,
   );
   return (

@@ -17,5 +17,7 @@ module.exports = {
     "@typescript-eslint/no-empty-function": "off",
     "react/no-array-index-key": "off",
     "import/no-cycle": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/require-await": "off",
   },
 };

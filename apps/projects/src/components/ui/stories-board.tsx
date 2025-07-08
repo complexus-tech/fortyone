@@ -10,11 +10,16 @@ import {
   TouchSensor,
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import { cn } from "lib";
+import type {
+  GroupedStoriesResponse,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -23,6 +28,9 @@ import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useFeatures, useTerminology } from "@/hooks";
+import { StoriesList } from "@/components/ui/stories-list";
+import { BodyContainer } from "@/components/shared/body";
+import { moveStoryBetweenGroups } from "@/modules/stories/utils/optimistic";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StoryCard } from "./story/card";
@@ -62,7 +70,7 @@ const StoryOverlay = ({
       ) : (
         <Flex
           align="center"
-          className="w-max rounded-[0.6rem] border border-gray-100 bg-gray-50/70 px-3 py-3.5 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
+          className="w-max rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-3.5 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
           gap={2}
         >
           {selectedStories > 1 ? (
@@ -86,39 +94,6 @@ const StoryOverlay = ({
   );
 };
 
-// Move orderStories out of the component for better performance
-const orderStories = (stories: Story[] = [], orderBy = ""): Story[] => {
-  const getSortValue = (story: Story): number => {
-    switch (orderBy) {
-      case "Created":
-        return new Date(story.createdAt).getTime();
-      case "Updated":
-        return new Date(story.updatedAt).getTime();
-      case "Deadline": {
-        const date = new Date(story.endDate!);
-        return isNaN(date.getTime()) ? Infinity : date.getTime();
-      }
-      case "Priority": {
-        const prioritiesMap: Record<StoryPriority, number> = {
-          "No Priority": 0,
-          Low: 1,
-          Medium: 2,
-          High: 3,
-          Urgent: 4,
-        };
-        return (
-          prioritiesMap[story.priority] * 1e15 -
-          new Date(story.createdAt).getTime()
-        );
-      }
-      default:
-        return 0;
-    }
-  };
-
-  return [...stories].sort((a, b) => getSortValue(b) - getSortValue(a));
-};
-
 // Move EmptyState component outside StoriesBoard to prevent recreation on each render
 const EmptyState = ({
   objectiveId,
@@ -131,7 +106,7 @@ const EmptyState = ({
   teamId?: string;
   getTermDisplay: ReturnType<typeof useTerminology>["getTermDisplay"];
 }) => (
-  <Box className="flex h-[70vh] items-center justify-center">
+  <Box className="flex h-[70dvh] items-center justify-center">
     <Box className="flex flex-col items-center">
       <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
       <Text className="mb-6 mt-8" fontSize="3xl">
@@ -160,15 +135,17 @@ const EmptyState = ({
 export const StoriesBoard = ({
   isInSearch,
   layout,
-  stories,
+  groupedStories: allStories,
   className,
   viewOptions,
+  rowClassName,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
-  stories: Story[];
+  groupedStories?: GroupedStoriesResponse;
   className?: string;
   viewOptions: StoriesViewOptions;
+  rowClassName?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId, sprintId, teamId } = useParams<{
@@ -176,10 +153,13 @@ export const StoriesBoard = ({
     sprintId: string;
     teamId: string;
   }>();
+
   const features = useFeatures();
-  const [storiesBoard, setStoriesBoard] = useState<Story[]>(stories);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
+  const [groupedStories, setGroupedStories] = useState<
+    GroupedStoriesResponse | undefined
+  >(undefined);
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -198,8 +178,12 @@ export const StoriesBoard = ({
   );
 
   const handleDragStart = (e: DragStartEvent) => {
-    const story = stories.find(({ id }) => id === e.active.id)!;
-    setActiveStory(story);
+    const storyId = e.active.id.toString();
+    // get the story from groupedStories
+    const story = groupedStories?.groups
+      .flatMap((group) => group.stories)
+      .find((story) => story.id === storyId);
+    setActiveStory(story!);
   };
 
   const handleDragEnd = useCallback(
@@ -217,58 +201,41 @@ export const StoriesBoard = ({
         const storyId = e.active.id.toString();
         const updatePayload: Partial<DetailedStory> = {};
 
-        if (groupBy === "Status") {
+        if (groupBy === "status") {
           const newStatus = e.over.id.toString();
           updatePayload.statusId = newStatus;
-
-          setStoriesBoard((prev) =>
-            prev.map((story) =>
-              story.id === storyId ? { ...story, statusId: newStatus } : story,
-            ),
-          );
         }
 
-        if (groupBy === "Priority") {
+        if (groupBy === "priority") {
           const newPriority = e.over.id as StoryPriority;
           updatePayload.priority = newPriority;
-
-          setStoriesBoard((prev) =>
-            prev.map((story) =>
-              story.id === storyId
-                ? { ...story, priority: newPriority }
-                : story,
-            ),
-          );
         }
 
-        if (groupBy === "Assignee") {
+        if (groupBy === "assignee") {
           const newAssignee = e.over.id as string;
           updatePayload.assigneeId = newAssignee;
-
-          setStoriesBoard((prev) =>
-            prev.map((story) =>
-              story.id === storyId
-                ? { ...story, assigneeId: newAssignee }
-                : story,
-            ),
-          );
         }
-
         // Only call the API if we have updates
         if (Object.keys(updatePayload).length > 0) {
           updateStory(storyId, updatePayload);
+          if (groupBy !== "none") {
+            setGroupedStories((prev) =>
+              prev
+                ? getOptimisticallyUpdatedGroups(
+                    prev,
+                    storyId,
+                    updatePayload,
+                    e.over!.id.toString(),
+                  )
+                : prev,
+            );
+          }
         }
       }
 
       setActiveStory(null);
     },
-    [viewOptions, mutate],
-  );
-
-  // Memoize the ordered stories
-  const orderedStories = useMemo(
-    () => orderStories(storiesBoard, viewOptions.orderBy),
-    [storiesBoard, viewOptions.orderBy],
+    [mutate, viewOptions],
   );
 
   const mouseSensor = useSensor(MouseSensor, {
@@ -291,10 +258,6 @@ export const StoriesBoard = ({
 
   const sensors = useSensors(mouseSensor, pointerSensor, touchSensor);
 
-  useEffect(() => {
-    setStoriesBoard(stories);
-  }, [stories]);
-
   // Memoize the context value to prevent unnecessary re-renders
   const boardContextValue = useMemo(
     () => ({
@@ -306,10 +269,18 @@ export const StoriesBoard = ({
     [selectedStories, viewOptions, isColumnVisible],
   );
 
+  const hasStories = groupedStories?.groups.some(
+    (group) => group.stories.length > 0,
+  );
+
+  useEffect(() => {
+    setGroupedStories(allStories);
+  }, [allStories]);
+
   return (
     <BoardContext.Provider value={boardContextValue}>
       <Box>
-        {storiesBoard.length === 0 && !isInSearch && (
+        {!isInSearch && !hasStories && (
           <EmptyState
             getTermDisplay={getTermDisplay}
             objectiveId={objectiveId}
@@ -318,27 +289,50 @@ export const StoriesBoard = ({
           />
         )}
 
-        {storiesBoard.length > 0 && (
+        {hasStories ? (
           <DndContext
             onDragEnd={handleDragEnd}
             onDragStart={handleDragStart}
             sensors={sensors}
           >
-            {layout === "kanban" && (
-              <KanbanBoard className={className} stories={orderedStories} />
-            )}
             {layout === "gantt" && (
-              <GanttBoard className={className} stories={orderedStories} />
+              <GanttBoard className={className} stories={[]} />
             )}
-            {(layout === "list" || !layout) && (
-              <ListBoard
-                className={className}
-                isInSearch={isInSearch}
-                stories={orderedStories}
-                viewOptions={viewOptions}
-              />
+            {groupedStories?.meta.groupBy === "none" ? (
+              <BodyContainer
+                className={cn(
+                  "overflow-x-auto pb-6",
+                  {
+                    "h-auto pb-0": isInSearch,
+                  },
+                  className,
+                )}
+              >
+                <StoriesList
+                  isInSearch={isInSearch}
+                  rowClassName={rowClassName}
+                  stories={groupedStories.groups[0].stories}
+                />
+              </BodyContainer>
+            ) : (
+              <>
+                {layout === "kanban" && (
+                  <KanbanBoard
+                    className={className}
+                    groupedStories={groupedStories!}
+                  />
+                )}
+                {(layout === "list" || !layout) && (
+                  <ListBoard
+                    className={className}
+                    groupedStories={groupedStories!}
+                    isInSearch={isInSearch}
+                    rowClassName={rowClassName}
+                    viewOptions={viewOptions}
+                  />
+                )}
+              </>
             )}
-
             {activeStory && typeof window !== "undefined"
               ? createPortal(
                   <StoryOverlay
@@ -350,11 +344,26 @@ export const StoriesBoard = ({
                 )
               : null}
           </DndContext>
-        )}
+        ) : null}
 
         {/* This toolbar pops up when the user selects stories */}
         {selectedStories.length > 0 && <StoriesToolbar />}
       </Box>
     </BoardContext.Provider>
   );
+};
+
+export const getOptimisticallyUpdatedGroups = (
+  prev: GroupedStoriesResponse,
+  storyId: string,
+  update: Partial<DetailedStory>,
+  targetKey: string,
+): GroupedStoriesResponse => {
+  const groups = moveStoryBetweenGroups(
+    prev.groups,
+    storyId,
+    targetKey,
+    update,
+  );
+  return { ...prev, groups };
 };

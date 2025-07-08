@@ -109,32 +109,32 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="dark:bg-dark-300 md:mb-auto md:mt-auto"
+        className="max-w-[86rem] border dark:bg-dark-300 md:mb-auto md:mt-auto"
         hideClose
-        size="xl"
       >
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>
         </Dialog.Title>
-        <Dialog.Body className="h-[85dvh] max-h-[85dvh] overflow-y-hidden px-0 pt-0">
+        <Dialog.Body className="h-[90dvh] max-h-[90dvh] overflow-y-hidden px-0 pt-0">
           <StoryPage
             isDialog
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-[2] bg-white/80 px-10 py-4 backdrop-blur dark:bg-dark-300/80"
+                className="sticky top-0 z-[2] bg-white/80 px-6 py-4 backdrop-blur dark:bg-dark-300/80"
                 gap={2}
                 justify="between"
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="shrink-0 gap-1 pl-2.5 pr-4 dark:border-dark-100 dark:bg-dark-100/30"
+                    className="shrink-0 gap-1 pl-2.5 pr-4 font-semibold tracking-wide text-dark/80 dark:border-dark-100 dark:bg-dark-100/30"
                     color="tertiary"
-                    leftIcon={<ArrowLeft2Icon />}
+                    leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    rounded="full"
+                    // rounded="full"
+                    variant="naked"
                   >
                     Close
                   </Button>

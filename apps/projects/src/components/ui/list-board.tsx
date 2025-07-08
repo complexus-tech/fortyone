@@ -1,56 +1,98 @@
 import { cn } from "lib";
 import { useParams } from "next/navigation";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  GroupedStoriesResponse,
+  StoryPriority,
+  StoryGroup,
+} from "@/modules/stories/types";
 import { StoriesGroup } from "@/components/ui/stories-group";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useStatuses, useTeamStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
 import type { Member } from "@/types";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
-import { StoriesList } from "./stories-list";
+
+// const unassignedMember: unknown = {
+//   id: "unassigned",
+//   username: "Unassigned",
+//   email: "unassigned@example.com",
+//   fullName: "",
+//   avatarUrl: "",
+//   isActive: true,
+//   role: "member",
+//   createdAt: new Date().toISOString(),
+//   updatedAt: new Date().toISOString(),
+// };
+
+const GroupedStories = ({
+  meta,
+  group,
+  isInSearch,
+  viewOptions,
+  members,
+  statuses,
+  rowClassName,
+}: {
+  meta: GroupedStoriesResponse["meta"];
+  group: StoryGroup;
+  isInSearch?: boolean;
+  viewOptions: StoriesViewOptions;
+  members: Member[];
+  statuses: State[];
+  rowClassName?: string;
+}) => {
+  const getGroupProps = () => {
+    switch (meta.groupBy) {
+      case "priority":
+        return { priority: group.key as StoryPriority };
+      case "status":
+        return { status: statuses.find((status) => status.id === group.key) };
+      case "assignee":
+        return { assignee: members.find((member) => member.id === group.key) };
+      case "none":
+        return {};
+    }
+  };
+
+  return (
+    <StoriesGroup
+      className="-top-[0.5px]"
+      id={group.key}
+      isInSearch={isInSearch}
+      key={group.key}
+      {...getGroupProps()}
+      group={group}
+      meta={meta}
+      rowClassName={rowClassName}
+      viewOptions={viewOptions}
+    />
+  );
+};
 
 export const ListBoard = ({
-  stories,
+  groupedStories,
   className,
   viewOptions,
   isInSearch,
+  rowClassName,
 }: {
-  stories: Story[];
   className?: string;
+  groupedStories: GroupedStoriesResponse;
   viewOptions: StoriesViewOptions;
   isInSearch?: boolean;
+  rowClassName?: string;
 }) => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { groupBy } = viewOptions;
-  const { data: teamStatuses = [] } = useTeamStatuses(teamId);
-  const { data: allStatuses = [] } = useStatuses();
-  const statuses = teamId ? teamStatuses : allStatuses;
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
   const members = (teamId ? teamMembers : allMembers).filter(
     ({ role }) => role !== "system",
   );
-
-  const priorities: StoryPriority[] = [
-    "Urgent",
-    "High",
-    "Medium",
-    "Low",
-    "No Priority",
-  ];
-
-  const unassignedMember: unknown = {
-    id: "unassigned",
-    username: "Unassigned",
-    email: "unassigned@example.com",
-    fullName: "",
-    avatarUrl: "",
-    isActive: true,
-    role: "member",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  const { data: teamStatuses = [] } = useTeamStatuses(teamId);
+  const { data: allStatuses = [] } = useStatuses();
+  const statuses = teamId ? teamStatuses : allStatuses;
 
   return (
     <BodyContainer
@@ -62,43 +104,18 @@ export const ListBoard = ({
         className,
       )}
     >
-      {groupBy === "None" && (
-        <StoriesList isInSearch={isInSearch} stories={stories} />
-      )}
-      {groupBy === "Status" &&
-        statuses.map((status) => (
-          <StoriesGroup
-            className="-top-[0.5px]"
-            isInSearch={isInSearch}
-            key={status.id}
-            status={status}
-            stories={stories}
-            viewOptions={viewOptions}
-          />
-        ))}
-      {groupBy === "Priority" &&
-        priorities.map((priority) => (
-          <StoriesGroup
-            className="-top-[0.5px]"
-            isInSearch={isInSearch}
-            key={priority}
-            priority={priority}
-            stories={stories}
-            viewOptions={viewOptions}
-          />
-        ))}
-
-      {groupBy === "Assignee" &&
-        [...members, unassignedMember].map((member) => (
-          <StoriesGroup
-            assignee={member as Member}
-            className="-top-[0.5px]"
-            isInSearch={isInSearch}
-            key={(member as Member).email}
-            stories={stories}
-            viewOptions={viewOptions}
-          />
-        ))}
+      {groupedStories.groups.map((group) => (
+        <GroupedStories
+          group={group}
+          isInSearch={isInSearch}
+          key={group.key}
+          members={members}
+          meta={groupedStories.meta}
+          rowClassName={rowClassName}
+          statuses={statuses}
+          viewOptions={viewOptions}
+        />
+      ))}
     </BodyContainer>
   );
 };

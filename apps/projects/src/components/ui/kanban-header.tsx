@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip, Avatar } from "ui";
 import { PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
 import { useUserRole, useTerminology } from "@/hooks";
 import type { Member } from "@/types";
@@ -16,14 +16,14 @@ import { useBoard } from "./board-context";
 export const StoriesKanbanHeader = ({
   status,
   priority,
-  stories,
+  group,
   groupBy,
   member,
 }: {
   status?: State;
   priority?: StoryPriority;
   member?: Member;
-  stories: Story[];
+  group: StoryGroup;
   groupBy: ViewOptionsGroupBy;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -32,21 +32,10 @@ export const StoriesKanbanHeader = ({
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
 
-  let filteredStories: Story[] = [];
-  if (groupBy === "Status") {
-    filteredStories = stories.filter((story) => story.statusId === status?.id);
-  } else if (groupBy === "Priority") {
-    filteredStories = stories.filter((story) => story.priority === priority);
-  } else if (groupBy === "Assignee") {
-    filteredStories = stories.filter(
-      (story) => story.assigneeId === member?.id,
-    );
-  }
-
   return (
     <Box
       className={cn({
-        hidden: filteredStories.length === 0 && !showEmptyGroups,
+        hidden: group.loadedCount === 0 && !showEmptyGroups,
       })}
     >
       <Flex
@@ -57,19 +46,19 @@ export const StoriesKanbanHeader = ({
         key={status?.id}
       >
         <Flex align="center" gap={2}>
-          {groupBy === "Status" && (
+          {groupBy === "status" && (
             <>
               <StoryStatusIcon statusId={status?.id} />
               {status?.name}
             </>
           )}
-          {groupBy === "Priority" && (
+          {groupBy === "priority" && (
             <>
               <PriorityIcon priority={priority} />
               {priority}
             </>
           )}
-          {groupBy === "Assignee" && (
+          {groupBy === "assignee" && (
             <>
               <Avatar
                 className={cn({
@@ -88,8 +77,10 @@ export const StoriesKanbanHeader = ({
             </span>
           </Tooltip>
           <Text color="muted">
-            {filteredStories.length}{" "}
-            {getTermDisplay("storyTerm", { variant: "plural" })}
+            {group.totalCount}{" "}
+            {getTermDisplay("storyTerm", {
+              variant: group.totalCount === 1 ? "singular" : "plural",
+            })}
           </Text>
         </Flex>
         <Button
