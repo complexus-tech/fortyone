@@ -15,6 +15,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       priorities: filters.priorities ?? undefined,
       assigneeIds: filters.assigneeIds ?? undefined,
       categories: ["backlog"],
+      reporterIds: filters.reporterIds ?? undefined,
+      assignedToMe: filters.assignedToMe ? true : undefined,
+      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
+      createdByMe: filters.createdByMe ? true : undefined,
+      teamIds: filters.teamIds ?? undefined,
+      sprintIds: filters.sprintIds ?? undefined,
     },
   );
 

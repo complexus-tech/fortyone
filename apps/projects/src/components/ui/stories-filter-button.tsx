@@ -10,7 +10,7 @@ import {
 import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -321,6 +321,9 @@ export const StoriesFilterButton = ({
   resetFilters,
 }: StoriesFilterButtonProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
+  const { teamId } = useParams<{ teamId: string }>();
+  const isBacklog = pathname.includes("/backlog");
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
@@ -434,15 +437,20 @@ export const StoriesFilterButton = ({
             }}
           />
         </Box>
-        <Divider />
-        <FilterSection title="Status">
-          <StatusSelector
-            onChange={(statusIds) => {
-              setFilters({ ...filters, statusIds });
-            }}
-            selected={filters.statusIds}
-          />
-        </FilterSection>
+        {!isBacklog && (
+          <>
+            <Divider />
+            <FilterSection title="Status">
+              <StatusSelector
+                onChange={(statusIds) => {
+                  setFilters({ ...filters, statusIds });
+                }}
+                selected={filters.statusIds}
+              />
+            </FilterSection>
+          </>
+        )}
+
         <Divider />
         <FilterSection title="Assignee">
           <UserSelector
@@ -469,24 +477,33 @@ export const StoriesFilterButton = ({
             selected={filters.priorities}
           />
         </FilterSection>
-        <Divider />
-        <FilterSection title="Team">
-          <TeamSelector
-            onChange={(teamIds) => {
-              setFilters({ ...filters, teamIds });
-            }}
-            selected={filters.teamIds}
-          />
-        </FilterSection>
-        <Divider />
-        <FilterSection title="Sprint">
-          <SprintSelector
-            onChange={(sprintIds) => {
-              setFilters({ ...filters, sprintIds });
-            }}
-            selected={filters.sprintIds}
-          />
-        </FilterSection>
+        {!teamId ? (
+          <>
+            <Divider />
+            <FilterSection title="Team">
+              <TeamSelector
+                onChange={(teamIds) => {
+                  setFilters({ ...filters, teamIds });
+                }}
+                selected={filters.teamIds}
+              />
+            </FilterSection>
+          </>
+        ) : null}
+
+        {!isBacklog && (
+          <>
+            <Divider />
+            <FilterSection title="Sprint">
+              <SprintSelector
+                onChange={(sprintIds) => {
+                  setFilters({ ...filters, sprintIds });
+                }}
+                selected={filters.sprintIds}
+              />
+            </FilterSection>
+          </>
+        )}
       </Popover.Content>
     </Popover>
   );
