@@ -20,6 +20,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       createdByMe: filters.createdByMe ? true : undefined,
       teamIds: filters.teamIds ?? undefined,
       sprintIds: filters.sprintIds ?? undefined,
+      includeArchived: true,
     },
   );
 

@@ -29,6 +29,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     updatedBefore: meta.filters.updatedBefore ?? undefined,
     deadlineAfter: meta.filters.deadlineAfter ?? undefined,
     deadlineBefore: meta.filters.deadlineBefore ?? undefined,
+    includeArchived: meta.filters.includeArchived ?? undefined,
   };
   return finalFilters;
 };

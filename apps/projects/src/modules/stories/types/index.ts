@@ -70,6 +70,7 @@ export type StoryFilters = {
   updatedBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  includeArchived?: boolean;
 };
 
 export type GroupedStoriesResponse = {
@@ -122,6 +123,7 @@ export type GroupedStoryParams = {
   updatedBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  includeArchived?: boolean;
 };
 
 export type GroupStoryParams = {
@@ -151,4 +153,5 @@ export type GroupStoryParams = {
   updatedBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  includeArchived?: boolean;
 };

@@ -84,11 +84,7 @@ export const Header = ({
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
-          groupByOptions={
-            layout === "kanban"
-              ? ["assignee", "priority"]
-              : ["assignee", "priority"]
-          }
+          groupByOptions={["status", "priority", "assignee"]}
           initialViewOptions={initialViewOptions}
           layout={layout}
           setViewOptions={setViewOptions}
