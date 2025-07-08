@@ -200,6 +200,10 @@ const updateInfiniteQuery = (
 
     const firstPage = data.pages[0];
 
+    if (firstPage.stories.length === 0) {
+      return data; // nothing to clone from; grouped cache already patched
+    }
+
     // Avoid duplicates
     const exists = firstPage.stories.some((s) => s.id === storyId);
 
@@ -209,6 +213,7 @@ const updateInfiniteQuery = (
     const updatedStory = {
       ...(firstPage.stories[0] ?? {}),
       id: storyId,
+      subStories: [],
       ...payload,
     } as (typeof firstPage.stories)[number];
 

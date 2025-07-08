@@ -38,7 +38,11 @@ export const moveStoryBetweenGroups = (
   const withoutStory = groups.map((g) => {
     const remaining = g.stories.filter((s) => {
       if (s.id === storyId) {
-        moved = { ...s, ...patch } as DetailedStory;
+        moved = {
+          ...s,
+          subStories: s.subStories,
+          ...patch,
+        } as DetailedStory;
         return false;
       }
       return true;
