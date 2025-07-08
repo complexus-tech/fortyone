@@ -7,6 +7,7 @@ import type {
   GroupedStoriesResponse,
   GroupStoriesResponse,
   GroupStoryParams,
+  Story,
 } from "@/modules/stories/types";
 import type { SearchResponse } from "@/modules/search/types";
 import {
@@ -138,6 +139,9 @@ const updateInfiniteQuery = (
   storyId: string,
   payload: Partial<DetailedStory>,
 ) => {
+  // Store the real story object once we encounter it
+  let movedStory: Story | undefined;
+
   const patchInfiniteQuery = (
     key: readonly unknown[],
     updater: (
@@ -152,25 +156,34 @@ const updateInfiniteQuery = (
     const { groupKey, params } = parseGroupQueryKey(queryKey);
     const target = computeTargetKey(params.groupBy ?? "none", payload);
 
-    // stays in same group → simple map
     if (!target || target === groupKey) {
       return {
         ...data,
         pages: data.pages.map((p) => ({
           ...p,
-          stories: p.stories.map((s) =>
-            s.id === storyId ? { ...s, ...payload } : s,
-          ),
+          stories: p.stories.map((s) => {
+            if (s.id === storyId) {
+              movedStory = { ...s, ...payload };
+              return movedStory;
+            }
+            return s;
+          }),
         })),
       };
     }
 
-    // moved → filter story out
+    // moved: filter out and capture
     return {
       ...data,
       pages: data.pages.map((p) => ({
         ...p,
-        stories: p.stories.filter((s) => s.id !== storyId),
+        stories: p.stories.filter((s) => {
+          if (s.id === storyId) {
+            movedStory = { ...s, ...payload };
+            return false;
+          }
+          return true;
+        }),
       })),
     };
   });
@@ -196,34 +209,37 @@ const updateInfiniteQuery = (
   ] as const;
 
   patchInfiniteQuery(targetQueryKey, (data) => {
-    if (!data?.pages) return data;
+    if (!movedStory) return data;
+
+    // If no pages yet, create minimal first page
+    if (!data?.pages || data.pages.length === 0) {
+      return {
+        pages: [
+          {
+            groupKey: targetKeyValue,
+            stories: [movedStory],
+            pagination: {
+              page: 1,
+              pageSize: 1,
+              hasMore: false,
+              nextPage: 2,
+            },
+            filters: {},
+          },
+        ],
+        pageParams: [1],
+      } as InfiniteData<GroupStoriesResponse>;
+    }
 
     const firstPage = data.pages[0];
 
-    if (firstPage.stories.length === 0) {
-      return data; // nothing to clone from; grouped cache already patched
-    }
-
     // Avoid duplicates
-    const exists = firstPage.stories.some((s) => s.id === storyId);
-
-    if (exists) return data;
-
-    // Prepend story to first page
-    const updatedStory = {
-      ...(firstPage.stories[0] ?? {}),
-      id: storyId,
-      subStories: [],
-      ...payload,
-    } as (typeof firstPage.stories)[number];
+    if (firstPage.stories.some((s) => s.id === storyId)) return data;
 
     return {
       ...data,
       pages: [
-        {
-          ...firstPage,
-          stories: [...firstPage.stories, updatedStory],
-        },
+        { ...firstPage, stories: [...firstPage.stories, movedStory] },
         ...data.pages.slice(1),
       ],
     };
