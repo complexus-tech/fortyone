@@ -11,6 +11,7 @@ import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 
 type ChatMessageProps = {
+  isFullScreen: boolean;
   message: Message;
   profile: User | undefined;
   isStreaming?: boolean;
@@ -101,6 +102,7 @@ const RenderMessage = ({
 };
 
 export const ChatMessage = ({
+  isFullScreen,
   message,
   profile,
   isStreaming,
@@ -126,6 +128,8 @@ export const ChatMessage = ({
       <Flex
         className={cn("max-w-[75%] flex-1", {
           "items-end": message.role === "user",
+          "max-w-full": message.role === "assistant",
+          "md:max-w-[90%]": isFullScreen,
         })}
         direction="column"
       >

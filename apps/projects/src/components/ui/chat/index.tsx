@@ -217,6 +217,7 @@ export const Chat = () => {
               direction="column"
             >
               <ChatMessages
+                isFullScreen={isFullScreen}
                 isLoading={isLoading}
                 isStreaming={status === "streaming"}
                 messages={messages}
