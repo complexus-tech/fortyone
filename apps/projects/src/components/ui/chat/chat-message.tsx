@@ -135,7 +135,7 @@ export const ChatMessage = ({
       <Flex
         className={cn("max-w-[75%] flex-1", {
           "items-end": message.role === "user",
-          "max-w-full": message.role === "assistant",
+          "max-w-[85%]": message.role === "assistant",
           "md:max-w-[90%]": isFullScreen,
         })}
         direction="column"

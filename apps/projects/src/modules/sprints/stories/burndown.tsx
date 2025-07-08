@@ -162,7 +162,7 @@ export const BurndownChart = ({
           data={chartData}
           margin={{
             top: 20,
-            right: 20,
+            right: 0,
             left: 2,
             bottom: 0,
           }}
