@@ -51,6 +51,7 @@ export type StoryGroup = {
 
 export type StoryFilters = {
   statusIds?: string[] | null;
+  categories?: StateCategory[];
   assigneeIds?: string[] | null;
   reporterIds?: string[] | null;
   priorities?: string[] | null;
@@ -133,6 +134,7 @@ export type GroupStoryParams = {
   assignedToMe?: boolean;
   createdByMe?: boolean;
   statusIds?: string[];
+  categories?: StateCategory[];
   assigneeIds?: string[];
   reporterIds?: string[];
   priorities?: string[];

@@ -9,6 +9,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     sprintIds: meta.filters.sprintIds ?? undefined,
     statusIds: meta.filters.statusIds ?? undefined,
     assigneeIds: meta.filters.assigneeIds ?? undefined,
+    categories: meta.filters.categories ?? undefined,
     orderBy: meta.orderBy,
     orderDirection: meta.orderDirection,
     // page?: number;

@@ -17,6 +17,7 @@ export const ChatHeader = ({
       <Button
         asIcon
         color="tertiary"
+        disabled
         leftIcon={
           <PlusIcon
             className="h-[1.4rem] text-dark/70 dark:text-gray-200"
