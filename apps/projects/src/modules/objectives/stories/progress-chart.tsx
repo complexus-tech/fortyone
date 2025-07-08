@@ -202,13 +202,13 @@ export const ProgressChart = ({ progressData }: ProgressChartProps) => {
   });
 
   return (
-    <Box className="h-64 w-full">
+    <Box className="h-72 w-full">
       <ResponsiveContainer height="100%" width="100%">
         <ComposedChart
           data={chartData}
           margin={{
             top: 20,
-            right: 20,
+            right: 0,
             left: 3,
             bottom: 0,
           }}
