@@ -16,9 +16,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       statusIds: filters.statusIds ?? undefined,
       priorities: filters.priorities ?? undefined,
       assigneeIds: filters.assigneeIds ?? undefined,
+      reporterIds: filters.reporterIds ?? undefined,
       assignedToMe: filters.assignedToMe ? true : undefined,
       hasNoAssignee: filters.hasNoAssignee ? true : undefined,
       createdByMe: filters.createdByMe ? true : undefined,
+      teamIds: filters.teamIds ?? undefined,
+      sprintIds: filters.sprintIds ?? undefined,
     },
   );
 
