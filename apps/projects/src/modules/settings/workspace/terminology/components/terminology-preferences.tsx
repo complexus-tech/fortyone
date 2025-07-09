@@ -65,6 +65,7 @@ export const TerminologyPreferences = () => {
           { label: "Story", value: "story" },
           { label: "Task", value: "task" },
           { label: "Issue", value: "issue" },
+          { label: "Work Item", value: "work item" },
         ],
       },
       {
@@ -95,7 +96,8 @@ export const TerminologyPreferences = () => {
         options: [
           { label: "Objective", value: "objective" },
           { label: "Goal", value: "goal" },
-          { label: "Project", value: "project" },
+          { label: "Aspiration", value: "aspiration" },
+          { label: "Deliverable", value: "deliverable" },
         ],
         disabled: !settings.objectiveEnabled,
       },
@@ -111,8 +113,9 @@ export const TerminologyPreferences = () => {
         key: "keyResultTerm",
         options: [
           { label: "Key Result", value: "key result" },
-          { label: "Focus Area", value: "focus area" },
-          { label: "Milestone", value: "milestone" },
+          { label: "Metric", value: "metric" },
+          { label: "KPI", value: "kpi" },
+          { label: "Outcome", value: "outcome" },
         ],
         disabled: !settings.keyResultEnabled,
       },
