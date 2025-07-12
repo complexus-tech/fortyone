@@ -195,7 +195,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                       {items.map(({ href, title }) => (
                         <NavLink
                           active={pathname === href}
-                          className="py-1.5"
+                          className="relative -left-1 py-1.5"
                           href={href}
                           key={href}
                         >
