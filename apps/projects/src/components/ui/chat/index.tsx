@@ -178,7 +178,7 @@ export const Chat = () => {
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className={cn(
-            "max-w-[36rem] rounded-[2rem] border border-gray-200/90 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
+            "max-w-[36rem] rounded-[2rem] border-[0.5px] border-gray-200/90 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
             {
               "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 bg-white/80 backdrop-blur-lg dark:bg-dark/80 md:mb-0 md:mt-0":
                 isFullScreen || isMobile,
