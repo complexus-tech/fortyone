@@ -132,7 +132,7 @@ export const StoriesGroup = ({
           ))
         : null}
       {!isCollapsed && (
-        <RowWrapper className="grid h-12 py-0 md:grid-cols-3">
+        <RowWrapper className="grid h-12 py-0 md:grid-cols-2">
           {hasNextPage ? (
             <button
               className="flex hover:underline"
