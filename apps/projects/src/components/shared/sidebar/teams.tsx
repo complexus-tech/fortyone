@@ -34,7 +34,7 @@ export const Teams = () => {
   };
   return (
     <Box className="mt-5">
-      <Flex align="center" className="mb-2.5" justify="between">
+      <Flex align="center" className="mb-2" justify="between">
         <Text className="pl-2.5 font-medium" color="muted" data-teams-heading>
           Your Teams
         </Text>

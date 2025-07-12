@@ -88,9 +88,9 @@ export const Header = () => {
           </Button>
         </Box>
       </Flex>
-      <Flex className="mb-4" gap={2}>
+      <Flex className="mb-3 gap-1.5">
         <Button
-          className="truncate rounded-[0.6rem] md:h-[2.5rem]"
+          className="truncate md:h-[2.4rem]"
           color="tertiary"
           data-sidebar-create-story-button
           disabled={userRole === "guest"}
@@ -107,7 +107,7 @@ export const Header = () => {
         </Button>
         <Button
           asIcon
-          className="rounded-[0.6rem] md:h-[2.5rem]"
+          className="md:h-[2.4rem]"
           color="tertiary"
           href="/search"
           leftIcon={<SearchIcon className="h-4" />}

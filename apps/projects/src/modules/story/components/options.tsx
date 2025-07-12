@@ -15,7 +15,6 @@ import { type ReactNode, useRef, useState } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
 import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
 import { cn } from "lib";
-import Link from "next/link";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
@@ -125,7 +124,6 @@ export const Options = ({
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = members.find((m) => m.id === assigneeId);
-  const reporter = members.find((m) => m.id === reporterId);
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
@@ -303,30 +301,6 @@ export const Options = ({
           ) : null}
         </Box>
         <Box className="flex flex-wrap gap-2 md:block">
-          {!isNotifications && !isMobile && (
-            <Option
-              isNotifications={isNotifications}
-              label="Reporter"
-              value={
-                <Flex align="center" className="px-2.5" gap={2}>
-                  <Avatar
-                    className={cn({
-                      "text-dark/80 dark:text-gray-200": !reporter?.fullName,
-                    })}
-                    name={reporter?.fullName}
-                    size="xs"
-                    src={reporter?.avatarUrl}
-                  />
-                  <Link
-                    className="relative -top-[1px] font-medium text-dark dark:text-gray-200"
-                    href={`/profile/${reporter?.id}`}
-                  >
-                    {reporter?.username}
-                  </Link>
-                </Flex>
-              }
-            />
-          )}
           <Option
             isNotifications={isNotifications}
             label="Status"

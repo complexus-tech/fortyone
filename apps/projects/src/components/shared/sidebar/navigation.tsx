@@ -72,7 +72,7 @@ export const Navigation = () => {
   ];
 
   return (
-    <Flex direction="column" gap={2}>
+    <Flex className="gap-1.5" direction="column">
       {links
         .filter(({ disabled }) => !disabled)
         .map(({ name, icon, href }) => {
