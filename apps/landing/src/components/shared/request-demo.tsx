@@ -14,7 +14,11 @@ export const RequestDemo = () => {
   return (
     <button
       className={cn(
-        buttonVariants({ color: "tertiary", variant: "naked", rounded: "lg" }),
+        buttonVariants({
+          color: "tertiary",
+          variant: "naked",
+          rounded: "full",
+        }),
         "hidden text-[0.93rem] md:flex",
       )}
       data-cal-config='{"layout":"month_view"}'

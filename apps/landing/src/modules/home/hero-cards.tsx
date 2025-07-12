@@ -49,7 +49,7 @@ export const HeroCards = () => {
   ];
 
   return (
-    <Container>
+    <Container className="max-w-7xl">
       <Box
         className="relative"
         onMouseEnter={() => {

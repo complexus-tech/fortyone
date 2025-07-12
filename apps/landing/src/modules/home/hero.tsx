@@ -10,7 +10,7 @@ export const Hero = () => {
 
   return (
     <Box>
-      <Container className="pt-12 md:pt-16">
+      <Container className="pt-12 md:pt-8">
         <Flex
           align="center"
           className="mb-8 mt-20 text-center"
@@ -26,13 +26,13 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="px-3 text-sm md:text-base"
+              className="border-0 bg-[#dddddd]/40 px-5 text-sm font-medium backdrop-blur-xl dark:bg-dark-100/40 md:text-base"
               color="tertiary"
               href="/signup"
-              rounded="lg"
+              rounded="full"
               size="sm"
             >
-              Get Started For Free
+              Free forever. No credit card required.
             </Button>
           </motion.span>
           <motion.span
@@ -46,10 +46,13 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-7xl md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.5rem] md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Project</span> Management &
-              OKR Software for Teams
+              The Everything App for{" "}
+              <Text as="span" className="text-stroke-white">
+                Projects
+              </Text>{" "}
+              & OKRs
             </Text>
           </motion.span>
 
@@ -62,16 +65,16 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg opacity-80 md:text-2xl">
-              Complexus is the project management and OKR platform that helps
-              engineering, product, and business teams align goals, track
-              progress, and deliver faster.
+            <Text className="mt-4 max-w-[700px] text-lg font-light opacity-80 md:text-xl">
+              An AI‑powered all‑in‑one Projects & OKRs platform that connects
+              daily work to strategic goals, tracks real‑time progress, and
+              predicts risks
             </Text>
           </motion.span>
 
           <Flex
             align="center"
-            className="relative mt-6 justify-center gap-2 md:mt-10 md:gap-4"
+            className="relative mt-6 justify-center gap-2 md:mt-6 md:gap-4"
             wrap
           >
             <motion.span
@@ -87,10 +90,12 @@ export const Hero = () => {
                 className="px-3 md:pl-5 md:pr-4"
                 color="invert"
                 href="/signup"
-                rounded="lg"
+                rounded="full"
                 size="lg"
               >
-                <span className="hidden md:inline">Manage in 3 minutes</span>
+                <span className="hidden md:inline">
+                  Get Started - It&apos;s free
+                </span>
                 <span className="md:hidden">Get Started</span>
               </Button>
             </motion.span>
@@ -104,20 +109,20 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="border-gray-200 px-3 md:pl-3.5 md:pr-4"
+                className="px-3 md:pl-3.5 md:pr-4"
                 color="tertiary"
                 leftIcon={<GoogleIcon />}
                 onClick={async () => {
                   await signInWithGoogle();
                 }}
-                rounded="lg"
+                rounded="full"
                 size="lg"
+                variant="naked"
               >
                 {session ? "Continue with Google" : "Sign up with Google"}
               </Button>
             </motion.span>
           </Flex>
-          <Text className="mt-6 opacity-60">No credit card required.</Text>
         </Flex>
       </Container>
     </Box>

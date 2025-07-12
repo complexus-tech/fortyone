@@ -1,14 +1,7 @@
 "use client";
 
 import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
-import {
-  SprintsIcon,
-  ObjectiveIcon,
-  StoryIcon,
-  OKRIcon,
-  TwitterIcon,
-  LinkedinIcon,
-} from "icons";
+import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
@@ -18,7 +11,6 @@ import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
 import { MenuButton } from "./menu-button";
-import { RequestDemo } from "./request-demo";
 
 const MenuItem = ({
   name,
@@ -95,23 +87,6 @@ export const Navigation = () => {
     },
   ];
 
-  const company = [
-    {
-      id: 1,
-      href: "https://x.com/complexus_app",
-      name: "X (Formerly Twitter)",
-      description: "Follow us on X",
-      icon: <TwitterIcon className="relative h-[1.15rem] shrink-0 md:top-1" />,
-    },
-    {
-      id: 2,
-      href: "https://linkedin.com/company/complexus-app",
-      name: "LinkedIn",
-      description: "Follow us on LinkedIn",
-      icon: <LinkedinIcon className="relative shrink-0 md:top-1" />,
-    },
-  ];
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const pathname = usePathname();
@@ -135,12 +110,12 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 top-2 z-10 w-screen md:top-4">
+    <Box className="fixed left-0 top-2 z-10 w-screen md:top-5">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.75rem] items-center justify-between gap-6 rounded-[1.25rem] border border-gray-200/60 bg-white/80 px-2.5 backdrop-blur-lg dark:border-dark-100 dark:bg-dark-300/70">
-            <Logo className="relative -left-3.5 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.6rem]" />
-            <Flex align="center" className="hidden md:flex" gap={2}>
+          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/20 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-100/50 dark:bg-dark-200/40">
+            <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
+            <Flex align="center" className="hidden md:flex" gap={1}>
               <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
@@ -177,7 +152,7 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-[0.6rem] px-3 py-1.5 transition hover:bg-gray-100 hover:dark:bg-dark-200",
+                    "rounded-full px-3 py-1.5 transition hover:bg-gray-100 hover:dark:bg-dark-200",
                     {
                       "bg-gray-100 dark:bg-dark-200": pathname === href,
                     },
@@ -188,45 +163,16 @@ export const Navigation = () => {
                   {title}
                 </NavLink>
               ))}
-              <NavigationMenu align="end">
-                <NavigationMenu.List>
-                  <NavigationMenu.Item>
-                    <NavigationMenu.Trigger
-                      className={cn(
-                        "rounded-[0.6rem] py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 hover:dark:bg-dark-200",
-                      )}
-                      hideArrow
-                    >
-                      Company
-                    </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="relative pb-1">
-                      <Box className="grid w-max grid-cols-1 gap-2 p-2">
-                        {company.map(
-                          ({ id, name, description, icon, href }) => (
-                            <MenuItem
-                              description={description}
-                              href={href}
-                              icon={icon}
-                              key={id}
-                              name={name}
-                            />
-                          ),
-                        )}
-                      </Box>
-                    </NavigationMenu.Content>
-                  </NavigationMenu.Item>
-                </NavigationMenu.List>
-              </NavigationMenu>
             </Flex>
-            <Flex align="center" className="ml-6 gap-3">
-              <RequestDemo />
+            <Flex align="center" className="ml-4 gap-2">
               <Button
                 className={cn("hidden px-5 text-[0.93rem] md:flex", {
                   flex: session,
                 })}
                 color={session ? "invert" : "tertiary"}
                 href={getNextUrl()}
-                rounded="lg"
+                rounded="full"
+                variant={session ? "solid" : "naked"}
               >
                 {session ? (
                   <>
@@ -248,7 +194,7 @@ export const Navigation = () => {
                   className="px-5 text-[0.93rem]"
                   color="invert"
                   href="/signup"
-                  rounded="lg"
+                  rounded="full"
                 >
                   Sign up
                 </Button>
