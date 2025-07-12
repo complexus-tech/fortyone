@@ -109,7 +109,7 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="max-w-[86rem] border dark:bg-dark-300 md:mb-auto md:mt-auto"
+        className="max-w-[86rem] rounded-[1.25rem] dark:bg-dark-300 md:mb-auto md:mt-auto"
         hideClose
       >
         <Dialog.Title className="hidden">
