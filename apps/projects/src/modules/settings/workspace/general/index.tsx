@@ -28,10 +28,7 @@ export const WorkspaceGeneralSettings = () => {
       <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
         <SectionHeader
           action={
-            <Button
-              className="mt-4 shrink-0 bg-primary text-white dark:bg-primary"
-              variant="naked"
-            >
+            <Button className="mt-4 shrink-0" disabled>
               Delete <span className="hidden md:inline">Workspace</span>
             </Button>
           }

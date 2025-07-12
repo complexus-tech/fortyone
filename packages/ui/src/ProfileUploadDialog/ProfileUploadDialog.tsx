@@ -121,6 +121,7 @@ export const ProfileUploadDialog = ({
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    onOpenChange(false);
   };
 
   const displayImage = previewUrl || currentImage;

@@ -30,11 +30,10 @@ export const ProfileSettings = () => {
             active, and you can be invited back by workspace admins at any time.
           </Text>
           <Button
-            className="bg-primary dark:bg-primary"
+            color="tertiary"
             onClick={() => {
               setIsOpen(true);
             }}
-            variant="naked"
           >
             Leave Workspace
           </Button>
