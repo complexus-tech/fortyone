@@ -121,7 +121,7 @@ export const Navigation = () => {
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-[0.6rem] py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 dark:hover:bg-dark-200",
+                        "rounded-full py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 dark:hover:bg-dark-200",
                         {
                           "bg-gray-100 dark:bg-dark-200":
                             pathname?.startsWith("/features"),

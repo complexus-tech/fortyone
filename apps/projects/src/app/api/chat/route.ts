@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const userContext = await getUserContext();
 
   const result = streamText({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-mini"),
     messages,
     maxSteps: 10,
     tools: {

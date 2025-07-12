@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <JsonLd />
       </head>
       <body className={cn(instrumentSans.className)}>
-        <ThemeProvider attribute="class" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <SessionProvider>
             <PostHogProvider>
               <CursorProvider>{children}</CursorProvider>
