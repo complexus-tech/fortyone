@@ -59,6 +59,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
+          { title: "Integrations", href: "/settings/workspace/integrations" },
           // { title: "API tokens", href: "/settings/workspace/api" },
         ]
       : []),
@@ -125,10 +126,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
               onClick={goBack}
               type="button"
             >
-              <ArrowLeft2Icon
-                className="opacity-80 transition group-hover:opacity-100"
-                strokeWidth={3}
-              />
+              <ArrowLeft2Icon strokeWidth={3} />
               Settings
             </button>
           </Flex>
@@ -176,11 +174,11 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 }
               >
                 <button
-                  className="group flex items-center gap-3 text-lg font-medium"
+                  className="group flex items-center gap-1.5 text-lg font-medium"
                   onClick={goBack}
                   type="button"
                 >
-                  <ArrowLeft2Icon className="opacity-80 transition group-hover:opacity-100" />
+                  <ArrowLeft2Icon strokeWidth={2.8} />
                   Settings
                 </button>
               </Tooltip>
