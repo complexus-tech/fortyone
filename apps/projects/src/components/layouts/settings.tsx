@@ -68,15 +68,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     ...(isAdmin || isMember
       ? [
           { title: "Labels", href: "/settings/workspace/labels" },
-          { title: "Teams", href: "/settings/workspace/teams" },
-          { title: "Create a team", href: "/settings/workspace/teams/create" },
           {
-            title: `${getTermDisplay("objectiveTerm", {
+            title: getTermDisplay("objectiveTerm", {
               variant: "plural",
               capitalize: true,
-            })} workflow`,
+            }),
             href: "/settings/workspace/objectives",
           },
+          { title: "Teams", href: "/settings/workspace/teams" },
         ]
       : []),
   ];
