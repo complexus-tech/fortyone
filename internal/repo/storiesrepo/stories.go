@@ -1924,19 +1924,47 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilters) string {
 	switch groupBy {
 	case "status":
+		// if len(filters.TeamIDs) > 0 {
+		// 	// If specific teams are filtered, get statuses used by those teams
+		// 	return `
+		// 		SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
+		// 		FROM statuses s
+		// 		WHERE s.workspace_id = :workspace_id
+		// 		AND s.team_id = ANY(:team_ids)
+		// 	`
+		// } else {
+		// 	// If no team filter, get statuses used by teams user belongs to
+		// 	return `
+		// 		SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
+		// 		FROM statuses s
+		// 		WHERE s.workspace_id = :workspace_id
+		// 		AND EXISTS (
+		// 			SELECT 1
+		// 			FROM team_members tm
+		// 			WHERE tm.team_id = s.team_id
+		// 			AND tm.user_id = :current_user_id
+		// 		)
+		// 	`
+		// }
+
 		if len(filters.TeamIDs) > 0 {
 			// If specific teams are filtered, get statuses used by those teams
 			return `
 				SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
+				SELECT DISTINCT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
 				FROM statuses s
+				INNER JOIN teams t ON s.team_id = t.team_id
 				WHERE s.workspace_id = :workspace_id
 				AND s.team_id = ANY(:team_ids)
+				AND t.team_id = ANY(:team_ids)
 			`
 		} else {
 			// If no team filter, get statuses used by teams user belongs to
 			return `
 				SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
+				SELECT DISTINCT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
 				FROM statuses s
+				INNER JOIN team_members tm ON s.team_id = tm.team_id
 				WHERE s.workspace_id = :workspace_id
 				AND EXISTS (
 					SELECT 1
@@ -1944,6 +1972,7 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 					WHERE tm.team_id = s.team_id
 					AND tm.user_id = :current_user_id
 				)
+				AND tm.user_id = :current_user_id
 			`
 		}
 	case "team":
