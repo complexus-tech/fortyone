@@ -91,11 +91,7 @@ const Card = ({
             <Image
               alt={alt}
               className={cn(
-                "pointer-events-none mx-auto block aspect-square rounded-xl object-contain",
-                {
-                  "aspect-[6/4]": name.toLowerCase().includes("keyboard"),
-                  "object-bottom": name.toLowerCase().includes("analytics"),
-                },
+                "pointer-events-none mx-auto block aspect-[6/4] rounded-xl object-contain",
               )}
               placeholder="blur"
               quality={100}
