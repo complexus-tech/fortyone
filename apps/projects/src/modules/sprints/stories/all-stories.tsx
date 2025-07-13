@@ -7,13 +7,17 @@ import { useSprintStoriesGrouped } from "@/modules/stories/hooks/use-sprint-stor
 import { useSprintOptions } from "./provider";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
-  const { sprintId } = useParams<{ sprintId: string }>();
+  const { sprintId, teamId } = useParams<{
+    sprintId: string;
+    teamId: string;
+  }>();
   const { viewOptions } = useSprintOptions();
   const { data: groupedStories, isPending } = useSprintStoriesGrouped(
     sprintId,
     viewOptions.groupBy,
     {
       orderBy: viewOptions.orderBy,
+      teamIds: [teamId],
     },
   );
 

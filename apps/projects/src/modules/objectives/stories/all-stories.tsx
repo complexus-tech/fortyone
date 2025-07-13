@@ -4,6 +4,7 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { Box, Button, Tabs, Text } from "ui";
 import { ArrowUpDownIcon, CopyIcon, ObjectiveIcon, StoryIcon } from "icons";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
@@ -15,6 +16,7 @@ import { Header } from "@/modules/objectives/stories/header";
 import { Overview } from "./overview";
 
 export const AllStories = ({ objectiveId }: { objectiveId: string }) => {
+  const { teamId } = useParams<{ teamId: string }>();
   const [isCopied, setIsCopied] = useState(false);
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "teams:objectives:stories:layout",
@@ -34,6 +36,7 @@ export const AllStories = ({ objectiveId }: { objectiveId: string }) => {
   const { isPending: isStoriesPending, data: groupedStories } =
     useObjectiveStoriesGrouped(objectiveId, viewOptions.groupBy, {
       orderBy: viewOptions.orderBy,
+      teamIds: [teamId],
     });
 
   if (isObjectivePending || isStoriesPending) {

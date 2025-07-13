@@ -20,7 +20,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       assignedToMe: filters.assignedToMe ? true : undefined,
       hasNoAssignee: filters.hasNoAssignee ? true : undefined,
       createdByMe: filters.createdByMe ? true : undefined,
-      teamIds: filters.teamIds ?? undefined,
+      teamIds: [teamId],
       sprintIds: filters.sprintIds ?? undefined,
     },
   );
