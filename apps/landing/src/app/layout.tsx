@@ -14,9 +14,9 @@ import PostHogPageView from "./posthog-page-view";
 import GoogleOneTap from "./one-tap";
 
 export const metadata: Metadata = {
-  title: "Project Management & OKR Software for Teams | Complexus",
+  title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
   description:
-    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
+    "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   metadataBase: new URL("https://www.complexus.app"),
   keywords: [
     "project management",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Project Management & OKR Software for Teams | Complexus",
+    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
+      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
     siteName: "Complexus",
     url: "/",
   },
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@complexus_app",
     creator: "@complexus_app",
-    title: "Project Management & OKR Software for Teams | Complexus",
+    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
+      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   },
   alternates: {
     canonical: "/",

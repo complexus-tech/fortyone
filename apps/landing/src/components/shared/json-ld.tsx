@@ -50,7 +50,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "User Stories",
   ],
   description:
-    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
+    "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
 };
 
 const organization: WithContext<Organization> = {
@@ -71,9 +71,9 @@ const organization: WithContext<Organization> = {
 const product: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Project Management & OKR Software for Teams | Complexus",
+  name: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
   description:
-    "Complexus is a project management and OKR platform that helps engineering, product, and business teams align goals, track progress, and deliver faster. Try it free.",
+    "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   category: "Software",
   brand: {
     "@type": "Brand",
@@ -118,7 +118,7 @@ const faq: WithContext<FAQPage> = {
       name: "What is Complexus?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Complexus is a comprehensive project management platform designed for modern teams. It combines OKR tracking, sprint planning, and collaborative workflows to help teams align strategic objectives with day-to-day execution, ensuring measurable results and improved team productivity.",
+        text: "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
       },
     },
     {
