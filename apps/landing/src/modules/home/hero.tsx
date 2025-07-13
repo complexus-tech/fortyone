@@ -46,7 +46,7 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.5rem] md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.7rem] md:leading-[1.1]"
             >
               The Everything App for{" "}
               <Text as="span" className="text-stroke-white">
@@ -65,10 +65,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-4 max-w-[700px] text-lg font-light opacity-80 md:text-xl">
-              An AI‑powered all‑in‑one Projects & OKRs platform that connects
-              daily work to strategic goals, tracks real‑time progress, and
-              predicts risks
+            <Text className="mt-4 max-w-[700px] text-lg opacity-80 dark:font-normal md:text-xl">
+              AI‑powered all‑in‑one Projects & OKRs platform that connects daily
+              work to strategic goals, tracks real‑time progress, and predicts
+              risks
             </Text>
           </motion.span>
 
