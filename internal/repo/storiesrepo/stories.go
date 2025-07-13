@@ -1946,7 +1946,6 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 				)
 			`
 		}
-
 	case "team":
 		if len(filters.TeamIDs) > 0 {
 			// If specific teams are filtered, only include those
@@ -2897,4 +2896,210 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 	))
 
 	return coreStories, hasMore, nil
+}
+
+// QueryByRef returns a story by team code and sequence ID.
+func (r *repo) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (stories.CoreSingleStory, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.QueryByRef")
+	defer span.End()
+
+	story, err := r.getStoryByRef(ctx, workspaceId, teamCode, sequenceID)
+	if err != nil {
+		span.RecordError(err)
+		return stories.CoreSingleStory{}, err
+	}
+
+	return toCoreStory(story), nil
+}
+
+func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (dbStory, error) {
+	query := `
+        SELECT
+					s.id,
+					s.title,
+					s.priority,
+					s.sequence_id,
+					s.status_id,
+					s.description,
+					s.description_html,
+					s.team_id,
+					s.objective_id,
+					s.sprint_id,
+					s.key_result_id,
+					s.workspace_id,
+					s.assignee_id,
+					s.reporter_id,
+					s.start_date,
+					s.end_date,
+					s.created_at,
+					s.updated_at,
+					s.deleted_at,
+					COALESCE(
+							(
+									SELECT
+											json_agg(sub.*)
+									FROM
+											stories sub
+									WHERE
+											sub.parent_id = s.id AND sub.deleted_at IS NULL
+							), '[]'
+					) AS sub_stories,
+					COALESCE(
+						(
+								SELECT
+										json_agg(l.label_id)
+								FROM
+										labels l
+										INNER JOIN story_labels sl ON sl.label_id = l.label_id
+								WHERE
+										sl.story_id = s.id
+						), '[]') AS labels
+				FROM
+					stories s
+					INNER JOIN teams t ON s.team_id = t.team_id
+				WHERE
+					s.sequence_id = :sequence_id
+					AND t.code = :team_code
+					AND s.workspace_id = :workspace_id
+					AND s.deleted_at IS NULL;
+    `
+
+	params := map[string]any{
+		"sequence_id":  sequenceID,
+		"team_code":    teamCode,
+		"workspace_id": workspaceId,
+	}
+
+	var story dbStory
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err), "teamCode", teamCode, "sequenceID", sequenceID)
+		return dbStory{}, err
+	}
+	defer stmt.Close()
+
+	err = stmt.GetContext(ctx, &story, params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return dbStory{}, errors.New("story not found")
+		}
+		r.log.Error(ctx, fmt.Sprintf("failed to execute query: %s", err), "teamCode", teamCode, "sequenceID", sequenceID)
+		return dbStory{}, err
+	}
+
+	return story, nil
+}
+
+// GetStoryIDByRef returns story UUID by workspace, team code and sequence.
+func (r *repo) GetStoryIDByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (uuid.UUID, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetStoryIDByRef")
+	defer span.End()
+
+	q := `SELECT s.id
+		  FROM stories s
+		  INNER JOIN teams t ON s.team_id = t.team_id
+		  WHERE t.code = :team_code
+			AND s.sequence_id = :sequence_id
+			AND s.workspace_id = :workspace_id
+			AND s.deleted_at IS NULL
+		  LIMIT 1`
+
+	params := map[string]any{
+		"team_code":    teamCode,
+		"sequence_id":  sequenceID,
+		"workspace_id": workspaceId,
+	}
+
+	var id uuid.UUID
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare GetStoryIDByRef", "error", err)
+		return uuid.Nil, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &id, params); err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.Nil, errors.New("story not found")
+		}
+		return uuid.Nil, err
+	}
+	return id, nil
+}
+
+// CreateStoryFromIssue inserts a minimal story when an issue is opened in GitHub.
+// It returns the new story id.
+func (r *repo) CreateStoryFromIssue(ctx context.Context, workspaceID, teamID uuid.UUID, title, description string, reporterID uuid.UUID) (uuid.UUID, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.CreateStoryFromIssue")
+	defer span.End()
+
+	// 1) Get default status for team (category 'unstarted')
+	var statusID uuid.UUID
+	statusQuery := `SELECT status_id FROM statuses WHERE team_id = :team_id AND category = 'unstarted' LIMIT 1`
+	stmtStatus, err := r.db.PrepareNamedContext(ctx, statusQuery)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("prepare status query: %w", err)
+	}
+	if err := stmtStatus.GetContext(ctx, &statusID, map[string]any{"team_id": teamID}); err != nil {
+		stmtStatus.Close()
+		return uuid.Nil, fmt.Errorf("fetch default status: %w", err)
+	}
+	stmtStatus.Close()
+
+	// 2) Get next sequence id
+	sequenceID, commit, rollback, err := r.GetNextSequenceID(ctx, teamID, workspaceID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	// 3) Insert story
+	insertQuery := `
+		INSERT INTO stories (
+			sequence_id, title, description, description_html, status_id, priority, team_id, workspace_id, reporter_id, created_at, updated_at
+		) VALUES (
+			:sequence_id, :title, :description, :description_html, :status_id, :priority, :team_id, :workspace_id, :reporter_id, NOW(), NOW()
+		) RETURNING id`
+
+	params := map[string]any{
+		"sequence_id":      sequenceID + 1,
+		"title":            title,
+		"description":      description,
+		"description_html": description,
+		"status_id":        statusID,
+		"team_id":          teamID,
+		"workspace_id":     workspaceID,
+		"reporter_id":      reporterID,
+		"priority":         "No Priority",
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, insertQuery)
+	if err != nil {
+		rollback()
+		return uuid.Nil, fmt.Errorf("prepare insert story: %w", err)
+	}
+	var storyID uuid.UUID
+	if err := stmt.GetContext(ctx, &storyID, params); err != nil {
+		stmt.Close()
+		rollback()
+		return uuid.Nil, fmt.Errorf("insert story: %w", err)
+	}
+	stmt.Close()
+
+	if err := commit(); err != nil {
+		return uuid.Nil, err
+	}
+	return storyID, nil
+}
+
+// UpdateStoryStatus updates only the status of a story - used for automated transitions
+func (r *repo) UpdateStoryStatus(ctx context.Context, storyID uuid.UUID, workspaceID uuid.UUID, statusID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.UpdateStoryStatus")
+	defer span.End()
+
+	updates := map[string]any{
+		"status_id": statusID,
+	}
+
+	return r.Update(ctx, storyID, workspaceID, updates)
 }
