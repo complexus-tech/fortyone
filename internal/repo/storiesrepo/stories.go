@@ -1925,7 +1925,7 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 	switch groupBy {
 	case "status":
 		if len(filters.TeamIDs) > 0 {
-			// If specific teams are filtered, get statuses used by those teams
+			// If specific teams are filtered, get all statuses from those teams
 			return `
 				SELECT CAST(s.status_id AS text) as group_key, s.order_index as sort_order
 				FROM statuses s
@@ -1980,6 +1980,7 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 		`
 	case "assignee":
 		if len(filters.TeamIDs) > 0 {
+			// If specific teams are filtered, get all users from those teams
 			return `
 				SELECT CAST(u.user_id AS text) as group_key, u.username as sort_order
 				FROM users u
@@ -2005,6 +2006,7 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 		}
 	case "sprint":
 		if len(filters.TeamIDs) > 0 {
+			// If specific teams are filtered, get all sprints from those teams
 			return `
 				SELECT CAST(sprint_id AS text) as group_key, name as sort_order
 				FROM sprints 
