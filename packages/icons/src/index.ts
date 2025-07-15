@@ -119,3 +119,5 @@ export * from "./ai";
 export * from "./brain";
 export * from "./backlog";
 export * from "./archive";
+export * from "./thumbs-up";
+export * from "./thumbs-down";
