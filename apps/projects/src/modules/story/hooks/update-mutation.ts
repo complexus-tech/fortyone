@@ -150,7 +150,7 @@ const updateInfiniteQuery = (
   ) =>
     queryClient.setQueryData<InfiniteData<GroupStoriesResponse>>(key, updater);
 
-  // 1️⃣ patch current query (remove/update)
+  // patch current query (remove/update)
   patchInfiniteQuery(queryKey, (data) => {
     if (!data?.pages) return data;
     const { groupKey, params } = parseGroupQueryKey(queryKey);
