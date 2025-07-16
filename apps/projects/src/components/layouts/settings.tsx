@@ -59,7 +59,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
-          { title: "Integrations", href: "/settings/workspace/integrations" },
+          // { title: "Integrations", href: "/settings/workspace/integrations" },
           // { title: "API tokens", href: "/settings/workspace/api" },
         ]
       : []),
