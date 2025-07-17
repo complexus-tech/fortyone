@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
-import { Dialog, Flex } from "ui";
+import { Button, Dialog, Flex, Text } from "ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "lib";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
@@ -43,6 +43,8 @@ export const Chat = () => {
     setInput,
     append,
     stop: handleStop,
+    reload,
+    error,
   } = useChat({
     experimental_throttle: 100,
     onFinish: (message) => {
@@ -172,7 +174,7 @@ export const Chat = () => {
           className={cn(
             "max-w-[36rem] rounded-[2rem] border-[0.5px] border-gray-200/90 font-medium outline-none backdrop-blur-lg dark:bg-dark-300/90 md:mb-[2.6vh] md:mt-auto",
             {
-              "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 bg-white/80 backdrop-blur-lg dark:bg-dark/80 md:mb-0 md:mt-0":
+              "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 backdrop-blur-lg dark:bg-dark md:mb-0 md:mt-0":
                 isFullScreen || isMobile,
             },
           )}
@@ -215,6 +217,14 @@ export const Chat = () => {
                 messages={messages}
                 value={input}
               />
+              {error ? (
+                <>
+                  <Text>An error occurred.</Text>
+                  <Button className="mt-4" onClick={() => reload()}>
+                    Retry
+                  </Button>
+                </>
+              ) : null}
               {messages.length === 0 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
