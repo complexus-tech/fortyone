@@ -4,9 +4,10 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
-import { Button, Dialog, Flex, Text } from "ui";
+import { Box, Button, Dialog, Flex, Text } from "ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "lib";
+import { ReloadIcon } from "icons";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import {
@@ -253,12 +254,18 @@ export const Chat = () => {
                 value={input}
               />
               {error ? (
-                <>
+                <Box className="px-6">
                   <Text>An error occurred.</Text>
-                  <Button className="mt-4" onClick={() => reload()}>
+                  <Button
+                    className="mt-4"
+                    leftIcon={
+                      <ReloadIcon className="text-white dark:text-white" />
+                    }
+                    onClick={() => reload()}
+                  >
                     Retry
                   </Button>
-                </>
+                </Box>
               ) : null}
               {messages.length === 0 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />

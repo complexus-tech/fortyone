@@ -1,4 +1,4 @@
-import { Button, Box, Flex, Text } from "ui";
+import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "lib";
@@ -182,8 +182,8 @@ export const ChatInput = ({
   );
 
   return (
-    <Box className="px-6 pb-3">
-      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
+    <Box className="sticky bottom-0 px-6 pb-3">
+      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -254,15 +254,18 @@ export const ChatInput = ({
           )}
         </Box>
         <Flex align="center" className="px-3" gap={2} justify="between">
-          <Button
-            asIcon
-            className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
-            color="tertiary"
-            onClick={open}
-            rounded="full"
-          >
-            <PlusIcon />
-          </Button>
+          <Tooltip side="bottom" title="Add files">
+            <Button
+              asIcon
+              className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
+              color="tertiary"
+              onClick={open}
+              rounded="full"
+            >
+              <PlusIcon />
+            </Button>
+          </Tooltip>
+
           <Button
             asIcon
             className="mb-0.5 md:h-10"
