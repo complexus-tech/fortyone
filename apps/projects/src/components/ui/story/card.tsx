@@ -91,7 +91,7 @@ export const StoryCard = ({
           )}
         >
           <div
-            className={cn("cursor-pointer pb-1 pt-3", {
+            className={cn("cursor-pointer pb-1.5 pt-3", {
               "cursor-grabbing": isDragging,
             })}
             ref={setNodeRef}
@@ -111,14 +111,14 @@ export const StoryCard = ({
               }}
             >
               <Text
-                className="line-clamp-3 text-[1.1rem] leading-[1.6rem]"
+                className="line-clamp-3 text-[1.1rem] leading-[1.4rem]"
                 fontWeight="medium"
               >
                 {story.title}
               </Text>
               {isColumnVisible("ID") && (
                 <Text
-                  className="shrink-0 text-[0.95rem] uppercase leading-[1.6rem]"
+                  className="shrink-0 text-[0.95rem] uppercase leading-[1.4rem]"
                   color="muted"
                   fontWeight="medium"
                 >
@@ -127,7 +127,7 @@ export const StoryCard = ({
               )}
             </Link>
           </div>
-          <Flex align="center" className="gap-1.5" wrap>
+          <Flex align="center" className="mt-1 gap-1.5" wrap>
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip
