@@ -12,6 +12,7 @@ import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard } from "@/hooks";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
+import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -142,7 +143,7 @@ export const ChatMessage = ({
         />
       )}
       <Flex
-        className={cn("max-w-[75%] flex-1", {
+        className={cn("max-w-[80%] flex-1", {
           "items-end": message.role === "user",
           "max-w-[85%]": message.role === "assistant",
           "md:max-w-[90%]": isFullScreen,
@@ -162,6 +163,7 @@ export const ChatMessage = ({
             message={message}
           />
         </Box>
+        <AttachmentsDisplay attachments={message.experimental_attachments} />
         <Flex className="mt-2 px-0.5" justify="between">
           {message.role === "assistant" && !isStreaming && (
             <Flex gap={3} justify="end">
