@@ -169,7 +169,9 @@ export const Chat = () => {
 
     append({
       role: "user",
-      content: content || "Please analyze the attached files.",
+      content:
+        content ||
+        `Analyze the attached file${attachmentData.length > 1 ? "s" : ""}.`,
       experimental_attachments:
         attachmentData.length > 0 ? attachmentData : undefined,
     });
