@@ -91,7 +91,7 @@ export const StoryCard = ({
           )}
         >
           <div
-            className={cn("cursor-pointer pb-2 pt-3", {
+            className={cn("cursor-pointer pb-1 pt-3", {
               "cursor-grabbing": isDragging,
             })}
             ref={setNodeRef}
@@ -127,7 +127,7 @@ export const StoryCard = ({
               )}
             </Link>
           </div>
-          <Flex align="center" className="mt-1 gap-1.5" wrap>
+          <Flex align="center" className="gap-1.5" wrap>
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip
