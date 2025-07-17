@@ -141,8 +141,8 @@ export const ChatMessage = ({
         direction="column"
       >
         <Box
-          className={cn("rounded-3xl p-4", {
-            "rounded-tr-lg bg-dark dark:bg-white dark:text-dark":
+          className={cn("rounded-2xl p-4", {
+            "rounded-tr-md bg-dark dark:bg-white dark:text-dark":
               message.role === "user",
             "bg-transparent p-0": message.role === "assistant",
           })}
