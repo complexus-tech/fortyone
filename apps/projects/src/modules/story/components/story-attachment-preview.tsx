@@ -143,7 +143,7 @@ export const StoryAttachmentPreview = ({
                 {isUploading ? "Uploading..." : file.filename}
               </Text>
               <Text className="text-[0.95rem]" color="muted">
-                {formatFileSize(file.size)}
+                {formatFileSize(file.size) || "PDF file"}
               </Text>
             </Box>
           </Flex>
