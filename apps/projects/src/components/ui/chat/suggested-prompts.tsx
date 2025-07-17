@@ -6,12 +6,6 @@ import { PriorityIcon } from "../priority-icon";
 
 const SUGGESTED_PROMPTS = [
   {
-    icon: <SunIcon className="text-secondary dark:text-white/80" />,
-    label: "Switch between light and dark mode",
-    value: "Change the app’s appearance to match your preference.",
-    classes: "bg-secondary/10 dark:bg-secondary/10",
-  },
-  {
     icon: <TeamIcon className="text-success dark:text-success" />,
     label: "Who’s on my team?",
     value: "See a list of everyone in your current team.",
@@ -36,6 +30,12 @@ const SUGGESTED_PROMPTS = [
     label: "High priority work",
     value: "Find your most urgent stories and tasks.",
     classes: "bg-danger/10 dark:bg-danger/10",
+  },
+  {
+    icon: <SunIcon className="text-secondary dark:text-white/80" />,
+    label: "Switch between light and dark mode",
+    value: "Change the app’s appearance to match your preference.",
+    classes: "bg-secondary/10 dark:bg-secondary/10",
   },
 ];
 
