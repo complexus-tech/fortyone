@@ -21,10 +21,23 @@ import { getUserContext } from "./user-context";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
-  const { messages } = await req.json();
+  const {
+    messages,
+    currentPath,
+    currentTheme,
+    resolvedTheme,
+    subscription,
+    teams,
+  } = await req.json();
 
   // Get user context for "me" resolution
-  const userContext = await getUserContext();
+  const userContext = await getUserContext({
+    currentPath,
+    currentTheme,
+    resolvedTheme,
+    subscription,
+    teams,
+  });
 
   const result = streamText({
     model: openai("gpt-4.1-mini"),

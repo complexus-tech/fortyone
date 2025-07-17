@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { Button, Dialog, Flex, Text } from "ui";
@@ -18,6 +18,8 @@ import {
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useMediaQuery } from "@/hooks";
+import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
+import { useTeams } from "@/modules/teams/hooks/teams";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -27,8 +29,11 @@ import { SuggestedPrompts } from "./suggested-prompts";
 export const Chat = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const { data: subscription } = useSubscription();
+  const { data: teams = [] } = useTeams();
 
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -47,6 +52,18 @@ export const Chat = () => {
     error,
   } = useChat({
     experimental_throttle: 100,
+    body: {
+      currentPath: pathname,
+      currentTheme: theme,
+      resolvedTheme,
+      subscription: {
+        tier: subscription?.tier,
+        billingInterval: subscription?.billingInterval,
+        billingEndsAt: subscription?.billingEndsAt,
+        status: subscription?.status,
+      },
+      teams,
+    },
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {

@@ -1,8 +1,25 @@
 import { headers } from "next/headers";
 import { auth } from "@/auth";
-import { getTeams } from "@/modules/teams/queries/get-teams";
+import type { Team } from "@/modules/teams/types";
 
-export async function getUserContext(): Promise<string> {
+export async function getUserContext({
+  currentPath,
+  currentTheme,
+  resolvedTheme,
+  subscription,
+  teams,
+}: {
+  currentPath: string;
+  currentTheme: string;
+  resolvedTheme: string;
+  subscription?: {
+    tier: string;
+    billingInterval: string;
+    billingEndsAt: string;
+    status: string;
+  };
+  teams: Team[];
+}): Promise<string> {
   const session = await auth();
   if (!session?.user) {
     return "";
@@ -20,7 +37,6 @@ export async function getUserContext(): Promise<string> {
     hour12: false,
   });
 
-  const teams = await getTeams(session);
   const teamsList = teams
     .map((t) => `name: ${t.name} - id: ${t.id} - code: ${t.code}`)
     .join(", ");
@@ -34,6 +50,13 @@ export async function getUserContext(): Promise<string> {
     - Current Date: ${currentDate}
     - Current Time: ${currentTime}
     - Teams: ${teamsList}
+    - Current Path: ${currentPath} the current page the user is on
+    - Current Theme: ${currentTheme} the current theme the user is using(light, dark, system)
+    - Resolved Theme: ${resolvedTheme} the resolved theme the user is using(light, dark)
+    - Subscription Tier: ${subscription?.tier}
+    - Subscription Billing Interval: ${subscription?.billingInterval}
+    - Subscription Billing Ends At: ${subscription?.billingEndsAt}
+    - Subscription Status: ${subscription?.status}
 
     **Timezone:**
     - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
