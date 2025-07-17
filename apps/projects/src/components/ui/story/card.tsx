@@ -127,7 +127,7 @@ export const StoryCard = ({
               )}
             </Link>
           </div>
-          <Flex align="center" className="mt-2 gap-1.5" wrap>
+          <Flex align="center" className="mt-1 gap-1.5" wrap>
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <Tooltip
