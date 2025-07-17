@@ -121,7 +121,7 @@ export const ChatInput = ({
   };
 
   return (
-    <Box className="px-6 pb-6">
+    <Box className="px-6 pb-3">
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
         <Box className="relative">
           <textarea

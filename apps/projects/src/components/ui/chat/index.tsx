@@ -217,7 +217,7 @@ export const Chat = () => {
             Maya is your AI assistant.
           </Dialog.Description>
           <Dialog.Body
-            className={cn("h-[82dvh] max-h-[82dvh] p-0", {
+            className={cn("h-[83dvh] max-h-[83dvh] p-0", {
               "h-dvh max-h-dvh md:h-dvh md:max-h-dvh": isFullScreen || isMobile,
             })}
           >
