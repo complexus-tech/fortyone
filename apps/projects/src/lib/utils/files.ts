@@ -5,8 +5,8 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.onload = () => {
       resolve(reader.result as string);
     };
-    reader.onerror = (error) => {
-      reject(error);
+    reader.onerror = () => {
+      reject(new Error("Failed to read file"));
     };
   });
 };
@@ -14,20 +14,15 @@ export const fileToBase64 = (file: File): Promise<string> => {
 export const validateFile = (file: File): boolean => {
   const validTypes = [
     "image/jpeg",
+    "image/jpg",
     "image/png",
     "image/webp",
     "image/gif",
     "application/pdf",
   ];
-  const maxSize = 20 * 1024 * 1024; // 20MB (OpenAI limit)
+  const maxSize = 15 * 1024 * 1024; // 15MB limit
 
   return validTypes.includes(file.type) && file.size <= maxSize;
-};
-
-export const getFileType = (file: File): "image" | "pdf" | "unknown" => {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type === "application/pdf") return "pdf";
-  return "unknown";
 };
 
 export const formatFileSize = (bytes: number): string => {

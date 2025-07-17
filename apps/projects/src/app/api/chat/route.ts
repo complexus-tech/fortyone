@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     model: openai("gpt-4.1-mini"),
     messages,
     maxSteps: 10,
+    maxTokens: 4000,
     tools: {
       navigation,
       theme,

@@ -3,7 +3,9 @@ import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "lib";
 import { PlusIcon } from "icons";
+import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 
 type ChatInputProps = {
@@ -75,12 +77,43 @@ export const ChatInput = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  const onDropRejected = (fileRejections: FileRejection[]) => {
+    const errors: string[] = [];
+    fileRejections.forEach((file) => {
+      if (file.errors[0]?.code === "file-too-large") {
+        errors.push(`File ${file.file.name} size exceeds 10MB limit`);
+      } else if (file.errors[0]?.code === "file-invalid-type") {
+        errors.push("Invalid file type");
+      } else if (file.errors[0]?.code === "too-many-files") {
+        errors.push("Too many files");
+      } else if (file.errors[0]?.code === "file-too-small") {
+        errors.push("File size is too small");
+      }
+    });
+    if (errors.length > 0) {
+      toast.error("Some files were not uploaded", {
+        description: errors.join("\n"),
+      });
+    }
+  };
   const { open } = useDropzone({
     noClick: true,
     noKeyboard: true,
+    accept: {
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
+      "image/gif": [".gif"],
+      "application/pdf": [".pdf"],
+    },
+    maxFiles: 5,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    minSize: 100, // 100 bytes
     onDrop: (acceptedFiles) => {
       onAttachmentsChange([...attachments, ...acceptedFiles]);
     },
+    onDropRejected,
   });
 
   const handleRemoveAttachment = (index: number) => {
