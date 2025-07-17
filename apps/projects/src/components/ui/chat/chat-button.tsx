@@ -13,7 +13,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   return (
     <Box
       className={cn(
-        "fixed bottom-6 left-1/2 right-1/2 z-50 -translate-x-1/2 transition-all duration-500 ease-in-out",
+        "fixed bottom-6 right-4 z-50 transition-all duration-500 ease-in-out md:left-1/2 md:right-1/2 md:-translate-x-1/2",
         {
           "-bottom-16": isOpen,
         },
@@ -29,8 +29,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
         rounded="xl"
         size="lg"
       >
-        <span className="hidden md:inline">AI Assistant</span>
-        <span className="inline md:hidden">AI</span>
+        AI Assistant
       </Button>
     </Box>
   );
