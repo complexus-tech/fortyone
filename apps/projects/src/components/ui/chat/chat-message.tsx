@@ -5,16 +5,23 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
+import { CheckIcon, CopyIcon, ReloadIcon } from "icons";
+import type { ChatRequestOptions } from "ai";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
+import { useCopyToClipboard } from "@/hooks";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 
 type ChatMessageProps = {
+  isLast: boolean;
   isFullScreen: boolean;
   message: Message;
   profile: User | undefined;
   isStreaming?: boolean;
+  reload: (
+    chatRequestOptions?: ChatRequestOptions,
+  ) => Promise<string | null | undefined>;
 };
 
 const RenderMessage = ({
@@ -109,12 +116,15 @@ const RenderMessage = ({
 };
 
 export const ChatMessage = ({
+  isLast,
   isFullScreen,
   message,
   profile,
   isStreaming,
+  reload,
 }: ChatMessageProps) => {
-  const createdAt = message.createdAt || new Date();
+  const [_, copy] = useCopyToClipboard();
+  const [hasCopied, setHasCopied] = useState(false);
   return (
     <Flex
       className={cn({
@@ -128,7 +138,6 @@ export const ChatMessage = ({
         <Avatar
           color="tertiary"
           name={profile?.fullName || profile?.username}
-          size="sm"
           src={profile?.avatarUrl}
         />
       )}
@@ -153,12 +162,35 @@ export const ChatMessage = ({
             message={message}
           />
         </Box>
-        <Text className="mt-2 px-1" color="muted" fontSize="sm">
-          {createdAt.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </Text>
+        <Flex className="mt-2 px-0.5" justify="between">
+          {message.role === "assistant" && !isStreaming && (
+            <Flex gap={3} justify="end">
+              <button
+                onClick={() => {
+                  copy(message.content).then(() => {
+                    setHasCopied(true);
+                    setTimeout(() => {
+                      setHasCopied(false);
+                    }, 1500);
+                  });
+                }}
+                type="button"
+              >
+                {hasCopied ? <CheckIcon /> : <CopyIcon />}
+              </button>
+              {isLast ? (
+                <button
+                  onClick={() => {
+                    reload();
+                  }}
+                  type="button"
+                >
+                  <ReloadIcon strokeWidth={2} />
+                </button>
+              ) : null}
+            </Flex>
+          )}
+        </Flex>
       </Flex>
     </Flex>
   );

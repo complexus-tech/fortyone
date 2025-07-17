@@ -232,6 +232,7 @@ export const Chat = () => {
                 isLoading={isLoading}
                 isStreaming={status === "streaming"}
                 messages={messages}
+                reload={reload}
                 value={input}
               />
               {error ? (

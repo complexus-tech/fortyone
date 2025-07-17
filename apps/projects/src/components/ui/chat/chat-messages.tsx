@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
 import type { Message } from "@ai-sdk/react";
+import type { ChatRequestOptions } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import { ChatMessage } from "./chat-message";
 import { ChatLoading } from "./chat-loading";
@@ -11,6 +12,9 @@ type ChatMessagesProps = {
   isLoading: boolean;
   isStreaming?: boolean;
   value: string;
+  reload: (
+    chatRequestOptions?: ChatRequestOptions,
+  ) => Promise<string | null | undefined>;
 };
 
 export const ChatMessages = ({
@@ -19,6 +23,7 @@ export const ChatMessages = ({
   isLoading,
   isStreaming,
   value,
+  reload,
 }: ChatMessagesProps) => {
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,13 +67,15 @@ export const ChatMessages = ({
       onScroll={handleScroll}
     >
       <Flex direction="column" gap={6}>
-        {messages.map((message) => (
+        {messages.map((message, idx) => (
           <ChatMessage
             isFullScreen={isFullScreen}
+            isLast={idx === messages.length - 1}
             isStreaming={isStreaming}
             key={message.id}
             message={message}
             profile={profile}
+            reload={reload}
           />
         ))}
         {isLoading ? <ChatLoading /> : null}
