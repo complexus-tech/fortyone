@@ -1,33 +1,41 @@
 import { AiIcon, NotificationsIcon, StoryIcon, SunIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
+import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
 import { PriorityIcon } from "../priority-icon";
 
 const SUGGESTED_PROMPTS = [
   {
-    icon: <SunIcon />,
+    icon: <SunIcon className="text-secondary dark:text-white/80" />,
     label: "Switch between light and dark mode",
     value: "Change the app’s appearance to match your preference.",
+    classes: "bg-secondary/10 dark:bg-secondary/10",
   },
   {
-    icon: <TeamIcon />,
+    icon: <TeamIcon className="text-success dark:text-success" />,
     label: "Who’s on my team?",
     value: "See a list of everyone in your current team.",
+    classes: "bg-success/10 dark:bg-success/10",
   },
   {
-    icon: <StoryIcon />,
+    icon: <StoryIcon className="text-warning dark:text-warning" />,
     label: "What’s on my plate?",
     value: "View all stories and tasks assigned to you.",
+    classes: "bg-warning/10 dark:bg-warning/10",
   },
   {
-    icon: <NotificationsIcon />,
+    icon: <NotificationsIcon className="text-info dark:text-info" />,
     label: "What’s new for me?",
     value: "Check your latest unread notifications.",
+    classes: "bg-info/10 dark:bg-info/10",
   },
   {
-    icon: <PriorityIcon priority="High" />,
+    icon: (
+      <PriorityIcon className="text-danger dark:text-danger" priority="High" />
+    ),
     label: "High priority work",
     value: "Find your most urgent stories and tasks.",
+    classes: "bg-danger/10 dark:bg-danger/10",
   },
 ];
 
@@ -41,9 +49,9 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
     <Box className="px-6 py-4">
       <Flex align="center" className="mx-auto" gap={2} justify="center">
-        <AiIcon className="h-11 text-primary" />
+        <AiIcon className="h-11" />
       </Flex>
-      <Text className="mt-5 text-center text-xl font-semibold">
+      <Text className="mt-7 text-center text-xl font-semibold">
         Hi, {name}! How can Maya help you today?
       </Text>
       <Text className="mx-auto mt-3 text-center" color="muted">
@@ -62,7 +70,10 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
           >
             <Flex
               align="center"
-              className="size-10 rounded-lg bg-gray-50 dark:bg-dark-200"
+              className={cn(
+                "size-10 rounded-lg bg-gray-50 dark:bg-dark-200",
+                prompt.classes,
+              )}
               gap={2}
               justify="center"
             >

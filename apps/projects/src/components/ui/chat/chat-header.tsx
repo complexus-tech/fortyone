@@ -1,5 +1,12 @@
-import { CloseIcon, MaximizeIcon, MinimizeIcon, PlusIcon } from "icons";
-import { Flex, Button, Badge, Tooltip } from "ui";
+import {
+  AiIcon,
+  CloseIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  PlusIcon,
+  PreferencesIcon,
+} from "icons";
+import { Flex, Button, Text } from "ui";
 import { useMediaQuery } from "@/hooks";
 
 export const ChatHeader = ({
@@ -15,14 +22,8 @@ export const ChatHeader = ({
   return (
     <Flex align="center" justify="between">
       <Flex align="center" gap={2}>
-        <Tooltip
-          className="max-w-60"
-          title="
-        Maya is under beta testing, some responses may not be accurate.
-        "
-        >
-          <Badge className="px-1.5 text-base">Beta</Badge>
-        </Tooltip>
+        <AiIcon className="h-6" />
+        <Text>Maya is your AI assistant</Text>
       </Flex>
       <Flex align="center" gap={2}>
         <Button
@@ -30,6 +31,16 @@ export const ChatHeader = ({
           color="tertiary"
           disabled
           leftIcon={<PlusIcon strokeWidth={2.8} />}
+          size="sm"
+          variant="naked"
+        >
+          <span className="sr-only">New chat</span>
+        </Button>
+        <Button
+          asIcon
+          color="tertiary"
+          disabled
+          leftIcon={<PreferencesIcon />}
           size="sm"
           variant="naked"
         >
