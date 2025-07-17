@@ -94,6 +94,8 @@ export const ChatInput = ({
     if (errors.length > 0) {
       toast.error("Some files were not uploaded", {
         description: errors.join("\n"),
+        duration: 2500,
+        closeButton: false,
       });
     }
   };
@@ -251,14 +253,13 @@ export const ChatInput = ({
             </Box>
           )}
         </Box>
-        <Flex align="center" className="pl-2 pr-3" gap={2} justify="between">
+        <Flex align="center" className="px-3" gap={2} justify="between">
           <Button
             asIcon
             className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
             color="tertiary"
             onClick={open}
             rounded="full"
-            variant="naked"
           >
             <PlusIcon />
           </Button>
