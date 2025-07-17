@@ -1,4 +1,4 @@
-import { Button, Box, Flex } from "ui";
+import { Button, Box, Flex, Text } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { PlusIcon } from "icons";
@@ -174,6 +174,13 @@ export const ChatInput = ({
           </Button>
         </Flex>
       </Box>
+      <Text
+        align="center"
+        className="mt-2 antialiased opacity-90"
+        color="muted"
+      >
+        Maya can make mistakes, so double-check important info.
+      </Text>
     </Box>
   );
 };
