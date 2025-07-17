@@ -17,7 +17,6 @@ import {
 } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
-import { useProfile } from "@/lib/hooks/profile";
 import { useMediaQuery } from "@/hooks";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
@@ -28,7 +27,7 @@ import { SuggestedPrompts } from "./suggested-prompts";
 export const Chat = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+
   const { resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -36,8 +35,6 @@ export const Chat = () => {
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-
-  const name = profile?.fullName.split(" ")[0] || profile?.username;
 
   const {
     messages,
@@ -133,13 +130,7 @@ export const Chat = () => {
         }
       });
     },
-    initialMessages: [
-      {
-        id: "1",
-        content: `Hi ${name}! I'm Maya, your AI assistant. I can help you navigate the app, change your theme, create new items, manage stories, get sprint insights, and provide project management assistance. How can I help you today?`,
-        role: "assistant",
-      },
-    ],
+    initialMessages: [],
   });
 
   const isLoading = status === "submitted";
@@ -165,6 +156,7 @@ export const Chat = () => {
   return (
     <>
       <ChatButton
+        isOpen={isOpen}
         onOpen={() => {
           setIsOpen(true);
         }}
@@ -178,7 +170,7 @@ export const Chat = () => {
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className={cn(
-            "max-w-[36rem] rounded-[2rem] border-[0.5px] border-gray-200/90 font-medium outline-none md:mb-[2.6vh] md:mt-auto",
+            "max-w-[36rem] rounded-[2rem] border-[0.5px] border-gray-200/90 font-medium outline-none backdrop-blur-lg dark:bg-dark-300/90 md:mb-[2.6vh] md:mt-auto",
             {
               "m-0 h-dvh w-screen max-w-[100vw] rounded-none border-0 bg-white/80 backdrop-blur-lg dark:bg-dark/80 md:mb-0 md:mt-0":
                 isFullScreen || isMobile,

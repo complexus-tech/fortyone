@@ -15,21 +15,6 @@ export const ChatHeader = ({
   return (
     <Flex align="center" justify="between">
       <Flex align="center" gap={2}>
-        <Button
-          asIcon
-          color="tertiary"
-          disabled
-          leftIcon={
-            <PlusIcon
-              className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-              strokeWidth={2.8}
-            />
-          }
-          size="sm"
-          variant="naked"
-        >
-          <span className="sr-only">New chat</span>
-        </Button>
         <Tooltip
           className="max-w-60"
           title="
@@ -39,22 +24,26 @@ export const ChatHeader = ({
           <Badge className="px-1.5 text-base">Beta</Badge>
         </Tooltip>
       </Flex>
-      <Flex align="center" gap={4}>
+      <Flex align="center" gap={2}>
+        <Button
+          asIcon
+          color="tertiary"
+          disabled
+          leftIcon={<PlusIcon strokeWidth={2.8} />}
+          size="sm"
+          variant="naked"
+        >
+          <span className="sr-only">New chat</span>
+        </Button>
         {isDesktop ? (
           <Button
             asIcon
             color="tertiary"
             leftIcon={
               isFullScreen ? (
-                <MinimizeIcon
-                  className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-                  strokeWidth={2.8}
-                />
+                <MinimizeIcon strokeWidth={2.8} />
               ) : (
-                <MaximizeIcon
-                  className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-                  strokeWidth={2.8}
-                />
+                <MaximizeIcon strokeWidth={2.8} />
               )
             }
             onClick={() => {
@@ -69,12 +58,7 @@ export const ChatHeader = ({
         <Button
           asIcon
           color="tertiary"
-          leftIcon={
-            <CloseIcon
-              className="h-[1.4rem] text-dark/70 dark:text-gray-200"
-              strokeWidth={2.8}
-            />
-          }
+          leftIcon={<CloseIcon strokeWidth={2.8} />}
           onClick={() => {
             setIsOpen(false);
           }}
