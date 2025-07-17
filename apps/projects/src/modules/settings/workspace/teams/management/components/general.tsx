@@ -29,6 +29,13 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
   const { userRole } = useUserRole();
   const updateTeam = useUpdateTeamMutation(team.id);
 
+  const formatCode = (name: string) => {
+    return name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric chars
+      .slice(0, 3); // Take first 3 characters
+  };
+
   const hasChanged = useMemo(() => {
     return (
       form.name !== team.name ||
@@ -87,7 +94,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
             minLength={2}
             name="code"
             onChange={(e) => {
-              setForm({ ...form, code: e.target.value });
+              setForm({ ...form, code: formatCode(e.target.value) });
             }}
             placeholder="ENG"
             required

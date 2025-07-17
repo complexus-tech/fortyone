@@ -110,17 +110,13 @@ export const StoryCard = ({
                 }
               }}
             >
-              <Text
-                className="line-clamp-3 text-[1.1rem] leading-[1.4rem]"
-                fontWeight="medium"
-              >
+              <Text className="line-clamp-3 text-[1.1rem] leading-[1.4rem]">
                 {story.title}
               </Text>
               {isColumnVisible("ID") && (
                 <Text
                   className="shrink-0 text-[0.95rem] uppercase leading-[1.4rem]"
                   color="muted"
-                  fontWeight="medium"
                 >
                   {teamCode}-{story.sequenceId}
                 </Text>
