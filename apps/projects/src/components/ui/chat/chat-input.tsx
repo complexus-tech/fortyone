@@ -2,6 +2,7 @@ import { Button, Box, Flex, Text } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { PlusIcon } from "icons";
+import { cn } from "lib";
 
 type ChatInputProps = {
   value: string;
@@ -126,7 +127,7 @@ export const ChatInput = ({
         <Box className="relative">
           <textarea
             autoFocus
-            className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-lg shadow-none focus:outline-none focus:ring-0 dark:text-white"
+            className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white"
             onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder=""
@@ -135,15 +136,16 @@ export const ChatInput = ({
             value={value}
           />
           {!value && (
-            <div
-              className={`pointer-events-none absolute left-5 top-2 text-lg text-gray transition-all duration-200 ease-in-out dark:text-gray-200/60 ${
-                isAnimating
-                  ? "translate-y-1 opacity-0"
-                  : "translate-y-0 opacity-100"
-              }`}
+            <Box
+              className={cn(
+                "pointer-events-none absolute left-5 top-2 text-[1.1rem] text-gray transition-all duration-200 ease-in-out dark:text-gray-200/60",
+                {
+                  "translate-y-1 opacity-0": isAnimating,
+                },
+              )}
             >
               {placeholderTexts[currentPlaceholderIndex]}
-            </div>
+            </Box>
           )}
         </Box>
         <Flex align="center" className="pl-2 pr-3" gap={2} justify="between">
