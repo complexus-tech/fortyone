@@ -44,13 +44,13 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
         <AiIcon className="h-11 text-primary" />
       </Flex>
       <Text className="mt-5 text-center text-xl font-semibold">
-        Hi, {name}! Plan your day with Maya
+        Hi, {name}! How can Maya help you today?
       </Text>
-      <Text className="mt-3 text-center" color="muted">
-        I&apos;m here to help you plan your day. Lorem ipsum dolor sit amet
-        consectetur adipisicing elit. Veniam, ullam!
+      <Text className="mx-auto mt-3 text-center" color="muted">
+        I&apos;m here to help you manage your work, stay organized, and keep
+        your projects moving. Choose a suggestion below or ask me anything!
       </Text>
-      <Flex className="mt-10" direction="column" gap={3}>
+      <Flex className="mt-6" direction="column" gap={3}>
         {SUGGESTED_PROMPTS.map((prompt, index) => (
           <Wrapper
             className="flex cursor-pointer items-center gap-2 ring-primary transition hover:ring-2 md:px-4"

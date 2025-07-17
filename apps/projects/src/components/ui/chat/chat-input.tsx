@@ -149,7 +149,7 @@ export const ChatInput = ({
         <Flex align="center" className="pl-2 pr-3" gap={2} justify="between">
           <Button
             asIcon
-            className="mb-0.5 dark:hover:bg-dark-50 md:h-11"
+            className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
             color="tertiary"
             onClick={onSend}
             rounded="full"
@@ -159,7 +159,7 @@ export const ChatInput = ({
           </Button>
           <Button
             asIcon
-            className="mb-0.5 md:h-11"
+            className="mb-0.5 md:h-10"
             color="invert"
             onClick={() => {
               if (isLoading) {
