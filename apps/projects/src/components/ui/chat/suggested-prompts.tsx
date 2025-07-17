@@ -6,28 +6,28 @@ import { PriorityIcon } from "../priority-icon";
 const SUGGESTED_PROMPTS = [
   {
     icon: <SunIcon />,
-    label: "Toggle color theme",
-    value: "Update the system theme",
+    label: "Switch between light and dark mode",
+    value: "Change the app’s appearance to match your preference.",
   },
   {
     icon: <TeamIcon />,
-    label: "List all team members",
-    value: "Show me all team members in your team",
+    label: "Who’s on my team?",
+    value: "See a list of everyone in your current team.",
   },
   {
     icon: <StoryIcon />,
-    label: "Show me my assigned stories",
-    value: "Show me my assigned stories",
+    label: "What’s on my plate?",
+    value: "View all stories and tasks assigned to you.",
   },
   {
     icon: <NotificationsIcon />,
-    label: "Show me unread notifications",
-    value: "Show me unread notifications",
+    label: "What’s new for me?",
+    value: "Check your latest unread notifications.",
   },
   {
     icon: <PriorityIcon priority="High" />,
-    label: "Show me high priority items",
-    value: "Show me high priority items",
+    label: "High priority work",
+    value: "Find your most urgent stories and tasks.",
   },
 ];
 

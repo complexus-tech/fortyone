@@ -215,7 +215,7 @@ export const Chat = () => {
                 messages={messages}
                 value={input}
               />
-              {messages.length <= 1 && (
+              {messages.length === 0 && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
               <ChatInput
