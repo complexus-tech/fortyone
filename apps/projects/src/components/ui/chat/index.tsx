@@ -20,6 +20,7 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { useMediaQuery } from "@/hooks";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { fileToBase64 } from "@/lib/utils/files";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -39,6 +40,7 @@ export const Chat = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
@@ -51,7 +53,6 @@ export const Chat = () => {
     reload,
     error,
   } = useChat({
-    experimental_throttle: 100,
     body: {
       currentPath: pathname,
       currentTheme: theme,
@@ -154,13 +155,27 @@ export const Chat = () => {
 
   const isLoading = status === "submitted";
 
-  const handleSendMessage = (content: string) => {
-    if (!content.trim()) return;
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() && attachments.length === 0) return;
+
+    // Convert attachments to base64 for AI SDK
+    const attachmentData = await Promise.all(
+      attachments.map(async (file) => ({
+        name: file.name,
+        contentType: file.type,
+        url: await fileToBase64(file),
+      })),
+    );
+
     append({
       role: "user",
-      content,
+      content: content || "Please analyze the attached files.",
+      experimental_attachments:
+        attachmentData.length > 0 ? attachmentData : undefined,
     });
+
     setInput("");
+    setAttachments([]);
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
@@ -168,7 +183,7 @@ export const Chat = () => {
   };
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() && attachments.length === 0) return;
     handleSendMessage(input);
   };
 
@@ -247,7 +262,9 @@ export const Chat = () => {
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
               )}
               <ChatInput
+                attachments={attachments}
                 isLoading={isLoading}
+                onAttachmentsChange={setAttachments}
                 onChange={(e) => {
                   setInput(e.target.value);
                 }}

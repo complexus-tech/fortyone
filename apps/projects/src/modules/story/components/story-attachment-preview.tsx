@@ -43,6 +43,7 @@ interface StoryAttachmentPreviewProps {
   children?: ReactNode;
   onDownload?: () => void;
   onDelete?: () => void;
+  isInChat?: boolean;
 }
 
 export const StoryAttachmentPreview = ({
@@ -51,12 +52,13 @@ export const StoryAttachmentPreview = ({
   children,
   onDownload,
   onDelete,
+  isInChat,
 }: StoryAttachmentPreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isImage = file.mimeType.includes("image");
-  const isVideo = file.mimeType.startsWith("video/");
-  const isPdf = file.mimeType === "application/pdf";
+  const isVideo = file.mimeType.startsWith("video");
+  const isPdf = file.mimeType.includes("pdf");
   const isUploading = file.id.includes("temp-");
   const { isAdminOrOwner } = useIsAdminOrOwner(file.uploadedBy);
 
@@ -97,6 +99,22 @@ export const StoryAttachmentPreview = ({
               <LoadingIcon className="h-6 animate-spin" />
             </Box>
           ) : null}
+
+          {isInChat && onDelete ? (
+            <Button
+              asIcon
+              className="absolute right-2 top-2"
+              color="invert"
+              onClick={onDelete}
+              rounded="full"
+              size="xs"
+            >
+              <CloseIcon
+                className="h-4 text-white dark:text-dark"
+                strokeWidth={3}
+              />
+            </Button>
+          ) : null}
         </Box>
       );
     }
@@ -129,55 +147,71 @@ export const StoryAttachmentPreview = ({
               </Text>
             </Box>
           </Flex>
-          <Flex align="center" gap={1}>
-            {isPdf ? (
+          {isInChat && onDelete ? (
+            <Button
+              asIcon
+              color="invert"
+              onClick={onDelete}
+              rounded="full"
+              size="sm"
+            >
+              <CloseIcon
+                className="h-4 text-white dark:text-dark"
+                strokeWidth={3}
+              />
+            </Button>
+          ) : null}
+          {!isInChat && (
+            <Flex align="center" gap={1}>
+              {isPdf ? (
+                <Button
+                  asIcon
+                  color="tertiary"
+                  disabled={isUploading}
+                  onClick={() => {
+                    setIsOpen(true);
+                  }}
+                  variant="naked"
+                >
+                  <NewTabIcon className="h-5" />
+                </Button>
+              ) : null}
               <Button
                 asIcon
                 color="tertiary"
                 disabled={isUploading}
-                onClick={() => {
-                  setIsOpen(true);
-                }}
+                onClick={onDownload}
                 variant="naked"
               >
-                <NewTabIcon className="h-5" />
+                <DownloadIcon className="h-5" />
               </Button>
-            ) : null}
-            <Button
-              asIcon
-              color="tertiary"
-              disabled={isUploading}
-              onClick={onDownload}
-              variant="naked"
-            >
-              <DownloadIcon className="h-5" />
-            </Button>
-            {isAdminOrOwner ? (
-              <Menu>
-                <Menu.Button>
-                  <Button
-                    asIcon
-                    color="tertiary"
-                    disabled={isUploading}
-                    variant="naked"
-                  >
-                    <MoreHorizontalIcon className="h-5" />
-                  </Button>
-                </Menu.Button>
-                <Menu.Items align="end" className="w-36">
-                  <Menu.Group>
-                    <Menu.Item
-                      onClick={() => {
-                        setIsDeleting(true);
-                      }}
+              {isAdminOrOwner ? (
+                <Menu>
+                  <Menu.Button>
+                    <Button
+                      asIcon
+                      color="tertiary"
+                      disabled={isUploading}
+                      variant="naked"
                     >
-                      <DeleteIcon /> Delete...
-                    </Menu.Item>
-                  </Menu.Group>
-                </Menu.Items>
-              </Menu>
-            ) : null}
-          </Flex>
+                      <MoreHorizontalIcon className="h-5" />
+                    </Button>
+                  </Menu.Button>
+                  <Menu.Items align="end" className="w-36">
+                    <Menu.Group>
+                      <Menu.Item
+                        onClick={() => {
+                          setIsDeleting(true);
+                        }}
+                      >
+                        <DeleteIcon /> Delete...
+                      </Menu.Item>
+                    </Menu.Group>
+                  </Menu.Items>
+                </Menu>
+              ) : null}
+            </Flex>
+          )}
         </Flex>
       </Wrapper>
     );
@@ -245,7 +279,7 @@ export const StoryAttachmentPreview = ({
                   {file.filename}
                 </Text>
                 <Flex align="center" gap={3}>
-                  {isAdminOrOwner ? (
+                  {isAdminOrOwner && !isInChat ? (
                     <Button
                       asIcon
                       color="tertiary"
@@ -258,27 +292,32 @@ export const StoryAttachmentPreview = ({
                       <span className="sr-only">Delete</span>
                     </Button>
                   ) : null}
-                  <Button
-                    asIcon
-                    color="tertiary"
-                    href={file.url}
-                    leftIcon={<NewTabIcon className="h-4" />}
-                    size="xs"
-                    target="_blank"
-                  >
-                    <span className="sr-only">Open in new tab</span>
-                  </Button>
-                  <Button
-                    asIcon
-                    color="tertiary"
-                    href={file.url}
-                    leftIcon={<DownloadIcon className="h-4" />}
-                    onClick={onDownload}
-                    size="xs"
-                    target="_blank"
-                  >
-                    <span className="sr-only">Download</span>
-                  </Button>
+                  {!isInChat ? (
+                    <>
+                      <Button
+                        asIcon
+                        color="tertiary"
+                        href={file.url}
+                        leftIcon={<NewTabIcon className="h-4" />}
+                        size="xs"
+                        target="_blank"
+                      >
+                        <span className="sr-only">Open in new tab</span>
+                      </Button>
+                      <Button
+                        asIcon
+                        color="tertiary"
+                        href={file.url}
+                        leftIcon={<DownloadIcon className="h-4" />}
+                        onClick={onDownload}
+                        size="xs"
+                        target="_blank"
+                      >
+                        <span className="sr-only">Download</span>
+                      </Button>
+                    </>
+                  ) : null}
+
                   <Button
                     asIcon
                     color="tertiary"

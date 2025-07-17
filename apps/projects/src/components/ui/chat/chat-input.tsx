@@ -1,8 +1,10 @@
 import { Button, Box, Flex, Text } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
-import { PlusIcon } from "icons";
 import { cn } from "lib";
+import { PlusIcon } from "icons";
+import { useDropzone } from "react-dropzone";
+import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 
 type ChatInputProps = {
   value: string;
@@ -10,6 +12,8 @@ type ChatInputProps = {
   onSend: () => void;
   onStop: () => void;
   isLoading: boolean;
+  attachments: File[];
+  onAttachmentsChange: (files: File[]) => void;
 };
 
 const placeholderTexts = [
@@ -65,10 +69,24 @@ export const ChatInput = ({
   onSend,
   isLoading,
   onStop,
+  attachments,
+  onAttachmentsChange,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { open } = useDropzone({
+    noClick: true,
+    noKeyboard: true,
+    onDrop: (acceptedFiles) => {
+      onAttachmentsChange([...attachments, ...acceptedFiles]);
+    },
+  });
+
+  const handleRemoveAttachment = (index: number) => {
+    const updatedAttachments = attachments.filter((_, i) => i !== index);
+    onAttachmentsChange(updatedAttachments);
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -121,9 +139,61 @@ export const ChatInput = ({
     }
   };
 
+  const images = attachments.filter((attachment) =>
+    attachment.type.startsWith("image/"),
+  );
+  const pdfs = attachments.filter((attachment) =>
+    attachment.type.startsWith("application/pdf"),
+  );
+
   return (
     <Box className="px-6 pb-3">
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
+        {images.length > 0 && (
+          <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
+            {images.map((attachment, idx) => (
+              <StoryAttachmentPreview
+                file={{
+                  id: attachment.name,
+                  filename: attachment.name,
+                  size: attachment.size,
+                  mimeType: attachment.type,
+                  url: URL.createObjectURL(attachment),
+                  createdAt: new Date().toISOString(),
+                  uploadedBy: "me",
+                }}
+                isInChat
+                key={idx}
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
+              />
+            ))}
+          </Box>
+        )}
+        {pdfs.length > 0 && (
+          <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
+            {pdfs.map((attachment, idx) => (
+              <StoryAttachmentPreview
+                file={{
+                  id: attachment.name,
+                  filename: attachment.name,
+                  size: attachment.size,
+                  mimeType: attachment.type,
+                  url: URL.createObjectURL(attachment),
+                  createdAt: new Date().toISOString(),
+                  uploadedBy: "me",
+                }}
+                isInChat
+                key={idx}
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
         <Box className="relative">
           <textarea
             autoFocus
@@ -153,7 +223,7 @@ export const ChatInput = ({
             asIcon
             className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
             color="tertiary"
-            onClick={onSend}
+            onClick={open}
             rounded="full"
             variant="naked"
           >
