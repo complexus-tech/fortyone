@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = streamText({
-      model: openai("gpt-4.1-minid"),
+      model: openai("gpt-4.1-mini"),
       messages,
       maxSteps: 10,
       maxTokens: 4000,
