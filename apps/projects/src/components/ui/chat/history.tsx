@@ -1,22 +1,15 @@
-import {
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  Input,
-  Menu,
-  Skeleton,
-  Text,
-  Tooltip,
-} from "ui";
-import { ChatIcon, DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
+import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
+import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
+import { format, isThisYear, isToday, isYesterday } from "date-fns";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
 import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
 import { useUpdateAiChat } from "@/modules/ai-chats/hooks/update-mutation";
+import { groupChatsByDate } from "@/lib/grouping";
 import { RowWrapper } from "../row-wrapper";
 import { ConfirmDialog } from "../confirm-dialog";
+import { Dot } from "../dot";
 
 const Row = ({
   chat,
@@ -36,29 +29,45 @@ const Row = ({
   const [title, setTitle] = useState(chat.title);
   const deleteMutation = useDeleteAiChat();
   const updateMutation = useUpdateAiChat();
+
+  const formartTime = () => {
+    const date = new Date(chat.createdAt);
+
+    if (isToday(date)) {
+      return format(date, "h:mm a");
+    }
+    if (isYesterday(date)) {
+      return "Yesterday";
+    }
+    if (isThisYear(date)) {
+      return format(date, "MMM d");
+    }
+
+    return format(date, "MMM d, yyyy");
+  };
   return (
     <>
-      <RowWrapper className="px-2 py-2 first-of-type:border-t-[0.5px] md:px-1">
-        <Tooltip
-          title={
-            chat.createdAt ? new Date(chat.createdAt).toLocaleString() : null
-          }
+      <RowWrapper className="rounded-xl border-0 px-2 py-1.5 md:px-3">
+        <Flex
+          align="center"
+          className="flex-1 cursor-pointer outline-none"
+          gap={3}
+          onClick={() => {
+            handleChatSelect(chat.id);
+            setIsHistoryOpen(false);
+          }}
+          role="button"
+          tabIndex={0}
+          title={new Date(chat.createdAt).toLocaleString()}
         >
-          <Flex
-            align="center"
-            className="flex-1 cursor-pointer outline-none"
-            gap={2}
-            onClick={() => {
-              handleChatSelect(chat.id);
-              setIsHistoryOpen(false);
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <ChatIcon className="h-4 shrink-0" strokeWidth={2.5} />
+          <Dot className="opacity-60" />
+          <Box>
             <Text className="line-clamp-1">{chat.title}</Text>
-          </Flex>
-        </Tooltip>
+            <Text className="text-[0.95rem]" color="muted">
+              {formartTime()}
+            </Text>
+          </Box>
+        </Flex>
         <Menu>
           <Menu.Button>
             <Button
@@ -177,6 +186,7 @@ export const History = ({
   setIsHistoryOpen: (isOpen: boolean) => void;
 }) => {
   const { data: chats = [], isPending } = useAiChats();
+
   if (isPending)
     return (
       <Box className="px-6">
@@ -197,18 +207,28 @@ export const History = ({
         ))}
       </Box>
     );
+
+  // Group chats by date
+  const groupedChats = groupChatsByDate(chats);
+
   return (
     <Box className="px-6">
-      <Text className="mb-4 px-2">Today</Text>
-      {chats.map((chat) => (
-        <Row
-          chat={chat}
-          currentChatId={currentChatId}
-          handleChatSelect={handleChatSelect}
-          handleNewChat={handleNewChat}
-          key={chat.id}
-          setIsHistoryOpen={setIsHistoryOpen}
-        />
+      {groupedChats.map((group) => (
+        <Box className="mb-6" key={group.label}>
+          <Text className="mb-3 px-2 text-[1.1rem] font-semibold antialiased">
+            {group.label}
+          </Text>
+          {group.items.map((chat) => (
+            <Row
+              chat={chat}
+              currentChatId={currentChatId}
+              handleChatSelect={handleChatSelect}
+              handleNewChat={handleNewChat}
+              key={chat.id}
+              setIsHistoryOpen={setIsHistoryOpen}
+            />
+          ))}
+        </Box>
       ))}
     </Box>
   );

@@ -20,7 +20,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
       )}
     >
       <Button
-        className="border-[0.5px] border-gray-200/60 px-3 shadow-xl shadow-gray-200 backdrop-blur dark:border-white/10 md:pl-5 md:pr-6"
+        className="border-[0.5px] border-gray-200/60 px-3 shadow-xl shadow-gray-200 backdrop-blur dark:border-white/10 dark:shadow-none md:pl-5 md:pr-6"
         color="tertiary"
         leftIcon={<AiIcon className="text-dark-50 dark:text-white" />}
         onClick={onOpen}
