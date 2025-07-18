@@ -1,5 +1,6 @@
 import { openai } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import type { Message } from "ai";
+import { appendResponseMessages, streamText } from "ai";
 import type { NextRequest } from "next/server";
 import {
   navigation,
@@ -20,6 +21,16 @@ import { getUserContext } from "./user-context";
 
 export const maxDuration = 30;
 
+const saveChat = async ({
+  id,
+  messages,
+}: {
+  id: string;
+  messages: Message[];
+}) => {
+  console.log("Saving chat", id, messages);
+};
+
 export async function POST(req: NextRequest) {
   const {
     messages,
@@ -28,6 +39,7 @@ export async function POST(req: NextRequest) {
     resolvedTheme,
     subscription,
     teams,
+    id,
   } = await req.json();
 
   // Get user context for "me" resolution
@@ -59,6 +71,16 @@ export async function POST(req: NextRequest) {
       notifications: notificationsTool,
     },
     system: systemPrompt + userContext,
+
+    async onFinish({ response }) {
+      await saveChat({
+        id,
+        messages: appendResponseMessages({
+          messages,
+          responseMessages: response.messages,
+        }),
+      });
+    },
   });
   return result.toDataStreamResponse({
     getErrorMessage: () => {

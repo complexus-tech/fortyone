@@ -8,6 +8,7 @@ import { Box, Button, Dialog, Flex, Text } from "ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "lib";
 import { ReloadIcon } from "icons";
+import { generateId } from "ai";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import {
@@ -43,6 +44,7 @@ export const Chat = () => {
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const id = generateId();
 
   const {
     messages,
@@ -65,7 +67,9 @@ export const Chat = () => {
         status: subscription?.status,
       },
       teams,
+      id,
     },
+    sendExtraMessageFields: true, // send id and createdAt for each message
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {

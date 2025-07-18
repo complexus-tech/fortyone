@@ -29,7 +29,6 @@ export const ChatHeader = ({
         <Button
           asIcon
           color="tertiary"
-          disabled
           leftIcon={<PlusIcon strokeWidth={2.8} />}
           size="sm"
           variant="naked"
@@ -39,7 +38,6 @@ export const ChatHeader = ({
         <Button
           asIcon
           color="tertiary"
-          disabled
           leftIcon={<PreferencesIcon />}
           size="sm"
           variant="naked"
