@@ -13,6 +13,10 @@ import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
@@ -102,6 +106,12 @@ export const MainDetails = ({
         autolink: true,
       }),
       Placeholder.configure({ placeholder: "Enter description..." }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: descriptionHTML || description,
     editable: !isDeleted && userRole !== "guest",
