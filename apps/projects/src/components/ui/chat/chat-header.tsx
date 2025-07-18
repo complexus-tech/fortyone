@@ -8,6 +8,7 @@ import {
 } from "icons";
 import { Flex, Button, Text, Tooltip } from "ui";
 import { useMediaQuery } from "@/hooks";
+import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 
 const BackIcon = () => {
   return (
@@ -43,6 +44,7 @@ export const ChatHeader = ({
   setIsHistoryOpen: (isHistoryOpen: boolean) => void;
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { data: aiChats = [] } = useAiChats();
   return (
     <Flex align="center" justify="between">
       {isHistoryOpen ? (
@@ -69,6 +71,7 @@ export const ChatHeader = ({
             <Button
               asIcon
               color="tertiary"
+              disabled={aiChats.length === 0}
               leftIcon={<HistoryIcon className="h-[1.3rem]" />}
               onClick={() => {
                 setIsHistoryOpen(true);
