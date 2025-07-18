@@ -264,7 +264,10 @@ export const Chat = () => {
               direction="column"
             >
               {isHistoryOpen ? (
-                <History />
+                <History
+                  currentChatId={idRef.current}
+                  handleNewChat={handleNewChat}
+                />
               ) : (
                 <>
                   <ChatMessages

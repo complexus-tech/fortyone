@@ -7,7 +7,15 @@ import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
 import { RowWrapper } from "../row-wrapper";
 import { ConfirmDialog } from "../confirm-dialog";
 
-const Row = ({ chat }: { chat: AiChatSession }) => {
+const Row = ({
+  chat,
+  currentChatId,
+  handleNewChat,
+}: {
+  chat: AiChatSession;
+  currentChatId: string;
+  handleNewChat: () => void;
+}) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const deleteMutation = useDeleteAiChat();
   return (
@@ -63,6 +71,9 @@ const Row = ({ chat }: { chat: AiChatSession }) => {
         }}
         onConfirm={() => {
           deleteMutation.mutate(chat.id);
+          if (currentChatId === chat.id) {
+            handleNewChat();
+          }
           setIsDeleteOpen(false);
         }}
         title="Delete chat"
@@ -71,22 +82,44 @@ const Row = ({ chat }: { chat: AiChatSession }) => {
   );
 };
 
-export const History = () => {
+export const History = ({
+  currentChatId,
+  handleNewChat,
+}: {
+  currentChatId: string;
+  handleNewChat: () => void;
+}) => {
   const { data: chats = [], isPending } = useAiChats();
   if (isPending)
     return (
       <Box className="px-6">
-        <Flex className="gap-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-10 rounded-full" />
-        </Flex>
+        <Skeleton className="mb-4 h-4 w-28" />
+        {new Array(4).fill(0).map((_, index) => (
+          <Flex className="mb-3 gap-2" key={index}>
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </Flex>
+        ))}
+
+        <Skeleton className="mb-4 mt-10 h-4 w-28" />
+        {new Array(6).fill(0).map((_, index) => (
+          <Flex className="mb-3 gap-2" key={index}>
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </Flex>
+        ))}
       </Box>
     );
   return (
     <Box className="px-6">
       <Text className="mb-4 px-2">Today</Text>
       {chats.map((chat) => (
-        <Row chat={chat} key={chat.id} />
+        <Row
+          chat={chat}
+          currentChatId={currentChatId}
+          handleNewChat={handleNewChat}
+          key={chat.id}
+        />
       ))}
     </Box>
   );

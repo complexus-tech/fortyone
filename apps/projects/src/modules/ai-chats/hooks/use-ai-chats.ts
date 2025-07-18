@@ -10,6 +10,5 @@ export const useAiChats = () => {
     queryKey: aiChatKeys.lists(),
     queryFn: () => getAiChats(session!),
     enabled: Boolean(session),
-    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };
