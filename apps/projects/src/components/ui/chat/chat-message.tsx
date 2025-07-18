@@ -1,4 +1,4 @@
-import { Avatar, Box, Text, Flex, Button } from "ui";
+import { Avatar, Box, Text, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -167,34 +167,38 @@ export const ChatMessage = ({
         <Flex className="mt-2 px-0.5" justify="between">
           {message.role === "assistant" && !isStreaming && (
             <Flex gap={3} justify="end">
-              <Button
-                asIcon
-                color="tertiary"
-                onClick={() => {
-                  copy(message.content).then(() => {
-                    setHasCopied(true);
-                    setTimeout(() => {
-                      setHasCopied(false);
-                    }, 1500);
-                  });
-                }}
-                size="sm"
-                variant="naked"
-              >
-                {hasCopied ? <CheckIcon /> : <CopyIcon />}
-              </Button>
-              {isLast ? (
+              <Tooltip title="Copy">
                 <Button
                   asIcon
                   color="tertiary"
                   onClick={() => {
-                    reload();
+                    copy(message.content).then(() => {
+                      setHasCopied(true);
+                      setTimeout(() => {
+                        setHasCopied(false);
+                      }, 1500);
+                    });
                   }}
                   size="sm"
                   variant="naked"
                 >
-                  <ReloadIcon strokeWidth={2} />
+                  {hasCopied ? <CheckIcon /> : <CopyIcon />}
                 </Button>
+              </Tooltip>
+              {isLast ? (
+                <Tooltip title="Retry">
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    onClick={() => {
+                      reload();
+                    }}
+                    size="sm"
+                    variant="naked"
+                  >
+                    <ReloadIcon strokeWidth={2} />
+                  </Button>
+                </Tooltip>
               ) : null}
             </Flex>
           )}
