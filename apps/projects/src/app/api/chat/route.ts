@@ -29,20 +29,25 @@ const saveChat = async ({
   id: string;
   messages: Message[];
 }) => {
+  let title = "";
   // if its a new chat generate the title
-  if (messages.length === 1) {
+  if (messages.length <= 3) {
     const result = await generateObject({
       model: openai("gpt-4.1-nano"),
       schema: z.object({
         title: z.string(),
       }),
-      prompt: `Generate a title for the chat.
-      Chat: ${messages.map((m) => m.content).join("\n")}`,
+      prompt: `You're generating a short title for a conversation in Complexus, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
+    
+    User message:
+    "${messages[0].content}"
+    
+    Title:`,
     });
-    console.log("Generated title", result.object.title);
+    title = result.object.title;
   }
 
-  console.log("Saving chat", id, messages);
+  console.log("Saving chat", id, messages, title);
 };
 
 export async function POST(req: NextRequest) {
