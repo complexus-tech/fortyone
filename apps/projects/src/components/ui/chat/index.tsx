@@ -48,16 +48,19 @@ export const Chat = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const idRef = useRef(generateId());
-  const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
+  const { data: aiChatMessages = [], refetch } = useAiChatMessages(
+    idRef.current,
+  );
 
   const handleNewChat = () => {
     idRef.current = generateId();
     setMessages([]);
   };
 
-  const handleChatSelect = (chatId: string) => {
+  const handleChatSelect = async (chatId: string) => {
     idRef.current = chatId;
-    setMessages([]);
+    const { data: newMessages = [] } = await refetch();
+    setMessages(newMessages);
     setInput("");
     setAttachments([]);
   };
