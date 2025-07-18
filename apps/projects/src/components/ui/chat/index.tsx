@@ -55,6 +55,13 @@ export const Chat = () => {
     setMessages([]);
   };
 
+  const handleChatSelect = (chatId: string) => {
+    idRef.current = chatId;
+    setMessages([]);
+    setInput("");
+    setAttachments([]);
+  };
+
   const {
     messages,
     input,
@@ -268,7 +275,9 @@ export const Chat = () => {
               {isHistoryOpen ? (
                 <History
                   currentChatId={idRef.current}
+                  handleChatSelect={handleChatSelect}
                   handleNewChat={handleNewChat}
+                  setIsHistoryOpen={setIsHistoryOpen}
                 />
               ) : (
                 <>

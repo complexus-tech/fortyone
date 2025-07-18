@@ -22,10 +22,14 @@ const Row = ({
   chat,
   currentChatId,
   handleNewChat,
+  handleChatSelect,
+  setIsHistoryOpen,
 }: {
   chat: AiChatSession;
   currentChatId: string;
   handleNewChat: () => void;
+  handleChatSelect: (chatId: string) => void;
+  setIsHistoryOpen: (isOpen: boolean) => void;
 }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -40,7 +44,17 @@ const Row = ({
             chat.createdAt ? new Date(chat.createdAt).toLocaleString() : null
           }
         >
-          <Flex align="center" className="flex-1 cursor-pointer" gap={2}>
+          <Flex
+            align="center"
+            className="flex-1 cursor-pointer outline-none"
+            gap={2}
+            onClick={() => {
+              handleChatSelect(chat.id);
+              setIsHistoryOpen(false);
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <ChatIcon className="h-4 shrink-0" />
             <Text className="line-clamp-1">{chat.title}</Text>
           </Flex>
@@ -153,10 +167,14 @@ const Row = ({
 
 export const History = ({
   currentChatId,
+  handleChatSelect,
   handleNewChat,
+  setIsHistoryOpen,
 }: {
   currentChatId: string;
+  handleChatSelect: (chatId: string) => void;
   handleNewChat: () => void;
+  setIsHistoryOpen: (isOpen: boolean) => void;
 }) => {
   const { data: chats = [], isPending } = useAiChats();
   if (isPending)
@@ -186,8 +204,10 @@ export const History = ({
         <Row
           chat={chat}
           currentChatId={currentChatId}
+          handleChatSelect={handleChatSelect}
           handleNewChat={handleNewChat}
           key={chat.id}
+          setIsHistoryOpen={setIsHistoryOpen}
         />
       ))}
     </Box>
