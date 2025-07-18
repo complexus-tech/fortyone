@@ -1,7 +1,8 @@
 import { openai } from "@ai-sdk/openai";
 import type { Message } from "ai";
-import { appendResponseMessages, streamText } from "ai";
+import { appendResponseMessages, generateObject, streamText } from "ai";
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   navigation,
   theme,
@@ -28,6 +29,19 @@ const saveChat = async ({
   id: string;
   messages: Message[];
 }) => {
+  // if its a new chat generate the title
+  if (messages.length === 1) {
+    const result = await generateObject({
+      model: openai("gpt-4.1-nano"),
+      schema: z.object({
+        title: z.string(),
+      }),
+      prompt: `Generate a title for the chat.
+      Chat: ${messages.map((m) => m.content).join("\n")}`,
+    });
+    console.log("Generated title", result.object.title);
+  }
+
   console.log("Saving chat", id, messages);
 };
 
