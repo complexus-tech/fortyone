@@ -5,11 +5,12 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
-import { CheckIcon, CopyIcon, ReloadIcon } from "icons";
+import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import type { ChatRequestOptions } from "ai";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard } from "@/hooks";
+import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 import { AttachmentsDisplay } from "./attachments-display";
@@ -126,84 +127,105 @@ export const ChatMessage = ({
 }: ChatMessageProps) => {
   const [_, copy] = useCopyToClipboard();
   const [hasCopied, setHasCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <Flex
-      className={cn({
-        "flex-row-reverse": message.role === "user",
-      })}
-      gap={3}
-    >
-      {message.role === "assistant" ? (
-        <AiIcon />
-      ) : (
-        <Avatar
-          color="tertiary"
-          name={profile?.fullName || profile?.username}
-          src={profile?.avatarUrl}
-        />
-      )}
+    <>
       <Flex
-        className={cn("max-w-[80%] flex-1", {
-          "items-end": message.role === "user",
-          "max-w-[85%]": message.role === "assistant",
-          "md:max-w-[90%]": isFullScreen,
+        className={cn({
+          "flex-row-reverse": message.role === "user",
         })}
-        direction="column"
+        gap={3}
       >
-        <Box
-          className={cn("rounded-2xl p-4", {
-            "rounded-tr-md bg-dark dark:bg-white dark:text-dark":
-              message.role === "user",
-            "bg-transparent p-0": message.role === "assistant",
-          })}
-        >
-          <RenderMessage
-            isFullScreen={isFullScreen}
-            isStreaming={isStreaming}
-            message={message}
+        {message.role === "assistant" ? (
+          <AiIcon />
+        ) : (
+          <Avatar
+            color="tertiary"
+            name={profile?.fullName || profile?.username}
+            src={profile?.avatarUrl}
           />
-        </Box>
-        <AttachmentsDisplay attachments={message.experimental_attachments} />
-        <Flex className="mt-2 px-0.5" justify="between">
-          {message.role === "assistant" && !isStreaming && (
-            <Flex gap={3} justify="end">
-              <Tooltip title="Copy">
-                <Button
-                  asIcon
-                  color="tertiary"
-                  onClick={() => {
-                    copy(message.content).then(() => {
-                      setHasCopied(true);
-                      setTimeout(() => {
-                        setHasCopied(false);
-                      }, 1500);
-                    });
-                  }}
-                  size="sm"
-                  variant="naked"
-                >
-                  {hasCopied ? <CheckIcon /> : <CopyIcon />}
-                </Button>
-              </Tooltip>
-              {isLast ? (
-                <Tooltip title="Retry">
+        )}
+        <Flex
+          className={cn("max-w-[80%] flex-1", {
+            "items-end": message.role === "user",
+            "max-w-[85%]": message.role === "assistant",
+            "md:max-w-[90%]": isFullScreen,
+          })}
+          direction="column"
+        >
+          <Box
+            className={cn("rounded-2xl p-4", {
+              "rounded-tr-md bg-dark dark:bg-white dark:text-dark":
+                message.role === "user",
+              "bg-transparent p-0": message.role === "assistant",
+            })}
+          >
+            <RenderMessage
+              isFullScreen={isFullScreen}
+              isStreaming={isStreaming}
+              message={message}
+            />
+          </Box>
+          <AttachmentsDisplay attachments={message.experimental_attachments} />
+          <Flex className="mt-2 px-0.5" justify="between">
+            {message.role === "assistant" && !isStreaming && (
+              <Flex gap={3} justify="end">
+                <Tooltip title="Copy">
                   <Button
                     asIcon
                     color="tertiary"
                     onClick={() => {
-                      reload();
+                      setIsOpen(true);
                     }}
                     size="sm"
                     variant="naked"
                   >
-                    <ReloadIcon strokeWidth={2} />
+                    <PlusIcon />
                   </Button>
                 </Tooltip>
-              ) : null}
-            </Flex>
-          )}
+                <Tooltip title="Copy">
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    onClick={() => {
+                      copy(message.content).then(() => {
+                        setHasCopied(true);
+                        setTimeout(() => {
+                          setHasCopied(false);
+                        }, 1500);
+                      });
+                    }}
+                    size="sm"
+                    variant="naked"
+                  >
+                    {hasCopied ? <CheckIcon /> : <CopyIcon />}
+                  </Button>
+                </Tooltip>
+                {isLast ? (
+                  <Tooltip title="Retry">
+                    <Button
+                      asIcon
+                      color="tertiary"
+                      onClick={() => {
+                        reload();
+                      }}
+                      size="sm"
+                      variant="naked"
+                    >
+                      <ReloadIcon strokeWidth={2} />
+                    </Button>
+                  </Tooltip>
+                ) : null}
+              </Flex>
+            )}
+          </Flex>
         </Flex>
       </Flex>
-    </Flex>
+      <NewStoryDialog
+        // description={message.content}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
+    </>
   );
 };
