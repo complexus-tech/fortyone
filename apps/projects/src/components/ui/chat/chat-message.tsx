@@ -222,7 +222,7 @@ export const ChatMessage = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        // description={message.content}
+        description={message.content}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />

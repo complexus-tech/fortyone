@@ -31,6 +31,11 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import { marked } from "marked";
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -115,6 +120,7 @@ export const NewStoryDialog = ({
   assigneeId,
   objectiveId,
   sprintId,
+  description,
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -124,6 +130,7 @@ export const NewStoryDialog = ({
   sprintId?: string;
   priority?: StoryPriority;
   assigneeId?: string | null;
+  description?: string;
 }) => {
   const session = useSession();
   const { userRole } = useUserRole();
@@ -226,8 +233,17 @@ export const NewStoryDialog = ({
       Placeholder.configure({
         placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description`,
       }),
+
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
-    content: "",
+    content: marked.parse(description || "", {
+      gfm: true,
+    }),
     editable: true,
     immediatelyRender: false,
   });
