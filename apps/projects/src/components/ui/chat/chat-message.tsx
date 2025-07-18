@@ -1,4 +1,4 @@
-import { Avatar, Box, Text, Flex } from "ui";
+import { Avatar, Box, Text, Flex, Button } from "ui";
 import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -167,7 +167,9 @@ export const ChatMessage = ({
         <Flex className="mt-2 px-0.5" justify="between">
           {message.role === "assistant" && !isStreaming && (
             <Flex gap={3} justify="end">
-              <button
+              <Button
+                asIcon
+                color="tertiary"
                 onClick={() => {
                   copy(message.content).then(() => {
                     setHasCopied(true);
@@ -176,19 +178,23 @@ export const ChatMessage = ({
                     }, 1500);
                   });
                 }}
-                type="button"
+                size="sm"
+                variant="naked"
               >
                 {hasCopied ? <CheckIcon /> : <CopyIcon />}
-              </button>
+              </Button>
               {isLast ? (
-                <button
+                <Button
+                  asIcon
+                  color="tertiary"
                   onClick={() => {
                     reload();
                   }}
-                  type="button"
+                  size="sm"
+                  variant="naked"
                 >
                   <ReloadIcon strokeWidth={2} />
-                </button>
+                </Button>
               ) : null}
             </Flex>
           )}
