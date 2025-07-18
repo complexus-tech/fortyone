@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/complexus-tech/projects-api/internal/handlers/activitiesgrp"
+	"github.com/complexus-tech/projects-api/internal/handlers/chatsessionsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/commentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/documentsgrp"
 	"github.com/complexus-tech/projects-api/internal/handlers/epicsgrp"
@@ -228,6 +229,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:          cfg.Log,
 		SecretKey:    cfg.SecretKey,
 		TasksService: cfg.TasksService,
+	}, app)
+
+	// register the chat sessions routes
+	chatsessionsgrp.Routes(chatsessionsgrp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
 	}, app)
 
 }
