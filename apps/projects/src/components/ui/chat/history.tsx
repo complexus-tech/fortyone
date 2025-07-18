@@ -1,9 +1,20 @@
-import { Box, Button, Flex, Menu, Skeleton, Text, Tooltip } from "ui";
+import {
+  Box,
+  Button,
+  Dialog,
+  Flex,
+  Input,
+  Menu,
+  Skeleton,
+  Text,
+  Tooltip,
+} from "ui";
 import { ChatIcon, DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
 import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
+import { useUpdateAiChat } from "@/modules/ai-chats/hooks/update-mutation";
 import { RowWrapper } from "../row-wrapper";
 import { ConfirmDialog } from "../confirm-dialog";
 
@@ -17,7 +28,10 @@ const Row = ({
   handleNewChat: () => void;
 }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [title, setTitle] = useState(chat.title);
   const deleteMutation = useDeleteAiChat();
+  const updateMutation = useUpdateAiChat();
   return (
     <>
       <RowWrapper className="px-2 py-2 first-of-type:border-t-[0.5px] md:px-1">
@@ -45,7 +59,11 @@ const Row = ({
           </Menu.Button>
           <Menu.Items align="end" className="w-28">
             <Menu.Group>
-              <Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  setIsRenameOpen(true);
+                }}
+              >
                 <EditIcon />
                 Rename
               </Menu.Item>
@@ -78,6 +96,57 @@ const Row = ({
         }}
         title="Delete chat"
       />
+
+      <Dialog
+        onOpenChange={() => {
+          setIsRenameOpen(false);
+        }}
+        open={isRenameOpen}
+      >
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Rename chat
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <Input
+              autoFocus
+              className="rounded-[0.6rem]"
+              onChange={(e) => {
+                setTitle(e.target.value);
+              }}
+              placeholder="Enter chat title"
+              value={title}
+            />
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+            <Button
+              className="px-4"
+              color="tertiary"
+              onClick={() => {
+                setIsRenameOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-4"
+              onClick={() => {
+                updateMutation.mutate({
+                  id: chat.id,
+                  payload: {
+                    title,
+                  },
+                });
+                setIsRenameOpen(false);
+              }}
+            >
+              Rename
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
     </>
   );
 };
