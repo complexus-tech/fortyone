@@ -9,7 +9,7 @@ import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import type { ChatRequestOptions } from "ai";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
@@ -128,6 +128,7 @@ export const ChatMessage = ({
   const [_, copy] = useCopyToClipboard();
   const [hasCopied, setHasCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { getTermDisplay } = useTerminology();
   return (
     <>
       <Flex
@@ -170,7 +171,7 @@ export const ChatMessage = ({
           <Flex className="mt-2 px-0.5" justify="between">
             {message.role === "assistant" && !isStreaming && (
               <Flex gap={3} justify="end">
-                <Tooltip title="Copy">
+                <Tooltip title={`Create ${getTermDisplay("storyTerm")}`}>
                   <Button
                     asIcon
                     color="tertiary"
