@@ -27,6 +27,7 @@ import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
+import { History } from "./history";
 import { SuggestedPrompts } from "./suggested-prompts";
 
 export const Chat = () => {
@@ -42,9 +43,15 @@ export const Chat = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const idRef = useRef(generateId());
+
+  const handleNewChat = () => {
+    idRef.current = generateId();
+    setMessages([]);
+  };
 
   const {
     messages,
@@ -55,6 +62,7 @@ export const Chat = () => {
     stop: handleStop,
     reload,
     error,
+    setMessages,
   } = useChat({
     body: {
       currentPath: pathname,
@@ -225,12 +233,17 @@ export const Chat = () => {
           <Dialog.Header
             className={cn("flex h-[4.5rem] items-center px-6", {
               "absolute left-0 right-0 top-0": isFullScreen || isMobile,
+              "border-b-[0.5px] border-gray-100 dark:border-dark-100":
+                isHistoryOpen && !isFullScreen && !isMobile,
             })}
           >
             <Dialog.Title className="w-full text-lg">
               <ChatHeader
+                handleNewChat={handleNewChat}
                 isFullScreen={isFullScreen}
+                isHistoryOpen={isHistoryOpen}
                 setIsFullScreen={setIsFullScreen}
+                setIsHistoryOpen={setIsHistoryOpen}
                 setIsOpen={setIsOpen}
               />
             </Dialog.Title>
@@ -246,45 +259,52 @@ export const Chat = () => {
             <Flex
               className={cn("h-full", {
                 "mx-auto h-dvh max-w-3xl pt-16": isFullScreen || isMobile,
+                "pt-4": isHistoryOpen && !isFullScreen && !isMobile,
               })}
               direction="column"
             >
-              <ChatMessages
-                isFullScreen={isFullScreen}
-                isLoading={isLoading}
-                isStreaming={status === "streaming"}
-                messages={messages}
-                reload={reload}
-                value={input}
-              />
-              {error ? (
-                <Box className="px-6">
-                  <Text>An error occurred.</Text>
-                  <Button
-                    className="mt-4"
-                    leftIcon={
-                      <ReloadIcon className="text-white dark:text-white" />
-                    }
-                    onClick={() => reload()}
-                  >
-                    Retry
-                  </Button>
-                </Box>
-              ) : null}
-              {messages.length === 0 && (
-                <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
+              {isHistoryOpen ? (
+                <History />
+              ) : (
+                <>
+                  <ChatMessages
+                    isFullScreen={isFullScreen}
+                    isLoading={isLoading}
+                    isStreaming={status === "streaming"}
+                    messages={messages}
+                    reload={reload}
+                    value={input}
+                  />
+                  {error ? (
+                    <Box className="px-6">
+                      <Text>An error occurred.</Text>
+                      <Button
+                        className="mt-4"
+                        leftIcon={
+                          <ReloadIcon className="text-white dark:text-white" />
+                        }
+                        onClick={() => reload()}
+                      >
+                        Retry
+                      </Button>
+                    </Box>
+                  ) : null}
+                  {messages.length === 0 && (
+                    <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
+                  )}
+                  <ChatInput
+                    attachments={attachments}
+                    isLoading={isLoading}
+                    onAttachmentsChange={setAttachments}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                    }}
+                    onSend={handleSend}
+                    onStop={handleStop}
+                    value={input}
+                  />
+                </>
               )}
-              <ChatInput
-                attachments={attachments}
-                isLoading={isLoading}
-                onAttachmentsChange={setAttachments}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                }}
-                onSend={handleSend}
-                onStop={handleStop}
-                value={input}
-              />
             </Flex>
           </Dialog.Body>
         </Dialog.Content>

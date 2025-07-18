@@ -110,7 +110,7 @@ export const ChatInput = ({
       "application/pdf": [".pdf"],
     },
     maxFiles: 5,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 5 * 1024 * 1024, // 5MB
     minSize: 100, // 100 bytes
     onDrop: (acceptedFiles) => {
       onAttachmentsChange([...attachments, ...acceptedFiles]);
@@ -254,7 +254,7 @@ export const ChatInput = ({
           )}
         </Box>
         <Flex align="center" className="px-3" gap={2} justify="between">
-          <Tooltip side="bottom" title="Add files">
+          <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
             <Button
               asIcon
               className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
