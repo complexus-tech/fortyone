@@ -7,8 +7,7 @@ export const ChatIcon = (props: Icon) => {
     <svg
       {...rest}
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
-      fill="currentColor"
-      fillOpacity={0.1}
+      fill="none"
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"

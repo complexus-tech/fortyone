@@ -55,7 +55,7 @@ const Row = ({
             role="button"
             tabIndex={0}
           >
-            <ChatIcon className="h-4 shrink-0" />
+            <ChatIcon className="h-4 shrink-0" strokeWidth={2.5} />
             <Text className="line-clamp-1">{chat.title}</Text>
           </Flex>
         </Tooltip>
