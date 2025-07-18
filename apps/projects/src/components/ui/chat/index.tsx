@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
@@ -174,6 +174,13 @@ export const Chat = () => {
     },
     initialMessages: aiChatMessages,
   });
+
+  // Sync messages when aiChatMessages changes (when selecting a different chat)
+  useEffect(() => {
+    if (aiChatMessages.length > 0) {
+      setMessages(aiChatMessages);
+    }
+  }, [aiChatMessages, setMessages]);
 
   const isLoading = status === "submitted";
 
