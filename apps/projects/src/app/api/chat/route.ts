@@ -41,7 +41,7 @@ const saveChat = async ({
     
     User message:
     "${messages[0].content}"
-    
+
     Title:`,
     });
     title = result.object.title;
