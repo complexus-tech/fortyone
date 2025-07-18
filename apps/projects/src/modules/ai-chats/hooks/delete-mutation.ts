@@ -46,10 +46,6 @@ export const useDeleteAiChat = () => {
       queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
       queryClient.removeQueries({ queryKey: aiChatKeys.detail(id) });
       queryClient.removeQueries({ queryKey: aiChatKeys.messages(id) });
-
-      toast.success("Success", {
-        description: "Chat deleted successfully",
-      });
     },
   });
 

@@ -68,10 +68,6 @@ export const useUpdateAiChat = () => {
 
       queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
       queryClient.invalidateQueries({ queryKey: aiChatKeys.detail(id) });
-
-      toast.success("Success", {
-        description: "Chat updated successfully",
-      });
     },
   });
 
