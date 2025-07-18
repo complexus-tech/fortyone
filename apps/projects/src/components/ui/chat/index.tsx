@@ -279,10 +279,10 @@ export const Chat = () => {
                     value={input}
                   />
                   {error ? (
-                    <Box className="px-6">
-                      <Text>An error occurred.</Text>
+                    <Box className="mb-4 px-6">
+                      <Text>{error.message || "An error occurred."} </Text>
                       <Button
-                        className="mt-4"
+                        className="mt-2"
                         leftIcon={
                           <ReloadIcon className="text-white dark:text-white" />
                         }

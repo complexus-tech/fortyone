@@ -80,40 +80,46 @@ export async function POST(req: NextRequest) {
     teams,
   });
 
-  const result = streamText({
-    model: openai("gpt-4.1-mini"),
-    messages,
-    maxSteps: 10,
-    maxTokens: 4000,
-    tools: {
-      navigation,
-      theme,
-      quickCreate,
-      teams: teamsTool,
-      members: membersTool,
-      stories: storiesTool,
-      statuses: statusesTool,
-      sprints: sprintsTool,
-      objectives: objectivesTool,
-      objectiveStatuses: objectiveStatusesTool,
-      search: searchTool,
-      notifications: notificationsTool,
-    },
-    system: systemPrompt + userContext,
+  try {
+    const result = streamText({
+      model: openai("gpt-4.1-minid"),
+      messages,
+      maxSteps: 10,
+      maxTokens: 4000,
+      tools: {
+        navigation,
+        theme,
+        quickCreate,
+        teams: teamsTool,
+        members: membersTool,
+        stories: storiesTool,
+        statuses: statusesTool,
+        sprints: sprintsTool,
+        objectives: objectivesTool,
+        objectiveStatuses: objectiveStatusesTool,
+        search: searchTool,
+        notifications: notificationsTool,
+      },
+      system: systemPrompt + userContext,
 
-    async onFinish({ response }) {
-      await saveChat({
-        id,
-        messages: appendResponseMessages({
-          messages,
-          responseMessages: response.messages,
-        }),
-      });
-    },
-  });
-  return result.toDataStreamResponse({
-    getErrorMessage: () => {
-      return "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.";
-    },
-  });
+      async onFinish({ response }) {
+        await saveChat({
+          id,
+          messages: appendResponseMessages({
+            messages,
+            responseMessages: response.messages,
+          }),
+        });
+      },
+    });
+    return result.toDataStreamResponse({
+      getErrorMessage: () => {
+        return "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.";
+      },
+    });
+  } catch {
+    throw new Error(
+      "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.",
+    );
+  }
 }
