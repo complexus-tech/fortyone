@@ -23,6 +23,7 @@ import { useMediaQuery } from "@/hooks";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { fileToBase64 } from "@/lib/utils/files";
+import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -47,6 +48,7 @@ export const Chat = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const idRef = useRef(generateId());
+  const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
 
   const handleNewChat = () => {
     idRef.current = generateId();
@@ -163,7 +165,7 @@ export const Chat = () => {
         }
       });
     },
-    initialMessages: [],
+    initialMessages: aiChatMessages,
   });
 
   const isLoading = status === "submitted";
