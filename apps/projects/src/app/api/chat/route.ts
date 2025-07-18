@@ -17,6 +17,8 @@ import {
   searchTool,
   notificationsTool,
 } from "@/lib/ai/tools";
+import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
+import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 
@@ -47,7 +49,15 @@ const saveChat = async ({
     title = result.object.title;
   }
 
-  console.log("Saving chat", id, messages, title);
+  try {
+    if (title) {
+      await createAiChatAction({ id, title, messages });
+    } else {
+      await saveAiChatMessagesAction({ id, messages });
+    }
+  } catch (error) {
+    // log to posthog or sentry later
+  }
 };
 
 export async function POST(req: NextRequest) {
