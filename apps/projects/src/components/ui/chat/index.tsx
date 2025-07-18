@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
@@ -44,7 +44,7 @@ export const Chat = () => {
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const id = generateId();
+  const idRef = useRef(generateId());
 
   const {
     messages,
@@ -67,7 +67,7 @@ export const Chat = () => {
         status: subscription?.status,
       },
       teams,
-      id,
+      id: idRef.current,
     },
     sendExtraMessageFields: true, // send id and createdAt for each message
     onFinish: (message) => {
