@@ -1,6 +1,7 @@
 import { NotificationsIcon, StoryIcon, SunIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
+import { usePathname } from "next/navigation";
 import { useProfile } from "@/lib/hooks/profile";
 import { PriorityIcon } from "../priority-icon";
 
@@ -46,19 +47,43 @@ type SuggestedPromptsProps = {
 export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
+  const pathname = usePathname();
+  const isMaya = pathname.includes("maya");
   return (
-    <Box className="px-6 py-4">
-      <Text className="text-center text-xl font-semibold">
+    <Box
+      className={cn("px-12 py-4", {
+        "md:px-12 md:py-6": isMaya,
+      })}
+    >
+      <Text
+        className={cn("text-center text-xl font-semibold", {
+          "mx-auto mb-10 md:w-11/12 md:text-5xl": isMaya,
+        })}
+      >
         Hi, {name}! How can Maya help you today?
       </Text>
-      <Text className="mx-auto mt-3 text-center" color="muted">
+      <Text
+        className={cn("mx-auto mt-3 text-center", {
+          "md:w-11/12 md:text-lg": isMaya,
+        })}
+        color="muted"
+      >
         I&apos;m here to help you manage your work, stay organized, and keep
         your projects moving. Choose a suggestion below or ask me anything!
       </Text>
-      <Flex className="mt-5" direction="column" gap={3}>
+      <Box
+        className={cn("mt-5 flex flex-col gap-3", {
+          "grid grid-cols-2 gap-4": isMaya,
+        })}
+      >
         {SUGGESTED_PROMPTS.map((prompt, index) => (
           <Wrapper
-            className="flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3"
+            className={cn(
+              "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
+              {
+                "md:px-4 md:py-4": isMaya,
+              },
+            )}
             key={index}
             onClick={() => {
               onPromptSelect(prompt.label);
@@ -68,7 +93,7 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
             <Flex
               align="center"
               className={cn(
-                "size-10 rounded-lg bg-gray-50 dark:bg-dark-200",
+                "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
                 prompt.classes,
               )}
               gap={2}
@@ -77,14 +102,20 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
               {prompt.icon}
             </Flex>
             <Box>
-              <Text>{prompt.label}</Text>
+              <Text
+                className={cn({
+                  "md:text-lg": isMaya,
+                })}
+              >
+                {prompt.label}
+              </Text>
               <Text className="text-[0.95rem]" color="muted">
                 {prompt.value}
               </Text>
             </Box>
           </Wrapper>
         ))}
-      </Flex>
+      </Box>
     </Box>
   );
 };

@@ -14,6 +14,7 @@ import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import ky from "ky";
+import { usePathname } from "next/navigation";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
@@ -87,6 +88,8 @@ export const ChatInput = ({
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const pathname = usePathname();
+  const isMaya = pathname.includes("maya");
 
   const {
     isRecording,
@@ -329,7 +332,12 @@ export const ChatInput = ({
         <Box className="relative dark:antialiased">
           <textarea
             autoFocus
-            className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white"
+            className={cn(
+              "max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
+              {
+                "md:min-h-[3.7rem]": isMaya,
+              },
+            )}
             onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder=""

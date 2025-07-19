@@ -191,7 +191,7 @@ export const History = ({
   const groupedChats = groupChatsByDate(chats);
 
   return (
-    <Box className="px-6">
+    <Box className="px-4">
       {groupedChats.map((group) => (
         <Box className="mb-6" key={group.label}>
           <Text

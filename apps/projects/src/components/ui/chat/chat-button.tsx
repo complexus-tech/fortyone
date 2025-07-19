@@ -13,7 +13,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   return (
     <Box
       className={cn(
-        "fixed bottom-6 right-4 z-50 transition-all duration-500 ease-in-out md:left-1/2 md:right-1/2 md:-translate-x-1/2",
+        "fixed bottom-6 right-4 z-50 hidden transition-all duration-500 ease-in-out md:left-1/2 md:right-1/2 md:-translate-x-1/2",
         {
           "-bottom-16": isOpen,
         },
