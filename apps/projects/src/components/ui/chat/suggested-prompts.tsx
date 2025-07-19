@@ -94,7 +94,7 @@ export const SuggestedPrompts = ({
             className={cn(
               "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
               {
-                "gap-3 md:px-4 md:py-4": isOnPage,
+                "gap-3 md:px-4": isOnPage,
               },
             )}
             key={index}
