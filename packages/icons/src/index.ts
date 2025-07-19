@@ -127,3 +127,4 @@ export * from "./history";
 export * from "./microphone";
 export * from "./volume";
 export * from "./pause";
+export * from "./stop";

@@ -1,7 +1,7 @@
 import type { ButtonProps } from "ui";
 import { Button } from "ui";
 import { cn } from "lib";
-import { VolumeIcon, PauseIcon, LoadingIcon } from "icons";
+import { VolumeIcon, LoadingIcon, StopIcon } from "icons";
 import { useTTS } from "@/hooks/use-tts";
 
 export const TTSButton = ({
@@ -9,8 +9,7 @@ export const TTSButton = ({
   size = "sm",
   className,
 }: ButtonProps & { text: string }) => {
-  const { playText, pause, resume, stop, currentAudio, isPlaying, isLoading } =
-    useTTS();
+  const { playText, stop, currentAudio, isPlaying, isLoading } = useTTS();
 
   const isCurrentText = currentAudio?.text === text;
   const isCurrentPlaying = isCurrentText && isPlaying;
@@ -18,9 +17,7 @@ export const TTSButton = ({
 
   const handleClick = async () => {
     if (isCurrentPlaying) {
-      pause();
-    } else if (isCurrentText && currentAudio.state === "paused") {
-      resume();
+      stop();
     } else {
       stop();
       await playText(text);
@@ -32,7 +29,7 @@ export const TTSButton = ({
       return <LoadingIcon className="animate-spin" />;
     }
     if (isCurrentPlaying) {
-      return <PauseIcon />;
+      return <StopIcon />;
     }
     return <VolumeIcon />;
   };
