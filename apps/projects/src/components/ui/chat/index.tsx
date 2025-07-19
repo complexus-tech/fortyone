@@ -24,6 +24,7 @@ import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { fileToBase64 } from "@/lib/utils/files";
 import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
+import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -172,6 +173,10 @@ export const Chat = () => {
               });
             }
           }
+        } else if (part.type === "text") {
+          queryClient.invalidateQueries({
+            queryKey: aiChatKeys.lists(),
+          });
         }
       });
     },
