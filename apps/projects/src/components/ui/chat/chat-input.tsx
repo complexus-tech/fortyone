@@ -98,7 +98,9 @@ export const ChatInput = ({
     stopRecording,
     getAudioBlob,
     resetRecording,
-  } = useVoiceRecording();
+  } = useVoiceRecording(() => {
+    processRecording();
+  });
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
@@ -206,48 +208,51 @@ export const ChatInput = ({
   const handleVoiceRecording = async () => {
     if (isRecording) {
       stopRecording();
-
-      // Wait for the recording to finish
-      setTimeout(async () => {
-        const audioBlob = getAudioBlob();
-        if (!audioBlob) {
-          toast.info("No audio recorded", {
-            description: "Please try again.",
-            duration: 2500,
-            closeButton: false,
-          });
-          resetRecording();
-          return;
-        }
-        setIsTranscribing(true);
-
-        try {
-          const formData = new FormData();
-          formData.append("audio", audioBlob, "recording.webm");
-          const { text = "" } = await ky
-            .post("/api/transcribe", {
-              body: formData,
-            })
-            .json<{ text: string }>();
-          if (text.trim()) {
-            onChange({
-              target: { value: `${value} ${text}` },
-            } as ChangeEvent<HTMLTextAreaElement>);
-          }
-        } catch (error) {
-          toast.error("Failed to transcribe audio", {
-            description: "Please try again.",
-            duration: 2500,
-            closeButton: false,
-          });
-        } finally {
-          setIsTranscribing(false);
-          resetRecording();
-        }
-      }, 100);
+      // The callback will handle the transcription
     } else {
       startRecording();
     }
+  };
+
+  const processRecording = async () => {
+    // Wait for the recording to finish
+    setTimeout(async () => {
+      const audioBlob = getAudioBlob();
+      if (!audioBlob) {
+        toast.info("No audio recorded", {
+          description: "Please try again.",
+          duration: 2500,
+          closeButton: false,
+        });
+        resetRecording();
+        return;
+      }
+      setIsTranscribing(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+        const { text = "" } = await ky
+          .post("/api/transcribe", {
+            body: formData,
+          })
+          .json<{ text: string }>();
+        if (text.trim()) {
+          onChange({
+            target: { value: `${value} ${text}` },
+          } as ChangeEvent<HTMLTextAreaElement>);
+        }
+      } catch (error) {
+        toast.error("Failed to transcribe audio", {
+          description: "Please try again.",
+          duration: 2500,
+          closeButton: false,
+        });
+      } finally {
+        setIsTranscribing(false);
+        resetRecording();
+      }
+    }, 100);
   };
 
   return (

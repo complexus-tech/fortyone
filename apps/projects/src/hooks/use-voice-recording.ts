@@ -3,9 +3,9 @@ import { toast } from "sonner";
 
 type RecordingState = "idle" | "recording" | "processing";
 
-const MAX_RECORDING_TIME = 60; // 60 seconds max
+const MAX_RECORDING_TIME = 10; // 60 seconds max
 
-export const useVoiceRecording = () => {
+export const useVoiceRecording = (onRecordingStop?: () => void) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -70,8 +70,13 @@ export const useVoiceRecording = () => {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+
+      // Call the callback to trigger transcription
+      if (onRecordingStop) {
+        onRecordingStop();
+      }
     }
-  }, [isRecording]);
+  }, [isRecording, onRecordingStop]);
 
   const getAudioBlob = useCallback(() => {
     if (audioChunksRef.current.length === 0) return null;
