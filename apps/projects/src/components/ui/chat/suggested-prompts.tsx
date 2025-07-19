@@ -81,7 +81,7 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
             className={cn(
               "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
               {
-                "md:px-4 md:py-4": isMaya,
+                "gap-3 md:px-4 md:py-4": isMaya,
               },
             )}
             key={index}
@@ -109,7 +109,12 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
               >
                 {prompt.label}
               </Text>
-              <Text className="text-[0.95rem]" color="muted">
+              <Text
+                className={cn("text-[0.95rem]", {
+                  "md:text-base": isMaya,
+                })}
+                color="muted"
+              >
                 {prompt.value}
               </Text>
             </Box>
