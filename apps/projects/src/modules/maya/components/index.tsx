@@ -54,8 +54,10 @@ export const MayaChat = ({ config }: MayaChatProps) => {
       <BodyContainer className="mx-auto flex max-w-4xl flex-col">
         <ChatMessages
           isLoading={isLoading}
+          isOnPage
           isStreaming={status === "streaming"}
           messages={messages}
+          onPromptSelect={handleSuggestedPrompt}
           reload={reload}
           value={input}
         />

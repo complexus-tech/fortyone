@@ -25,6 +25,7 @@ type ChatMessageProps = {
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   onPromptSelect: (prompt: string) => void;
+  isOnPage?: boolean;
 };
 
 const RenderMessage = ({
@@ -32,11 +33,13 @@ const RenderMessage = ({
   message,
   isStreaming,
   onPromptSelect,
+  isOnPage,
 }: {
   isLast: boolean;
   message: Message;
   isStreaming?: boolean;
   onPromptSelect: (prompt: string) => void;
+  isOnPage?: boolean;
 }) => {
   const [hasText, setHasText] = useState(false);
   const pathname = usePathname();
@@ -114,9 +117,14 @@ const RenderMessage = ({
               }
             } else if (toolInvocation.toolName === "suggestions") {
               const { result } = toolInvocation;
-              if (result?.suggestions && isLast) {
+              if (result?.suggestions && isLast && !isStreaming) {
                 return (
-                  <Flex className="mt-2" gap={2} key={index} wrap>
+                  <Flex
+                    className="mt-2"
+                    gap={2}
+                    key={`${index}-suggestions`}
+                    wrap
+                  >
                     {result.suggestions.map(
                       (suggestion: string, index: number) => (
                         <Button
@@ -125,8 +133,8 @@ const RenderMessage = ({
                           onClick={() => {
                             onPromptSelect(suggestion);
                           }}
-                          size="sm"
-                          variant="outline"
+                          rounded="lg"
+                          size={isOnPage ? "md" : "sm"}
                         >
                           {suggestion}
                         </Button>
@@ -151,6 +159,7 @@ export const ChatMessage = ({
   isStreaming,
   reload,
   onPromptSelect,
+  isOnPage,
 }: ChatMessageProps) => {
   const [_, copy] = useCopyToClipboard();
   const [hasCopied, setHasCopied] = useState(false);
@@ -189,6 +198,7 @@ export const ChatMessage = ({
           >
             <RenderMessage
               isLast={isLast}
+              isOnPage={isOnPage}
               isStreaming={isStreaming}
               message={message}
               onPromptSelect={onPromptSelect}
