@@ -6,6 +6,7 @@ import { PlusIcon, MicrophoneIcon } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import ky from "ky";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
@@ -212,24 +213,15 @@ export const ChatInput = ({
         try {
           const formData = new FormData();
           formData.append("audio", audioBlob, "recording.webm");
-          const response = await fetch("/api/transcribe", {
-            method: "POST",
-            body: formData,
-          });
-          if (!response.ok) {
-            throw new Error("Transcription failed");
-          }
-          const { text = "" } = await response.json();
+          const { text = "" } = await ky
+            .post("/api/transcribe", {
+              body: formData,
+            })
+            .json<{ text: string }>();
           if (text.trim()) {
             onChange({
               target: { value: text },
             } as ChangeEvent<HTMLTextAreaElement>);
-          } else {
-            toast.warning("No speech detected", {
-              description: "Please try again.",
-              duration: 2500,
-              closeButton: false,
-            });
           }
         } catch (error) {
           toast.error("Failed to transcribe audio", {
