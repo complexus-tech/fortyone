@@ -47,6 +47,7 @@
     "javascript-time-ago": "^2.5.11",
     "ky": "^1.5.0",
     "lib": "workspace:*",
+    "marked": "^16.1.1",
     "msw": "^2.3.1",
     "next": "15.3.2",
     "next-auth": "5.0.0-beta.28",
