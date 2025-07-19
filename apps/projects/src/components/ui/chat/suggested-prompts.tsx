@@ -94,7 +94,7 @@ export const SuggestedPrompts = ({
             className={cn(
               "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
               {
-                "gap-3 md:px-4": isOnPage,
+                "gap-3 md:px-4 md:py-3": isOnPage,
               },
             )}
             key={index}
@@ -124,7 +124,7 @@ export const SuggestedPrompts = ({
               </Text>
               <Text
                 className={cn("text-[0.95rem]", {
-                  "md:text-base": isOnPage,
+                  "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
                 })}
                 color="muted"
               >
