@@ -244,7 +244,11 @@ export const Chat = () => {
         >
           <Dialog.Header className="flex h-[4.5rem] items-center px-6">
             <Dialog.Title className="w-full text-lg">
-              <ChatHeader handleNewChat={handleNewChat} setIsOpen={setIsOpen} />
+              <ChatHeader
+                currentChatId={idRef.current}
+                handleNewChat={handleNewChat}
+                setIsOpen={setIsOpen}
+              />
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Description className="sr-only">

@@ -3,9 +3,11 @@ import { Flex, Button, Text, Tooltip } from "ui";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 
 export const ChatHeader = ({
+  currentChatId,
   setIsOpen,
   handleNewChat,
 }: {
+  currentChatId: string;
   setIsOpen: (isOpen: boolean) => void;
   handleNewChat: () => void;
 }) => {
@@ -46,7 +48,7 @@ export const ChatHeader = ({
           <Button
             asIcon
             color="tertiary"
-            href="/maya"
+            href={`/maya?chatRef=${currentChatId}`}
             leftIcon={<NewTabIcon className="h-[1.4rem]" strokeWidth={2.6} />}
             size="sm"
             variant="naked"
