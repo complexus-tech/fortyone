@@ -208,7 +208,8 @@ export const ChatInput = ({
   const handleVoiceRecording = async () => {
     if (isRecording) {
       stopRecording();
-      // The callback will handle the transcription
+      // For manual stop, we need to handle transcription ourselves
+      processRecording();
     } else {
       startRecording();
     }

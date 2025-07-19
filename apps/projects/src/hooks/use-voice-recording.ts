@@ -5,7 +5,7 @@ type RecordingState = "idle" | "recording" | "processing";
 
 const MAX_RECORDING_TIME = 60; // 60 seconds max
 
-export const useVoiceRecording = (onRecordingStop?: () => void) => {
+export const useVoiceRecording = (onAutoStop?: () => void) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -70,13 +70,8 @@ export const useVoiceRecording = (onRecordingStop?: () => void) => {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-
-      // Call the callback to trigger transcription
-      if (onRecordingStop) {
-        onRecordingStop();
-      }
     }
-  }, [isRecording, onRecordingStop]);
+  }, [isRecording]);
 
   const getAudioBlob = useCallback(() => {
     if (audioChunksRef.current.length === 0) return null;
@@ -101,8 +96,12 @@ export const useVoiceRecording = (onRecordingStop?: () => void) => {
   useEffect(() => {
     if (recordingDuration >= MAX_RECORDING_TIME) {
       stopRecording();
+      // Call the callback only for auto-stop
+      if (onAutoStop) {
+        onAutoStop();
+      }
     }
-  }, [recordingDuration, stopRecording]);
+  }, [recordingDuration, stopRecording, onAutoStop]);
 
   return {
     isRecording,
