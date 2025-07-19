@@ -1,4 +1,4 @@
-import { AiIcon, NotificationsIcon, StoryIcon, SunIcon, TeamIcon } from "icons";
+import { NotificationsIcon, StoryIcon, SunIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
@@ -48,20 +48,17 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   const name = profile?.fullName.split(" ")[0] || profile?.username;
   return (
     <Box className="px-6 py-4">
-      <Flex align="center" className="mx-auto" gap={2} justify="center">
-        <AiIcon className="h-11" />
-      </Flex>
-      <Text className="mt-7 text-center text-xl font-semibold">
+      <Text className="text-center text-xl font-semibold">
         Hi, {name}! How can Maya help you today?
       </Text>
       <Text className="mx-auto mt-3 text-center" color="muted">
         I&apos;m here to help you manage your work, stay organized, and keep
         your projects moving. Choose a suggestion below or ask me anything!
       </Text>
-      <Flex className="mt-6" direction="column" gap={3}>
+      <Flex className="mt-5" direction="column" gap={3}>
         {SUGGESTED_PROMPTS.map((prompt, index) => (
           <Wrapper
-            className="flex cursor-pointer items-center gap-2 ring-primary transition hover:ring-2 md:px-4"
+            className="flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3"
             key={index}
             onClick={() => {
               onPromptSelect(prompt.label);

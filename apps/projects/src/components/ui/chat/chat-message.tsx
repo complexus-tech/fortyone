@@ -7,6 +7,7 @@ import type { Message } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import type { ChatRequestOptions } from "ai";
+import { usePathname } from "next/navigation";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -17,7 +18,6 @@ import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
   isLast: boolean;
-  isFullScreen: boolean;
   message: Message;
   profile: User | undefined;
   isStreaming?: boolean;
@@ -27,15 +27,14 @@ type ChatMessageProps = {
 };
 
 const RenderMessage = ({
-  isFullScreen,
   message,
   isStreaming,
 }: {
-  isFullScreen: boolean;
   message: Message;
   isStreaming?: boolean;
 }) => {
   const [hasText, setHasText] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (message.parts?.some((p) => p.type === "text")) {
@@ -102,7 +101,7 @@ const RenderMessage = ({
                     <BurndownChart
                       burndownData={result?.analytics?.burndown}
                       className={cn("h-72", {
-                        "h-80": isFullScreen,
+                        "h-80": pathname === "/maya",
                       })}
                     />
                   </Box>
@@ -119,7 +118,6 @@ const RenderMessage = ({
 
 export const ChatMessage = ({
   isLast,
-  isFullScreen,
   message,
   profile,
   isStreaming,
@@ -150,7 +148,6 @@ export const ChatMessage = ({
           className={cn("max-w-[80%] flex-1", {
             "items-end": message.role === "user",
             "max-w-[85%]": message.role === "assistant",
-            "md:max-w-[90%]": isFullScreen,
           })}
           direction="column"
         >
@@ -161,11 +158,7 @@ export const ChatMessage = ({
               "bg-transparent p-0": message.role === "assistant",
             })}
           >
-            <RenderMessage
-              isFullScreen={isFullScreen}
-              isStreaming={isStreaming}
-              message={message}
-            />
+            <RenderMessage isStreaming={isStreaming} message={message} />
           </Box>
           <AttachmentsDisplay attachments={message.experimental_attachments} />
           <Flex className="mt-2 px-0.5" justify="between">
