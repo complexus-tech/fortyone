@@ -8,6 +8,7 @@ import {
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
+import { useMediaQuery } from "@/hooks/media";
 import { PriorityIcon } from "../priority-icon";
 
 const SUGGESTED_PROMPTS = [
@@ -60,6 +61,7 @@ export const SuggestedPrompts = ({
   onPromptSelect,
   isOnPage,
 }: SuggestedPromptsProps) => {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
   return (
@@ -69,14 +71,14 @@ export const SuggestedPrompts = ({
       })}
     >
       <Text
-        className={cn("mx-auto w-11/12 text-center text-2xl font-semibold", {
-          "mb-10 antialiased md:text-5xl": isOnPage,
+        className={cn("mx-auto text-center text-2xl font-semibold md:w-11/12", {
+          "antialiased md:mb-10 md:text-5xl": isOnPage,
         })}
       >
         Hi, {name}! How can Maya help you today?
       </Text>
       <Text
-        className={cn("mx-auto mt-3 w-10/12 text-center", {
+        className={cn("mx-auto mt-3 text-center md:w-10/12", {
           "md:text-lg": isOnPage,
         })}
         color="muted"
@@ -86,53 +88,55 @@ export const SuggestedPrompts = ({
       </Text>
       <Box
         className={cn("mt-6 flex flex-col gap-3", {
-          "grid grid-cols-2 gap-4": isOnPage,
+          "grid md:grid-cols-2 md:gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.slice(0, isOnPage ? 6 : 5).map((prompt, index) => (
-          <Wrapper
-            className={cn(
-              "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
-              {
-                "gap-3 md:px-4 md:py-3": isOnPage,
-              },
-            )}
-            key={index}
-            onClick={() => {
-              onPromptSelect(prompt.label);
-            }}
-            tabIndex={0}
-          >
-            <Flex
-              align="center"
+        {SUGGESTED_PROMPTS.slice(0, isOnPage && isDesktop ? 6 : 5).map(
+          (prompt, index) => (
+            <Wrapper
               className={cn(
-                "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
-                prompt.classes,
+                "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
+                {
+                  "gap-3 md:px-4 md:py-3": isOnPage,
+                },
               )}
-              gap={2}
-              justify="center"
+              key={index}
+              onClick={() => {
+                onPromptSelect(prompt.label);
+              }}
+              tabIndex={0}
             >
-              {prompt.icon}
-            </Flex>
-            <Box>
-              <Text
-                className={cn({
-                  "md:text-lg": isOnPage,
-                })}
+              <Flex
+                align="center"
+                className={cn(
+                  "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
+                  prompt.classes,
+                )}
+                gap={2}
+                justify="center"
               >
-                {prompt.label}
-              </Text>
-              <Text
-                className={cn("text-[0.95rem]", {
-                  "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
-                })}
-                color="muted"
-              >
-                {prompt.value}
-              </Text>
-            </Box>
-          </Wrapper>
-        ))}
+                {prompt.icon}
+              </Flex>
+              <Box>
+                <Text
+                  className={cn({
+                    "md:text-lg": isOnPage,
+                  })}
+                >
+                  {prompt.label}
+                </Text>
+                <Text
+                  className={cn("text-[0.95rem]", {
+                    "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
+                  })}
+                  color="muted"
+                >
+                  {prompt.value}
+                </Text>
+              </Box>
+            </Wrapper>
+          ),
+        )}
       </Box>
     </Box>
   );
