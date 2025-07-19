@@ -1,8 +1,9 @@
+/* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "lib";
-import { PlusIcon, MicrophoneIcon } from "icons";
+import { PlusIcon, MicrophoneIcon, CloseIcon, LoadingIcon } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -312,54 +313,60 @@ export const ChatInput = ({
           )}
         </Box>
         <Flex align="center" className="px-3" gap={2} justify="between">
-          <Flex gap={2}>
-            <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
-              <Button
-                asIcon
-                className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
-                color="tertiary"
-                onClick={open}
-                rounded="full"
-              >
-                <PlusIcon />
-              </Button>
-            </Tooltip>
+          <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
+            <Button
+              asIcon
+              className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
+              color="tertiary"
+              onClick={open}
+              rounded="full"
+            >
+              <PlusIcon />
+            </Button>
+          </Tooltip>
 
+          <Flex align="center" gap={2}>
             <Tooltip
               side="bottom"
-              title={isRecording ? "Stop recording" : "Record voice message"}
+              title={isRecording ? "Stop dictation" : "Dictate"}
             >
               <Button
                 asIcon
-                className={cn("mb-0.5 md:h-10", {
-                  "bg-red-500 hover:bg-red-600 text-white": isRecording,
-                  "dark:hover:bg-dark-50": !isRecording,
-                })}
+                className="mb-0.5 border-0 bg-gray-100/60 md:h-[2.6rem]"
                 color={isRecording ? "primary" : "tertiary"}
-                loading={isTranscribing}
+                leftIcon={
+                  isTranscribing ? (
+                    <LoadingIcon className="animate-spin" />
+                  ) : isRecording ? (
+                    <CloseIcon />
+                  ) : (
+                    <MicrophoneIcon />
+                  )
+                }
                 onClick={handleVoiceRecording}
                 rounded="full"
               >
-                <MicrophoneIcon />
+                <span className="sr-only">
+                  {isRecording ? "Stop dictation" : "Dictate"}
+                </span>
               </Button>
             </Tooltip>
+            <Button
+              asIcon
+              className="mb-0.5 md:h-10"
+              color="invert"
+              onClick={() => {
+                if (isLoading) {
+                  onStop();
+                } else {
+                  onSend();
+                }
+              }}
+              rounded="full"
+            >
+              {isLoading ? <StopIcon /> : <SendIcon />}
+            </Button>
           </Flex>
-
-          <Button
-            asIcon
-            className="mb-0.5 md:h-10"
-            color="invert"
-            onClick={() => {
-              if (isLoading) {
-                onStop();
-              } else {
-                onSend();
-              }
-            }}
-            rounded="full"
-          >
-            {isLoading ? <StopIcon /> : <SendIcon />}
-          </Button>
         </Flex>
       </Box>
       <Text
