@@ -9,7 +9,6 @@ import {
   CloseIcon,
   LoadingIcon,
   CheckIcon,
-  ClockIcon,
 } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
@@ -91,11 +90,14 @@ export const ChatInput = ({
 
   const {
     isRecording,
+    recordingState,
+    recordingDuration,
+    formatDuration,
+    MAX_RECORDING_TIME,
     startRecording,
     stopRecording,
     getAudioBlob,
     resetRecording,
-    recordingState,
   } = useVoiceRecording();
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
@@ -250,17 +252,28 @@ export const ChatInput = ({
 
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
-      <Flex align="center" className="mb-2 px-1" gap={2} justify="between">
-        <Text className="text-sm" color="muted">
-          {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
-        </Text>
-        <Flex align="center" gap={1}>
-          <ClockIcon className="h-4 w-auto" />
+      {recordingState !== "idle" && (
+        <Flex align="center" className="mb-2 px-1" gap={2} justify="between">
           <Text className="text-sm" color="muted">
-            00:00
+            {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
           </Text>
+          <Flex align="center" gap={1}>
+            <Text
+              className={cn("text-sm", {
+                "text-success": recordingDuration < 40,
+                "text-warning":
+                  recordingDuration >= 40 && recordingDuration < 50,
+                "text-danger": recordingDuration >= 50,
+              })}
+            >
+              {formatDuration(recordingDuration)}
+            </Text>
+            <Text className="text-sm" color="muted">
+              / {formatDuration(MAX_RECORDING_TIME)}
+            </Text>
+          </Flex>
         </Flex>
-      </Flex>
+      )}
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
@@ -370,6 +383,7 @@ export const ChatInput = ({
                 onClick={() => {
                   if (isRecording) {
                     stopRecording();
+                    resetRecording();
                   } else {
                     handleVoiceRecording();
                   }
