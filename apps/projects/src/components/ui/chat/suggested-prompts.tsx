@@ -70,7 +70,7 @@ export const SuggestedPrompts = ({
     >
       <Text
         className={cn("mx-auto w-11/12 text-center text-2xl font-semibold", {
-          "mb-10 md:text-5xl": isOnPage,
+          "mb-10 antialiased md:text-5xl": isOnPage,
         })}
       >
         Hi, {name}! How can Maya help you today?

@@ -44,8 +44,6 @@ export const MayaChat = ({ config }: MayaChatProps) => {
     setIsSprintOpen,
   } = useMayaChat(config);
 
-  const showEmptyState = config.isNewChat && messages.length === 0;
-
   return (
     <>
       <Header
@@ -73,7 +71,7 @@ export const MayaChat = ({ config }: MayaChatProps) => {
             </Button>
           </Box>
         ) : null}
-        {showEmptyState ? (
+        {messages.length === 0 ? (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         ) : null}
         <ChatInput
