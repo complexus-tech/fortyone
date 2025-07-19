@@ -27,7 +27,6 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={<PlusIcon className="h-[1.4rem]" strokeWidth={2.8} />}
               onClick={handleNewChat}
-              size="sm"
               variant="naked"
             >
               <span className="sr-only">New chat</span>
@@ -43,7 +42,6 @@ export const ChatHeader = ({
               onClick={() => {
                 setIsHistoryOpen(true);
               }}
-              size="sm"
               variant="naked"
             >
               <span className="sr-only">History</span>
@@ -63,7 +61,6 @@ export const ChatHeader = ({
                 router.push(`/maya?chatRef=${currentChatId}`);
                 setIsOpen(false);
               }}
-              size="sm"
               variant="naked"
             >
               <span className="sr-only">Open on new page</span>
@@ -77,7 +74,6 @@ export const ChatHeader = ({
               onClick={() => {
                 setIsOpen(false);
               }}
-              size="sm"
               variant="naked"
             >
               <span className="sr-only">Close</span>
