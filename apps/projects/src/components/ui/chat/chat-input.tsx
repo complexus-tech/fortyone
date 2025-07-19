@@ -254,7 +254,12 @@ export const ChatInput = ({
         <Text className="text-sm" color="muted">
           {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
         </Text>
-        <ClockIcon />
+        <Flex align="center" gap={1}>
+          <ClockIcon className="h-4 w-auto" />
+          <Text className="text-sm" color="muted">
+            00:00
+          </Text>
+        </Flex>
       </Flex>
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
