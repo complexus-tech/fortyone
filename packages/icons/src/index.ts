@@ -125,3 +125,5 @@ export * from "./ai";
 export * from "./reload";
 export * from "./history";
 export * from "./microphone";
+export * from "./volume";
+export * from "./pause";

@@ -8,6 +8,7 @@ export { useIsOwner } from "./owner";
 export * from "./tracking";
 export * from "./feature-flag";
 export * from "./use-terminology-display";
+export * from "./use-tts";
 export * from "./features";
 export * from "./media";
 export { useVoiceRecording } from "./use-voice-recording";
