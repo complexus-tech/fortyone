@@ -52,17 +52,21 @@ export const ChatHeader = ({
           Maya is your AI assistant
         </Text>
         <Flex align="center" gap={3}>
-          <Tooltip title="New tab">
-            <Button
-              asIcon
-              color="tertiary"
-              href={`/maya?chatRef=${currentChatId}`}
-              leftIcon={<NewTabIcon className="h-[1.4rem]" strokeWidth={2.6} />}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">New tab</span>
-            </Button>
+          <Tooltip title="Open on new page">
+            <span>
+              <Button
+                asIcon
+                color="tertiary"
+                href={`/maya?chatRef=${currentChatId}`}
+                leftIcon={
+                  <NewTabIcon className="h-[1.4rem]" strokeWidth={2.6} />
+                }
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">Open on new page</span>
+              </Button>
+            </span>
           </Tooltip>
           <Tooltip title="Close">
             <Button

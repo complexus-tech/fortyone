@@ -7,7 +7,6 @@ import {
 } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
-import { usePathname } from "next/navigation";
 import { useProfile } from "@/lib/hooks/profile";
 import { PriorityIcon } from "../priority-icon";
 
@@ -54,46 +53,48 @@ const SUGGESTED_PROMPTS = [
 
 type SuggestedPromptsProps = {
   onPromptSelect: (prompt: string) => void;
+  isOnPage?: boolean;
 };
 
-export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
+export const SuggestedPrompts = ({
+  onPromptSelect,
+  isOnPage,
+}: SuggestedPromptsProps) => {
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
-  const pathname = usePathname();
-  const isMaya = pathname.includes("maya");
   return (
     <Box
-      className={cn("px-12 py-4", {
-        "md:px-10 md:py-6": isMaya,
+      className={cn("px-6 py-4", {
+        "md:px-10 md:py-6": isOnPage,
       })}
     >
       <Text
-        className={cn("text-center text-xl font-semibold", {
-          "mx-auto mb-10 md:w-11/12 md:text-5xl": isMaya,
+        className={cn("mx-auto w-11/12 text-center text-2xl font-semibold", {
+          "mb-10 md:text-5xl": isOnPage,
         })}
       >
         Hi, {name}! How can Maya help you today?
       </Text>
       <Text
-        className={cn("mx-auto mt-3 text-center", {
-          "md:w-11/12 md:text-lg": isMaya,
+        className={cn("mx-auto mt-3 w-10/12 text-center", {
+          "md:text-lg": isOnPage,
         })}
         color="muted"
       >
         I&apos;m here to help you manage your work, stay organized, and keep
-        your projects moving. Choose a suggestion below or ask me anything!
+        your projects moving. Ask me anything!
       </Text>
       <Box
-        className={cn("mt-5 flex flex-col gap-3", {
-          "grid grid-cols-2 gap-4": isMaya,
+        className={cn("mt-6 flex flex-col gap-3", {
+          "grid grid-cols-2 gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.map((prompt, index) => (
+        {SUGGESTED_PROMPTS.slice(0, isOnPage ? 6 : 5).map((prompt, index) => (
           <Wrapper
             className={cn(
               "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
               {
-                "gap-3 md:px-4 md:py-4": isMaya,
+                "gap-3 md:px-4 md:py-4": isOnPage,
               },
             )}
             key={index}
@@ -116,14 +117,14 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
             <Box>
               <Text
                 className={cn({
-                  "md:text-lg": isMaya,
+                  "md:text-lg": isOnPage,
                 })}
               >
                 {prompt.label}
               </Text>
               <Text
                 className={cn("text-[0.95rem]", {
-                  "md:text-base": isMaya,
+                  "md:text-base": isOnPage,
                 })}
                 color="muted"
               >

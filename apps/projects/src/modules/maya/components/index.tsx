@@ -74,11 +74,12 @@ export const MayaChat = ({ config }: MayaChatProps) => {
           </Box>
         ) : null}
         {showEmptyState ? (
-          <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
+          <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         ) : null}
         <ChatInput
           attachments={attachments}
           isLoading={isLoading}
+          isOnPage
           onAttachmentsChange={setAttachments}
           onChange={(e) => {
             setInput(e.target.value);

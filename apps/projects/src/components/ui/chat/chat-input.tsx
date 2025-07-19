@@ -14,7 +14,6 @@ import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import ky from "ky";
-import { usePathname } from "next/navigation";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
@@ -26,6 +25,7 @@ type ChatInputProps = {
   isLoading: boolean;
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
+  isOnPage?: boolean;
 };
 
 const placeholderTexts = [
@@ -83,13 +83,12 @@ export const ChatInput = ({
   onStop,
   attachments,
   onAttachmentsChange,
+  isOnPage,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const pathname = usePathname();
-  const isMaya = pathname.includes("maya");
 
   const {
     isRecording,
@@ -260,12 +259,12 @@ export const ChatInput = ({
   };
 
   return (
-    <Box className="sticky bottom-0 px-6 pb-3">
+    <Box className="sticky bottom-0 bg-white px-6 pb-3 backdrop-blur-lg dark:bg-dark-300/90">
       {recordingState !== "idle" && (
         <Flex
           align="center"
           className={cn("mb-2 px-1 text-sm", {
-            "md:text-base": isMaya,
+            "md:text-base": isOnPage,
           })}
           gap={2}
           justify="between"
@@ -288,7 +287,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
+      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -340,7 +339,7 @@ export const ChatInput = ({
             className={cn(
               "max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
               {
-                "md:min-h-[3.7rem]": isMaya,
+                "md:min-h-[3.7rem]": isOnPage,
               },
             )}
             onChange={onChange}
@@ -444,7 +443,7 @@ export const ChatInput = ({
       </Box>
       <Text
         align="center"
-        className="mt-2 antialiased opacity-90"
+        className="pt-2 antialiased opacity-90"
         color="muted"
       >
         Maya can make mistakes, so double-check important info.
