@@ -25,6 +25,7 @@ type ChatInputProps = {
   isLoading: boolean;
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
+  isOnPage?: boolean;
 };
 
 const placeholderTexts = [
@@ -82,6 +83,7 @@ export const ChatInput = ({
   onStop,
   attachments,
   onAttachmentsChange,
+  isOnPage,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
@@ -257,11 +259,25 @@ export const ChatInput = ({
   };
 
   return (
-    <Box className="sticky bottom-0 px-6 pb-3">
+    <Box
+      className={cn(
+        "sticky bottom-0 bg-white px-6 pb-3 backdrop-blur-lg dark:bg-dark-300/90",
+        {
+          "dark:bg-dark": isOnPage,
+        },
+      )}
+    >
       {recordingState !== "idle" && (
-        <Flex align="center" className="mb-2 px-1" gap={2} justify="between">
-          <Text className="text-sm" color="muted">
-            {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
+        <Flex
+          align="center"
+          className={cn("mb-2 px-1 text-sm", {
+            "md:text-base": isOnPage,
+          })}
+          gap={2}
+          justify="between"
+        >
+          <Text color="muted">
+            {`${recordingState.replace("r", "l").charAt(0).toUpperCase() + recordingState.replace("recording", "listening").slice(1)}...`}
           </Text>
           <Flex align="center" gap={1}>
             <Text
@@ -274,13 +290,11 @@ export const ChatInput = ({
             >
               {formatDuration(recordingDuration)}
             </Text>
-            <Text className="text-sm" color="muted">
-              / {formatDuration(MAX_RECORDING_TIME)}
-            </Text>
+            <Text color="muted">/ {formatDuration(MAX_RECORDING_TIME)}</Text>
           </Flex>
         </Flex>
       )}
-      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
+      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -329,7 +343,12 @@ export const ChatInput = ({
         <Box className="relative dark:antialiased">
           <textarea
             autoFocus
-            className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white"
+            className={cn(
+              "max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
+              {
+                "md:min-h-[3.7rem]": isOnPage,
+              },
+            )}
             onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder=""
@@ -363,6 +382,7 @@ export const ChatInput = ({
               color="tertiary"
               onClick={open}
               rounded="full"
+              variant="outline"
             >
               <PlusIcon />
             </Button>
@@ -375,7 +395,7 @@ export const ChatInput = ({
             >
               <Button
                 asIcon
-                className="mb-0.5 border-0 bg-gray-100/60 md:h-[2.6rem]"
+                className="mb-0.5 md:h-[2.6rem]"
                 color="tertiary"
                 leftIcon={
                   isTranscribing ? (
@@ -395,6 +415,7 @@ export const ChatInput = ({
                   }
                 }}
                 rounded="full"
+                variant="outline"
               >
                 <span className="sr-only">
                   {isRecording ? "Stop dictation" : "Dictate"}
@@ -429,7 +450,7 @@ export const ChatInput = ({
       </Box>
       <Text
         align="center"
-        className="mt-2 antialiased opacity-90"
+        className="pt-2 antialiased opacity-90"
         color="muted"
       >
         Maya can make mistakes, so double-check important info.

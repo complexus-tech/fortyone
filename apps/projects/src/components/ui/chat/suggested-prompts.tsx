@@ -1,4 +1,10 @@
-import { AiIcon, NotificationsIcon, StoryIcon, SunIcon, TeamIcon } from "icons";
+import {
+  NotificationsIcon,
+  StoryIcon,
+  SunIcon,
+  TeamIcon,
+  HelpIcon,
+} from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
@@ -7,20 +13,20 @@ import { PriorityIcon } from "../priority-icon";
 const SUGGESTED_PROMPTS = [
   {
     icon: <TeamIcon className="text-success dark:text-success" />,
-    label: "Who’s on my team?",
-    value: "See a list of everyone in your current team.",
+    label: "Who's on my team?",
+    value: "See a list of everyone in your current team and their roles.",
     classes: "bg-success/10 dark:bg-success/10",
   },
   {
     icon: <StoryIcon className="text-warning dark:text-warning" />,
-    label: "What’s on my plate?",
-    value: "View all stories and tasks assigned to you.",
+    label: "What's on my plate?",
+    value: "View all stories assigned to you across teams.",
     classes: "bg-warning/10 dark:bg-warning/10",
   },
   {
     icon: <NotificationsIcon className="text-info dark:text-info" />,
-    label: "What’s new for me?",
-    value: "Check your latest unread notifications.",
+    label: "What's new for me?",
+    value: "Check your latest unread notifications and updates.",
     classes: "bg-info/10 dark:bg-info/10",
   },
   {
@@ -28,40 +34,69 @@ const SUGGESTED_PROMPTS = [
       <PriorityIcon className="text-danger dark:text-danger" priority="High" />
     ),
     label: "High priority work",
-    value: "Find your most urgent stories and tasks.",
+    value: "Find your most urgent stories across teams to focus on.",
     classes: "bg-danger/10 dark:bg-danger/10",
   },
   {
     icon: <SunIcon className="text-secondary dark:text-white/80" />,
     label: "Switch between light and dark mode",
-    value: "Change the app’s appearance to match your preference.",
+    value: "Change the app's appearance to match your preference.",
     classes: "bg-secondary/10 dark:bg-secondary/10",
+  },
+  {
+    icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
+    label: "How can you help me?",
+    value: "Learn about what I can do and how to use the app effectively.",
+    classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
   },
 ];
 
 type SuggestedPromptsProps = {
   onPromptSelect: (prompt: string) => void;
+  isOnPage?: boolean;
 };
 
-export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
+export const SuggestedPrompts = ({
+  onPromptSelect,
+  isOnPage,
+}: SuggestedPromptsProps) => {
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
   return (
-    <Box className="px-6 py-4">
-      <Flex align="center" className="mx-auto" gap={2} justify="center">
-        <AiIcon className="h-11" />
-      </Flex>
-      <Text className="mt-7 text-center text-xl font-semibold">
+    <Box
+      className={cn("px-6 py-4", {
+        "md:px-10 md:py-6": isOnPage,
+      })}
+    >
+      <Text
+        className={cn("mx-auto w-11/12 text-center text-2xl font-semibold", {
+          "mb-10 md:text-5xl": isOnPage,
+        })}
+      >
         Hi, {name}! How can Maya help you today?
       </Text>
-      <Text className="mx-auto mt-3 text-center" color="muted">
+      <Text
+        className={cn("mx-auto mt-3 w-10/12 text-center", {
+          "md:text-lg": isOnPage,
+        })}
+        color="muted"
+      >
         I&apos;m here to help you manage your work, stay organized, and keep
-        your projects moving. Choose a suggestion below or ask me anything!
+        your projects moving. Ask me anything!
       </Text>
-      <Flex className="mt-6" direction="column" gap={3}>
-        {SUGGESTED_PROMPTS.map((prompt, index) => (
+      <Box
+        className={cn("mt-6 flex flex-col gap-3", {
+          "grid grid-cols-2 gap-4": isOnPage,
+        })}
+      >
+        {SUGGESTED_PROMPTS.slice(0, isOnPage ? 6 : 5).map((prompt, index) => (
           <Wrapper
-            className="flex cursor-pointer items-center gap-2 ring-primary transition hover:ring-2 md:px-4"
+            className={cn(
+              "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
+              {
+                "gap-3 md:px-4": isOnPage,
+              },
+            )}
             key={index}
             onClick={() => {
               onPromptSelect(prompt.label);
@@ -71,7 +106,7 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
             <Flex
               align="center"
               className={cn(
-                "size-10 rounded-lg bg-gray-50 dark:bg-dark-200",
+                "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
                 prompt.classes,
               )}
               gap={2}
@@ -80,14 +115,25 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
               {prompt.icon}
             </Flex>
             <Box>
-              <Text>{prompt.label}</Text>
-              <Text className="text-[0.95rem]" color="muted">
+              <Text
+                className={cn({
+                  "md:text-lg": isOnPage,
+                })}
+              >
+                {prompt.label}
+              </Text>
+              <Text
+                className={cn("text-[0.95rem]", {
+                  "md:text-base": isOnPage,
+                })}
+                color="muted"
+              >
                 {prompt.value}
               </Text>
             </Box>
           </Wrapper>
         ))}
-      </Flex>
+      </Box>
     </Box>
   );
 };

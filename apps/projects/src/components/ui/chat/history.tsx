@@ -1,6 +1,7 @@
 import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
-import { ChatIcon, DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
+import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
 import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
@@ -14,14 +15,14 @@ const Row = ({
   currentChatId,
   handleNewChat,
   handleChatSelect,
-  setIsHistoryOpen,
 }: {
   chat: AiChatSession;
   currentChatId: string;
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => void;
-  setIsHistoryOpen: (isOpen: boolean) => void;
 }) => {
+  const pathname = usePathname();
+  const router = useRouter();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [title, setTitle] = useState(chat.title);
@@ -36,8 +37,11 @@ const Row = ({
           className="flex-1 cursor-pointer outline-none"
           gap={3}
           onClick={() => {
-            handleChatSelect(chat.id);
-            setIsHistoryOpen(false);
+            if (pathname === "/maya") {
+              router.push(`/maya?chatRef=${chat.id}`);
+            } else {
+              handleChatSelect(chat.id);
+            }
           }}
           role="button"
           tabIndex={0}
@@ -155,12 +159,10 @@ export const History = ({
   currentChatId,
   handleChatSelect,
   handleNewChat,
-  setIsHistoryOpen,
 }: {
   currentChatId: string;
   handleChatSelect: (chatId: string) => void;
   handleNewChat: () => void;
-  setIsHistoryOpen: (isOpen: boolean) => void;
 }) => {
   const { data: chats = [], isPending } = useAiChats();
 
@@ -189,11 +191,13 @@ export const History = ({
   const groupedChats = groupChatsByDate(chats);
 
   return (
-    <Box className="px-6">
+    <Box className="px-4">
       {groupedChats.map((group) => (
         <Box className="mb-6" key={group.label}>
-          <Text className="mb-3 flex items-center gap-2 px-2 text-[1.1rem] font-semibold antialiased">
-            <ChatIcon />
+          <Text
+            className="mb-1 px-2.5 text-[1.1rem] font-semibold antialiased"
+            color="muted"
+          >
             {group.label}
           </Text>
           {group.items.map((chat) => (
@@ -203,7 +207,6 @@ export const History = ({
               handleChatSelect={handleChatSelect}
               handleNewChat={handleNewChat}
               key={chat.id}
-              setIsHistoryOpen={setIsHistoryOpen}
             />
           ))}
         </Box>

@@ -7,7 +7,6 @@ import { ChatMessage } from "./chat-message";
 import { ChatLoading } from "./chat-loading";
 
 type ChatMessagesProps = {
-  isFullScreen: boolean;
   messages: Message[];
   isLoading: boolean;
   isStreaming?: boolean;
@@ -18,7 +17,6 @@ type ChatMessagesProps = {
 };
 
 export const ChatMessages = ({
-  isFullScreen,
   messages,
   isLoading,
   isStreaming,
@@ -69,7 +67,6 @@ export const ChatMessages = ({
       <Flex direction="column" gap={6}>
         {messages.map((message, idx) => (
           <ChatMessage
-            isFullScreen={isFullScreen}
             isLast={idx === messages.length - 1}
             isStreaming={isStreaming}
             key={message.id}
