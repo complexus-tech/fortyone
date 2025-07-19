@@ -21,7 +21,7 @@ const SUGGESTED_PROMPTS = [
   {
     icon: <StoryIcon className="text-warning dark:text-warning" />,
     label: "What's on my plate?",
-    value: "View all stories and tasks assigned to you across teams.",
+    value: "View all stories assigned to you across teams.",
     classes: "bg-warning/10 dark:bg-warning/10",
   },
   {
@@ -35,7 +35,7 @@ const SUGGESTED_PROMPTS = [
       <PriorityIcon className="text-danger dark:text-danger" priority="High" />
     ),
     label: "High priority work",
-    value: "Find your most urgent stories and tasks to focus on.",
+    value: "Find your most urgent stories across teams to focus on.",
     classes: "bg-danger/10 dark:bg-danger/10",
   },
   {
