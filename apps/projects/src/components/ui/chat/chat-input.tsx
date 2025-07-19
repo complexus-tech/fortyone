@@ -9,6 +9,7 @@ import {
   CloseIcon,
   LoadingIcon,
   CheckIcon,
+  ClockIcon,
 } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
@@ -249,6 +250,12 @@ export const ChatInput = ({
 
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
+      <Flex align="center" className="mb-2 px-1" gap={2} justify="between">
+        <Text className="text-sm" color="muted">
+          {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
+        </Text>
+        <ClockIcon />
+      </Flex>
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
