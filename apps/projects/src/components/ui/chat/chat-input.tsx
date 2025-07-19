@@ -2,11 +2,12 @@ import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "lib";
-import { PlusIcon } from "icons";
+import { PlusIcon, MicrophoneIcon } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
+import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
 type ChatInputProps = {
   value: string;
@@ -77,6 +78,15 @@ export const ChatInput = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const {
+    isRecording,
+    startRecording,
+    stopRecording,
+    getAudioBlob,
+    resetRecording,
+  } = useVoiceRecording();
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
@@ -181,6 +191,62 @@ export const ChatInput = ({
     attachment.type.startsWith("application/pdf"),
   );
 
+  const handleVoiceRecording = async () => {
+    if (isRecording) {
+      stopRecording();
+
+      // Wait for the recording to finish
+      setTimeout(async () => {
+        const audioBlob = getAudioBlob();
+        if (!audioBlob) {
+          toast.info("No audio recorded", {
+            description: "Please try again.",
+            duration: 2500,
+            closeButton: false,
+          });
+          resetRecording();
+          return;
+        }
+        setIsTranscribing(true);
+
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+          const response = await fetch("/api/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+          if (!response.ok) {
+            throw new Error("Transcription failed");
+          }
+          const { text = "" } = await response.json();
+          if (text.trim()) {
+            onChange({
+              target: { value: text },
+            } as ChangeEvent<HTMLTextAreaElement>);
+          } else {
+            toast.warning("No speech detected", {
+              description: "Please try again.",
+              duration: 2500,
+              closeButton: false,
+            });
+          }
+        } catch (error) {
+          toast.error("Failed to transcribe audio", {
+            description: "Please try again.",
+            duration: 2500,
+            closeButton: false,
+          });
+        } finally {
+          setIsTranscribing(false);
+          resetRecording();
+        }
+      }, 100);
+    } else {
+      startRecording();
+    }
+  };
+
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
       <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 backdrop-blur-lg dark:border-dark-50/80 dark:bg-dark-200/70">
@@ -254,17 +320,38 @@ export const ChatInput = ({
           )}
         </Box>
         <Flex align="center" className="px-3" gap={2} justify="between">
-          <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
-            <Button
-              asIcon
-              className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
-              color="tertiary"
-              onClick={open}
-              rounded="full"
+          <Flex gap={2}>
+            <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
+              <Button
+                asIcon
+                className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
+                color="tertiary"
+                onClick={open}
+                rounded="full"
+              >
+                <PlusIcon />
+              </Button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title={isRecording ? "Stop recording" : "Record voice message"}
             >
-              <PlusIcon />
-            </Button>
-          </Tooltip>
+              <Button
+                asIcon
+                className={cn("mb-0.5 md:h-10", {
+                  "bg-red-500 hover:bg-red-600 text-white": isRecording,
+                  "dark:hover:bg-dark-50": !isRecording,
+                })}
+                color={isRecording ? "primary" : "tertiary"}
+                loading={isTranscribing}
+                onClick={handleVoiceRecording}
+                rounded="full"
+              >
+                <MicrophoneIcon />
+              </Button>
+            </Tooltip>
+          </Flex>
 
           <Button
             asIcon

@@ -124,3 +124,4 @@ export * from "./thumbs-down";
 export * from "./ai";
 export * from "./reload";
 export * from "./history";
+export * from "./microphone";

@@ -10,3 +10,4 @@ export * from "./feature-flag";
 export * from "./use-terminology-display";
 export * from "./features";
 export * from "./media";
+export { useVoiceRecording } from "./use-voice-recording";
