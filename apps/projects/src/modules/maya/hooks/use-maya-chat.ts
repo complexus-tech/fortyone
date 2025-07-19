@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateId } from "ai";
+import { useSession } from "next-auth/react";
 import {
   notificationKeys,
   sprintKeys,
@@ -16,6 +17,7 @@ import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { fileToBase64 } from "@/lib/utils/files";
 import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
+import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messages";
 import { aiChatKeys } from "@/modules/ai-chats/constants";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
@@ -24,6 +26,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { data: subscription } = useSubscription();
   const { data: teams = [] } = useTeams();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
@@ -34,9 +37,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const idRef = useRef(config.currentChatId);
-  const { data: aiChatMessages = [], refetch } = useAiChatMessages(
-    idRef.current,
-  );
+  const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
 
   const handleNewChat = () => {
     const newChatId = generateId();
@@ -49,7 +50,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
   const handleChatSelect = async (chatId: string) => {
     idRef.current = chatId;
-    const { data: newMessages = [] } = await refetch();
+    // Fetch messages for the new chat ID directly
+    const newMessages = await queryClient.fetchQuery({
+      queryKey: aiChatKeys.messages(chatId),
+      queryFn: () => getAiChatMessages(session!, chatId),
+    });
     setMessages(newMessages);
     setInput("");
     setAttachments([]);

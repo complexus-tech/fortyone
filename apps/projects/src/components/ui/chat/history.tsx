@@ -1,7 +1,6 @@
 import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
 import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
@@ -21,8 +20,6 @@ const Row = ({
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => void;
 }) => {
-  const pathname = usePathname();
-  const router = useRouter();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [title, setTitle] = useState(chat.title);
@@ -37,11 +34,7 @@ const Row = ({
           className="flex-1 cursor-pointer outline-none"
           gap={3}
           onClick={() => {
-            if (pathname === "/maya") {
-              router.push(`/maya?chatRef=${chat.id}`);
-            } else {
-              handleChatSelect(chat.id);
-            }
+            handleChatSelect(chat.id);
           }}
           role="button"
           tabIndex={0}
