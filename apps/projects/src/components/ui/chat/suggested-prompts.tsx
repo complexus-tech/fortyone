@@ -15,19 +15,19 @@ const SUGGESTED_PROMPTS = [
   {
     icon: <TeamIcon className="text-success dark:text-success" />,
     label: "Who's on my team?",
-    value: "See a list of everyone in your current team.",
+    value: "See a list of everyone in your current team and their roles.",
     classes: "bg-success/10 dark:bg-success/10",
   },
   {
     icon: <StoryIcon className="text-warning dark:text-warning" />,
     label: "What's on my plate?",
-    value: "View all stories and tasks assigned to you.",
+    value: "View all stories and tasks assigned to you across teams.",
     classes: "bg-warning/10 dark:bg-warning/10",
   },
   {
     icon: <NotificationsIcon className="text-info dark:text-info" />,
     label: "What's new for me?",
-    value: "Check your latest unread notifications.",
+    value: "Check your latest unread notifications and updates.",
     classes: "bg-info/10 dark:bg-info/10",
   },
   {
