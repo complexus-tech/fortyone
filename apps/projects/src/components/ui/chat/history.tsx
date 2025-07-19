@@ -38,9 +38,9 @@ const Row = ({
           gap={3}
           onClick={() => {
             if (pathname === "/maya") {
-              handleChatSelect(chat.id);
-            } else {
               router.push(`/maya?chatRef=${chat.id}`);
+            } else {
+              handleChatSelect(chat.id);
             }
           }}
           role="button"

@@ -25,9 +25,9 @@ export const HistoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="mr-0 max-w-[30rem] rounded-none border-l-[0.5px] font-medium outline-none dark:bg-dark-300 md:mt-auto"
+        className="mr-0 max-w-[32rem] rounded-none border-0 border-l-[0.5px] font-medium outline-none dark:bg-dark-300 md:mt-auto"
         hideClose
-        overlayClassName="justify-end backdrop-blur-[1px]"
+        overlayClassName="justify-end backdrop-blur-sm"
       >
         <Dialog.Header className="flex h-16 items-center border-b-[0.5px] border-gray-100 px-6 dark:border-dark-50">
           <Dialog.Title className="flex w-full items-center gap-2 text-lg font-semibold">
