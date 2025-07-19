@@ -326,7 +326,7 @@ export const ChatInput = ({
           </Box>
         )}
 
-        <Box className="relative">
+        <Box className="relative dark:antialiased">
           <textarea
             autoFocus
             className="max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white"
