@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 type RecordingState = "idle" | "recording" | "processing";
 
-const MAX_RECORDING_TIME = 10; // 60 seconds max
+const MAX_RECORDING_TIME = 60; // 60 seconds max
 
 export const useVoiceRecording = (onRecordingStop?: () => void) => {
   const [isRecording, setIsRecording] = useState(false);
