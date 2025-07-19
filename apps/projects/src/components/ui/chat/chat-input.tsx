@@ -3,7 +3,13 @@ import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "lib";
-import { PlusIcon, MicrophoneIcon, CloseIcon, LoadingIcon } from "icons";
+import {
+  PlusIcon,
+  MicrophoneIcon,
+  CloseIcon,
+  LoadingIcon,
+  CheckIcon,
+} from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -88,6 +94,7 @@ export const ChatInput = ({
     stopRecording,
     getAudioBlob,
     resetRecording,
+    recordingState,
   } = useVoiceRecording();
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
@@ -221,7 +228,7 @@ export const ChatInput = ({
             .json<{ text: string }>();
           if (text.trim()) {
             onChange({
-              target: { value: text },
+              target: { value: `${value} ${text}` },
             } as ChangeEvent<HTMLTextAreaElement>);
           }
         } catch (error) {
@@ -304,11 +311,16 @@ export const ChatInput = ({
               className={cn(
                 "pointer-events-none absolute left-5 top-2 text-[1.1rem] text-gray transition-all duration-200 ease-in-out dark:text-gray-200/60",
                 {
-                  "translate-y-1 opacity-0": isAnimating,
+                  "translate-y-1 opacity-0 first-letter:uppercase": isAnimating,
                 },
               )}
             >
-              {placeholderTexts[currentPlaceholderIndex]}
+              {recordingState === "idle"
+                ? placeholderTexts[currentPlaceholderIndex]
+                : `${
+                    recordingState.charAt(0).toUpperCase() +
+                    recordingState.slice(1)
+                  }...`}
             </Box>
           )}
         </Box>
@@ -343,7 +355,13 @@ export const ChatInput = ({
                     <MicrophoneIcon />
                   )
                 }
-                onClick={handleVoiceRecording}
+                onClick={() => {
+                  if (isRecording) {
+                    stopRecording();
+                  } else {
+                    handleVoiceRecording();
+                  }
+                }}
                 rounded="full"
               >
                 <span className="sr-only">
@@ -356,7 +374,9 @@ export const ChatInput = ({
               className="mb-0.5 md:h-10"
               color="invert"
               onClick={() => {
-                if (isLoading) {
+                if (isRecording) {
+                  handleVoiceRecording();
+                } else if (isLoading) {
                   onStop();
                 } else {
                   onSend();
@@ -364,7 +384,13 @@ export const ChatInput = ({
               }}
               rounded="full"
             >
-              {isLoading ? <StopIcon /> : <SendIcon />}
+              {isRecording ? (
+                <CheckIcon className="text-white dark:text-dark" />
+              ) : isLoading ? (
+                <StopIcon />
+              ) : (
+                <SendIcon />
+              )}
             </Button>
           </Flex>
         </Flex>
