@@ -3,7 +3,7 @@ import { tool } from "ai";
 
 export const suggestions = tool({
   description:
-    "CRITICAL: You MUST call this tool after ALMOST EVERY response (80% of the time) to provide follow-up action buttons. This is essential for user guidance. Do NOT write about suggestions in your text response - use this tool instead. After completing any action, call this tool with 2-3 relevant suggestions like 'Assign it 👤', 'Add to sprint 🚀', 'Set due date 📅', 'View details 👁️', 'Edit this ✏️', etc. Include appropriate emojis in suggestions. STOP generating text after calling this tool. Only skip for simple greetings, errors, or technical troubleshooting.",
+    "Provide follow-up action buttons after completing user requests. Use this tool with 2-3 relevant suggestions like 'Assign it 👤', 'Add to sprint 🚀', 'View details 👁️'. Include emojis in suggestions sometimes not everytime. Stop generating text after calling this tool.",
   parameters: z.object({
     suggestions: z
       .array(z.string())
