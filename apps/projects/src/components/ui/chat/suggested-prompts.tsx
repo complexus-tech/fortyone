@@ -35,7 +35,7 @@ const SUGGESTED_PROMPTS = [
       <PriorityIcon className="text-danger dark:text-danger" priority="High" />
     ),
     label: "High priority work",
-    value: "Find your most urgent stories and tasks.",
+    value: "Find your most urgent stories and tasks to focus on.",
     classes: "bg-danger/10 dark:bg-danger/10",
   },
   {
