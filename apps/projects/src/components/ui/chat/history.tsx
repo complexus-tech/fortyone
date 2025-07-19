@@ -1,5 +1,5 @@
 import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
-import { ChatIcon, DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
+import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
@@ -192,8 +192,10 @@ export const History = ({
     <Box className="px-6">
       {groupedChats.map((group) => (
         <Box className="mb-6" key={group.label}>
-          <Text className="mb-3 flex items-center gap-2 px-2 text-[1.1rem] font-semibold antialiased">
-            <ChatIcon />
+          <Text
+            className="mb-3 px-2 text-[1.1rem] font-semibold antialiased"
+            color="muted"
+          >
             {group.label}
           </Text>
           {group.items.map((chat) => (

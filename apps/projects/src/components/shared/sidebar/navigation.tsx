@@ -1,6 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import {
+  AiIcon,
   AnalyticsIcon,
   DashboardIcon,
   GridIcon,
@@ -55,6 +56,11 @@ export const Navigation = () => {
       name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
       icon: <UserIcon />,
       href: "/my-work",
+    },
+    {
+      name: "AI Assistant",
+      icon: <AiIcon />,
+      href: "/maya",
     },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
     {
