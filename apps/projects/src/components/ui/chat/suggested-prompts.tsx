@@ -52,7 +52,7 @@ export const SuggestedPrompts = ({ onPromptSelect }: SuggestedPromptsProps) => {
   return (
     <Box
       className={cn("px-12 py-4", {
-        "md:px-12 md:py-6": isMaya,
+        "md:px-10 md:py-6": isMaya,
       })}
     >
       <Text

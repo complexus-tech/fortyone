@@ -262,9 +262,16 @@ export const ChatInput = ({
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
       {recordingState !== "idle" && (
-        <Flex align="center" className="mb-2 px-1" gap={2} justify="between">
-          <Text className="text-sm" color="muted">
-            {`${recordingState.charAt(0).toUpperCase() + recordingState.slice(1)}...`}
+        <Flex
+          align="center"
+          className={cn("mb-2 px-1 text-sm", {
+            "md:text-base": isMaya,
+          })}
+          gap={2}
+          justify="between"
+        >
+          <Text color="muted">
+            {`${recordingState.replace("r", "l").charAt(0).toUpperCase() + recordingState.replace("recording", "listening").slice(1)}...`}
           </Text>
           <Flex align="center" gap={1}>
             <Text
@@ -277,9 +284,7 @@ export const ChatInput = ({
             >
               {formatDuration(recordingDuration)}
             </Text>
-            <Text className="text-sm" color="muted">
-              / {formatDuration(MAX_RECORDING_TIME)}
-            </Text>
+            <Text color="muted">/ {formatDuration(MAX_RECORDING_TIME)}</Text>
           </Flex>
         </Flex>
       )}
