@@ -107,6 +107,26 @@ const RenderMessage = ({
                   </Box>
                 );
               }
+            } else if (toolInvocation.toolName === "suggestions") {
+              const { result } = toolInvocation;
+              if (result?.suggestions) {
+                return (
+                  <Flex className="mt-2" gap={2} key={index} wrap>
+                    {result.suggestions.map(
+                      (suggestion: string, index: number) => (
+                        <Button
+                          color="tertiary"
+                          key={index}
+                          size="sm"
+                          variant="outline"
+                        >
+                          {suggestion}
+                        </Button>
+                      ),
+                    )}
+                  </Flex>
+                );
+              }
             }
           }
         }

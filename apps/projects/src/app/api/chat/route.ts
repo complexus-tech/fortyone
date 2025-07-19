@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/tools";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
+import { suggestions } from "@/lib/ai/tools/suggestions";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
         navigation,
         theme,
         quickCreate,
+        suggestions,
         teams: teamsTool,
         members: membersTool,
         stories: storiesTool,
