@@ -14,6 +14,7 @@ type ChatMessagesProps = {
   reload: (
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
+  onPromptSelect: (prompt: string) => void;
 };
 
 export const ChatMessages = ({
@@ -22,6 +23,7 @@ export const ChatMessages = ({
   isStreaming,
   value,
   reload,
+  onPromptSelect,
 }: ChatMessagesProps) => {
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ export const ChatMessages = ({
             isStreaming={isStreaming}
             key={message.id}
             message={message}
+            onPromptSelect={onPromptSelect}
             profile={profile}
             reload={reload}
           />

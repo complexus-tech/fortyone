@@ -85,6 +85,7 @@ export const Chat = () => {
                 isLoading={isLoading}
                 isStreaming={status === "streaming"}
                 messages={messages}
+                onPromptSelect={handleSuggestedPrompt}
                 reload={reload}
                 value={input}
               />

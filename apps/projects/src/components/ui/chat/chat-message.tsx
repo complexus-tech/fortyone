@@ -24,14 +24,19 @@ type ChatMessageProps = {
   reload: (
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
+  onPromptSelect: (prompt: string) => void;
 };
 
 const RenderMessage = ({
+  isLast,
   message,
   isStreaming,
+  onPromptSelect,
 }: {
+  isLast: boolean;
   message: Message;
   isStreaming?: boolean;
+  onPromptSelect: (prompt: string) => void;
 }) => {
   const [hasText, setHasText] = useState(false);
   const pathname = usePathname();
@@ -109,7 +114,7 @@ const RenderMessage = ({
               }
             } else if (toolInvocation.toolName === "suggestions") {
               const { result } = toolInvocation;
-              if (result?.suggestions) {
+              if (result?.suggestions && isLast) {
                 return (
                   <Flex className="mt-2" gap={2} key={index} wrap>
                     {result.suggestions.map(
@@ -117,6 +122,9 @@ const RenderMessage = ({
                         <Button
                           color="tertiary"
                           key={index}
+                          onClick={() => {
+                            onPromptSelect(suggestion);
+                          }}
                           size="sm"
                           variant="outline"
                         >
@@ -142,6 +150,7 @@ export const ChatMessage = ({
   profile,
   isStreaming,
   reload,
+  onPromptSelect,
 }: ChatMessageProps) => {
   const [_, copy] = useCopyToClipboard();
   const [hasCopied, setHasCopied] = useState(false);
@@ -178,7 +187,12 @@ export const ChatMessage = ({
               "bg-transparent p-0": message.role === "assistant",
             })}
           >
-            <RenderMessage isStreaming={isStreaming} message={message} />
+            <RenderMessage
+              isLast={isLast}
+              isStreaming={isStreaming}
+              message={message}
+              onPromptSelect={onPromptSelect}
+            />
           </Box>
           <AttachmentsDisplay attachments={message.experimental_attachments} />
           <Flex className="mt-2 px-0.5" justify="between">
