@@ -1,7 +1,6 @@
 import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
-import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
+import { ChatIcon, DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
-import { format, isThisYear, isToday, isYesterday } from "date-fns";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import type { AiChatSession } from "@/modules/ai-chats/types";
 import { useDeleteAiChat } from "@/modules/ai-chats/hooks/delete-mutation";
@@ -9,7 +8,6 @@ import { useUpdateAiChat } from "@/modules/ai-chats/hooks/update-mutation";
 import { groupChatsByDate } from "@/lib/grouping";
 import { RowWrapper } from "../row-wrapper";
 import { ConfirmDialog } from "../confirm-dialog";
-import { Dot } from "../dot";
 
 const Row = ({
   chat,
@@ -30,21 +28,6 @@ const Row = ({
   const deleteMutation = useDeleteAiChat();
   const updateMutation = useUpdateAiChat();
 
-  const formartTime = () => {
-    const date = new Date(chat.createdAt);
-
-    if (isToday(date)) {
-      return format(date, "h:mm a");
-    }
-    if (isYesterday(date)) {
-      return "Yesterday";
-    }
-    if (isThisYear(date)) {
-      return format(date, "MMM d");
-    }
-
-    return format(date, "MMM d, yyyy");
-  };
   return (
     <>
       <RowWrapper className="rounded-xl border-0 px-2 py-1.5 md:px-3">
@@ -60,13 +43,7 @@ const Row = ({
           tabIndex={0}
           title={new Date(chat.createdAt).toLocaleString()}
         >
-          <Dot className="opacity-60" />
-          <Box>
-            <Text className="line-clamp-1">{chat.title}</Text>
-            <Text className="text-[0.95rem]" color="muted">
-              {formartTime()}
-            </Text>
-          </Box>
+          <Text className="line-clamp-1">{chat.title}</Text>
         </Flex>
         <Menu>
           <Menu.Button>
@@ -215,7 +192,8 @@ export const History = ({
     <Box className="px-6">
       {groupedChats.map((group) => (
         <Box className="mb-6" key={group.label}>
-          <Text className="mb-3 px-2 text-[1.1rem] font-semibold antialiased">
+          <Text className="mb-3 flex items-center gap-2 px-2 text-[1.1rem] font-semibold antialiased">
+            <ChatIcon />
             {group.label}
           </Text>
           {group.items.map((chat) => (
