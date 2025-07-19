@@ -376,7 +376,7 @@ export const ChatInput = ({
               <Button
                 asIcon
                 className="mb-0.5 border-0 bg-gray-100/60 md:h-[2.6rem]"
-                color={isRecording ? "primary" : "tertiary"}
+                color="tertiary"
                 leftIcon={
                   isTranscribing ? (
                     <LoadingIcon className="animate-spin" />
