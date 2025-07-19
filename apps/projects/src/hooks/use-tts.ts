@@ -66,7 +66,8 @@ export const useTTS = () => {
 
       const handleError = (_event: Event) => {
         setCurrentAudio(null);
-        toast.error("Audio playback failed", {
+        setIsLoading(false);
+        toast.warning("Audio playback failed", {
           description: "Please try again.",
           duration: 3000,
         });
@@ -113,6 +114,12 @@ export const useTTS = () => {
         state: "loading",
       });
 
+      // Safety timeout to clear loading state if something goes wrong
+      const timeoutId = setTimeout(() => {
+        setIsLoading(false);
+        setCurrentAudio(null);
+      }, 30000); // 30 seconds timeout
+
       try {
         const audioUrl = await generateAudio(text, voice, speed);
 
@@ -129,12 +136,13 @@ export const useTTS = () => {
           await audioRef.current.play();
         }
       } catch (error) {
-        toast.error("Failed to play audio", {
+        toast.warning("Failed to play audio", {
           description: "Please try again.",
           duration: 3000,
         });
         setCurrentAudio(null);
       } finally {
+        clearTimeout(timeoutId);
         setIsLoading(false);
       }
     },
@@ -161,6 +169,7 @@ export const useTTS = () => {
       audioRef.current.currentTime = 0;
     }
     setCurrentAudio(null);
+    setIsLoading(false);
   }, []);
 
   const clearCache = useCallback(() => {
