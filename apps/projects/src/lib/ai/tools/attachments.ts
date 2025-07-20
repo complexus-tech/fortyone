@@ -3,7 +3,6 @@ import { tool } from "ai";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
-import { addAttachmentAction } from "@/modules/story/actions/add-attachment";
 import { deleteStoryAttachmentAction } from "@/modules/story/actions/delete-attachment";
 import { getMembers } from "@/lib/queries/members/get-members";
 
@@ -12,7 +11,7 @@ export const attachmentsTool = tool({
     "Manage story attachments: list, upload, delete files associated with stories. Supports images and PDFs.",
   parameters: z.object({
     action: z
-      .enum(["list-attachments", "upload-attachment", "delete-attachment"])
+      .enum(["list-attachments", "delete-attachment"])
       .describe("The attachment operation to perform"),
 
     storyId: z.string().describe("Story ID for attachment operations"),
@@ -22,21 +21,6 @@ export const attachmentsTool = tool({
       .optional()
       .describe("Attachment ID for specific attachment operations"),
 
-    fileData: z
-      .object({
-        name: z.string().describe("File name"),
-        size: z.number().describe("File size in bytes"),
-        type: z.string().describe("File MIME type"),
-        content: z.string().describe("File content as base64 string"),
-      })
-      .optional()
-      .describe("File data for upload operations"),
-
-    includeMetadata: z
-      .boolean()
-      .optional()
-      .describe("Include detailed metadata in responses"),
-
     limit: z
       .number()
       .min(1)
@@ -45,14 +29,7 @@ export const attachmentsTool = tool({
       .describe("Limit number of attachments returned (default: 20, max: 100)"),
   }),
 
-  execute: async ({
-    action,
-    storyId,
-    attachmentId,
-    fileData,
-    includeMetadata = false,
-    limit = 20,
-  }) => {
+  execute: async ({ action, storyId, attachmentId, limit = 20 }) => {
     try {
       const session = await auth();
 
@@ -129,14 +106,6 @@ export const attachmentsTool = tool({
                 : null,
             };
 
-            if (includeMetadata) {
-              return {
-                ...baseAttachment,
-                isImage: attachment.mimeType.startsWith("image/"),
-                isPdf: attachment.mimeType.includes("pdf"),
-              };
-            }
-
             return baseAttachment;
           });
 
@@ -159,94 +128,6 @@ export const attachmentsTool = tool({
               ),
             },
             message: `Found ${formattedAttachments.length} attachment${formattedAttachments.length !== 1 ? "s" : ""} on this story.`,
-          };
-        }
-
-        case "upload-attachment": {
-          if (!storyId || !fileData) {
-            return {
-              success: false,
-              error:
-                "Story ID and file data are required for uploading attachments",
-            };
-          }
-
-          if (userRole === "guest") {
-            return {
-              success: false,
-              error: "Guests cannot upload attachments",
-            };
-          }
-
-          // Validate file size (10MB limit)
-          const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-          if (fileData.size > MAX_FILE_SIZE) {
-            return {
-              success: false,
-              error: `File size (${formatFileSize(fileData.size)}) exceeds the 10MB limit`,
-            };
-          }
-
-          // Validate file type
-          const allowedTypes = [
-            "image/jpeg",
-            "image/jpg",
-            "image/png",
-            "image/webp",
-            "image/gif",
-            "application/pdf",
-          ];
-
-          if (!allowedTypes.includes(fileData.type)) {
-            return {
-              success: false,
-              error: `File type ${fileData.type} is not supported`,
-            };
-          }
-
-          // Convert base64 to File object
-          const base64Data = fileData.content.replace(
-            /^data:[^;]+;base64,/,
-            "",
-          );
-          const binaryData = Buffer.from(base64Data, "base64");
-          const file = new File([binaryData], fileData.name, {
-            type: fileData.type,
-          });
-
-          const result = await addAttachmentAction(storyId, file);
-
-          if (result.error) {
-            return {
-              success: false,
-              error: result.error.message || "Failed to upload attachment",
-            };
-          }
-
-          const newAttachment = result.data!;
-          const uploader = memberMap.get(newAttachment.uploadedBy);
-
-          return {
-            success: true,
-            attachment: {
-              id: newAttachment.id,
-              filename: newAttachment.filename,
-              size: newAttachment.size,
-              formattedSize: formatFileSize(newAttachment.size),
-              mimeType: newAttachment.mimeType,
-              fileType: getFileType(newAttachment.mimeType),
-              url: newAttachment.url,
-              createdAt: newAttachment.createdAt,
-              uploader: uploader
-                ? {
-                    id: uploader.id,
-                    name: uploader.fullName,
-                    username: uploader.username,
-                    avatarUrl: uploader.avatarUrl,
-                  }
-                : null,
-            },
-            message: `File "${newAttachment.filename}" uploaded successfully`,
           };
         }
 
