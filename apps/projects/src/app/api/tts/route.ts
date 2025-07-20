@@ -12,6 +12,9 @@ type TTSRequest = {
   speed?: number;
 };
 
+const instructions =
+  'Affect/personality: A cheerful guide \n\nTone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.\n\nPronunciation: Clear, articulate, and steady, ensuring each instruction is easily understood while maintaining a natural, conversational flow.\n\nPause: Brief, purposeful pauses after key instructions (e.g., "cross the street" and "turn right") to allow time for the listener to process the information and follow along.\n\nEmotion: Warm and supportive, conveying empathy and care, ensuring the listener feels guided and safe throughout the journey.';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -19,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { text, voice = "alloy", speed = 1.0 }: TTSRequest = await req.json();
+    const { text, voice = "alloy" }: TTSRequest = await req.json();
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: "No text provided" }, { status: 400 });
@@ -36,20 +39,17 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
+    const audio = await openai.audio.speech.create({
+      model: "gpt-4o-mini-tts",
       voice,
       input: text,
-      speed,
+      instructions,
+      response_format: "wav",
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": buffer.length.toString(),
-      },
+    const bodyStream = audio.body;
+    return new NextResponse(bodyStream, {
+      headers: { "Content-Type": "audio/wav" },
     });
   } catch (error) {
     return NextResponse.json(

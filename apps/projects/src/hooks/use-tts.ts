@@ -8,7 +8,6 @@ type AudioState = "idle" | "loading" | "playing" | "paused" | "ended";
 type AudioItem = {
   text: string;
   voice: TTSVoice;
-  speed: number;
   state: AudioState;
   audioUrl?: string;
 };
@@ -20,12 +19,8 @@ export const useTTS = () => {
   const audioCache = useRef<Map<string, string>>(new Map());
 
   const generateAudio = useCallback(
-    async (
-      text: string,
-      voice: TTSVoice = "alloy",
-      speed = 1.0,
-    ): Promise<string> => {
-      const cacheKey = `${text}-${voice}-${speed}`;
+    async (text: string, voice: TTSVoice = "alloy"): Promise<string> => {
+      const cacheKey = `${text}-${voice}`;
 
       // Check cache first
       if (audioCache.current.has(cacheKey)) {
@@ -35,11 +30,11 @@ export const useTTS = () => {
       try {
         const response = await ky
           .post("/api/tts", {
-            json: { text, voice, speed },
+            json: { text, voice },
           })
           .arrayBuffer();
 
-        const blob = new Blob([response], { type: "audio/mpeg" });
+        const blob = new Blob([response], { type: "audio/wav" });
         const audioUrl = URL.createObjectURL(blob);
 
         // Cache the audio URL
@@ -99,7 +94,7 @@ export const useTTS = () => {
   }, []);
 
   const playText = useCallback(
-    async (text: string, voice: TTSVoice = "alloy", speed = 1.0) => {
+    async (text: string, voice: TTSVoice = "alloy") => {
       // Stop any current playback
       if (audioRef.current) {
         audioRef.current.pause();
@@ -110,7 +105,6 @@ export const useTTS = () => {
       setCurrentAudio({
         text,
         voice,
-        speed,
         state: "loading",
       });
 
@@ -121,12 +115,11 @@ export const useTTS = () => {
       }, 30000); // 30 seconds timeout
 
       try {
-        const audioUrl = await generateAudio(text, voice, speed);
+        const audioUrl = await generateAudio(text, voice);
 
         setCurrentAudio({
           text,
           voice,
-          speed,
           state: "loading",
           audioUrl,
         });
