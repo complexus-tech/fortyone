@@ -10,3 +10,7 @@ export { searchTool } from "./search";
 export { notificationsTool } from "./notifications";
 export { theme } from "./theme";
 export { quickCreate } from "./quick-create";
+export { commentsTool } from "./comments";
+export { attachmentsTool } from "./attachments";
+export { storyActivitiesTool } from "./story-activities";
+export { linksTool } from "./links";

@@ -16,6 +16,10 @@ import {
   objectiveStatusesTool,
   searchTool,
   notificationsTool,
+  commentsTool,
+  attachmentsTool,
+  storyActivitiesTool,
+  linksTool,
 } from "@/lib/ai/tools";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
@@ -101,6 +105,10 @@ export async function POST(req: NextRequest) {
         objectiveStatuses: objectiveStatusesTool,
         search: searchTool,
         notifications: notificationsTool,
+        comments: commentsTool,
+        attachments: attachmentsTool,
+        storyActivities: storyActivitiesTool,
+        links: linksTool,
       },
       system: systemPrompt + userContext,
 
