@@ -133,7 +133,6 @@ const RenderMessage = ({
                           onClick={() => {
                             onPromptSelect(suggestion);
                           }}
-                          rounded="lg"
                           size={isOnPage ? "md" : "sm"}
                         >
                           {suggestion}
