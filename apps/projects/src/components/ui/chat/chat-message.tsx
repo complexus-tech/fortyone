@@ -15,7 +15,6 @@ import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 import { AttachmentsDisplay } from "./attachments-display";
-import { TTSButton } from "./tts-button";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -209,7 +208,6 @@ export const ChatMessage = ({
           <Flex className="mt-2 px-0.5" justify="between">
             {message.role === "assistant" && !isStreaming && (
               <Flex gap={2} justify="end">
-                <TTSButton text={message.content} />
                 <Tooltip title={`Create ${getTermDisplay("storyTerm")}`}>
                   <Button
                     asIcon
