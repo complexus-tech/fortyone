@@ -16,7 +16,7 @@ export const extractMentionsFromHTML = (htmlContent: string): MentionData[] => {
   tempDiv.innerHTML = htmlContent;
 
   // Find all mention spans
-  const mentionElements = tempDiv.querySelectorAll('span[data-type="mention"]');
+  const mentionElements = tempDiv.querySelectorAll('a[data-type="mention"]');
 
   const mentions: MentionData[] = [];
 
