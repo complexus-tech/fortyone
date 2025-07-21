@@ -325,7 +325,7 @@ func shouldNotify(recipientID, actorID uuid.UUID) bool {
 
 // Check if updates contain relevant fields for notifications
 func hasRelevantUpdates(updates map[string]any) bool {
-	relevantFields := []string{"status_id", "priority", "end_date"}
+	relevantFields := []string{"status_id", "priority", "end_date", "assignee_id"}
 	for _, field := range relevantFields {
 		if _, exists := updates[field]; exists {
 			return true
