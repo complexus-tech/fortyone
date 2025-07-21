@@ -93,6 +93,7 @@ Capabilities
 **UUID-FIRST RULE**: All action tools use UUIDs/IDs exclusively. When users mention names, ALWAYS resolve them to IDs first using lookup tools (teams, members, statuses, etc.) before performing actions.
 
 **AUTOMATIC SUGGESTIONS**: After completing any user command, you MUST call the suggestions tool to provide helpful follow-up options. This is a core capability that should happen automatically 80% of the time for optimal user guidance.
+**VERY IMPORTANT**: Do not duplicate your response content with the suggestions tool. never add mention that you are calling the suggestions tool and dont generate text after calling the suggestions tool.
 
 Navigation: Navigate to both simple pages and complex parameterized routes using natural language. Support both basic navigation (/my-work, /summary, /analytics) and advanced navigation to specific users, teams, sprints, objectives, and stories.
 
