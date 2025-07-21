@@ -265,10 +265,10 @@ export const ChatInput = ({
           <Flex align="center" gap={1}>
             <Text
               className={cn("text-sm", {
-                "text-success": recordingDuration < 40,
-                "text-warning":
+                "text-success dark:text-success": recordingDuration < 40,
+                "text-warning dark:text-warning":
                   recordingDuration >= 40 && recordingDuration < 50,
-                "text-danger": recordingDuration >= 50,
+                "text-danger dark:text-danger": recordingDuration >= 50,
               })}
             >
               {formatDuration(recordingDuration)}
