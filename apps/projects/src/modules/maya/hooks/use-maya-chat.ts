@@ -19,6 +19,7 @@ import { fileToBase64 } from "@/lib/utils/files";
 import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
 import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messages";
 import { aiChatKeys } from "@/modules/ai-chats/constants";
+import { useProfile } from "@/lib/hooks/profile";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
 
@@ -29,6 +30,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: session } = useSession();
   const { data: subscription } = useSubscription();
   const { data: teams = [] } = useTeams();
+  const { data: profile } = useProfile();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
 
   const { resolvedTheme, theme, setTheme } = useTheme();
@@ -81,6 +83,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         billingInterval: subscription?.billingInterval,
         billingEndsAt: subscription?.billingEndsAt,
         status: subscription?.status,
+        username: profile?.username,
       },
       teams,
       id: idRef.current,

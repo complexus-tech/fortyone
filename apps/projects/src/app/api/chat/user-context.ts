@@ -8,6 +8,7 @@ export async function getUserContext({
   resolvedTheme,
   subscription,
   teams,
+  username,
 }: {
   currentPath: string;
   currentTheme: string;
@@ -19,6 +20,7 @@ export async function getUserContext({
     status: string;
   };
   teams: Team[];
+  username: string;
 }): Promise<string> {
   const session = await auth();
   if (!session?.user) {
@@ -45,6 +47,7 @@ export async function getUserContext({
     **Current User Context:**
     - User ID: ${session.user.id}
     - Name: ${session.user.name}
+    - Username: ${username}
     - Role: ${userRole}
     - Workspace: ${workspace?.name}
     - Current Date: ${currentDate}

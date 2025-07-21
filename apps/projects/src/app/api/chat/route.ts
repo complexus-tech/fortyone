@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     subscription,
     teams,
     id,
+    username,
   } = await req.json();
 
   // Get user context for "me" resolution
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
     resolvedTheme,
     subscription,
     teams,
+    username,
   });
 
   try {
