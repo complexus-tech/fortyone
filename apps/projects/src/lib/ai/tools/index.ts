@@ -14,3 +14,5 @@ export { commentsTool } from "./comments";
 export { attachmentsTool } from "./attachments";
 export { storyActivitiesTool } from "./story-activities";
 export { linksTool } from "./links";
+export { labelsTool } from "./labels";
+export { storyLabelsTool } from "./story-labels";

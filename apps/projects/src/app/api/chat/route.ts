@@ -20,6 +20,8 @@ import {
   attachmentsTool,
   storyActivitiesTool,
   linksTool,
+  labelsTool,
+  storyLabelsTool,
 } from "@/lib/ai/tools";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
@@ -109,6 +111,8 @@ export async function POST(req: NextRequest) {
         attachments: attachmentsTool,
         storyActivities: storyActivitiesTool,
         links: linksTool,
+        labels: labelsTool,
+        storyLabels: storyLabelsTool,
       },
       system: systemPrompt + userContext,
 
