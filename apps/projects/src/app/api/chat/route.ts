@@ -1,8 +1,9 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import type { Message } from "ai";
 import { appendResponseMessages, generateObject, streamText } from "ai";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { withTracing } from "@posthog/ai";
 import {
   navigation,
   theme,
@@ -26,6 +27,8 @@ import {
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
 import { suggestions } from "@/lib/ai/tools/suggestions";
+import { auth } from "@/auth";
+import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 
@@ -89,9 +92,27 @@ export async function POST(req: NextRequest) {
     username,
   });
 
+  const session = await auth();
+
+  const phClient = posthogServer();
+
+  const openaiClient = createOpenAI({
+    // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
+    apiKey: process.env.OPENAI_API_KEY,
+    compatibility: "strict",
+  });
+
+  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+    posthogDistinctId: session?.user?.email ?? undefined,
+    posthogProperties: {
+      conversation_id: id,
+      paid: subscription?.status === "active",
+    },
+  });
+
   try {
     const result = streamText({
-      model: openai("gpt-4.1-mini"),
+      model,
       messages,
       maxSteps: 10,
       maxTokens: 4000,
