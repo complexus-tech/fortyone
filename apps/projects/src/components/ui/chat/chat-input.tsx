@@ -43,7 +43,7 @@ const placeholderTexts = [
 const SendIcon = () => {
   return (
     <svg
-      className="h-6 w-auto text-white dark:text-dark"
+      className="h-6 w-auto text-white"
       fill="none"
       height="24"
       viewBox="0 0 24 24"
@@ -405,7 +405,7 @@ export const ChatInput = ({
             <Button
               asIcon
               className="mb-0.5 md:h-10"
-              color="invert"
+              // color="invert"
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
@@ -418,9 +418,9 @@ export const ChatInput = ({
               rounded="full"
             >
               {isRecording ? (
-                <CheckIcon className="text-white dark:text-dark" />
+                <CheckIcon className="text-white dark:text-white" />
               ) : isLoading ? (
-                <StopIcon className="text-white dark:text-dark" />
+                <StopIcon className="text-white dark:text-white" />
               ) : (
                 <SendIcon />
               )}

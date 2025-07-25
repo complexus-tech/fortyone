@@ -5,7 +5,6 @@ import {
   AnalyticsIcon,
   DashboardIcon,
   GridIcon,
-  OKRIcon,
   RoadmapIcon,
   UserIcon,
 } from "icons";
@@ -64,12 +63,12 @@ export const Navigation = () => {
       href: "/maya",
     },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
-    {
-      name: getTermDisplay("keyResultTerm", { variant: "plural" }),
-      icon: <OKRIcon strokeWidth={2.8} />,
-      href: "/okrs",
-      disabled: !features.objectiveEnabled,
-    },
+    // {
+    //   name: getTermDisplay("keyResultTerm", { variant: "plural" }),
+    //   icon: <OKRIcon strokeWidth={2.8} />,
+    //   href: "/okrs",
+    //   disabled: !features.objectiveEnabled,
+    // },
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
