@@ -27,18 +27,8 @@ type ChatInputProps = {
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
+  messagesCount: number;
 };
-
-const placeholderTexts = [
-  "Show me my stories...",
-  "Take me to my work...",
-  "Show me the current sprint...",
-  "Open my objectives...",
-  "Show team analytics...",
-  "Navigate to the roadmap...",
-  "Find stories in progress...",
-  "Show my key results...",
-];
 
 const SendIcon = () => {
   return (
@@ -67,6 +57,7 @@ export const ChatInput = ({
   attachments,
   onAttachmentsChange,
   isOnPage,
+  messagesCount,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
@@ -241,6 +232,25 @@ export const ChatInput = ({
     }, 100);
   };
 
+  const placeholderTexts =
+    messagesCount > 2
+      ? [
+          "Tell Maya what to do next...",
+          "Continue the conversation...",
+          "Ask me anything...",
+          "Tell Maya what to do next...",
+          "Continue the conversation...",
+          "Ask me anything...",
+        ]
+      : [
+          "Take me to my work...",
+          "Show me the current sprint...",
+          "Open my objectives...",
+          "Navigate to the roadmap...",
+          "Find stories in progress...",
+          "Show my key results...",
+        ];
+
   return (
     <Box
       className={cn(
@@ -405,7 +415,6 @@ export const ChatInput = ({
             <Button
               asIcon
               className="mb-0.5 md:h-10"
-              // color="invert"
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();

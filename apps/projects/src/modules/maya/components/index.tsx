@@ -80,6 +80,7 @@ export const MayaChat = ({ config }: MayaChatProps) => {
           attachments={attachments}
           isLoading={isLoading}
           isOnPage
+          messagesCount={messages.length}
           onAttachmentsChange={setAttachments}
           onChange={(e) => {
             setInput(e.target.value);

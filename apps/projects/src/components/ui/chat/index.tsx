@@ -109,6 +109,7 @@ export const Chat = () => {
               <ChatInput
                 attachments={attachments}
                 isLoading={isLoading}
+                messagesCount={messages.length}
                 onAttachmentsChange={setAttachments}
                 onChange={(e) => {
                   setInput(e.target.value);
