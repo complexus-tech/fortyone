@@ -21,7 +21,7 @@ import { ObjectiveHealth } from "./components/objective-health";
 import { SprintHealth } from "./components/sprint-health";
 import { TeamAllocation } from "./components/team-allocation";
 // import { TimelineTrends } from "./components/timeline-trends";
-import { Filters } from "./components/filters";
+// import { Filters } from "./components/filters";
 
 export const AnalyticsPage = () => {
   // const { getTermDisplay } = useTerminology();
@@ -71,7 +71,7 @@ export const AnalyticsPage = () => {
                 Here&rsquo;s your workspace analytics and insights.
               </Text>
             </Box>
-            <Filters />
+            {/* <Filters /> */}
           </Flex>
 
           {/* Workspace Overview */}
