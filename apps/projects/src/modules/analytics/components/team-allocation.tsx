@@ -59,9 +59,16 @@ const CustomTooltip = ({
   );
 };
 
-export const TeamAllocation = () => {
+export const TeamAllocation = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
   const { resolvedTheme } = useTheme();
-  const { data: sprintAnalytics, isPending } = useSprintAnalytics();
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: sprintAnalytics, isPending } = useSprintAnalytics(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

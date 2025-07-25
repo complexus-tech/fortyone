@@ -40,9 +40,16 @@ const CustomTooltip = ({
   );
 };
 
-export const TeamVelocity = () => {
+export const TeamVelocity = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
   const { resolvedTheme } = useTheme();
-  const { data: teamPerformance, isPending } = useTeamPerformance();
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: teamPerformance, isPending } = useTeamPerformance(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

@@ -1,6 +1,8 @@
 "use client";
-import { Box, Container, Text } from "ui";
+import { useState } from "react";
+import { Box, Container, Flex, Text } from "ui";
 import { useSession } from "next-auth/react";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 import { BodyContainer } from "@/components/shared/body";
 // import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
@@ -19,10 +21,24 @@ import { ObjectiveHealth } from "./components/objective-health";
 import { SprintHealth } from "./components/sprint-health";
 import { TeamAllocation } from "./components/team-allocation";
 // import { TimelineTrends } from "./components/timeline-trends";
+import { DateRangeFilter } from "./components/date-range-filter";
 
 export const AnalyticsPage = () => {
   // const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
+
+  // Default to last 30 days
+  const getDefaultDates = () => {
+    const endDate = endOfDay(new Date());
+    const startDate = startOfDay(subDays(new Date(), 30));
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+  };
+
+  const [dateRange, setDateRange] = useState(getDefaultDates());
+
   const timeOfDay = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "morning";
@@ -30,52 +46,89 @@ export const AnalyticsPage = () => {
     return "evening";
   };
 
+  const handleDateChange = (startDate?: string, endDate?: string) => {
+    setDateRange({
+      startDate: startDate || getDefaultDates().startDate,
+      endDate: endDate || getDefaultDates().endDate,
+    });
+  };
+
   return (
     <>
       <Header />
       <BodyContainer>
         <Container className="pb-4 pt-3">
-          <Text
-            as="h2"
-            className="mb-1 text-2xl md:mb-2 md:text-3xl"
-            fontWeight="medium"
-          >
-            Good {timeOfDay()}, {session?.user?.name}.
-          </Text>
-          <Text color="muted" fontSize="lg">
-            Here&rsquo;s your workspace analytics and insights.
-          </Text>
+          <Flex align="end" justify="between">
+            <Box>
+              <Text
+                as="h2"
+                className="mb-1 text-2xl md:text-3xl"
+                fontWeight="medium"
+              >
+                Good {timeOfDay()}, {session?.user?.name}.
+              </Text>
+              <Text color="muted" fontSize="lg">
+                Here&rsquo;s your workspace analytics and insights.
+              </Text>
+            </Box>
+            <DateRangeFilter
+              endDate={dateRange.endDate}
+              onDateChange={handleDateChange}
+              startDate={dateRange.startDate}
+            />
+          </Flex>
 
           {/* Workspace Overview */}
           <ErrorBoundary fallback={<div>Error loading overview</div>}>
-            <Overview />
+            <Overview
+              endDate={dateRange.endDate}
+              startDate={dateRange.startDate}
+            />
           </ErrorBoundary>
 
           {/* Completion & Velocity Trends */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading completion trend</div>}>
-              <CompletionTrend />
+              <CompletionTrend
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading velocity trend</div>}>
-              <VelocityTrend />
+              <VelocityTrend
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading team velocity</div>}>
-              <TeamVelocity />
+              <TeamVelocity
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
           </Box>
 
           {/* Stories & Work Analysis */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading status breakdown</div>}>
-              <StatusBreakdown />
+              <StatusBreakdown
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
             <ErrorBoundary
               fallback={<div>Error loading priority distribution</div>}
             >
-              <PriorityDistribution />
+              <PriorityDistribution
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading team allocation</div>}>
-              <TeamAllocation />
+              <TeamAllocation
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
           </Box>
 
@@ -83,13 +136,16 @@ export const AnalyticsPage = () => {
           {/* <ErrorBoundary
             fallback={<div>Error loading key results progress</div>}
           >
-            <KeyResultsProgress />
+            <KeyResultsProgress startDate={dateRange.startDate} endDate={dateRange.endDate} />
           </ErrorBoundary> */}
 
           {/* Health & Allocation Analytics */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading objective health</div>}>
-              <ObjectiveHealth />
+              <ObjectiveHealth
+                endDate={dateRange.endDate}
+                startDate={dateRange.startDate}
+              />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading sprint health</div>}>
               <SprintHealth />
@@ -101,21 +157,21 @@ export const AnalyticsPage = () => {
             <ErrorBoundary
               fallback={<div>Error loading member contributions</div>}
             >
-              <MemberContributions />
+              <MemberContributions startDate={dateRange.startDate} endDate={dateRange.endDate} />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading burndown chart</div>}>
               <Box className="md:col-span-2">
-                <BurndownChart />
+                <BurndownChart startDate={dateRange.startDate} endDate={dateRange.endDate} />
               </Box>
             </ErrorBoundary>
           </Box> */}
           {/* 
           <Box className="my-4 grid gap-4 md:grid-cols-2">
             <ErrorBoundary fallback={<div>Error loading team workload</div>}>
-              <TeamWorkload />
+              <TeamWorkload startDate={dateRange.startDate} endDate={dateRange.endDate} />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading timeline trends</div>}>
-              <TimelineTrends />
+              <TimelineTrends startDate={dateRange.startDate} endDate={dateRange.endDate} />
             </ErrorBoundary>
           </Box> */}
         </Container>

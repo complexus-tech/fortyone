@@ -40,9 +40,16 @@ const CustomTooltip = ({
   );
 };
 
-export const VelocityTrend = () => {
+export const VelocityTrend = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
   const { resolvedTheme } = useTheme();
-  const { data: overview, isPending } = useWorkspaceOverview();
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: overview, isPending } = useWorkspaceOverview(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

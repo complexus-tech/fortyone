@@ -24,12 +24,13 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
       )}
     >
       <Button
-        className="rounded-2xl border-[0.5px] border-gray-200/80 shadow-xl shadow-gray-200 backdrop-blur dark:border-white/10 dark:bg-dark-50/30 dark:shadow-none md:h-[3.5rem] md:pl-4 md:pr-6"
-        color="tertiary"
-        leftIcon={<AiIcon className="h-7 text-dark-50 dark:text-white" />}
+        asIcon
+        className="border-0 bg-gradient-to-br from-primary to-secondary shadow-xl shadow-gray-200 dark:shadow-none md:h-[3.4rem]"
+        leftIcon={<AiIcon className="h-7 text-white dark:text-white" />}
         onClick={onOpen}
+        rounded="full"
       >
-        AI Assistant...
+        <span className="sr-only">AI Assistant</span>
       </Button>
     </Box>
   );

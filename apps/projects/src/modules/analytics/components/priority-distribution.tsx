@@ -50,9 +50,16 @@ const CustomTooltip = ({
   );
 };
 
-export const PriorityDistribution = () => {
+export const PriorityDistribution = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
   const { resolvedTheme } = useTheme();
-  const { data: storyAnalytics, isPending } = useStoryAnalytics();
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

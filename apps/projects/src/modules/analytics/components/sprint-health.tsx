@@ -46,8 +46,15 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const SprintHealth = () => {
-  const { data: sprintAnalytics, isPending } = useSprintAnalytics();
+export const SprintHealth = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: sprintAnalytics, isPending } = useSprintAnalytics(filters);
   const [chartData, setChartData] = useState<SprintHealthItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 

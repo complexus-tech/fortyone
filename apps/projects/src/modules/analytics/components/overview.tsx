@@ -31,8 +31,14 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
   </Wrapper>
 );
 
-export const Overview = () => {
-  const { data: overview, isPending } = useWorkspaceOverview();
+type OverviewProps = {
+  startDate?: string;
+  endDate?: string;
+};
+
+export const Overview = ({ startDate, endDate }: OverviewProps) => {
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: overview, isPending } = useWorkspaceOverview(filters);
 
   if (isPending) {
     return <OverviewSkeleton />;

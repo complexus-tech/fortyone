@@ -40,9 +40,16 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const StatusBreakdown = () => {
+export const StatusBreakdown = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
   const { getTermDisplay } = useTerminology();
-  const { data: storyAnalytics, isPending } = useStoryAnalytics();
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const [chartData, setChartData] = useState<StatusBreakdownItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 

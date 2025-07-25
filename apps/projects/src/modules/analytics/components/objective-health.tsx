@@ -46,8 +46,15 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const ObjectiveHealth = () => {
-  const { data: objectiveProgress, isPending } = useObjectiveProgress();
+export const ObjectiveHealth = ({
+  startDate,
+  endDate,
+}: {
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const { data: objectiveProgress, isPending } = useObjectiveProgress(filters);
   const [chartData, setChartData] = useState<HealthDistributionItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
