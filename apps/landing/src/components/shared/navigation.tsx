@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
 import { MenuButton } from "./menu-button";
+import { RequestDemo } from "./request-demo";
 
 const MenuItem = ({
   name,
@@ -165,6 +166,7 @@ export const Navigation = () => {
               ))}
             </Flex>
             <Flex align="center" className="ml-4 gap-2">
+              <RequestDemo />
               <Button
                 className={cn("hidden px-5 text-[0.93rem] md:flex", {
                   flex: session,
