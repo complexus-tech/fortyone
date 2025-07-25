@@ -327,7 +327,7 @@ export const ChatInput = ({
           <textarea
             autoFocus
             className={cn(
-              "max-h-40 min-h-9 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
+              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
               {
                 "md:min-h-[3.7rem]": isOnPage,
               },
@@ -377,8 +377,7 @@ export const ChatInput = ({
               title={isRecording ? "Stop dictation" : "Dictate"}
             >
               <Button
-                asIcon
-                className="mb-0.5 md:h-[2.6rem]"
+                className="mb-0.5 gap-1 md:h-[2.6rem]"
                 color="tertiary"
                 leftIcon={
                   isTranscribing ? (
@@ -397,12 +396,10 @@ export const ChatInput = ({
                     handleVoiceRecording();
                   }
                 }}
-                rounded="full"
+                rounded="lg"
                 variant="outline"
               >
-                <span className="sr-only">
-                  {isRecording ? "Stop dictation" : "Dictate"}
-                </span>
+                {isRecording ? "Cancel" : "Talk"}
               </Button>
             </Tooltip>
             <Button

@@ -21,7 +21,7 @@ import { ObjectiveHealth } from "./components/objective-health";
 import { SprintHealth } from "./components/sprint-health";
 import { TeamAllocation } from "./components/team-allocation";
 // import { TimelineTrends } from "./components/timeline-trends";
-import { DateRangeFilter } from "./components/date-range-filter";
+import { Filters } from "./components/filters";
 
 export const AnalyticsPage = () => {
   // const { getTermDisplay } = useTerminology();
@@ -46,7 +46,7 @@ export const AnalyticsPage = () => {
     return "evening";
   };
 
-  const handleDateChange = (startDate?: string, endDate?: string) => {
+  const _handleDateChange = (startDate?: string, endDate?: string) => {
     setDateRange({
       startDate: startDate || getDefaultDates().startDate,
       endDate: endDate || getDefaultDates().endDate,
@@ -71,11 +71,7 @@ export const AnalyticsPage = () => {
                 Here&rsquo;s your workspace analytics and insights.
               </Text>
             </Box>
-            <DateRangeFilter
-              endDate={dateRange.endDate}
-              onDateChange={handleDateChange}
-              startDate={dateRange.startDate}
-            />
+            <Filters />
           </Flex>
 
           {/* Workspace Overview */}

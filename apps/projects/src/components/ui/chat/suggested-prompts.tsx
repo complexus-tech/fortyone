@@ -67,24 +67,19 @@ export const SuggestedPrompts = ({
   return (
     <Box
       className={cn("px-6 py-4", {
-        "md:px-10 md:py-6": isOnPage,
+        "md:py-6": isOnPage,
       })}
     >
       <Text
-        className={cn("mx-auto text-center text-2xl font-semibold md:w-11/12", {
-          "antialiased md:mb-10 md:text-5xl": isOnPage,
-        })}
+        className={cn(
+          "mx-auto w-max pb-1.5 text-center text-5xl font-semibold antialiased md:w-11/12",
+          {
+            "md:mb-10 md:text-6xl": isOnPage,
+          },
+        )}
+        color="gradient"
       >
-        Hi, {name}! How can Maya help you today?
-      </Text>
-      <Text
-        className={cn("mx-auto mt-3 text-center md:w-10/12", {
-          "md:text-lg": isOnPage,
-        })}
-        color="muted"
-      >
-        I&apos;m here to help you manage your work, stay organized, and keep
-        your projects moving. Ask me anything!
+        Hi, {name}! Ask me anything!
       </Text>
       <Box
         className={cn("mt-6 flex flex-col gap-3", {
@@ -95,7 +90,7 @@ export const SuggestedPrompts = ({
           (prompt, index) => (
             <Wrapper
               className={cn(
-                "flex cursor-pointer items-center gap-2 py-3.5 ring-primary transition hover:ring-2 md:px-3",
+                "flex cursor-pointer items-center gap-3 ring-primary transition hover:ring-2 md:px-4",
                 {
                   "gap-3 md:px-4 md:py-3": isOnPage,
                 },

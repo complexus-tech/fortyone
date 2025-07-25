@@ -1,5 +1,5 @@
-import { HistoryIcon, PlusIcon, AiIcon } from "icons";
-import { Flex, Button, BreadCrumbs } from "ui";
+import { HistoryIcon, PlusIcon } from "icons";
+import { Flex, Button } from "ui";
 import { useState } from "react";
 import { HistoryDialog } from "@/components/ui/chat/history-dialog";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
@@ -19,39 +19,29 @@ export const Header = ({
 
   return (
     <>
-      <HeaderContainer className="justify-between">
+      <HeaderContainer className="justify-between border-b-0">
         <Flex align="center" gap={2}>
           <MobileMenuButton />
-          <BreadCrumbs
-            breadCrumbs={[
-              {
-                name: "Plan with Maya",
-                icon: <AiIcon />,
-              },
-            ]}
-          />
-        </Flex>
-        <Flex align="center" gap={2}>
           <Button
             color="tertiary"
             leftIcon={<PlusIcon strokeWidth={2.8} />}
             onClick={handleNewChat}
-            size="sm"
+            variant="naked"
           >
             New chat
           </Button>
-          <Button
-            className="gap-2"
-            color="tertiary"
-            leftIcon={<HistoryIcon className="h-[1.15rem]" strokeWidth={2.6} />}
-            onClick={() => {
-              setIsHistoryOpen(true);
-            }}
-            size="sm"
-          >
-            History
-          </Button>
         </Flex>
+        <Button
+          className="gap-2"
+          color="tertiary"
+          leftIcon={<HistoryIcon className="h-[1.15rem]" strokeWidth={2.6} />}
+          onClick={() => {
+            setIsHistoryOpen(true);
+          }}
+          variant="naked"
+        >
+          History
+        </Button>
       </HeaderContainer>
       <HistoryDialog
         currentChatId={currentChatId}
