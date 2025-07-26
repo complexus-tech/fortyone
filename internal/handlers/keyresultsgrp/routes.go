@@ -23,8 +23,10 @@ func Routes(cfg Config, app *web.App) {
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB))
 	h := New(keyResultsService, cfg.Cache, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	gzip := mid.Gzip(cfg.Log)
 
 	app.Put("/workspaces/{workspaceId}/key-results/{id}", h.Update, auth)
 	app.Delete("/workspaces/{workspaceId}/key-results/{id}", h.Delete, auth)
 	app.Post("/workspaces/{workspaceId}/key-results", h.Create, auth)
+	app.Get("/workspaces/{workspaceId}/key-results", h.ListPaginated, auth, gzip)
 }

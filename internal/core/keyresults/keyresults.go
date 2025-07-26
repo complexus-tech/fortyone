@@ -136,3 +136,16 @@ func (s *Service) List(ctx context.Context, objectiveId uuid.UUID, workspaceId u
 
 	return results, nil
 }
+
+// ListPaginated retrieves paginated key results with filters
+func (s *Service) ListPaginated(ctx context.Context, filters keyresultsrepo.CoreKeyResultFilters) (keyresultsrepo.CoreKeyResultListResponse, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.keyresults.ListPaginated")
+	defer span.End()
+
+	response, err := s.repo.ListPaginated(ctx, filters)
+	if err != nil {
+		return keyresultsrepo.CoreKeyResultListResponse{}, fmt.Errorf("listing paginated key results: %w", err)
+	}
+
+	return response, nil
+}

@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -211,4 +214,107 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	web.Respond(ctx, w, toAppKeyResults(krs), http.StatusOK)
 	return nil
+}
+
+// ListPaginated returns paginated key results for a workspace
+func (h *Handlers) ListPaginated(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "keyresultsgrp.handlers.ListPaginated")
+	defer span.End()
+
+	// Get current user
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspaceID := web.Params(r, "workspaceId")
+	wsID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Parse query parameters
+	filters := parseKeyResultFilters(r, wsID, userID)
+
+	// Call service
+	response, err := h.keyResults.ListPaginated(ctx, filters)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	web.Respond(ctx, w, toAppKeyResultListResponse(response), http.StatusOK)
+	return nil
+}
+
+// Helper function to parse filters from request
+func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyresultsrepo.CoreKeyResultFilters {
+	query := r.URL.Query()
+
+	filters := keyresultsrepo.CoreKeyResultFilters{
+		WorkspaceID:    workspaceID,
+		CurrentUserID:  userID,
+		Page:           getIntParam(query, "page", 1),
+		PageSize:       getIntParam(query, "pageSize", 20),
+		OrderBy:        getStringParam(query, "orderBy", "created_at"),
+		OrderDirection: getStringParam(query, "orderDirection", "desc"),
+	}
+
+	// Parse team IDs
+	if teamIDs := query["teamIds"]; len(teamIDs) > 0 {
+		filters.TeamIDs = parseUUIDArray(teamIDs)
+	}
+
+	// Parse objective IDs
+	if objectiveIDs := query["objectiveIds"]; len(objectiveIDs) > 0 {
+		filters.ObjectiveIDs = parseUUIDArray(objectiveIDs)
+	}
+
+	// Parse measurement types
+	if measurementTypes := query["measurementTypes"]; len(measurementTypes) > 0 {
+		filters.MeasurementTypes = measurementTypes
+	}
+
+	// Parse dates
+	if createdAfter := query.Get("createdAfter"); createdAfter != "" {
+		if t, err := time.Parse(time.RFC3339, createdAfter); err == nil {
+			filters.CreatedAfter = &t
+		}
+	}
+
+	if createdBefore := query.Get("createdBefore"); createdBefore != "" {
+		if t, err := time.Parse(time.RFC3339, createdBefore); err == nil {
+			filters.CreatedBefore = &t
+		}
+	}
+
+	return filters
+}
+
+// Helper functions for parsing query parameters
+func getIntParam(query map[string][]string, key string, defaultValue int) int {
+	if values := query[key]; len(values) > 0 {
+		if val, err := strconv.Atoi(values[0]); err == nil {
+			return val
+		}
+	}
+	return defaultValue
+}
+
+func getStringParam(query map[string][]string, key, defaultValue string) string {
+	if values := query[key]; len(values) > 0 {
+		return values[0]
+	}
+	return defaultValue
+}
+
+func parseUUIDArray(values []string) []uuid.UUID {
+	var uuids []uuid.UUID
+	for _, val := range values {
+		if id, err := uuid.Parse(val); err == nil {
+			uuids = append(uuids, id)
+		}
+	}
+	return uuids
 }

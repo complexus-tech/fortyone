@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -43,6 +44,40 @@ type AppUpdateKeyResult struct {
 	StartValue      *float64 `json:"startValue" db:"start_value"`
 	CurrentValue    *float64 `json:"currentValue" db:"current_value"`
 	TargetValue     *float64 `json:"targetValue" db:"target_value"`
+}
+
+// AppKeyResultWithObjective extends AppKeyResult with objective info
+type AppKeyResultWithObjective struct {
+	AppKeyResult
+	ObjectiveName string    `json:"objectiveName"`
+	ObjectiveID   uuid.UUID `json:"objectiveId"`
+	TeamID        uuid.UUID `json:"teamId"`
+	TeamName      string    `json:"teamName"`
+	WorkspaceID   uuid.UUID `json:"workspaceId"`
+}
+
+// AppKeyResultListResponse represents paginated response
+type AppKeyResultListResponse struct {
+	KeyResults []AppKeyResultWithObjective `json:"keyResults"`
+	TotalCount int                         `json:"totalCount"`
+	Page       int                         `json:"page"`
+	PageSize   int                         `json:"pageSize"`
+	HasMore    bool                        `json:"hasMore"`
+}
+
+// AppKeyResultFilters represents filtering options
+type AppKeyResultFilters struct {
+	ObjectiveIDs     []uuid.UUID `json:"objectiveIds"`
+	TeamIDs          []uuid.UUID `json:"teamIds"`
+	MeasurementTypes []string    `json:"measurementTypes"`
+	CreatedAfter     *time.Time  `json:"createdAfter"`
+	CreatedBefore    *time.Time  `json:"createdBefore"`
+	UpdatedAfter     *time.Time  `json:"updatedAfter"`
+	UpdatedBefore    *time.Time  `json:"updatedBefore"`
+	Page             int         `json:"page"`
+	PageSize         int         `json:"pageSize"`
+	OrderBy          string      `json:"orderBy"`
+	OrderDirection   string      `json:"orderDirection"`
 }
 
 // Validate validates the AppNewKeyResult struct
@@ -122,6 +157,34 @@ func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
 		result[i] = toAppKeyResult(kr)
 	}
 	return result
+}
+
+// toAppKeyResultWithObjective converts a CoreKeyResultWithObjective to an AppKeyResultWithObjective
+func toAppKeyResultWithObjective(kr keyresultsrepo.CoreKeyResultWithObjective) AppKeyResultWithObjective {
+	return AppKeyResultWithObjective{
+		AppKeyResult:  toAppKeyResult(keyresults.CoreKeyResult(kr.CoreKeyResult)),
+		ObjectiveName: kr.ObjectiveName,
+		ObjectiveID:   kr.ObjectiveID,
+		TeamID:        kr.TeamID,
+		TeamName:      kr.TeamName,
+		WorkspaceID:   kr.WorkspaceID,
+	}
+}
+
+// toAppKeyResultListResponse converts a CoreKeyResultListResponse to an AppKeyResultListResponse
+func toAppKeyResultListResponse(response keyresultsrepo.CoreKeyResultListResponse) AppKeyResultListResponse {
+	keyResults := make([]AppKeyResultWithObjective, len(response.KeyResults))
+	for i, kr := range response.KeyResults {
+		keyResults[i] = toAppKeyResultWithObjective(kr)
+	}
+
+	return AppKeyResultListResponse{
+		KeyResults: keyResults,
+		TotalCount: response.TotalCount,
+		Page:       response.Page,
+		PageSize:   response.PageSize,
+		HasMore:    response.HasMore,
+	}
 }
 
 // toCoreNewKeyResult converts an AppNewKeyResult to a CoreNewKeyResult

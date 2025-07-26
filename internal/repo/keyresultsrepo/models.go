@@ -45,6 +45,55 @@ type CoreKeyResult struct {
 	LastUpdatedBy   uuid.UUID
 }
 
+// CoreKeyResultFilters represents filtering options for key results
+type CoreKeyResultFilters struct {
+	ObjectiveIDs     []uuid.UUID `json:"objectiveIds"`
+	TeamIDs          []uuid.UUID `json:"teamIds"`          // Filter by teams
+	MeasurementTypes []string    `json:"measurementTypes"` // "percentage", "number", "boolean"
+	CreatedBy        []uuid.UUID `json:"createdBy"`
+	WorkspaceID      uuid.UUID   `json:"workspaceId"`
+	CurrentUserID    uuid.UUID   `json:"currentUserId"` // For team membership filtering
+	// Date range filters
+	CreatedAfter  *time.Time `json:"createdAfter"`
+	CreatedBefore *time.Time `json:"createdBefore"`
+	UpdatedAfter  *time.Time `json:"updatedAfter"`
+	UpdatedBefore *time.Time `json:"updatedBefore"`
+	// Pagination
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+	// Sorting
+	OrderBy        string `json:"orderBy"`        // "name", "created_at", "updated_at", "objective_name"
+	OrderDirection string `json:"orderDirection"` // "asc", "desc"
+}
+
+// CoreKeyResultWithObjective extends CoreKeyResult with objective info
+type CoreKeyResultWithObjective struct {
+	CoreKeyResult
+	ObjectiveName string    `json:"objectiveName"`
+	ObjectiveID   uuid.UUID `json:"objectiveId"`
+	TeamID        uuid.UUID `json:"teamId"`
+	TeamName      string    `json:"teamName"`
+	WorkspaceID   uuid.UUID `json:"workspaceId"`
+}
+
+// CoreKeyResultListResponse represents paginated response
+type CoreKeyResultListResponse struct {
+	KeyResults []CoreKeyResultWithObjective `json:"keyResults"`
+	TotalCount int                          `json:"totalCount"`
+	Page       int                          `json:"page"`
+	PageSize   int                          `json:"pageSize"`
+	HasMore    bool                         `json:"hasMore"`
+}
+
+// dbKeyResultWithObjective represents the database model with objective info
+type dbKeyResultWithObjective struct {
+	dbKeyResult
+	ObjectiveName string    `db:"objective_name"`
+	TeamID        uuid.UUID `db:"team_id"`
+	TeamName      string    `db:"team_name"`
+	WorkspaceID   uuid.UUID `db:"workspace_id"`
+}
+
 // toCoreKeyResult converts a dbKeyResult to a CoreKeyResult
 func toCoreKeyResult(kr dbKeyResult) CoreKeyResult {
 	return CoreKeyResult{
@@ -67,6 +116,27 @@ func toCoreKeyResults(krs []dbKeyResult) []CoreKeyResult {
 	result := make([]CoreKeyResult, len(krs))
 	for i, kr := range krs {
 		result[i] = toCoreKeyResult(kr)
+	}
+	return result
+}
+
+// toCoreKeyResultWithObjective converts a dbKeyResultWithObjective to a CoreKeyResultWithObjective
+func toCoreKeyResultWithObjective(kr dbKeyResultWithObjective) CoreKeyResultWithObjective {
+	return CoreKeyResultWithObjective{
+		CoreKeyResult: toCoreKeyResult(kr.dbKeyResult),
+		ObjectiveName: kr.ObjectiveName,
+		ObjectiveID:   kr.ObjectiveID,
+		TeamID:        kr.TeamID,
+		TeamName:      kr.TeamName,
+		WorkspaceID:   kr.WorkspaceID,
+	}
+}
+
+// toCoreKeyResultsWithObjective converts a slice of dbKeyResultWithObjective to a slice of CoreKeyResultWithObjective
+func toCoreKeyResultsWithObjective(krs []dbKeyResultWithObjective) []CoreKeyResultWithObjective {
+	result := make([]CoreKeyResultWithObjective, len(krs))
+	for i, kr := range krs {
+		result[i] = toCoreKeyResultWithObjective(kr)
 	}
 	return result
 }
