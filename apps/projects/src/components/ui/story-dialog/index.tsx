@@ -133,7 +133,6 @@ export const StoryDialog = ({
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    // rounded="full"
                     variant="naked"
                   >
                     Close

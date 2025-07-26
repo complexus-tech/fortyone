@@ -83,7 +83,7 @@ const RenderMessage = ({
             return (
               <Thinking
                 key={index}
-                message={`Using ${toolInvocation.toolName} tool...`}
+                message={`Invoking ${toolInvocation.toolName}...`}
               />
             );
           }
