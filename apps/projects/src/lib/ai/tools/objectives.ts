@@ -28,7 +28,6 @@ export const objectivesTool = tool({
         "create-objective",
         "update-objective",
         "delete-objective",
-        "list-key-results",
         "create-key-result",
         "update-key-result",
         "delete-key-result",
@@ -522,55 +521,6 @@ export const objectivesTool = tool({
           return {
             success: true,
             message: "Successfully deleted objective.",
-          };
-        }
-
-        case "list-key-results": {
-          if (!objectiveId) {
-            return {
-              success: false,
-              error: "Objective ID is required for list-key-results action",
-            };
-          }
-
-          const objective = await getObjective(objectiveId, session);
-          if (!objective) {
-            return {
-              success: false,
-              error: "Objective not found",
-            };
-          }
-
-          if (userRole !== "admin") {
-            const userTeams = await getTeams(session);
-            const hasAccess = userTeams.some(
-              (team) => team.id === objective.teamId,
-            );
-
-            if (!hasAccess) {
-              return {
-                success: false,
-                error: "You can only view key results for teams you belong to",
-              };
-            }
-          }
-
-          const keyResults = await getKeyResults(objectiveId, session);
-
-          return {
-            success: true,
-            keyResults: keyResults.map((kr) => ({
-              id: kr.id,
-              name: kr.name,
-              measurementType: kr.measurementType,
-              startValue: kr.startValue,
-              targetValue: kr.targetValue,
-              currentValue: kr.currentValue,
-              createdAt: kr.createdAt,
-              updatedAt: kr.updatedAt,
-            })),
-            count: keyResults.length,
-            message: `Found ${keyResults.length} key results.`,
           };
         }
 
