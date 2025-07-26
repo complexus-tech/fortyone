@@ -5,7 +5,9 @@ import {
   AnalyticsIcon,
   DashboardIcon,
   GridIcon,
+  OKRIcon,
   RoadmapIcon,
+  TeamIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -62,24 +64,29 @@ export const Navigation = () => {
       icon: <AiIcon />,
       href: "/maya",
     },
-    ...(getSprintsItem() ? [getSprintsItem()!] : []),
-    // {
-    //   name: getTermDisplay("keyResultTerm", { variant: "plural" }),
-    //   icon: <OKRIcon strokeWidth={2.8} />,
-    //   href: "/okrs",
-    //   disabled: !features.objectiveEnabled,
-    // },
-    {
-      name: "Analytics",
-      icon: <AnalyticsIcon />,
-      href: "/analytics",
-      disabled: !isAnalyticsEnabled,
-    },
     {
       name: "Roadmap",
       icon: <RoadmapIcon strokeWidth={2} />,
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
+    },
+    ...(getSprintsItem() ? [getSprintsItem()!] : []),
+    {
+      name: getTermDisplay("keyResultTerm", { variant: "plural" }),
+      icon: <OKRIcon strokeWidth={2.8} />,
+      href: "/okrs",
+      disabled: !features.objectiveEnabled,
+    },
+    {
+      name: "Members",
+      icon: <TeamIcon strokeWidth={2.8} />,
+      href: "/members",
+    },
+    {
+      name: "Analytics",
+      icon: <AnalyticsIcon />,
+      href: "/analytics",
+      disabled: !isAnalyticsEnabled,
     },
   ];
 
