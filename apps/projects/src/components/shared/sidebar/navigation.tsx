@@ -7,7 +7,6 @@ import {
   GridIcon,
   OKRIcon,
   RoadmapIcon,
-  TeamIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -64,12 +63,6 @@ export const Navigation = () => {
       icon: <AiIcon />,
       href: "/maya",
     },
-    {
-      name: "Roadmap",
-      icon: <RoadmapIcon strokeWidth={2} />,
-      href: "/roadmaps",
-      disabled: !features.objectiveEnabled,
-    },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
     {
       name: getTermDisplay("keyResultTerm", { variant: "plural" }),
@@ -78,9 +71,10 @@ export const Navigation = () => {
       disabled: !features.objectiveEnabled,
     },
     {
-      name: "Members",
-      icon: <TeamIcon strokeWidth={2.8} />,
-      href: "/members",
+      name: "Roadmap",
+      icon: <RoadmapIcon strokeWidth={2} />,
+      href: "/roadmaps",
+      disabled: !features.objectiveEnabled,
     },
     {
       name: "Analytics",
