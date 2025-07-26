@@ -283,8 +283,9 @@ export const storiesTool = tool({
       switch (action) {
         case "list-my-stories": {
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             assignedToMe: true,
+            storiesPerGroup: 50,
             ...filters,
           };
 
@@ -345,8 +346,9 @@ export const storiesTool = tool({
 
         case "list-created-stories": {
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             createdByMe: true,
+            storiesPerGroup: 50,
             ...filters,
           };
 
@@ -422,8 +424,9 @@ export const storiesTool = tool({
 
           const [groupedResult, allStatuses] = await Promise.all([
             getGroupedStories(session, {
-              groupBy: "none",
+              groupBy: "status",
               teamIds: teamId ? [teamId] : undefined,
+              storiesPerGroup: 50,
               ...filters,
             }),
             getStatuses(session),
@@ -494,6 +497,7 @@ export const storiesTool = tool({
             ...(assigneeId && { assigneeId }),
             ...(priority && { priority }),
             sortBy: "relevance",
+            pageSize: 50,
           };
 
           const searchResults = await searchQuery(session, searchParams);
@@ -987,8 +991,9 @@ export const storiesTool = tool({
           const tomorrowISO = tomorrow.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             assignedToMe: true,
+            storiesPerGroup: 50,
             deadlineAfter: todayISO,
             deadlineBefore: tomorrowISO,
             ...filters,
@@ -1055,8 +1060,9 @@ export const storiesTool = tool({
           const nextWeekISO = nextWeek.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             assignedToMe: true,
+            storiesPerGroup: 50,
             deadlineAfter: todayISO,
             deadlineBefore: nextWeekISO,
             ...filters,
@@ -1119,8 +1125,9 @@ export const storiesTool = tool({
           const todayISO = today.toISOString().split("T")[0];
 
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             assignedToMe: true,
+            storiesPerGroup: 50,
             deadlineBefore: todayISO,
             ...filters,
           };
@@ -1189,8 +1196,9 @@ export const storiesTool = tool({
             .split("T")[0];
 
           const params: GroupedStoryParams = {
-            groupBy: "none",
+            groupBy: "status",
             assignedToMe: true,
+            storiesPerGroup: 50,
             deadlineAfter: tomorrowISO,
             deadlineBefore: dayAfterTomorrowISO,
             ...filters,
