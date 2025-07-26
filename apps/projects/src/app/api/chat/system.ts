@@ -80,6 +80,7 @@ Complexus supports customizable terminology for core concepts. Users may refer t
 
 **Key Results** (default) may also be called:
 - "focus areas", "milestones", "outcomes", "metrics"
+- key results can also be called objective key results or sometimes just okrs
 - These are always managed within the objectives tool
 
 When users reference any of these terms or their alternatives, automatically map them to the correct tool. For example:
