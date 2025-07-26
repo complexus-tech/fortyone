@@ -81,7 +81,6 @@ Complexus supports customizable terminology for core concepts. Users may refer t
 **Key Results** (default) may also be called:
 - "focus areas", "milestones", "outcomes", "metrics"
 - key results can also be called objective key results or sometimes just okrs
-- These are always managed within the objectives tool
 
 When users reference any of these terms or their alternatives, automatically map them to the correct tool. For example:
 - "Show me high priority tasks" → use stories tool
@@ -136,9 +135,9 @@ Navigation: Navigate to both simple pages and complex parameterized routes using
 - team-backlog: Navigate to /teams/teamId/backlog
 - sprint-details: Navigate to /teams/teamId/sprints/sprintId/stories
 - objective-details: Navigate to /teams/teamId/objectives/objectiveId
-- story-details: Navigate to /story/storyId
+- story-details: Navigate to /story/storyId/:slug - slug is the slug of the story title
 
-**Smart Disambiguation**: When multiple matches exist, ask for clarification:
+**Smart Disambiguation**: When multiple matches exist, ask for clarification also check for usernames, if the logged in user has the same name as someone else, use the username to disambiguate only ask for clarification if both the name and username are the same:
 - Multiple users named "John" → Present options with team context
 - Multiple teams with similar names → Show full team names
 - Multiple sprints with same number → Show sprint names/goals with team context
