@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
     teams,
     id,
     username,
+    terminology,
   } = await req.json();
 
   // Get user context for "me" resolution
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
     subscription,
     teams,
     username,
+    terminology,
   });
 
   const session = await auth();

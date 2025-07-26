@@ -9,6 +9,7 @@ export async function getUserContext({
   subscription,
   teams,
   username,
+  terminology,
 }: {
   currentPath: string;
   currentTheme: string;
@@ -21,6 +22,12 @@ export async function getUserContext({
   };
   teams: Team[];
   username: string;
+  terminology: {
+    stories: string;
+    sprints: string;
+    objectives: string;
+    keyResults: string;
+  };
 }): Promise<string> {
   const session = await auth();
   if (!session?.user) {
@@ -60,6 +67,15 @@ export async function getUserContext({
     - Subscription Billing Interval: ${subscription?.billingInterval}
     - Subscription Billing Ends At: ${subscription?.billingEndsAt}
     - Subscription Status: ${subscription?.status}
+
+
+    **Current Terminology:**
+    - Stories: the user's selected terminology for stories is ${terminology.stories}
+    - Sprints: the user's selected terminology for sprints is ${terminology.sprints}
+    - Objectives: the user's selected terminology for objectives is ${terminology.objectives}
+    - Key Results: the user's selected terminology for key results is ${terminology.keyResults}
+    - Always use the user's selected terminology for stories, sprints, objectives, and key results.
+    
 
     **Timezone:**
     - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}

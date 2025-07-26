@@ -20,6 +20,7 @@ import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages
 import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messages";
 import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { useProfile } from "@/lib/hooks/profile";
+import { useTerminology } from "@/hooks";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
 
@@ -32,14 +33,21 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: teams = [] } = useTeams();
   const { data: profile } = useProfile();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
-
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const { getTermDisplay } = useTerminology();
   const idRef = useRef(config.currentChatId);
   const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
+
+  const terminology = {
+    stories: getTermDisplay("storyTerm", { variant: "plural" }),
+    sprints: getTermDisplay("sprintTerm", { variant: "plural" }),
+    objectives: getTermDisplay("objectiveTerm", { variant: "plural" }),
+    keyResults: getTermDisplay("keyResultTerm", { variant: "plural" }),
+  };
 
   const handleNewChat = () => {
     const newChatId = generateId();
@@ -86,6 +94,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         username: profile?.username,
       },
       teams,
+      terminology,
       id: idRef.current,
     },
     sendExtraMessageFields: true,
