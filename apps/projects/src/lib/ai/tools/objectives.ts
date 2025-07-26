@@ -6,19 +6,15 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getTeamObjectives } from "@/modules/objectives/queries/get-team-objectives";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
-import { getKeyResults } from "@/modules/objectives/queries/get-key-results";
 import { getObjectiveAnalytics } from "@/modules/objectives/queries/get-objective-analytics";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { createObjective } from "@/modules/objectives/actions/create-objective";
 import { updateObjective } from "@/modules/objectives/actions/update-objective";
 import { deleteObjective } from "@/modules/objectives/actions/delete-objective";
-import { createKeyResult } from "@/modules/objectives/actions/create-key-result";
-import { updateKeyResult } from "@/modules/objectives/actions/update-key-result";
-import { deleteKeyResult } from "@/modules/objectives/actions/delete-key-result";
 
 export const objectivesTool = tool({
   description:
-    "Comprehensive OKR management: create, update, delete objectives and key results, track progress, get analytics. Supports team name resolution and role-based permissions.",
+    "Comprehensive objective management: create, update, delete objectives, track progress, get analytics. Supports team name resolution and role-based permissions.",
   parameters: z.object({
     action: z
       .enum([
@@ -28,9 +24,6 @@ export const objectivesTool = tool({
         "create-objective",
         "update-objective",
         "delete-objective",
-        "create-key-result",
-        "update-key-result",
-        "delete-key-result",
         "get-objective-analytics",
         "get-objectives-overview",
       ])
@@ -45,11 +38,6 @@ export const objectivesTool = tool({
       .string()
       .optional()
       .describe("Objective ID for single objective operations"),
-
-    keyResultId: z
-      .string()
-      .optional()
-      .describe("Key result ID for key result operations"),
 
     objectiveData: z
       .object({
@@ -98,36 +86,6 @@ export const objectivesTool = tool({
       .optional()
       .describe("Objective update data"),
 
-    keyResultData: z
-      .object({
-        name: z.string().describe("Key result name (required)"),
-        measurementType: z
-          .enum(["number", "percentage", "boolean"])
-          .describe("Measurement type"),
-        startValue: z.number().describe("Starting value"),
-        targetValue: z.number().describe("Target value"),
-        currentValue: z.number().optional().describe("Current progress value"),
-      })
-      .optional()
-      .describe("Key result data for creation"),
-
-    updateKeyResultData: z
-      .object({
-        name: z.string().optional().describe("Updated key result name"),
-        startValue: z.number().optional().describe("Updated starting value"),
-        targetValue: z.number().optional().describe("Updated target value"),
-        currentValue: z
-          .number()
-          .optional()
-          .describe("Updated current progress value"),
-      })
-      .optional()
-      .describe("Key result data for updates"),
-
-    includeKeyResults: z
-      .boolean()
-      .optional()
-      .describe("Include key results in objective responses"),
     includeAnalytics: z
       .boolean()
       .optional()
@@ -138,12 +96,8 @@ export const objectivesTool = tool({
     action,
     teamId,
     objectiveId,
-    keyResultId,
     objectiveData,
     updateData,
-    keyResultData,
-    updateKeyResultData,
-    includeKeyResults = true,
     includeAnalytics = false,
   }) => {
     try {
@@ -278,12 +232,7 @@ export const objectivesTool = tool({
             }
           }
 
-          let keyResults;
           let analytics;
-
-          if (includeKeyResults) {
-            keyResults = await getKeyResults(objective.id, session);
-          }
 
           if (includeAnalytics) {
             analytics = await getObjectiveAnalytics(objective.id, session);
@@ -304,7 +253,6 @@ export const objectivesTool = tool({
               health: objective.health,
               createdAt: objective.createdAt,
               updatedAt: objective.updatedAt,
-              ...(keyResults ? { keyResults } : {}),
               ...(analytics ? { analytics } : {}),
             },
             message: `Retrieved objective "${objective.name}".`,
@@ -521,152 +469,6 @@ export const objectivesTool = tool({
           return {
             success: true,
             message: "Successfully deleted objective.",
-          };
-        }
-
-        case "create-key-result": {
-          if (!objectiveId) {
-            return {
-              success: false,
-              error: "Objective ID is required for create-key-result action",
-            };
-          }
-
-          if (!keyResultData) {
-            return {
-              success: false,
-              error: "Key result data is required for create-key-result action",
-            };
-          }
-
-          if (userRole === "guest") {
-            return {
-              success: false,
-              error: "Guests cannot create key results",
-            };
-          }
-
-          const objective = await getObjective(objectiveId, session);
-          if (!objective) {
-            return {
-              success: false,
-              error: "Objective not found",
-            };
-          }
-
-          if (userRole !== "admin") {
-            const userTeams = await getTeams(session);
-            const hasAccess = userTeams.some(
-              (team) => team.id === objective.teamId,
-            );
-
-            if (!hasAccess) {
-              return {
-                success: false,
-                error:
-                  "You can only create key results for teams you belong to",
-              };
-            }
-          }
-
-          const result = await createKeyResult({
-            objectiveId,
-            name: keyResultData.name,
-            measurementType: keyResultData.measurementType,
-            startValue: keyResultData.startValue,
-            targetValue: keyResultData.targetValue,
-            currentValue:
-              keyResultData.currentValue ?? keyResultData.startValue,
-          });
-
-          if (result.error) {
-            return {
-              success: false,
-              error: result.error.message || "Failed to create key result",
-            };
-          }
-
-          return {
-            success: true,
-            message: `Successfully created key result "${keyResultData.name}".`,
-          };
-        }
-
-        case "update-key-result": {
-          if (!keyResultId) {
-            return {
-              success: false,
-              error: "Key result ID is required for update actions",
-            };
-          }
-
-          if (!objectiveId) {
-            return {
-              success: false,
-              error: "Objective ID is required for update-key-result action",
-            };
-          }
-
-          if (!updateKeyResultData) {
-            return {
-              success: false,
-              error: "Key result update data is required",
-            };
-          }
-
-          if (userRole === "guest") {
-            return {
-              success: false,
-              error: "Guests cannot update key results",
-            };
-          }
-
-          const result = await updateKeyResult(
-            keyResultId,
-            objectiveId,
-            updateKeyResultData,
-          );
-
-          if (result.error) {
-            return {
-              success: false,
-              error: result.error.message || "Failed to update key result",
-            };
-          }
-
-          return {
-            success: true,
-            message: "Successfully updated key result.",
-          };
-        }
-
-        case "delete-key-result": {
-          if (!keyResultId) {
-            return {
-              success: false,
-              error: "Key result ID is required for delete-key-result action",
-            };
-          }
-
-          if (userRole === "guest") {
-            return {
-              success: false,
-              error: "Guests cannot delete key results",
-            };
-          }
-
-          const result = await deleteKeyResult(keyResultId);
-
-          if (result.error) {
-            return {
-              success: false,
-              error: result.error.message || "Failed to delete key result",
-            };
-          }
-
-          return {
-            success: true,
-            message: "Successfully deleted key result.",
           };
         }
 
