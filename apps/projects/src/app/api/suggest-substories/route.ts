@@ -42,6 +42,7 @@ export async function POST(req: Request) {
     ## Guidelines
     - Break down by user value - each substory delivers tangible value
     - Follow INVEST criteria: Independent, Negotiable, Valuable, Estimable, Small, Testable
+    - Only suggest substories if the parent story is actionable and has a clear goal, if not return an empty array
 
     ## Title Requirements
     - Clear and actionable (e.g., "Implement user authentication flow" not "User auth")

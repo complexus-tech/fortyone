@@ -1,4 +1,4 @@
-import { Flex, Badge, Button, Tooltip } from "ui";
+import { Flex, Badge, Button, Tooltip, Box, Text, Checkbox } from "ui";
 import {
   ArrowDown2Icon,
   ArrowUp2Icon,
@@ -11,7 +11,7 @@ import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { NewSubStory } from "@/components/ui/new-sub-story";
-import { StoriesBoard } from "@/components/ui";
+import { RowWrapper, StoriesBoard } from "@/components/ui";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTerminology, useUserRole } from "@/hooks";
 import { substoryGenerationSchema } from "@/modules/stories/schemas";
@@ -91,7 +91,7 @@ export const SubStories = ({
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               loading={isLoading}
-              loadingText="Generating..."
+              loadingText="Maya is thinking..."
               onClick={() => {
                 submit(parent);
               }}
@@ -135,11 +135,31 @@ export const SubStories = ({
         setIsOpen={setIsCreateSubStoryOpen}
         teamId={parent.teamId}
       />
-      {object?.substories?.map((substory) => (
-        <div key={substory?.title}>
-          <h3>{substory?.title}</h3>
-        </div>
-      ))}
+      {object?.substories && object.substories.length > 0 ? (
+        <Box>
+          <Box className="mt-2 rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
+            {object.substories.map((substory) => (
+              <RowWrapper
+                className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
+                key={substory?.title}
+              >
+                <Flex align="center" className="flex-1" gap={2}>
+                  <AiIcon className="shrink-0" />
+                  <Text className="line-clamp-1">{substory?.title}</Text>
+                </Flex>
+                <Checkbox className="shrink-0" />
+              </RowWrapper>
+            ))}
+          </Box>
+          <Flex className="mt-2" gap={2} justify="end">
+            <Button color="tertiary" variant="naked">
+              Cancel
+            </Button>
+            <Button>Add Selected</Button>
+          </Flex>
+        </Box>
+      ) : null}
+
       {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
