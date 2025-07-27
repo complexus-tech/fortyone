@@ -5,7 +5,7 @@ import {
   PlusIcon,
   SubStoryIcon,
   AiIcon,
-  WarningIcon,
+  InfoIcon,
 } from "icons";
 import { useState, useEffect } from "react";
 import { cn } from "lib";
@@ -252,9 +252,9 @@ export const SubStories = ({
           ) : (
             <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
               <Flex align="center" gap={2}>
-                <WarningIcon className="text-warning dark:text-warning" />
+                <InfoIcon className="text-warning dark:text-warning" />
                 <Text>
-                  Failed to generate sub{" "}
+                  Could not generate sub{" "}
                   {getTermDisplay("storyTerm", {
                     variant: "plural",
                   })}
