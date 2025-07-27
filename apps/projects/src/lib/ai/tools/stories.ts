@@ -35,6 +35,7 @@ export const storiesTool = tool({
         "delete-story",
         "bulk-update-stories",
         "bulk-delete-stories",
+        "bulk-create-stories",
         "duplicate-story",
         "restore-story",
         "list-due-soon",
@@ -217,6 +218,44 @@ export const storiesTool = tool({
       .optional()
       .describe("Story data for creation"),
 
+    // For bulk creating stories
+    storiesData: z
+      .array(
+        z.object({
+          title: z.string().describe("Story title (required)"),
+          description: z.string().optional().describe("Story description"),
+          descriptionHTML: z
+            .string()
+            .optional()
+            .describe("Story description HTML"),
+          teamId: z.string().describe("Team ID where story belongs (required)"),
+          statusId: z.string().describe("Initial status ID (required)"),
+          assigneeId: z.string().optional().describe("Assignee user ID"),
+          priority: z
+            .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+            .describe("Story priority (required)"),
+          sprintId: z.string().optional().describe("Sprint ID to assign story"),
+          objectiveId: z
+            .string()
+            .optional()
+            .describe("Objective ID to assign story"),
+          parentId: z
+            .string()
+            .optional()
+            .describe("Parent story ID for sub-stories"),
+          startDate: z
+            .string()
+            .optional()
+            .describe("Story start date (ISO string)"),
+          endDate: z
+            .string()
+            .optional()
+            .describe("Story end date (ISO string)"),
+        }),
+      )
+      .optional()
+      .describe("Array of story data for bulk creation"),
+
     // For updating stories
     updateData: z
       .object({
@@ -252,6 +291,7 @@ export const storiesTool = tool({
     storyId,
     storyIds,
     storyData,
+    storiesData,
     updateData,
   }) => {
     try {
@@ -913,6 +953,62 @@ export const storiesTool = tool({
           return {
             success: true,
             message: `Successfully deleted ${storyIds.length} stories.`,
+          };
+        }
+
+        case "bulk-create-stories": {
+          if (userRole === "guest") {
+            return {
+              success: false,
+              error: "Guests cannot create stories",
+            };
+          }
+
+          if (!storiesData) {
+            return {
+              success: false,
+              error: "Stories data is required for bulk creation",
+            };
+          }
+
+          // Prepare all story creation promises
+          const storyPromises = storiesData.map(async (storyData) => {
+            return createStoryAction({
+              title: storyData.title,
+              description: storyData.description || "",
+              descriptionHTML: storyData.descriptionHTML || "",
+              teamId: storyData.teamId,
+              statusId: storyData.statusId,
+              assigneeId: storyData.assigneeId || undefined,
+              priority: storyData.priority,
+              sprintId: storyData.sprintId || undefined,
+              objectiveId: storyData.objectiveId || undefined,
+              parentId: storyData.parentId || undefined,
+              startDate: storyData.startDate || undefined,
+              endDate: storyData.endDate || undefined,
+              reporterId: userId,
+            });
+          });
+
+          // Execute all story creations in parallel
+          const results = await Promise.all(storyPromises);
+
+          const successful = results
+            .filter((result) => result.data)
+            .map((result) => result.data);
+
+          const failed = results.filter(
+            (result) => result.error?.message,
+          ).length;
+
+          return {
+            success: successful.length,
+            stories: successful,
+            failedStories: failed,
+            message:
+              failed === 0
+                ? `Successfully created ${successful.length} stories.`
+                : `Created ${successful.length} stories. ${failed} failed to create.`,
           };
         }
 
