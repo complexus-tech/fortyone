@@ -71,7 +71,7 @@ export const Hero = () => {
           >
             <Text className="mt-4 max-w-[700px] text-lg opacity-80 dark:font-normal md:text-xl">
               AI‑powered all‑in‑one Projects & OKRs platform that connects daily
-              work to strategic goals, tracks real‑time progress, and predicts
+              work to strategic goals, tracks realtime progress, and predicts
               risks
             </Text>
           </motion.span>
