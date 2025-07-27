@@ -1,11 +1,5 @@
 import { Flex, Badge, Button, Tooltip } from "ui";
-import {
-  AiIcon,
-  ArrowDown2Icon,
-  ArrowUp2Icon,
-  PlusIcon,
-  SubStoryIcon,
-} from "icons";
+import { ArrowDown2Icon, ArrowUp2Icon, PlusIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -84,7 +78,7 @@ export const SubStories = ({
 
         {userRole !== "guest" && (
           <Flex align="center" gap={2}>
-            <Button
+            {/* <Button
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               size="sm"
@@ -95,7 +89,7 @@ export const SubStories = ({
                 capitalize: true,
                 variant: "plural",
               })}
-            </Button>
+            </Button> */}
             <Tooltip title={subStories.length > 0 ? "Add Sub Story" : null}>
               <Button
                 color="tertiary"

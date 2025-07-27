@@ -1,14 +1,5 @@
 "use client";
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Flex,
-  TextEditor,
-  Wrapper,
-  Text,
-} from "ui";
+import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -26,7 +17,6 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import { AiIcon, CloseIcon } from "icons";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
@@ -190,7 +180,7 @@ export const MainDetails = ({
           className="relative -left-1 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
-        <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
+        {/* <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
           <Flex align="center" gap={2}>
             <AiIcon className="text-primary dark:text-primary" />
             <Text>
@@ -229,7 +219,7 @@ export const MainDetails = ({
           >
             <span className="sr-only">Close</span>
           </Button>
-        </Wrapper>
+        </Wrapper> */}
         <TextEditor className="mt-8" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
