@@ -1,5 +1,11 @@
 import { Flex, Badge, Button, Tooltip } from "ui";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, SubStoryIcon } from "icons";
+import {
+  AiIcon,
+  ArrowDown2Icon,
+  ArrowUp2Icon,
+  PlusIcon,
+  SubStoryIcon,
+} from "icons";
 import { useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -45,7 +51,7 @@ export const SubStories = ({
       <Flex
         align="center"
         className={cn({
-          "border-b-[0.5px] border-gray-200 pb-2 dark:border-dark-200":
+          "border-b-[0.5px] border-gray-100 pb-2 dark:border-dark-200":
             !isSubStoriesOpen,
         })}
         justify={subStories.length > 0 ? "between" : "end"}
@@ -60,9 +66,9 @@ export const SubStories = ({
               }}
               rightIcon={
                 isSubStoriesOpen ? (
-                  <ArrowDownIcon className="h-4 w-auto" />
+                  <ArrowDown2Icon className="h-4 w-auto" />
                 ) : (
-                  <ArrowUpIcon className="h-4 w-auto" />
+                  <ArrowUp2Icon className="h-4 w-auto" />
                 )
               }
               size="sm"
@@ -77,27 +83,46 @@ export const SubStories = ({
         )}
 
         {userRole !== "guest" && (
-          <Tooltip title={subStories.length > 0 ? "Add Sub Story" : null}>
+          <Flex align="center" gap={2}>
             <Button
               color="tertiary"
-              leftIcon={<PlusIcon />}
-              onClick={() => {
-                setIsCreateSubStoryOpen(true);
-              }}
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               size="sm"
               variant="naked"
             >
-              <span className={cn({ "sr-only": subStories.length > 0 })}>
-                Add Sub{" "}
-                {getTermDisplay("storyTerm", {
-                  capitalize: true,
-                })}
-              </span>
+              Suggest Sub{" "}
+              {getTermDisplay("storyTerm", {
+                capitalize: true,
+                variant: "plural",
+              })}
             </Button>
-          </Tooltip>
+            <Tooltip title={subStories.length > 0 ? "Add Sub Story" : null}>
+              <Button
+                color="tertiary"
+                leftIcon={<PlusIcon />}
+                onClick={() => {
+                  setIsCreateSubStoryOpen(true);
+                }}
+                size="sm"
+                variant="naked"
+              >
+                <span className={cn({ "sr-only": subStories.length > 0 })}>
+                  Add Sub{" "}
+                  {getTermDisplay("storyTerm", {
+                    capitalize: true,
+                  })}
+                </span>
+              </Button>
+            </Tooltip>
+          </Flex>
         )}
       </Flex>
-
+      <NewSubStory
+        isOpen={isCreateSubStoryOpen}
+        parentId={parentId}
+        setIsOpen={setIsCreateSubStoryOpen}
+        teamId={teamId}
+      />
       {isSubStoriesOpen && subStories.length > 0 ? (
         <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
@@ -130,12 +155,6 @@ export const SubStories = ({
           }}
         />
       ) : null}
-      <NewSubStory
-        isOpen={isCreateSubStoryOpen}
-        parentId={parentId}
-        setIsOpen={setIsCreateSubStoryOpen}
-        teamId={teamId}
-      />
     </>
   );
 };

@@ -1,5 +1,14 @@
 "use client";
-import { Box, Container, Divider, TextEditor } from "ui";
+import {
+  Box,
+  Button,
+  Container,
+  Divider,
+  Flex,
+  TextEditor,
+  Wrapper,
+  Text,
+} from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -17,6 +26,7 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
+import { AiIcon, CloseIcon } from "icons";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
@@ -180,6 +190,46 @@ export const MainDetails = ({
           className="relative -left-1 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
+        <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
+          <Flex align="center" gap={2}>
+            <AiIcon className="text-primary dark:text-primary" />
+            <Text>
+              Ask Maya to{" "}
+              <Text
+                as="span"
+                className="underline antialiased"
+                fontWeight="semibold"
+              >
+                write a description
+              </Text>{" "}
+              &bull;{" "}
+              <Text
+                as="span"
+                className="underline antialiased"
+                fontWeight="semibold"
+              >
+                create a summary
+              </Text>{" "}
+              &bull; or{" "}
+              <Text
+                as="span"
+                className="underline antialiased"
+                fontWeight="semibold"
+              >
+                ask about this task
+              </Text>
+            </Text>
+          </Flex>
+          <Button
+            asIcon
+            color="tertiary"
+            leftIcon={<CloseIcon strokeWidth={2.8} />}
+            size="sm"
+            variant="naked"
+          >
+            <span className="sr-only">Close</span>
+          </Button>
+        </Wrapper>
         <TextEditor className="mt-8" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
