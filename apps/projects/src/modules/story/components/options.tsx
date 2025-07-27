@@ -596,7 +596,7 @@ export const Options = ({
                             <StoryLabel
                               {...label}
                               isRectangular={isMobile}
-                              size="md"
+                              size="sm"
                             />
                           </span>
                         </LabelsMenu.Trigger>
@@ -621,7 +621,7 @@ export const Options = ({
                             <StoryLabel
                               {...labels.at(-1)!}
                               isRectangular={isMobile}
-                              size="md"
+                              size="sm"
                             />
                           </span>
                         </LabelsMenu.Trigger>
