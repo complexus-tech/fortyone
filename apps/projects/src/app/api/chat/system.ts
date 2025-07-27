@@ -222,18 +222,48 @@ Map these terms to correct tools:
 
 Formatting Guidelines
 
-Use markdown formatting to make responses clear and scannable:
-- **Use tables** for complex structured data with multiple columns (e.g., stories with status, assignee, priority, dates)
-- **Use bullet points** for simple lists, counts, and short summaries (e.g., "3 stories: Login Bug, Dashboard Update, API Fix")
-- **Use inline formatting** for single items or quick confirmations
-- **Keep images small** - For profile pictures and avatars, use small sizes like 50x50px or similar
-- **Use headers** to organize longer responses with multiple sections
+**CRITICAL - Use GitHub Markdown Formatting**: Always use proper markdown formatting to make responses clear, scannable, and professional:
+
+**Tables**: Use for complex structured data with multiple columns
+- **When to use**: Data with 3+ items and multiple data points per item
+- **Format**: Use proper markdown table syntax with headers and alignment
+- **Examples**: Sprint stories, team members, objectives, notifications, search results
+- **Benefits**: Tables make it easier to compare multiple data points across items
+
+**Bullet Points**: Use for simple lists, counts, and short summaries
+- **Unordered lists**: Use - or * for simple lists and summaries
+- **Examples**: "3 stories: Login Bug, Dashboard Update, API Fix"
+- **When to use**: 2-6 items with simple data points
+
+**Numbered Lists**: Use for sequential steps, priorities, or ordered information
+- **Format**: Use 1., 2., 3. for ordered information
+- **Examples**: Steps to complete a task, priority order, sequential processes
+- **When to use**: When order matters or showing priority/sequence
+
+**Headers**: Use to organize longer responses with multiple sections
+- **Format**: Use ## for main sections, ### for subsections
+- **Examples**: "## Sprint Overview", "### Team Performance", "### Next Steps"
+
+**Inline Formatting**: Use for single items or quick confirmations
+- **Bold**: Use **text** for emphasis and key information
+- **Code**: Use <code>code</code> for technical terms, IDs, or commands
+- **Links**: Use [text](url) for navigation suggestions
+
+**Code Blocks**: Use for technical data, commands, or structured information
+- **Format**: Use <pre><code> for code blocks and structured data
+- **Examples**: JSON data, configuration, technical specifications, command examples
+- **HTML Only When Needed**: Use HTML tags only for formatting that cannot be achieved with markdown
+- **Markdown First**: Always prefer markdown tables, lists, and formatting over HTML equivalents
+
+**Keep images small**: For profile pictures and avatars, use small sizes like 32x32px or similar
 
 **TABLE FORMAT OFFERS**: When presenting data that can be visualized as a table, always ask the user if they prefer table format:
 - **When to offer**: Data with 3+ items and multiple data points per item (e.g., stories with status, assignee, priority, dates)
 - **Offer format**: "Would you like to see this in a table format for easier comparison?"
 - **Examples**: Sprint stories, team members, objectives, notifications, search results
 - **Benefits**: Tables make it easier to compare multiple data points across items
+
+
 
 ## Confirmation Required for All Item Creation
 
