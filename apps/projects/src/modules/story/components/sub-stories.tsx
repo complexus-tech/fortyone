@@ -31,6 +31,7 @@ export const SubStories = ({
   const [selectedSubstories, setSelectedSubstories] = useState<Set<string>>(
     new Set(),
   );
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { userRole } = useUserRole();
   const completedStatus = statuses.find(
@@ -49,6 +50,7 @@ export const SubStories = ({
         .map((s) => s?.title)
         .filter((title): title is string => Boolean(title));
       setSelectedSubstories(new Set(titles));
+      setShowSuggestions(true);
     }
   }, [object?.substories]);
 
@@ -76,10 +78,12 @@ export const SubStories = ({
     // eslint-disable-next-line no-console -- Temporary logging for development
     console.log("Selected substories:", Array.from(selectedSubstories));
     clearSelection();
+    setShowSuggestions(false);
   };
 
   const handleCancel = () => {
     clearSelection();
+    setShowSuggestions(false);
   };
 
   useHotkeys("c", () => {
@@ -174,7 +178,7 @@ export const SubStories = ({
         setIsOpen={setIsCreateSubStoryOpen}
         teamId={parent.teamId}
       />
-      {object?.substories && object.substories.length > 0 ? (
+      {object?.substories && object.substories.length > 0 && showSuggestions ? (
         <Box>
           <Box className="mt-2 rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
             {object.substories.map((substory) => {
