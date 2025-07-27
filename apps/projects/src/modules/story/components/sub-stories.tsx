@@ -6,7 +6,7 @@ import {
   SubStoryIcon,
   AiIcon,
 } from "icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
@@ -28,6 +28,9 @@ export const SubStories = ({
 }) => {
   const { getTermDisplay } = useTerminology();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
+  const [selectedSubstories, setSelectedSubstories] = useState<Set<string>>(
+    new Set(),
+  );
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { userRole } = useUserRole();
   const completedStatus = statuses.find(
@@ -39,9 +42,45 @@ export const SubStories = ({
     schema: substoryGenerationSchema,
   });
 
+  // Set all substories as selected by default when they're loaded
+  useEffect(() => {
+    if (object?.substories && object.substories.length > 0) {
+      const titles = object.substories
+        .map((s) => s?.title)
+        .filter((title): title is string => Boolean(title));
+      setSelectedSubstories(new Set(titles));
+    }
+  }, [object?.substories]);
+
   const completedStories = parent.subStories.filter(
     (story) => story.statusId === completedStatus?.id,
   ).length;
+
+  const toggleSelection = (substoryTitle: string) => {
+    setSelectedSubstories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(substoryTitle)) {
+        newSet.delete(substoryTitle);
+      } else {
+        newSet.add(substoryTitle);
+      }
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedSubstories(new Set());
+  };
+
+  const handleAddSelected = () => {
+    // eslint-disable-next-line no-console -- Temporary logging for development
+    console.log("Selected substories:", Array.from(selectedSubstories));
+    clearSelection();
+  };
+
+  const handleCancel = () => {
+    clearSelection();
+  };
 
   useHotkeys("c", () => {
     if (userRole !== "guest") {
@@ -138,24 +177,51 @@ export const SubStories = ({
       {object?.substories && object.substories.length > 0 ? (
         <Box>
           <Box className="mt-2 rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
-            {object.substories.map((substory) => (
-              <RowWrapper
-                className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
-                key={substory?.title}
-              >
-                <Flex align="center" className="flex-1" gap={2}>
-                  <AiIcon className="shrink-0" />
-                  <Text className="line-clamp-1">{substory?.title}</Text>
-                </Flex>
-                <Checkbox className="shrink-0" />
-              </RowWrapper>
-            ))}
+            {object.substories.map((substory) => {
+              if (!substory?.title) return null;
+              return (
+                <RowWrapper
+                  className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
+                  key={substory.title}
+                >
+                  <Flex align="center" className="flex-1" gap={2}>
+                    <AiIcon className="shrink-0" />
+                    <Text
+                      className="line-clamp-1"
+                      color={
+                        selectedSubstories.has(substory.title)
+                          ? undefined
+                          : "muted"
+                      }
+                    >
+                      {substory.title}
+                    </Text>
+                  </Flex>
+                  <Checkbox
+                    checked={selectedSubstories.has(substory.title)}
+                    className="shrink-0"
+                    onCheckedChange={() => {
+                      toggleSelection(substory.title!);
+                    }}
+                  />
+                </RowWrapper>
+              );
+            })}
           </Box>
           <Flex className="mt-2" gap={2} justify="end">
-            <Button color="tertiary" variant="naked">
+            <Button color="tertiary" onClick={handleCancel} variant="naked">
               Cancel
             </Button>
-            <Button>Add Selected</Button>
+            <Button
+              disabled={selectedSubstories.size === 0}
+              onClick={handleAddSelected}
+            >
+              Create {selectedSubstories.size} Sub{" "}
+              {getTermDisplay("storyTerm", {
+                capitalize: true,
+                variant: selectedSubstories.size === 1 ? "singular" : "plural",
+              })}
+            </Button>
           </Flex>
         </Box>
       ) : null}
