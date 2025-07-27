@@ -1,36 +1,45 @@
 import { Flex, Badge, Button, Tooltip } from "ui";
-import { ArrowDown2Icon, ArrowUp2Icon, PlusIcon, SubStoryIcon } from "icons";
+import {
+  ArrowDown2Icon,
+  ArrowUp2Icon,
+  PlusIcon,
+  SubStoryIcon,
+  AiIcon,
+} from "icons";
 import { useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { NewSubStory } from "@/components/ui/new-sub-story";
 import { StoriesBoard } from "@/components/ui";
-import type { Story } from "@/modules/stories/types";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTerminology, useUserRole } from "@/hooks";
+import { substoryGenerationSchema } from "@/modules/stories/schemas";
+import type { DetailedStory } from "../types";
 
 export const SubStories = ({
-  subStories,
-  parentId,
-  teamId,
+  parent,
   setIsSubStoriesOpen,
   isSubStoriesOpen,
 }: {
-  subStories: Story[];
-  parentId: string;
-  teamId: string;
+  parent: DetailedStory;
   setIsSubStoriesOpen: (value: boolean) => void;
   isSubStoriesOpen: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
-  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { userRole } = useUserRole();
   const completedStatus = statuses.find(
     (status) => status.category === "completed",
   );
 
-  const completedStories = subStories.filter(
+  const { object, submit, isLoading } = useObject({
+    api: "/api/suggest-substories",
+    schema: substoryGenerationSchema,
+  });
+
+  const completedStories = parent.subStories.filter(
     (story) => story.statusId === completedStatus?.id,
   ).length;
 
@@ -48,9 +57,9 @@ export const SubStories = ({
           "border-b-[0.5px] border-gray-100 pb-2 dark:border-dark-200":
             !isSubStoriesOpen,
         })}
-        justify={subStories.length > 0 ? "between" : "end"}
+        justify={parent.subStories.length > 0 ? "between" : "end"}
       >
-        {subStories.length > 0 && (
+        {parent.subStories.length > 0 && (
           <Flex align="center" gap={2}>
             <Button
               color="tertiary"
@@ -71,16 +80,21 @@ export const SubStories = ({
               Sub {getTermDisplay("storyTerm", { variant: "plural" })}
             </Button>
             <Badge className="px-1.5" color="tertiary" rounded="full">
-              {completedStories}/{subStories.length} Done
+              {completedStories}/{parent.subStories.length} Done
             </Badge>
           </Flex>
         )}
 
         {userRole !== "guest" && (
           <Flex align="center" gap={2}>
-            {/* <Button
+            <Button
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              loading={isLoading}
+              loadingText="Generating..."
+              onClick={() => {
+                submit(parent);
+              }}
               size="sm"
               variant="naked"
             >
@@ -89,8 +103,10 @@ export const SubStories = ({
                 capitalize: true,
                 variant: "plural",
               })}
-            </Button> */}
-            <Tooltip title={subStories.length > 0 ? "Add Sub Story" : null}>
+            </Button>
+            <Tooltip
+              title={parent.subStories.length > 0 ? "Add Sub Story" : null}
+            >
               <Button
                 color="tertiary"
                 leftIcon={<PlusIcon />}
@@ -100,7 +116,9 @@ export const SubStories = ({
                 size="sm"
                 variant="naked"
               >
-                <span className={cn({ "sr-only": subStories.length > 0 })}>
+                <span
+                  className={cn({ "sr-only": parent.subStories.length > 0 })}
+                >
                   Add Sub{" "}
                   {getTermDisplay("storyTerm", {
                     capitalize: true,
@@ -113,20 +131,25 @@ export const SubStories = ({
       </Flex>
       <NewSubStory
         isOpen={isCreateSubStoryOpen}
-        parentId={parentId}
+        parentId={parent.id}
         setIsOpen={setIsCreateSubStoryOpen}
-        teamId={teamId}
+        teamId={parent.teamId}
       />
-      {isSubStoriesOpen && subStories.length > 0 ? (
+      {object?.substories?.map((substory) => (
+        <div key={substory?.title}>
+          <h3>{substory?.title}</h3>
+        </div>
+      ))}
+      {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard
           className="mt-2 h-auto border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200"
           groupedStories={{
             groups: [
               {
                 key: "none",
-                totalCount: subStories.length,
-                stories: subStories,
-                loadedCount: subStories.length,
+                totalCount: parent.subStories.length,
+                stories: parent.subStories,
+                loadedCount: parent.subStories.length,
                 hasMore: false,
                 nextPage: 1,
               },

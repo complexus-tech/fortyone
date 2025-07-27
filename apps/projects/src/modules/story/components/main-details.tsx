@@ -223,10 +223,8 @@ export const MainDetails = ({
         <TextEditor className="mt-8" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
-          parentId={storyId}
+          parent={data!}
           setIsSubStoriesOpen={setIsSubStoriesOpen}
-          subStories={subStories}
-          teamId={teamId}
         />
         {isLinksLoading ? (
           <LinksSkeleton />
