@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const improvedPrompt = `You are an expert in agile project management. Analyze this story and suggest 0-5 well-structured substories:
+    const improvedPrompt = `You are an expert in agile project management. Analyze this story and suggest 1-5 well-structured substories:
 
     Context - Parent Story:
      - Title: ${parentStory.title}
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     - No user value
     - Duplicating existing substories this this very important, also don't suggest substories similar to existing substories
 
-    Generate 0-5 substories with clear, actionable titles that follow these principles.
+    Generate 1-5 substories with clear, actionable titles that follow these principles.
 `;
 
     const result = streamObject({
