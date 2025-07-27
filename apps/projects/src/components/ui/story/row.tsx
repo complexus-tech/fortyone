@@ -101,7 +101,7 @@ export const StoryRow = ({
               {
                 "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                   isDragging,
-                "pointer-events-none opacity-40": story.id === "123",
+                "pointer-events-none opacity-40": story.id.startsWith("123"),
                 "bg-gray-50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]":
                   isSubStory,
               },

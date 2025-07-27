@@ -1,10 +1,11 @@
-import { Flex, Badge, Button, Tooltip, Box, Text, Checkbox } from "ui";
+import { Flex, Badge, Button, Tooltip, Box, Text, Checkbox, Wrapper } from "ui";
 import {
   ArrowDown2Icon,
   ArrowUp2Icon,
   PlusIcon,
   SubStoryIcon,
   AiIcon,
+  WarningIcon,
 } from "icons";
 import { useState, useEffect } from "react";
 import { cn } from "lib";
@@ -15,6 +16,8 @@ import { RowWrapper, StoriesBoard } from "@/components/ui";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTerminology, useUserRole } from "@/hooks";
 import { substoryGenerationSchema } from "@/modules/stories/schemas";
+import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
+import { Thinking } from "@/components/ui/chat/thinking";
 import type { DetailedStory } from "../types";
 
 export const SubStories = ({
@@ -27,6 +30,7 @@ export const SubStories = ({
   isSubStoriesOpen: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
+  const mutation = useCreateStoryMutation();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const [selectedSubstories, setSelectedSubstories] = useState<Set<string>>(
     new Set(),
@@ -37,6 +41,8 @@ export const SubStories = ({
   const completedStatus = statuses.find(
     (status) => status.category === "completed",
   );
+  const defaultStatus =
+    statuses.find((status) => status.isDefault) || statuses.at(0);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-substories",
@@ -75,8 +81,15 @@ export const SubStories = ({
   };
 
   const handleAddSelected = () => {
-    // eslint-disable-next-line no-console -- Temporary logging for development
-    console.log("Selected substories:", Array.from(selectedSubstories));
+    Array.from(selectedSubstories).forEach((substoryTitle) => {
+      mutation.mutate({
+        title: substoryTitle,
+        parentId: parent.id,
+        teamId: parent.teamId,
+        priority: "No Priority",
+        statusId: defaultStatus?.id,
+      });
+    });
     clearSelection();
     setShowSuggestions(false);
   };
@@ -132,20 +145,25 @@ export const SubStories = ({
           <Flex align="center" gap={2}>
             <Button
               color="tertiary"
+              disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-              loading={isLoading}
-              loadingText="Maya is thinking..."
               onClick={() => {
                 submit(parent);
               }}
               size="sm"
               variant="naked"
             >
-              Suggest Sub{" "}
-              {getTermDisplay("storyTerm", {
-                capitalize: true,
-                variant: "plural",
-              })}
+              {isLoading ? (
+                <Thinking message="Maya is thinking" />
+              ) : (
+                <>
+                  Suggest Sub{" "}
+                  {getTermDisplay("storyTerm", {
+                    capitalize: true,
+                    variant: "plural",
+                  })}
+                </>
+              )}
             </Button>
             <Tooltip
               title={parent.subStories.length > 0 ? "Add Sub Story" : null}
@@ -178,55 +196,82 @@ export const SubStories = ({
         setIsOpen={setIsCreateSubStoryOpen}
         teamId={parent.teamId}
       />
-      {object?.substories && object.substories.length > 0 && showSuggestions ? (
-        <Box>
-          <Box className="mt-2 rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
-            {object.substories.map((substory) => {
-              if (!substory?.title) return null;
-              return (
-                <RowWrapper
-                  className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
-                  key={substory.title}
-                >
-                  <Flex align="center" className="flex-1" gap={2}>
-                    <AiIcon className="shrink-0" />
-                    <Text
-                      className="line-clamp-1"
-                      color={
-                        selectedSubstories.has(substory.title)
-                          ? undefined
-                          : "muted"
-                      }
+      {object?.substories && showSuggestions ? (
+        <Box className="my-2.5">
+          {object.substories.length > 0 ? (
+            <>
+              <Box className="rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
+                {object.substories.map((substory) => {
+                  if (!substory?.title) return null;
+                  return (
+                    <RowWrapper
+                      className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
+                      key={substory.title}
                     >
-                      {substory.title}
-                    </Text>
-                  </Flex>
-                  <Checkbox
-                    checked={selectedSubstories.has(substory.title)}
-                    className="shrink-0"
-                    onCheckedChange={() => {
-                      toggleSelection(substory.title!);
-                    }}
-                  />
-                </RowWrapper>
-              );
-            })}
-          </Box>
-          <Flex className="mt-2" gap={2} justify="end">
-            <Button color="tertiary" onClick={handleCancel} variant="naked">
-              Cancel
-            </Button>
-            <Button
-              disabled={selectedSubstories.size === 0}
-              onClick={handleAddSelected}
-            >
-              Create {selectedSubstories.size} Sub{" "}
-              {getTermDisplay("storyTerm", {
-                capitalize: true,
-                variant: selectedSubstories.size === 1 ? "singular" : "plural",
-              })}
-            </Button>
-          </Flex>
+                      <Flex align="center" className="flex-1" gap={2}>
+                        <AiIcon className="shrink-0" />
+                        <Text
+                          className="line-clamp-1"
+                          color={
+                            selectedSubstories.has(substory.title)
+                              ? undefined
+                              : "muted"
+                          }
+                        >
+                          {substory.title}
+                        </Text>
+                      </Flex>
+                      <Checkbox
+                        checked={selectedSubstories.has(substory.title)}
+                        className="shrink-0"
+                        onCheckedChange={() => {
+                          toggleSelection(substory.title!);
+                        }}
+                      />
+                    </RowWrapper>
+                  );
+                })}
+              </Box>
+              <Flex className="mt-2" gap={2} justify="end">
+                <Button color="tertiary" onClick={handleCancel} variant="naked">
+                  Cancel
+                </Button>
+                <Button
+                  disabled={selectedSubstories.size === 0}
+                  onClick={handleAddSelected}
+                >
+                  Create {selectedSubstories.size} Sub{" "}
+                  {getTermDisplay("storyTerm", {
+                    capitalize: true,
+                    variant:
+                      selectedSubstories.size === 1 ? "singular" : "plural",
+                  })}
+                </Button>
+              </Flex>
+            </>
+          ) : (
+            <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Flex align="center" gap={2}>
+                <WarningIcon className="text-warning dark:text-warning" />
+                <Text>
+                  Failed to generate sub{" "}
+                  {getTermDisplay("storyTerm", {
+                    variant: "plural",
+                  })}
+                  , make sure your parent {getTermDisplay("storyTerm")} is
+                  actionable
+                </Text>
+              </Flex>
+              <Button
+                color="warning"
+                onClick={() => {
+                  submit(parent);
+                }}
+              >
+                Try again
+              </Button>
+            </Wrapper>
+          )}
         </Box>
       ) : null}
 

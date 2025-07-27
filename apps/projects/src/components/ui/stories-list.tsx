@@ -31,7 +31,7 @@ export const StoriesList = ({
             setIsDialogOpen(true);
           }}
           isInSearch={isInSearch}
-          key={story.id}
+          key={`${story.id}-${story.title.slice(0, 10)}`}
           story={story}
         />
       ))}

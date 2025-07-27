@@ -299,17 +299,23 @@ export const useCreateStoryMutation = () => {
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
 
-      toast.success("Success", {
-        description: "Story created successfully",
-        action: {
-          label: "View story",
-          onClick: () => {
-            router.push(
-              `/story/${createdStory.id}/${slugify(createdStory.title)}`,
-            );
+      if (createdStory.parentId) {
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.detail(createdStory.parentId),
+        });
+      } else {
+        toast.success("Success", {
+          description: "Story created successfully",
+          action: {
+            label: "View story",
+            onClick: () => {
+              router.push(
+                `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+              );
+            },
           },
-        },
-      });
+        });
+      }
     },
   });
 

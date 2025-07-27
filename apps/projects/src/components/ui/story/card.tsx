@@ -85,7 +85,7 @@ export const StoryCard = ({
             {
               "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                 isDragging,
-              "pointer-events-none opacity-40": story.id === "123",
+              "pointer-events-none opacity-40": story.id.startsWith("123"),
             },
             className,
           )}

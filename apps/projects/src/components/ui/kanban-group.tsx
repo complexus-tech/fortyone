@@ -124,7 +124,7 @@ export const KanbanGroup = ({
             setStoryId(storyId);
             setIsDialogOpen(true);
           }}
-          key={story.id}
+          key={`${story.id}-${story.title.slice(0, 10)}`}
           story={story}
         />
       ))}
