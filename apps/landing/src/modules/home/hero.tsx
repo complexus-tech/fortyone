@@ -46,7 +46,7 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[5rem] md:leading-[1.1]"
+              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.7rem] md:leading-[1.1]"
             >
               The{" "}
               <Text as="span" className="text-stroke-white">
