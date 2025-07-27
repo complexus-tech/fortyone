@@ -593,11 +593,7 @@ export const Options = ({
                                 isDeleted || isGuest,
                             })}
                           >
-                            <StoryLabel
-                              {...label}
-                              isRectangular={isMobile}
-                              size="sm"
-                            />
+                            <StoryLabel {...label} isRectangular size="sm" />
                           </span>
                         </LabelsMenu.Trigger>
                         <LabelsMenu.Items
@@ -620,7 +616,7 @@ export const Options = ({
                           >
                             <StoryLabel
                               {...labels.at(-1)!}
-                              isRectangular={isMobile}
+                              isRectangular
                               size="sm"
                             />
                           </span>
@@ -643,6 +639,7 @@ export const Options = ({
                             leftIcon={<PlusIcon />}
                             ref={labelsButtonRef}
                             rounded="full"
+                            size="sm"
                             title="Add labels"
                             type="button"
                             variant={isMobile ? "solid" : "naked"}
@@ -668,6 +665,7 @@ export const Options = ({
                         disabled={isDeleted || isGuest}
                         leftIcon={<PlusIcon />}
                         ref={emptyLabelsButtonRef}
+                        size="sm"
                         type="button"
                         variant={isMobile ? "solid" : "naked"}
                       >
