@@ -1501,12 +1501,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.title,
 				s.priority,
 				s.status_id,
-				s.assignee_id,
+				s.start_date,
+				s.end_date,
+				s.sprint_id,
 				s.team_id,
+				s.objective_id,
 				s.workspace_id,
+				s.assignee_id,
+				s.reporter_id,
 				s.created_at,
 				s.updated_at,
-				s.end_date,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
@@ -1530,12 +1534,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'title', ls.title,
 						'priority', ls.priority,
 						'status_id', ls.status_id,
-						'assignee_id', ls.assignee_id,
+						'start_date', ls.start_date,
+						'end_date', ls.end_date,
+						'sprint_id', ls.sprint_id,
 						'team_id', ls.team_id,
+						'objective_id', ls.objective_id,
 						'workspace_id', ls.workspace_id,
+						'assignee_id', ls.assignee_id,
+						'reporter_id', ls.reporter_id,
 						'created_at', ls.created_at,
-						'updated_at', ls.updated_at,
-						'end_date', ls.end_date
+						'updated_at', ls.updated_at
 					) ORDER BY %s
 				) FILTER (WHERE ls.id IS NOT NULL), 
 				CAST('[]' AS json)
