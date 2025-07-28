@@ -10,17 +10,26 @@ import {
   TimeAgo,
   Divider,
 } from "ui";
-import { DeleteIcon, EditIcon, MoreHorizontalIcon, OKRIcon } from "icons";
+import {
+  AiIcon,
+  DeleteIcon,
+  EditIcon,
+  MoreHorizontalIcon,
+  OKRIcon,
+} from "icons";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import Link from "next/link";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { ConfirmDialog } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTerminology } from "@/hooks";
-import { useKeyResults } from "../../hooks";
+import { Thinking } from "@/components/ui/chat/thinking";
+import { useKeyResults, useObjective } from "../../hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
+import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
 import { NewKeyResultButton } from "./new-key-result";
 import { UpdateKeyResultDialog } from "./update-key-result-dialog";
 import { KeyResultsSkeleton } from "./key-results-skeleton";
@@ -225,6 +234,11 @@ export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
+  const { data: objective } = useObjective(objectiveId);
+  const { object, submit, isLoading } = useObject({
+    api: "/api/suggest-key-results",
+    schema: keyResultGenerationSchema,
+  });
 
   if (isPending) {
     return (
@@ -257,11 +271,36 @@ export const KeyResults = () => {
             capitalize: true,
           })}
         </Text>
-        {keyResults.length > 0 && (
-          <NewKeyResultButton className="capitalize" size="sm" />
-        )}
+        <Flex>
+          <Button
+            color="tertiary"
+            disabled={isLoading}
+            leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+            onClick={() => {
+              submit({ objective, keyResults });
+            }}
+            size="sm"
+            variant="naked"
+          >
+            {isLoading ? (
+              <Thinking message="Maya is thinking" />
+            ) : (
+              <>
+                Suggest{" "}
+                {getTermDisplay("keyResultTerm", {
+                  capitalize: true,
+                  variant: "plural",
+                })}
+              </>
+            )}
+          </Button>
+          {keyResults.length > 0 && (
+            <NewKeyResultButton className="capitalize" size="sm" />
+          )}
+        </Flex>
       </Flex>
       <Divider />
+
       {keyResults.length > 0 ? (
         <Flex className="mt-3" direction="column" gap={3}>
           {keyResults.map((keyResult) => (
