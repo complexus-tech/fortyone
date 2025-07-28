@@ -222,8 +222,7 @@ export const MainDetails = ({
             </Button>
           </Wrapper>
         ) : null}
-
-        <TextEditor className="mt-8" editor={descriptionEditor} />
+        <TextEditor editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}
