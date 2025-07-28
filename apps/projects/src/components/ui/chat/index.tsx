@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateId } from "ai";
 import { Box, Button, Dialog, Flex, Text } from "ui";
 import { ReloadIcon } from "icons";
@@ -13,8 +13,25 @@ import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { SuggestedPrompts } from "./suggested-prompts";
 
-export const Chat = () => {
-  const [isOpen, setIsOpen] = useState(false);
+type ChatProps = {
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+  initialMessage?: string;
+  onMessageSent?: () => void;
+};
+
+export const Chat = ({
+  isOpen: externalIsOpen,
+  setIsOpen: externalSetIsOpen,
+  initialMessage,
+  onMessageSent,
+}: ChatProps = {}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen ?? internalIsOpen;
+  const setIsOpen = externalSetIsOpen ?? setInternalIsOpen;
+
   const {
     // Chat state
     messages,
@@ -45,6 +62,14 @@ export const Chat = () => {
   } = useMayaChat({
     currentChatId: generateId(),
   });
+
+  // Handle initial message when chat opens
+  useEffect(() => {
+    if (initialMessage && isOpen) {
+      handleSuggestedPrompt(initialMessage);
+      onMessageSent?.();
+    }
+  }, [isOpen, initialMessage, handleSuggestedPrompt, onMessageSent]);
 
   return (
     <>

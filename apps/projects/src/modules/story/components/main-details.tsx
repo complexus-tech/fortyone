@@ -43,6 +43,7 @@ import {
   Attachments,
 } from "@/modules/story/components";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useChatContext } from "@/context/chat-context";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
 import { useStoryActivities } from "../hooks/story-activities";
@@ -72,6 +73,7 @@ export const MainDetails = ({
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const { openChat } = useChatContext();
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -109,6 +111,10 @@ export const MainDetails = ({
   };
 
   const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
+
+  const handleWriteDescription = () => {
+    openChat("write a description");
+  };
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -204,6 +210,7 @@ export const MainDetails = ({
                 Ask Maya to{" "}
                 <button
                   className="font-semibold underline antialiased"
+                  onClick={handleWriteDescription}
                   type="button"
                 >
                   write a description
