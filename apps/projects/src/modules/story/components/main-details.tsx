@@ -203,7 +203,9 @@ export const MainDetails = ({
           editor={titleEditor}
         />
 
-        {descriptionEditor?.getText() === "" ? (
+        {!isDeleted &&
+        userRole !== "guest" &&
+        !(description || descriptionHTML) ? (
           <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
             <Flex align="center" gap={2}>
               <AiIcon className="text-primary dark:text-primary" />
