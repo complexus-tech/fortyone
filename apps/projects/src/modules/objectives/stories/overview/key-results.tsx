@@ -20,7 +20,7 @@ import {
   InfoIcon,
 } from "icons";
 import { useParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
@@ -237,10 +237,54 @@ export const KeyResults = () => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
   const { data: objective } = useObjective(objectiveId);
+  const [selectedKeyResults, setSelectedKeyResults] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-key-results",
     schema: keyResultGenerationSchema,
   });
+
+  // Set all key results as selected by default when they're loaded
+  useEffect(() => {
+    if (object?.keyResults && object.keyResults.length > 0) {
+      const names = object.keyResults
+        .map((kr) => kr?.name)
+        .filter((name): name is string => Boolean(name));
+      setSelectedKeyResults(new Set(names));
+      setShowSuggestions(true);
+    }
+  }, [object?.keyResults]);
+
+  const toggleSelection = (keyResultName: string) => {
+    setSelectedKeyResults((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyResultName)) {
+        newSet.delete(keyResultName);
+      } else {
+        newSet.add(keyResultName);
+      }
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedKeyResults(new Set());
+  };
+
+  const handleAddSelected = () => {
+    // eslint-disable-next-line no-console -- Temporary logging for development
+    console.log("Selected key results:", Array.from(selectedKeyResults));
+    clearSelection();
+    setShowSuggestions(false);
+  };
+
+  const handleCancel = () => {
+    clearSelection();
+    setShowSuggestions(false);
+  };
 
   if (isPending) {
     return (
@@ -273,7 +317,7 @@ export const KeyResults = () => {
             capitalize: true,
           })}
         </Text>
-        <Flex>
+        <Flex align="center" gap={2}>
           <Button
             color="tertiary"
             disabled={isLoading}
@@ -304,18 +348,42 @@ export const KeyResults = () => {
       <Divider />
 
       {object?.keyResults && showSuggestions ? (
-        <Box className="my-2.5">
+        <Box className="my-3">
           {object.keyResults.length > 0 ? (
             <>
-              <Box className="rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
+              <Box className="rounded-2xl border border-gray-100/80 shadow-lg shadow-gray-50 dark:border-dark-100 dark:shadow-none">
                 {object.keyResults.map((keyResult) => {
                   if (!keyResult?.name) return null;
                   return (
                     <RowWrapper
-                      className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
+                      className="gap-6 border-b border-gray-100/80 px-2 last-of-type:border-b-0 md:px-4"
                       key={keyResult.name}
                     >
-                      {keyResult.name}
+                      <Flex align="center" className="flex-1" gap={2}>
+                        <Badge
+                          className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
+                          color="tertiary"
+                        >
+                          <AiIcon />
+                        </Badge>
+                        <Text
+                          className="line-clamp-1"
+                          color={
+                            selectedKeyResults.has(keyResult.name)
+                              ? undefined
+                              : "muted"
+                          }
+                        >
+                          {keyResult.name}
+                        </Text>
+                      </Flex>
+                      <Checkbox
+                        checked={selectedKeyResults.has(keyResult.name)}
+                        className="shrink-0"
+                        onCheckedChange={() => {
+                          toggleSelection(keyResult.name!);
+                        }}
+                      />
                     </RowWrapper>
                   );
                 })}
@@ -328,7 +396,7 @@ export const KeyResults = () => {
                   disabled={selectedKeyResults.size === 0}
                   onClick={handleAddSelected}
                 >
-                  Create {selectedKeyResults.size}
+                  Create {selectedKeyResults.size}{" "}
                   {getTermDisplay("keyResultTerm", {
                     capitalize: true,
                     variant:
