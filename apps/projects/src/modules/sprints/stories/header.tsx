@@ -111,7 +111,7 @@ export const Header = ({
               size="sm"
               variant="naked"
             >
-              Smart Fill
+              Smart fill
             </Button>
           </Tooltip>
         )}
