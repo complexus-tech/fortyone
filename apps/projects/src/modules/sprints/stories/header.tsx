@@ -1,5 +1,5 @@
 "use client";
-import { Box, BreadCrumbs, Button, Flex } from "ui";
+import { Box, BreadCrumbs, Button, Flex, Tooltip } from "ui";
 import { AiIcon, SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
@@ -96,18 +96,24 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         {userRole !== "guest" && (
-          <Button
-            color="tertiary"
-            leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-            onClick={() => {
-              openChat(
-                `Suggest stories from "${team.name}" team backlog for sprint "${sprint.name}"`,
-              );
-            }}
-            variant="naked"
+          <Tooltip
+            className="max-w-60"
+            title="Intelligently suggest work items from backlog to fill this sprint"
           >
-            Suggest stories from backlog
-          </Button>
+            <Button
+              color="tertiary"
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              onClick={() => {
+                openChat(
+                  `Suggest stories from "${team.name}" team backlog for sprint "${sprint.name}"`,
+                );
+              }}
+              size="sm"
+              variant="naked"
+            >
+              Smart Fill
+            </Button>
+          </Tooltip>
         )}
         <LayoutSwitcher
           layout={layout}
