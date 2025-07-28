@@ -9,7 +9,7 @@ import {
   Divider,
 } from "ui";
 import {
-  ArrowRightIcon,
+  ArrowRight2Icon,
   CalendarIcon,
   ObjectiveIcon,
   SprintsIcon,
@@ -335,7 +335,7 @@ export const StoryProperties = ({
           }
         >
           <Badge
-            className="h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem]"
+            className="h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] text-dark"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {
@@ -352,10 +352,11 @@ export const StoryProperties = ({
               variant: subStories.length === 1 ? "singular" : "plural",
             })}
             {!asKanban && (
-              <ArrowRightIcon
-                className={cn("h-3.5 transition-transform", {
+              <ArrowRight2Icon
+                className={cn("h-4 transition-transform", {
                   "rotate-90": isExpanded,
                 })}
+                strokeWidth={3}
               />
             )}
           </Badge>
