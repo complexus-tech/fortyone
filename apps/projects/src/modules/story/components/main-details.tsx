@@ -203,31 +203,34 @@ export const MainDetails = ({
           editor={titleEditor}
         />
 
-        <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
-          <Flex align="center" gap={2}>
-            <AiIcon className="text-primary dark:text-primary" />
-            <Text>
-              Ask Maya to{" "}
-              <button
-                className="font-semibold underline antialiased"
-                onClick={handleWriteDescription}
-                type="button"
-              >
-                write a description
-              </button>{" "}
-              for this {getTermDisplay("storyTerm")}
-            </Text>
-          </Flex>
-          <Button
-            asIcon
-            color="tertiary"
-            leftIcon={<CloseIcon strokeWidth={2.8} />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Close</span>
-          </Button>
-        </Wrapper>
+        {descriptionEditor?.getText() === "" ? (
+          <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
+            <Flex align="center" gap={2}>
+              <AiIcon className="text-primary dark:text-primary" />
+              <Text>
+                Ask Maya to{" "}
+                <button
+                  className="font-semibold underline antialiased"
+                  onClick={handleWriteDescription}
+                  type="button"
+                >
+                  write a description
+                </button>{" "}
+                for this {getTermDisplay("storyTerm")}
+              </Text>
+            </Flex>
+            <Button
+              asIcon
+              color="tertiary"
+              leftIcon={<CloseIcon strokeWidth={2.8} />}
+              size="sm"
+              variant="naked"
+            >
+              <span className="sr-only">Close</span>
+            </Button>
+          </Wrapper>
+        ) : null}
+
         <TextEditor editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
