@@ -3,7 +3,7 @@ import { tool } from "ai";
 
 export const suggestions = tool({
   description:
-    "Provide follow-up action buttons after completing user requests. Use this tool with 2-3 relevant suggestions like 'Assign it', 'Add to sprint', 'View details'. Stop generating text after calling this tool.",
+    "Provide follow-up action buttons after completing user requests. Use this tool with 2-3 relevant suggestions like 'Assign it', 'Add to sprint', 'View details'. Stop generating text after calling this tool this is very important.",
   parameters: z.object({
     suggestions: z
       .array(z.string())
