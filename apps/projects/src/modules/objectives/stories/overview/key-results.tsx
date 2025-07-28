@@ -315,7 +315,7 @@ export const KeyResults = () => {
                       className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
                       key={keyResult.name}
                     >
-                      test
+                      {keyResult.name}
                     </RowWrapper>
                   );
                 })}
