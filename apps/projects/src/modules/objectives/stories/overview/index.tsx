@@ -1,17 +1,27 @@
-import { Container, Box, Divider, TextEditor, Menu, Button, Flex } from "ui";
+import {
+  Container,
+  Box,
+  Divider,
+  TextEditor,
+  Menu,
+  Button,
+  Flex,
+  Tooltip,
+} from "ui";
 import { useParams } from "next/navigation";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { DeleteIcon, ArrowDownIcon } from "icons";
+import { DeleteIcon, ArrowDownIcon, AiIcon } from "icons";
 import { useState } from "react";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce, useFeatures, useTerminology } from "@/hooks";
+import { useDebounce, useFeatures, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useChatContext } from "@/context/chat-context";
 import {
   useDeleteObjectiveMutation,
   useObjective,
@@ -36,6 +46,8 @@ export const Overview = () => {
   const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
+  const { userRole } = useUserRole();
+  const { openChat } = useChatContext();
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -112,31 +124,55 @@ export const Overview = () => {
                     className="text-4xl font-medium"
                     editor={nameEditor}
                   />
-                  {isAdminOrOwner ? (
-                    <Menu>
-                      <Menu.Button>
+                  <Flex align="center" gap={2}>
+                    {userRole !== "guest" && (
+                      <Tooltip
+                        className="max-w-60"
+                        title="Intelligently add work items to the objective"
+                      >
                         <Button
-                          className="gap-1 pl-2.5"
                           color="tertiary"
-                          rightIcon={<ArrowDownIcon className="h-4" />}
+                          leftIcon={
+                            <AiIcon className="text-primary dark:text-primary" />
+                          }
+                          onClick={() => {
+                            openChat(
+                              `Suggest work items that can be added to the objective "${objective?.name}"`,
+                            );
+                          }}
                           size="sm"
+                          variant="naked"
                         >
-                          More
+                          Smart fill
                         </Button>
-                      </Menu.Button>
-                      <Menu.Items align="end" className="w-36">
-                        <Menu.Group>
-                          <Menu.Item
-                            onSelect={() => {
-                              setIsOpen(true);
-                            }}
+                      </Tooltip>
+                    )}
+                    {isAdminOrOwner ? (
+                      <Menu>
+                        <Menu.Button>
+                          <Button
+                            className="gap-1 pl-2.5"
+                            color="tertiary"
+                            rightIcon={<ArrowDownIcon className="h-4" />}
+                            size="sm"
                           >
-                            <DeleteIcon /> Delete...
-                          </Menu.Item>
-                        </Menu.Group>
-                      </Menu.Items>
-                    </Menu>
-                  ) : null}
+                            More
+                          </Button>
+                        </Menu.Button>
+                        <Menu.Items align="end" className="w-36">
+                          <Menu.Group>
+                            <Menu.Item
+                              onSelect={() => {
+                                setIsOpen(true);
+                              }}
+                            >
+                              <DeleteIcon /> Delete...
+                            </Menu.Item>
+                          </Menu.Group>
+                        </Menu.Items>
+                      </Menu>
+                    ) : null}
+                  </Flex>
                 </Flex>
 
                 <TextEditor
