@@ -28,7 +28,11 @@ import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
-import { useKeyResults, useObjective } from "../../hooks";
+import {
+  useCreateKeyResultMutation,
+  useKeyResults,
+  useObjective,
+} from "@/modules/objectives/hooks";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
@@ -235,6 +239,7 @@ const Okr = ({
 export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
+  const keyResultMutation = useCreateKeyResultMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
   const { data: objective } = useObjective(objectiveId);
   const [selectedKeyResults, setSelectedKeyResults] = useState<Set<string>>(
@@ -275,8 +280,19 @@ export const KeyResults = () => {
   };
 
   const handleAddSelected = () => {
-    // eslint-disable-next-line no-console -- Temporary logging for development
-    console.log("Selected key results:", Array.from(selectedKeyResults));
+    const keyResults = object?.keyResults?.filter((kr) =>
+      selectedKeyResults.has(kr?.name ?? ""),
+    );
+    keyResults?.forEach((kr) => {
+      keyResultMutation.mutate({
+        name: kr?.name ?? "",
+        objectiveId,
+        measurementType: kr?.measurementType ?? "number",
+        startValue: kr?.startValue ?? 0,
+        targetValue: kr?.targetValue ?? 0,
+        currentValue: kr?.startValue ?? 0,
+      });
+    });
     clearSelection();
     setShowSuggestions(false);
   };
