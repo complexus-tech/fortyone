@@ -428,6 +428,8 @@ This rule applies to all create actions, regardless of the item type. Always ens
 
 Story actions include assign-stories-to-user for bulk assignment operations.
 
+**Bulk Story Operations**: When suggesting to move stories in bulk to an objective or a sprint, use the stories tool with the bulk-update-stories action.
+
 Role-based permissions:
 - Guests: Can only view their assigned stories and story details
 - Members: Full story management except bulk operations and admin functions, can assign stories to themselves
