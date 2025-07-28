@@ -135,7 +135,7 @@ export const StoryRow = ({
                 <Tooltip title={`Story ID: ${teamCode}-${story.sequenceId}`}>
                   <Text
                     className={cn(
-                      "flex min-w-[6ch] items-center gap-1 truncate text-[0.95rem] transition-colors",
+                      "flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem] transition-colors",
                       {
                         "cursor-pointer dark:hover:text-white/80":
                           story.subStories.length > 0,
@@ -151,7 +151,7 @@ export const StoryRow = ({
                     {teamCode}-{story.sequenceId}
                     {story.subStories.length > 0 && (
                       <ArrowRight2Icon
-                        className={cn("h-4 transition-transform", {
+                        className={cn("h-4 shrink-0 transition-transform", {
                           "rotate-90": isExpanded,
                         })}
                         strokeWidth={3}
