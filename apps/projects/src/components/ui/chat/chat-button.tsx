@@ -4,8 +4,6 @@ import { AiIcon } from "icons";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { Button, Box } from "ui";
-import { useHotkeys } from "react-hotkeys-hook";
-import { useUserRole } from "@/hooks/role";
 
 type ChatButtonProps = {
   onOpen: () => void;
@@ -15,13 +13,7 @@ type ChatButtonProps = {
 export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   const pathname = usePathname();
   const isOnPage = pathname.includes("maya");
-  const { userRole } = useUserRole();
 
-  useHotkeys("shift+m", () => {
-    if (userRole !== "guest") {
-      onOpen();
-    }
-  });
   return (
     <Box
       className={cn(
