@@ -12,6 +12,8 @@ export const suggestions = tool({
   execute: async ({ suggestions }: { suggestions: string[] }) => {
     return {
       suggestions,
+      message:
+        "Tool called, do not continue generating text the tool result is for private use only",
     };
   },
 });
