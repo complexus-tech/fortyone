@@ -1,5 +1,15 @@
 "use client";
-import { Box, Container, Divider, TextEditor } from "ui";
+import {
+  Box,
+  Container,
+  Divider,
+  Flex,
+  TextEditor,
+  Wrapper,
+  Text,
+  Button,
+} from "ui";
+import { AiIcon, CloseIcon } from "icons";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -17,7 +27,12 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
+import {
+  useDebounce,
+  useLocalStorage,
+  useTerminology,
+  useUserRole,
+} from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
@@ -56,6 +71,7 @@ export const MainDetails = ({
     useStoryActivities(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -180,46 +196,33 @@ export const MainDetails = ({
           className="relative -left-1 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
-        {/* <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
-          <Flex align="center" gap={2}>
-            <AiIcon className="text-primary dark:text-primary" />
-            <Text>
-              Ask Maya to{" "}
-              <Text
-                as="span"
-                className="underline antialiased"
-                fontWeight="semibold"
-              >
-                write a description
-              </Text>{" "}
-              &bull;{" "}
-              <Text
-                as="span"
-                className="underline antialiased"
-                fontWeight="semibold"
-              >
-                create a summary
-              </Text>{" "}
-              &bull; or{" "}
-              <Text
-                as="span"
-                className="underline antialiased"
-                fontWeight="semibold"
-              >
-                ask about this task
+        {descriptionEditor?.isEmpty ? (
+          <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
+            <Flex align="center" gap={2}>
+              <AiIcon className="text-primary dark:text-primary" />
+              <Text>
+                Ask Maya to{" "}
+                <button
+                  className="font-semibold underline antialiased"
+                  type="button"
+                >
+                  write a description
+                </button>{" "}
+                for this {getTermDisplay("storyTerm")}
               </Text>
-            </Text>
-          </Flex>
-          <Button
-            asIcon
-            color="tertiary"
-            leftIcon={<CloseIcon strokeWidth={2.8} />}
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Close</span>
-          </Button>
-        </Wrapper> */}
+            </Flex>
+            <Button
+              asIcon
+              color="tertiary"
+              leftIcon={<CloseIcon strokeWidth={2.8} />}
+              size="sm"
+              variant="naked"
+            >
+              <span className="sr-only">Close</span>
+            </Button>
+          </Wrapper>
+        ) : null}
+
         <TextEditor className="mt-8" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
