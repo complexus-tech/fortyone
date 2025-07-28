@@ -300,21 +300,28 @@ export const StoryProperties = ({
                 })}
               </Text>
               <Divider />
-              {subStories.map((subStory) => (
+              {subStories.map((subStory, idx) => (
                 <Link
                   href={`/story/${subStory.id}/${slugify(subStory.title)}`}
                   key={subStory.id}
                 >
-                  <RowWrapper className="group max-w-72 gap-4 truncate px-0 py-2 last-of-type:border-b-0 dark:border-dark-50 md:px-0">
+                  <RowWrapper
+                    className={cn(
+                      "group max-w-72 gap-4 px-0 py-2 dark:border-dark-50 md:px-0",
+                      {
+                        "border-b-0": idx === subStories.length - 1,
+                      },
+                    )}
+                  >
                     <Flex align="center" gap={2}>
                       <Text color="muted">
                         {teamCode}-{subStory.sequenceId}
                       </Text>
-                      <Text className="group-hover:underline">
+                      <Text className="line-clamp-1 group-hover:underline">
                         {subStory.title}
                       </Text>
                     </Flex>
-                    <Flex align="center" gap={2}>
+                    <Flex align="center" className="shrink-0" gap={2}>
                       <PriorityIcon priority={subStory.priority} />
                       <StoryStatusIcon
                         className="h-[1.15rem]"

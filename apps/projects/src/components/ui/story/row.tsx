@@ -4,7 +4,7 @@ import { Flex, Text, Tooltip, Avatar, Checkbox, Box, Button } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRightIcon, StoryIcon, SubStoryIcon } from "icons";
+import { ArrowRight2Icon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -102,7 +102,7 @@ export const StoryRow = ({
                 "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
                   isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
-                "bg-gray-50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]":
+                "bg-gray-50/50 pl-10 dark:bg-dark-200/50 md:pl-[4.5rem]":
                   isSubStory,
               },
               className,
@@ -150,10 +150,11 @@ export const StoryRow = ({
                   >
                     {teamCode}-{story.sequenceId}
                     {story.subStories.length > 0 && (
-                      <ArrowRightIcon
+                      <ArrowRight2Icon
                         className={cn("h-4 transition-transform", {
                           "rotate-90": isExpanded,
                         })}
+                        strokeWidth={3}
                       />
                     )}
                   </Text>
