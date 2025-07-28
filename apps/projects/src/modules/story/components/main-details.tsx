@@ -113,7 +113,7 @@ export const MainDetails = ({
   const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
 
   const handleWriteDescription = () => {
-    openChat("write a description");
+    openChat(`write a description for ${title}`);
   };
 
   const descriptionEditor = useEditor({
