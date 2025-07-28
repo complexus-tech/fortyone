@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
       maxSteps: 10,
       maxTokens: 4000,
       temperature: 0.5,
+      maxRetries: 2,
       tools: {
         navigation,
         theme,
