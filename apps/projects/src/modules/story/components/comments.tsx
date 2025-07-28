@@ -62,7 +62,7 @@ const MainComment = ({
           title={
             member ? (
               <Box>
-                <Flex gap={2}>
+                <Flex align="center" gap={2}>
                   <Avatar
                     className="mt-0.5"
                     name={member.fullName}
@@ -73,12 +73,8 @@ const MainComment = ({
                       className="mb-2 flex gap-1"
                       href={`/profile/${member.id}`}
                     >
-                      <Text fontSize="md" fontWeight="medium">
-                        {member.fullName}
-                      </Text>
-                      <Text color="muted" fontSize="md">
-                        ({member.username})
-                      </Text>
+                      <Text fontSize="md">{member.fullName}</Text>
+                      <Text color="muted">({member.username})</Text>
                     </Link>
                     <Button
                       className="mb-0.5 ml-px px-2"
@@ -102,10 +98,7 @@ const MainComment = ({
                 src={member?.avatarUrl}
               />
             </Box>
-            <Text
-              className="relative top-0.5 ml-1 text-black dark:text-white"
-              fontWeight="medium"
-            >
+            <Text className="relative top-0.5 ml-1 text-black dark:text-white">
               {member?.username}
             </Text>
           </Flex>
@@ -148,7 +141,7 @@ const MainComment = ({
       </Flex>
       {!isEditing && (
         <Box
-          className="prose prose-stone ml-9 mt-0.5 max-w-full leading-6 antialiased dark:prose-invert prose-headings:font-medium prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200"
+          className="prose prose-stone ml-9 mt-0.5 max-w-full leading-6 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200"
           html={comment}
         />
       )}

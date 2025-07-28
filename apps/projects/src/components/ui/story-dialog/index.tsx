@@ -111,6 +111,7 @@ export const StoryDialog = ({
       <Dialog.Content
         className="max-w-[80rem] rounded-[1.25rem] dark:bg-dark-300 md:mb-auto md:mt-auto"
         hideClose
+        overlayClassName="bg-black/10"
       >
         <Dialog.Title className="hidden">
           <span className="sr-only">{story?.title}</span>

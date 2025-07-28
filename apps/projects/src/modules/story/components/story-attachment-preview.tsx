@@ -222,9 +222,12 @@ export const StoryAttachmentPreview = ({
       <Box className={cn("cursor-pointer", className)}>{renderThumbnail()}</Box>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className={cn("relative my-auto px-2 pt-2 md:mb-auto md:mt-auto", {
-            "bg-dark dark:bg-dark": isImage,
-          })}
+          className={cn(
+            "relative my-auto rounded-2xl border-0 px-2 pt-2 dark:border-[0.5px] md:mb-auto md:mt-auto",
+            {
+              "bg-dark dark:bg-dark": isImage,
+            },
+          )}
           hideClose
           size="lg"
         >
