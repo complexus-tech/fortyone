@@ -9,6 +9,7 @@ import {
   Badge,
   TimeAgo,
   Divider,
+  Checkbox,
 } from "ui";
 import {
   AiIcon,
@@ -16,12 +17,13 @@ import {
   EditIcon,
   MoreHorizontalIcon,
   OKRIcon,
+  InfoIcon,
 } from "icons";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import Link from "next/link";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { ConfirmDialog } from "@/components/ui";
+import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTerminology } from "@/hooks";
@@ -300,6 +302,66 @@ export const KeyResults = () => {
         </Flex>
       </Flex>
       <Divider />
+
+      {object?.keyResults && showSuggestions ? (
+        <Box className="my-2.5">
+          {object.keyResults.length > 0 ? (
+            <>
+              <Box className="rounded-lg border-[0.5px] border-gray-100 dark:border-dark-100">
+                {object.keyResults.map((keyResult) => {
+                  if (!keyResult?.name) return null;
+                  return (
+                    <RowWrapper
+                      className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
+                      key={keyResult.name}
+                    >
+                      test
+                    </RowWrapper>
+                  );
+                })}
+              </Box>
+              <Flex className="mt-2" gap={2} justify="end">
+                <Button color="tertiary" onClick={handleCancel} variant="naked">
+                  Cancel
+                </Button>
+                <Button
+                  disabled={selectedKeyResults.size === 0}
+                  onClick={handleAddSelected}
+                >
+                  Create {selectedKeyResults.size}
+                  {getTermDisplay("keyResultTerm", {
+                    capitalize: true,
+                    variant:
+                      selectedKeyResults.size === 1 ? "singular" : "plural",
+                  })}
+                </Button>
+              </Flex>
+            </>
+          ) : (
+            <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Flex align="center" gap={2}>
+                <InfoIcon className="text-warning dark:text-warning" />
+                <Text>
+                  Could not generate sub{" "}
+                  {getTermDisplay("storyTerm", {
+                    variant: "plural",
+                  })}
+                  , make sure your parent {getTermDisplay("storyTerm")} is
+                  actionable
+                </Text>
+              </Flex>
+              <Button
+                color="warning"
+                onClick={() => {
+                  submit(parent);
+                }}
+              >
+                Try again
+              </Button>
+            </Wrapper>
+          )}
+        </Box>
+      ) : null}
 
       {keyResults.length > 0 ? (
         <Flex className="mt-3" direction="column" gap={3}>
