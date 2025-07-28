@@ -202,33 +202,32 @@ export const MainDetails = ({
           className="relative -left-1 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
-        {descriptionEditor?.isEmpty ? (
-          <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
-            <Flex align="center" gap={2}>
-              <AiIcon className="text-primary dark:text-primary" />
-              <Text>
-                Ask Maya to{" "}
-                <button
-                  className="font-semibold underline antialiased"
-                  onClick={handleWriteDescription}
-                  type="button"
-                >
-                  write a description
-                </button>{" "}
-                for this {getTermDisplay("storyTerm")}
-              </Text>
-            </Flex>
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={<CloseIcon strokeWidth={2.8} />}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Close</span>
-            </Button>
-          </Wrapper>
-        ) : null}
+
+        <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
+          <Flex align="center" gap={2}>
+            <AiIcon className="text-primary dark:text-primary" />
+            <Text>
+              Ask Maya to{" "}
+              <button
+                className="font-semibold underline antialiased"
+                onClick={handleWriteDescription}
+                type="button"
+              >
+                write a description
+              </button>{" "}
+              for this {getTermDisplay("storyTerm")}
+            </Text>
+          </Flex>
+          <Button
+            asIcon
+            color="tertiary"
+            leftIcon={<CloseIcon strokeWidth={2.8} />}
+            size="sm"
+            variant="naked"
+          >
+            <span className="sr-only">Close</span>
+          </Button>
+        </Wrapper>
         <TextEditor editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}

@@ -264,6 +264,7 @@ When a user asks you to "write a description" and includes a story ID, follow th
 2. Analyze the story's title, current description, status, priority, and other context
 3. Write a clear, concise description that explains what the story is about
 4. Use the update-story tool to apply the new description
+5. Always ask the user to review the description and make any changes they want before you update the description
 
 If a story ID is provided in the message, use it directly. Otherwise, try to extract it from the current path.
 
