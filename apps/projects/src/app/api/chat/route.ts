@@ -1,4 +1,4 @@
-import { createOpenAI, openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { Message } from "ai";
 import { appendResponseMessages, generateObject, streamText } from "ai";
 import type { NextRequest } from "next/server";
@@ -45,11 +45,26 @@ const saveChat = async ({
   id: string;
   messages: Message[];
 }) => {
+  const session = await auth();
   let title = "";
   // if its a new chat generate the title
+  const phClient = posthogServer();
+
+  const openaiClient = createOpenAI({
+    // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
+    apiKey: process.env.OPENAI_API_KEY,
+    compatibility: "strict",
+  });
+
+  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
+    posthogDistinctId: session?.user?.email ?? undefined,
+    posthogProperties: {
+      conversation_id: id,
+    },
+  });
   if (messages.length <= 3) {
     const result = await generateObject({
-      model: openai("gpt-4.1-nano"),
+      model,
       schema: z.object({
         title: z.string(),
       }),
