@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     Context - Objective:
      - Name: ${objective.name}
      - Description: ${objective.description}
-     - Current Key Results: ${keyResults.map((kr) => kr.name).join("\n ") || "None"}
+     - Current Key Results: ${keyResults.map((kr) => kr.name).join("\n ") || "None"} don't suggest key results that are already in the list or similar to existing key results
 
     ## Guidelines
     - Each key result should be specific, measurable, and directly contribute to the objective

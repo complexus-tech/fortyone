@@ -450,7 +450,11 @@ export const KeyResults = () => {
       {keyResults.length > 0 ? (
         <Flex className="mt-3" direction="column" gap={3}>
           {keyResults.map((keyResult) => (
-            <Okr key={keyResult.id} {...keyResult} />
+            <Okr
+              key={`${keyResult.id}-${keyResult.name.slice(0, 10)}`}
+              {...keyResult}
+              objectiveId={objectiveId}
+            />
           ))}
         </Flex>
       ) : (

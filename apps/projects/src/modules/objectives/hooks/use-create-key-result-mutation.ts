@@ -36,9 +36,6 @@ export const useCreateKeyResultMutation = () => {
         objectiveKeys.keyResults(newKeyResult.objectiveId),
         (old = []) => [optimisticKeyResult, ...old],
       );
-      toast.success("Success", {
-        description: "Key result created successfully",
-      });
 
       return { previousKeyResults };
     },
@@ -67,6 +64,11 @@ export const useCreateKeyResultMutation = () => {
 
       analytics.track("key_result_created", {
         ...newKeyResult,
+      });
+
+      toast.success("Success", {
+        id: "key-result-created",
+        description: "Key result created successfully",
       });
 
       queryClient.invalidateQueries({
