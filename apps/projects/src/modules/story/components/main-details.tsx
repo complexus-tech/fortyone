@@ -1,15 +1,5 @@
 "use client";
-import {
-  Box,
-  Container,
-  Divider,
-  Flex,
-  TextEditor,
-  Wrapper,
-  Text,
-  Button,
-} from "ui";
-import { AiIcon, CloseIcon } from "icons";
+import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -27,12 +17,7 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import {
-  useDebounce,
-  useLocalStorage,
-  useTerminology,
-  useUserRole,
-} from "@/hooks";
+import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
@@ -43,7 +28,6 @@ import {
   Attachments,
 } from "@/modules/story/components";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useChatContext } from "@/context/chat-context";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
 import { useStoryActivities } from "../hooks/story-activities";
@@ -72,8 +56,6 @@ export const MainDetails = ({
     useStoryActivities(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminology();
-  const { openChat } = useChatContext();
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -111,10 +93,6 @@ export const MainDetails = ({
   };
 
   const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
-
-  const handleWriteDescription = () => {
-    openChat(`write a description for ${title}`);
-  };
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -199,40 +177,9 @@ export const MainDetails = ({
       >
         <TextEditor
           asTitle
-          className="relative -left-1 text-3xl font-medium md:text-4xl"
+          className="text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
-
-        {!isDeleted &&
-        userRole !== "guest" &&
-        !(description || descriptionHTML) ? (
-          <Wrapper className="mt-3.5 flex items-center justify-between py-3 md:px-4">
-            <Flex align="center" gap={2}>
-              <AiIcon className="text-primary dark:text-primary" />
-              <Text>
-                Ask Maya to{" "}
-                <button
-                  className="font-semibold underline antialiased"
-                  onClick={handleWriteDescription}
-                  type="button"
-                >
-                  write a description
-                </button>{" "}
-                for this {getTermDisplay("storyTerm")}
-              </Text>
-            </Flex>
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={<CloseIcon strokeWidth={2.8} />}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Close</span>
-            </Button>
-          </Wrapper>
-        ) : null}
-
         <TextEditor editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
