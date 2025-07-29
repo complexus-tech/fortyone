@@ -6,7 +6,7 @@ import { Navigation } from "@/components/shared/navigation";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html className="light" lang="en" suppressHydrationWarning>
       <body className={cn(ibmplexsans.className)}>
         <Navigation />
         {children}

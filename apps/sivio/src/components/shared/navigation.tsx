@@ -28,10 +28,10 @@ export const Navigation = () => {
     {
       name: "For Organisations",
       items: [
-        { name: "How To Join", href: "/how-to-join" },
-        { name: "Update Profile", href: "/update-profile" },
-        { name: "Resources", href: "/resources" },
-        { name: "Transparency", href: "/org-transparency" },
+        { name: "How To Join", href: "/organisations/join" },
+        { name: "Update Profile", href: "/organisations/update-profile" },
+        { name: "Resources", href: "/organisations/resources" },
+        { name: "Transparency", href: "/organisations/transparency" },
       ],
     },
     {
