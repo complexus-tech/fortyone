@@ -1,5 +1,5 @@
-import React from "react";
+import { Container } from "@/components/ui";
 
 export const WhatWeDo = () => {
-  return <div>what-we-do</div>;
+  return <Container>what-we-do</Container>;
 };
