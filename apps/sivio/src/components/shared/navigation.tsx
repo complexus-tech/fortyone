@@ -49,7 +49,7 @@ export const Navigation = () => {
 
   return (
     <Container as="nav" className="flex items-center justify-between py-2">
-      <Logo />
+      <Logo className="relative -left-4" />
       <Flex align="center" className="gap-10">
         {nav.map((item, index) => (
           <Fragment key={index}>
