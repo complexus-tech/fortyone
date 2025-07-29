@@ -1,5 +1,6 @@
 import React from "react";
+import { Box } from "ui";
 
 export const Reel = () => {
-  return <div>R</div>;
+  return <Box>Reel</Box>;
 };
