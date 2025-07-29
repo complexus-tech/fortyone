@@ -6,43 +6,11 @@
   --nprogress-color: #ea6060;
 }
 
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-animate 10s ease infinite;
-}
-
-@keyframes gradient-animate {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.text-stroke-white {
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke-width: 1px;
-  -webkit-text-stroke-color: #000;
-}
-.dark .text-stroke-white {
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke-width: 1px;
-  -webkit-text-stroke-color: #fff;
-}
-
 body,
 html {
   @apply overflow-x-hidden scroll-smooth font-sans text-[15.5px] font-medium text-dark-200 antialiased dark:bg-black dark:text-gray-200;
 }
 
-svg {
-  shape-rendering: auto;
-  vector-effect: non-scaling-stroke;
-}
 /* Chrome, Safari, Edge */
 *::-webkit-scrollbar {
   width: 3px;
