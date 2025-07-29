@@ -1,4 +1,5 @@
-import { Box, BlurImage, Text } from "ui";
+import { Box, BlurImage, Text, Flex, Button } from "ui";
+import { Container } from "@/components/ui";
 
 export const Stories = () => {
   const stories = [
@@ -18,19 +19,29 @@ export const Stories = () => {
   ];
 
   return (
-    <Box className="grid grid-cols-3">
-      <Box className="relative">
-        <BlurImage
-          className="aspect-square"
-          quality={100}
-          src="/images/home/hero.webp"
-        />
-        <Box className="absolute inset-0 flex flex-col justify-end bg-black/20 p-10">
-          <Text as="h2" className="w-full text-2xl font-semibold text-white">
-            Zambia: Provide meals for children in ECD
-          </Text>
-        </Box>
+    <Box>
+      <Box className="grid grid-cols-3">
+        {stories.map((s, idx) => (
+          <Box className="relative" key={idx}>
+            <BlurImage className="aspect-square" quality={100} src={s.image} />
+            <Box className="absolute inset-0 flex flex-col justify-end bg-black/20 px-6 py-8">
+              <Text
+                as="h2"
+                className="w-full text-[1.7rem] font-semibold leading-snug text-white"
+              >
+                {s.title}
+              </Text>
+            </Box>
+          </Box>
+        ))}
       </Box>
+      <Container>
+        <Flex justify="end">
+          <Button className="mt-4" color="secondary" size="lg">
+            Read more of our stories
+          </Button>
+        </Flex>
+      </Container>
     </Box>
   );
 };
