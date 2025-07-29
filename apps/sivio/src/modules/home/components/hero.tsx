@@ -38,10 +38,13 @@ export const Hero = () => {
             justify="between"
           >
             <Box className="p-10">
-              <Text as="h1" className="mb-8 text-7xl font-semibold text-white">
+              <Text
+                as="h1"
+                className="mb-8 text-center text-7xl font-semibold text-white"
+              >
                 Be part of the change. <br /> Give today.
               </Text>
-              <Text className="max-w-xs text-lg text-white">
+              <Text className="mx-auto max-w-xs text-center text-lg text-white">
                 Your donation can help transform lives and bring hope to
                 communities.
               </Text>
