@@ -2,6 +2,7 @@
 
 import { Container, Flex, NavigationMenu } from "ui";
 import Link from "next/link";
+import { Fragment } from "react";
 import { Logo } from "./logo";
 
 export const Navigation = () => {
@@ -23,6 +24,26 @@ export const Navigation = () => {
         { name: "Transparency", href: "/transparency" },
       ],
     },
+    {
+      name: "For Organisations",
+      items: [
+        { name: "How To Join", href: "/how-to-join" },
+        { name: "Update Profile", href: "/update-profile" },
+        { name: "Resources", href: "/resources" },
+        { name: "Transparency", href: "/org-transparency" },
+      ],
+    },
+    {
+      name: "Stories",
+      items: [
+        { name: "Impact Stories", href: "/impact-stories" },
+        { name: "Submit a Story", href: "/submit-story" },
+      ],
+    },
+    {
+      name: "News and Events",
+      href: "/news",
+    },
   ];
 
   return (
@@ -30,25 +51,37 @@ export const Navigation = () => {
       <Logo />
       <Flex align="center" className="gap-10">
         {nav.map((item, index) => (
-          <NavigationMenu key={index}>
-            <NavigationMenu.List>
-              <NavigationMenu.Item>
-                <NavigationMenu.Trigger
-                  className="text-2xl font-medium"
-                  hideArrow
-                >
-                  {item.name}
-                </NavigationMenu.Trigger>
-                <NavigationMenu.Content className="px-4">
-                  {item.items.map(({ name, href }) => (
-                    <Link className="block text-lg" href={href} key={name}>
-                      {name}
-                    </Link>
-                  ))}
-                </NavigationMenu.Content>
-              </NavigationMenu.Item>
-            </NavigationMenu.List>
-          </NavigationMenu>
+          <Fragment key={index}>
+            {item?.items ? (
+              <NavigationMenu>
+                <NavigationMenu.List>
+                  <NavigationMenu.Item>
+                    <NavigationMenu.Trigger
+                      className="text-2xl font-medium"
+                      hideArrow
+                    >
+                      {item.name}
+                    </NavigationMenu.Trigger>
+                    <NavigationMenu.Content className="min-w-64 space-y-6 px-5 py-4">
+                      {item.items.map(({ name, href }) => (
+                        <Link
+                          className="block text-lg hover:text-primary"
+                          href={href}
+                          key={name}
+                        >
+                          {name}
+                        </Link>
+                      ))}
+                    </NavigationMenu.Content>
+                  </NavigationMenu.Item>
+                </NavigationMenu.List>
+              </NavigationMenu>
+            ) : (
+              <Link className="block text-2xl font-medium" href={item.href}>
+                {item.name}
+              </Link>
+            )}
+          </Fragment>
         ))}
       </Flex>
     </Container>
