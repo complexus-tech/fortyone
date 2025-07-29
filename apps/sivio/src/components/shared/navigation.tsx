@@ -1,8 +1,9 @@
 "use client";
 
-import { Container, Flex, NavigationMenu } from "ui";
+import { Flex, NavigationMenu } from "ui";
 import Link from "next/link";
 import { Fragment } from "react";
+import { Container } from "../ui";
 import { Logo } from "./logo";
 
 export const Navigation = () => {
