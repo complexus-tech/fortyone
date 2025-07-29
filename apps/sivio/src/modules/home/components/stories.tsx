@@ -35,9 +35,9 @@ export const Stories = () => {
           </Box>
         ))}
       </Box>
-      <Container>
+      <Container className="mt-6">
         <Flex justify="end">
-          <Button className="mt-4" color="secondary" size="lg">
+          <Button color="secondary" size="lg">
             Read more of our stories
           </Button>
         </Flex>
