@@ -7,7 +7,7 @@ import girlsRightsSvg from "../../../../public/images/home/girl.svg";
 
 export const Hero = () => {
   return (
-    <Container className="mt-4">
+    <Container>
       <Box className="relative">
         <BlurImage
           className="aspect-[16/10]"
