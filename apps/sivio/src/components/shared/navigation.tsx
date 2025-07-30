@@ -37,8 +37,8 @@ export const Navigation = () => {
     {
       name: "Stories",
       items: [
-        { name: "Impact Stories", href: "/impact-stories" },
-        { name: "Submit a Story", href: "/submit-story" },
+        { name: "Impact Stories", href: "/stories" },
+        { name: "Submit a Story", href: "/stories/submit" },
       ],
     },
     {
