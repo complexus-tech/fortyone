@@ -7,6 +7,7 @@ import { Future } from "./components/future";
 import { Compliance } from "./components/compliance";
 import { TrustTransparency } from "./components/trust-transparency";
 import { Features } from "./components/features";
+import { Partnerships } from "./components/partnerships";
 
 export const AboutPage = () => {
   return (
@@ -19,6 +20,7 @@ export const AboutPage = () => {
       <Features />
       <TrustTransparency />
       <Compliance />
+      <Partnerships />
     </Box>
   );
 };
