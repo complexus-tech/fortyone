@@ -47,15 +47,15 @@ export const Partnerships = () => {
           </Box>
         </Box>
 
-        <Box className="flex flex-col gap-8">
+        <Box className="flex flex-col gap-10">
           <Box className="flex gap-4">
             <Image
               alt="Reporting Practices"
               className="h-16 w-auto flex-shrink-0"
               src={educationSvg}
             />
-            <Box className="flex flex-col gap-2">
-              <Text as="h3" className="text-2xl font-bold text-black">
+            <Box className="flex flex-col gap-4">
+              <Text as="h3" className="text-3xl font-bold text-black">
                 Reporting Practices
               </Text>
               <Text className="text-lg">
@@ -73,8 +73,8 @@ export const Partnerships = () => {
               className="h-16 w-auto flex-shrink-0"
               src={educationSvg}
             />
-            <Box className="flex flex-col gap-2">
-              <Text as="h3" className="text-2xl font-bold text-black">
+            <Box className="flex flex-col gap-4">
+              <Text as="h3" className="text-3xl font-bold text-black">
                 Accessibility
               </Text>
               <Text className="text-lg">
@@ -92,16 +92,58 @@ export const Partnerships = () => {
               className="h-16 w-auto flex-shrink-0"
               src={educationSvg}
             />
-            <Box className="flex flex-col gap-2">
-              <Text as="h3" className="text-2xl font-bold text-black">
+            <Box className="flex flex-col gap-4">
+              <Text as="h3" className="text-3xl font-bold text-black">
                 Governance Structures
               </Text>
               <Text className="text-lg">
                 Strong governance ensures responsible oversight and ethical
-                decision-making. Organisations must have a functioning board of
-                directors or advisory group overseeing operations, and
-                established leadership structures that support accountability
-                and strategic direction.
+                decision-making. Organisations must have:
+                <ul className="mt-2 list-disc pl-8">
+                  <li>
+                    A functioning board of directors or advisory group
+                    overseeing operations
+                  </li>
+                  <li>
+                    Established leadership structures that support
+                    accountability and strategic direction
+                  </li>
+                </ul>
+              </Text>
+            </Box>
+          </Box>
+
+          <Box className="flex gap-4">
+            <Image
+              alt="Governance Structures"
+              className="h-16 w-auto flex-shrink-0"
+              src={educationSvg}
+            />
+            <Box className="flex flex-col gap-4">
+              <Text as="h3" className="text-3xl font-bold text-black">
+                Legal Registration
+              </Text>
+              <Text className="text-lg">
+                Organisations must provide proof of official registration with
+                the relevant authorities in their country.
+              </Text>
+            </Box>
+          </Box>
+
+          <Box className="flex gap-4">
+            <Image
+              alt="Governance Structures"
+              className="h-16 w-auto flex-shrink-0"
+              src={educationSvg}
+            />
+            <Box className="flex flex-col gap-4">
+              <Text as="h3" className="text-3xl font-bold text-black">
+                Financial Transparency
+              </Text>
+              <Text className="text-lg">
+                Organisations are assessed on their ability to share: Audited
+                financial statements, Annual reports, Basic financial
+                disclosures detailing income sources and expenditures.
               </Text>
             </Box>
           </Box>
