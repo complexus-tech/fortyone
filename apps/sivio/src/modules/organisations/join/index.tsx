@@ -5,6 +5,7 @@ import { Partner } from "./compoments/partner";
 import { Why } from "./compoments/why";
 import { Role } from "./compoments/role";
 import { Apply } from "./compoments/apply";
+import { Form } from "./compoments/form";
 
 export const JoinPage = () => {
   return (
@@ -48,6 +49,7 @@ export const JoinPage = () => {
       </Box>
       <Role />
       <Apply />
+      <Form />
     </Box>
   );
 };
