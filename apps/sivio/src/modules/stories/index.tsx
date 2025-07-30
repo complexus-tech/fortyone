@@ -2,6 +2,7 @@ import { Box } from "ui";
 import { Container } from "@/components/ui";
 import { StoryCard } from "./components/story-card";
 import { Hero } from "./components/hero";
+import { Subscribe } from "./components/subscribe";
 
 const stories = [
   {
@@ -59,6 +60,7 @@ export const StoriesPage = () => {
           ))}
         </Box>
       </Container>
+      <Subscribe />
     </Box>
   );
 };
