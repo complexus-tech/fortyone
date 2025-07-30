@@ -7,9 +7,9 @@ import { NewsletterForm } from "./components/newsletter-form";
 export const ContactPage = () => {
   return (
     <Box>
-      <Container className="py-2">
+      <Container className="max-w-7xl">
         <VoiceSection />
-        <Box className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <Box className="grid grid-cols-1 gap-16 pb-20 md:grid-cols-2">
           <ContactForm />
           <NewsletterForm />
         </Box>

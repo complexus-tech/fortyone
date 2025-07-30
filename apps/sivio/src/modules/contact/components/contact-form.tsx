@@ -4,47 +4,42 @@ export const ContactForm = () => {
   return (
     <Box className="flex flex-col gap-6">
       <Box>
-        <Text as="h2" className="text-4xl font-bold text-black">
+        <Text as="h2" className="text-4xl font-bold">
           SEND US A MESSAGE
         </Text>
-        <Text className="text-gray-600 mt-2 text-lg">
+        <Text className="mt-2 text-lg">
           We are always happy to hear from you.
         </Text>
       </Box>
 
       <Box className="flex flex-col gap-4">
         <Box>
-          <Text className="mb-2 text-sm font-medium text-black">
-            Full name*
-          </Text>
+          <Text className="k mb-2 font-medium">Full name*</Text>
           <Input
-            type="text"
+            className="w-full rounded-lg border border-gray-300 px-4 py-3"
             placeholder="Enter your full name"
-            className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            type="text"
           />
         </Box>
 
         <Box>
-          <Text className="mb-2 text-sm font-medium text-black">Email*</Text>
+          <Text className="mb-2 font-medium">Email*</Text>
           <Input
-            type="email"
-            placeholder="Enter your email"
             className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            placeholder="Enter your email"
+            type="email"
           />
         </Box>
 
         <Box>
-          <Text className="mb-2 text-sm font-medium text-black">Message*</Text>
+          <Text className="mb-2 font-medium">Message*</Text>
           <TextArea
-            placeholder="Enter your message"
-            rows={5}
             className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            placeholder="Enter your message"
+            rows={3}
           />
         </Box>
-
-        <Button className="bg-green-600 hover:bg-green-700 mt-4 px-6 py-3 text-white">
-          Send message
-        </Button>
+        <Button size="lg">Send message</Button>
       </Box>
     </Box>
   );

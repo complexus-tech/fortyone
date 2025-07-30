@@ -1,10 +1,10 @@
 import { Box, Text, Button } from "ui";
 import Link from "next/link";
-import { Container } from "@/components/ui";
+import { FacebookIcon, InstagramIcon, TwitterIcon } from "icons";
 
 export const VoiceSection = () => {
   return (
-    <Container className="py-20">
+    <Box className="py-20">
       <Box className="grid grid-cols-1 gap-16 md:grid-cols-2">
         <Box className="flex flex-col gap-6">
           <Text as="h2" className="text-5xl font-bold">
@@ -38,52 +38,73 @@ export const VoiceSection = () => {
               color="black"
               fullWidth
               href="/"
+              rounded="none"
               variant="outline"
             >
               Linktree
             </Button>
 
-            <Link href="/youtube">
-              <Button className="w-full border border-gray-300 bg-transparent text-white hover:bg-white hover:text-secondary">
-                YouTube
-              </Button>
-            </Link>
+            <Button
+              align="center"
+              color="black"
+              fullWidth
+              href="/"
+              rounded="none"
+              variant="outline"
+            >
+              YouTube
+            </Button>
             <Link href="/substack">
-              <Button className="w-full border border-gray-300 bg-transparent text-white hover:bg-white hover:text-secondary">
+              <Button
+                align="center"
+                color="black"
+                fullWidth
+                href="/"
+                rounded="none"
+                variant="outline"
+              >
                 Substack
               </Button>
             </Link>
             <Link href="/about-sivio">
-              <Button className="w-full border border-gray-300 bg-transparent text-white hover:bg-white hover:text-secondary">
+              <Button
+                align="center"
+                color="black"
+                fullWidth
+                href="/"
+                rounded="none"
+                variant="outline"
+              >
                 Learn more about SIVIO
               </Button>
             </Link>
             <Link href="mailto:contact@africagiving.org">
-              <Button className="w-full border border-gray-300 bg-transparent text-white hover:bg-white hover:text-secondary">
+              <Button
+                align="center"
+                color="black"
+                fullWidth
+                href="/"
+                rounded="none"
+                variant="outline"
+              >
                 Email Us
               </Button>
             </Link>
           </Box>
 
-          <Box className="mt-auto flex justify-center gap-4">
+          <Box className="mt-8 flex justify-center gap-4">
             <Link href="/facebook">
-              <Box className="hover:bg-gray-800 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
-                <Text className="text-lg font-bold">f</Text>
-              </Box>
+              <FacebookIcon className="text-black" />
             </Link>
             <Link href="/instagram">
-              <Box className="hover:bg-gray-800 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
-                <Text className="text-lg">📷</Text>
-              </Box>
+              <InstagramIcon className="text-black" />
             </Link>
             <Link href="/twitter">
-              <Box className="hover:bg-gray-800 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
-                <Text className="text-lg">🐦</Text>
-              </Box>
+              <TwitterIcon className="text-black" />
             </Link>
           </Box>
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 };
