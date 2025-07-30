@@ -3,12 +3,14 @@ import { Container } from "@/components/ui";
 
 export const Content = () => {
   return (
-    <Container className="py-10">
+    <Container className="py-16">
       <Box className="grid grid-cols-3 gap-16">
         <BlurImage
           alt="Transparency"
           className="aspect-square"
-          src="/images/transparency/1.png"
+          imageClassName="bg-white"
+          quality={100}
+          src="/images/trusted.png"
         />
         <Box className="col-span-2">
           <Flex className="gap-6" direction="column">
@@ -94,20 +96,28 @@ export const Content = () => {
                 >
                   Governance Structures
                 </Text>
-                <Text className="mb-2 text-lg">
-                  Strong governance ensures responsible oversight and ethical
-                  decision-making. Organisations must demonstrate:
-                </Text>
-                <Flex className="gap-1" direction="column">
-                  <Text className="text-lg">
-                    • A functioning board of directors or advisory group
-                    overseeing operations.
-                  </Text>
-                  <Text className="text-lg">
-                    • Established leadership structures that support
-                    accountability and strategic direction.
-                  </Text>
-                </Flex>
+                <ul className="list-disc pl-8">
+                  <li>
+                    <Text className="mb-2 text-lg">
+                      Strong governance ensures responsible oversight and
+                      ethical decision-making. Organisations must demonstrate:
+                    </Text>
+                    <ul className="list-disc pl-8">
+                      <li>
+                        <Text className="text-lg">
+                          A functioning board of directors or advisory group
+                          overseeing operations.
+                        </Text>
+                      </li>
+                      <li>
+                        <Text className="text-lg">
+                          Established leadership structures that support
+                          accountability and strategic direction.
+                        </Text>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
               </Box>
 
               <Box>
@@ -117,17 +127,27 @@ export const Content = () => {
                 >
                   Reporting Practices
                 </Text>
-                <Text className="mb-2 text-lg">
-                  Organisations must consistently communicate their activities,
-                  impact, and use of funds. This includes:
-                </Text>
-                <Flex className="gap-1" direction="column">
-                  <Text className="text-lg">• Project reports</Text>
-                  <Text className="text-lg">• Impact statements</Text>
-                  <Text className="text-lg">
-                    • Regular updates shared with donors and stakeholders.
-                  </Text>
-                </Flex>
+                <ul className="list-disc pl-8">
+                  <li>
+                    <Text className="mb-2 text-lg">
+                      Organisations must consistently communicate their
+                      activities, impact, and use of funds. This includes:
+                    </Text>
+                    <ul className="list-disc pl-8">
+                      <li>
+                        <Text className="text-lg">Project reports</Text>
+                      </li>
+                      <li>
+                        <Text className="text-lg">Impact statements</Text>
+                      </li>
+                      <li>
+                        <Text className="text-lg">
+                          Regular updates shared with donors and stakeholders.
+                        </Text>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
               </Box>
 
               <Box>
@@ -137,19 +157,27 @@ export const Content = () => {
                 >
                   Accessibility & Public Presence
                 </Text>
-                <Text className="mb-2 text-lg">
-                  To be visible and accessible to donors, organisations must
-                  have:
-                </Text>
-                <Flex className="gap-1" direction="column">
-                  <Text className="text-lg">
-                    • A functional website, email, or social media presence to
-                    engage with supporters.
-                  </Text>
-                  <Text className="text-lg">
-                    • Clear channels for communication and transparency.
-                  </Text>
-                </Flex>
+                <ul className="list-disc pl-8">
+                  <li>
+                    <Text className="mb-2 text-lg">
+                      To be visible and accessible to donors, organisations must
+                      have:
+                    </Text>
+                    <ul className="list-disc pl-8">
+                      <li>
+                        <Text className="text-lg">
+                          A functional website, email, or social media presence
+                          to engage with supporters.
+                        </Text>
+                      </li>
+                      <li>
+                        <Text className="text-lg">
+                          Clear channels for communication and transparency.
+                        </Text>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
               </Box>
             </Flex>
 
@@ -189,9 +217,12 @@ export const Content = () => {
               <Text className="text-lg">
                 Should you have any further questions, you can reach out to the
                 AfricaGiving team:{" "}
-                <span className="font-bold underline">
+                <a
+                  className="text-primary underline"
+                  href="mailto:africagiving@sivioinstitute.org"
+                >
                   africagiving@sivioinstitute.org
-                </span>
+                </a>
               </Text>
             </Box>
           </Flex>
