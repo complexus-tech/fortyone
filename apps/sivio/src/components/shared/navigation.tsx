@@ -29,7 +29,7 @@ export const Navigation = () => {
       name: "For Organisations",
       items: [
         { name: "How To Join", href: "/organisations/join" },
-        { name: "Update Profile", href: "/organisations/update-profile" },
+        { name: "Update Profile", href: "/organisations/update" },
         { name: "Resources", href: "/organisations/resources" },
         { name: "Transparency", href: "/organisations/transparency" },
       ],
