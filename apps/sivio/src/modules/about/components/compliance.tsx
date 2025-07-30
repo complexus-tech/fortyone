@@ -15,7 +15,7 @@ export const Compliance = () => {
         className="absolute inset-0 bg-black/60"
         justify="center"
       >
-        <Text className="max-w-2xl text-center text-5xl font-semibold text-white">
+        <Text className="max-w-2xl text-center text-6xl font-semibold text-white">
           Understanding Our Compliance Score
         </Text>
       </Flex>
