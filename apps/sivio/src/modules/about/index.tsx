@@ -6,6 +6,7 @@ import { Together } from "./components/together";
 import { Future } from "./components/future";
 import { Compliance } from "./components/compliance";
 import { TrustTransparency } from "./components/trust-transparency";
+import { Features } from "./components/features";
 
 export const AboutPage = () => {
   return (
@@ -15,6 +16,7 @@ export const AboutPage = () => {
       <Future />
       <Welcome />
       <GivingBack />
+      <Features />
       <TrustTransparency />
       <Compliance />
     </Box>

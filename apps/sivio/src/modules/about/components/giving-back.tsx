@@ -3,7 +3,7 @@ import { Container } from "@/components/ui";
 
 export const GivingBack = () => {
   return (
-    <Container className="py-10">
+    <Container className="pb-20 pt-10">
       <Box className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <Box>
           <Box className="mb-4 h-2 w-36 bg-secondary" />
