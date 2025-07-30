@@ -1,0 +1,23 @@
+import React from "react";
+import { Box, BlurImage, Text, Flex } from "ui";
+
+export const Hero = () => {
+  return (
+    <Box className="relative">
+      <BlurImage
+        className="aspect-[16/7]"
+        quality={100}
+        src="/images/home/hero.webp"
+      />
+      <Flex
+        align="center"
+        className="absolute inset-0 bg-black/40"
+        justify="center"
+      >
+        <Text className="text-center text-8xl font-semibold uppercase text-white">
+          About Us
+        </Text>
+      </Flex>
+    </Box>
+  );
+};
