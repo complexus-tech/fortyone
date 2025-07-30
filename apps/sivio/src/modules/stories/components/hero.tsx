@@ -14,7 +14,7 @@ export const Hero = () => {
         className="absolute inset-0 bg-secondary/50"
         justify="center"
       >
-        <Text className="text-center text-8xl font-semibold uppercase text-white">
+        <Text className="text-center text-8xl font-semibold text-white">
           Our Impact <br /> Stories
         </Text>
       </Flex>
