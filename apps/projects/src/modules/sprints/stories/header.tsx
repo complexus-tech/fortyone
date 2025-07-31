@@ -1,6 +1,6 @@
 "use client";
-import { Box, BreadCrumbs, Flex } from "ui";
-import { SprintsIcon, StoryIcon } from "icons";
+import { Box, BreadCrumbs, Button, Flex, Tooltip } from "ui";
+import { AiIcon, SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -12,7 +12,8 @@ import {
   SideDetailsSwitch,
   TeamColor,
 } from "@/components/ui";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
+import { useChatContext } from "@/context/chat-context";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintOptions } from "./provider";
@@ -36,6 +37,8 @@ export const Header = ({
   }>();
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
+  const { userRole } = useUserRole();
+  const { openChat } = useChatContext();
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -92,6 +95,26 @@ export const Header = ({
         />
       </Flex>
       <Flex align="center" gap={2}>
+        {userRole !== "guest" && (
+          <Tooltip
+            className="max-w-60"
+            title="Intelligently suggest work items from backlog to fill this sprint"
+          >
+            <Button
+              color="tertiary"
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              onClick={() => {
+                openChat(
+                  `Suggest stories from "${team.name}" team backlog for sprint "${sprint.name}"`,
+                );
+              }}
+              size="sm"
+              variant="naked"
+            >
+              Smart fill
+            </Button>
+          </Tooltip>
+        )}
         <LayoutSwitcher
           layout={layout}
           options={["list", "kanban"]}

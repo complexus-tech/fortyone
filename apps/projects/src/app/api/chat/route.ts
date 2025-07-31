@@ -68,6 +68,7 @@ const saveChat = async ({
       schema: z.object({
         title: z.string(),
       }),
+      temperature: 0.6,
       prompt: `You're generating a short title for a conversation in Complexus, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
     
     User message:
@@ -137,6 +138,8 @@ export async function POST(req: NextRequest) {
       messages,
       maxSteps: 10,
       maxTokens: 4000,
+      temperature: 0.5,
+      maxRetries: 2,
       tools: {
         navigation,
         theme,

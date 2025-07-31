@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/*", "/auth-callback/*", "/onboarding/*", "/verify/*"],
       },
     ],
-    sitemap: "https://www.complexus.tech/sitemap.xml",
+    sitemap: "https://www.complexus.app/sitemap.xml",
   };
 }

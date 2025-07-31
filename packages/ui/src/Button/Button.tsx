@@ -35,6 +35,7 @@ export const buttonVariants = cva(
         white: "text-black dark:text-dark border-white bg-white ring-white",
         invert:
           "dark:text-dark text-white bg-dark border-dark dark:border-white dark:bg-white ring-white",
+        black: "text-white border-black bg-black ring-black",
       },
       size: {
         xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
@@ -82,6 +83,11 @@ export const buttonVariants = cva(
         color: ["primary", "secondary", "warning", "danger", "info"],
         className:
           "enabled:bg-opacity-0 hover:enabled:bg-opacity-10 focus:enabled:bg-opacity-10",
+      },
+      {
+        variant: "outline",
+        color: "black",
+        className: "text-black border-black bg-transparent ring-black",
       },
       {
         variant: "outline",

@@ -32,6 +32,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       {children}
       <Chat
         initialMessage={initialMessage}
+        isFromContext
         isOpen={isOpen}
         onMessageSent={() => {
           setInitialMessage("");

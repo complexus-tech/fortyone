@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { generateId } from "ai";
 import { Box, Button, Dialog, Flex, Text } from "ui";
 import { ReloadIcon } from "icons";
+import { useHotkeys } from "react-hotkeys-hook";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useMayaChat } from "@/modules/maya";
+import { useUserRole } from "@/hooks/role";
 import { ChatButton } from "./chat-button";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
@@ -18,6 +20,7 @@ type ChatProps = {
   setIsOpen?: (open: boolean) => void;
   initialMessage?: string;
   onMessageSent?: () => void;
+  isFromContext?: boolean;
 };
 
 export const Chat = ({
@@ -25,12 +28,21 @@ export const Chat = ({
   setIsOpen: externalSetIsOpen,
   initialMessage,
   onMessageSent,
+  isFromContext,
 }: ChatProps = {}) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
   // Use external state if provided, otherwise use internal state
   const isOpen = externalIsOpen ?? internalIsOpen;
   const setIsOpen = externalSetIsOpen ?? setInternalIsOpen;
+
+  const { userRole } = useUserRole();
+
+  useHotkeys("shift+m", () => {
+    if (userRole !== "guest" && !isFromContext) {
+      setIsOpen(!isOpen);
+    }
+  });
 
   const {
     // Chat state

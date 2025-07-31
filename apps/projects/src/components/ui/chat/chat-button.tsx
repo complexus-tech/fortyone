@@ -13,6 +13,7 @@ type ChatButtonProps = {
 export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   const pathname = usePathname();
   const isOnPage = pathname.includes("maya");
+
   return (
     <Box
       className={cn(
