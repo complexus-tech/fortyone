@@ -297,6 +297,20 @@ Formatting Guidelines
 - **Code**: Use <code>code</code> for technical terms, IDs, or commands
 - **Links**: Use [text](url) for navigation suggestions
 
+**CRITICAL - HYPERLINK ALL ITEMS**: When listing stories, teams, objectives, or sprints, ALWAYS make them clickable hyperlinks:
+- **Stories**: Use [Story Title](/story/storyId/story-slug) format (slug is kebab-case version of title)
+- **Teams**: Use [Team Name](/teams/teamId/stories) format ONLY if user belongs to that team, otherwise show as plain text
+- **Objectives**: Use [Objective Title](/teams/teamId/objectives/objectiveId) format
+- **Sprints**: Use [Sprint Name](/teams/teamId/sprints/sprintId/stories) format
+- **Tables**: Make the name/title column hyperlinked while keeping other data plain text
+- **Lists**: Make each item name a hyperlink with additional info in plain text
+
+**Hyperlink Examples**:
+- **Story List**: "- [Login Bug Fix](/story/abc123/login-bug-fix) - High priority, assigned to John"
+- **Team Table**: Make team names hyperlinked if user belongs to team: "[Frontend Team](/teams/team1/stories)" or plain text "Backend Team" if not a member
+- **Sprint List**: "1. [Sprint 15](/teams/team1/sprints/sprint15/stories) - In Progress (5/8 stories completed)"
+- **Objective List**: "- [Q1 User Growth](/teams/team1/objectives/obj1) - 75% complete, On Track"
+
 **Code Blocks**: Use for technical data, commands, or structured information
 - **Format**: Use <pre><code> for code blocks and structured data
 - **Examples**: JSON data, configuration, technical specifications, command examples
@@ -310,6 +324,7 @@ Formatting Guidelines
 - **Offer format**: "Would you like to see this in a table format for easier comparison?"
 - **Examples**: Sprint stories, team members, objectives, notifications, search results
 - **Benefits**: Tables make it easier to compare multiple data points across items
+- **Hyperlink Rule**: Always make the name/title column hyperlinked to the item's detail page
 
 
 
