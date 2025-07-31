@@ -3,7 +3,7 @@ import { Container } from "@/components/ui";
 
 export const Content = () => {
   return (
-    <Container className="py-16">
+    <Container className="pt-16">
       <Box className="mx-auto max-w-3xl">
         <Text as="h2" className="mb-6 text-4xl font-bold text-black">
           Need to update your AfricaGiving profile?
