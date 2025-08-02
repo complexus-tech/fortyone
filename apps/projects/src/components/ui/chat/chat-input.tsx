@@ -409,7 +409,11 @@ export const ChatInput = ({
                 rounded="lg"
                 variant="outline"
               >
-                {isRecording ? "Cancel" : "Talk"}
+                {isTranscribing
+                  ? "Transcribing..."
+                  : isRecording
+                    ? "Cancel"
+                    : "Talk"}
               </Button>
             </Tooltip>
             <Button
