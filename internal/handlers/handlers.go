@@ -209,6 +209,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
 	ssegrp.Routes(ssegrp.Config{
 		Log:        cfg.Log,
+		DB:         cfg.DB,
 		SecretKey:  cfg.SecretKey,
 		SSEHub:     cfg.SSEHub,
 		CorsOrigin: cfg.CorsOrigin,
