@@ -36,7 +36,7 @@ export default async function RootLayout({
   const host = headersList.get("host");
   const subdomain = host?.split(".")[0];
   const token = session?.token || "";
-  const workspaces = session?.workspaces || [];
+  const workspaces = await getWorkspaces(token);
 
   if (workspaces.length === 0) {
     redirect(
