@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -23,6 +24,11 @@ func New(log *logger.Logger, comments *comments.Service) *Handlers {
 }
 
 func (h *Handlers) UpdateComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	commentIDParam := web.Params(r, "id")
 	commentID, err := uuid.Parse(commentIDParam)
 	if err != nil {
@@ -45,6 +51,11 @@ func (h *Handlers) UpdateComment(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (h *Handlers) DeleteComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	commentIDParam := web.Params(r, "id")
 	commentID, err := uuid.Parse(commentIDParam)
 	if err != nil {

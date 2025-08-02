@@ -4,6 +4,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -17,25 +18,27 @@ type Config struct {
 	Redis        *redis.Client
 	SecretKey    string
 	TasksService *tasks.Service
+	Cache        *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	notificationsService := notifications.New(cfg.Log, notificationsrepo.New(cfg.Log, cfg.DB), cfg.Redis, cfg.TasksService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
 	h := New(notificationsService)
 
 	// Notifications
-	app.Get("/workspaces/{workspaceId}/notifications", h.List, auth)
-	app.Put("/workspaces/{workspaceId}/notifications/{id}/read", h.MarkAsRead, auth)
-	app.Put("/workspaces/{workspaceId}/notifications/{id}/unread", h.MarkAsUnread, auth)
-	app.Put("/workspaces/{workspaceId}/notifications/read-all", h.MarkAllAsRead, auth)
-	app.Get("/workspaces/{workspaceId}/notifications/unread-count", h.GetUnreadCount, auth)
-	app.Delete("/workspaces/{workspaceId}/notifications/{id}", h.DeleteNotification, auth)
-	app.Delete("/workspaces/{workspaceId}/notifications", h.DeleteAllNotifications, auth)
-	app.Delete("/workspaces/{workspaceId}/notifications/read", h.DeleteReadNotifications, auth)
+	app.Get("/workspaces/{workspaceSlug}/notifications", h.List, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/notifications/{id}/read", h.MarkAsRead, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/notifications/{id}/unread", h.MarkAsUnread, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/notifications/read-all", h.MarkAllAsRead, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/notifications/unread-count", h.GetUnreadCount, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/notifications/{id}", h.DeleteNotification, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/notifications", h.DeleteAllNotifications, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/notifications/read", h.DeleteReadNotifications, auth, workspace)
 
 	// Notification Preferences
-	app.Get("/workspaces/{workspaceId}/notification-preferences", h.GetPreferences, auth)
-	app.Put("/workspaces/{workspaceId}/notification-preferences/{type}", h.UpdatePreference, auth)
+	app.Get("/workspaces/{workspaceSlug}/notification-preferences", h.GetPreferences, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/notification-preferences/{type}", h.UpdatePreference, auth, workspace)
 }

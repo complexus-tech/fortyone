@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/links"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -29,6 +30,11 @@ func New(log *logger.Logger, links *links.Service) *Handlers {
 }
 
 func (h *Handlers) CreateLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	var nl NewLink
 	if err := web.Decode(r, &nl); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -45,6 +51,11 @@ func (h *Handlers) CreateLink(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) UpdateLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	linkIdParam := web.Params(r, "id")
 	linkID, err := uuid.Parse(linkIdParam)
 	if err != nil {
@@ -67,6 +78,11 @@ func (h *Handlers) UpdateLink(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) DeleteLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	linkIdParam := web.Params(r, "id")
 	linkID, err := uuid.Parse(linkIdParam)
 	if err != nil {

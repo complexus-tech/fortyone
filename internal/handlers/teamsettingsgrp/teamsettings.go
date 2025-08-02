@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/teamsettings"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -21,22 +22,19 @@ var (
 	ErrInvalidTeamID      = errors.New("team id is not in its proper form")
 )
 
-// New constructs a new team settings handlers instance.
 func New(teamsettings *teamsettings.Service) *Handlers {
 	return &Handlers{
 		teamsettings: teamsettings,
 	}
 }
 
-// GetSettings returns the complete team settings.
 func (h *Handlers) GetSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teamsettings.GetSettings")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "teamId")
@@ -45,28 +43,26 @@ func (h *Handlers) GetSettings(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
 	}
 
-	settings, err := h.teamsettings.GetSettings(ctx, teamID, workspaceID)
+	settings, err := h.teamsettings.GetSettings(ctx, teamID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("team settings retrieved.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppTeamSettings(settings), http.StatusOK)
 }
 
-// UpdateSprintSettings updates the sprint settings for a team.
 func (h *Handlers) UpdateSprintSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teamsettings.UpdateSprintSettings")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "teamId")
@@ -81,28 +77,26 @@ func (h *Handlers) UpdateSprintSettings(ctx context.Context, w http.ResponseWrit
 	}
 
 	updates := toCoreUpdateTeamSprintSettings(input)
-	result, err := h.teamsettings.UpdateSprintSettings(ctx, teamID, workspaceID, updates)
+	result, err := h.teamsettings.UpdateSprintSettings(ctx, teamID, workspace.ID, updates)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("sprint settings updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppTeamSprintSettings(result), http.StatusOK)
 }
 
-// UpdateStoryAutomationSettings updates the story automation settings for a team.
 func (h *Handlers) UpdateStoryAutomationSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teamsettings.UpdateStoryAutomationSettings")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "teamId")
@@ -117,14 +111,14 @@ func (h *Handlers) UpdateStoryAutomationSettings(ctx context.Context, w http.Res
 	}
 
 	updates := toCoreUpdateTeamStoryAutomationSettings(input)
-	result, err := h.teamsettings.UpdateStoryAutomationSettings(ctx, teamID, workspaceID, updates)
+	result, err := h.teamsettings.UpdateStoryAutomationSettings(ctx, teamID, workspace.ID, updates)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("story automation settings updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppTeamStoryAutomationSettings(result), http.StatusOK)

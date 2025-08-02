@@ -23,10 +23,8 @@ var (
 type Handlers struct {
 	teams *teams.Service
 	cache *cache.Service
-	// audit  *audit.Service
 }
 
-// New constructs a new teams handlers instance.
 func New(teams *teams.Service, cacheService *cache.Service) *Handlers {
 	return &Handlers{
 		teams: teams,
@@ -34,19 +32,18 @@ func New(teams *teams.Service, cacheService *cache.Service) *Handlers {
 	}
 }
 
-// List returns a list of teams.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	teams, err := h.teams.List(ctx, workspaceId, userID)
+
+	teams, err := h.teams.List(ctx, workspace.ID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -55,11 +52,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 }
 
 func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -67,7 +62,7 @@ func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	teams, err := h.teams.ListPublicTeams(ctx, workspaceId, userID)
+	teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -80,10 +75,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Create")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var input AppNewTeam
@@ -101,7 +95,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Code:      input.Code,
 		Color:     input.Color,
 		IsPrivate: input.IsPrivate,
-		Workspace: workspaceID,
+		Workspace: workspace.ID,
 	}
 
 	result, err := h.teams.Create(ctx, team)
@@ -112,14 +106,13 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Add creator as member
 	if err := h.teams.AddMember(ctx, result.ID, userID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("team created.", trace.WithAttributes(
 		attribute.String("team_id", result.ID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppTeams([]teams.CoreTeam{result})[0], http.StatusCreated)
@@ -129,10 +122,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Update")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "id")
@@ -150,7 +142,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Name:      input.Name,
 		Code:      input.Code,
 		Color:     input.Color,
-		Workspace: workspaceID,
+		Workspace: workspace.ID,
 	}
 
 	if input.IsPrivate != nil {
@@ -170,7 +162,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	span.AddEvent("team updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppTeams([]teams.CoreTeam{result})[0], http.StatusOK)
@@ -180,10 +172,9 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.teams.Delete")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "id")
@@ -192,7 +183,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
 	}
 
-	if err := h.teams.Delete(ctx, teamID, workspaceID); err != nil {
+	if err := h.teams.Delete(ctx, teamID, workspace.ID); err != nil {
 		if err.Error() == "team not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
@@ -201,7 +192,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	span.AddEvent("team deleted.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -216,10 +207,9 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "id")
@@ -235,20 +225,16 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate the my-stories cache for this user
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
-		// Just log the error but don't fail the request
 		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
 	}
 
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", input.UserID.String()),
 	))
-
-	// TODO: Send notification to user
 
 	team := struct {
 		ID uuid.UUID `json:"teamId"`
@@ -263,10 +249,9 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	ctx, span := web.AddSpan(ctx, "handlers.teams.RemoveMember")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	teamIDParam := web.Params(r, "id")
@@ -281,22 +266,20 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
 	}
 
-	if err := h.teams.RemoveMember(ctx, teamID, userID, workspaceID); err != nil {
+	if err := h.teams.RemoveMember(ctx, teamID, userID, workspace.ID); err != nil {
 		if err.Error() == "member not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	// Invalidate the my-stories cache for this user
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
-		// Just log the error but don't fail the request
 		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
 	}
 
 	span.AddEvent("team member removed.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", userID.String()),
 	))
 

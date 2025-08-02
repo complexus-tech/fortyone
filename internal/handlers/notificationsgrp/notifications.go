@@ -29,7 +29,6 @@ func New(notifications *notifications.Service) *Handlers {
 	}
 }
 
-// List returns a list of notifications.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.List")
 	defer span.End()
@@ -39,13 +38,11 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get pagination parameters
 	limit := 10
 	offset := 0
 
@@ -61,7 +58,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	notifications, err := h.notifications.List(ctx, userID, workspaceID, limit, offset)
+	notifications, err := h.notifications.List(ctx, userID, workspace.ID, limit, offset)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -73,7 +70,6 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return web.Respond(ctx, w, toAppNotifications(notifications), http.StatusOK)
 }
 
-// GetUnreadCount returns the number of unread notifications for a user in a workspace.
 func (h *Handlers) GetUnreadCount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.GetUnreadCount")
 	defer span.End()
@@ -83,13 +79,12 @@ func (h *Handlers) GetUnreadCount(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	count, err := h.notifications.GetUnreadCount(ctx, userID, workspaceID)
+	count, err := h.notifications.GetUnreadCount(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -101,10 +96,14 @@ func (h *Handlers) GetUnreadCount(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, count, http.StatusOK)
 }
 
-// MarkAsRead marks a notification as read.
 func (h *Handlers) MarkAsRead(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.MarkAsRead")
 	defer span.End()
+
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	notificationIDParam := web.Params(r, "id")
 	notificationID, err := uuid.Parse(notificationIDParam)
@@ -128,7 +127,6 @@ func (h *Handlers) MarkAsRead(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// GetPreferences returns the notification preferences for a user in a workspace.
 func (h *Handlers) GetPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.GetPreferences")
 	defer span.End()
@@ -138,13 +136,12 @@ func (h *Handlers) GetPreferences(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	preferences, err := h.notifications.GetPreferences(ctx, userID, workspaceID)
+	preferences, err := h.notifications.GetPreferences(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -156,7 +153,6 @@ func (h *Handlers) GetPreferences(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, toAppNotificationPreferences(preferences), http.StatusOK)
 }
 
-// UpdatePreference updates a notification preference.
 func (h *Handlers) UpdatePreference(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.UpdatePreference")
 	defer span.End()
@@ -171,10 +167,9 @@ func (h *Handlers) UpdatePreference(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	notificationType := web.Params(r, "type")
@@ -190,7 +185,7 @@ func (h *Handlers) UpdatePreference(ctx context.Context, w http.ResponseWriter, 
 		updates["in_app_enabled"] = *input.InAppEnabled
 	}
 
-	if err := h.notifications.UpdatePreference(ctx, userID, workspaceID, notificationType, updates); err != nil {
+	if err := h.notifications.UpdatePreference(ctx, userID, workspace.ID, notificationType, updates); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -201,7 +196,6 @@ func (h *Handlers) UpdatePreference(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// MarkAllAsRead marks all notifications as read for a user in a workspace.
 func (h *Handlers) MarkAllAsRead(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.MarkAllAsRead")
 	defer span.End()
@@ -211,28 +205,31 @@ func (h *Handlers) MarkAllAsRead(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	if err := h.notifications.MarkAllAsRead(ctx, userID, workspaceID); err != nil {
+	if err := h.notifications.MarkAllAsRead(ctx, userID, workspace.ID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("all notifications marked as read", trace.WithAttributes(
 		attribute.String("user.id", userID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
+		attribute.String("workspace.id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// DeleteNotification deletes a specific notification.
 func (h *Handlers) DeleteNotification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteNotification")
 	defer span.End()
+
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	notificationIDParam := web.Params(r, "id")
 	notificationID, err := uuid.Parse(notificationIDParam)
@@ -256,7 +253,6 @@ func (h *Handlers) DeleteNotification(ctx context.Context, w http.ResponseWriter
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// DeleteAllNotifications deletes all notifications for the user in the workspace.
 func (h *Handlers) DeleteAllNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteAllNotifications")
 	defer span.End()
@@ -266,13 +262,12 @@ func (h *Handlers) DeleteAllNotifications(ctx context.Context, w http.ResponseWr
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	count, err := h.notifications.DeleteAllNotifications(ctx, userID, workspaceID)
+	count, err := h.notifications.DeleteAllNotifications(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -280,13 +275,12 @@ func (h *Handlers) DeleteAllNotifications(ctx context.Context, w http.ResponseWr
 	span.AddEvent("all notifications deleted", trace.WithAttributes(
 		attribute.Int64("notifications.count", count),
 		attribute.String("user.id", userID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
+		attribute.String("workspace.id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, map[string]int64{"deleted_count": count}, http.StatusOK)
 }
 
-// DeleteReadNotifications deletes all read notifications for the user in the workspace.
 func (h *Handlers) DeleteReadNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.DeleteReadNotifications")
 	defer span.End()
@@ -296,13 +290,12 @@ func (h *Handlers) DeleteReadNotifications(ctx context.Context, w http.ResponseW
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	count, err := h.notifications.DeleteReadNotifications(ctx, userID, workspaceID)
+	count, err := h.notifications.DeleteReadNotifications(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -310,16 +303,20 @@ func (h *Handlers) DeleteReadNotifications(ctx context.Context, w http.ResponseW
 	span.AddEvent("read notifications deleted", trace.WithAttributes(
 		attribute.Int64("notifications.count", count),
 		attribute.String("user.id", userID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
+		attribute.String("workspace.id", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, map[string]int64{"deleted_count": count}, http.StatusOK)
 }
 
-// MarkAsUnread marks a notification as unread.
 func (h *Handlers) MarkAsUnread(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.notifications.MarkAsUnread")
 	defer span.End()
+
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	notificationIDParam := web.Params(r, "id")
 	notificationID, err := uuid.Parse(notificationIDParam)

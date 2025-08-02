@@ -23,14 +23,15 @@ func Routes(cfg Config, app *web.App) {
 	objectivesService := objectives.New(cfg.Log, objectivesrepo.New(cfg.Log, cfg.DB))
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
 	h := New(objectivesService, keyResultsService, cfg.Cache, cfg.Log)
 
-	app.Get("/workspaces/{workspaceId}/objectives", h.List, auth)
-	app.Get("/workspaces/{workspaceId}/objectives/{id}", h.Get, auth)
-	app.Put("/workspaces/{workspaceId}/objectives/{id}", h.Update, auth)
-	app.Delete("/workspaces/{workspaceId}/objectives/{id}", h.Delete, auth)
-	app.Get("/workspaces/{workspaceId}/objectives/{id}/key-results", h.GetKeyResults, auth)
-	app.Get("/workspaces/{workspaceId}/objectives/{id}/analytics", h.GetAnalytics, auth)
-	app.Post("/workspaces/{workspaceId}/objectives", h.Create, auth)
+	app.Get("/workspaces/{workspaceSlug}/objectives", h.List, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/objectives/{id}", h.Get, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/objectives/{id}", h.Update, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/objectives/{id}", h.Delete, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/key-results", h.GetKeyResults, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/analytics", h.GetAnalytics, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/objectives", h.Create, auth, workspace)
 }

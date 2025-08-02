@@ -31,21 +31,17 @@ import (
 
 type handlers struct{}
 
-// New returns a new handlers instance which implements the mux.RouteAdder interface.
 func New() handlers {
 	return handlers{}
 }
 
-// BuildAllRoutes implements the mux.RouteAdder interface. It builds all the routes for the application.
 func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 
-	// register the heath routes
 	healthgrp.Routes(healthgrp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
 	}, app)
 
-	// register the stories routes
 	storiesgrp.Routes(storiesgrp.Config{
 		DB:          cfg.DB,
 		Log:         cfg.Log,
@@ -56,7 +52,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:       cfg.Cache,
 	}, app)
 
-	// register the objectives routes
 	objectivesgrp.Routes(objectivesgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
@@ -64,56 +59,55 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 	}, app)
 
-	// register the objective statuses routes
 	objectivestatusgrp.Routes(objectivestatusgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the labels routes
 	labelsgrp.Routes(labelsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the links routes
 	linksgrp.Routes(linksgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the sprints routes
 	sprintsgrp.Routes(sprintsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register epics routes
 	epicsgrp.Routes(epicsgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the documents routes
 	documentsgrp.Routes(documentsgrp.Config{
-		DB:  cfg.DB,
-		Log: cfg.Log,
-		// SecretKey: cfg.SecretKey,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the states routes
 	statesgrp.Routes(statesgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the teams routes
 	teamsgrp.Routes(teamsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
@@ -121,7 +115,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 	}, app)
 
-	// register the users routes
 	usersgrp.Routes(usersgrp.Config{
 		DB:            cfg.DB,
 		Log:           cfg.Log,
@@ -130,9 +123,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
 		AzureConfig:   cfg.AzureConfig,
+		Cache:         cfg.Cache,
 	}, app)
 
-	// register the workspaces routes
 	workspacesgrp.Routes(workspacesgrp.Config{
 		DB:            cfg.DB,
 		Log:           cfg.Log,
@@ -146,14 +139,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		AzureConfig:   cfg.AzureConfig,
 	}, app)
 
-	// register the comments routes
 	commentsgrp.Routes(commentsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the activities routes
 	activitiesgrp.Routes(activitiesgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
@@ -161,14 +153,13 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 	}, app)
 
-	// register the reports routes
 	reportsgrp.Routes(reportsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the key results routes
 	keyresultsgrp.Routes(keyresultsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
@@ -176,7 +167,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 	}, app)
 
-	// register the notifications routes
 	notificationsgrp.Routes(notificationsgrp.Config{
 		DB:           cfg.DB,
 		Log:          cfg.Log,
@@ -185,7 +175,6 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		TasksService: cfg.TasksService,
 	}, app)
 
-	// register the invitations routes
 	invitationsgrp.Routes(invitationsgrp.Config{
 		DB:           cfg.DB,
 		Log:          cfg.Log,
@@ -195,16 +184,16 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeSecret: cfg.WebhookSecret,
 		TasksService: cfg.TasksService,
 		SystemUserID: cfg.SystemUserID,
+		Cache:        cfg.Cache,
 	}, app)
 
-	// register the search routes
 	searchgrp.Routes(searchgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
-	// register the subscriptions routes
 	subscriptionsgrp.Routes(subscriptionsgrp.Config{
 		DB:            cfg.DB,
 		Log:           cfg.Log,
@@ -214,9 +203,9 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
 		SystemUserID:  cfg.SystemUserID,
+		Cache:         cfg.Cache,
 	}, app)
 
-	// register the sse routes
 	ssegrp.Routes(ssegrp.Config{
 		Log:        cfg.Log,
 		SecretKey:  cfg.SecretKey,
@@ -224,19 +213,19 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		CorsOrigin: cfg.CorsOrigin,
 	}, app)
 
-	// register the team settings routes
 	teamsettingsgrp.Routes(teamsettingsgrp.Config{
 		DB:           cfg.DB,
 		Log:          cfg.Log,
 		SecretKey:    cfg.SecretKey,
 		TasksService: cfg.TasksService,
+		Cache:        cfg.Cache,
 	}, app)
 
-	// register the chat sessions routes
 	chatsessionsgrp.Routes(chatsessionsgrp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
 	}, app)
 
 }

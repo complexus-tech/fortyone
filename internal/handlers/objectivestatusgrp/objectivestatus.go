@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -19,7 +20,6 @@ type Handlers struct {
 	objectiveStatus *objectivestatus.Service
 }
 
-// New constructs a new objective status handlers instance.
 func New(objectiveStatus *objectivestatus.Service) *Handlers {
 	return &Handlers{
 		objectiveStatus: objectiveStatus,
@@ -27,10 +27,9 @@ func New(objectiveStatus *objectivestatus.Service) *Handlers {
 }
 
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var req NewObjectiveStatus
@@ -38,7 +37,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	status, err := h.objectiveStatus.Create(ctx, workspaceId, toCoreNewObjectiveStatus(req))
+	status, err := h.objectiveStatus.Create(ctx, workspace.ID, toCoreNewObjectiveStatus(req))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -47,14 +46,12 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	statusIdParam := web.Params(r, "statusId")
-
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
+	statusIdParam := web.Params(r, "statusId")
 	statusId, err := uuid.Parse(statusIdParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidStatusID, http.StatusBadRequest)
@@ -65,7 +62,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	status, err := h.objectiveStatus.Update(ctx, workspaceId, statusId, toCoreUpdateObjectiveStatus(req))
+	status, err := h.objectiveStatus.Update(ctx, workspace.ID, statusId, toCoreUpdateObjectiveStatus(req))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -74,35 +71,31 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	statusIdParam := web.Params(r, "statusId")
-
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
+	statusIdParam := web.Params(r, "statusId")
 	statusId, err := uuid.Parse(statusIdParam)
 	if err != nil {
 		return web.RespondError(ctx, w, ErrInvalidStatusID, http.StatusBadRequest)
 	}
 
-	if err := h.objectiveStatus.Delete(ctx, workspaceId, statusId); err != nil {
+	if err := h.objectiveStatus.Delete(ctx, workspace.ID, statusId); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// List returns a list of objective statuses.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	statuses, err := h.objectiveStatus.List(ctx, workspaceId)
+	statuses, err := h.objectiveStatus.List(ctx, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

@@ -13,26 +13,22 @@ import (
 
 type Handlers struct {
 	sprints *sprints.Service
-	// audit  *audit.Service
 }
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 )
 
-// New constructs a new sprints handlers instance.
 func New(sprints *sprints.Service) *Handlers {
 	return &Handlers{
 		sprints: sprints,
 	}
 }
 
-// List returns a list of sprints.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var af AppFilters
@@ -44,7 +40,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	userID, _ := mid.GetUserID(ctx)
 
-	sprints, err := h.sprints.List(ctx, workspaceId, userID, filters)
+	sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err
 	}
@@ -52,17 +48,15 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-// Running returns a list of running sprints.
 func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, _ := mid.GetUserID(ctx)
 
-	sprints, err := h.sprints.Running(ctx, workspaceId, userID)
+	sprints, err := h.sprints.Running(ctx, workspace.ID, userID)
 	if err != nil {
 		return err
 	}
@@ -70,12 +64,10 @@ func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.R
 	return nil
 }
 
-// GetByID returns a single sprint by ID without stats.
 func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	sprintIdParam := web.Params(r, "sprintId")
@@ -84,7 +76,7 @@ func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.R
 		return errors.New("sprint id is not in its proper form")
 	}
 
-	sprint, err := h.sprints.GetByID(ctx, sprintId, workspaceId)
+	sprint, err := h.sprints.GetByID(ctx, sprintId, workspace.ID)
 	if err != nil {
 		return err
 	}
@@ -93,12 +85,10 @@ func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.R
 	return nil
 }
 
-// GetAnalytics returns analytics data for a sprint.
 func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	sprintIdParam := web.Params(r, "sprintId")
@@ -107,7 +97,7 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 		return errors.New("sprint id is not in its proper form")
 	}
 
-	analytics, err := h.sprints.GetAnalytics(ctx, sprintId, workspaceId)
+	analytics, err := h.sprints.GetAnalytics(ctx, sprintId, workspace.ID)
 	if err != nil {
 		return err
 	}
@@ -116,12 +106,10 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 	return nil
 }
 
-// Create creates a new sprint.
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var app AppNewSprint
@@ -134,7 +122,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Goal:      app.Goal,
 		Objective: app.Objective,
 		Team:      app.Team,
-		Workspace: workspaceId,
+		Workspace: workspace.ID,
 		StartDate: app.StartDate,
 		EndDate:   app.EndDate,
 	}
@@ -148,12 +136,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// Update updates an existing sprint.
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	sprintIdParam := web.Params(r, "sprintId")
@@ -169,8 +155,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	userID, _ := mid.GetUserID(ctx)
 
-	// First get the sprint to verify it belongs to the workspace
-	existingSprints, err := h.sprints.List(ctx, workspaceId, userID, map[string]any{"sprint_id": sprintId})
+	existingSprints, err := h.sprints.List(ctx, workspace.ID, userID, map[string]any{"sprint_id": sprintId})
 	if err != nil {
 		return err
 	}
@@ -186,7 +171,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		EndDate:   app.EndDate,
 	}
 
-	result, err := h.sprints.Update(ctx, sprintId, workspaceId, sprint)
+	result, err := h.sprints.Update(ctx, sprintId, workspace.ID, sprint)
 	if err != nil {
 		return err
 	}
@@ -195,12 +180,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// Delete removes a sprint.
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	sprintIdParam := web.Params(r, "sprintId")
@@ -209,7 +192,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return errors.New("sprint id is not in its proper form")
 	}
 
-	if err := h.sprints.Delete(ctx, sprintId, workspaceId); err != nil {
+	if err := h.sprints.Delete(ctx, sprintId, workspace.ID); err != nil {
 		return err
 	}
 

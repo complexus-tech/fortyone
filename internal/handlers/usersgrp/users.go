@@ -31,7 +31,6 @@ type Handlers struct {
 	publisher     *publisher.Publisher
 }
 
-// New constructs a new users handlers instance.
 func New(users *users.Service, attachments users.AttachmentsService, secretKey string, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
@@ -42,7 +41,6 @@ func New(users *users.Service, attachments users.AttachmentsService, secretKey s
 	}
 }
 
-// GetProfile returns the current user's profile
 func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -60,7 +58,6 @@ func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// UpdateProfile updates the current user's profile
 func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -74,7 +71,6 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 
 	updates := users.CoreUpdateUser{}
 
-	// Only set pointers for fields that were provided and are not empty
 	if req.Username != "" {
 		updates.Username = &req.Username
 	}
@@ -95,7 +91,6 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Get updated user profile
 	user, err := h.users.GetUser(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -104,7 +99,6 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// DeleteProfile soft deletes the current user's account
 func (h *Handlers) DeleteProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -121,7 +115,6 @@ func (h *Handlers) DeleteProfile(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// SwitchWorkspace updates the current user's active workspace
 func (h *Handlers) SwitchWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -140,7 +133,6 @@ func (h *Handlers) SwitchWorkspace(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Get updated user profile
 	user, err := h.users.GetUser(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -149,13 +141,10 @@ func (h *Handlers) SwitchWorkspace(ctx context.Context, w http.ResponseWriter, r
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// List returns a list of users for a workspace.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var teamID *uuid.UUID
@@ -168,7 +157,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		teamID = &parsedTeamID
 	}
 
-	users, err := h.users.List(ctx, workspaceId, teamID)
+	users, err := h.users.List(ctx, workspace.ID, teamID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -176,14 +165,12 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-// GoogleAuth handles authentication with Google
 func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var req GoogleAuthRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Verify Google token
 	payload, err := h.googleService.VerifyToken(ctx, req.Token)
 	if err != nil {
 		switch {
@@ -194,19 +181,16 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	// Verify email is verified by Google
 	if verified, ok := payload.Claims["email_verified"].(bool); !ok || !verified {
 		return web.RespondError(ctx, w, errors.New("email not verified by google"), http.StatusUnauthorized)
 	}
 
-	// Try to find existing user
 	user, err := h.users.GetUserByEmail(ctx, payload.Claims["email"].(string))
 	if err != nil && !errors.Is(err, users.ErrNotFound) {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	if errors.Is(err, users.ErrNotFound) {
-		// Create new user
 		newUser := users.CoreNewUser{
 			Email:     payload.Claims["email"].(string),
 			FullName:  payload.Claims["name"].(string),
@@ -218,7 +202,6 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
@@ -235,21 +218,18 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// SendEmailVerification sends a verification email to the user
 func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var req EmailVerificationRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Validate and normalize email
 	normalizedEmail, err := validate.Email(req.Email)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	req.Email = normalizedEmail
 
-	// Check if too many attempts
 	count, err := h.users.GetValidTokenCount(ctx, req.Email, 10*time.Minute)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -259,7 +239,6 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
 	}
 
-	// Check if user exists to determine token type
 	_, err = h.users.GetUserByEmail(ctx, req.Email)
 	tokenType := users.TokenTypeRegistration
 	if err == nil {
@@ -268,13 +247,11 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Create new verification token
 	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Publish email verification event
 	event := events.Event{
 		Type: events.EmailVerification,
 		Payload: events.EmailVerificationPayload{
@@ -283,7 +260,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 			TokenType: string(tokenType),
 		},
 		Timestamp: time.Now(),
-		ActorID:   uuid.Nil, // System generated event
+		ActorID:   uuid.Nil,
 	}
 
 	if err := h.publisher.Publish(ctx, event); err != nil {
@@ -293,21 +270,18 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// VerifyEmail verifies an email verification token
 func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var req VerifyEmailRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Validate and normalize email
 	normalizedEmail, err := validate.Email(req.Email)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	req.Email = normalizedEmail
 
-	// Get and validate token
 	verificationToken, err := h.users.GetVerificationToken(ctx, req.Token)
 	if err != nil {
 		switch {
@@ -322,24 +296,20 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	// Verify email matches
 	if verificationToken.Email != req.Email {
 		return web.RespondError(ctx, w, errors.New("email mismatch"), http.StatusBadRequest)
 	}
 
-	// Mark token as used
 	if err := h.users.MarkTokenUsed(ctx, verificationToken.ID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Try to find existing user
 	user, err := h.users.GetUserByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, users.ErrNotFound) {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	if errors.Is(err, users.ErrNotFound) {
-		// Create new user with verified email
 		newUser := users.CoreNewUser{
 			Email: req.Email,
 		}
@@ -349,7 +319,6 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	// Generate JWT token
 	claims := jwt.RegisteredClaims{
 		Subject:   user.ID.String(),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
@@ -366,7 +335,6 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// GetAutomationPreferences retrieves the user's automation preferences for a workspace
 func (h *Handlers) GetAutomationPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.users.GetAutomationPreferences")
 	defer span.End()
@@ -376,12 +344,12 @@ func (h *Handlers) GetAutomationPreferences(ctx context.Context, w http.Response
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("invalid workspace ID: %w", err), http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspaceID)
+	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("failed to get automation preferences: %w", err), http.StatusInternalServerError)
 	}
@@ -390,7 +358,6 @@ func (h *Handlers) GetAutomationPreferences(ctx context.Context, w http.Response
 	return web.Respond(ctx, w, toAppAutomationPreferences(preferences), http.StatusOK)
 }
 
-// UpdateAutomationPreferences updates the user's automation preferences for a workspace
 func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.users.UpdateAutomationPreferences")
 	defer span.End()
@@ -400,9 +367,9 @@ func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.Respo
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("invalid workspace ID: %w", err), http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var req UpdateAutomationPreferencesRequest
@@ -411,12 +378,11 @@ func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.Respo
 	}
 
 	updates := toCoreUpdateAutomationPreferences(req)
-	if err := h.users.UpdateAutomationPreferences(ctx, userID, workspaceID, updates); err != nil {
+	if err := h.users.UpdateAutomationPreferences(ctx, userID, workspace.ID, updates); err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("failed to update automation preferences: %w", err), http.StatusInternalServerError)
 	}
 
-	// Get the updated preferences to return to the client
-	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspaceID)
+	preferences, err := h.users.GetAutomationPreferences(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("failed to get updated automation preferences: %w", err), http.StatusInternalServerError)
 	}
@@ -425,26 +391,22 @@ func (h *Handlers) UpdateAutomationPreferences(ctx context.Context, w http.Respo
 	return web.Respond(ctx, w, toAppAutomationPreferences(preferences), http.StatusOK)
 }
 
-// UploadProfileImage handles profile image upload
 func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Parse multipart form, limit to 6MB for profile images
 	if err := r.ParseMultipartForm(6 << 20); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Get file from form
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("error getting image file: %w", err), http.StatusBadRequest)
 	}
 	defer file.Close()
 
-	// Upload profile image
 	err = h.users.UploadProfileImage(ctx, userID, file, header, h.attachments)
 	if err != nil {
 		switch {
@@ -455,7 +417,6 @@ func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter
 		}
 	}
 
-	// Get updated user profile
 	user, err := h.users.GetUser(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -464,7 +425,6 @@ func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
-// DeleteProfileImage handles profile image deletion
 func (h *Handlers) DeleteProfileImage(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -479,7 +439,6 @@ func (h *Handlers) DeleteProfileImage(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Get updated user profile
 	user, err := h.users.GetUser(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)

@@ -59,13 +59,14 @@ func Routes(cfg Config, app *web.App) {
 
 	h := New(subsService, usersService, workspacesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
-	app.Post("/workspaces/{workspaceId}/subscriptions/checkout", h.CreateCheckoutSession, auth)
-	app.Post("/workspaces/{workspaceId}/subscriptions/portal", h.CreateCustomerPortal, auth)
-	app.Get("/workspaces/{workspaceId}/subscription", h.GetSubscription, auth)
-	app.Get("/workspaces/{workspaceId}/invoices", h.GetInvoices, auth)
-	app.Post("/workspaces/{workspaceId}/subscriptions/add-seat", h.AddSeat, auth)
-	app.Post("/workspaces/{workspaceId}/subscriptions/change-plan", h.ChangeSubscriptionPlan, auth)
+	app.Post("/workspaces/{workspaceSlug}/subscriptions/checkout", h.CreateCheckoutSession, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/subscriptions/portal", h.CreateCustomerPortal, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/subscription", h.GetSubscription, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/invoices", h.GetInvoices, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/subscriptions/add-seat", h.AddSeat, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/subscriptions/change-plan", h.ChangeSubscriptionPlan, auth, workspace)
 
 	// Public webhook endpoint
 	app.Post("/webhooks/stripe", h.HandleWebhook)

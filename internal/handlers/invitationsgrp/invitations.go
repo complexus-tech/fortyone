@@ -31,14 +31,13 @@ func New(invitations *invitations.Service, users *users.Service) *Handlers {
 	}
 }
 
-// CreateBulkInvitations creates multiple workspace invitations
 func (h *Handlers) CreateBulkInvitations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.CreateBulkInvitations")
 	defer span.End()
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -51,7 +50,6 @@ func (h *Handlers) CreateBulkInvitations(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Convert request to core type
 	requests := make([]invitations.InvitationRequest, len(req.Invitations))
 	for i, inv := range req.Invitations {
 		requests[i] = invitations.InvitationRequest{
@@ -61,30 +59,29 @@ func (h *Handlers) CreateBulkInvitations(ctx context.Context, w http.ResponseWri
 		}
 	}
 
-	results, err := h.invitations.CreateBulkInvitations(ctx, workspaceID, userID, requests)
+	results, err := h.invitations.CreateBulkInvitations(ctx, workspace.ID, userID, requests)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	span.AddEvent("bulk invitations created", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.Int("invitation_count", len(results)),
 	))
 
 	return web.Respond(ctx, w, toAppInvitations(results), http.StatusCreated)
 }
 
-// ListInvitations returns all pending invitations for a workspace
 func (h *Handlers) ListInvitations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.ListInvitations")
 	defer span.End()
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	invitations, err := h.invitations.ListInvitations(ctx, workspaceID)
+	invitations, err := h.invitations.ListInvitations(ctx, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -92,10 +89,15 @@ func (h *Handlers) ListInvitations(ctx context.Context, w http.ResponseWriter, r
 	return web.Respond(ctx, w, toAppInvitations(invitations), http.StatusOK)
 }
 
-// RevokeInvitation revokes a workspace invitation
 func (h *Handlers) RevokeInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.RevokeInvitation")
 	defer span.End()
+
+	// Workspace is in context for authorization, but not directly used here.
+	_, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	invitationID, err := uuid.Parse(web.Params(r, "id"))
 	if err != nil {
@@ -113,7 +115,6 @@ func (h *Handlers) RevokeInvitation(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// GetInvitation retrieves and validates an invitation by token
 func (h *Handlers) GetInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.GetInvitation")
 	defer span.End()
@@ -140,7 +141,6 @@ func (h *Handlers) GetInvitation(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, toAppInvitation(invitation), http.StatusOK)
 }
 
-// ListUserInvitations returns all pending invitations for the authenticated user
 func (h *Handlers) ListUserInvitations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.ListUserInvitations")
 	defer span.End()
@@ -150,7 +150,6 @@ func (h *Handlers) ListUserInvitations(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get user details to get email
 	user, err := h.users.GetUser(ctx, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -164,7 +163,6 @@ func (h *Handlers) ListUserInvitations(ctx context.Context, w http.ResponseWrite
 	return web.Respond(ctx, w, toAppInvitations(invitations), http.StatusOK)
 }
 
-// AcceptInvitation accepts a workspace invitation
 func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.AcceptInvitation")
 	defer span.End()

@@ -9,7 +9,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
 var (
@@ -22,7 +21,6 @@ type Handlers struct {
 	log          *logger.Logger
 }
 
-// New returns a new chat sessions handlers instance.
 func New(chatsessions *chatsessions.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		chatsessions: chatsessions,
@@ -30,12 +28,11 @@ func New(chatsessions *chatsessions.Service, log *logger.Logger) *Handlers {
 	}
 }
 
-// CreateSession creates a new chat session with initial messages.
 func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.CreateSession")
 	defer span.End()
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		h.log.Error(ctx, "invalid workspace id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -57,7 +54,7 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 	ncs := chatsessions.CoreNewChatSession{
 		ID:          req.ID,
 		UserID:      userID,
-		WorkspaceID: workspaceID,
+		WorkspaceID: workspace.ID,
 		Title:       req.Title,
 		Messages:    req.Messages,
 	}
@@ -72,7 +69,6 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// GetSession returns the chat session with the specified ID.
 func (h *Handlers) GetSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.GetSession")
 	defer span.End()
@@ -84,14 +80,14 @@ func (h *Handlers) GetSession(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		h.log.Error(ctx, "invalid workspace id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
-	session, err := h.chatsessions.GetSession(ctx, sessionID, workspaceID)
+	session, err := h.chatsessions.GetSession(ctx, sessionID, workspace.ID)
 	if err != nil {
 		if errors.Is(err, chatsessions.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -105,12 +101,11 @@ func (h *Handlers) GetSession(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-// ListSessions returns a list of chat sessions for the current user in the workspace.
 func (h *Handlers) ListSessions(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.ListSessions")
 	defer span.End()
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		h.log.Error(ctx, "invalid workspace id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -123,7 +118,7 @@ func (h *Handlers) ListSessions(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
-	sessions, err := h.chatsessions.ListSessions(ctx, userID, workspaceID)
+	sessions, err := h.chatsessions.ListSessions(ctx, userID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
@@ -133,7 +128,6 @@ func (h *Handlers) ListSessions(ctx context.Context, w http.ResponseWriter, r *h
 	return nil
 }
 
-// UpdateSession updates the title of a chat session.
 func (h *Handlers) UpdateSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.UpdateSession")
 	defer span.End()
@@ -145,7 +139,7 @@ func (h *Handlers) UpdateSession(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		h.log.Error(ctx, "invalid workspace id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
@@ -158,7 +152,7 @@ func (h *Handlers) UpdateSession(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	if err := h.chatsessions.UpdateSession(ctx, sessionID, workspaceID, req.Title); err != nil {
+	if err := h.chatsessions.UpdateSession(ctx, sessionID, workspace.ID, req.Title); err != nil {
 		if errors.Is(err, chatsessions.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -171,7 +165,6 @@ func (h *Handlers) UpdateSession(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// DeleteSession deletes the chat session with the specified ID.
 func (h *Handlers) DeleteSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.DeleteSession")
 	defer span.End()
@@ -183,14 +176,14 @@ func (h *Handlers) DeleteSession(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	workspaceID, err := uuid.Parse(web.Params(r, "workspaceId"))
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		h.log.Error(ctx, "invalid workspace id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
-	if err := h.chatsessions.DeleteSession(ctx, sessionID, workspaceID); err != nil {
+	if err := h.chatsessions.DeleteSession(ctx, sessionID, workspace.ID); err != nil {
 		if errors.Is(err, chatsessions.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -203,7 +196,6 @@ func (h *Handlers) DeleteSession(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// SaveMessages saves messages for a chat session.
 func (h *Handlers) SaveMessages(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.SaveMessages")
 	defer span.End()
@@ -230,7 +222,6 @@ func (h *Handlers) SaveMessages(ctx context.Context, w http.ResponseWriter, r *h
 	return nil
 }
 
-// GetMessages returns the messages for a chat session.
 func (h *Handlers) GetMessages(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "chatsessionsgrp.handlers.GetMessages")
 	defer span.End()

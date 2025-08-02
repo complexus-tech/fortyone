@@ -30,7 +30,6 @@ var (
 	ErrInvalidObjectiveID = errors.New("objective id is not in its proper form")
 )
 
-// New constructs a new objectives handlers instance.
 func New(objectives *objectives.Service, keyResults *keyresults.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		objectives: objectives,
@@ -40,14 +39,13 @@ func New(objectives *objectives.Service, keyResults *keyresults.Service, cacheSe
 	}
 }
 
-// List returns a list of objectives.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.List")
 	defer span.End()
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return ErrInvalidWorkspaceID
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -62,20 +60,16 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	// Try to get from cache first
 	filtersStr := ""
 	if filters != nil {
-		// Convert filters to string representation for cache key
-		// This is a simple implementation - you might want to make this more sophisticated
 		for k, v := range filters {
 			filtersStr += fmt.Sprintf("%s:%v;", k, v)
 		}
 	}
-	cacheKey := cache.ObjectiveListCacheKey(workspaceId, filtersStr)
+	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, filtersStr)
 	var cachedObjectives []objectives.CoreObjective
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedObjectives); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -83,15 +77,12 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	// Cache miss, get from database
-	objectivesList, err := h.objectives.List(ctx, workspaceId, userID, filters)
+	objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, objectivesList, cache.ListTTL); err != nil {
-		// Log error but continue - cache failure shouldn't affect response
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -99,31 +90,26 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-// Get returns an objective by ID.
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Get")
 	defer span.End()
-	objectiveID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
 
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	// Try to get from cache first
-	cacheKey := cache.ObjectiveDetailCacheKey(wsID, objID)
+	cacheKey := cache.ObjectiveDetailCacheKey(workspace.ID, objID)
 	var cachedObjective objectives.CoreObjective
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedObjective); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -131,8 +117,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	// Cache miss, get from database
-	objective, err := h.objectives.Get(ctx, objID, wsID)
+	objective, err := h.objectives.Get(ctx, objID, workspace.ID)
 	if err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -142,9 +127,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, objective, cache.DetailTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -152,22 +135,19 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-// Update updates an objective in the system
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Update")
 	defer span.End()
-	objectiveID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
 
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
-		return nil
-	}
-
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
@@ -206,7 +186,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["health"] = health
 	}
 
-	if err := h.objectives.Update(ctx, objID, wsID, updates); err != nil {
+	if err := h.objectives.Update(ctx, objID, workspace.ID, updates); err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -219,14 +199,11 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// Invalidate cache after successful update
-	cacheKeys := cache.InvalidateObjectiveKeys(wsID, objID)
+	cacheKeys := cache.InvalidateObjectiveKeys(workspace.ID, objID)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			h.cache.DeleteByPattern(ctx, key)
 		} else {
-			// Handle exact key deletion
 			h.cache.Delete(ctx, key)
 		}
 	}
@@ -235,38 +212,32 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// Delete removes an objective from the system
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Delete")
 	defer span.End()
-	objectiveID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
 
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	// Invalidate cache before deleting the objective
-	cacheKeys := cache.InvalidateObjectiveKeys(wsID, objID)
+	cacheKeys := cache.InvalidateObjectiveKeys(workspace.ID, objID)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			h.cache.DeleteByPattern(ctx, key)
 		} else {
-			// Handle exact key deletion
 			h.cache.Delete(ctx, key)
 		}
 	}
 
-	if err := h.objectives.Delete(ctx, objID, wsID); err != nil {
+	if err := h.objectives.Delete(ctx, objID, workspace.ID); err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -279,31 +250,26 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// GetKeyResults returns all key results for an objective.
 func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.GetKeyResults")
 	defer span.End()
-	objectiveID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
 
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	// Try to get from cache first
-	cacheKey := cache.KeyResultsListCacheKey(wsID, objID)
+	cacheKey := cache.KeyResultsListCacheKey(workspace.ID, objID)
 	var cachedKeyResults []keyresults.CoreKeyResult
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedKeyResults); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -311,16 +277,13 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	// Cache miss, get from database
-	krs, err := h.keyResults.List(ctx, objID, wsID)
+	krs, err := h.keyResults.List(ctx, objID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, krs, cache.ListTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -328,15 +291,13 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// Create creates a new objective with optional key results
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.Create")
 	defer span.End()
-	workspaceID := web.Params(r, "workspaceId")
-	wsID, err := uuid.Parse(workspaceID)
+
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -349,7 +310,6 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	// Convert key results if they exist
 	var keyResults []keyresults.CoreNewKeyResult
 	for _, kr := range newObj.KeyResults {
 		keyResults = append(keyResults, keyresults.CoreNewKeyResult{
@@ -362,7 +322,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		})
 	}
 
-	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj, userID), wsID, keyResults)
+	objective, createdKRs, err := h.objectives.Create(ctx, toCoreNewObjective(newObj, userID), workspace.ID, keyResults)
 	if err != nil {
 		if errors.Is(err, objectives.ErrNameExists) {
 			web.RespondError(ctx, w, err, http.StatusConflict)
@@ -372,8 +332,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// After successful creation, invalidate list cache
-	listCachePattern := fmt.Sprintf(cache.ObjectiveListKey+"*", wsID.String())
+	listCachePattern := fmt.Sprintf(cache.ObjectiveListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
 	response := struct {
@@ -388,27 +347,23 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// GetAnalytics returns analytics data for an objective.
 func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectivesgrp.handlers.GetAnalytics")
 	defer span.End()
 
-	objectiveID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	analytics, err := h.objectives.GetAnalytics(ctx, objID, wsID)
+	analytics, err := h.objectives.GetAnalytics(ctx, objID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil

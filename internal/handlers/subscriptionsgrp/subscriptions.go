@@ -12,7 +12,6 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
 var (
@@ -35,16 +34,14 @@ func New(subscriptions *subscriptions.Service, users *users.Service, workspaces 
 	}
 }
 
-// CreateCheckoutSession generates a new Stripe checkout session
 func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.CreateCheckoutSession")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -61,13 +58,6 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	workspace, err := h.workspaces.Get(ctx, workspaceId, userId)
-	if err != nil {
-		span.RecordError(err)
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
-		return nil
-	}
-
 	var req AppCheckoutRequest
 	if err := web.Decode(r, &req); err != nil {
 		span.RecordError(err)
@@ -75,7 +65,7 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspaceId, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
+	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspace.ID, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
 	if err != nil {
 		if errors.Is(err, subscriptions.ErrWorkspaceHasActiveSub) {
 			web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -94,20 +84,18 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 	return nil
 }
 
-// AddSeat increases the number of seats in a subscription
 func (h *Handlers) AddSeat(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.AddSeat")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	err = h.subscriptions.UpdateSubscriptionSeats(ctx, workspaceId)
+	err = h.subscriptions.UpdateSubscriptionSeats(ctx, workspace.ID)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -118,16 +106,14 @@ func (h *Handlers) AddSeat(ctx context.Context, w http.ResponseWriter, r *http.R
 	return nil
 }
 
-// CreateCustomerPortal generates a URL for the Stripe Customer Portal
 func (h *Handlers) CreateCustomerPortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.CreateCustomerPortal")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -138,7 +124,7 @@ func (h *Handlers) CreateCustomerPortal(ctx context.Context, w http.ResponseWrit
 		return nil
 	}
 
-	url, err := h.subscriptions.CreateCustomerPortalSession(ctx, workspaceId, req.ReturnURL)
+	url, err := h.subscriptions.CreateCustomerPortalSession(ctx, workspace.ID, req.ReturnURL)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -153,20 +139,18 @@ func (h *Handlers) CreateCustomerPortal(ctx context.Context, w http.ResponseWrit
 	return nil
 }
 
-// GetSubscription returns the current subscription for a workspace
 func (h *Handlers) GetSubscription(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.GetSubscription")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	subscription, err := h.subscriptions.GetSubscription(ctx, workspaceId)
+	subscription, err := h.subscriptions.GetSubscription(ctx, workspace.ID)
 	if err != nil {
 		span.RecordError(err)
 		if errors.Is(err, subscriptions.ErrSubscriptionNotFound) {
@@ -181,20 +165,18 @@ func (h *Handlers) GetSubscription(ctx context.Context, w http.ResponseWriter, r
 	return nil
 }
 
-// GetInvoices returns the invoices for a workspace
 func (h *Handlers) GetInvoices(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.GetInvoices")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	invoices, err := h.subscriptions.GetInvoices(ctx, workspaceId)
+	invoices, err := h.subscriptions.GetInvoices(ctx, workspace.ID)
 	if err != nil {
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -205,7 +187,6 @@ func (h *Handlers) GetInvoices(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
-// HandleWebhook processes Stripe webhook events
 func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.HandleWebhook")
 	defer span.End()
@@ -220,7 +201,6 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	// Get the Stripe signature from headers
 	signature := r.Header.Get("Stripe-Signature")
 	if signature == "" {
 		span.RecordError(errors.New("missing Stripe-Signature header"))
@@ -233,8 +213,6 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		span.RecordError(err)
 		h.log.Error(ctx, "Failed to handle webhook event", "error", err)
-		// Still return 200 to prevent Stripe from retrying failed events with the same payload
-		// since we've already logged the error
 		if errors.Is(err, subscriptions.ErrFailedToCreateSubscription) {
 			web.RespondError(ctx, w, err, http.StatusInternalServerError)
 			return nil
@@ -247,16 +225,14 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// ChangeSubscriptionPlan changes the subscription plan for a workspace
 func (h *Handlers) ChangeSubscriptionPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.ChangeSubscriptionPlan")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		span.RecordError(err)
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -273,7 +249,7 @@ func (h *Handlers) ChangeSubscriptionPlan(ctx context.Context, w http.ResponseWr
 		return nil
 	}
 
-	err = h.subscriptions.ChangeSubscriptionPlan(ctx, workspaceId, req.NewLookupKey)
+	err = h.subscriptions.ChangeSubscriptionPlan(ctx, workspace.ID, req.NewLookupKey)
 	if err != nil {
 		switch {
 		case errors.Is(err, subscriptions.ErrNoActiveSubscriptionToChange),

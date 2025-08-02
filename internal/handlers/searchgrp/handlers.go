@@ -17,40 +17,32 @@ var (
 	ErrInvalidSearchType  = errors.New("invalid search type")
 )
 
-// Handlers manages the handlers for search endpoints.
 type Handlers struct {
 	searchService *search.Service
 }
 
-// New creates a new instance of search handlers.
 func New(searchService *search.Service) *Handlers {
 	return &Handlers{
 		searchService: searchService,
 	}
 }
 
-// Search handles the search request.
 func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 	userID, _ := mid.GetUserID(ctx)
 
-	// Extract query parameters
 	var params AppSearchParams
 
-	// Parse type
 	params.Type = r.URL.Query().Get("type")
 	if params.Type == "" {
 		params.Type = "all"
 	}
 
-	// Parse query
 	params.Query = r.URL.Query().Get("query")
 
-	// Parse optional UUIDs
 	if teamIDStr := r.URL.Query().Get("teamId"); teamIDStr != "" {
 		teamID, err := uuid.Parse(teamIDStr)
 		if err != nil {
@@ -83,18 +75,15 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		params.StatusID = &statusID
 	}
 
-	// Parse optional string
 	if priority := r.URL.Query().Get("priority"); priority != "" {
 		params.Priority = &priority
 	}
 
-	// Parse sort option
 	params.SortBy = r.URL.Query().Get("sortBy")
 	if params.SortBy == "" {
 		params.SortBy = "relevance"
 	}
 
-	// Parse pagination
 	params.Page = 1
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
@@ -109,7 +98,6 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	// Convert to core parameters
 	searchType := search.SearchTypeAll
 	switch params.Type {
 	case "stories":
@@ -122,7 +110,6 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, ErrInvalidSearchType, http.StatusBadRequest)
 	}
 
-	// Convert sort option
 	sortOption := search.SortByRelevance
 	switch params.SortBy {
 	case "updated":
@@ -146,13 +133,11 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 		PageSize:   params.PageSize,
 	}
 
-	// Call search service
-	result, err := h.searchService.Search(ctx, workspaceID, userID, searchParams)
+	result, err := h.searchService.Search(ctx, workspace.ID, userID, searchParams)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Convert to app response
 	response := toAppSearchResponse(result, params.Page, params.PageSize)
 
 	return web.Respond(ctx, w, response, http.StatusOK)

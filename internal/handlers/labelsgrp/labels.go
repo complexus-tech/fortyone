@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/labels"
+	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -29,11 +30,9 @@ func New(labels *labels.Service, log *logger.Logger) *Handlers {
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var af AppFilters
@@ -43,7 +42,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	labels, err := h.labels.GetLabels(ctx, workspaceId, filters)
+	labels, err := h.labels.GetLabels(ctx, workspace.ID, filters)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -53,22 +52,19 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	labelIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	labelIdParam := web.Params(r, "id")
 	labelId, err := uuid.Parse(labelIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidLabelID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	label, err := h.labels.GetLabel(ctx, labelId, workspaceId)
+	label, err := h.labels.GetLabel(ctx, labelId, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -78,11 +74,9 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 }
 
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var req AppNewLabel
@@ -94,7 +88,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	input := labels.CoreNewLabel{
 		Name:        req.Name,
 		TeamID:      req.TeamID,
-		WorkspaceID: workspaceId,
+		WorkspaceID: workspace.ID,
 		Color:       req.Color,
 	}
 
@@ -108,18 +102,15 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	labelIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	labelIdParam := web.Params(r, "id")
 	labelId, err := uuid.Parse(labelIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidLabelID, http.StatusBadRequest)
-		return nil
-	}
-
-	workspaceId, err := uuid.Parse(workspaceIdParam)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
@@ -129,7 +120,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	label, err := h.labels.UpdateLabel(ctx, labelId, workspaceId, req.Name, req.Color)
+	label, err := h.labels.UpdateLabel(ctx, labelId, workspace.ID, req.Name, req.Color)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -139,22 +130,19 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	labelIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	labelIdParam := web.Params(r, "id")
 	labelId, err := uuid.Parse(labelIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidLabelID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	if err := h.labels.DeleteLabel(ctx, labelId, workspaceId); err != nil {
+	if err := h.labels.DeleteLabel(ctx, labelId, workspace.ID); err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}

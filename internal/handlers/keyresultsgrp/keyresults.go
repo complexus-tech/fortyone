@@ -17,21 +17,18 @@ import (
 	"github.com/google/uuid"
 )
 
-// Set of error variables for key result operations
 var (
 	ErrInvalidKeyResultID = errors.New("key result id is not in its proper form")
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 	ErrInvalidObjectiveID = errors.New("objective id is not in its proper form")
 )
 
-// Handlers manages the set of key result endpoints
 type Handlers struct {
 	keyResults *keyresults.Service
 	log        *logger.Logger
 	cache      *cache.Service
 }
 
-// New creates a new key results handlers
 func New(keyResults *keyresults.Service, cache *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		keyResults: keyResults,
@@ -40,17 +37,14 @@ func New(keyResults *keyresults.Service, cache *cache.Service, log *logger.Logge
 	}
 }
 
-// invalidateCache invalidates all relevant caches for a key result operation
 func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
 	cacheKeys := cache.InvalidateKeyResultKeys(workspaceID)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
 			}
 		} else {
-			// Handle exact key deletion
 			if err := h.cache.Delete(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
 			}
@@ -58,18 +52,15 @@ func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
 	}
 }
 
-// Create adds a new key result to the system
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceID := web.Params(r, "workspaceId")
-	wsID, err := uuid.Parse(workspaceID)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	var nkr AppNewKeyResult
@@ -88,32 +79,27 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// Invalidate cache after successful creation
-	h.invalidateCache(ctx, wsID)
+	h.invalidateCache(ctx, workspace.ID)
 
 	web.Respond(ctx, w, toAppKeyResult(kr), http.StatusCreated)
 	return nil
 }
 
-// Update modifies a key result in the system
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	keyResultID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	keyResultID := web.Params(r, "id")
 	id, err := uuid.Parse(keyResultID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
-		return nil
-	}
-
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
 		return nil
 	}
 
@@ -140,7 +126,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 	updates["last_updated_by"] = userID
 
-	if err := h.keyResults.Update(ctx, id, wsID, updates); err != nil {
+	if err := h.keyResults.Update(ctx, id, workspace.ID, updates); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -149,31 +135,26 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// Invalidate cache after successful update
-	h.invalidateCache(ctx, wsID)
+	h.invalidateCache(ctx, workspace.ID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
-// Delete removes a key result from the system
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	keyResultID := web.Params(r, "id")
-	workspaceID := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	keyResultID := web.Params(r, "id")
 	id, err := uuid.Parse(keyResultID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	if err := h.keyResults.Delete(ctx, id, wsID); err != nil {
+	if err := h.keyResults.Delete(ctx, id, workspace.ID); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
@@ -182,31 +163,26 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	// Invalidate cache after successful deletion
-	h.invalidateCache(ctx, wsID)
+	h.invalidateCache(ctx, workspace.ID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
-// List returns all key results for an objective
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	objectiveID := web.Params(r, "objectiveId")
-	workspaceID := web.Params(r, "workspaceId")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
+	objectiveID := web.Params(r, "objectiveId")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
 
-	wsID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
-	}
-
-	krs, err := h.keyResults.List(ctx, objID, wsID)
+	krs, err := h.keyResults.List(ctx, objID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -216,28 +192,22 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-// ListPaginated returns paginated key results for a workspace
 func (h *Handlers) ListPaginated(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "keyresultsgrp.handlers.ListPaginated")
 	defer span.End()
 
-	// Get current user
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	workspaceID := web.Params(r, "workspaceId")
-	wsID, err := uuid.Parse(workspaceID)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Parse query parameters
-	filters := parseKeyResultFilters(r, wsID, userID)
+	filters := parseKeyResultFilters(r, workspace.ID, userID)
 
-	// Call service
 	response, err := h.keyResults.ListPaginated(ctx, filters)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -248,7 +218,6 @@ func (h *Handlers) ListPaginated(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// Helper function to parse filters from request
 func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyresultsrepo.CoreKeyResultFilters {
 	query := r.URL.Query()
 
@@ -261,22 +230,18 @@ func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyre
 		OrderDirection: getStringParam(query, "orderDirection", "desc"),
 	}
 
-	// Parse team IDs
 	if teamIDs := query["teamIds"]; len(teamIDs) > 0 {
 		filters.TeamIDs = parseUUIDArray(teamIDs)
 	}
 
-	// Parse objective IDs
 	if objectiveIDs := query["objectiveIds"]; len(objectiveIDs) > 0 {
 		filters.ObjectiveIDs = parseUUIDArray(objectiveIDs)
 	}
 
-	// Parse measurement types
 	if measurementTypes := query["measurementTypes"]; len(measurementTypes) > 0 {
 		filters.MeasurementTypes = measurementTypes
 	}
 
-	// Parse dates
 	if createdAfter := query.Get("createdAfter"); createdAfter != "" {
 		if t, err := time.Parse(time.RFC3339, createdAfter); err == nil {
 			filters.CreatedAfter = &t
@@ -292,7 +257,6 @@ func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyre
 	return filters
 }
 
-// Helper functions for parsing query parameters
 func getIntParam(query map[string][]string, key string, defaultValue int) int {
 	if values := query[key]; len(values) > 0 {
 		if val, err := strconv.Atoi(values[0]); err == nil {
