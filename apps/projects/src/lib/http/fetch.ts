@@ -9,7 +9,7 @@ const apiURL = process.env.NEXT_PUBLIC_API_URL;
 const isServer = typeof window === "undefined";
 
 // Cache client creation with workspace context using React's cache function
-const getClientContext = cache(async (session: Session) => {
+const getClientContext = cache(async (token: string) => {
   let subdomain = "";
   if (isServer) {
     const headersList = await getHeaders();
@@ -18,12 +18,7 @@ const getClientContext = cache(async (session: Session) => {
     subdomain = window.location.hostname.split(".")[0];
   }
 
-  const workspaces = session.workspaces;
-  const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-  );
-
-  const prefixUrl = `${apiURL}/workspaces/${workspace?.id}/`;
+  const prefixUrl = `${apiURL}/workspaces/${subdomain.toLowerCase()}/`;
 
   const client = ky.create({
     prefixUrl,
@@ -42,7 +37,7 @@ const getClientContext = cache(async (session: Session) => {
   });
 
   const authHeaders = {
-    Authorization: `Bearer ${session.token}`,
+    Authorization: `Bearer ${token}`,
   };
 
   return { client, authHeaders };
@@ -53,7 +48,7 @@ export const get = async <T>(
   session: Session,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session);
+  const { client, authHeaders } = await getClientContext(session.token);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -71,7 +66,7 @@ export const post = async <T, U>(
   session: Session,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session);
+  const { client, authHeaders } = await getClientContext(session.token);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -93,7 +88,7 @@ export const put = async <T, U>(
   session: Session,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session);
+  const { client, authHeaders } = await getClientContext(session.token);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -113,7 +108,7 @@ export const patch = async <T, U>(
   session: Session,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session);
+  const { client, authHeaders } = await getClientContext(session.token);
   const mergedOptions = {
     headers: {
       ...authHeaders,
@@ -132,7 +127,7 @@ export const remove = async <T>(
   session: Session,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session);
+  const { client, authHeaders } = await getClientContext(session.token);
   const mergedOptions = {
     headers: {
       ...authHeaders,
