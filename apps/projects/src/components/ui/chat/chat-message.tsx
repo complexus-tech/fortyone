@@ -248,7 +248,7 @@ export const ChatMessage = ({
                       size="sm"
                       variant="naked"
                     >
-                      <ReloadIcon strokeWidth={2} />
+                      <ReloadIcon strokeWidth={2.8} />
                     </Button>
                   </Tooltip>
                 ) : null}
