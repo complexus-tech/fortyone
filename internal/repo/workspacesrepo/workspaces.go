@@ -457,6 +457,73 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 	return toCoreWorkspaceWithRole(workspace), nil
 }
 
+func (r *repo) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (workspaces.CoreWorkspace, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetBySlug")
+	defer span.End()
+
+	var workspace dbWorkspaceWithRole
+
+	query := `
+		SELECT
+			w.workspace_id,
+			w.name,
+			w.slug,
+			w.color,
+			w.avatar_url,
+			CASE 
+				WHEN u.last_used_workspace_id = w.workspace_id THEN TRUE
+				WHEN u.last_used_workspace_id IS NULL AND w.workspace_id = (
+					SELECT w2.workspace_id 
+					FROM workspaces w2 
+					INNER JOIN workspace_members wm2 ON w2.workspace_id = wm2.workspace_id 
+					WHERE wm2.user_id = :user_id
+					ORDER BY w2.created_at ASC
+					LIMIT 1
+				) THEN TRUE
+				ELSE FALSE
+			END as is_active,
+			wm.role as user_role,
+			w.created_at,
+			w.updated_at,
+			w.trial_ends_on
+		FROM
+			workspaces w
+		INNER JOIN
+			workspace_members wm ON w.workspace_id = wm.workspace_id
+		INNER JOIN
+			users u ON wm.user_id = u.user_id
+		WHERE
+			w.slug = :slug
+			AND wm.user_id = :user_id
+	`
+
+	params := map[string]any{
+		"slug":    slug,
+		"user_id": userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get workspace by slug: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+
+	return toCoreWorkspaceWithRole(workspace), nil
+}
+
 func (r *repo) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.RemoveMember")
 	defer span.End()
