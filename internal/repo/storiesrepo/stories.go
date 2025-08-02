@@ -1501,12 +1501,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.title,
 				s.priority,
 				s.status_id,
-				s.assignee_id,
+				s.start_date,
+				s.end_date,
+				s.sprint_id,
 				s.team_id,
+				s.objective_id,
 				s.workspace_id,
+				s.assignee_id,
+				s.reporter_id,
 				s.created_at,
 				s.updated_at,
-				s.end_date,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
@@ -1530,12 +1534,57 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'title', ls.title,
 						'priority', ls.priority,
 						'status_id', ls.status_id,
-						'assignee_id', ls.assignee_id,
+						'start_date', ls.start_date,
+						'end_date', ls.end_date,
+						'sprint_id', ls.sprint_id,
 						'team_id', ls.team_id,
+						'objective_id', ls.objective_id,
 						'workspace_id', ls.workspace_id,
+						'assignee_id', ls.assignee_id,
+						'reporter_id', ls.reporter_id,
 						'created_at', ls.created_at,
 						'updated_at', ls.updated_at,
-						'end_date', ls.end_date
+						'sub_stories', COALESCE(
+							(
+								SELECT
+									json_agg(
+										json_build_object(
+											'id', sub.id,
+											'sequence_id', sub.sequence_id,
+											'title', sub.title,
+											'priority', sub.priority,
+											'status_id', sub.status_id,
+											'start_date', sub.start_date,
+											'end_date', sub.end_date,
+											'sprint_id', sub.sprint_id,
+											'team_id', sub.team_id,
+											'objective_id', sub.objective_id,
+											'workspace_id', sub.workspace_id,
+											'assignee_id', sub.assignee_id,
+											'reporter_id', sub.reporter_id,
+											'created_at', sub.created_at,
+											'updated_at', sub.updated_at,
+											'labels', '[]'
+										)
+									)
+								FROM
+									stories sub
+								WHERE
+									sub.parent_id = ls.id 
+									AND sub.deleted_at IS NULL
+							), '[]'
+						),
+						'labels', COALESCE(
+							(
+								SELECT
+									json_agg(l.label_id)
+								FROM
+									labels l
+									INNER JOIN story_labels sl ON sl.label_id = l.label_id
+								WHERE
+									sl.story_id = ls.id
+							), '[]'
+						)
 					) ORDER BY %s
 				) FILTER (WHERE ls.id IS NOT NULL), 
 				CAST('[]' AS json)
@@ -1914,6 +1963,27 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	if endDate, ok := storyMap["end_date"].(string); ok && endDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, endDate); err == nil {
 			story.EndDate = &parsed
+		}
+	}
+
+	// Handle sub-stories
+	if subStoriesData, ok := storyMap["sub_stories"].([]interface{}); ok {
+		for _, subStoryData := range subStoriesData {
+			if subStoryMap, ok := subStoryData.(map[string]interface{}); ok {
+				subStory := r.mapToStoryList(subStoryMap)
+				story.SubStories = append(story.SubStories, subStory)
+			}
+		}
+	}
+
+	// Handle labels
+	if labelsData, ok := storyMap["labels"].([]interface{}); ok {
+		for _, labelData := range labelsData {
+			if labelID, ok := labelData.(string); ok {
+				if parsed, err := uuid.Parse(labelID); err == nil {
+					story.Labels = append(story.Labels, parsed)
+				}
+			}
 		}
 	}
 
@@ -2679,8 +2749,47 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
-			CAST('[]' AS json) AS sub_stories,
-			CAST('[]' AS json) AS labels
+			COALESCE(
+				(
+					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at,
+								'labels', '[]'
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), '[]'
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
 		FROM
 			stories s
 	`
@@ -2841,8 +2950,47 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
-			CAST('[]' AS json) AS sub_stories,
-			CAST('[]' AS json) AS labels
+			COALESCE(
+				(
+					SELECT
+						json_agg(
+							json_build_object(
+								'id', sub.id,
+								'sequence_id', sub.sequence_id,
+								'title', sub.title,
+								'priority', sub.priority,
+								'status_id', sub.status_id,
+								'start_date', sub.start_date,
+								'end_date', sub.end_date,
+								'sprint_id', sub.sprint_id,
+								'team_id', sub.team_id,
+								'objective_id', sub.objective_id,
+								'workspace_id', sub.workspace_id,
+								'assignee_id', sub.assignee_id,
+								'reporter_id', sub.reporter_id,
+								'created_at', sub.created_at,
+								'updated_at', sub.updated_at,
+								'labels', '[]'
+							)
+						)
+					FROM
+						stories sub
+					WHERE
+						sub.parent_id = s.id 
+						AND sub.deleted_at IS NULL
+				), '[]'
+			) AS sub_stories,
+			COALESCE(
+				(
+					SELECT
+						json_agg(l.label_id)
+					FROM
+						labels l
+						INNER JOIN story_labels sl ON sl.label_id = l.label_id
+					WHERE
+						sl.story_id = s.id
+				), '[]'
+			) AS labels
 		FROM
 			stories s
 		INNER JOIN statuses stat ON s.status_id = stat.status_id
