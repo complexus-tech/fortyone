@@ -2,9 +2,7 @@
 import { Badge, Box, Button, Container, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
 import { Logo } from "@/components/ui";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
-import { useProfile } from "@/lib/hooks/profile";
-import type { Workspace } from "@/types";
+import type { User, Workspace } from "@/types";
 import { ActionCard } from "./components/action-card";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
@@ -22,9 +20,13 @@ const getRedirectUrl = (
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 
-export const Welcome = () => {
-  const { data: workspaces = [] } = useWorkspaces();
-  const { data: profile } = useProfile();
+export const Welcome = ({
+  workspaces,
+  profile,
+}: {
+  workspaces: Workspace[];
+  profile: User;
+}) => {
   const redirectUrl = getRedirectUrl(workspaces, profile?.lastUsedWorkspaceId);
 
   return (
