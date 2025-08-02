@@ -24,6 +24,6 @@ export default async function InvitePage() {
   if (!activeWorkspace || activeWorkspace?.userRole !== "admin") {
     return redirect("/onboarding/welcome");
   }
-  const teams = await getTeams(activeWorkspace.id);
+  const teams = await getTeams(activeWorkspace.slug);
   return <InviteTeam activeWorkspace={activeWorkspace} teams={teams} />;
 }

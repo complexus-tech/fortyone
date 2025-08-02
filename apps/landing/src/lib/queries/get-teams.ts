@@ -4,13 +4,13 @@ import { auth } from "@/auth";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-export const getTeams = async (workspaceId: string): Promise<Team[]> => {
-  if (!workspaceId) {
+export const getTeams = async (workspace: string): Promise<Team[]> => {
+  if (!workspace) {
     return [];
   }
   const session = await auth();
   const res = await ky
-    .get(`${apiURL}/workspaces/${workspaceId}/teams`, {
+    .get(`${apiURL}/workspaces/${workspace}/teams`, {
       headers: {
         Authorization: `Bearer ${session?.token}`,
       },
