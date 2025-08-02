@@ -33,7 +33,7 @@ import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
 import { suggestions } from "@/lib/ai/tools/suggestions";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
-import { systemPrompt } from "./system";
+import { systemPrompt } from "./system-xml";
 import { getUserContext } from "./user-context";
 
 export const maxDuration = 30;
