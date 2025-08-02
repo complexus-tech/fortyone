@@ -3,6 +3,7 @@ package workspaces
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"mime/multipart"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -73,11 +75,12 @@ type Service struct {
 	objectivestatus *objectivestatus.Service
 	subscriptions   *subscriptions.Service
 	attachments     AttachmentsService
+	cache           *cache.Service
 	systemUserID    uuid.UUID
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, systemUserID uuid.UUID) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -89,6 +92,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		objectivestatus: objectivestatus,
 		subscriptions:   subscriptions,
 		attachments:     attachments,
+		cache:           cache,
 		systemUserID:    systemUserID,
 	}
 }
@@ -303,15 +307,28 @@ func (s *Service) RemoveMember(ctx context.Context, workspaceID, userID uuid.UUI
 	ctx, span := web.AddSpan(ctx, "business.core.workspaces.RemoveMember")
 	defer span.End()
 
+	// Get workspace before deletion to get the slug for cache invalidation
+	workspace, err := s.repo.Get(ctx, workspaceID, userID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get workspace for cache invalidation", "error", err)
+	}
+
 	if err := s.repo.RemoveMember(ctx, workspaceID, userID); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
+	// Invalidate cache for this user if we got the workspace
+	if workspace.Slug != "" {
+		cacheKey := fmt.Sprintf("workspace:%s:user:%s", workspace.Slug, userID)
+		if err := s.cache.Delete(ctx, cacheKey); err != nil {
+			s.log.Error(ctx, "failed to invalidate workspace cache", "error", err)
+		}
+	}
+
 	// update subscription seats
 	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
 		s.log.Error(ctx, "failed to update subscription seats", err)
-		// no need to return error this is not a critical operation
 	}
 
 	span.AddEvent("workspace member removed.", trace.WithAttributes(
@@ -360,10 +377,20 @@ func (s *Service) UpdateMemberRole(ctx context.Context, workspaceID, userID uuid
 		return err
 	}
 
+	// Invalidate cache for this user
+	workspace, err := s.repo.Get(ctx, workspaceID, userID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get workspace for cache invalidation", "error", err)
+	} else {
+		cacheKey := fmt.Sprintf("workspace:%s:user:%s", workspace.Slug, userID)
+		if err := s.cache.Delete(ctx, cacheKey); err != nil {
+			s.log.Error(ctx, "failed to invalidate workspace cache", "error", err)
+		}
+	}
+
 	// update subscription seats
 	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
 		s.log.Error(ctx, "failed to update subscription seats", err)
-		// no need to return error this is not a critical operation
 	}
 
 	span.AddEvent("workspace member role updated.", trace.WithAttributes(
