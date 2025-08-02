@@ -95,7 +95,7 @@ export const ServerSentEvents = () => {
   );
 
   useEffect(() => {
-    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace?.id}/notifications/subscribe?token=${session?.token}`;
+    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace?.slug}/notifications/subscribe?token=${session?.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
     eventSource.onmessage = (event) => {
