@@ -17,6 +17,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -35,6 +36,7 @@ type Config struct {
 	Publisher     *publisher.Publisher
 	TasksService  *tasks.Service
 	SystemUserID  uuid.UUID
+	Cache         *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -53,7 +55,7 @@ func Routes(cfg Config, app *web.App) {
 	statusesService := states.New(cfg.Log, statesrepo.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepo.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepo.New(cfg.Log, cfg.DB), cfg.TasksService)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subsService, nil, cfg.SystemUserID)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subsService, nil, cfg.Cache, cfg.SystemUserID)
 
 	h := New(subsService, usersService, workspacesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)

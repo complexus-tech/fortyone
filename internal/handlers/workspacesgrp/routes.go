@@ -64,7 +64,7 @@ func Routes(cfg Config, app *web.App) {
 	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.SystemUserID)
+	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.Cache, cfg.SystemUserID)
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,
