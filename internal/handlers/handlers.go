@@ -173,6 +173,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:    cfg.SecretKey,
 		Redis:        cfg.Redis,
 		TasksService: cfg.TasksService,
+		Cache:        cfg.Cache,
 	}, app)
 
 	invitationsgrp.Routes(invitationsgrp.Config{
@@ -211,6 +212,7 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:  cfg.SecretKey,
 		SSEHub:     cfg.SSEHub,
 		CorsOrigin: cfg.CorsOrigin,
+		Cache:      cfg.Cache,
 	}, app)
 
 	teamsettingsgrp.Routes(teamsettingsgrp.Config{
