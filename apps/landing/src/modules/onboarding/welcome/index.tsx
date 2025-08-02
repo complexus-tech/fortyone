@@ -1,3 +1,4 @@
+"use client";
 import { Badge, Box, Button, Container, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
 import { Logo } from "@/components/ui";
@@ -15,6 +16,9 @@ const getRedirectUrl = (
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
     workspaces[0];
+  if (!activeWorkspace) {
+    return "/onboarding/create";
+  }
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 

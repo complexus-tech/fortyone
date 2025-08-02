@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
-import { Suspense, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "next-themes";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { instrumentSans } from "@/styles/fonts";
 import "../styles/global.css";
-import { CursorProvider } from "@/context";
 import { JsonLd } from "@/components/shared";
-import { PostHogProvider } from "./posthog";
 import { Toaster } from "./toaster";
-import PostHogPageView from "./posthog-page-view";
-import GoogleOneTap from "./one-tap";
-import { getQueryClient } from "./get-query-client";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
@@ -71,23 +64,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <JsonLd />
       </head>
       <body className={cn(instrumentSans.className)}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <SessionProvider>
-            <QueryClientProvider client={getQueryClient()}>
-              <PostHogProvider>
-                <CursorProvider>{children}</CursorProvider>
-              </PostHogProvider>
-              <Suspense>
-                {isProduction ? (
-                  <>
-                    <GoogleOneTap />
-                    <PostHogPageView />
-                  </>
-                ) : null}
-              </Suspense>
-            </QueryClientProvider>
-          </SessionProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
       {isProduction ? (
