@@ -19,6 +19,7 @@ import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-int
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
 import { ChatProvider } from "@/context/chat-context";
+import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -81,6 +82,7 @@ export default async function RootLayout({
       queryKey: sprintKeys.running(),
       queryFn: () => getRunningSprints(session!),
     }),
+    switchWorkspace(workspace.id),
   ]);
 
   return (
