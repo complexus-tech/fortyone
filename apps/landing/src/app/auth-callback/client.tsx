@@ -8,20 +8,20 @@ import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
-import type { Invitation } from "@/types";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
-import { useProfile } from "@/lib/hooks/profile";
+import type { Invitation, User, Workspace } from "@/types";
 
 export const ClientPage = ({
   invitations,
   session,
+  workspaces,
+  profile,
 }: {
   invitations: Invitation[];
   session: Session;
+  workspaces: Workspace[];
+  profile: User;
 }) => {
   const { analytics } = useAnalytics();
-  const { data: workspaces = [] } = useWorkspaces();
-  const { data: profile } = useProfile();
 
   useEffect(() => {
     nProgress.done();
@@ -31,7 +31,7 @@ export const ClientPage = ({
         name: session.user!.name!,
       });
       redirect(
-        getRedirectUrl(workspaces, invitations, profile?.lastUsedWorkspaceId),
+        getRedirectUrl(workspaces, invitations, profile.lastUsedWorkspaceId),
       );
     }
   }, [analytics, session, invitations, workspaces, profile]);
