@@ -29,13 +29,7 @@ export const Labels = ({
   };
 
   return (
-    <Flex
-      align="center"
-      className={cn("gap-2", {
-        "gap-1.5": isRectangular,
-      })}
-      wrap
-    >
+    <>
       {firstTwoLabels.map((label) => (
         <LabelsMenu key={label.id}>
           <LabelsMenu.Trigger>
@@ -101,6 +95,6 @@ export const Labels = ({
           </span>
         </Tooltip>
       )}
-    </Flex>
+    </>
   );
 };
