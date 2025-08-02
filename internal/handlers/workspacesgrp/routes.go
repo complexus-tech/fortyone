@@ -64,25 +64,26 @@ func Routes(cfg Config, app *web.App) {
 	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.Cache, cfg.SystemUserID)
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,
 		cfg.Cache, cfg.Log, cfg.SecretKey, attachmentsService)
 
-	app.Get("/workspaces/{workspaceId}", h.Get, auth)
-	app.Put("/workspaces/{workspaceId}", h.Update, auth)
-	app.Delete("/workspaces/{workspaceId}", h.Delete, auth)
-	app.Post("/workspaces/{workspaceId}/members", h.AddMember, auth)
-	app.Put("/workspaces/{workspaceId}/members/{userId}/role", h.UpdateMemberRole, auth)
-	app.Delete("/workspaces/{workspaceId}/members/{userId}", h.RemoveMember, auth)
+	app.Get("/workspaces/{workspaceSlug}", h.Get, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}", h.Update, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}", h.Delete, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/members", h.AddMember, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/members/{userId}/role", h.UpdateMemberRole, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/members/{userId}", h.RemoveMember, auth, workspace)
 	app.Post("/workspaces", h.Create, auth)
 	app.Get("/workspaces", h.List, auth)
 	app.Get("/workspaces/check-availability", h.CheckSlugAvailability)
-	app.Get("/workspaces/{workspaceId}/settings", h.GetWorkspaceSettings, auth)
-	app.Put("/workspaces/{workspaceId}/settings", h.UpdateWorkspaceSettings, auth)
+	app.Get("/workspaces/{workspaceSlug}/settings", h.GetWorkspaceSettings, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/settings", h.UpdateWorkspaceSettings, auth, workspace)
 
 	// Workspace logo endpoints
-	app.Post("/workspaces/{workspaceId}/logo", h.UploadWorkspaceLogo, auth)
-	app.Delete("/workspaces/{workspaceId}/logo", h.DeleteWorkspaceLogo, auth)
+	app.Post("/workspaces/{workspaceSlug}/logo", h.UploadWorkspaceLogo, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/logo", h.DeleteWorkspaceLogo, auth, workspace)
 }

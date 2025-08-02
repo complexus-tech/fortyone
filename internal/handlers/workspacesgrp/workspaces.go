@@ -41,7 +41,6 @@ type Handlers struct {
 	attachments   workspaces.AttachmentsService
 }
 
-// New constructs a new workspaces andlers instance.
 func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, cacheService *cache.Service, log *logger.Logger, secretKey string, attachments workspaces.AttachmentsService) *Handlers {
 	return &Handlers{
 		workspaces:    workspaces,
@@ -53,7 +52,6 @@ func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.
 	}
 }
 
-// List returns a list of workspaces for a user.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.List")
 	defer span.End()
@@ -81,7 +79,6 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Add validation for restricted slugs
 	if slices.Contains(restrictedSlugs, input.Slug) {
 		return web.RespondError(ctx, w, errors.New("this workspace slug is restricted"), http.StatusBadRequest)
 	}
@@ -102,10 +99,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Invalidate the user's workspaces list cache
 	cacheKey := cache.WorkspacesListCacheKey(userID)
 	if err := h.cache.Delete(ctx, cacheKey); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to delete cache", "key", cacheKey, "error", err)
 	}
 
@@ -126,17 +121,16 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	updates := workspaces.CoreWorkspace{
 		Name: input.Name,
 	}
 
-	result, err := h.workspaces.Update(ctx, workspaceID, updates)
+	result, err := h.workspaces.Update(ctx, workspace.ID, updates)
 	if err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -144,16 +138,13 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate the workspace caches
-	cacheKeys := cache.InvalidateWorkspaceKeys(workspaceID)
+	cacheKeys := cache.InvalidateWorkspaceKeys(workspace.ID)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
 			}
 		} else {
-			// Handle exact key deletion
 			if err := h.cache.Delete(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
 			}
@@ -161,7 +152,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	span.AddEvent("workspace updated.", trace.WithAttributes(
-		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("workspaceId", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusOK)
@@ -171,47 +162,41 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Delete")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get the user ID before deleting the workspace
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Invalidate the workspace caches before deleting
-	cacheKeys := cache.InvalidateWorkspaceKeys(workspaceID)
+	cacheKeys := cache.InvalidateWorkspaceKeys(workspace.ID)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
 			}
 		} else {
-			// Handle exact key deletion
 			if err := h.cache.Delete(ctx, key); err != nil {
 				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
 			}
 		}
 	}
 
-	// Also invalidate the user's workspaces list cache
 	userCacheKey := cache.WorkspacesListCacheKey(userID)
 	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
-	err = h.subscriptions.CancelSubscription(ctx, workspaceID)
+	err = h.subscriptions.CancelSubscription(ctx, workspace.ID)
 	if err != nil {
 		span.RecordError(err)
-		h.log.Error(ctx, "failed to cancel subscription", "workspaceId", workspaceID.String(), "error", err)
+		h.log.Error(ctx, "failed to cancel subscription", "workspaceId", workspace.ID.String(), "error", err)
 	}
 
-	if err := h.workspaces.Delete(ctx, workspaceID); err != nil {
+	if err := h.workspaces.Delete(ctx, workspace.ID); err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
@@ -219,7 +204,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	span.AddEvent("workspace deleted.", trace.WithAttributes(
-		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("workspaceId", workspace.ID.String()),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -234,36 +219,32 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Default to member role if not provided
 	role := input.Role
 	if role == "" {
 		role = "member"
 	}
 
-	if err := h.workspaces.AddMember(ctx, workspaceID, input.UserID, role); err != nil {
+	if err := h.workspaces.AddMember(ctx, workspace.ID, input.UserID, role); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate workspace members cache
-	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspace.ID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
 	}
 
-	// Invalidate user's workspaces list cache
 	userCacheKey := cache.WorkspacesListCacheKey(input.UserID)
 	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(
-		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("workspaceId", workspace.ID.String()),
 		attribute.String("userId", input.UserID.String()),
 		attribute.String("role", role),
 	))
@@ -271,15 +252,13 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// Get returns a workspace by ID
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.Get")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userID, err := mid.GetUserID(ctx)
@@ -287,7 +266,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return web.RespondError(ctx, w, errors.New("not authenticated"), http.StatusUnauthorized)
 	}
 
-	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	ws, err := h.workspaces.Get(ctx, workspace.ID, userID)
 	if err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -295,7 +274,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+	web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 	return nil
 }
 
@@ -303,10 +282,9 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.RemoveMember")
 	defer span.End()
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userIDParam := web.Params(r, "userId")
@@ -315,27 +293,25 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
 	}
 
-	if err := h.workspaces.RemoveMember(ctx, workspaceID, userID); err != nil {
+	if err := h.workspaces.RemoveMember(ctx, workspace.ID, userID); err != nil {
 		if errors.Is(err, workspaces.ErrMemberNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate workspace members cache
-	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspace.ID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
 	}
 
-	// Invalidate user's workspaces list cache
 	userCacheKey := cache.WorkspacesListCacheKey(userID)
 	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace member removed.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", userID.String()),
 	))
 
@@ -351,10 +327,9 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
 	userIDParam := web.Params(r, "userId")
@@ -363,21 +338,20 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
 	}
 
-	if err := h.workspaces.UpdateMemberRole(ctx, workspaceID, userID, input.Role); err != nil {
+	if err := h.workspaces.UpdateMemberRole(ctx, workspace.ID, userID, input.Role); err != nil {
 		if err == workspaces.ErrNotFound {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate workspace members cache
-	membersCacheKey := cache.WorkspaceMembersCacheKey(workspaceID)
+	membersCacheKey := cache.WorkspaceMembersCacheKey(workspace.ID)
 	if err := h.cache.Delete(ctx, membersCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", membersCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace member role updated.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", userID.String()),
 		attribute.String("role", input.Role),
 	))
@@ -385,7 +359,6 @@ func (h *Handlers) UpdateMemberRole(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
-// CheckSlugAvailability checks if a slug is available for use.
 func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.CheckSlugAvailability")
 	defer span.End()
@@ -395,12 +368,10 @@ func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, errors.New("slug is required"), http.StatusBadRequest)
 	}
 
-	// Validate slug format
 	if len(slug) < 3 || len(slug) > 255 {
 		return web.RespondError(ctx, w, errors.New("slug must be between 3 and 255 characters"), http.StatusBadRequest)
 	}
 
-	// Only allow lowercase letters, numbers, and hyphens
 	if !regexp.MustCompile(`^[a-z0-9-]+$`).MatchString(slug) {
 		return web.RespondError(ctx, w, errors.New("slug can only contain lowercase letters, numbers, and hyphens"), http.StatusBadRequest)
 	}
@@ -423,24 +394,19 @@ func (h *Handlers) CheckSlugAvailability(ctx context.Context, w http.ResponseWri
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-// GetWorkspaceSettings retrieves the settings for a workspace.
 func (h *Handlers) GetWorkspaceSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.GetWorkspaceSettings")
 	defer span.End()
 
-	// Get workspace ID from path
-	workspaceIDStr := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDStr)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Try to get from cache first
-	cacheKey := cache.WorkspaceSettingsCacheKey(workspaceID)
+	cacheKey := cache.WorkspaceSettingsCacheKey(workspace.ID)
 	var cachedSettings workspaces.CoreWorkspaceSettings
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedSettings); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -448,108 +414,82 @@ func (h *Handlers) GetWorkspaceSettings(ctx context.Context, w http.ResponseWrit
 		return nil
 	}
 
-	// Cache miss, get from database
-	settings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
+	settings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, settings, cache.DetailTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	return web.Respond(ctx, w, toAppWorkspaceSettings(settings), http.StatusOK)
 }
 
-// UpdateWorkspaceSettings updates the settings for a workspace.
 func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.UpdateWorkspaceSettings")
 	defer span.End()
 
-	// Get workspace ID from path
-	workspaceIDStr := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDStr)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get user ID from context
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Check if user has access to the workspace
-	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
-	if err != nil {
-		if errors.Is(err, workspaces.ErrNotFound) {
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-
-	// Check if user has admin role
 	if workspace.UserRole != "admin" {
 		return web.RespondError(ctx, w, errors.New("only workspace admins can update workspace settings"), http.StatusForbidden)
 	}
 
-	// Decode the request
 	var input AppUpdateWorkspaceSettings
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// First, ensure settings exist by getting or creating them
-	currentSettings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspaceID)
+	currentSettings, err := h.workspaces.GetOrCreateWorkspaceSettings(ctx, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Update the settings
-	coreSettings := toCoreWorkspaceSettings(input, workspaceID, currentSettings)
-	updatedSettings, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspaceID, coreSettings)
+	coreSettings := toCoreWorkspaceSettings(input, workspace.ID, currentSettings)
+	updatedSettings, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspace.ID, coreSettings)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Invalidate the workspace settings cache
-	settingsCacheKey := cache.WorkspaceSettingsCacheKey(workspaceID)
+	settingsCacheKey := cache.WorkspaceSettingsCacheKey(workspace.ID)
 	if err := h.cache.Delete(ctx, settingsCacheKey); err != nil {
 		h.log.Error(ctx, "failed to delete cache", "key", settingsCacheKey, "error", err)
 	}
 
 	span.AddEvent("workspace settings updated.", trace.WithAttributes(
-		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("workspaceId", workspace.ID.String()),
 		attribute.String("userId", userID.String()),
 	))
 
 	return web.Respond(ctx, w, toAppWorkspaceSettings(updatedSettings), http.StatusOK)
 }
 
-// UploadWorkspaceLogo handles workspace logo upload
 func (h *Handlers) UploadWorkspaceLogo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Parse multipart form, limit to 6MB for workspace logos
 	if err := r.ParseMultipartForm(6 << 20); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Get file from form
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("error getting image file: %w", err), http.StatusBadRequest)
 	}
 	defer file.Close()
 
-	// Upload workspace logo
-	err = h.workspaces.UploadWorkspaceLogo(ctx, workspaceID, file, header, h.attachments)
+	err = h.workspaces.UploadWorkspaceLogo(ctx, workspace.ID, file, header, h.attachments)
 	if err != nil {
 		switch {
 		case errors.Is(err, validate.ErrFileTooLarge), errors.Is(err, validate.ErrInvalidFileType):
@@ -561,30 +501,26 @@ func (h *Handlers) UploadWorkspaceLogo(ctx context.Context, w http.ResponseWrite
 		}
 	}
 
-	// Get user ID for workspace access
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get updated workspace
-	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	ws, err := h.workspaces.Get(ctx, workspace.ID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+	return web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 }
 
-// DeleteWorkspaceLogo handles workspace logo deletion
 func (h *Handlers) DeleteWorkspaceLogo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspaceIDParam := web.Params(r, "workspaceId")
-	workspaceID, err := uuid.Parse(workspaceIDParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	err = h.workspaces.DeleteWorkspaceLogo(ctx, workspaceID, h.attachments)
+	err = h.workspaces.DeleteWorkspaceLogo(ctx, workspace.ID, h.attachments)
 	if err != nil {
 		if errors.Is(err, workspaces.ErrNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -592,17 +528,15 @@ func (h *Handlers) DeleteWorkspaceLogo(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	// Get user ID for workspace access
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	// Get updated workspace
-	workspace, err := h.workspaces.Get(ctx, workspaceID, userID)
+	ws, err := h.workspaces.Get(ctx, workspace.ID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusOK)
+	return web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 }
