@@ -25,8 +25,7 @@ import (
 )
 
 var (
-	ErrInvalidStoryID     = errors.New("story id is not in its proper form")
-	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
+	ErrInvalidStoryID = errors.New("story id is not in its proper form")
 )
 
 type Handlers struct {
@@ -38,7 +37,6 @@ type Handlers struct {
 	log         *logger.Logger
 }
 
-// NewStoriesHandlers returns a new storiesHandlers instance.
 func New(stories *stories.Service, comments *comments.Service, links *links.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		stories:     stories,
@@ -50,28 +48,24 @@ func New(stories *stories.Service, comments *comments.Service, links *links.Serv
 	}
 }
 
-// Get returns the story with the specified ID, including sub-stories.
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Get")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		h.log.Error(ctx, "invalid story id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Cache miss, get from database
-	story, err := h.stories.Get(ctx, storyId, workspaceId)
+	story, err := h.stories.Get(ctx, storyId, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
@@ -81,15 +75,13 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-// List returns a list of stories.
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.List")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -100,19 +92,16 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	// Try to get from cache first
 	filtersStr := ""
 	if filters != nil {
-		// Convert filters to string representation for cache key
 		for k, v := range filters {
 			filtersStr += fmt.Sprintf("%s:%v;", k, v)
 		}
 	}
-	cacheKey := cache.StoryListCacheKey(workspaceId, filtersStr)
+	cacheKey := cache.StoryListCacheKey(workspace.ID, filtersStr)
 	var cachedStories []stories.CoreStoryList
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedStories); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -120,16 +109,13 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	// Cache miss, get from database
-	storyList, err := h.stories.List(ctx, workspaceId, filters)
+	storyList, err := h.stories.List(ctx, workspace.ID, filters)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, storyList, cache.ListTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -137,42 +123,36 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-// Delete removes the story with the specified ID.
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Delete")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Invalidate cache before deleting the story
-	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			h.cache.DeleteByPattern(ctx, key)
 		} else {
-			// Handle exact key deletion
 			h.cache.Delete(ctx, key)
 		}
 	}
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.Delete(ctx, storyId, workspaceId); err != nil {
+	if err := h.stories.Delete(ctx, storyId, workspace.ID); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
@@ -180,15 +160,13 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-// BulkDelete removes the stories with the specified IDs.
 func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkDelete")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 	var req AppBulkDeleteRequest
@@ -197,10 +175,8 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	// Invalidate cache before deleting the stories
-	// First invalidate individual story caches
 	for _, storyId := range req.StoryIDs {
-		cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
 				h.cache.DeleteByPattern(ctx, key)
@@ -210,15 +186,13 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	// Then invalidate the list cache
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspaceId); err != nil {
+	if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
@@ -227,33 +201,29 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-// Restore restores the story with the specified ID.
 func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Restore")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	if err := h.stories.Restore(ctx, storyId, workspaceId); err != nil {
+	if err := h.stories.Restore(ctx, storyId, workspace.ID); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache after successful restore
-	// Invalidate specific story cache
-	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
 			h.cache.DeleteByPattern(ctx, key)
@@ -262,12 +232,10 @@ func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.R
 		}
 	}
 
-	// Invalidate list cache
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	data := map[string]uuid.UUID{"id": storyId}
@@ -275,15 +243,13 @@ func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.R
 	return nil
 }
 
-// BulkRestore restores the stories with the specified IDs.
 func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkRestore")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 	var req AppBulkRestoreRequest
@@ -291,15 +257,13 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	if err := h.stories.BulkRestore(ctx, req.StoryIDs, workspaceId); err != nil {
+	if err := h.stories.BulkRestore(ctx, req.StoryIDs, workspace.ID); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache after successful bulk restore
-	// First invalidate individual story caches
 	for _, storyId := range req.StoryIDs {
-		cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
 				h.cache.DeleteByPattern(ctx, key)
@@ -309,12 +273,10 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	// Then invalidate the list cache
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
@@ -322,26 +284,22 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
-// BulkUpdate updates multiple stories with the same updates.
 func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkUpdate")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Decode as raw JSON
 	var requestData map[string]json.RawMessage
 	if err := web.Decode(r, &requestData); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Extract and validate storyIds
 	var storyIDs []uuid.UUID
 	if err := json.Unmarshal(requestData["storyIds"], &storyIDs); err != nil {
 		web.RespondError(ctx, w, errors.New("invalid storyIds"), http.StatusBadRequest)
@@ -353,23 +311,20 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	// Extract updates and convert to format getUpdates expects
 	var updatesRaw map[string]json.RawMessage
 	if err := json.Unmarshal(requestData["updates"], &updatesRaw); err != nil {
 		web.RespondError(ctx, w, errors.New("invalid updates"), http.StatusBadRequest)
 		return nil
 	}
 
-	// Reuse existing getUpdates function (same as Update handler)
 	updates, err := getUpdates(updatesRaw)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache for all affected stories
 	for _, storyId := range storyIDs {
-		cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
 				h.cache.DeleteByPattern(ctx, key)
@@ -379,15 +334,13 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	// Then invalidate the list cache
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.BulkUpdate(ctx, storyIDs, workspaceId, updates); err != nil {
+	if err := h.stories.BulkUpdate(ctx, storyIDs, workspace.ID, updates); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
@@ -396,15 +349,13 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-// Create creates a new story.
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Create")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 	var ns AppNewStory
@@ -413,39 +364,33 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	story, err := h.stories.Create(ctx, toCoreNewStory(ns), workspaceId)
+	story, err := h.stories.Create(ctx, toCoreNewStory(ns), workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// invalidate parent story cache if it exists parent_id is not nil
 	if story.Parent != nil {
-		cacheKeys := cache.InvalidateStoryKeys(workspaceId, *story.Parent)
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, *story.Parent)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
-				// Handle pattern deletion
 				h.cache.DeleteByPattern(ctx, key)
 			} else {
-				// Handle exact key deletion
 				h.cache.Delete(ctx, key)
 			}
 		}
 	}
 
-	// invalidate list cache
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	web.Respond(ctx, w, toAppStory(story), http.StatusCreated)
 	return nil
 }
 
-// UpdateLabels replaces the labels for a story.
 func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.UpdateLabels")
 	defer span.End()
@@ -457,10 +402,9 @@ func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -470,14 +414,12 @@ func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
-	if err := h.stories.UpdateLabels(ctx, storyId, workspaceId, req.Labels); err != nil {
+	if err := h.stories.UpdateLabels(ctx, storyId, workspace.ID, req.Labels); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache after updating labels
-	// Invalidate specific story cache
-	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
 			h.cache.DeleteByPattern(ctx, key)
@@ -486,19 +428,16 @@ func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *h
 		}
 	}
 
-	// Invalidate list cache (since labels may be used in filtering)
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspaceId.String())
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, listCachePattern)
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
-// GetStoryLinks returns the links for a story.
 func (h *Handlers) GetStoryLinks(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	storyIdParam := web.Params(r, "id")
 	storyID, err := uuid.Parse(storyIdParam)
@@ -516,15 +455,13 @@ func (h *Handlers) GetStoryLinks(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, linksgrp.ToLinks(links), http.StatusOK)
 }
 
-// MyStories returns a list of stories.
 func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.MyStories")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -534,12 +471,10 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 		return nil
 	}
 
-	// Use the predefined MyStoriesKey with the user ID as part of the key
-	cacheKey := fmt.Sprintf(cache.MyStoriesKey+":%s", workspaceId.String(), userID.String())
+	cacheKey := fmt.Sprintf(cache.MyStoriesKey+":%s", workspace.ID.String(), userID.String())
 	var cachedStories []stories.CoreStoryList
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedStories); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -547,16 +482,13 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 		return nil
 	}
 
-	// Cache miss, get from database
-	storiesList, err := h.stories.MyStories(ctx, workspaceId)
+	storiesList, err := h.stories.MyStories(ctx, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, storiesList, cache.ListTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -564,22 +496,20 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 	return nil
 }
 
-// Update updates the story with the specified ID.
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Update")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -594,38 +524,32 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	if err := h.stories.Update(ctx, storyId, workspaceId, updates); err != nil {
+	if err := h.stories.Update(ctx, storyId, workspace.ID, updates); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache after successful update
-	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			h.cache.DeleteByPattern(ctx, key)
 		} else {
-			// Handle exact key deletion
 			h.cache.Delete(ctx, key)
 		}
 	}
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
 }
 
-// GetActivities returns the activities for a story.
 func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetActivities")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
@@ -633,18 +557,16 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Try to get from cache first
-	cacheKey := cache.StoryActivitiesCacheKey(workspaceId, storyId)
+	cacheKey := cache.StoryActivitiesCacheKey(workspace.ID, storyId)
 	var cachedActivities []stories.CoreActivity
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedActivities); err == nil {
-		// Cache hit
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
@@ -652,16 +574,13 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	// Cache miss, get from database
 	activitiesList, err := h.stories.GetActivities(ctx, storyId)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Store in cache
 	if err := h.cache.Set(ctx, cacheKey, activitiesList, cache.ListTTL); err != nil {
-		// Log error but continue
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
@@ -669,13 +588,11 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// CreateComment creates a comment for a story.
 func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.CreateComment")
 	defer span.End()
 
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
@@ -683,9 +600,9 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -709,7 +626,7 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		Mentions: requestData.Mentions,
 	}
 
-	comment, err := h.stories.CreateComment(ctx, workspaceId, ca)
+	comment, err := h.stories.CreateComment(ctx, workspace.ID, ca)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
@@ -720,7 +637,6 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-// GetComments returns the comments for a story.
 func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetComments")
 	defer span.End()
@@ -728,14 +644,12 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 	storyIdParam := web.Params(r, "id")
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
-		h.log.Error(ctx, "invalid story id", "error", err)
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
 
 	commentsList, err := h.stories.GetComments(ctx, storyId)
 	if err != nil {
-		h.log.Error(ctx, "failed to get comments", "error", err)
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
@@ -744,10 +658,8 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
-// DuplicateStory creates a copy of an existing story.
 func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
@@ -755,42 +667,36 @@ func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r 
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Get the user ID from context
 	userID, _ := mid.GetUserID(ctx)
 
-	duplicatedStory, err := h.stories.DuplicateStory(ctx, storyId, workspaceId, userID)
+	duplicatedStory, err := h.stories.DuplicateStory(ctx, storyId, workspace.ID, userID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Invalidate cache after successful copy
-	cacheKeys := cache.InvalidateStoryKeys(workspaceId, storyId)
+	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
 		if strings.Contains(key, "*") {
-			// Handle pattern deletion
 			h.cache.DeleteByPattern(ctx, key)
 		} else {
-			// Handle exact key deletion
 			h.cache.Delete(ctx, key)
 		}
 	}
 
-	// Also invalidate my-stories cache pattern
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspaceId.String())
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
 	web.Respond(ctx, w, toAppStory(duplicatedStory), http.StatusCreated)
 	return nil
 }
 
-// GetAttachmentsForStory returns the attachments for a story.
 func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.GetAttachmentsForStory")
 	defer span.End()
@@ -803,7 +709,6 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 		return nil
 	}
 
-	// Cache miss, get from database
 	fileInfos, err := h.attachments.GetAttachmentsForStory(ctx, storyId)
 	if err != nil {
 		return fmt.Errorf("error getting attachments for story: %w", err)
@@ -812,7 +717,6 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 	return web.Respond(ctx, w, fileInfos, http.StatusOK)
 }
 
-// DeleteAttachment deletes an attachment from a story.
 func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.DeleteAttachment")
 	defer span.End()
@@ -825,7 +729,6 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, errors.New("invalid attachment ID"), http.StatusBadRequest)
 	}
 
-	// delete attachment from Azure
 	err = h.attachments.DeleteAttachment(ctx, attachmentID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("error deleting attachment: %w", err), http.StatusBadRequest)
@@ -834,11 +737,9 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-// UploadStoryAttachment handles the upload of a new attachment specifically for a story
 func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, _ := mid.GetUserID(ctx)
 	storyIdParam := web.Params(r, "id")
-	workspaceIdParam := web.Params(r, "workspaceId")
 
 	storyId, err := uuid.Parse(storyIdParam)
 	if err != nil {
@@ -846,26 +747,23 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	// Parse multipart form, limit to 10MB
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	// Get file from form
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("error getting file: %w", err), http.StatusBadRequest)
 	}
 	defer file.Close()
 
-	// Upload file and automatically link to story
-	fileInfo, err := h.attachments.UploadAndLinkToStory(ctx, file, header, userID, storyId, workspaceId)
+	fileInfo, err := h.attachments.UploadAndLinkToStory(ctx, file, header, userID, storyId, workspace.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, attachments.ErrFileTooLarge), errors.Is(err, attachments.ErrInvalidFileType):
@@ -878,19 +776,17 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 	return web.Respond(ctx, w, fileInfo, http.StatusCreated)
 }
 
-// CountInWorkspace returns the count of stories in a workspace.
 func (h *Handlers) CountInWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.stories.CountInWorkspace")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
-	count, err := h.stories.CountInWorkspace(ctx, workspaceId)
+	count, err := h.stories.CountInWorkspace(ctx, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -903,15 +799,13 @@ func (h *Handlers) CountInWorkspace(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, map[string]int{"count": count}, http.StatusOK)
 }
 
-// ListGrouped handles the initial load of grouped stories
 func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.ListGrouped")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -921,62 +815,51 @@ func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *ht
 		return nil
 	}
 
-	// Parse query parameters
-	query, err := parseStoryQuery(r, userID, workspaceId)
+	query, err := parseStoryQuery(r, userID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Set default values
 	if query.StoriesPerGroup == 0 {
-		query.StoriesPerGroup = 15 // Increased from 5 for better UX
+		query.StoriesPerGroup = 15
 	}
 
-	// Convert to core query
 	coreQuery := toCoreStoryQuery(query)
 	coreQuery.Filters.CurrentUserID = userID
-	coreQuery.Filters.WorkspaceID = workspaceId
+	coreQuery.Filters.WorkspaceID = workspace.ID
 
-	// Handle "none" groupBy case - create a single group with key "none"
 	if query.GroupBy == "none" {
-		// Use the grouped stories method but force groupBy to be handled as a single group
 		coreQuery.GroupBy = "none"
 
-		// Fetch grouped stories (which will handle "none" as a special case)
 		groups, err := h.stories.ListGroupedStories(ctx, coreQuery)
 		if err != nil {
 			web.RespondError(ctx, w, err, http.StatusInternalServerError)
 			return nil
 		}
 
-		// Convert to app response (same format as other grouped responses)
 		response := convertGroupsToResponse(groups, query)
 		return web.Respond(ctx, w, response, http.StatusOK)
 	}
 
-	// Fetch grouped stories
 	groups, err := h.stories.ListGroupedStories(ctx, coreQuery)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
 
-	// Convert to app response
 	response := convertGroupsToResponse(groups, query)
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-// LoadMoreGroup handles loading more stories for a specific group
 func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.LoadMoreGroup")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -986,41 +869,34 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	// Parse query parameters
-	query, err := parseStoryQuery(r, userID, workspaceId)
+	query, err := parseStoryQuery(r, userID, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	// Set default values
 	if query.PageSize == 0 {
-		query.PageSize = 15 // Increased from 10 for better performance
+		query.PageSize = 15
 	}
 
-	// Get group key from query parameters
 	groupKey := r.URL.Query().Get("groupKey")
 	if groupKey == "" {
 		web.RespondError(ctx, w, fmt.Errorf("groupKey is required"), http.StatusBadRequest)
 		return nil
 	}
 
-	// Convert to core query
 	coreQuery := toCoreStoryQuery(query)
 	coreQuery.Filters.CurrentUserID = userID
-	coreQuery.Filters.WorkspaceID = workspaceId
+	coreQuery.Filters.WorkspaceID = workspace.ID
 
-	// Fetch stories for the specific group
 	stories, hasMore, err := h.stories.ListGroupStories(ctx, groupKey, coreQuery)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
 
-	// Convert to app stories
 	appStories := toAppStories(stories)
 
-	// Calculate pagination info
 	nextPage := query.Page + 1
 	if !hasMore {
 		nextPage = 0
@@ -1043,15 +919,13 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-// ListByCategory returns stories filtered by category with pagination
 func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.ListByCategory")
 	defer span.End()
 
-	workspaceIdParam := web.Params(r, "workspaceId")
-	workspaceId, err := uuid.Parse(workspaceIdParam)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
 
@@ -1061,14 +935,12 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 		return nil
 	}
 
-	// Get required category parameter
 	category := r.URL.Query().Get("category")
 	if category == "" {
 		web.RespondError(ctx, w, fmt.Errorf("category parameter is required"), http.StatusBadRequest)
 		return nil
 	}
 
-	// Get required teamId parameter
 	teamIdParam := r.URL.Query().Get("teamId")
 	if teamIdParam == "" {
 		web.RespondError(ctx, w, fmt.Errorf("teamId parameter is required"), http.StatusBadRequest)
@@ -1081,7 +953,6 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 		return nil
 	}
 
-	// Parse pagination parameters
 	page := getIntParam(r, "page", 1)
 	pageSize := getIntParam(r, "pageSize", 20)
 
@@ -1092,17 +963,14 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 		pageSize = 20
 	}
 
-	// Fetch stories by category and team
-	stories, hasMore, err := h.stories.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
+	stories, hasMore, err := h.stories.ListByCategory(ctx, workspace.ID, userID, teamId, category, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
 
-	// Convert to app stories
 	appStories := toAppStories(stories)
 
-	// Calculate pagination info
 	nextPage := page + 1
 	if !hasMore {
 		nextPage = 0
@@ -1126,39 +994,32 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-// parseStoryQuery parses URL query parameters into a StoryQuery struct
 func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery, error) {
 	query := StoryQuery{
 		Filters: StoryFilters{},
 	}
 
-	// Parse simple string parameters
 	query.GroupBy = getStringParam(r, "groupBy", "status")
 	query.OrderBy = getStringParam(r, "orderBy", "created")
 	query.OrderDirection = getStringParam(r, "orderDirection", "desc")
 	query.GroupKey = r.URL.Query().Get("groupKey")
 
-	// Validate groupBy values
 	if !isValidGroupBy(query.GroupBy) {
 		return query, fmt.Errorf("invalid groupBy value: %s. Must be one of: status, assignee, priority, team, sprint, none", query.GroupBy)
 	}
 
-	// Validate orderBy values
 	if !isValidOrderBy(query.OrderBy) {
 		return query, fmt.Errorf("invalid orderBy value: %s. Must be one of: created, updated, priority, deadline", query.OrderBy)
 	}
 
-	// Validate orderDirection values
 	if !isValidOrderDirection(query.OrderDirection) {
 		return query, fmt.Errorf("invalid orderDirection value: %s. Must be asc or desc", query.OrderDirection)
 	}
 
-	// Parse integer parameters
 	query.StoriesPerGroup = getIntParam(r, "storiesPerGroup", 0)
 	query.Page = getIntParam(r, "page", 1)
 	query.PageSize = getIntParam(r, "pageSize", 0)
 
-	// Parse array filters using helper functions
 	query.Filters.StatusIDs = parseUUIDArray(r, "statusIds")
 	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
 	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
@@ -1166,22 +1027,18 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
 	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
 
-	// Parse string arrays (comma-separated)
 	query.Filters.Priorities = parseStringArray(r, "priorities")
 	query.Filters.Categories = parseStringArray(r, "categories")
 
-	// Parse single UUID parameters
 	query.Filters.Parent = parseUUIDParam(r, "parentId")
 	query.Filters.Objective = parseUUIDParam(r, "objectiveId")
 	query.Filters.Epic = parseUUIDParam(r, "epicId")
 
-	// Parse boolean parameters
 	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 	query.Filters.IncludeArchived = parseBoolParam(r, "includeArchived")
 
-	// Parse date range parameters
 	query.Filters.CreatedAfter = parseDateParam(r, "createdAfter")
 	query.Filters.CreatedBefore = parseDateParam(r, "createdBefore")
 	query.Filters.UpdatedAfter = parseDateParam(r, "updatedAfter")
@@ -1192,7 +1049,6 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	return query, nil
 }
 
-// Helper functions for parameter parsing
 func getStringParam(r *http.Request, key, defaultValue string) string {
 	if value := r.URL.Query().Get(key); value != "" {
 		return value
@@ -1210,7 +1066,6 @@ func getIntParam(r *http.Request, key string, defaultValue int) int {
 }
 
 func parseUUIDArray(r *http.Request, key string) []uuid.UUID {
-	// Accept both repeated query params (e.g. ?id=a&id=b) and comma-separated lists (e.g. ?id=a,b)
 	values := r.URL.Query()[key]
 	if len(values) == 0 {
 		return nil
@@ -1241,7 +1096,6 @@ func parseStringArray(r *http.Request, key string) []string {
 		return nil
 	}
 
-	// Support comma-separated format: priorities=high,medium,low
 	parts := strings.Split(value, ",")
 	var result []string
 	for _, part := range parts {
@@ -1272,11 +1126,10 @@ func parseBoolParam(r *http.Request, key string) *bool {
 
 func parseDateParam(r *http.Request, key string) *time.Time {
 	if value := r.URL.Query().Get(key); value != "" {
-		// Support multiple date formats
 		formats := []string{
-			time.RFC3339,          // "2006-01-02T15:04:05Z07:00"
-			"2006-01-02",          // "2024-06-02"
-			"2006-01-02T15:04:05", // "2024-06-02T15:04:05"
+			time.RFC3339,
+			"2006-01-02",
+			"2006-01-02T15:04:05",
 		}
 
 		for _, format := range formats {
@@ -1288,7 +1141,6 @@ func parseDateParam(r *http.Request, key string) *time.Time {
 	return nil
 }
 
-// isValidOrderBy validates the orderBy parameter
 func isValidOrderBy(orderBy string) bool {
 	validValues := []string{"created", "updated", "priority", "deadline"}
 	for _, v := range validValues {
@@ -1299,12 +1151,10 @@ func isValidOrderBy(orderBy string) bool {
 	return false
 }
 
-// isValidOrderDirection validates the orderDirection parameter
 func isValidOrderDirection(direction string) bool {
 	return direction == "asc" || direction == "desc"
 }
 
-// isValidGroupBy validates the groupBy parameter
 func isValidGroupBy(groupBy string) bool {
 	validValues := []string{"status", "assignee", "priority", "team", "sprint", "none"}
 	for _, v := range validValues {
@@ -1315,7 +1165,6 @@ func isValidGroupBy(groupBy string) bool {
 	return false
 }
 
-// toCoreStoryQuery converts a handler StoryQuery to a core CoreStoryQuery
 func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	return stories.CoreStoryQuery{
 		Filters: stories.CoreStoryFilters{
@@ -1340,8 +1189,8 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			UpdatedBefore:   query.Filters.UpdatedBefore,
 			DeadlineAfter:   query.Filters.DeadlineAfter,
 			DeadlineBefore:  query.Filters.DeadlineBefore,
-			CurrentUserID:   uuid.Nil, // Will be set in handler
-			WorkspaceID:     uuid.Nil, // Will be set in handler
+			CurrentUserID:   uuid.Nil,
+			WorkspaceID:     uuid.Nil,
 		},
 		GroupBy:         query.GroupBy,
 		OrderBy:         query.OrderBy,
@@ -1353,15 +1202,12 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	}
 }
 
-// coreFiltersToMap converts CoreStoryFilters to map[string]any format for the List method
 func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	result := make(map[string]any)
 
-	// Always include CurrentUserID and WorkspaceID as they're needed for user-specific filters
 	result["current_user_id"] = filters.CurrentUserID
 	result["workspace_id"] = filters.WorkspaceID
 
-	// Only add non-empty/non-nil filters
 	if len(filters.StatusIDs) > 0 {
 		result["status_ids"] = filters.StatusIDs
 	}
@@ -1426,7 +1272,6 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	return result
 }
 
-// convertGroupsToResponse converts core story groups to handler response
 func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) StoriesResponse {
 	appGroups := make([]StoryGroup, len(groups))
 	for i, group := range groups {
