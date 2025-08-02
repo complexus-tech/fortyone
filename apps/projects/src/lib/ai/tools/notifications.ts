@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getNotifications } from "@/modules/notifications/queries/get-notifications";
 import { readNotification } from "@/modules/notifications/actions/read";
@@ -11,6 +10,8 @@ import { deleteReadNotifications } from "@/modules/notifications/actions/delete-
 import { markUnread } from "@/modules/notifications/actions/mark-unread";
 import { updateNotificationPreferences } from "@/modules/notifications/actions/update-preferences";
 import type { AppNotification } from "@/modules/notifications/types";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const notificationsTool = tool({
   description:
@@ -112,11 +113,8 @@ export const notificationsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
 
       if (!workspace) {
         return {

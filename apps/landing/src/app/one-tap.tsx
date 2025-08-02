@@ -9,6 +9,8 @@ import { useSearchParams } from "next/navigation";
 import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
+import { useProfile } from "@/lib/hooks/profile";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { getSession } from "./verify/[email]/[token]/actions";
 
 const AUTH_GOOGLE_ID = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID;
@@ -31,24 +33,30 @@ declare global {
 export default function GoogleOneTap() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
+  const { data: workspaces = [] } = useWorkspaces();
+  const { data: profile } = useProfile();
 
   const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false);
 
-  const handleCredentialResponse = useCallback(async (response: any) => {
-    try {
-      await signInWithGoogleOneTap(response?.credential as string);
-      const newSession = await getSession();
-      if (newSession) {
-        const invitations = await getMyInvitations();
-        window.location.href = getRedirectUrl(
-          newSession,
-          invitations.data || [],
-        );
+  const handleCredentialResponse = useCallback(
+    async (response: any) => {
+      try {
+        await signInWithGoogleOneTap(response?.credential as string);
+        const newSession = await getSession();
+        if (newSession) {
+          const invitations = await getMyInvitations();
+          window.location.href = getRedirectUrl(
+            workspaces,
+            invitations.data || [],
+            profile?.lastUsedWorkspaceId,
+          );
+        }
+      } catch (error) {
+        console.error("Error signing in:", error);
       }
-    } catch (error) {
-      console.error("Error signing in:", error);
-    }
-  }, []);
+    },
+    [workspaces, profile],
+  );
 
   const initializeGoogleOneTap = useCallback(() => {
     if (window?.google && !session) {

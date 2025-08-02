@@ -4,20 +4,18 @@ import { Box, Input, Select, Text, Button, Flex } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { CloseIcon } from "icons";
 import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 import { useDebounce } from "@/hooks";
 import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
 import type { ApiResponse } from "@/types";
-import { updateSessionAction } from "./update-session";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
-  const { data: session } = useSession();
   const checkAvailability = useDebounce<
     string,
     ApiResponse<{
@@ -33,7 +31,7 @@ export const CreateWorkspaceForm = () => {
     slug: "",
     teamSize: "2-10",
   });
-  const prevWorkspaces = session?.workspaces || [];
+  const { data: workspaces = [] } = useWorkspaces();
 
   const formatSlug = (name: string) => {
     return name
@@ -106,17 +104,12 @@ export const CreateWorkspaceForm = () => {
       return;
     }
     const workspace = res.data!;
-
-    try {
-      await updateSessionAction(workspace);
-    } finally {
-      if (prevWorkspaces.length === 0) {
-        router.push("/onboarding/account");
-      } else if (domain.includes("localhost")) {
-        window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
-      } else {
-        window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
-      }
+    if (workspaces.length === 0) {
+      router.push("/onboarding/account");
+    } else if (domain.includes("localhost")) {
+      window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
+    } else {
+      window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
     }
   };
 

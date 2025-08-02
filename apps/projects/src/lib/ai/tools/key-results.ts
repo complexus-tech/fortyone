@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getWorkspaceKeyResults } from "@/modules/key-results/queries/get-workspace-key-results";
 import { createKeyResult } from "@/modules/objectives/actions/create-key-result";
 import { updateKeyResult } from "@/modules/objectives/actions/update-key-result";
 import { deleteKeyResult } from "@/modules/objectives/actions/delete-key-result";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 // Tool 1: List Key Results
 export const keyResultsListTool = tool({
@@ -46,11 +47,8 @@ export const keyResultsListTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const headersList = await headers();
-    const subdomain = headersList.get("host")?.split(".")[0] || "";
-    const workspace = session.workspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-    );
+    const workspaces = await getWorkspaces(session.token);
+    const workspace = getCurrentWorkspace(workspaces);
     const userRole = workspace?.userRole;
 
     if (!userRole) {
@@ -140,11 +138,8 @@ export const keyResultsCreateTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const headersList = await headers();
-    const subdomain = headersList.get("host")?.split(".")[0] || "";
-    const workspace = session.workspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-    );
+    const workspaces = await getWorkspaces(session.token);
+    const workspace = getCurrentWorkspace(workspaces);
     const userRole = workspace?.userRole;
 
     if (!userRole) {
@@ -228,11 +223,8 @@ export const keyResultsUpdateTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const headersList = await headers();
-    const subdomain = headersList.get("host")?.split(".")[0] || "";
-    const workspace = session.workspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-    );
+    const workspaces = await getWorkspaces(session.token);
+    const workspace = getCurrentWorkspace(workspaces);
     const userRole = workspace?.userRole;
 
     if (userRole === "guest") {
@@ -282,11 +274,8 @@ export const keyResultsDeleteTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const headersList = await headers();
-    const subdomain = headersList.get("host")?.split(".")[0] || "";
-    const workspace = session.workspaces.find(
-      (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-    );
+    const workspaces = await getWorkspaces(session.token);
+    const workspace = getCurrentWorkspace(workspaces);
     const userRole = workspace?.userRole;
 
     if (!userRole) {

@@ -5,13 +5,13 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { updateProfile } from "@/lib/actions/update-profile";
+import { useProfile } from "@/lib/hooks/profile";
 
 export const CreateAccountForm = () => {
-  const { data: session } = useSession();
+  const { data: profile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
-  const [fullName, setFullName] = useState(session?.user?.name || "");
+  const [fullName, setFullName] = useState(profile?.fullName || "");
   const [receiveUpdates, setReceiveUpdates] = useState(false);
   const router = useRouter();
 

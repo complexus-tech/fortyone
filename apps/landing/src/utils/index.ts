@@ -1,19 +1,21 @@
-import type { Session } from "next-auth";
-import type { Invitation } from "@/types";
+import type { Invitation, Workspace } from "@/types";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const getRedirectUrl = (
-  session: Session,
+  workspaces: Workspace[],
   invitations: Invitation[] = [],
+  lastUsedWorkspaceId?: string,
 ) => {
-  if (session.workspaces.length === 0) {
+  if (workspaces.length === 0) {
     if (invitations.length > 0) {
       return `/onboarding/join?token=${invitations[0].token}`;
     }
     return "/onboarding/create";
   }
-  const activeWorkspace = session.activeWorkspace || session.workspaces[0];
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
+    workspaces[0];
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 

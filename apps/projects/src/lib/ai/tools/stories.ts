@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getGroupedStories } from "@/modules/stories/queries/get-grouped-stories";
 import type { GroupedStoryParams } from "@/modules/stories/types";
@@ -17,6 +16,8 @@ import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
 import { searchQuery } from "@/modules/search/queries/search";
 import type { SearchQueryParams } from "@/modules/search/types";
 import { getTeams } from "@/modules/teams/queries/get-teams";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const storiesTool = tool({
   description:
@@ -305,11 +306,8 @@ export const storiesTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
       const userId = session.user!.id;
 

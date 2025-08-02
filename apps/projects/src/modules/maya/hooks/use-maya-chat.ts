@@ -21,6 +21,7 @@ import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messag
 import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { useProfile } from "@/lib/hooks/profile";
 import { useTerminology } from "@/hooks";
+import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
 
@@ -32,6 +33,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: subscription } = useSubscription();
   const { data: teams = [] } = useTeams();
   const { data: profile } = useProfile();
+  const { workspace } = useCurrentWorkspace();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -94,6 +96,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         username: profile?.username,
       },
       teams,
+      workspace,
       terminology,
       id: idRef.current,
     },

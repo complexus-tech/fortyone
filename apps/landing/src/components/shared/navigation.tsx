@@ -10,6 +10,8 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
+import { useProfile } from "@/lib/hooks/profile";
 import { MenuButton } from "./menu-button";
 import { RequestDemo } from "./request-demo";
 
@@ -91,21 +93,26 @@ export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const pathname = usePathname();
+  const { data: workspaces = [] } = useWorkspaces();
+  const { data: profile } = useProfile();
 
   const getNextUrl = () => {
+    let workspace: Workspace | undefined;
     if (session) {
-      let workspace: Workspace | undefined;
-      if (session.activeWorkspace) {
-        workspace = session.activeWorkspace;
-      } else if (session.workspaces.length > 0) {
-        workspace = session.workspaces[0];
-      } else {
+      if (workspaces.length === 0) {
         return "/onboarding/create";
       }
-      if (domain.includes("localhost")) {
-        return `http://${workspace.slug}.complexus.lc/my-work`;
+      if (profile?.lastUsedWorkspaceId) {
+        workspace = workspaces.find(
+          (w) => w.id === profile.lastUsedWorkspaceId,
+        );
+      } else {
+        workspace = workspaces[0];
       }
-      return `https://${workspace.slug}.${domain}/my-work`;
+      if (domain.includes("localhost")) {
+        return `https://${workspace!.slug}.complexus.lc/my-work`;
+      }
+      return `https://${workspace!.slug}.${domain}/my-work`;
     }
     return "/login";
   };

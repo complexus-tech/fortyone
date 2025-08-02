@@ -1,7 +1,7 @@
 "use server";
 
 import ky from "ky";
-import { auth, refreshWorkspaces } from "@/auth";
+import { auth } from "@/auth";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
@@ -18,7 +18,6 @@ export async function acceptInvitation(inviteToken: string) {
         },
       },
     );
-    await refreshWorkspaces();
 
     const data = await response.json<ApiResponse<null>>();
     return data;

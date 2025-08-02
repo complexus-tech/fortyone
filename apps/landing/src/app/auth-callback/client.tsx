@@ -9,6 +9,8 @@ import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
 import type { Invitation } from "@/types";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
+import { useProfile } from "@/lib/hooks/profile";
 
 export const ClientPage = ({
   invitations,
@@ -18,6 +20,8 @@ export const ClientPage = ({
   session: Session;
 }) => {
   const { analytics } = useAnalytics();
+  const { data: workspaces = [] } = useWorkspaces();
+  const { data: profile } = useProfile();
 
   useEffect(() => {
     nProgress.done();
@@ -26,9 +30,11 @@ export const ClientPage = ({
         email: session.user!.email!,
         name: session.user!.name!,
       });
-      redirect(getRedirectUrl(session, invitations));
+      redirect(
+        getRedirectUrl(workspaces, invitations, profile?.lastUsedWorkspaceId),
+      );
     }
-  }, [analytics, session, invitations]);
+  }, [analytics, session, invitations, workspaces, profile]);
 
   return (
     <Flex

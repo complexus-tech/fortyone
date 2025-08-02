@@ -7,6 +7,8 @@ import { Logo } from "@/components/ui";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { useAnalytics } from "@/hooks";
+import { getWorkspaces } from "@/lib/queries/get-workspaces";
+import { getProfile } from "@/lib/queries/profile";
 import { logIn, getSession } from "./actions";
 
 export const EmailVerificationCallback = () => {
@@ -22,13 +24,23 @@ export const EmailVerificationCallback = () => {
         redirect(`/login?error=${res.error}`);
       } else {
         const session = await getSession();
+        const [workspaces, profile] = await Promise.all([
+          getWorkspaces(session?.token || ""),
+          getProfile(session!),
+        ]);
         if (session) {
           analytics.identify(session.user!.email!, {
             email: session.user!.email!,
             name: session.user!.name!,
           });
           const invitations = await getMyInvitations();
-          redirect(getRedirectUrl(session, invitations.data || []));
+          redirect(
+            getRedirectUrl(
+              workspaces,
+              invitations.data || [],
+              profile?.lastUsedWorkspaceId,
+            ),
+          );
         }
       }
     };

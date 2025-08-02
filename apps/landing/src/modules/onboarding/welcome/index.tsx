@@ -1,24 +1,27 @@
 import { Badge, Box, Button, Container, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
-import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
-import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { auth } from "@/auth";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
+import { useProfile } from "@/lib/hooks/profile";
+import type { Workspace } from "@/types";
 import { ActionCard } from "./components/action-card";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
-const getRedirectUrl = async (session: Session) => {
-  const workspaces = (await getWorkspaces(session.token)).sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
-  const activeWorkspace = workspaces[0] || session.activeWorkspace;
+const getRedirectUrl = (
+  workspaces: Workspace[],
+  lastUsedWorkspaceId?: string,
+) => {
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
+    workspaces[0];
   return `https://${activeWorkspace.slug}.${domain}/my-work`;
 };
 
-export const Welcome = async () => {
-  const session = await auth();
-  const redirectUrl = await getRedirectUrl(session!);
+export const Welcome = () => {
+  const { data: workspaces = [] } = useWorkspaces();
+  const { data: profile } = useProfile();
+  const redirectUrl = getRedirectUrl(workspaces, profile?.lastUsedWorkspaceId);
 
   return (
     <Container className="max-w-md md:max-w-lg">

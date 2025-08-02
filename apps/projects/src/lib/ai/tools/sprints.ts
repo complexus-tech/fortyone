@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
@@ -13,6 +12,8 @@ import { deleteSprintAction } from "@/modules/sprints/actions/delete-sprint";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const sprintsTool = tool({
   description:
@@ -125,11 +126,8 @@ export const sprintsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
 
       if (!userRole) {

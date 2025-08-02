@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
@@ -11,6 +10,8 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { createObjective } from "@/modules/objectives/actions/create-objective";
 import { updateObjective } from "@/modules/objectives/actions/update-objective";
 import { deleteObjective } from "@/modules/objectives/actions/delete-objective";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const objectivesTool = tool({
   description:
@@ -111,11 +112,8 @@ export const objectivesTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
 
       if (!userRole) {

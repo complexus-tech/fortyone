@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
@@ -9,6 +8,8 @@ import { createTeam } from "@/modules/teams/actions";
 import { updateTeamAction } from "@/modules/teams/actions/update-team";
 import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
 import { removeTeamMemberAction } from "@/modules/teams/actions/remove-team-member";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { deleteTeamAction } from "@/modules/teams/actions/delete-team";
 
 export const teamsTool = tool({
@@ -59,12 +60,8 @@ export const teamsTool = tool({
           error: "Authentication required to access teams",
         };
       }
-      // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
       const currentUserId = session.user?.id;
 

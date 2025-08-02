@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { createLinkAction } from "@/lib/actions/links/create-link";
 import { updateLinkAction } from "@/lib/actions/links/update-link";
 import { deleteLinkAction } from "@/lib/actions/links/delete-link";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const linksTool = tool({
   description:
@@ -46,11 +47,8 @@ export const linksTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
 
       if (!userRole) {

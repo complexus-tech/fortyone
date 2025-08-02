@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { searchQuery } from "@/modules/search/queries/search";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { SearchQueryParams } from "@/modules/search/types";
 
 export const searchTool = tool({
@@ -86,12 +87,8 @@ export const searchTool = tool({
         };
       }
 
-      // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
       const userRole = workspace?.userRole;
 
       if (!userRole) {

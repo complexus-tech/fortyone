@@ -1,11 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { workspaceKeys } from "@/constants/keys";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { useQuery } from "@tanstack/react-query";
 import type { Workspace } from "@/types";
-import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { DURATION_FROM_MILLISECONDS } from "@/utils";
+import { getWorkspaces } from "../queries/get-workspaces";
 
-export const getCurrentWorkspace = (workspaces: Workspace[]) => {
+export const workspaceKeys = {
+  all: ["workspaces"] as const,
+  lists: () => [...workspaceKeys.all, "list"] as const,
+  settings: () => [...workspaceKeys.all, "settings"] as const,
+};
+
+const getCurrentWorkspace = (workspaces: Workspace[]) => {
   if (typeof window === "undefined") return null;
   const slug = window.location.hostname.split(".")[0];
   return workspaces.find((workspace) => workspace.slug === slug);
@@ -17,6 +22,7 @@ export const useWorkspaces = () => {
     queryKey: workspaceKeys.lists(),
     queryFn: () => getWorkspaces(session!.token),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    enabled: Boolean(session),
   });
 };
 export const useCurrentWorkspace = () => {

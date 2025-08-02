@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { deleteStoryAttachmentAction } from "@/modules/story/actions/delete-attachment";
 import { getMembers } from "@/lib/queries/members/get-members";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const attachmentsTool = tool({
   description:
@@ -41,11 +42,9 @@ export const attachmentsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const headersList = await headers();
-      const subdomain = headersList.get("host")?.split(".")[0] || "";
-      const workspace = session.workspaces.find(
-        (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-      );
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
+
       const userRole = workspace?.userRole;
       const userId = session.user!.id;
 

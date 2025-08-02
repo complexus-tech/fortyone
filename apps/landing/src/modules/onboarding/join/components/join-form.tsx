@@ -4,18 +4,17 @@ import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
 import { toast } from "sonner";
 import { useState } from "react";
 import { redirect, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import type { Invitation } from "@/types";
 import { acceptInvitation } from "@/lib/actions/accept-invitation";
 import { buildWorkspaceUrl } from "@/utils";
+import { useWorkspaces } from "@/lib/hooks/workspaces";
 
 export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
   const { workspaceName, workspaceSlug, workspaceColor } = invitation;
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
   const token = searchParams.get("token");
   const [isLoading, setIsLoading] = useState(false);
-  const prevWorkspaces = session?.workspaces || [];
+  const { data: workspaces = [] } = useWorkspaces();
 
   const handleJoin = async () => {
     setIsLoading(true);
@@ -25,7 +24,7 @@ export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
         description: res.error.message,
       });
       setIsLoading(false);
-    } else if (prevWorkspaces.length === 0) {
+    } else if (workspaces.length === 0) {
       redirect("/onboarding/account");
     } else {
       redirect(buildWorkspaceUrl(workspaceSlug));

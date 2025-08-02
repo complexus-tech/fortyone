@@ -1,6 +1,6 @@
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import type { Team } from "@/modules/teams/types";
+import type { Workspace } from "@/types";
 
 export async function getUserContext({
   currentPath,
@@ -10,6 +10,7 @@ export async function getUserContext({
   teams,
   username,
   terminology,
+  workspace,
 }: {
   currentPath: string;
   currentTheme: string;
@@ -28,17 +29,12 @@ export async function getUserContext({
     objectives: string;
     keyResults: string;
   };
+  workspace: Workspace;
 }): Promise<string> {
   const session = await auth();
   if (!session?.user) {
     return "";
   }
-  const headersList = await headers();
-  const subdomain = headersList.get("host")?.split(".")[0] || "";
-  const workspace = session.workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
-  );
-  const userRole = workspace?.userRole;
 
   const now = new Date();
   const currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
@@ -55,8 +51,8 @@ export async function getUserContext({
     - User ID: ${session.user.id}
     - Name: ${session.user.name}
     - Username: ${username}
-    - Role: ${userRole}
-    - Workspace: ${workspace?.name}
+    - Role: ${workspace.userRole}
+    - Workspace: ${workspace.name}
     - Current Date: ${currentDate}
     - Current Time: ${currentTime}
     - Teams: ${teamsList}

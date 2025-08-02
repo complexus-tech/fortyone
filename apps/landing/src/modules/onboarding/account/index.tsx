@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Text } from "ui";
 import { Logo } from "@/components/ui";
 import { CreateAccountForm } from "./components/create-account-form";

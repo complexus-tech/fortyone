@@ -5,6 +5,8 @@ import { getLabels } from "@/lib/queries/labels/get-labels";
 import { createLabelAction } from "@/lib/actions/labels/create-label";
 import { editLabelAction } from "@/lib/actions/labels/edit-label";
 import { deleteLabelAction } from "@/lib/actions/labels/delete-label";
+import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 
 export const labelsTool = tool({
   description: "Manage workspace/team labels: list, create, edit, delete.",
@@ -26,8 +28,9 @@ export const labelsTool = tool({
       if (!session) return { success: false, error: "Authentication required" };
 
       // Use workspace userRole only
-      const workspace = session.workspaces[0];
-      const userRole = workspace.userRole;
+      const workspaces = await getWorkspaces(session.token);
+      const workspace = getCurrentWorkspace(workspaces);
+      const userRole = workspace?.userRole;
       const isGuest = userRole === "guest";
 
       if (isGuest && action !== "list-labels") {

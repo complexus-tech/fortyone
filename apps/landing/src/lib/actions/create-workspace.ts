@@ -1,7 +1,7 @@
 "use server";
 
 import ky from "ky";
-import { auth, updateSession } from "@/auth";
+import { auth } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
 import { requestError } from "../fetch-error";
 
@@ -24,10 +24,6 @@ export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
         },
       })
       .json<ApiResponse<Workspace>>();
-    await updateSession({
-      activeWorkspace: workspace.data!,
-      workspaces: undefined,
-    }).catch();
 
     return workspace;
   } catch (error) {
