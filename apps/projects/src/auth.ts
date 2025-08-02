@@ -18,8 +18,6 @@ declare module "next-auth" {
     userRole: UserRole;
   }
   interface Session {
-    workspaces: Workspace[];
-    activeWorkspace: Workspace;
     token: string;
   }
 }
@@ -97,9 +95,7 @@ export const {
         workspaces.at(0);
       return {
         ...session,
-        token: token.accessToken,
-        workspaces,
-        activeWorkspace,
+        token: token.accessToken as string,
         user: {
           ...session.user,
           id: token.id as string,
@@ -125,7 +121,3 @@ export const {
   },
   debug: process.env.NODE_ENV === "development",
 });
-
-export const refreshWorkspaces = async () => {
-  await updateSession({ workspaces: undefined });
-};

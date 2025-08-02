@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 
 export default async function RootLayout({
   children,
@@ -12,7 +13,7 @@ export default async function RootLayout({
   const subdomain = headersList.get("host")!.split(".")[0];
   const session = await auth();
 
-  const workspaces = session?.workspaces || [];
+  const workspaces = await getWorkspaces(session!.token);
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
   );

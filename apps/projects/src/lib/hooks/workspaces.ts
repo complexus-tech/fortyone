@@ -19,7 +19,6 @@ export const useWorkspaces = () => {
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };
-
 export const useCurrentWorkspace = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const workspace = getCurrentWorkspace(workspaces);
