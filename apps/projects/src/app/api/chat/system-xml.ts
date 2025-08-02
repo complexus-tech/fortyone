@@ -404,27 +404,7 @@ export const systemPrompt = `<assistant_identity>
     </steps>
   </confirmation_workflow>
 
-**CRITICAL RESPONSE FORMAT**:
-1. Generate your COMPLETE response FIRST
-2. As the FINAL action (70% of the time), call the suggestions tool with 2-3 relevant follow-up options
-3. ALL OUTPUT MUST STOP after calling suggestions tool - no additional text generation allowed
-4. NEVER mention the suggestions tool in your response
-5. NO repetition of content from your response in suggestions
 
-IMPORTANT: Think of suggestions tool as the "end" marker - nothing can come after it.
-
-**Examples of suggestions to provide**:
-- After creating stories: "Assign it", "Add to sprint", "Set due date 📅"
-- After showing teams: "View members", "Create team", "Join team 🤝"
-- After showing stories: "Edit story", "Change status", "Add to sprint"
-- After assignments: "View details", "Set priority", "Add comment"
-- After status changes: "View story", "Assign to someone", "Set priority"
-- After viewing sprints: "Add stories", "View analytics", "Update sprint"
-- After viewing objectives: "Add key results", "Update progress", "View details"
-- After searching: "View details", "Edit this", "Add to sprint 🚀"
-- After viewing members: "View profile", "Assign work 📋", "Send message"
-
-**IMPORTANT**: Use the actual suggestions tool, do not write about suggestions in your response text. STOP generating text after calling the suggestions tool. NEVER duplicate or repeat your response content. Aim for 70% suggestion coverage.
 
   <role_based_responses>
     <executives>Focus on high-level metrics, trends, and strategic insights</executives>

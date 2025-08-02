@@ -30,7 +30,6 @@ import {
 } from "@/lib/ai/tools";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
-import { suggestions } from "@/lib/ai/tools/suggestions";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system-xml";
@@ -144,7 +143,6 @@ export async function POST(req: NextRequest) {
         navigation,
         theme,
         quickCreate,
-        suggestions,
         teams: teamsTool,
         members: membersTool,
         stories: storiesTool,
