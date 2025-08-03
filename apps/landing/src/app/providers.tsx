@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
+import type { Session } from "next-auth";
 import { CursorProvider } from "@/context";
 import { PostHogProvider } from "@/app/posthog";
 import PostHogPageView from "@/app/posthog-page-view";
@@ -12,10 +13,16 @@ import { getQueryClient } from "@/app/get-query-client";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <SessionProvider>
+      <SessionProvider session={session}>
         <QueryClientProvider client={getQueryClient()}>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>

@@ -89,7 +89,7 @@ export default async function RootLayout({
         <JsonLd />
       </head>
       <body className={cn(instrumentSans.className)}>
-        <Providers>
+        <Providers session={session}>
           <HydrationBoundary state={dehydrate(queryClient)}>
             {children}
           </HydrationBoundary>
