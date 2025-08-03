@@ -76,10 +76,7 @@ export const AnalyticsPage = () => {
 
           {/* Workspace Overview */}
           <ErrorBoundary fallback={<div>Error loading overview</div>}>
-            <Overview
-              endDate={dateRange.endDate}
-              startDate={dateRange.startDate}
-            />
+            <Overview />
           </ErrorBoundary>
 
           {/* Completion & Velocity Trends */}

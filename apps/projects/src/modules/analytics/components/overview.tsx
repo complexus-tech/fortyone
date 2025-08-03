@@ -1,5 +1,12 @@
 "use client";
+import {
+  parseAsIsoDateTime,
+  parseAsArrayOf,
+  parseAsString,
+  useQueryStates,
+} from "nuqs";
 import { Box, Flex, Text, Wrapper } from "ui";
+import type { AnalyticsFilters } from "../types";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import { OverviewSkeleton } from "./overview-skeleton";
 
@@ -31,14 +38,26 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
   </Wrapper>
 );
 
-type OverviewProps = {
-  startDate?: string;
-  endDate?: string;
-};
+export const Overview = () => {
+  const [filters] = useQueryStates({
+    startDate: parseAsIsoDateTime,
+    endDate: parseAsIsoDateTime,
+    teamIds: parseAsArrayOf(parseAsString),
+    sprintIds: parseAsArrayOf(parseAsString),
+    objectiveIds: parseAsArrayOf(parseAsString),
+  });
 
-export const Overview = ({ startDate, endDate }: OverviewProps) => {
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
-  const { data: overview, isPending } = useWorkspaceOverview(filters);
+  const analyticsFilters: AnalyticsFilters = {
+    startDate: filters.startDate?.toISOString(),
+    endDate: filters.endDate?.toISOString(),
+    teamIds: filters.teamIds?.length ? filters.teamIds : undefined,
+    sprintIds: filters.sprintIds?.length ? filters.sprintIds : undefined,
+    objectiveIds: filters.objectiveIds?.length
+      ? filters.objectiveIds
+      : undefined,
+  };
+
+  const { data: overview, isPending } = useWorkspaceOverview(analyticsFilters);
 
   if (isPending) {
     return <OverviewSkeleton />;
