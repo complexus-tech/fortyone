@@ -472,7 +472,7 @@ export const NewObjectiveDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="px-2 text-sm"
+                    className="px-2"
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
@@ -511,7 +511,7 @@ export const NewObjectiveDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="px-2 text-sm"
+                    className="px-2"
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
@@ -555,7 +555,7 @@ export const NewObjectiveDialog = ({
               <AssigneesMenu>
                 <AssigneesMenu.Trigger>
                   <Button
-                    className="gap-1.5 px-2 text-sm"
+                    className="gap-1.5 px-2"
                     color="tertiary"
                     leftIcon={
                       <Avatar
@@ -586,7 +586,7 @@ export const NewObjectiveDialog = ({
             </Flex>
             {features.keyResultEnabled ? (
               <Box className="mt-3">
-                <Text className="mb-3 text-lg font-semibold antialiased">
+                <Text className="mb-2 text-lg font-semibold antialiased">
                   {getTermDisplay("keyResultTerm", {
                     variant: "plural",
                     capitalize: true,

@@ -243,7 +243,7 @@ export const NewSprintDialog = ({
             <DatePicker>
               <DatePicker.Trigger>
                 <Button
-                  className="px-2 text-sm"
+                  className="px-2"
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
@@ -282,7 +282,7 @@ export const NewSprintDialog = ({
             <DatePicker>
               <DatePicker.Trigger>
                 <Button
-                  className="px-2 text-sm"
+                  className="px-2"
                   color="tertiary"
                   leftIcon={<CalendarIcon className="h-4 w-auto" />}
                   rightIcon={
@@ -327,7 +327,7 @@ export const NewSprintDialog = ({
               <ObjectivesMenu>
                 <ObjectivesMenu.Trigger>
                   <Button
-                    className="gap-1 px-2 text-sm"
+                    className="gap-1 px-2"
                     color="tertiary"
                     leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
                     size="sm"
