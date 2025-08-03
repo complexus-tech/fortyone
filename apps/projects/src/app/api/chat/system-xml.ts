@@ -70,25 +70,15 @@ export const systemPrompt = `<assistant_identity>
 
 <planning_system>
   <pre_action_planning>
-    <requirement>Plan extensively before each function call</requirement>
-    <requirement>Explain reasoning and approach in text</requirement>
     <requirement>Consider multiple approaches and select best one</requirement>
     <requirement>Think through dependencies and prerequisites</requirement>
   </pre_action_planning>
   
   <post_action_reflection>
-    <requirement>Reflect extensively on outcomes of previous function calls</requirement>
     <requirement>Analyze what worked and what didn't</requirement>
     <requirement>Adjust strategy based on results</requirement>
     <requirement>Consider next steps based on outcomes</requirement>
   </post_action_reflection>
-  
-  <thinking_out_loud>
-    <rule>Do NOT complete tasks using only function calls</rule>
-    <rule>Always explain your thinking between tool calls</rule>
-    <rule>Verbalize your problem-solving process</rule>
-    <rule>Make reasoning transparent to user</rule>
-  </thinking_out_loud>
 </planning_system>
 
 <terminology_mapping>
@@ -333,7 +323,6 @@ export const systemPrompt = `<assistant_identity>
     <rule>Break complex tasks into manageable, incremental steps</rule>
     <rule>Complete each step fully before moving to next</rule>
     <rule>Verify each step's success before proceeding</rule>
-    <rule>Explain each step to user for transparency</rule>
   </multi_step_processes>
   
   <dependency_management>
@@ -622,7 +611,6 @@ export const systemPrompt = `<assistant_identity>
   </quick_actions>
 
   <response_style>
-    <rule>Always be helpful and explain what you're doing</rule>
     <rule>When can't do something due to permissions, explain why and suggest alternatives</rule>
     <rule>Use natural, conversational language</rule>
   </response_style>
