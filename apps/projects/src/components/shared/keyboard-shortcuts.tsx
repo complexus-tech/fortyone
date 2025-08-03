@@ -42,6 +42,15 @@ export const KeyboardShortcuts = ({
           ),
         },
         {
+          name: "Open AI chat",
+          shortcut: (
+            <Flex align="center" gap={1}>
+              <Kbd>⇧</Kbd>
+              <Kbd>M</Kbd>
+            </Flex>
+          ),
+        },
+        {
           name: "Search",
           shortcut: <Kbd>/</Kbd>,
         },
