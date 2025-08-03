@@ -97,24 +97,20 @@ const DateRangeSelector = () => {
               color="tertiary"
               leftIcon={<CalendarIcon className="h-4 w-auto" />}
               rightIcon={
-                customStartDate ? (
-                  <CloseIcon
-                    aria-label="Clear start date"
-                    className="h-4 w-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCustomDateChange(undefined, customEndDate);
-                    }}
-                    role="button"
-                  />
-                ) : null
+                <CloseIcon
+                  aria-label="Clear start date"
+                  className="h-4 w-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCustomDateChange(undefined, customEndDate);
+                  }}
+                  role="button"
+                />
               }
               size="sm"
               variant="outline"
             >
-              {customStartDate
-                ? format(customStartDate, "MMM d, yyyy")
-                : "Start date"}
+              {format(customStartDate, "MMM d, yyyy")}
             </Button>
           </DatePicker.Trigger>
           <DatePicker.Calendar
@@ -160,17 +156,15 @@ const DateRangeSelector = () => {
             selected={customEndDate}
           />
         </DatePicker>
-        {customStartDate || customEndDate ? (
-          <Button
-            color="tertiary"
-            leftIcon={<CloseIcon className="h-4 w-auto" />}
-            onClick={clearDates}
-            size="sm"
-            variant="outline"
-          >
-            Clear
-          </Button>
-        ) : null}
+        <Button
+          color="tertiary"
+          leftIcon={<CloseIcon className="h-4 w-auto" />}
+          onClick={clearDates}
+          size="sm"
+          variant="outline"
+        >
+          Clear
+        </Button>
       </Flex>
     </Box>
   );
@@ -186,7 +180,6 @@ export const DateRangeFilter = () => {
   });
 
   const getDateRangeText = () => {
-    if (!filters.startDate || !filters.endDate) return "Select dates";
     const start = format(filters.startDate, "MMM d");
     const end = format(filters.endDate, "MMM d");
     return `${start} — ${end}`;
@@ -195,7 +188,7 @@ export const DateRangeFilter = () => {
   return (
     <FilterButton
       icon={<CalendarIcon className="h-4 w-auto" />}
-      isActive={Boolean(filters.startDate && filters.endDate)}
+      isActive
       label="Date Range"
       popover={<DateRangeSelector />}
       text={getDateRangeText()}
