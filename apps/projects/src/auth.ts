@@ -2,9 +2,7 @@
 
 import Credentials from "next-auth/providers/credentials";
 import NextAuth, { CredentialsSignin } from "next-auth";
-import type { Workspace, UserRole } from "@/types";
 import { authenticateWithToken } from "./lib/actions/users/sigin-in";
-import { getWorkspaces } from "./lib/queries/workspaces/get-workspaces";
 import { DURATION_FROM_SECONDS } from "./constants/time";
 
 const domain = `.${process.env.NEXT_PUBLIC_DOMAIN!}`;
@@ -14,8 +12,6 @@ declare module "next-auth" {
   interface User {
     token: string;
     lastUsedWorkspaceId: string;
-    workspaces: Workspace[];
-    userRole: UserRole;
   }
   interface Session {
     token: string;
@@ -62,37 +58,19 @@ export const {
     },
   },
   callbacks: {
-    jwt({ token, user, trigger, session }) {
+    jwt({ token, user }) {
       if (user) {
         return {
           ...token,
           id: user.id,
           accessToken: user.token,
           lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-          workspaces: user.workspaces,
         };
-      }
-
-      if (trigger === "update") {
-        if (session.activeWorkspace) {
-          token.lastUsedWorkspaceId = session.activeWorkspace.id;
-          token.workspaces = session.workspaces;
-        } else {
-          token.workspaces = session.workspaces;
-        }
       }
 
       return token;
     },
-    async session({ session, token }) {
-      if (!token.workspaces || (token.workspaces as Workspace[]).length === 0) {
-        const workspaces = await getWorkspaces(token.accessToken as string);
-        token.workspaces = workspaces;
-      }
-      const workspaces = token.workspaces as Workspace[];
-      const activeWorkspace =
-        workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
-        workspaces.at(0);
+    session({ session, token }) {
       return {
         ...session,
         token: token.accessToken as string,
@@ -102,7 +80,6 @@ export const {
           name: token.name,
           email: token.email,
           image: token.picture,
-          userRole: activeWorkspace?.userRole || "guest",
         },
       };
     },

@@ -1,12 +1,10 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import type { Workspace, UserRole } from "@/types";
 import {
   authenticateGoogleUser,
   authenticateWithToken,
 } from "./lib/actions/auth";
-import { getWorkspaces } from "./lib/queries/get-workspaces";
 import { DURATION_FROM_SECONDS } from "./utils";
 
 const domain = `.${process.env.NEXT_PUBLIC_DOMAIN!}`;
@@ -16,8 +14,6 @@ declare module "next-auth" {
   interface User {
     token: string;
     lastUsedWorkspaceId: string;
-    workspaces: Workspace[];
-    userRole: UserRole;
   }
   interface Session {
     token: string;
@@ -82,7 +78,7 @@ export const {
   },
 
   callbacks: {
-    async jwt({ token, user, trigger, session, account }) {
+    async jwt({ token, user, account }) {
       if (account && user) {
         if (
           account.provider === "credentials" ||
@@ -96,7 +92,6 @@ export const {
             picture: user.image,
             accessToken: user.token,
             lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-            workspaces: user.workspaces,
           };
         }
         if (account.provider === "google") {
@@ -114,29 +109,12 @@ export const {
             email: googleUser.email,
             accessToken: googleUser.token,
             lastUsedWorkspaceId: googleUser.lastUsedWorkspaceId,
-            workspaces: googleUser.workspaces,
           };
-        }
-      }
-      if (trigger === "update") {
-        if (session.activeWorkspace) {
-          token.lastUsedWorkspaceId = session.activeWorkspace.id;
-          token.workspaces = session.workspaces;
-        } else {
-          token.workspaces = session.workspaces;
         }
       }
       return token;
     },
-    async session({ session, token }) {
-      if (!token.workspaces || (token.workspaces as Workspace[]).length === 0) {
-        const workspaces = await getWorkspaces(token.accessToken as string);
-        token.workspaces = workspaces;
-      }
-      const workspaces = token.workspaces as Workspace[];
-      const activeWorkspace =
-        workspaces.find((w) => w.id === token.lastUsedWorkspaceId) ||
-        workspaces.at(0);
+    session({ session, token }) {
       return {
         ...session,
         token: token.accessToken as string,
@@ -146,7 +124,6 @@ export const {
           name: token.name,
           email: token.email,
           image: token.picture,
-          userRole: activeWorkspace?.userRole || "guest",
         },
       };
     },
