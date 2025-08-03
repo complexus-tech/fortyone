@@ -1,6 +1,6 @@
 "use client";
 import { Flex } from "ui";
-import { DateRangeFilter } from "./date-range-filter";
+// import { DateRangeFilter } from "./date-range-filter";
 import { TeamsFilter } from "./teams-filter";
 import { SprintsFilter } from "./sprints-filter";
 import { ObjectivesFilter } from "./objectives-filter";
@@ -8,7 +8,7 @@ import { ObjectivesFilter } from "./objectives-filter";
 export const Filters = () => {
   return (
     <Flex align="end" gap={4}>
-      <DateRangeFilter />
+      {/* <DateRangeFilter /> */}
       <TeamsFilter />
       <SprintsFilter />
       <ObjectivesFilter />
@@ -17,7 +17,7 @@ export const Filters = () => {
 };
 
 // Export individual components for potential standalone use
-export { DateRangeFilter } from "./date-range-filter";
+// export { DateRangeFilter } from "./date-range-filter";
 export { TeamsFilter } from "./teams-filter";
 export { SprintsFilter } from "./sprints-filter";
 export { ObjectivesFilter } from "./objectives-filter";
