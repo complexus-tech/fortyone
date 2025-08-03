@@ -555,7 +555,7 @@ export const NewStoryDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="px-2 text-sm"
+                    className="px-2"
                     color="tertiary"
                     leftIcon={<CalendarIcon className="h-4 w-auto" />}
                     rightIcon={
@@ -595,7 +595,7 @@ export const NewStoryDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className={cn("px-2 text-sm", {
+                    className={cn("px-2", {
                       "text-primary dark:text-primary": storyForm.endDate
                         ? new Date(storyForm.endDate) < new Date()
                         : false,
@@ -649,7 +649,7 @@ export const NewStoryDialog = ({
               <AssigneesMenu>
                 <AssigneesMenu.Trigger>
                   <Button
-                    className="gap-1.5 px-2 text-sm"
+                    className="gap-1.5 px-2"
                     color="tertiary"
                     leftIcon={
                       <Avatar
@@ -681,7 +681,7 @@ export const NewStoryDialog = ({
                 <ObjectivesMenu>
                   <ObjectivesMenu.Trigger>
                     <Button
-                      className="gap-1 px-2 text-sm"
+                      className="gap-1 px-2"
                       color="tertiary"
                       leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
                       size="sm"
@@ -710,7 +710,7 @@ export const NewStoryDialog = ({
                 <SprintsMenu>
                   <SprintsMenu.Trigger>
                     <Button
-                      className="gap-1 px-2 text-sm"
+                      className="gap-1 px-2"
                       color="tertiary"
                       leftIcon={<SprintsIcon className="h-4 w-auto" />}
                       size="sm"
