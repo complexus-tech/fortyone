@@ -3,8 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { updateLabelsAction } from "@/modules/story/actions/update-labels";
 import { getStory } from "@/modules/story/queries/get-story";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const storyLabelsTool = tool({
   description: "Manage story labels: get, add, remove, set labels on stories.",
@@ -23,9 +22,8 @@ export const storyLabelsTool = tool({
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
 
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
       const isGuest = userRole === "guest";
 
       const story = await getStory(storyId, session);

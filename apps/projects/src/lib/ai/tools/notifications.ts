@@ -10,8 +10,6 @@ import { deleteReadNotifications } from "@/modules/notifications/actions/delete-
 import { markUnread } from "@/modules/notifications/actions/mark-unread";
 import { updateNotificationPreferences } from "@/modules/notifications/actions/update-preferences";
 import type { AppNotification } from "@/modules/notifications/types";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const notificationsTool = tool({
   description:
@@ -109,17 +107,6 @@ export const notificationsTool = tool({
         return {
           success: false,
           error: "Authentication required to access notifications",
-        };
-      }
-
-      // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-
-      if (!workspace) {
-        return {
-          success: false,
-          error: "Unable to determine workspace",
         };
       }
 

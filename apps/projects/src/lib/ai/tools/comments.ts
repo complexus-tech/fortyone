@@ -4,8 +4,7 @@ import { auth } from "@/auth";
 import { getStoryComments } from "@/modules/story/queries/get-comments";
 import { commentStoryAction } from "@/modules/story/actions/comment-story";
 import { getMembers } from "@/lib/queries/members/get-members";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const commentsTool = tool({
   description:
@@ -64,16 +63,8 @@ export const commentsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
 
       // Get members for mention resolution and commenter info
       const members = await getMembers(session);

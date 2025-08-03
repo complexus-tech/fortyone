@@ -12,8 +12,7 @@ import { deleteSprintAction } from "@/modules/sprints/actions/delete-sprint";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const sprintsTool = tool({
   description:
@@ -126,18 +125,8 @@ export const sprintsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
-
-      // teamId is passed directly - no name resolution needed
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
 
       switch (action) {
         case "list-sprints": {

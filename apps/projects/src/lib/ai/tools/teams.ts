@@ -8,8 +8,7 @@ import { createTeam } from "@/modules/teams/actions";
 import { updateTeamAction } from "@/modules/teams/actions/update-team";
 import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
 import { removeTeamMemberAction } from "@/modules/teams/actions/remove-team-member";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { deleteTeamAction } from "@/modules/teams/actions/delete-team";
 
 export const teamsTool = tool({
@@ -60,17 +59,9 @@ export const teamsTool = tool({
           error: "Authentication required to access teams",
         };
       }
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
       const currentUserId = session.user?.id;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
 
       switch (action) {
         case "list-teams": {

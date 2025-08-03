@@ -16,8 +16,7 @@ import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
 import { searchQuery } from "@/modules/search/queries/search";
 import type { SearchQueryParams } from "@/modules/search/types";
 import { getTeams } from "@/modules/teams/queries/get-teams";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const storiesTool = tool({
   description:
@@ -306,17 +305,9 @@ export const storiesTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
       const userId = session.user!.id;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
 
       switch (action) {
         case "list-my-stories": {

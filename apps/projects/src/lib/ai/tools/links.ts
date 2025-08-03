@@ -5,8 +5,7 @@ import { getLinks } from "@/lib/queries/links/get-links";
 import { createLinkAction } from "@/lib/actions/links/create-link";
 import { updateLinkAction } from "@/lib/actions/links/update-link";
 import { deleteLinkAction } from "@/lib/actions/links/delete-link";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const linksTool = tool({
   description:
@@ -47,16 +46,8 @@ export const linksTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
 
       switch (action) {
         case "list-links": {

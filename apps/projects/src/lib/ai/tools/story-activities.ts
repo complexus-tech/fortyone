@@ -2,8 +2,6 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const storyActivitiesTool = tool({
   description:
@@ -67,18 +65,6 @@ export const storyActivitiesTool = tool({
         return {
           success: false,
           error: "Authentication required to access story activities",
-        };
-      }
-
-      // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
         };
       }
 

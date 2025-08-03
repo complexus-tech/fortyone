@@ -9,8 +9,7 @@ import { getTeamStatuses } from "@/lib/queries/states/get-team-states";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import type { NewState } from "@/lib/actions/states/create";
 import type { UpdateState } from "@/lib/actions/states/update";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const statusesTool = tool({
   description:
@@ -80,26 +79,15 @@ export const statusesTool = tool({
         };
       }
 
-      // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
 
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
-
-      // Helper function to get team name from team ID
       const getTeamName = async (teamId: string): Promise<string | null> => {
         const teams = await getTeams(session);
         const team = teams.find((t) => t.id === teamId);
         return team ? team.name : null;
       };
 
-      // Helper function to find status by name within a team
       const findStatusByName = async (statusName: string, teamId?: string) => {
         const statuses = teamId
           ? await getTeamStatuses(teamId, session)
@@ -211,7 +199,6 @@ export const statusesTool = tool({
         }
 
         case "create-status": {
-          // Only admins and members can create statuses
           if (userRole === "guest") {
             return {
               success: false,
@@ -260,7 +247,6 @@ export const statusesTool = tool({
         }
 
         case "update-status": {
-          // Only admins and members can update statuses
           if (userRole === "guest") {
             return {
               success: false,
@@ -304,7 +290,6 @@ export const statusesTool = tool({
         }
 
         case "delete-status": {
-          // Only admins can delete statuses
           if (userRole !== "admin") {
             return {
               success: false,
@@ -342,7 +327,6 @@ export const statusesTool = tool({
         }
 
         case "set-default-status": {
-          // Only admins and members can set default status
           if (userRole === "guest") {
             return {
               success: false,

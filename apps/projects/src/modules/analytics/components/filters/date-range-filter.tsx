@@ -5,12 +5,15 @@ import { CalendarIcon, CloseIcon } from "icons";
 import { format } from "date-fns";
 import { cn } from "lib";
 import { FilterButton } from "./filter-button";
-import { datePresets, type DatePreset } from "./types";
+import { datePresets, getDefaultDateRange, type DatePreset } from "./types";
 
 const DateRangeSelector = () => {
+  // Default to last 30 days (matching backend default)
+  const defaultDates = getDefaultDateRange();
+
   const [filters, setFilters] = useQueryStates({
-    startDate: parseAsIsoDateTime,
-    endDate: parseAsIsoDateTime,
+    startDate: parseAsIsoDateTime.withDefault(defaultDates.startDate),
+    endDate: parseAsIsoDateTime.withDefault(defaultDates.endDate),
   });
 
   const customStartDate = filters.startDate || undefined;
@@ -160,6 +163,7 @@ const DateRangeSelector = () => {
         {customStartDate || customEndDate ? (
           <Button
             color="tertiary"
+            leftIcon={<CloseIcon className="h-4 w-auto" />}
             onClick={clearDates}
             size="sm"
             variant="outline"
@@ -173,9 +177,12 @@ const DateRangeSelector = () => {
 };
 
 export const DateRangeFilter = () => {
+  // Default to last 30 days (matching backend default)
+  const defaultDates = getDefaultDateRange();
+
   const [filters] = useQueryStates({
-    startDate: parseAsIsoDateTime,
-    endDate: parseAsIsoDateTime,
+    startDate: parseAsIsoDateTime.withDefault(defaultDates.startDate),
+    endDate: parseAsIsoDateTime.withDefault(defaultDates.endDate),
   });
 
   const getDateRangeText = () => {

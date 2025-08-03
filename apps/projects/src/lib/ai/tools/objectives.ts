@@ -10,8 +10,7 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import { createObjective } from "@/modules/objectives/actions/create-objective";
 import { updateObjective } from "@/modules/objectives/actions/update-objective";
 import { deleteObjective } from "@/modules/objectives/actions/delete-objective";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const objectivesTool = tool({
   description:
@@ -112,16 +111,8 @@ export const objectivesTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
+      const workspace = await getWorkspace(session);
+      const userRole = workspace.userRole;
 
       switch (action) {
         case "list-objectives": {

@@ -3,8 +3,6 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { getMembers, getTeamMembers } from "@/lib/queries/members/get-members";
 import { getTeams } from "@/modules/teams/queries/get-teams";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 
 export const membersTool = tool({
   description:
@@ -43,18 +41,6 @@ export const membersTool = tool({
         return {
           success: false,
           error: "Authentication required to access members",
-        };
-      }
-
-      // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
         };
       }
 

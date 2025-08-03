@@ -5,8 +5,6 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import { getStatuses } from "@/lib/queries/states/get-states";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { searchQuery } from "@/modules/search/queries/search";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { SearchQueryParams } from "@/modules/search/types";
 
 export const searchTool = tool({
@@ -86,20 +84,6 @@ export const searchTool = tool({
           error: "Authentication required to perform search",
         };
       }
-
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
-      const userRole = workspace?.userRole;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
-
-      // Note: teamId, assigneeId, and statusId are passed directly as UUIDs
-      // No name resolution needed as the search API expects UUIDs
 
       // Build search parameters based on action
       let searchParams: SearchQueryParams;

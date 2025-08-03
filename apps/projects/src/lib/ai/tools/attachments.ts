@@ -4,8 +4,7 @@ import { auth } from "@/auth";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { deleteStoryAttachmentAction } from "@/modules/story/actions/delete-attachment";
 import { getMembers } from "@/lib/queries/members/get-members";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const attachmentsTool = tool({
   description:
@@ -42,18 +41,10 @@ export const attachmentsTool = tool({
       }
 
       // Get user's workspace and role for permissions
-      const workspaces = await getWorkspaces(session.token);
-      const workspace = getCurrentWorkspace(workspaces);
+      const workspace = await getWorkspace(session);
 
-      const userRole = workspace?.userRole;
+      const userRole = workspace.userRole;
       const userId = session.user!.id;
-
-      if (!userRole) {
-        return {
-          success: false,
-          error: "Unable to determine user permissions",
-        };
-      }
 
       // Get members for uploader resolution and metadata
       const members = await getMembers(session);

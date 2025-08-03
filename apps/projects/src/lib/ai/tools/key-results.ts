@@ -6,8 +6,7 @@ import { createKeyResult } from "@/modules/objectives/actions/create-key-result"
 import { updateKeyResult } from "@/modules/objectives/actions/update-key-result";
 import { deleteKeyResult } from "@/modules/objectives/actions/delete-key-result";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
-import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 // Tool 1: List Key Results
 export const keyResultsListTool = tool({
@@ -47,16 +46,8 @@ export const keyResultsListTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const workspaces = await getWorkspaces(session.token);
-    const workspace = getCurrentWorkspace(workspaces);
-    const userRole = workspace?.userRole;
-
-    if (!userRole) {
-      return {
-        success: false,
-        error: "Unable to determine user permissions",
-      };
-    }
+    const workspace = await getWorkspace(session);
+    const userRole = workspace.userRole;
 
     if (userRole === "guest") {
       return {
@@ -138,16 +129,8 @@ export const keyResultsCreateTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const workspaces = await getWorkspaces(session.token);
-    const workspace = getCurrentWorkspace(workspaces);
-    const userRole = workspace?.userRole;
-
-    if (!userRole) {
-      return {
-        success: false,
-        error: "Unable to determine user permissions",
-      };
-    }
+    const workspace = await getWorkspace(session);
+    const userRole = workspace.userRole;
 
     if (userRole === "guest") {
       return {
@@ -223,9 +206,8 @@ export const keyResultsUpdateTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const workspaces = await getWorkspaces(session.token);
-    const workspace = getCurrentWorkspace(workspaces);
-    const userRole = workspace?.userRole;
+    const workspace = await getWorkspace(session);
+    const userRole = workspace.userRole;
 
     if (userRole === "guest") {
       return {
@@ -274,16 +256,8 @@ export const keyResultsDeleteTool = tool({
     }
 
     // Get user's workspace and role for permissions
-    const workspaces = await getWorkspaces(session.token);
-    const workspace = getCurrentWorkspace(workspaces);
-    const userRole = workspace?.userRole;
-
-    if (!userRole) {
-      return {
-        success: false,
-        error: "Unable to determine user permissions",
-      };
-    }
+    const workspace = await getWorkspace(session);
+    const userRole = workspace.userRole;
 
     if (userRole === "guest") {
       return {

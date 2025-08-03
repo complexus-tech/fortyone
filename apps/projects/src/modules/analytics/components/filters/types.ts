@@ -1,5 +1,12 @@
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
+// Default date range (last 30 days) matching backend default
+export const getDefaultDateRange = () => {
+  const endDate = endOfDay(new Date());
+  const startDate = startOfDay(subDays(new Date(), 30));
+  return { startDate, endDate };
+};
+
 export type DatePreset = {
   label: string;
   value: string;
