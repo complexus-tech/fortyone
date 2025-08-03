@@ -15,5 +15,11 @@
     "turbo": "^2.5.0"
   },
   "packageManager": "pnpm@9.3.0",
-  "name": "complexus.tech"
+  "name": "complexus.tech",
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.9",
+      "@types/react-dom": "19.1.7"
+    }
+  }
 }
