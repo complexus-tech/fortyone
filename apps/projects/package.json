@@ -50,7 +50,7 @@
     "lib": "workspace:*",
     "marked": "^16.1.1",
     "msw": "^2.3.1",
-    "next": "15.3.2",
+    "next": "15.4.5",
     "next-auth": "5.0.0-beta.28",
     "next-themes": "^0.3.0",
     "nprogress": "^0.2.0",
@@ -60,9 +60,9 @@
     "posthog-js": "^1.246.0",
     "posthog-node": "^4.17.2",
     "qs": "^6.12.3",
-    "react": "19.1.0",
+    "react": "19.1.1",
     "react-day-picker": "^8.10.1",
-    "react-dom": "19.1.0",
+    "react-dom": "19.1.1",
     "react-dropzone": "^14.2.3",
     "react-hotkeys-hook": "^4.5.0",
     "react-intersection-observer-hook": "^4.0.0",
@@ -79,7 +79,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "15.3.2",
+    "@next/eslint-plugin-next": "15.4.5",
     "@tailwindcss/typography": "^0.5.12",
     "@tanstack/eslint-plugin-query": "^5.66.1",
     "@tanstack/react-query-devtools": "^5.69.0",
@@ -88,8 +88,8 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
     "@types/nprogress": "^0.2.3",
-    "@types/react": "19.1.4",
-    "@types/react-dom": "19.1.5",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
     "autoprefixer": "^10.4.19",
     "eslint-config-custom": "workspace:*",
     "jest": "^29.7.0",
@@ -101,5 +101,11 @@
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
     "typescript": "^5.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.9",
+      "@types/react-dom": "19.1.7"
+    }
   }
 }
