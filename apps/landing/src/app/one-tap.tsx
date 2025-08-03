@@ -9,8 +9,6 @@ import { useSearchParams } from "next/navigation";
 import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
 import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
-import { useProfile } from "@/lib/hooks/profile";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { getSession } from "./verify/[email]/[token]/actions";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
