@@ -93,8 +93,13 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	newAssigneeName := r.getUserName(ctx, *newAssigneeID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
+	template := "{actor} reassigned story to {assignee}"
+	if actorName == newAssigneeName {
+		template = "{actor} reassigned story to themselves"
+	}
+
 	message := NotificationMessage{
-		Template: "{actor} reassigned story to {assignee}",
+		Template: template,
 		Variables: map[string]Variable{
 			"actor":    {Value: actorName, Type: "actor"},
 			"assignee": {Value: newAssigneeName, Type: "assignee"},
@@ -136,7 +141,7 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 
 	actorName := r.getUserName(ctx, actorID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
-	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates, ctx)
+	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates)
 
 	return []CoreNewNotification{
 		r.createNotification(*payload.AssigneeID, payload, actorID, "story_update", storyTitle, message),
@@ -144,7 +149,7 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 }
 
 // generateNonAssignmentUpdateMessage creates messages for status, priority, due date updates
-func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map[string]any, ctx context.Context) NotificationMessage {
+func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map[string]any) NotificationMessage {
 	// Priority update
 	if priorityValue, exists := updates["priority"]; exists {
 		priority := "Unknown"

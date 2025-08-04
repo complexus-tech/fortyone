@@ -287,7 +287,7 @@ func TestGenerateUpdateMessage(t *testing.T) {
 			// Create a mock rules instance
 			rules := &Rules{}
 
-			result := rules.generateNonAssignmentUpdateMessage("jack", tt.updates, context.Background())
+			result := rules.generateNonAssignmentUpdateMessage("jack", tt.updates)
 
 			assert.Equal(t, tt.expected.Template, result.Template, tt.description)
 			assert.Equal(t, len(tt.expected.Variables), len(result.Variables), "Should have same number of variables")
