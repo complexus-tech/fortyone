@@ -19,26 +19,27 @@ type CoreLabel struct {
 
 // CoreStoryList represents a list of stories.
 type CoreStoryList struct {
-	ID         uuid.UUID       `json:"id"`
-	SequenceID int             `json:"sequence_id"`
-	Title      string          `json:"title"`
-	Parent     *uuid.UUID      `json:"parent_id"`
-	Objective  *uuid.UUID      `json:"objective_id"`
-	Epic       *uuid.UUID      `json:"epic_id"`
-	Status     *uuid.UUID      `json:"status_id"`
-	Assignee   *uuid.UUID      `json:"assignee_id"`
-	Reporter   *uuid.UUID      `json:"reporter_id"`
-	Priority   string          `json:"priority"`
-	Sprint     *uuid.UUID      `json:"sprint_id"`
-	KeyResult  *uuid.UUID      `json:"key_result_id"`
-	Team       uuid.UUID       `json:"team_id"`
-	Workspace  uuid.UUID       `json:"workspace_id"`
-	StartDate  *time.Time      `json:"start_date"`
-	EndDate    *time.Time      `json:"end_date"`
-	CreatedAt  time.Time       `json:"created_at"`
-	UpdatedAt  time.Time       `json:"updated_at"`
-	Labels     []uuid.UUID     `json:"labels"`
-	SubStories []CoreStoryList `json:"subStories"`
+	ID          uuid.UUID       `json:"id"`
+	SequenceID  int             `json:"sequence_id"`
+	Title       string          `json:"title"`
+	Parent      *uuid.UUID      `json:"parent_id"`
+	Objective   *uuid.UUID      `json:"objective_id"`
+	Epic        *uuid.UUID      `json:"epic_id"`
+	Status      *uuid.UUID      `json:"status_id"`
+	Assignee    *uuid.UUID      `json:"assignee_id"`
+	Reporter    *uuid.UUID      `json:"reporter_id"`
+	Priority    string          `json:"priority"`
+	Sprint      *uuid.UUID      `json:"sprint_id"`
+	KeyResult   *uuid.UUID      `json:"key_result_id"`
+	Team        uuid.UUID       `json:"team_id"`
+	Workspace   uuid.UUID       `json:"workspace_id"`
+	StartDate   *time.Time      `json:"start_date"`
+	EndDate     *time.Time      `json:"end_date"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+	CompletedAt *time.Time      `json:"completed_at"`
+	Labels      []uuid.UUID     `json:"labels"`
+	SubStories  []CoreStoryList `json:"subStories"`
 }
 
 // CoreSingleStory represents a single story.
@@ -67,6 +68,7 @@ type CoreSingleStory struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time
+	CompletedAt     *time.Time
 	SubStories      []CoreStoryList
 	Labels          []uuid.UUID
 }
@@ -104,6 +106,7 @@ type CoreUpdateStory struct {
 	KeyResult       *uuid.UUID
 	StartDate       *time.Time
 	EndDate         *time.Time
+	CompletedAt     *time.Time
 }
 
 func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
@@ -182,6 +185,10 @@ type CoreStoryFilters struct {
 	UpdatedBefore   *time.Time `json:"updatedBefore"`
 	DeadlineAfter   *time.Time `json:"deadlineAfter"`
 	DeadlineBefore  *time.Time `json:"deadlineBefore"`
+	CompletedAfter  *time.Time `json:"completedAfter"`
+	CompletedBefore *time.Time `json:"completedBefore"`
+	IsCompleted     *bool      `json:"isCompleted"`
+	IsNotCompleted  *bool      `json:"isNotCompleted"`
 	IncludeArchived *bool      `json:"includeArchived"`
 }
 

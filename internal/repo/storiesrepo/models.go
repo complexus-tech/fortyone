@@ -40,6 +40,7 @@ type dbStory struct {
 	UpdatedAt       time.Time        `db:"updated_at"`
 	DeletedAt       *time.Time       `db:"deleted_at"`
 	ArchivedAt      *time.Time       `db:"archived_at"`
+	CompletedAt     *time.Time       `db:"completed_at"`
 	SubStories      *json.RawMessage `db:"sub_stories"`
 	Labels          *json.RawMessage `db:"labels"`
 }
@@ -87,6 +88,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+		CompletedAt:     i.CompletedAt,
 		SubStories:      subStories,
 		Labels:          labels,
 	}
@@ -116,26 +118,27 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 		}
 
 		cl[i] = stories.CoreStoryList{
-			ID:         story.ID,
-			SequenceID: story.SequenceID,
-			Title:      story.Title,
-			Parent:     story.Parent,
-			Objective:  story.Objective,
-			Sprint:     story.Sprint,
-			Epic:       story.Epic,
-			Team:       story.Team,
-			Workspace:  story.Workspace,
-			Status:     story.Status,
-			Assignee:   story.Assignee,
-			Reporter:   story.Reporter,
-			KeyResult:  story.KeyResult,
-			StartDate:  story.StartDate,
-			EndDate:    story.EndDate,
-			Priority:   story.Priority,
-			CreatedAt:  story.CreatedAt,
-			UpdatedAt:  story.UpdatedAt,
-			Labels:     labels,
-			SubStories: subStories,
+			ID:          story.ID,
+			SequenceID:  story.SequenceID,
+			Title:       story.Title,
+			Parent:      story.Parent,
+			Objective:   story.Objective,
+			Sprint:      story.Sprint,
+			Epic:        story.Epic,
+			Team:        story.Team,
+			Workspace:   story.Workspace,
+			Status:      story.Status,
+			Assignee:    story.Assignee,
+			Reporter:    story.Reporter,
+			KeyResult:   story.KeyResult,
+			StartDate:   story.StartDate,
+			EndDate:     story.EndDate,
+			Priority:    story.Priority,
+			CreatedAt:   story.CreatedAt,
+			UpdatedAt:   story.UpdatedAt,
+			CompletedAt: story.CompletedAt,
+			Labels:      labels,
+			SubStories:  subStories,
 		}
 	}
 	return cl
@@ -166,6 +169,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+		CompletedAt:     i.CompletedAt,
 	}
 }
 

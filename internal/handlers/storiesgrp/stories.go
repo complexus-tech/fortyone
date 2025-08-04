@@ -1045,6 +1045,10 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.UpdatedBefore = parseDateParam(r, "updatedBefore")
 	query.Filters.DeadlineAfter = parseDateParam(r, "deadlineAfter")
 	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
+	query.Filters.CompletedAfter = parseDateParam(r, "completedAfter")
+	query.Filters.CompletedBefore = parseDateParam(r, "completedBefore")
+	query.Filters.IsCompleted = parseBoolParam(r, "isCompleted")
+	query.Filters.IsNotCompleted = parseBoolParam(r, "isNotCompleted")
 
 	return query, nil
 }
@@ -1267,6 +1271,18 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.DeadlineBefore != nil {
 		result["deadline_before"] = *filters.DeadlineBefore
+	}
+	if filters.CompletedAfter != nil {
+		result["completed_after"] = *filters.CompletedAfter
+	}
+	if filters.CompletedBefore != nil {
+		result["completed_before"] = *filters.CompletedBefore
+	}
+	if filters.IsCompleted != nil {
+		result["is_completed"] = *filters.IsCompleted
+	}
+	if filters.IsNotCompleted != nil {
+		result["is_not_completed"] = *filters.IsNotCompleted
 	}
 
 	return result

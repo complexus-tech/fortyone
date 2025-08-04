@@ -104,30 +104,32 @@ type AppSingleStory struct {
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       *time.Time     `json:"deletedAt"`
+	CompletedAt     *time.Time     `json:"completedAt"`
 	SubStories      []AppStoryList `json:"subStories"`
 	Labels          []uuid.UUID    `json:"labels"`
 }
 
 // AppStoryList represents a single story in the list of stories in the application.
 type AppStoryList struct {
-	ID         uuid.UUID      `json:"id"`
-	SequenceID int            `json:"sequenceId"`
-	Title      string         `json:"title"`
-	Objective  *uuid.UUID     `json:"objectiveId"`
-	Status     *uuid.UUID     `json:"statusId"`
-	Assignee   *uuid.UUID     `json:"assigneeId"`
-	Reporter   *uuid.UUID     `json:"reporterId"`
-	Priority   string         `json:"priority"`
-	Sprint     *uuid.UUID     `json:"sprintId"`
-	KeyResult  *uuid.UUID     `json:"keyResultId"`
-	Workspace  uuid.UUID      `json:"workspaceId"`
-	Team       uuid.UUID      `json:"teamId"`
-	StartDate  *time.Time     `json:"startDate"`
-	EndDate    *time.Time     `json:"endDate"`
-	CreatedAt  time.Time      `json:"createdAt"`
-	UpdatedAt  time.Time      `json:"updatedAt"`
-	Labels     []uuid.UUID    `json:"labels"`
-	SubStories []AppStoryList `json:"subStories"`
+	ID          uuid.UUID      `json:"id"`
+	SequenceID  int            `json:"sequenceId"`
+	Title       string         `json:"title"`
+	Objective   *uuid.UUID     `json:"objectiveId"`
+	Status      *uuid.UUID     `json:"statusId"`
+	Assignee    *uuid.UUID     `json:"assigneeId"`
+	Reporter    *uuid.UUID     `json:"reporterId"`
+	Priority    string         `json:"priority"`
+	Sprint      *uuid.UUID     `json:"sprintId"`
+	KeyResult   *uuid.UUID     `json:"keyResultId"`
+	Workspace   uuid.UUID      `json:"workspaceId"`
+	Team        uuid.UUID      `json:"teamId"`
+	StartDate   *time.Time     `json:"startDate"`
+	EndDate     *time.Time     `json:"endDate"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	CompletedAt *time.Time     `json:"completedAt"`
+	Labels      []uuid.UUID    `json:"labels"`
+	SubStories  []AppStoryList `json:"subStories"`
 }
 
 func toAppStory(i stories.CoreSingleStory) AppSingleStory {
@@ -152,6 +154,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+		CompletedAt:     i.CompletedAt,
 		BlockedBy:       i.BlockedBy,
 		Blocking:        i.Blocking,
 		Related:         i.Related,
@@ -165,24 +168,25 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 	appStories := make([]AppStoryList, len(stories))
 	for i, story := range stories {
 		appStories[i] = AppStoryList{
-			ID:         story.ID,
-			SequenceID: story.SequenceID,
-			Title:      story.Title,
-			Objective:  story.Objective,
-			Team:       story.Team,
-			Workspace:  story.Workspace,
-			Status:     story.Status,
-			Assignee:   story.Assignee,
-			Reporter:   story.Reporter,
-			Priority:   story.Priority,
-			Sprint:     story.Sprint,
-			KeyResult:  story.KeyResult,
-			StartDate:  story.StartDate,
-			EndDate:    story.EndDate,
-			CreatedAt:  story.CreatedAt,
-			UpdatedAt:  story.UpdatedAt,
-			Labels:     story.Labels,
-			SubStories: toAppStories(story.SubStories),
+			ID:          story.ID,
+			SequenceID:  story.SequenceID,
+			Title:       story.Title,
+			Objective:   story.Objective,
+			Team:        story.Team,
+			Workspace:   story.Workspace,
+			Status:      story.Status,
+			Assignee:    story.Assignee,
+			Reporter:    story.Reporter,
+			Priority:    story.Priority,
+			Sprint:      story.Sprint,
+			KeyResult:   story.KeyResult,
+			StartDate:   story.StartDate,
+			EndDate:     story.EndDate,
+			CreatedAt:   story.CreatedAt,
+			UpdatedAt:   story.UpdatedAt,
+			CompletedAt: story.CompletedAt,
+			Labels:      story.Labels,
+			SubStories:  toAppStories(story.SubStories),
 		}
 	}
 	return appStories
@@ -202,6 +206,7 @@ type AppUpdateStory struct {
 	KeyResult       uuid.UUID  `json:"keyResultId" db:"key_result_id"`
 	StartDate       *time.Time `json:"startDate" db:"start_date"`
 	EndDate         *time.Time `json:"endDate" db:"end_date"`
+	CompletedAt     *time.Time `json:"completedAt" db:"completed_at"`
 }
 
 type AppNewStory struct {
@@ -262,6 +267,10 @@ type StoryFilters struct {
 	UpdatedBefore   *time.Time `json:"updatedBefore"`
 	DeadlineAfter   *time.Time `json:"deadlineAfter"`
 	DeadlineBefore  *time.Time `json:"deadlineBefore"`
+	CompletedAfter  *time.Time `json:"completedAfter"`
+	CompletedBefore *time.Time `json:"completedBefore"`
+	IsCompleted     *bool      `json:"isCompleted"`
+	IsNotCompleted  *bool      `json:"isNotCompleted"`
 	IncludeArchived *bool      `json:"includeArchived"`
 }
 

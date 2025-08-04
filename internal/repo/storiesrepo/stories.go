@@ -329,6 +329,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
+								'completed_at', sub.completed_at,
 								'labels', '[]'		
 							)
 						)
@@ -423,6 +424,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.created_at,
 					s.updated_at,
 					s.deleted_at,
+					s.completed_at,
 					COALESCE(
 							(
 									SELECT
@@ -579,6 +581,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
+			s.completed_at,
 			COALESCE(
 				(
 					SELECT
@@ -599,6 +602,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
+								'completed_at', sub.completed_at,
 								'labels', '[]'
 							)
 						)
@@ -684,6 +688,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if priorities, ok := filters["priorities"].([]string); ok {
 		coreFilters.Priorities = priorities
 	}
+	if categories, ok := filters["categories"].([]string); ok {
+		coreFilters.Categories = categories
+	}
 	if teamIds, ok := filters["team_ids"].([]uuid.UUID); ok {
 		coreFilters.TeamIDs = teamIds
 	}
@@ -701,6 +708,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if epicId, ok := filters["epic_id"].(uuid.UUID); ok {
 		coreFilters.Epic = &epicId
+	}
+	if keyResultId, ok := filters["key_result_id"].(uuid.UUID); ok {
+		coreFilters.KeyResult = &keyResultId
 	}
 	if hasNoAssignee, ok := filters["has_no_assignee"].(bool); ok {
 		coreFilters.HasNoAssignee = &hasNoAssignee
@@ -728,6 +738,21 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if deadlineBefore, ok := filters["deadline_before"].(time.Time); ok {
 		coreFilters.DeadlineBefore = &deadlineBefore
+	}
+	if completedAfter, ok := filters["completed_after"].(time.Time); ok {
+		coreFilters.CompletedAfter = &completedAfter
+	}
+	if completedBefore, ok := filters["completed_before"].(time.Time); ok {
+		coreFilters.CompletedBefore = &completedBefore
+	}
+	if isCompleted, ok := filters["is_completed"].(bool); ok {
+		coreFilters.IsCompleted = &isCompleted
+	}
+	if isNotCompleted, ok := filters["is_not_completed"].(bool); ok {
+		coreFilters.IsNotCompleted = &isNotCompleted
+	}
+	if includeArchived, ok := filters["include_archived"].(bool); ok {
+		coreFilters.IncludeArchived = &includeArchived
 	}
 
 	return coreFilters
@@ -958,7 +983,8 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 					assignee_id,
 					reporter_id,
 					created_at,
-					updated_at
+					updated_at,
+					completed_at
         FROM
             stories
         WHERE
@@ -1511,6 +1537,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.reporter_id,
 				s.created_at,
 				s.updated_at,
+				s.completed_at,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
@@ -1544,6 +1571,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'reporter_id', ls.reporter_id,
 						'created_at', ls.created_at,
 						'updated_at', ls.updated_at,
+						'completed_at', ls.completed_at,
 						'sub_stories', COALESCE(
 							(
 								SELECT
@@ -1564,6 +1592,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 											'reporter_id', sub.reporter_id,
 											'created_at', sub.created_at,
 											'updated_at', sub.updated_at,
+											'completed_at', sub.completed_at,
 											'labels', '[]'
 										)
 									)
@@ -1867,6 +1896,27 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if filters.DeadlineBefore != nil {
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
+	}
+
+	// Completion filters
+	if filters.CompletedAfter != nil {
+		whereClauses = append(whereClauses, "s.completed_at >= :completed_after")
+	}
+
+	if filters.CompletedBefore != nil {
+		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
+	}
+
+	if filters.IsCompleted != nil {
+		if *filters.IsCompleted {
+			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+		} else {
+			whereClauses = append(whereClauses, "s.completed_at IS NULL")
+		}
+	}
+
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
 	}
 
 	return "WHERE " + strings.Join(whereClauses, " AND ")
@@ -2229,6 +2279,12 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if filters.DeadlineBefore != nil {
 		params["deadline_before"] = *filters.DeadlineBefore
 	}
+	if filters.CompletedAfter != nil {
+		params["completed_after"] = *filters.CompletedAfter
+	}
+	if filters.CompletedBefore != nil {
+		params["completed_before"] = *filters.CompletedBefore
+	}
 
 	return params
 }
@@ -2252,6 +2308,7 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
+			s.completed_at,
 			COALESCE(
 				(
 					SELECT
@@ -2271,7 +2328,8 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 								'assignee_id', sub.assignee_id,
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
-								'updated_at', sub.updated_at
+								'updated_at', sub.updated_at,
+								'completed_at', sub.completed_at
 							)
 						)
 					FROM
@@ -2418,6 +2476,27 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.DeadlineBefore != nil {
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
+	}
+
+	// Completion filters
+	if filters.CompletedAfter != nil {
+		whereClauses = append(whereClauses, "s.completed_at >= :completed_after")
+	}
+
+	if filters.CompletedBefore != nil {
+		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
+	}
+
+	if filters.IsCompleted != nil {
+		if *filters.IsCompleted {
+			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+		} else {
+			whereClauses = append(whereClauses, "s.completed_at IS NULL")
+		}
+	}
+
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
@@ -2749,6 +2828,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
+			s.completed_at,
 			COALESCE(
 				(
 					SELECT
@@ -2769,6 +2849,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
+								'completed_at', sub.completed_at,
 								'labels', '[]'
 							)
 						)
@@ -2922,6 +3003,27 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
 	}
 
+	// Completion filters
+	if filters.CompletedAfter != nil {
+		whereClauses = append(whereClauses, "s.completed_at >= :completed_after")
+	}
+
+	if filters.CompletedBefore != nil {
+		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
+	}
+
+	if filters.IsCompleted != nil {
+		if *filters.IsCompleted {
+			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+		} else {
+			whereClauses = append(whereClauses, "s.completed_at IS NULL")
+		}
+	}
+
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
+	}
+
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
 
 	return query
@@ -2950,6 +3052,7 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
+			s.completed_at,
 			COALESCE(
 				(
 					SELECT
@@ -2970,6 +3073,7 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
+								'completed_at', sub.completed_at,
 								'labels', '[]'
 							)
 						)
