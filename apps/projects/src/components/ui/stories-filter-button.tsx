@@ -392,7 +392,10 @@ export const StoriesFilterButton = ({
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content className="max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-[35rem]">
+      <Popover.Content
+        align="end"
+        className="max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-[35rem]"
+      >
         <Flex align="center" className="h-11 px-4" justify="between">
           <Text
             color="muted"
