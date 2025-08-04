@@ -130,6 +130,22 @@ export const storiesTool = tool({
           .describe(
             "Filter stories with deadlines before this date (ISO string)",
           ),
+        completedAfter: z
+          .string()
+          .optional()
+          .describe("Filter stories completed after this date (ISO string)"),
+        completedBefore: z
+          .string()
+          .optional()
+          .describe("Filter stories completed before this date (ISO string)"),
+        isCompleted: z
+          .boolean()
+          .optional()
+          .describe("Filter for completed stories only"),
+        isNotCompleted: z
+          .boolean()
+          .optional()
+          .describe("Filter for non-completed stories only"),
         categories: z
           .array(
             z.enum([
