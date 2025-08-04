@@ -3253,3 +3253,37 @@ func (r *repo) UpdateStoryStatus(ctx context.Context, storyID uuid.UUID, workspa
 
 	return r.Update(ctx, storyID, workspaceID, updates)
 }
+
+// GetStatusCategory returns the category for a given status ID
+func (r *repo) GetStatusCategory(ctx context.Context, statusID string) (string, error) {
+	ctx, span := web.AddSpan(ctx, "storiesrepo.GetStatusCategory")
+	defer span.End()
+
+	query := `
+		SELECT category 
+		FROM statuses 
+		WHERE status_id = :status_id
+	`
+
+	params := map[string]any{
+		"status_id": statusID,
+	}
+
+	var category string
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare status category query", "error", err)
+		return "", err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &category, params); err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("status not found: %s", statusID)
+		}
+		r.log.Error(ctx, "failed to get status category", "statusID", statusID, "error", err)
+		return "", err
+	}
+
+	return category, nil
+}

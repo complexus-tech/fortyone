@@ -49,6 +49,7 @@ type Repository interface {
 	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
 	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
 	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
+	GetStatusCategory(ctx context.Context, statusID string) (string, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -211,7 +212,15 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	if err != nil {
 		span.RecordError(err)
 		s.log.Error(ctx, "failed to get story", "error", err)
-		return nil
+		return err
+	}
+
+	// Handle auto-completion logic if status is being updated
+	if newStatusID, hasStatusUpdate := updates["status_id"]; hasStatusUpdate {
+		if err := s.handleCompletionStatusChange(ctx, story, newStatusID, updates); err != nil {
+			s.log.Error(ctx, "failed to handle completion status change", "error", err)
+			// Don't fail the entire update - log and continue
+		}
 	}
 
 	// Update the story
@@ -265,6 +274,43 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		s.log.Error(ctx, "failed to publish story updated event", "error", err)
 		// Don't return error as this is not critical
 	}
+
+	return nil
+}
+
+// handleCompletionStatusChange handles auto-setting completed_at based on status category changes
+func (s *Service) handleCompletionStatusChange(ctx context.Context, story CoreSingleStory,
+	newStatusID any, updates map[string]any) error {
+
+	// Convert status ID to string
+	newStatusStr, ok := newStatusID.(string)
+	if !ok {
+		return fmt.Errorf("status ID is not a string: %T", newStatusID)
+	}
+
+	// Get old status category
+	oldCategory, err := s.repo.GetStatusCategory(ctx, story.Status.String())
+	if err != nil {
+		s.log.Error(ctx, "failed to get old status category", "statusId", *story.Status, "error", err)
+		// Continue without old category info
+	}
+
+	// Get new status category
+	newCategory, err := s.repo.GetStatusCategory(ctx, newStatusStr)
+	if err != nil {
+		return fmt.Errorf("failed to get new status category: %w", err)
+	}
+
+	// Auto-completion logic
+	now := time.Now()
+	if newCategory == "completed" && oldCategory != "completed" {
+		updates["completed_at"] = &now
+		s.log.Info(ctx, "auto-completing story", "storyId", story.ID, "oldCategory", oldCategory, "newCategory", newCategory)
+	} else if oldCategory == "completed" && newCategory != "completed" {
+		updates["completed_at"] = nil
+		s.log.Info(ctx, "auto-uncompleting story", "storyId", story.ID, "oldCategory", oldCategory, "newCategory", newCategory)
+	}
+	// If both old and new are in completed category, do nothing (keep existing completed_at)
 
 	return nil
 }
