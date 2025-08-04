@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// isNewAssignment detects when someone is assigned to a story (initial assignment OR reassignment to them)
+// isNewAssignment detects when someone is assigned to a story for the first time (no previous assignee)
 func (r *Rules) isNewAssignment(payload events.StoryUpdatedPayload) bool {
-	return getNewAssignee(payload.Updates) != nil
+	return payload.AssigneeID == nil && getNewAssignee(payload.Updates) != nil
 }
 
 // isReassignment detects when a story is reassigned from one person to another (different people)
@@ -51,20 +51,7 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 	actorName := r.getUserName(ctx, actorID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
-	// Self-assignment (always notify for activity tracking)
-	if *newAssigneeID == actorID {
-		message := NotificationMessage{
-			Template: "{actor} assigned story to themselves",
-			Variables: map[string]Variable{
-				"actor": {Value: actorName, Type: "actor"},
-			},
-		}
-		return []CoreNewNotification{
-			r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message),
-		}
-	}
-
-	// Assignment to someone else
+	// Only notify the new assignee if they're not the actor
 	if shouldNotify(*newAssigneeID, actorID) {
 		message := NotificationMessage{
 			Template: "{actor} assigned you a story",
