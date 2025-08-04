@@ -28,95 +28,270 @@ func NewRules(log *logger.Logger, stories *stories.Service, users *users.Service
 
 // ProcessStoryUpdate applies notification rules for story updates
 func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
-	var notifications []CoreNewNotification
-
-	// Get story title for notifications
-	story, err := r.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
-	storyTitle := "Story updated"
-	if err == nil {
-		storyTitle = story.Title
-	}
-
-	// Get actor username
-	actorUsername := "Someone"
-	if actor, err := r.users.GetUser(ctx, actorID); err == nil {
-		actorUsername = actor.Username
-	}
-
 	r.log.Info(ctx, "ProcessStoryUpdate", "payload", payload, "actor_id", actorID)
 
-	// Rule 1: New assignment notification
-	if newAssigneeID := getNewAssignee(payload.Updates); newAssigneeID != nil {
-		var message NotificationMessage
+	var notifications []CoreNewNotification
 
-		// Check if actor is assigning to themselves
-		if *newAssigneeID == actorID {
-			message = NotificationMessage{
-				Template: "{actor} assigned story to themselves",
-				Variables: map[string]Variable{
-					"actor": {Value: actorUsername, Type: "actor"},
-				},
-			}
-			notification := createAssignmentNotification(*newAssigneeID, payload, actorID, storyTitle, message)
-			notifications = append(notifications, notification)
-		} else if shouldNotify(*newAssigneeID, actorID) {
-			message = NotificationMessage{
-				Template: "{actor} assigned you a story",
-				Variables: map[string]Variable{
-					"actor": {Value: actorUsername, Type: "actor"},
-				},
-			}
-			notification := createAssignmentNotification(*newAssigneeID, payload, actorID, storyTitle, message)
-			notifications = append(notifications, notification)
-		}
+	// Handle assignment scenarios
+	if r.isNewAssignment(payload) {
+		notifications = append(notifications, r.handleNewAssignment(ctx, payload, actorID)...)
 	}
 
-	// Rule 2: Story update notification (status, priority, due_date, re-assignment)
-	if hasRelevantUpdates(payload.Updates) && payload.AssigneeID != nil && !isUnassignment(payload.Updates) {
-		if shouldNotify(*payload.AssigneeID, actorID) {
-			message := generateUpdateMessage(actorUsername, payload.Updates, ctx, r)
-			notification := createUpdateNotification(*payload.AssigneeID, payload, actorID, storyTitle, message)
-			notifications = append(notifications, notification)
-		}
+	if r.isReassignment(payload) {
+		notifications = append(notifications, r.handleReassignment(ctx, payload, actorID)...)
 	}
 
-	// Rule 3: Unassignment notification
-	if isUnassignment(payload.Updates) && payload.AssigneeID != nil {
-		if shouldNotify(*payload.AssigneeID, actorID) {
-			newAssigneeID := getNewAssignee(payload.Updates)
+	if r.isPureUnassignment(payload) {
+		notifications = append(notifications, r.handlePureUnassignment(ctx, payload, actorID)...)
+	}
 
-			if newAssigneeID == nil {
-				// Pure unassignment - no new assignee
-				message := NotificationMessage{
-					Template: "{actor} removed your assignment",
-					Variables: map[string]Variable{
-						"actor": {Value: actorUsername, Type: "actor"},
-					},
-				}
-				notification := createUnassignmentNotification(*payload.AssigneeID, payload, actorID, storyTitle, message)
-				notifications = append(notifications, notification)
-			} else {
-				// Reassignment case - notify old assignee about who it was reassigned to
-				newAssigneeName := "someone else"
-				if newAssignee, err := r.users.GetUser(ctx, *newAssigneeID); err == nil {
-					newAssigneeName = newAssignee.Username
-				}
-
-				message := NotificationMessage{
-					Template: "{actor} reassigned story to {assignee}",
-					Variables: map[string]Variable{
-						"actor":    {Value: actorUsername, Type: "actor"},
-						"assignee": {Value: newAssigneeName, Type: "assignee"},
-					},
-				}
-
-				notification := createUnassignmentNotification(*payload.AssigneeID, payload, actorID, storyTitle, message)
-				notifications = append(notifications, notification)
-			}
-		}
+	// Handle other story updates (status, priority, due date)
+	if r.hasNonAssignmentUpdates(payload) {
+		notifications = append(notifications, r.handleStoryUpdates(ctx, payload, actorID)...)
 	}
 
 	return notifications, nil
+}
+
+// =============================================================================
+// SCENARIO DETECTION FUNCTIONS
+// =============================================================================
+
+// isNewAssignment detects when someone is assigned to a story (from no assignee or different assignee)
+func (r *Rules) isNewAssignment(payload events.StoryUpdatedPayload) bool {
+	return getNewAssignee(payload.Updates) != nil
+}
+
+// isReassignment detects when a story is reassigned from one person to another
+func (r *Rules) isReassignment(payload events.StoryUpdatedPayload) bool {
+	return payload.AssigneeID != nil && getNewAssignee(payload.Updates) != nil
+}
+
+// isPureUnassignment detects when someone is unassigned without reassigning to anyone else
+func (r *Rules) isPureUnassignment(payload events.StoryUpdatedPayload) bool {
+	return payload.AssigneeID != nil && isUnassignment(payload.Updates)
+}
+
+// hasNonAssignmentUpdates detects updates to status, priority, due date (excluding assignment changes)
+func (r *Rules) hasNonAssignmentUpdates(payload events.StoryUpdatedPayload) bool {
+	if payload.AssigneeID == nil {
+		return false // No current assignee to notify
+	}
+
+	nonAssignmentFields := []string{"status_id", "priority", "end_date"}
+	for _, field := range nonAssignmentFields {
+		if _, exists := payload.Updates[field]; exists {
+			return true
+		}
+	}
+	return false
+}
+
+// =============================================================================
+// NOTIFICATION HANDLERS
+// =============================================================================
+
+// handleNewAssignment creates notifications for new assignments (including self-assignment)
+func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	newAssigneeID := getNewAssignee(payload.Updates)
+	if newAssigneeID == nil {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
+
+	// Self-assignment (always notify for activity tracking)
+	if *newAssigneeID == actorID {
+		message := NotificationMessage{
+			Template: "{actor} assigned story to themselves",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+		return []CoreNewNotification{
+			r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message),
+		}
+	}
+
+	// Assignment to someone else
+	if shouldNotify(*newAssigneeID, actorID) {
+		message := NotificationMessage{
+			Template: "{actor} assigned you a story",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+		return []CoreNewNotification{
+			r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message),
+		}
+	}
+
+	return nil
+}
+
+// handleReassignment creates notifications for reassignments (notify old assignee about who it went to)
+func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	oldAssigneeID := payload.AssigneeID
+	newAssigneeID := getNewAssignee(payload.Updates)
+
+	if oldAssigneeID == nil || newAssigneeID == nil || !shouldNotify(*oldAssigneeID, actorID) {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	newAssigneeName := r.getUserName(ctx, *newAssigneeID)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
+
+	message := NotificationMessage{
+		Template: "{actor} reassigned story to {assignee}",
+		Variables: map[string]Variable{
+			"actor":    {Value: actorName, Type: "actor"},
+			"assignee": {Value: newAssigneeName, Type: "assignee"},
+		},
+	}
+
+	return []CoreNewNotification{
+		r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message),
+	}
+}
+
+// handlePureUnassignment creates notifications for pure unassignments (no new assignee)
+func (r *Rules) handlePureUnassignment(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	oldAssigneeID := payload.AssigneeID
+	if oldAssigneeID == nil || !shouldNotify(*oldAssigneeID, actorID) {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
+
+	message := NotificationMessage{
+		Template: "{actor} removed your assignment",
+		Variables: map[string]Variable{
+			"actor": {Value: actorName, Type: "actor"},
+		},
+	}
+
+	return []CoreNewNotification{
+		r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message),
+	}
+}
+
+// handleStoryUpdates creates notifications for non-assignment updates (status, priority, due date)
+func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	if payload.AssigneeID == nil || !shouldNotify(*payload.AssigneeID, actorID) {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
+	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates, ctx)
+
+	return []CoreNewNotification{
+		r.createNotification(*payload.AssigneeID, payload, actorID, "story_update", storyTitle, message),
+	}
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+// getUserName gets a user's name with fallback
+func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
+	if user, err := r.users.GetUser(ctx, userID); err == nil {
+		return user.Username
+	}
+	return "Someone"
+}
+
+// getStoryTitle gets a story's title with fallback
+func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUID) string {
+	if story, err := r.stories.Get(ctx, storyID, workspaceID); err == nil {
+		return story.Title
+	}
+	return "Story updated"
+}
+
+// createNotification creates a notification with consistent structure
+func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType, title string, message NotificationMessage) CoreNewNotification {
+	return CoreNewNotification{
+		RecipientID: recipientID,
+		WorkspaceID: payload.WorkspaceID,
+		Type:        notifType,
+		EntityType:  "story",
+		EntityID:    payload.StoryID,
+		ActorID:     actorID,
+		Title:       title,
+		Message:     message,
+	}
+}
+
+// generateNonAssignmentUpdateMessage creates messages for status, priority, due date updates
+func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map[string]any, ctx context.Context) NotificationMessage {
+	// Priority update
+	if priorityValue, exists := updates["priority"]; exists {
+		priority := "Unknown"
+		if priorityStr, ok := priorityValue.(string); ok {
+			priority = priorityStr
+		}
+		return NotificationMessage{
+			Template: "{actor} set the {field} to {value}",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+				"field": {Value: "Priority", Type: "field"},
+				"value": {Value: priority, Type: "value"},
+			},
+		}
+	}
+
+	// Status update
+	if _, exists := updates["status_id"]; exists {
+		return NotificationMessage{
+			Template: "{actor} updated {field}",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+				"field": {Value: "Status", Type: "field"},
+			},
+		}
+	}
+
+	// Due date update
+	if dueDateValue, exists := updates["end_date"]; exists {
+		if dueDateValue == nil {
+			return NotificationMessage{
+				Template: "{actor} removed the {field}",
+				Variables: map[string]Variable{
+					"actor": {Value: actorName, Type: "actor"},
+					"field": {Value: "deadline", Type: "field"},
+				},
+			}
+		}
+
+		dateStr := "Unknown date"
+		if strDate, ok := dueDateValue.(string); ok {
+			if parsedTime, err := parseDate(strDate); err == nil {
+				dateStr = parsedTime.Format("2 Jan")
+			}
+		}
+
+		return NotificationMessage{
+			Template: "{actor} set the {field} to {value}",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+				"field": {Value: "Deadline", Type: "field"},
+				"value": {Value: dateStr, Type: "date"},
+			},
+		}
+	}
+
+	// Default case
+	return NotificationMessage{
+		Template: "{actor} updated the story",
+		Variables: map[string]Variable{
+			"actor": {Value: actorName, Type: "actor"},
+		},
+	}
 }
 
 // ProcessCommentCreated applies notification rules for comment creation
@@ -242,97 +417,9 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 	return notifications, nil
 }
 
-// generateUpdateMessage creates structured messages for different update types
-func generateUpdateMessage(actorUsername string, updates map[string]any, ctx context.Context, r *Rules) NotificationMessage {
-	// Assignee update (re-assignment only, unassignment handled by Rule 3)
-	if newAssigneeValue, exists := updates["assignee_id"]; exists && newAssigneeValue != nil {
-		// Re-assignment to someone
-		newAssigneeName := "someone else"
-
-		// Get the new assignee's name
-		if newAssigneePtr, ok := newAssigneeValue.(*uuid.UUID); ok && newAssigneePtr != nil {
-			if newAssignee, err := r.users.GetUser(ctx, *newAssigneePtr); err == nil {
-				newAssigneeName = newAssignee.Username
-			}
-		}
-
-		return NotificationMessage{
-			Template: "{actor} reassigned the story to {assignee}",
-			Variables: map[string]Variable{
-				"actor":    {Value: actorUsername, Type: "actor"},
-				"assignee": {Value: newAssigneeName, Type: "assignee"},
-			},
-		}
-	}
-
-	// Priority update
-	if priorityValue, exists := updates["priority"]; exists {
-		priority := "Unknown"
-		if priorityStr, ok := priorityValue.(string); ok {
-			priority = priorityStr
-		}
-
-		return NotificationMessage{
-			Template: "{actor} set the {field} to {value}",
-			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "Priority", Type: "field"},
-				"value": {Value: priority, Type: "value"},
-			},
-		}
-	}
-
-	// Status update
-	if _, exists := updates["status_id"]; exists {
-		statusName := "In Progress" // Placeholder - can be enhanced with actual status lookup
-
-		return NotificationMessage{
-			Template: "{actor} updated {field} to {value}",
-			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "Status", Type: "field"},
-				"value": {Value: statusName, Type: "value"},
-			},
-		}
-	}
-
-	// Due date update
-	if dueDateValue, exists := updates["end_date"]; exists {
-		if dueDateValue == nil {
-			return NotificationMessage{
-				Template: "{actor} removed the {field}",
-				Variables: map[string]Variable{
-					"actor": {Value: actorUsername, Type: "actor"},
-					"field": {Value: "deadline", Type: "field"},
-				},
-			}
-		}
-
-		dateStr := "Unknown date"
-		if strDate, ok := dueDateValue.(string); ok {
-			if parsedTime, err := parseDate(strDate); err == nil {
-				dateStr = parsedTime.Format("2 Jan")
-			}
-		}
-
-		return NotificationMessage{
-			Template: "{actor} set the {field} to {value}",
-			Variables: map[string]Variable{
-				"actor": {Value: actorUsername, Type: "actor"},
-				"field": {Value: "Deadline", Type: "field"},
-				"value": {Value: dateStr, Type: "date"},
-			},
-		}
-	}
-
-	// Default case
-	return NotificationMessage{
-		Template: "{actor} updated the story",
-		Variables: map[string]Variable{
-			"actor": {Value: actorUsername, Type: "actor"},
-		},
-	}
-}
+// =============================================================================
+// UTILITY FUNCTIONS (used by handlers)
+// =============================================================================
 
 // parseDate tries to parse date strings in various formats
 func parseDate(dateStr string) (time.Time, error) {
@@ -351,23 +438,12 @@ func parseDate(dateStr string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
 }
 
-// Rule 4: Never notify the actor
+// shouldNotify checks if a recipient should be notified (never notify the actor)
 func shouldNotify(recipientID, actorID uuid.UUID) bool {
 	return recipientID != actorID
 }
 
-// Check if updates contain relevant fields for notifications
-func hasRelevantUpdates(updates map[string]any) bool {
-	relevantFields := []string{"status_id", "priority", "end_date", "assignee_id"}
-	for _, field := range relevantFields {
-		if _, exists := updates[field]; exists {
-			return true
-		}
-	}
-	return false
-}
-
-// Get new assignee ID from updates
+// getNewAssignee extracts the new assignee ID from updates
 func getNewAssignee(updates map[string]any) *uuid.UUID {
 	assigneeValue, exists := updates["assignee_id"]
 	if !exists {
@@ -387,53 +463,11 @@ func getNewAssignee(updates map[string]any) *uuid.UUID {
 	return nil
 }
 
-// Check if this is an unassignment (assignee_id set to null/empty)
+// isUnassignment checks if this is an unassignment (assignee_id set to null)
 func isUnassignment(updates map[string]any) bool {
 	assigneeValue, exists := updates["assignee_id"]
 	if !exists {
 		return false
 	}
 	return assigneeValue == nil
-}
-
-// Create assignment notification
-func createAssignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle string, message NotificationMessage) CoreNewNotification {
-	return CoreNewNotification{
-		RecipientID: recipientID,
-		WorkspaceID: payload.WorkspaceID,
-		Type:        "story_update",
-		EntityType:  "story",
-		EntityID:    payload.StoryID,
-		ActorID:     actorID,
-		Title:       storyTitle,
-		Message:     message,
-	}
-}
-
-// Create update notification
-func createUpdateNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle string, message NotificationMessage) CoreNewNotification {
-	return CoreNewNotification{
-		RecipientID: recipientID,
-		WorkspaceID: payload.WorkspaceID,
-		Type:        "story_update",
-		EntityType:  "story",
-		EntityID:    payload.StoryID,
-		ActorID:     actorID,
-		Title:       storyTitle,
-		Message:     message,
-	}
-}
-
-// Create unassignment notification
-func createUnassignmentNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, storyTitle string, message NotificationMessage) CoreNewNotification {
-	return CoreNewNotification{
-		RecipientID: recipientID,
-		WorkspaceID: payload.WorkspaceID,
-		Type:        "story_update",
-		EntityType:  "story",
-		EntityID:    payload.StoryID,
-		ActorID:     actorID,
-		Title:       storyTitle,
-		Message:     message,
-	}
 }
