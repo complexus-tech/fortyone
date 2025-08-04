@@ -53,18 +53,18 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	return notifications, nil
 }
 
-// =============================================================================
-// SCENARIO DETECTION FUNCTIONS
-// =============================================================================
-
-// isNewAssignment detects when someone is assigned to a story (from no assignee or different assignee)
+// isNewAssignment detects when someone is assigned to a story (initial assignment OR reassignment to them)
 func (r *Rules) isNewAssignment(payload events.StoryUpdatedPayload) bool {
 	return getNewAssignee(payload.Updates) != nil
 }
 
-// isReassignment detects when a story is reassigned from one person to another
+// isReassignment detects when a story is reassigned from one person to another (different people)
 func (r *Rules) isReassignment(payload events.StoryUpdatedPayload) bool {
-	return payload.AssigneeID != nil && getNewAssignee(payload.Updates) != nil
+	oldAssigneeID := payload.AssigneeID
+	newAssigneeID := getNewAssignee(payload.Updates)
+
+	// Must have both old and new assignee, and they must be different people
+	return oldAssigneeID != nil && newAssigneeID != nil && *oldAssigneeID != *newAssigneeID
 }
 
 // isPureUnassignment detects when someone is unassigned without reassigning to anyone else
@@ -192,10 +192,6 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 		r.createNotification(*payload.AssigneeID, payload, actorID, "story_update", storyTitle, message),
 	}
 }
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
 
 // getUserName gets a user's name with fallback
 func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
