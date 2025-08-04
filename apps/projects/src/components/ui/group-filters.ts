@@ -30,6 +30,10 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     deadlineAfter: meta.filters.deadlineAfter ?? undefined,
     deadlineBefore: meta.filters.deadlineBefore ?? undefined,
     includeArchived: meta.filters.includeArchived ?? undefined,
+    completedAfter: meta.filters.completedAfter ?? undefined,
+    completedBefore: meta.filters.completedBefore ?? undefined,
+    isCompleted: meta.filters.isCompleted ?? undefined,
+    isNotCompleted: meta.filters.isNotCompleted ?? undefined,
   };
   return finalFilters;
 };

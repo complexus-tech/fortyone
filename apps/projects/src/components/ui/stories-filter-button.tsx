@@ -38,6 +38,10 @@ export type StoriesFilter = {
   hasNoAssignee: boolean | null;
   assignedToMe: boolean;
   createdByMe: boolean;
+  completedAfter?: string;
+  completedBefore?: string;
+  isCompleted?: boolean;
+  isNotCompleted?: boolean;
 };
 
 type StoriesFilterButtonProps = {

@@ -71,6 +71,10 @@ export type StoryFilters = {
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
+  completedAfter?: string;
+  completedBefore?: string;
+  isCompleted?: boolean;
+  isNotCompleted?: boolean;
 };
 
 export type GroupedStoriesResponse = {
@@ -124,6 +128,10 @@ export type GroupedStoryParams = {
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
+  completedAfter?: string;
+  completedBefore?: string;
+  isCompleted?: boolean;
+  isNotCompleted?: boolean;
 };
 
 export type GroupStoryParams = {
@@ -154,4 +162,8 @@ export type GroupStoryParams = {
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
+  completedAfter?: string;
+  completedBefore?: string;
+  isCompleted?: boolean;
+  isNotCompleted?: boolean;
 };
