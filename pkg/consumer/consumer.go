@@ -249,6 +249,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
+	c.log.Info(ctx, "consumer.handleStoryUpdated", "story_id", payload.StoryID, "workspace_id", payload.WorkspaceID, "updates", payload.Updates)
+
 	// Use notification rules to process the story update
 	notifications, err := c.notificationRules.ProcessStoryUpdate(ctx, payload, event.ActorID)
 	if err != nil {
