@@ -101,9 +101,10 @@ func TestNotificationRules(t *testing.T) {
 			// Test hasNonAssignmentUpdates function
 			rules := &Rules{}
 			hasRelevant := rules.hasNonAssignmentUpdates(tt.payload)
-			if tt.name == "No relevant updates" {
+			switch tt.name {
+			case "No relevant updates":
 				assert.False(t, hasRelevant, "Should not have relevant updates for description change")
-			} else if tt.name == "Rule 2: Status update notification" {
+			case "Rule 2: Status update notification":
 				assert.True(t, hasRelevant, "Should have relevant updates for status change")
 			}
 
@@ -116,9 +117,10 @@ func TestNotificationRules(t *testing.T) {
 
 			// Test isUnassignment function
 			isUnassign := isUnassignment(tt.payload.Updates)
-			if tt.name == "Rule 3: Unassignment notification" {
+			switch tt.name {
+			case "Rule 3: Unassignment notification":
 				assert.True(t, isUnassign, "Should detect unassignment")
-			} else if tt.name == "Rule 1: New assignment notification" {
+			case "Rule 1: New assignment notification":
 				assert.False(t, isUnassign, "Should not detect unassignment for new assignment")
 			}
 		})
