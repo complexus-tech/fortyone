@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -58,7 +59,7 @@ func RequireMinimumRole(log *logger.Logger, minimumRole Role) web.Middleware {
 	}
 }
 
-// RequireRoles ensures user has exactly one of the specified roles (not hierarchical)
+// RequireRoles ensures user has exactly one of the specified roles
 func RequireRoles(log *logger.Logger, roles ...Role) web.Middleware {
 	return func(next web.Handler) web.Handler {
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -74,11 +75,8 @@ func RequireRoles(log *logger.Logger, roles ...Role) web.Middleware {
 				return web.RespondError(ctx, w, errors.New("invalid user role"), http.StatusInternalServerError)
 			}
 
-			// Check for exact role match (not hierarchical)
-			for _, role := range roles {
-				if userRole == role {
-					return next(ctx, w, r)
-				}
+			if slices.Contains(roles, userRole) {
+				return next(ctx, w, r)
 			}
 
 			return web.RespondError(ctx, w, errors.New("you don't have permission to access this resource"), http.StatusForbidden)
