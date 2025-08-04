@@ -80,6 +80,7 @@ const updateInfiniteQuery = (
         endDate: story.endDate || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        completedAt: null,
         labels: [],
         subStories: [],
       };
@@ -133,6 +134,7 @@ const updateGroupedQuery = (
         endDate: story.endDate || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        completedAt: null,
         labels: [],
         subStories: [],
       };
