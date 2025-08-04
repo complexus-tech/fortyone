@@ -370,6 +370,7 @@ export const storiesTool = tool({
                 endDate: story.endDate,
                 createdAt: story.createdAt,
                 updatedAt: story.updatedAt,
+                completedAt: story.completedAt,
               };
             }),
             count: stories.length,
