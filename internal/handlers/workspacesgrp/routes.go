@@ -65,6 +65,7 @@ func Routes(cfg Config, app *web.App) {
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 	workspacesService := workspaces.New(cfg.Log, workspacesrepo.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.Cache, cfg.SystemUserID)
 
 	h := New(workspacesService, teamsService,
@@ -75,15 +76,15 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceSlug}", h.Update, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}", h.Delete, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/members", h.AddMember, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/members/{userId}/role", h.UpdateMemberRole, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/members/{userId}", h.RemoveMember, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/members/{userId}/role", h.UpdateMemberRole, auth, workspace, adminOnly)
+	app.Delete("/workspaces/{workspaceSlug}/members/{userId}", h.RemoveMember, auth, workspace, adminOnly)
 	app.Post("/workspaces", h.Create, auth)
 	app.Get("/workspaces", h.List, auth)
 	app.Get("/workspaces/check-availability", h.CheckSlugAvailability)
 	app.Get("/workspaces/{workspaceSlug}/settings", h.GetWorkspaceSettings, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/settings", h.UpdateWorkspaceSettings, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/settings", h.UpdateWorkspaceSettings, auth, workspace, adminOnly)
 
 	// Workspace logo endpoints
-	app.Post("/workspaces/{workspaceSlug}/logo", h.UploadWorkspaceLogo, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/logo", h.DeleteWorkspaceLogo, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/logo", h.UploadWorkspaceLogo, auth, workspace, adminOnly)
+	app.Delete("/workspaces/{workspaceSlug}/logo", h.DeleteWorkspaceLogo, auth, workspace, adminOnly)
 }

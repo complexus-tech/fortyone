@@ -21,8 +21,9 @@ func Routes(cfg Config, app *web.App) {
 	activitiesService := activities.New(cfg.Log, activitiesrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	memberOnly := mid.RequireRoles(cfg.Log, mid.RoleMember)
 
 	h := New(cfg.Log, activitiesService)
 
-	app.Get("/workspaces/{workspaceSlug}/activities", h.GetActivities, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/activities", h.GetActivities, auth, workspace, memberOnly)
 }
