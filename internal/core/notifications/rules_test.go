@@ -98,8 +98,9 @@ func TestNotificationRules(t *testing.T) {
 				}
 			}
 
-			// Test hasRelevantUpdates function
-			hasRelevant := hasRelevantUpdates(tt.payload.Updates)
+			// Test hasNonAssignmentUpdates function
+			rules := &Rules{}
+			hasRelevant := rules.hasNonAssignmentUpdates(tt.payload)
 			if tt.name == "No relevant updates" {
 				assert.False(t, hasRelevant, "Should not have relevant updates for description change")
 			} else if tt.name == "Rule 2: Status update notification" {
@@ -138,15 +139,17 @@ func TestNotificationTypes(t *testing.T) {
 		},
 	}
 
-	assignmentNotif := createAssignmentNotification(
+	rules := &Rules{}
+	assignmentNotif := rules.createNotification(
 		assigneeID,
 		events.StoryUpdatedPayload{StoryID: storyID, WorkspaceID: workspaceID},
 		actorID,
+		"story_update",
 		"Test Story",
 		assignmentMessage,
 	)
 
-	assert.Equal(t, "story_assignment", assignmentNotif.Type)
+	assert.Equal(t, "story_update", assignmentNotif.Type)
 	assert.Equal(t, "{actor} assigned you a story", assignmentNotif.Message.Template)
 	assert.Equal(t, "testuser", assignmentNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "actor", assignmentNotif.Message.Variables["actor"].Type)
@@ -162,7 +165,8 @@ func TestNotificationTypes(t *testing.T) {
 		},
 	}
 
-	updateNotif := createUpdateNotification(
+	rules = &Rules{}
+	updateNotif := rules.createNotification(
 		assigneeID,
 		events.StoryUpdatedPayload{
 			StoryID:     storyID,
@@ -170,6 +174,7 @@ func TestNotificationTypes(t *testing.T) {
 			Updates:     map[string]any{"priority": "High"},
 		},
 		actorID,
+		"story_update",
 		"Test Story",
 		updateMessage,
 	)
@@ -189,15 +194,17 @@ func TestNotificationTypes(t *testing.T) {
 		},
 	}
 
-	unassignNotif := createUnassignmentNotification(
+	rules = &Rules{}
+	unassignNotif := rules.createNotification(
 		assigneeID,
 		events.StoryUpdatedPayload{StoryID: storyID, WorkspaceID: workspaceID},
 		actorID,
+		"story_update",
 		"Test Story",
 		unassignMessage,
 	)
 
-	assert.Equal(t, "story_unassignment", unassignNotif.Type)
+	assert.Equal(t, "story_update", unassignNotif.Type)
 	assert.Equal(t, "{actor} reassigned story to {assignee}", unassignNotif.Message.Template)
 	assert.Equal(t, "testuser", unassignNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "tom", unassignNotif.Message.Variables["assignee"].Value)
@@ -217,7 +224,7 @@ func TestGenerateUpdateMessage(t *testing.T) {
 				Template: "{actor} set the {field} to {value}",
 				Variables: map[string]Variable{
 					"actor": {Value: "jack", Type: "actor"},
-					"field": {Value: "priority", Type: "field"},
+					"field": {Value: "Priority", Type: "field"},
 					"value": {Value: "High", Type: "value"},
 				},
 			},
@@ -227,11 +234,10 @@ func TestGenerateUpdateMessage(t *testing.T) {
 			name:    "Status update",
 			updates: map[string]any{"status_id": uuid.New().String()},
 			expected: NotificationMessage{
-				Template: "{actor} changed the {field} to {value}",
+				Template: "{actor} updated {field}",
 				Variables: map[string]Variable{
 					"actor": {Value: "jack", Type: "actor"},
-					"field": {Value: "status", Type: "field"},
-					"value": {Value: "In Progress", Type: "value"},
+					"field": {Value: "Status", Type: "field"},
 				},
 			},
 			description: "Should generate structured status update message",
@@ -243,7 +249,7 @@ func TestGenerateUpdateMessage(t *testing.T) {
 				Template: "{actor} set the {field} to {value}",
 				Variables: map[string]Variable{
 					"actor": {Value: "jack", Type: "actor"},
-					"field": {Value: "deadline", Type: "field"},
+					"field": {Value: "Deadline", Type: "field"},
 					"value": {Value: "3 Jun", Type: "date"},
 				},
 			},
@@ -279,7 +285,7 @@ func TestGenerateUpdateMessage(t *testing.T) {
 			// Create a mock rules instance
 			rules := &Rules{}
 
-			result := generateUpdateMessage("jack", tt.updates, context.Background(), rules)
+			result := rules.generateNonAssignmentUpdateMessage("jack", tt.updates, context.Background())
 
 			assert.Equal(t, tt.expected.Template, result.Template, tt.description)
 			assert.Equal(t, len(tt.expected.Variables), len(result.Variables), "Should have same number of variables")

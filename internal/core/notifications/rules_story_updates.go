@@ -223,6 +223,9 @@ func getNewAssignee(updates map[string]any) *uuid.UUID {
 			return &parsedUUID
 		}
 	}
+	if assigneeUUID, ok := assigneeValue.(uuid.UUID); ok {
+		return &assigneeUUID
+	}
 	if assigneeUUID, ok := assigneeValue.(*uuid.UUID); ok {
 		return assigneeUUID
 	}
