@@ -25,9 +25,10 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
-	app.Put("/workspaces/{workspaceSlug}/key-results/{id}", h.Update, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/key-results/{id}", h.Delete, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/key-results", h.Create, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/key-results/{id}", h.Update, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/key-results/{id}", h.Delete, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/key-results", h.Create, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/key-results", h.ListPaginated, auth, workspace, gzip)
 }

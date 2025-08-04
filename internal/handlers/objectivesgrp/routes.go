@@ -24,14 +24,15 @@ func Routes(cfg Config, app *web.App) {
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB))
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	h := New(objectivesService, keyResultsService, cfg.Cache, cfg.Log)
 
 	app.Get("/workspaces/{workspaceSlug}/objectives", h.List, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}", h.Get, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/objectives/{id}", h.Update, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/objectives/{id}", h.Delete, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/objectives/{id}", h.Update, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/objectives/{id}", h.Delete, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/key-results", h.GetKeyResults, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/analytics", h.GetAnalytics, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/objectives", h.Create, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/objectives", h.Create, auth, workspace, memberAndAdmin)
 }

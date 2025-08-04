@@ -22,9 +22,10 @@ func Routes(cfg Config, app *web.App) {
 	h := New(objectiveStatusService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 
 	app.Get("/workspaces/{workspaceSlug}/objective-statuses", h.List, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/objective-statuses", h.Create, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/objective-statuses/{statusId}", h.Update, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/objective-statuses/{statusId}", h.Delete, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/objective-statuses", h.Create, auth, workspace, adminOnly)
+	app.Put("/workspaces/{workspaceSlug}/objective-statuses/{statusId}", h.Update, auth, workspace, adminOnly)
+	app.Delete("/workspaces/{workspaceSlug}/objective-statuses/{statusId}", h.Delete, auth, workspace, adminOnly)
 }
