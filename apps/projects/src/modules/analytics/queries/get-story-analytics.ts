@@ -15,6 +15,7 @@ export const getStoryAnalytics = async (
         skipNulls: true,
         addQueryPrefix: true,
         encodeValuesOnly: true,
+        arrayFormat: "comma",
       })
     : "";
 

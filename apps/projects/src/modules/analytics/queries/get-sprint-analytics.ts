@@ -15,6 +15,7 @@ export const getSprintAnalytics = async (
         skipNulls: true,
         addQueryPrefix: true,
         encodeValuesOnly: true,
+        arrayFormat: "comma",
       })
     : "";
 

@@ -15,6 +15,7 @@ export const getTimelineTrends = async (
         skipNulls: true,
         addQueryPrefix: true,
         encodeValuesOnly: true,
+        arrayFormat: "comma",
       })
     : "";
 

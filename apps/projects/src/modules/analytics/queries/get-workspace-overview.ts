@@ -15,6 +15,7 @@ export const getWorkspaceOverview = async (
         skipNulls: true,
         addQueryPrefix: true,
         encodeValuesOnly: true,
+        arrayFormat: "comma",
       })
     : "";
 

@@ -15,6 +15,7 @@ export const getObjectiveProgress = async (
         skipNulls: true,
         addQueryPrefix: true,
         encodeValuesOnly: true,
+        arrayFormat: "comma",
       })
     : "";
 
