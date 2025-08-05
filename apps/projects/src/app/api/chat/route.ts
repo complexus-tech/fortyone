@@ -8,7 +8,6 @@ import {
   quickCreate,
   membersTool,
   statusesTool,
-  objectivesTool,
   objectiveStatusesTool,
   keyResultsListTool,
   keyResultsCreateTool,
@@ -131,6 +130,7 @@ export async function POST(req: NextRequest) {
         navigation,
         theme,
         quickCreate,
+        members: membersTool,
         // Teams
         listTeams,
         listPublicTeams,
@@ -141,7 +141,6 @@ export async function POST(req: NextRequest) {
         joinTeam,
         deleteTeam,
         leaveTeam,
-        members: membersTool,
         // Stories
         listTeamStories,
         searchStories,
@@ -165,7 +164,6 @@ export async function POST(req: NextRequest) {
         listRunningSprints,
         getSprintDetailsTool,
         createSprint,
-        objectives: objectivesTool,
         objectiveStatuses: objectiveStatusesTool,
         keyResultsListTool,
         keyResultsCreateTool,
