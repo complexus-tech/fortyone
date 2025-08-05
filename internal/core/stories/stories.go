@@ -283,7 +283,7 @@ func (s *Service) handleCompletionStatusChange(ctx context.Context, story CoreSi
 	newStatusID any, updates map[string]any) error {
 
 	// Convert status ID to string
-	newStatusStr, ok := newStatusID.(string)
+	newStatus, ok := newStatusID.(uuid.UUID)
 	if !ok {
 		return fmt.Errorf("status ID is not a string: %T", newStatusID)
 	}
@@ -296,7 +296,7 @@ func (s *Service) handleCompletionStatusChange(ctx context.Context, story CoreSi
 	}
 
 	// Get new status category
-	newCategory, err := s.repo.GetStatusCategory(ctx, newStatusStr)
+	newCategory, err := s.repo.GetStatusCategory(ctx, newStatus.String())
 	if err != nil {
 		return fmt.Errorf("failed to get new status category: %w", err)
 	}
