@@ -22,7 +22,21 @@ export {
 // Legacy stories tool (to be deprecated)
 export { storiesTool } from "./stories-legacy";
 export { membersTool } from "./members";
-export { teamsTool } from "./teams";
+// Team tools - individual focused tools
+export {
+  listTeams,
+  listPublicTeams,
+  getTeamDetails,
+  listTeamMembers,
+  createTeamTool,
+  updateTeam,
+  joinTeam,
+  deleteTeam,
+  leaveTeam,
+} from "./teams";
+
+// Legacy teams tool (to be deprecated)
+export { teamsTool } from "./teams-legacy";
 export { statusesTool } from "./statuses";
 // Sprint tools - individual focused tools
 export {

@@ -8,7 +8,6 @@ import {
   navigation,
   theme,
   quickCreate,
-  teamsTool,
   membersTool,
   statusesTool,
   objectivesTool,
@@ -63,6 +62,17 @@ import {
   getSprintDetailsTool,
   createSprint,
 } from "@/lib/ai/tools/sprints";
+import {
+  listTeams,
+  listPublicTeams,
+  getTeamDetails,
+  listTeamMembers,
+  createTeamTool,
+  updateTeam,
+  joinTeam,
+  deleteTeam,
+  leaveTeam,
+} from "@/lib/ai/tools/teams";
 import { systemPrompt } from "./system-xml";
 import { getUserContext } from "./user-context";
 
@@ -176,7 +186,16 @@ export async function POST(req: NextRequest) {
         navigation,
         theme,
         quickCreate,
-        teams: teamsTool,
+        // Teams
+        listTeams,
+        listPublicTeams,
+        getTeamDetails,
+        listTeamMembers,
+        createTeamTool,
+        updateTeam,
+        joinTeam,
+        deleteTeam,
+        leaveTeam,
         members: membersTool,
         // Stories
         listTeamStories,
