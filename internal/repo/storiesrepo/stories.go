@@ -745,12 +745,6 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if completedBefore, ok := filters["completed_before"].(time.Time); ok {
 		coreFilters.CompletedBefore = &completedBefore
 	}
-	if isCompleted, ok := filters["is_completed"].(bool); ok {
-		coreFilters.IsCompleted = &isCompleted
-	}
-	if isNotCompleted, ok := filters["is_not_completed"].(bool); ok {
-		coreFilters.IsNotCompleted = &isNotCompleted
-	}
 	if includeArchived, ok := filters["include_archived"].(bool); ok {
 		coreFilters.IncludeArchived = &includeArchived
 	}
@@ -1907,18 +1901,6 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
 	}
 
-	if filters.IsCompleted != nil {
-		if *filters.IsCompleted {
-			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
-		} else {
-			whereClauses = append(whereClauses, "s.completed_at IS NULL")
-		}
-	}
-
-	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
-		whereClauses = append(whereClauses, "s.completed_at IS NULL")
-	}
-
 	return "WHERE " + strings.Join(whereClauses, " AND ")
 }
 
@@ -2487,18 +2469,6 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
 	}
 
-	if filters.IsCompleted != nil {
-		if *filters.IsCompleted {
-			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
-		} else {
-			whereClauses = append(whereClauses, "s.completed_at IS NULL")
-		}
-	}
-
-	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
-		whereClauses = append(whereClauses, "s.completed_at IS NULL")
-	}
-
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
 
 	return query
@@ -3010,18 +2980,6 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.CompletedBefore != nil {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
-	}
-
-	if filters.IsCompleted != nil {
-		if *filters.IsCompleted {
-			whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
-		} else {
-			whereClauses = append(whereClauses, "s.completed_at IS NULL")
-		}
-	}
-
-	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
-		whereClauses = append(whereClauses, "s.completed_at IS NULL")
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")

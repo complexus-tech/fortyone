@@ -1047,8 +1047,6 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
 	query.Filters.CompletedAfter = parseDateParam(r, "completedAfter")
 	query.Filters.CompletedBefore = parseDateParam(r, "completedBefore")
-	query.Filters.IsCompleted = parseBoolParam(r, "isCompleted")
-	query.Filters.IsNotCompleted = parseBoolParam(r, "isNotCompleted")
 
 	return query, nil
 }
@@ -1193,6 +1191,8 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			UpdatedBefore:   query.Filters.UpdatedBefore,
 			DeadlineAfter:   query.Filters.DeadlineAfter,
 			DeadlineBefore:  query.Filters.DeadlineBefore,
+			CompletedAfter:  query.Filters.CompletedAfter,
+			CompletedBefore: query.Filters.CompletedBefore,
 			CurrentUserID:   uuid.Nil,
 			WorkspaceID:     uuid.Nil,
 		},
