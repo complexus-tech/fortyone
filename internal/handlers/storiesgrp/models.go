@@ -269,8 +269,6 @@ type StoryFilters struct {
 	DeadlineBefore  *time.Time `json:"deadlineBefore"`
 	CompletedAfter  *time.Time `json:"completedAfter"`
 	CompletedBefore *time.Time `json:"completedBefore"`
-	IsCompleted     *bool      `json:"isCompleted"`
-	IsNotCompleted  *bool      `json:"isNotCompleted"`
 	IncludeArchived *bool      `json:"includeArchived"`
 }
 
