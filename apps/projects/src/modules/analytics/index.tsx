@@ -1,8 +1,7 @@
 "use client";
-import { useState } from "react";
+
 import { Box, Container, Flex, Text } from "ui";
 import { useSession } from "next-auth/react";
-import { subDays, startOfDay, endOfDay } from "date-fns";
 import { BodyContainer } from "@/components/shared/body";
 // import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
@@ -27,30 +26,11 @@ export const AnalyticsPage = () => {
   // const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
 
-  // Default to last 30 days
-  const getDefaultDates = () => {
-    const endDate = endOfDay(new Date());
-    const startDate = startOfDay(subDays(new Date(), 30));
-    return {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-    };
-  };
-
-  const [dateRange, setDateRange] = useState(getDefaultDates());
-
   const timeOfDay = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "morning";
     if (hour < 18) return "afternoon";
     return "evening";
-  };
-
-  const _handleDateChange = (startDate?: string, endDate?: string) => {
-    setDateRange({
-      startDate: startDate || getDefaultDates().startDate,
-      endDate: endDate || getDefaultDates().endDate,
-    });
   };
 
   return (
@@ -73,55 +53,33 @@ export const AnalyticsPage = () => {
             </Box>
             <Filters />
           </Flex>
-
-          {/* Workspace Overview */}
           <ErrorBoundary fallback={<div>Error loading overview</div>}>
             <Overview />
           </ErrorBoundary>
-
-          {/* Completion & Velocity Trends */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading completion trend</div>}>
-              <CompletionTrend
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <CompletionTrend />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading velocity trend</div>}>
-              <VelocityTrend
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <VelocityTrend />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading team velocity</div>}>
-              <TeamVelocity
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <TeamVelocity />
             </ErrorBoundary>
           </Box>
 
           {/* Stories & Work Analysis */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading status breakdown</div>}>
-              <StatusBreakdown
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <StatusBreakdown />
             </ErrorBoundary>
             <ErrorBoundary
               fallback={<div>Error loading priority distribution</div>}
             >
-              <PriorityDistribution
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <PriorityDistribution />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading team allocation</div>}>
-              <TeamAllocation
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <TeamAllocation />
             </ErrorBoundary>
           </Box>
 
@@ -135,10 +93,7 @@ export const AnalyticsPage = () => {
           {/* Health & Allocation Analytics */}
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading objective health</div>}>
-              <ObjectiveHealth
-                endDate={dateRange.endDate}
-                startDate={dateRange.startDate}
-              />
+              <ObjectiveHealth />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading sprint health</div>}>
               <SprintHealth />

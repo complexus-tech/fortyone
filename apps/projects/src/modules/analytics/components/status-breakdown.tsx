@@ -6,6 +6,7 @@ import type { TooltipProps } from "recharts";
 import { useTerminology } from "@/hooks";
 import { useStoryAnalytics } from "../hooks/story-analytics";
 import type { StatusBreakdownItem } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { StatusBreakdownSkeleton } from "./status-breakdown-skeleton";
 
 // Define colors for different statuses
@@ -40,15 +41,9 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const StatusBreakdown = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const StatusBreakdown = () => {
   const { getTermDisplay } = useTerminology();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const [chartData, setChartData] = useState<StatusBreakdownItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);

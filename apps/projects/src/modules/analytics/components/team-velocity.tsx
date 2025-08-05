@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useTeamPerformance } from "../hooks/team-performance";
 import type { VelocityByTeamItem } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { TeamVelocitySkeleton } from "./team-velocity-skeleton";
 
 type ChartDataItem = {
@@ -40,15 +41,9 @@ const CustomTooltip = ({
   );
 };
 
-export const TeamVelocity = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const TeamVelocity = () => {
   const { resolvedTheme } = useTheme();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const filters = useAppliedFilters();
   const { data: teamPerformance, isPending } = useTeamPerformance(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 

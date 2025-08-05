@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import type { TooltipProps } from "recharts";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintHealthItem } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { SprintHealthSkeleton } from "./sprint-health-skeleton";
 
 // Define colors for different sprint statuses
@@ -46,14 +47,8 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const SprintHealth = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+export const SprintHealth = () => {
+  const filters = useAppliedFilters();
   const { data: sprintAnalytics, isPending } = useSprintAnalytics(filters);
   const [chartData, setChartData] = useState<SprintHealthItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);

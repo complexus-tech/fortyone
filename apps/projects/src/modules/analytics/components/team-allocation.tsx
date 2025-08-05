@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { TeamAllocationItem } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { TeamAllocationSkeleton } from "./team-allocation-skeleton";
 
 // Define colors for different teams
@@ -59,15 +60,9 @@ const CustomTooltip = ({
   );
 };
 
-export const TeamAllocation = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const TeamAllocation = () => {
   const { resolvedTheme } = useTheme();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const filters = useAppliedFilters();
   const { data: sprintAnalytics, isPending } = useSprintAnalytics(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 

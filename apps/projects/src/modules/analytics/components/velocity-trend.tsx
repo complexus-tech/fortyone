@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import type { VelocityTrendPoint } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { VelocityTrendSkeleton } from "./velocity-trend-skeleton";
 
 type ChartDataItem = {
@@ -40,15 +41,9 @@ const CustomTooltip = ({
   );
 };
 
-export const VelocityTrend = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const VelocityTrend = () => {
   const { resolvedTheme } = useTheme();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const filters = useAppliedFilters();
   const { data: overview, isPending } = useWorkspaceOverview(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 

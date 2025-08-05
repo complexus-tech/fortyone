@@ -1,14 +1,7 @@
 "use client";
-import {
-  parseAsIsoDateTime,
-  parseAsArrayOf,
-  parseAsString,
-  useQueryStates,
-} from "nuqs";
 import { Box, Flex, Text, Wrapper } from "ui";
-import type { AnalyticsFilters } from "../types";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
-import { getDefaultDateRange } from "./filters/types";
+import { useAppliedFilters } from "../hooks/filters";
 import { OverviewSkeleton } from "./overview-skeleton";
 
 const Card = ({ title, count }: { title: string; count?: number }) => (
@@ -40,28 +33,9 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 );
 
 export const Overview = () => {
-  // Default to last 30 days (matching backend default)
-  const defaultDates = getDefaultDateRange();
+  const filters = useAppliedFilters();
 
-  const [filters] = useQueryStates({
-    startDate: parseAsIsoDateTime.withDefault(defaultDates.startDate),
-    endDate: parseAsIsoDateTime.withDefault(defaultDates.endDate),
-    teamIds: parseAsArrayOf(parseAsString),
-    sprintIds: parseAsArrayOf(parseAsString),
-    objectiveIds: parseAsArrayOf(parseAsString),
-  });
-
-  const analyticsFilters: AnalyticsFilters = {
-    startDate: filters.startDate.toISOString(),
-    endDate: filters.endDate.toISOString(),
-    teamIds: filters.teamIds?.length ? filters.teamIds : undefined,
-    sprintIds: filters.sprintIds?.length ? filters.sprintIds : undefined,
-    objectiveIds: filters.objectiveIds?.length
-      ? filters.objectiveIds
-      : undefined,
-  };
-
-  const { data: overview, isPending } = useWorkspaceOverview(analyticsFilters);
+  const { data: overview, isPending } = useWorkspaceOverview(filters);
 
   if (isPending) {
     return <OverviewSkeleton />;

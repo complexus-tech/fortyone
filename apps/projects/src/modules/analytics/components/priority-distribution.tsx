@@ -17,6 +17,7 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { useTerminology } from "@/hooks";
 import type { PriorityDistributionItem } from "../types";
 import { useStoryAnalytics } from "../hooks/story-analytics";
+import { useAppliedFilters } from "../hooks/filters";
 import { PriorityDistributionSkeleton } from "./priority-distribution-skeleton";
 
 type ChartDataItem = {
@@ -50,15 +51,9 @@ const CustomTooltip = ({
   );
 };
 
-export const PriorityDistribution = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const PriorityDistribution = () => {
   const { resolvedTheme } = useTheme();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+  const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import type { TooltipProps } from "recharts";
 import { useObjectiveProgress } from "../hooks/objective-progress";
 import type { HealthDistributionItem } from "../types";
+import { useAppliedFilters } from "../hooks/filters";
 import { ObjectiveHealthSkeleton } from "./objective-health-skeleton";
 
 // Define colors for different health statuses
@@ -46,14 +47,8 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   );
 };
 
-export const ObjectiveHealth = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
+export const ObjectiveHealth = () => {
+  const filters = useAppliedFilters();
   const { data: objectiveProgress, isPending } = useObjectiveProgress(filters);
   const [chartData, setChartData] = useState<HealthDistributionItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);

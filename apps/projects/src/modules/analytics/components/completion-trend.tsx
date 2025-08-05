@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useAppliedFilters } from "@/modules/analytics/hooks/filters";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import type { CompletionTrendPoint } from "../types";
 import { CompletionTrendSkeleton } from "./completion-trend-skeleton";
@@ -51,15 +52,9 @@ const formatDate = (date: string) => {
   });
 };
 
-export const CompletionTrend = ({
-  startDate,
-  endDate,
-}: {
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const CompletionTrend = () => {
+  const filters = useAppliedFilters();
   const { resolvedTheme } = useTheme();
-  const filters = startDate && endDate ? { startDate, endDate } : undefined;
   const { data: overview, isPending } = useWorkspaceOverview(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
