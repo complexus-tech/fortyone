@@ -25,6 +25,10 @@ export const Activity = ({
   const { data: sprints = [] } = useSprints();
   const member = members.find((m) => m.id === userId);
 
+  if (field === "completed_at") {
+    return null;
+  }
+
   const fieldMap = {
     title: {
       label: "Title",
