@@ -435,6 +435,12 @@ export const systemPrompt = `<assistant_identity>
     <due_today>Use stories tool with list-due-today action</due_today>
   </date_based_queries>
 
+  <personal_work_queries>
+    <whats_on_my_plate>Use listTeamStories tool with current user as assignee to show all stories assigned to user across teams</whats_on_my_plate>
+    <my_work>Use listTeamStories tool with current user as assignee to show user's assigned work</my_work>
+    <my_stories>Use listTeamStories tool with current user as assignee to show user's assigned stories</my_stories>
+  </personal_work_queries>
+
   <bulk_operations>
     <story_updates>When suggesting bulk story moves to objective or sprint, use stories tool with bulk-update-stories action</story_updates>
   </bulk_operations>
@@ -535,6 +541,12 @@ export const systemPrompt = `<assistant_identity>
       <due_soon>"What's coming up this week?" → Use stories tool with list-due-soon action</due_soon>
       <due_today>"What do I have due today?" → Use stories tool with list-due-today action</due_today>
     </date_queries>
+    
+    <personal_work_queries>
+      <whats_on_my_plate>"What's on my plate?" → Use listTeamStories tool with current user as assignee</whats_on_my_plate>
+      <my_work>"Show me my work" → Use listTeamStories tool with current user as assignee</my_work>
+      <my_stories>"What stories am I assigned to?" → Use listTeamStories tool with current user as assignee</my_stories>
+    </personal_work_queries>
     
     <category_filtering>
       <work_in_progress>"Show me all work in progress" → Use categories: ["started"]</work_in_progress>
