@@ -9,10 +9,6 @@ import {
   membersTool,
   statusesTool,
   objectiveStatusesTool,
-  keyResultsListTool,
-  keyResultsCreateTool,
-  keyResultsUpdateTool,
-  keyResultsDeleteTool,
   searchTool,
   notificationsTool,
   commentsTool,
@@ -33,6 +29,12 @@ import {
   getObjectiveDetailsTool,
   objectiveAnalyticsTool,
 } from "@/lib/ai/tools/objectives";
+import {
+  listKeyResultsTool,
+  createKeyResultTool,
+  updateKeyResultTool,
+  deleteKeyResultTool,
+} from "@/lib/ai/tools/key-results";
 import {
   listTeamStories,
   searchStories,
@@ -131,6 +133,9 @@ export async function POST(req: NextRequest) {
         theme,
         quickCreate,
         members: membersTool,
+        search: searchTool,
+        notifications: notificationsTool,
+        comments: commentsTool,
         // Teams
         listTeams,
         listPublicTeams,
@@ -165,13 +170,11 @@ export async function POST(req: NextRequest) {
         getSprintDetailsTool,
         createSprint,
         objectiveStatuses: objectiveStatusesTool,
-        keyResultsListTool,
-        keyResultsCreateTool,
-        keyResultsUpdateTool,
-        keyResultsDeleteTool,
-        search: searchTool,
-        notifications: notificationsTool,
-        comments: commentsTool,
+        // Key Results
+        listKeyResultsTool,
+        createKeyResultTool,
+        updateKeyResultTool,
+        deleteKeyResultTool,
         // Attachments
         listAttachments,
         deleteAttachment,
