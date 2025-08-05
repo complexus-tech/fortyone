@@ -1992,6 +1992,12 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		}
 	}
 
+	if completedAt, ok := storyMap["completed_at"].(string); ok && completedAt != "" {
+		if parsed, err := time.Parse(time.RFC3339, completedAt); err == nil {
+			story.CompletedAt = &parsed
+		}
+	}
+
 	if endDate, ok := storyMap["end_date"].(string); ok && endDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, endDate); err == nil {
 			story.EndDate = &parsed
