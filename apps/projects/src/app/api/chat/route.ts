@@ -22,7 +22,6 @@ import {
   searchTool,
   notificationsTool,
   commentsTool,
-  attachmentsTool,
   storyActivitiesTool,
   linksTool,
   labelsTool,
@@ -32,6 +31,16 @@ import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-cha
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
+import { listAttachments, deleteAttachment } from "@/lib/ai/tools/attachments";
+import {
+  createObjectiveTool,
+  deleteObjectiveTool,
+  listObjectivesTool,
+  listTeamObjectivesTool,
+  updateObjectiveTool,
+  getObjectiveDetailsTool,
+  objectiveAnalyticsTool,
+} from "@/lib/ai/tools/objectives";
 import { systemPrompt } from "./system-xml";
 import { getUserContext } from "./user-context";
 
@@ -159,10 +168,21 @@ export async function POST(req: NextRequest) {
         search: searchTool,
         notifications: notificationsTool,
         comments: commentsTool,
-        attachments: attachmentsTool,
-        storyActivities: storyActivitiesTool,
+        // Attachments
+        listAttachments,
+        deleteAttachment,
+        // Objectives
+        listObjectivesTool,
+        listTeamObjectivesTool,
+        createObjectiveTool,
+        updateObjectiveTool,
+        deleteObjectiveTool,
+        objectiveAnalyticsTool,
+        getObjectiveDetailsTool,
+        // Links
         links: linksTool,
         labels: labelsTool,
+        storyActivities: storyActivitiesTool,
         storyLabels: storyLabelsTool,
       },
       system: systemPrompt + userContext,
