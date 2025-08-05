@@ -4,7 +4,8 @@ export { membersTool } from "./members";
 export { teamsTool } from "./teams";
 export { statusesTool } from "./statuses";
 export { sprintsTool } from "./sprints";
-export { objectivesTool } from "./objectives";
+// Legacy objectives tool (to be deprecated)
+export { objectivesTool } from "./objectives-legacy";
 export { objectiveStatusesTool } from "./objective-statuses";
 export {
   keyResultsListTool,
