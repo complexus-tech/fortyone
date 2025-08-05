@@ -16,7 +16,7 @@ type SprintStatus = "completed" | "in progress" | "upcoming";
 
 const statusColors = {
   completed: "tertiary",
-  "in progress": "primary",
+  "in progress": "success",
   upcoming: "tertiary",
 } as const;
 
