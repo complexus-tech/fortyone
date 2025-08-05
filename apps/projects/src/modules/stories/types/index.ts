@@ -74,8 +74,6 @@ export type StoryFilters = {
   includeArchived?: boolean;
   completedAfter?: string;
   completedBefore?: string;
-  isCompleted?: boolean;
-  isNotCompleted?: boolean;
 };
 
 export type GroupedStoriesResponse = {
@@ -131,8 +129,6 @@ export type GroupedStoryParams = {
   includeArchived?: boolean;
   completedAfter?: string;
   completedBefore?: string;
-  isCompleted?: boolean;
-  isNotCompleted?: boolean;
 };
 
 export type GroupStoryParams = {
@@ -165,6 +161,4 @@ export type GroupStoryParams = {
   includeArchived?: boolean;
   completedAfter?: string;
   completedBefore?: string;
-  isCompleted?: boolean;
-  isNotCompleted?: boolean;
 };

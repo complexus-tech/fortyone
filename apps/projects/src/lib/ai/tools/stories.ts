@@ -138,14 +138,6 @@ export const storiesTool = tool({
           .string()
           .optional()
           .describe("Filter stories completed before this date (ISO string)"),
-        isCompleted: z
-          .boolean()
-          .optional()
-          .describe("Filter for completed stories only"),
-        isNotCompleted: z
-          .boolean()
-          .optional()
-          .describe("Filter for non-completed stories only"),
         categories: z
           .array(
             z.enum([
