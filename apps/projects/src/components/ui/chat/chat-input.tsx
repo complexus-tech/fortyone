@@ -33,7 +33,7 @@ type ChatInputProps = {
 const SendIcon = () => {
   return (
     <svg
-      className="h-6 w-auto text-white"
+      className="h-6 w-auto text-current"
       fill="none"
       height="24"
       viewBox="0 0 24 24"
@@ -419,6 +419,7 @@ export const ChatInput = ({
             <Button
               asIcon
               className="mb-0.5 md:h-10"
+              color="invert"
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
@@ -431,9 +432,9 @@ export const ChatInput = ({
               rounded="full"
             >
               {isRecording ? (
-                <CheckIcon className="text-white dark:text-white" />
+                <CheckIcon className="text-current dark:text-current" />
               ) : isLoading ? (
-                <StopIcon className="text-white dark:text-white" />
+                <StopIcon className="text-current dark:text-current" />
               ) : (
                 <SendIcon />
               )}

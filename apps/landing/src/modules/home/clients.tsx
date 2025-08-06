@@ -26,18 +26,8 @@ export const SampleClients = () => {
     "/images/brands/wastemate.png",
   ];
   return (
-    <Container className="relative md:mt-16">
-      <img
-        alt="Arrow pointing to the right"
-        className="absolute left-0 top-0 hidden h-20 w-auto -rotate-12 opacity-20 dark:invert md:-bottom-28 md:inline-block"
-        src="/svgs/xx.svg"
-      />
-      <img
-        alt="Arrow pointing to the left"
-        className="absolute right-0 top-0 hidden h-24 w-auto -rotate-[40deg] opacity-20 dark:invert md:-bottom-28 md:inline-block"
-        src="/svgs/arrow-2.svg"
-      />
-      <Box className="py-16 md:py-28">
+    <Container className="relative">
+      <Box className="py-16 md:py-32">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           transition={{
@@ -72,37 +62,11 @@ export const SampleClients = () => {
             </Text>
           </Text>
         </motion.div>
-        <Box className="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-x-4 gap-y-10 md:mt-36 md:grid-cols-3 md:gap-y-20">
+        <Box className="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-x-4 gap-y-10 md:mt-20 md:grid-cols-4 md:gap-y-20">
           {brands.map((logo) => (
             <Brand key={logo} logo={logo} />
           ))}
         </Box>
-      </Box>
-      <Box className="absolute bottom-0 right-0 opacity-5">
-        <svg
-          className="3xl:w-40 h-auto w-20 rotate-6 dark:text-white xl:w-32 2xl:w-36"
-          fill="none"
-          height="470"
-          viewBox="0 0 266 470"
-          width="266"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <line
-            stroke="currentColor"
-            x1="202.44"
-            x2="0.43993"
-            y1="33.2376"
-            y2="407.238"
-          />
-          <line
-            stroke="currentColor"
-            x1="265.439"
-            x2="10.4393"
-            y1="0.238835"
-            y2="469.239"
-          />
-          <circle cx="123.5" cy="212.5" r="86" stroke="currentColor" />
-        </svg>
       </Box>
     </Container>
   );

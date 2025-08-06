@@ -99,7 +99,7 @@ export const Chat = ({
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[1.8rem] border-[0.5px] border-gray-200/90 font-medium outline-none backdrop-blur-lg dark:bg-dark-300/90 md:mb-[2.6dvh] md:mt-auto"
+          className="max-w-[36rem] rounded-[1.6rem] border-[0.5px] border-gray-200/90 font-medium outline-none backdrop-blur-lg dark:bg-dark-300/90 md:mb-[2.5dvh] md:mt-auto"
           hideClose
           overlayClassName="justify-end pr-[1.5vh]"
         >

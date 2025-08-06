@@ -71,13 +71,9 @@ export const SuggestedPrompts = ({
       })}
     >
       <Text
-        className={cn(
-          "mx-auto w-max pb-1.5 text-center text-4xl font-semibold md:w-11/12",
-          {
-            "md:mb-10 md:text-5xl": isOnPage,
-          },
-        )}
-        color="gradient"
+        className={cn("mx-auto w-max pb-1.5 text-center text-4xl md:w-11/12", {
+          "md:mb-10 md:text-5xl": isOnPage,
+        })}
       >
         Hi, {name}! Ask me anything!
       </Text>

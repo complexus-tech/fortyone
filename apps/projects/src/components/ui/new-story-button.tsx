@@ -9,6 +9,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 
 export const NewStoryButton = ({
   size = "sm",
+  color = "invert",
   children,
   leftIcon = <PlusIcon className="text-current dark:text-current" />,
   teamId,
@@ -30,6 +31,7 @@ export const NewStoryButton = ({
     <>
       <Button
         className={cn("shrink-0", className)}
+        color={color}
         data-new-story-button
         disabled={rest.disabled || userRole === "guest"}
         leftIcon={leftIcon}

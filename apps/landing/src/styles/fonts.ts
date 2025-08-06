@@ -1,24 +1,19 @@
-import { Instrument_Sans as InstrumentSans, Inter } from "next/font/google";
-import localFont from "next/font/local";
+import {
+  // Instrument_Sans as InstrumentSans,
+  Englebert,
+  Inter,
+} from "next/font/google";
 
-export const satoshi = localFont({
-  src: "../styles/Satoshi-Variable.woff2",
-  // variable: "--font-satoshi",
-  weight: "450 900",
-  display: "swap",
-  style: "normal",
-});
-
-export const instrumentSans = InstrumentSans({
-  variable: "--font-sans",
+export const instrumentSans = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
   weight: "variable",
 });
 
-export const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+export const heading = Englebert({
+  variable: "--font-heading",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: "400",
+  style: "normal",
 });

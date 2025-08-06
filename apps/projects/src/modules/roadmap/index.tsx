@@ -83,9 +83,10 @@ export const RoadmapPage = () => {
             </Button>
           </Box>
           <Button
+            color="invert"
             disabled={userRole === "guest"}
             leftIcon={
-              <PlusIcon className="h-[1.1rem] text-white dark:text-white" />
+              <PlusIcon className="h-[1.1rem] text-current dark:text-current" />
             }
             onClick={() => {
               if (userRole !== "guest") {

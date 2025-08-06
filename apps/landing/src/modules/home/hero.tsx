@@ -2,14 +2,18 @@
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { cn } from "lib";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
+import { heading } from "@/styles/fonts";
 
 export const Hero = () => {
   const { data: session } = useSession();
 
   return (
     <Box>
+      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px]" />
+      <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12 md:pt-8">
         <Flex
           align="center"
@@ -46,17 +50,40 @@ export const Hero = () => {
           >
             <Text
               as="h1"
-              className="mt-6 pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.7rem] md:leading-[1.1]"
+              className={cn(
+                "relative z-[1] mt-6 pb-2 text-5xl font-bold md:max-w-5xl md:text-[4.1rem] md:leading-[1.1]",
+              )}
             >
               The{" "}
-              <Text as="span" className="text-stroke-white">
+              <Text
+                as="span"
+                className={cn(
+                  "text-stroke-white tracking-wider",
+                  heading.className,
+                )}
+              >
                 AI
               </Text>{" "}
               Everything App for{" "}
-              <Text as="span" className="text-stroke-white">
+              <Text
+                as="span"
+                className={cn(
+                  "text-stroke-white tracking-wide",
+                  heading.className,
+                )}
+              >
                 Projects
               </Text>{" "}
-              & OKRs
+              &{" "}
+              <Text
+                as="span"
+                // className={cn(
+                //   "text-stroke-white tracking-wide",
+                //   heading.className,
+                // )}
+              >
+                OKRs
+              </Text>
             </Text>
           </motion.span>
 
@@ -69,10 +96,9 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-4 max-w-[700px] text-lg opacity-80 dark:font-normal md:text-xl">
-              AI‑powered all‑in‑one Projects & OKRs platform that connects daily
-              work to strategic goals, tracks realtime progress, and predicts
-              risks
+            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-[1.4rem]">
+              The only AI-powered project management system that connects daily
+              work to strategic goals.
             </Text>
           </motion.span>
 

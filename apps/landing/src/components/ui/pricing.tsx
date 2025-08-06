@@ -122,15 +122,25 @@ const Package = ({
         </Text>
         <Text className="text-center text-lg opacity-80">{description}</Text>
         {name !== "Enterprise" ? (
-          <Text align="center" className="mt-4" fontSize="4xl">
+          <Text
+            align="center"
+            className="mt-4"
+            fontSize="4xl"
+            fontWeight="semibold"
+          >
             ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
-            <Text as="span" color="muted" fontSize="lg">
+            <Text as="span" color="muted" fontSize="lg" fontWeight="normal">
               {" "}
               {finalPrice > 0 ? "per user/month" : ""}
             </Text>
           </Text>
         ) : (
-          <Text align="center" className="mt-4" fontSize="4xl">
+          <Text
+            align="center"
+            className="mt-4"
+            fontSize="4xl"
+            fontWeight="semibold"
+          >
             Custom Pricing
           </Text>
         )}

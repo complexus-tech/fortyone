@@ -103,7 +103,7 @@ export const Testimonials = () => {
           <Text
             as="span"
             className="3xl:mb-4 relative mb-2 block text-2xl md:text-3xl"
-            fontWeight="medium"
+            fontWeight="normal"
           >
             {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- ok for this case */}
             <span className="absolute -left-7 text-primary">//</span>

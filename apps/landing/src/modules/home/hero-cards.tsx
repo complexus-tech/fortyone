@@ -6,7 +6,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
 import "swiper/css/effect-cards";
-import { Container } from "@/components/ui";
+import { Blur, Container } from "@/components/ui";
 import { useCursor } from "@/hooks";
 import listImg from "../../../public/images/product/list.webp";
 import objectiveImg from "../../../public/images/product/objective.webp";
@@ -49,49 +49,53 @@ export const HeroCards = () => {
   ];
 
   return (
-    <Container className="mt-12 max-w-7xl">
-      <Box
-        className="relative"
-        onMouseEnter={() => {
-          cursor.setText("←Drag→");
-        }}
-        onMouseLeave={() => {
-          cursor.removeText();
-        }}
-      >
-        <Swiper
-          autoplay={{
-            delay: 2000,
-            disableOnInteraction: false,
+    <Box className="relative">
+      <Container className="relative mt-12 max-w-[85rem]">
+        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[600px] w-[800px] -translate-x-1/2 bg-warning/15 dark:bg-white/15" />
+        <Box
+          className="relative"
+          onMouseEnter={() => {
+            cursor.setText("←Drag→");
           }}
-          effect="cards"
-          grabCursor
-          initialSlide={1}
-          modules={[EffectCards]}
+          onMouseLeave={() => {
+            cursor.removeText();
+          }}
         >
-          {cards.map((card) => (
-            <SwiperSlide
-              className="relative rounded-[0.6rem] border border-gray-200/80 bg-white/50 p-0.5 backdrop-blur dark:border-dark-100 dark:bg-dark-100/40 md:rounded-3xl md:p-1.5"
-              key={card.id}
-            >
-              <Image
-                alt={card.title}
-                className="relative hidden rounded border border-gray-200/80 dark:block dark:border-dark-100 md:rounded-[1.2rem]"
-                placeholder="blur"
-                priority
-                src={card.image.src}
-              />
-              <Image
-                alt={card.title}
-                className="relative rounded border border-gray-200/80 dark:hidden dark:border-dark-100 md:rounded-[1.2rem]"
-                placeholder="blur"
-                priority
-                src={card.image.srcLight}
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </Box>
-    </Container>
+          <Swiper
+            autoplay={{
+              delay: 1000,
+              disableOnInteraction: false,
+            }}
+            effect="cards"
+            grabCursor
+            initialSlide={1}
+            modules={[EffectCards]}
+          >
+            {cards.map((card) => (
+              <SwiperSlide
+                className="relative rounded-[0.6rem] border border-gray-200/80 bg-white/50 p-0.5 backdrop-blur dark:border-dark-100 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.4rem]"
+                key={card.id}
+              >
+                <Image
+                  alt={card.title}
+                  className="relative hidden rounded dark:block md:rounded-[1.2rem]"
+                  placeholder="blur"
+                  priority
+                  src={card.image.src}
+                />
+                <Image
+                  alt={card.title}
+                  className="relative rounded border border-gray-200/80 dark:hidden md:rounded-[1.2rem]"
+                  placeholder="blur"
+                  priority
+                  src={card.image.srcLight}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </Box>
+      </Container>
+      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-white via-white/80 dark:from-black dark:via-black/80" />
+    </Box>
   );
 };

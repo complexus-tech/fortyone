@@ -31,25 +31,6 @@ export const Transform = () => {
       <Box className="z-[3] md:absolute md:inset-0">
         <Container className="grid-cols-2 gap-10 md:grid md:h-full">
           <Flex direction="column" justify="center">
-            <motion.span
-              initial={{ y: -10, opacity: 0 }}
-              transition={{
-                duration: 1,
-                delay: 0,
-              }}
-              viewport={{ once: true, amount: 0.5 }}
-              whileInView={{ y: 0, opacity: 1 }}
-            >
-              <Button
-                className="mx-auto border-gray-200 px-3 text-sm md:mx-0 md:text-base"
-                color="tertiary"
-                href="/signup"
-                rounded="lg"
-                size="sm"
-              >
-                Ready to get started?
-              </Button>
-            </motion.span>
             <Text
               as="h2"
               className="mt-6 text-center text-5xl font-semibold md:text-left md:text-7xl"
@@ -57,13 +38,13 @@ export const Transform = () => {
               <span className="text-stroke-white">Transform</span> how your team
               works <span className="text-stroke-white relative">today.</span>
             </Text>
-            <Text className="mt-10 max-w-[600px] text-center text-lg opacity-80 md:mt-16 md:text-left md:text-xl">
+            <Text className="mt-10 max-w-[600px] text-center text-lg font-normal opacity-80 md:mt-16 md:text-left md:text-xl">
               Join innovative teams who use complexus to deliver projects faster
               and with better results.
             </Text>
             <Flex
               align="center"
-              className="relative mt-6 justify-center gap-2 md:mt-10 md:justify-start md:gap-4"
+              className="relative mt-6 justify-center gap-2 md:mt-8 md:justify-start md:gap-4"
               wrap
             >
               <motion.span

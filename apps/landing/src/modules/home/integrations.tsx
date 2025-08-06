@@ -63,10 +63,8 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-5xl font-semibold md:mt-6 md:text-7xl"
             >
-              <Text as="span" color="gradient">
-                Sync up
-              </Text>{" "}
-              your favorite <span className="text-stroke-white">tools</span>.
+              <Text as="span">Sync up</Text> your favorite{" "}
+              <span className="text-stroke-white">tools</span>.
             </Text>
           </motion.div>
           <motion.div
@@ -78,7 +76,11 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="my-10 max-w-[600px]" color="muted" fontSize="xl">
+            <Text
+              className="my-10 max-w-[600px] font-normal"
+              color="muted"
+              fontSize="xl"
+            >
               Connect your entire stack with GitHub, GitLab, Figma, Slack, and
               more. Keep development, design, and communication unified.
             </Text>
