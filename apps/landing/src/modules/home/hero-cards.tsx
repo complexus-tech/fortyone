@@ -95,7 +95,7 @@ export const HeroCards = () => {
           </Swiper>
         </Box>
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-white via-white/80 dark:from-black dark:via-black/80" />
+      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t dark:from-black dark:via-black/80" />
     </Box>
   );
 };

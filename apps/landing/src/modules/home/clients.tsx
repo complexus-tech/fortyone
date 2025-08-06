@@ -62,7 +62,7 @@ export const SampleClients = () => {
             </Text>
           </Text>
         </motion.div>
-        <Box className="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-x-4 gap-y-10 md:mt-20 md:grid-cols-4 md:gap-y-20">
+        <Box className="mx-auto mt-16 flex max-w-5xl flex-wrap justify-center gap-x-4 gap-y-10 md:mt-20 md:gap-y-20">
           {brands.map((logo) => (
             <Brand key={logo} logo={logo} />
           ))}
