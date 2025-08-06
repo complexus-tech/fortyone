@@ -2,7 +2,9 @@
 import React from "react";
 import { Box, Text } from "ui";
 import { motion } from "framer-motion";
+import { cn } from "lib";
 import { Container } from "@/components/ui";
+import { heading } from "@/styles/fonts";
 
 const Brand = ({ logo }: { logo: string }) => {
   return (
@@ -39,30 +41,21 @@ export const SampleClients = () => {
         >
           <Text
             as="h2"
-            className="mx-auto max-w-4xl text-center text-3xl md:text-5xl md:leading-tight"
+            className="mx-auto max-w-3xl text-center text-3xl font-semibold md:text-5xl md:leading-tight"
           >
+            Teams use Complexus to stay aligned and hit{" "}
             <Text
               as="span"
-              className="text-stroke-white relative opacity-80"
-              fontWeight="semibold"
+              className={cn(
+                "text-stroke-white relative opacity-80",
+                heading.className,
+              )}
             >
-              Join{" "}
-            </Text>
-            these ambitious teams relying on us to crush their{" "}
-            <Text
-              as="span"
-              className="text-stroke-whitee opacity-80"
-              fontWeight="semibold"
-            >
-              objectives{" "}
-            </Text>
-            and drive{" "}
-            <Text as="span" className="text-stroke-white" fontWeight="semibold">
-              growth.
+              key results.
             </Text>
           </Text>
         </motion.div>
-        <Box className="mx-auto mt-16 flex max-w-5xl flex-wrap justify-center gap-x-4 gap-y-10 md:mt-20 md:gap-y-20">
+        <Box className="mx-auto mt-16 flex max-w-5xl flex-wrap justify-center gap-x-4 gap-y-10 md:mt-24 md:gap-y-20">
           {brands.map((logo) => (
             <Brand key={logo} logo={logo} />
           ))}
