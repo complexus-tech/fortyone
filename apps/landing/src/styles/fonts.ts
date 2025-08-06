@@ -14,6 +14,7 @@ export const instrumentSans = Inter({
 export const heading = Englebert({
   variable: "--font-heading",
   display: "swap",
+  subsets: ["latin"],
   weight: "400",
   style: "normal",
 });
