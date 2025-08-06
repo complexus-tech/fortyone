@@ -39,7 +39,15 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 		) VALUES (
 			:recipient_id, :workspace_id, :type, :entity_type,
 			:entity_id, :actor_id, :title, :message	
-		) RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
+		) 
+		ON CONFLICT (recipient_id, workspace_id, entity_id, entity_type)
+		DO UPDATE SET
+			title = :title,
+			message = :message,
+			actor_id = :actor_id,
+			read_at = NULL,
+			created_at = CURRENT_TIMESTAMP
+		RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
 			entity_id, actor_id, title, message, created_at, read_at;
 	`
 
