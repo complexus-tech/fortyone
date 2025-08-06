@@ -3,7 +3,6 @@
 import { Box, Container, Flex, Text } from "ui";
 import { useSession } from "next-auth/react";
 import { BodyContainer } from "@/components/shared/body";
-// import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
 import { Header } from "./components/header";
 import { Overview } from "./components/overview";
@@ -23,7 +22,6 @@ import { TeamAllocation } from "./components/team-allocation";
 import { Filters } from "./components/filters";
 
 export const AnalyticsPage = () => {
-  // const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
 
   const timeOfDay = () => {
