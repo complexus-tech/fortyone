@@ -65,6 +65,20 @@ type ActivitiesResponse struct {
 	Pagination ActivitiesPagination `json:"pagination"`
 }
 
+// CommentsPagination represents pagination information for comments
+type CommentsPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+// CommentsResponse represents the response for paginated comments
+type CommentsResponse struct {
+	Comments   []AppComment       `json:"comments"`
+	Pagination CommentsPagination `json:"pagination"`
+}
+
 // AppBulkDeleteRequest represents a request to delete multiple stories.
 type AppBulkDeleteRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`

@@ -41,7 +41,7 @@ type Repository interface {
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
-	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
+	GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error)
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
@@ -558,24 +558,27 @@ func (s *Service) CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc 
 	return comment, nil
 }
 
-// GetComments returns the comments for a story.
-func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error) {
+// GetComments returns the comments for a story with pagination.
+func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
 	s.log.Info(ctx, "business.core.stories.GetComments")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.GetComments")
 	defer span.End()
 
-	comments, err := s.repo.GetComments(ctx, storyID)
+	comments, hasMore, err := s.repo.GetComments(ctx, storyID, page, pageSize)
 	if err != nil {
 		s.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
 		span.RecordError(err)
-		return nil, err
+		return nil, false, err
 	}
 
 	span.AddEvent("comments retrieved.", trace.WithAttributes(
 		attribute.Int("comment.count", len(comments)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
 	))
 
-	return comments, nil
+	return comments, hasMore, nil
 }
 
 // DuplicateStory creates a copy of an existing story.

@@ -1186,9 +1186,19 @@ func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (c
 	return toCoreComment(comment), nil
 }
 
-func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error) {
+func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComments")
 	defer span.End()
+
+	// Calculate offset and fetch one extra to check if there are more
+	offset := (page - 1) * pageSize
+	limit := pageSize + 1
+
+	params := map[string]any{
+		"story_id": storyID,
+		"limit":    limit,
+		"offset":   offset,
+	}
 
 	q := `
 		SELECT 
@@ -1209,25 +1219,40 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.C
 						sub.parent_id = sc.comment_id			
 				), '[]'
 			) AS sub_comments
-		FROM story_comments sc WHERE sc.story_id = :story_id AND sc.parent_id IS NULL ORDER BY sc.created_at ASC
+		FROM story_comments sc 
+		WHERE sc.story_id = :story_id AND sc.parent_id IS NULL 
+		ORDER BY sc.created_at DESC
+		LIMIT :limit OFFSET :offset
 	`
-
-	params := map[string]any{"story_id": storyID}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err))
-		return nil, fmt.Errorf("failed to prepare named statement: %w", err)
+		return nil, false, fmt.Errorf("failed to prepare named statement: %w", err)
 	}
 	defer stmt.Close()
 
 	var comments []commentsrepo.DbComment
 	if err := stmt.SelectContext(ctx, &comments, params); err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
-		return nil, fmt.Errorf("failed to get comments: %w", err)
+		return nil, false, fmt.Errorf("failed to get comments: %w", err)
 	}
 
-	return toCoreComments(comments), nil
+	// Check if there are more comments
+	hasMore := len(comments) > pageSize
+	if hasMore {
+		// Remove the extra comment we fetched
+		comments = comments[:pageSize]
+	}
+
+	span.AddEvent("comments retrieved.", trace.WithAttributes(
+		attribute.Int("comment.count", len(comments)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return toCoreComments(comments), hasMore, nil
 }
 
 func (r *repo) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {

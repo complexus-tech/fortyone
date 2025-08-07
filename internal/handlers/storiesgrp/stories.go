@@ -659,13 +659,42 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		return nil
 	}
 
-	commentsList, err := h.stories.GetComments(ctx, storyId)
+	// Parse pagination parameters
+	page := getIntParam(r, "page", 1)
+	pageSize := getIntParam(r, "pageSize", 20)
+
+	// Validate pagination parameters
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	commentsList, hasMore, err := h.stories.GetComments(ctx, storyId, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	web.Respond(ctx, w, toAppComments(commentsList), http.StatusOK)
+	appComments := toAppComments(commentsList)
+
+	nextPage := page + 1
+	if !hasMore {
+		nextPage = 0
+	}
+
+	response := CommentsResponse{
+		Comments: appComments,
+		Pagination: CommentsPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
+
+	web.Respond(ctx, w, response, http.StatusOK)
 	return nil
 }
 
