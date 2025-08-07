@@ -16,7 +16,7 @@ type ActivitiesResponse = {
 export const getStoryActivities = async (
   id: string,
   session: Session,
-  page: number = 1,
+  page = 1,
 ) => {
   const response = await get<ApiResponse<ActivitiesResponse>>(
     `stories/${id}/activities?page=${page}`,

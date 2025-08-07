@@ -15,7 +15,7 @@ type CommentsResponse = {
 export const getStoryComments = async (
   id: string,
   session: Session,
-  page: number = 1,
+  page = 1,
 ) => {
   const response = await get<ApiResponse<CommentsResponse>>(
     `stories/${id}/comments?page=${page}`,

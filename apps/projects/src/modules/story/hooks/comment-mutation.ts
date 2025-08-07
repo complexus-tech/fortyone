@@ -5,7 +5,7 @@ import type { Comment } from "@/types";
 import { commentStoryAction } from "../actions/comment-story";
 
 type InfiniteCommentsData = {
-  pages: Array<{
+  pages: {
     comments: Comment[];
     pagination: {
       page: number;
@@ -13,7 +13,7 @@ type InfiniteCommentsData = {
       hasMore: boolean;
       nextPage: number;
     };
-  }>;
+  }[];
   pageParams: number[];
 };
 
@@ -82,13 +82,12 @@ export const useCommentStoryMutation = () => {
                   return comment;
                 });
                 return { ...page, comments: updatedComments };
-              } else {
-                // Add as new top-level comment
-                return {
-                  ...page,
-                  comments: [newComment, ...page.comments],
-                };
               }
+              // Add as new top-level comment
+              return {
+                ...page,
+                comments: [newComment, ...page.comments],
+              };
             }
             return page;
           }),
