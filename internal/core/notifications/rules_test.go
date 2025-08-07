@@ -363,7 +363,7 @@ func TestProcessCommentCreated(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil)
+			rules := NewRules(nil, nil, nil, nil)
 
 			notifications, err := rules.ProcessCommentCreated(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -432,7 +432,7 @@ func TestProcessCommentReplied(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil)
+			rules := NewRules(nil, nil, nil, nil)
 
 			notifications, err := rules.ProcessCommentReplied(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -497,7 +497,7 @@ func TestProcessUserMentioned(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rules := NewRules(nil, nil, nil)
+			rules := NewRules(nil, nil, nil, nil)
 
 			notifications, err := rules.ProcessUserMentioned(context.Background(), tt.payload, tt.actorID)
 			assert.NoError(t, err)
@@ -525,7 +525,7 @@ func TestPreventDuplicateNotifications(t *testing.T) {
 
 	// Create a rules instance with nil services for this test
 	// We'll test the logic by checking if the story lookup would prevent duplicates
-	rules := NewRules(nil, nil, nil)
+	rules := NewRules(nil, nil, nil, nil)
 
 	// Test that when the story assignee is mentioned, we would need to check for duplicates
 	// This test verifies the logic exists, but we can't easily mock the full stories service

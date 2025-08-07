@@ -27,6 +27,15 @@ func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUI
 	return storyTitle
 }
 
+// getStatusName gets a status's name with fallback
+func (r *Rules) getStatusName(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) string {
+	var statusName string
+	if status, err := r.statuses.Get(ctx, workspaceID, statusID); err == nil {
+		statusName = status.Name
+	}
+	return statusName
+}
+
 // createNotification creates a notification with consistent structure
 func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType, title string, message NotificationMessage) CoreNewNotification {
 	return CoreNewNotification{

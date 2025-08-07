@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -12,16 +13,18 @@ import (
 )
 
 type Rules struct {
-	log     *logger.Logger
-	stories *stories.Service
-	users   *users.Service
+	log      *logger.Logger
+	stories  *stories.Service
+	users    *users.Service
+	statuses *states.Service
 }
 
-func NewRules(log *logger.Logger, stories *stories.Service, users *users.Service) *Rules {
+func NewRules(log *logger.Logger, stories *stories.Service, users *users.Service, statuses *states.Service) *Rules {
 	return &Rules{
-		log:     log,
-		stories: stories,
-		users:   users,
+		log:      log,
+		stories:  stories,
+		users:    users,
+		statuses: statuses,
 	}
 }
 

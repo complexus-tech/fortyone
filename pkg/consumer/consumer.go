@@ -43,7 +43,7 @@ type Consumer struct {
 }
 
 func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, brevoService *brevo.Service) *Consumer {
-	notificationRules := notifications.NewRules(log, stories, users)
+	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
 		redis:             redis,

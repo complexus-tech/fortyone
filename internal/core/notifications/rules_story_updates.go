@@ -125,7 +125,11 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 	if payload.AssigneeID == nil || !shouldNotify(*payload.AssigneeID, actorID) {
 		return nil
 	}
-
+	var statusName string
+	if statusID, exists := payload.Updates["status_id"]; exists {
+		statusName = r.getStatusName(ctx, statusID.(uuid.UUID), payload.WorkspaceID)
+		payload.Updates["status_name"] = statusName
+	}
 	actorName := r.getUserName(ctx, actorID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates)
@@ -156,10 +160,11 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 	// Status update
 	if _, exists := updates["status_id"]; exists {
 		return NotificationMessage{
-			Template: "{actor} updated {field}",
+			Template: "{actor} changed the {field} to {value}",
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 				"field": {Value: "Status", Type: "field"},
+				"value": {Value: updates["status_name"].(string), Type: "value"},
 			},
 		}
 	}
@@ -171,7 +176,7 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 				Template: "{actor} removed the {field}",
 				Variables: map[string]Variable{
 					"actor": {Value: actorName, Type: "actor"},
-					"field": {Value: "deadline", Type: "field"},
+					"field": {Value: "Deadline", Type: "field"},
 				},
 			}
 		}
