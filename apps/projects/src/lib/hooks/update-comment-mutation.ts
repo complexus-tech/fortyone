@@ -6,7 +6,7 @@ import type { UpdateComment } from "../actions/comments/update-comment";
 import { updateCommentAction } from "../actions/comments/update-comment";
 
 type InfiniteCommentsData = {
-  pages: Array<{
+  pages: {
     comments: Comment[];
     pagination: {
       page: number;
@@ -14,7 +14,7 @@ type InfiniteCommentsData = {
       hasMore: boolean;
       nextPage: number;
     };
-  }>;
+  }[];
   pageParams: number[];
 };
 

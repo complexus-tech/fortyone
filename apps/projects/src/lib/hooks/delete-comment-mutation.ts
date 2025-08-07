@@ -5,7 +5,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import { deleteCommentAction } from "../actions/comments/delete-comment";
 
 type InfiniteCommentsData = {
-  pages: Array<{
+  pages: {
     comments: Comment[];
     pagination: {
       page: number;
@@ -13,7 +13,7 @@ type InfiniteCommentsData = {
       hasMore: boolean;
       nextPage: number;
     };
-  }>;
+  }[];
   pageParams: number[];
 };
 
