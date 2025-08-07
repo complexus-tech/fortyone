@@ -557,34 +557,45 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusUnauthorized)
-		return nil
+	// Parse pagination parameters
+	page := getIntParam(r, "page", 1)
+	pageSize := getIntParam(r, "pageSize", 20)
+
+	// Validate pagination parameters
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
 	}
 
-	cacheKey := cache.StoryActivitiesCacheKey(workspace.ID, storyId)
-	var cachedActivities []stories.CoreActivity
+	// Note: Cache is disabled for paginated requests since we need different cache keys per page
+	// TODO: Consider implementing page-specific caching if needed
 
-	if err := h.cache.Get(ctx, cacheKey, &cachedActivities); err == nil {
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppActivities(cachedActivities), http.StatusOK)
-		return nil
-	}
-
-	activitiesList, err := h.stories.GetActivities(ctx, storyId)
+	activitiesList, hasMore, err := h.stories.GetActivities(ctx, storyId, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	if err := h.cache.Set(ctx, cacheKey, activitiesList, cache.ListTTL); err != nil {
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
+	appActivities := toAppActivities(activitiesList)
+
+	nextPage := page + 1
+	if !hasMore {
+		nextPage = 0
 	}
 
-	web.Respond(ctx, w, toAppActivities(activitiesList), http.StatusOK)
+	response := ActivitiesResponse{
+		Activities: appActivities,
+		Pagination: ActivitiesPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
+
+	web.Respond(ctx, w, response, http.StatusOK)
 	return nil
 }
 

@@ -51,6 +51,20 @@ func toAppActivities(activities []stories.CoreActivity) []AppActivity {
 	return appActivities
 }
 
+// ActivitiesPagination represents pagination information for activities
+type ActivitiesPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+// ActivitiesResponse represents the response for paginated activities
+type ActivitiesResponse struct {
+	Activities []AppActivity        `json:"activities"`
+	Pagination ActivitiesPagination `json:"pagination"`
+}
+
 // AppBulkDeleteRequest represents a request to delete multiple stories.
 type AppBulkDeleteRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`

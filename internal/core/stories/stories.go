@@ -39,7 +39,7 @@ type Repository interface {
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
-	GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error)
+	GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID) ([]comments.CoreComment, error)
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
@@ -422,23 +422,26 @@ func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId 
 	return nil
 }
 
-// GetActivities returns the activities for a story.
-func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID) ([]CoreActivity, error) {
+// GetActivities returns the activities for a story with pagination.
+func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
 	s.log.Info(ctx, "business.core.activities.GetActivities")
 	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivities")
 	defer span.End()
 
-	activities, err := s.repo.GetActivities(ctx, storyID)
+	activities, hasMore, err := s.repo.GetActivities(ctx, storyID, page, pageSize)
 	if err != nil {
 		span.RecordError(err)
-		return nil, err
+		return nil, false, err
 	}
 
 	span.AddEvent("activities retrieved.", trace.WithAttributes(
 		attribute.Int("activity.count", len(activities)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
 	))
 
-	return activities, nil
+	return activities, hasMore, nil
 }
 
 // CreateComment creates a comment for a story.

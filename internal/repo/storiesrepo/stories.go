@@ -1091,11 +1091,20 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 	return result, nil
 }
 
-// GetActivities returns all activities for a given story ID.
-func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.CoreActivity, error) {
+// GetActivities returns activities for a given story ID with pagination.
+func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]stories.CoreActivity, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetActivities")
 	defer span.End()
-	params := map[string]any{"story_id": storyID}
+
+	// Calculate offset and fetch one extra to check if there are more
+	offset := (page - 1) * pageSize
+	limit := pageSize + 1
+
+	params := map[string]any{
+		"story_id": storyID,
+		"limit":    limit,
+		"offset":   offset,
+	}
 
 	q := `
 		SELECT 
@@ -1109,7 +1118,8 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 			workspace_id
 		FROM story_activities
 		WHERE story_id = :story_id
-		ORDER BY created_at
+		ORDER BY created_at DESC
+		LIMIT :limit OFFSET :offset
 	`
 
 	var activities []dbActivity
@@ -1119,7 +1129,7 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, fmt.Errorf("failed to get activities: %w", err)
+		return nil, false, fmt.Errorf("failed to get activities: %w", err)
 	}
 	defer stmt.Close()
 
@@ -1127,10 +1137,24 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID) ([]stories.
 		errMsg := fmt.Sprintf("Failed to get activities: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to get activities"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, fmt.Errorf("failed to get activities: %w", err)
+		return nil, false, fmt.Errorf("failed to get activities: %w", err)
 	}
 
-	return toCoreActivities(activities), nil
+	// Check if there are more activities
+	hasMore := len(activities) > pageSize
+	if hasMore {
+		// Remove the extra activity we fetched
+		activities = activities[:pageSize]
+	}
+
+	span.AddEvent("activities retrieved.", trace.WithAttributes(
+		attribute.Int("activity.count", len(activities)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return toCoreActivities(activities), hasMore, nil
 }
 
 func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (comments.CoreComment, error) {
