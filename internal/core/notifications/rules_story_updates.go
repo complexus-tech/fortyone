@@ -127,8 +127,12 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 	}
 	var statusName string
 	if statusID, exists := payload.Updates["status_id"]; exists {
-		statusName = r.getStatusName(ctx, statusID.(uuid.UUID), payload.WorkspaceID)
-		payload.Updates["status_name"] = statusName
+		if statusStr, ok := statusID.(string); ok {
+			if statusID, err := uuid.Parse(statusStr); err == nil {
+				statusName = r.getStatusName(ctx, statusID, payload.WorkspaceID)
+				payload.Updates["status_name"] = statusName
+			}
+		}
 	}
 	actorName := r.getUserName(ctx, actorID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
