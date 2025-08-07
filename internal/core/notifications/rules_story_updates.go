@@ -143,10 +143,7 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map[string]any) NotificationMessage {
 	// Priority update
 	if priorityValue, exists := updates["priority"]; exists {
-		priority := "Unknown"
-		if priorityStr, ok := priorityValue.(string); ok {
-			priority = priorityStr
-		}
+		priority := priorityValue.(string)
 		return NotificationMessage{
 			Template: "{actor} set the {field} to {value}",
 			Variables: map[string]Variable{
