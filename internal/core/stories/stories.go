@@ -96,6 +96,19 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		return CoreSingleStory{}, err
 	}
 
+	// Record in the activity log
+	ca := CoreActivity{
+		StoryID:      cs.ID,
+		Type:         "create",
+		Field:        "story",
+		CurrentValue: cs.Title,
+		UserID:       *ns.Reporter,
+		WorkspaceID:  workspaceId,
+	}
+	if _, err := s.repo.RecordActivities(ctx, []CoreActivity{ca}); err != nil {
+		span.RecordError(err)
+	}
+
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
 	))
