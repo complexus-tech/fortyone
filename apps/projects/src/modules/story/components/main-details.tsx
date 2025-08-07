@@ -19,7 +19,6 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
-import type { StoryActivity } from "@/modules/stories/types";
 import { useLinks } from "@/lib/hooks/links";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
@@ -69,7 +68,6 @@ export const MainDetails = ({
     teamId,
     deletedAt,
     subStories,
-    createdAt,
     reporterId,
   } = data!;
   const isDeleted = Boolean(deletedAt);
