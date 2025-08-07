@@ -75,19 +75,6 @@ export const MainDetails = ({
   const isDeleted = Boolean(deletedAt);
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
 
-  const createStoryActivity: StoryActivity = {
-    id: "1",
-    type: "create",
-    createdAt,
-    storyId,
-    userId: reporterId,
-    field: "title",
-    currentValue: title,
-  };
-  const allActivities = reporterId
-    ? [createStoryActivity, ...activities]
-    : activities;
-
   const handleUpdate = (data: Partial<DetailedStory>) => {
     updateStory({ storyId, payload: data });
   };
@@ -217,7 +204,7 @@ export const MainDetails = ({
           <ActivitiesSkeleton />
         ) : (
           <Activities
-            activities={allActivities}
+            activities={activities}
             storyId={storyId}
             teamId={teamId}
           />
