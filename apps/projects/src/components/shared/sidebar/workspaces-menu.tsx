@@ -1,6 +1,5 @@
 import { Avatar, Badge, Button, Menu } from "ui";
 import {
-  ArrowDownIcon,
   CheckIcon,
   LogoutIcon,
   PlusIcon,
@@ -8,6 +7,7 @@ import {
   UsersAddIcon,
   ArrowRightIcon,
   WorkspaceIcon,
+  ArrowDown2Icon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -56,7 +56,7 @@ export const WorkspacesMenu = () => {
     <Menu>
       <Menu.Button>
         <Button
-          className="gap-2 pl-1"
+          className="gap-1.5 pl-1"
           color="tertiary"
           data-workspace-switcher
           leftIcon={
@@ -72,7 +72,7 @@ export const WorkspacesMenu = () => {
             />
           }
           rightIcon={
-            <ArrowDownIcon className="relative top-[0.5px] h-3.5 w-auto text-gray dark:text-gray-300" />
+            <ArrowDown2Icon className="relative top-[0.5px] h-4 w-auto text-gray dark:text-gray-300" />
           }
           size="sm"
           suppressHydrationWarning
