@@ -29,11 +29,9 @@ import {
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
-import { useStoryActivities } from "../hooks/story-activities";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { LinksSkeleton } from "./links-skeleton";
-import { ActivitiesSkeleton } from "./activities-skeleton";
 import { Options } from "./options";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
@@ -51,8 +49,6 @@ export const MainDetails = ({
 }) => {
   const { data } = useStoryById(storyId);
   const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
-  const { data: activities = [], isLoading: isActivitiesLoading } =
-    useStoryActivities(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
 
@@ -198,15 +194,7 @@ export const MainDetails = ({
           storyId={storyId}
         />
         <Divider className="my-6" />
-        {isActivitiesLoading ? (
-          <ActivitiesSkeleton />
-        ) : (
-          <Activities
-            activities={activities}
-            storyId={storyId}
-            teamId={teamId}
-          />
-        )}
+        <Activities storyId={storyId} teamId={teamId} />
       </Container>
     </BodyContainer>
   );

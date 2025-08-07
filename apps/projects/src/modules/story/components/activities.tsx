@@ -1,23 +1,34 @@
-import { Avatar, Box, Flex, Tabs, Text } from "ui";
+import { Avatar, Box, Flex, Tabs, Text, Button, Skeleton } from "ui";
 import { ClockIcon, CommentIcon } from "icons";
 import { useSession } from "next-auth/react";
 import { Activity } from "@/components/ui";
-import type { StoryActivity } from "@/modules/stories/types";
+import { useStoryActivitiesInfinite } from "@/modules/story/hooks/story-activities";
 import { CommentInput } from "./comment-input";
 import { Comments } from "./comments";
 
 export const Activities = ({
-  activities,
   className,
   storyId,
   teamId,
 }: {
-  activities: StoryActivity[];
   className?: string;
   storyId: string;
   teamId: string;
 }) => {
   const { data: session } = useSession();
+  const {
+    data: infiniteData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useStoryActivitiesInfinite(storyId);
+
+  const allActivities =
+    infiniteData?.pages.flatMap((page) => page.activities) ?? [];
+
+  const handleLoadMore = () => {
+    fetchNextPage();
+  };
 
   return (
     <Box className={className}>
@@ -50,14 +61,43 @@ export const Activities = ({
 
         <Tabs.Panel value="updates">
           <Flex direction="column">
-            {activities.length === 0 ? (
+            {allActivities.length === 0 ? (
               <Text>No updates available</Text>
             ) : (
-              activities.map((activity) => (
-                <Activity key={activity.id} {...activity} />
-              ))
+              <>
+                {allActivities.map((activity) => (
+                  <Activity key={activity.id} {...activity} />
+                ))}
+                {isFetchingNextPage && (
+                  <Box className="mt-4 space-y-3">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <Box key={i} className="flex gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Box className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-48" />
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Flex>
+          {hasNextPage && (
+            <Box className="mt-2">
+              <Button
+                color="tertiary"
+                disabled={isFetchingNextPage}
+                onClick={handleLoadMore}
+                size="sm"
+                variant="naked"
+                className="ml-2 px-2 text-[0.95rem]"
+              >
+                {isFetchingNextPage ? "Loading..." : "Load more updates"}
+              </Button>
+            </Box>
+          )}
         </Tabs.Panel>
         <Tabs.Panel value="comments">
           <Comments storyId={storyId} teamId={teamId} />

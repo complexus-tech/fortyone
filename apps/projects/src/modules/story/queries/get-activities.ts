@@ -3,10 +3,24 @@ import { get } from "@/lib/http";
 import type { StoryActivity } from "@/modules/stories/types";
 import type { ApiResponse } from "@/types";
 
-export const getStoryActivities = async (id: string, session: Session) => {
-  const story = await get<ApiResponse<StoryActivity[]>>(
-    `stories/${id}/activities`,
+type ActivitiesResponse = {
+  activities: StoryActivity[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
+export const getStoryActivities = async (
+  id: string,
+  session: Session,
+  page: number = 1,
+) => {
+  const response = await get<ApiResponse<ActivitiesResponse>>(
+    `stories/${id}/activities?page=${page}`,
     session,
   );
-  return story.data!;
+  return response.data!;
 };

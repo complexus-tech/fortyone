@@ -79,7 +79,8 @@ export const commentsTool = tool({
             };
           }
 
-          const comments = await getStoryComments(storyId, session);
+          const response = await getStoryComments(storyId, session);
+          const comments = response.comments;
 
           // Filter and limit comments
           const limitedComments = comments.slice(0, limit);

@@ -77,7 +77,8 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const activities = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, session);
+          const activities = response.activities;
 
           return {
             success: true,
@@ -95,7 +96,8 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const activities = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, session);
+          const activities = response.activities;
 
           // Sort by creation date (oldest first for timeline)
           activities.sort(
@@ -139,7 +141,8 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const activities = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, session);
+          const activities = response.activities;
 
           // Sort by creation date (newest first)
           activities.sort(

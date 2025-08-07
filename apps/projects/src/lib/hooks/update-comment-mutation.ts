@@ -20,7 +20,7 @@ export const useUpdateCommentMutation = () => {
 
     onMutate: (newComment) => {
       const previousComments = queryClient.getQueryData<Comment[]>(
-        storyKeys.comments(newComment.storyId),
+        storyKeys.commentsInfinite(newComment.storyId),
       );
       if (previousComments) {
         const updatedComments = previousComments.map((comment) =>
@@ -29,7 +29,7 @@ export const useUpdateCommentMutation = () => {
             : comment,
         );
         queryClient.setQueryData<Comment[]>(
-          storyKeys.comments(newComment.storyId),
+          storyKeys.commentsInfinite(newComment.storyId),
           updatedComments,
         );
       }
@@ -37,7 +37,7 @@ export const useUpdateCommentMutation = () => {
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        storyKeys.comments(variables.storyId),
+        storyKeys.commentsInfinite(variables.storyId),
         context?.previousComments,
       );
       toast.error("Failed to update comment", {
@@ -50,7 +50,7 @@ export const useUpdateCommentMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(variables.storyId),
+        queryKey: storyKeys.commentsInfinite(variables.storyId),
       });
     },
     onSuccess: (res, { storyId }) => {
@@ -59,7 +59,7 @@ export const useUpdateCommentMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(storyId),
+        queryKey: storyKeys.commentsInfinite(storyId),
       });
     },
   });

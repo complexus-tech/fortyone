@@ -13,11 +13,11 @@ export const useDeleteCommentMutation = () => {
 
     onMutate: ({ commentId, storyId }) => {
       const previousComments = queryClient.getQueryData<Comment[]>(
-        storyKeys.comments(storyId),
+        storyKeys.commentsInfinite(storyId),
       );
       if (previousComments) {
         queryClient.setQueryData<Comment[]>(
-          storyKeys.comments(storyId),
+          storyKeys.commentsInfinite(storyId),
           previousComments.filter((comment) => comment.id !== commentId),
         );
       }
@@ -25,7 +25,7 @@ export const useDeleteCommentMutation = () => {
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        storyKeys.comments(variables.storyId),
+        storyKeys.commentsInfinite(variables.storyId),
         context?.previousComments,
       );
       toast.error("Failed to delete comment", {
@@ -38,7 +38,7 @@ export const useDeleteCommentMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(variables.storyId),
+        queryKey: storyKeys.commentsInfinite(variables.storyId),
       });
     },
     onSuccess: (res, { storyId }) => {
@@ -47,7 +47,7 @@ export const useDeleteCommentMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(storyId),
+        queryKey: storyKeys.commentsInfinite(storyId),
       });
     },
   });

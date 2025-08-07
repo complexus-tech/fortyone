@@ -37,7 +37,7 @@ export const useCommentStoryMutation = () => {
     },
     onMutate: ({ storyId, payload }) => {
       const previousComments = queryClient.getQueryData<Comment[]>(
-        storyKeys.comments(storyId),
+        storyKeys.commentsInfinite(storyId),
       );
       if (previousComments) {
         const newComment = {
@@ -59,10 +59,10 @@ export const useCommentStoryMutation = () => {
             parentComment.subComments.push(newComment);
           }
         } else {
-          queryClient.setQueryData<Comment[]>(storyKeys.comments(storyId), [
-            ...previousComments,
-            newComment,
-          ]);
+          queryClient.setQueryData<Comment[]>(
+            storyKeys.commentsInfinite(storyId),
+            [...previousComments, newComment],
+          );
         }
       }
     },
@@ -72,7 +72,7 @@ export const useCommentStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.comments(storyId),
+        queryKey: storyKeys.commentsInfinite(storyId),
       });
     },
   });

@@ -7,13 +7,15 @@ export const storyKeys = {
   list: (filter: string) => [...storyKeys.lists(), filter] as const,
   details: () => [...storyKeys.all, "detail"] as const,
   detail: (id: string) => [...storyKeys.details(), id] as const,
-  activities: (id: string) => [...storyKeys.detail(id), "activities"] as const,
+  activitiesInfinite: (id: string) =>
+    [...storyKeys.detail(id), "activities", "infinite"] as const,
   objectives: () => [...storyKeys.all, "objectives"] as const,
   objective: (objectiveId: string) =>
     [...storyKeys.objectives(), objectiveId] as const,
   sprints: () => [...storyKeys.all, "sprints"] as const,
   sprint: (sprintId: string) => [...storyKeys.sprints(), sprintId] as const,
-  comments: (id: string) => [...storyKeys.detail(id), "comments"] as const,
+  commentsInfinite: (id: string) =>
+    [...storyKeys.detail(id), "comments", "infinite"] as const,
   attachments: (id: string) =>
     [...storyKeys.detail(id), "attachments"] as const,
   total: () => ["totalSories"] as const,
@@ -38,11 +40,9 @@ export const storyTags = {
   team: (teamId: string) => `${storyTags.teams()}-${teamId}` as const,
   details: () => `${storyTags.all}-detail` as const,
   detail: (id: string) => `${storyTags.details()}-${id}` as const,
-  activities: (id: string) => `${storyTags.detail(id)}-activities` as const,
   objectives: () => `${storyTags.all}-objectives` as const,
   objective: (objectiveId: string) =>
     `${storyTags.objectives()}-${objectiveId}` as const,
   sprints: () => `${storyTags.all}-sprints` as const,
   sprint: (sprintId: string) => `${storyTags.sprints()}-${sprintId}` as const,
-  comments: (id: string) => `${storyTags.detail(id)}-comments` as const,
 };

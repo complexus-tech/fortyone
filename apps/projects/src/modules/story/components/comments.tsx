@@ -1,4 +1,14 @@
-import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Dialog } from "ui";
+import {
+  Box,
+  Flex,
+  Text,
+  Avatar,
+  TimeAgo,
+  Tooltip,
+  Button,
+  Dialog,
+  Skeleton,
+} from "ui";
 import Link from "next/link";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
@@ -6,7 +16,7 @@ import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
 import { useState } from "react";
 import type { Comment } from "@/types";
 import { useMembers } from "@/lib/hooks/members";
-import { useStoryComments } from "@/modules/story/hooks/story-comments";
+import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { CommentInput } from "@/modules/story/components/comment-input";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
 
@@ -242,11 +252,23 @@ export const Comments = ({
   storyId: string;
   teamId: string;
 }) => {
-  const { data: comments = [] } = useStoryComments(storyId);
+  const {
+    data: infiniteData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useStoryCommentsInfinite(storyId);
+
+  const allComments =
+    infiniteData?.pages.flatMap((page) => page.comments) ?? [];
+
+  const handleLoadMore = () => {
+    fetchNextPage();
+  };
 
   return (
     <Box>
-      {comments.map((comment) => (
+      {allComments.map((comment) => (
         <MainComment
           comment={comment}
           key={comment.id}
@@ -254,6 +276,35 @@ export const Comments = ({
           teamId={teamId}
         />
       ))}
+
+      {isFetchingNextPage && (
+        <Box className="mt-4 space-y-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Box key={i} className="flex gap-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Box className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-16 w-full" />
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {hasNextPage && (
+        <Box className="mt-2">
+          <Button
+            color="tertiary"
+            disabled={isFetchingNextPage}
+            onClick={handleLoadMore}
+            size="sm"
+            variant="naked"
+            className="ml-2 px-2 text-[0.95rem]"
+          >
+            {isFetchingNextPage ? "Loading..." : "Load more comments"}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };
