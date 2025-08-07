@@ -29,9 +29,7 @@ export const CallToAction = () => {
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
               Set <span className="text-stroke-white">Objectives</span>. Drive{" "}
-              <Text as="span" color="gradient">
-                Outcomes.
-              </Text>
+              <Text as="span">Outcomes.</Text>
             </Text>
           </motion.div>
           <motion.div
