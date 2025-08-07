@@ -68,10 +68,10 @@ export const Activities = ({
                 {allActivities.map((activity) => (
                   <Activity key={activity.id} {...activity} />
                 ))}
-                {isFetchingNextPage && (
+                {isFetchingNextPage ? (
                   <Box className="mt-4 space-y-3">
                     {Array.from({ length: 2 }).map((_, i) => (
-                      <Box key={i} className="flex gap-3">
+                      <Box className="flex gap-3" key={i}>
                         <Skeleton className="h-8 w-8 rounded-full" />
                         <Box className="flex-1 space-y-2">
                           <Skeleton className="h-4 w-32" />
@@ -80,24 +80,24 @@ export const Activities = ({
                       </Box>
                     ))}
                   </Box>
-                )}
+                ) : null}
               </>
             )}
           </Flex>
-          {hasNextPage && (
+          {hasNextPage ? (
             <Box className="mt-2">
               <Button
+                className="ml-6 px-3 text-[0.95rem]"
                 color="tertiary"
                 disabled={isFetchingNextPage}
                 onClick={handleLoadMore}
                 size="sm"
                 variant="naked"
-                className="ml-2 px-2 text-[0.95rem]"
               >
                 {isFetchingNextPage ? "Loading..." : "Load more updates"}
               </Button>
             </Box>
-          )}
+          ) : null}
         </Tabs.Panel>
         <Tabs.Panel value="comments">
           <Flex align="start" className="mb-3">
