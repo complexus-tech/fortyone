@@ -130,7 +130,6 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 			if statusID, err := uuid.Parse(statusStr); err == nil {
 				status := r.getStatus(ctx, statusID, payload.WorkspaceID)
 				payload.Updates["status_name"] = status.Name
-				payload.Updates["status_color"] = status.Color
 			}
 		}
 	}
@@ -166,7 +165,6 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 				"actor": {Value: actorName, Type: "actor"},
 				"field": {Value: "Status", Type: "field"},
 				"value": {Value: updates["status_name"].(string), Type: "value"},
-				"color": {Value: updates["status_color"].(string), Type: "color"},
 			},
 		}
 	}
