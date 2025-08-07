@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -27,13 +28,10 @@ func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUI
 	return storyTitle
 }
 
-// getStatusName gets a status's name with fallback
-func (r *Rules) getStatusName(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) string {
-	var statusName string
-	if status, err := r.statuses.Get(ctx, workspaceID, statusID); err == nil {
-		statusName = status.Name
-	}
-	return statusName
+// getStatus gets a status
+func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) states.CoreState {
+	status, _ := r.statuses.Get(ctx, workspaceID, statusID)
+	return status
 }
 
 // createNotification creates a notification with consistent structure

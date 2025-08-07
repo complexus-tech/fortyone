@@ -125,12 +125,12 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 	if payload.AssigneeID == nil || !shouldNotify(*payload.AssigneeID, actorID) {
 		return nil
 	}
-	var statusName string
 	if statusID, exists := payload.Updates["status_id"]; exists {
 		if statusStr, ok := statusID.(string); ok {
 			if statusID, err := uuid.Parse(statusStr); err == nil {
-				statusName = r.getStatusName(ctx, statusID, payload.WorkspaceID)
-				payload.Updates["status_name"] = statusName
+				status := r.getStatus(ctx, statusID, payload.WorkspaceID)
+				payload.Updates["status_name"] = status.Name
+				payload.Updates["status_color"] = status.Color
 			}
 		}
 	}
@@ -166,6 +166,7 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 				"actor": {Value: actorName, Type: "actor"},
 				"field": {Value: "Status", Type: "field"},
 				"value": {Value: updates["status_name"].(string), Type: "value"},
+				"color": {Value: updates["status_color"].(string), Type: "color"},
 			},
 		}
 	}
