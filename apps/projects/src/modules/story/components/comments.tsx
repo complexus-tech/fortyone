@@ -284,7 +284,7 @@ export const Comments = ({
               <Skeleton className="h-8 w-8 rounded-full" />
               <Box className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-12 w-full" />
               </Box>
             </Box>
           ))}
@@ -292,18 +292,16 @@ export const Comments = ({
       )}
 
       {hasNextPage && (
-        <Box className="mt-2">
-          <Button
-            color="tertiary"
-            disabled={isFetchingNextPage}
-            onClick={handleLoadMore}
-            size="sm"
-            variant="naked"
-            className="ml-2 px-2 text-[0.95rem]"
-          >
-            {isFetchingNextPage ? "Loading..." : "Load more comments"}
-          </Button>
-        </Box>
+        <Button
+          color="tertiary"
+          disabled={isFetchingNextPage}
+          onClick={handleLoadMore}
+          size="sm"
+          variant="naked"
+          className="ml-2 px-2 text-[0.95rem]"
+        >
+          {isFetchingNextPage ? "Loading..." : "Load more comments"}
+        </Button>
       )}
     </Box>
   );

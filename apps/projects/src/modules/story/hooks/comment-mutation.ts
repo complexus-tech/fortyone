@@ -4,6 +4,19 @@ import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
 import { commentStoryAction } from "../actions/comment-story";
 
+type InfiniteCommentsData = {
+  pages: Array<{
+    comments: Comment[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      hasMore: boolean;
+      nextPage: number;
+    };
+  }>;
+  pageParams: number[];
+};
+
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
 
@@ -36,10 +49,11 @@ export const useCommentStoryMutation = () => {
       });
     },
     onMutate: ({ storyId, payload }) => {
-      const previousComments = queryClient.getQueryData<Comment[]>(
+      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
         storyKeys.commentsInfinite(storyId),
       );
-      if (previousComments) {
+
+      if (previousData) {
         const newComment = {
           id: "new comment",
           userId: "",
@@ -51,20 +65,41 @@ export const useCommentStoryMutation = () => {
           subComments: [],
         };
 
-        if (payload.parentId) {
-          const parentComment = previousComments.find(
-            (comment) => comment.id === payload.parentId,
-          );
-          if (parentComment) {
-            parentComment.subComments.push(newComment);
-          }
-        } else {
-          queryClient.setQueryData<Comment[]>(
-            storyKeys.commentsInfinite(storyId),
-            [...previousComments, newComment],
-          );
-        }
+        const updatedData = {
+          ...previousData,
+          pages: previousData.pages.map((page, pageIndex) => {
+            if (pageIndex === 0) {
+              // Add to first page
+              if (payload.parentId) {
+                // Add as reply to parent comment
+                const updatedComments = page.comments.map((comment) => {
+                  if (comment.id === payload.parentId) {
+                    return {
+                      ...comment,
+                      subComments: [newComment, ...comment.subComments],
+                    };
+                  }
+                  return comment;
+                });
+                return { ...page, comments: updatedComments };
+              } else {
+                // Add as new top-level comment
+                return {
+                  ...page,
+                  comments: [newComment, ...page.comments],
+                };
+              }
+            }
+            return page;
+          }),
+        };
+
+        queryClient.setQueryData<InfiniteCommentsData>(
+          storyKeys.commentsInfinite(storyId),
+          updatedData,
+        );
       }
+      return { previousData };
     },
     onSuccess: (res, { storyId }) => {
       if (res.error?.message) {

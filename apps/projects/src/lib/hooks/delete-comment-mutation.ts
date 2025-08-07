@@ -4,6 +4,19 @@ import type { Comment } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { deleteCommentAction } from "../actions/comments/delete-comment";
 
+type InfiniteCommentsData = {
+  pages: Array<{
+    comments: Comment[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      hasMore: boolean;
+      nextPage: number;
+    };
+  }>;
+  pageParams: number[];
+};
+
 export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
 
@@ -12,22 +25,35 @@ export const useDeleteCommentMutation = () => {
       deleteCommentAction(commentId),
 
     onMutate: ({ commentId, storyId }) => {
-      const previousComments = queryClient.getQueryData<Comment[]>(
+      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
         storyKeys.commentsInfinite(storyId),
       );
-      if (previousComments) {
-        queryClient.setQueryData<Comment[]>(
+
+      if (previousData) {
+        const updatedData = {
+          ...previousData,
+          pages: previousData.pages.map((page) => ({
+            ...page,
+            comments: page.comments.filter(
+              (comment) => comment.id !== commentId,
+            ),
+          })),
+        };
+
+        queryClient.setQueryData<InfiniteCommentsData>(
           storyKeys.commentsInfinite(storyId),
-          previousComments.filter((comment) => comment.id !== commentId),
+          updatedData,
         );
       }
-      return { previousComments };
+      return { previousData };
     },
     onError: (error, variables, context) => {
-      queryClient.setQueryData(
-        storyKeys.commentsInfinite(variables.storyId),
-        context?.previousComments,
-      );
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          storyKeys.commentsInfinite(variables.storyId),
+          context.previousData,
+        );
+      }
       toast.error("Failed to delete comment", {
         description: error.message || "Your changes were not saved",
         action: {

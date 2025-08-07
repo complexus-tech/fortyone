@@ -5,6 +5,19 @@ import type { Comment } from "@/types";
 import type { UpdateComment } from "../actions/comments/update-comment";
 import { updateCommentAction } from "../actions/comments/update-comment";
 
+type InfiniteCommentsData = {
+  pages: Array<{
+    comments: Comment[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      hasMore: boolean;
+      nextPage: number;
+    };
+  }>;
+  pageParams: number[];
+};
+
 export const useUpdateCommentMutation = () => {
   const queryClient = useQueryClient();
 
@@ -19,27 +32,37 @@ export const useUpdateCommentMutation = () => {
     }) => updateCommentAction(commentId, payload),
 
     onMutate: (newComment) => {
-      const previousComments = queryClient.getQueryData<Comment[]>(
+      const previousData = queryClient.getQueryData<InfiniteCommentsData>(
         storyKeys.commentsInfinite(newComment.storyId),
       );
-      if (previousComments) {
-        const updatedComments = previousComments.map((comment) =>
-          comment.id === newComment.commentId
-            ? { ...comment, comment: newComment.payload.content }
-            : comment,
-        );
-        queryClient.setQueryData<Comment[]>(
+
+      if (previousData) {
+        const updatedData = {
+          ...previousData,
+          pages: previousData.pages.map((page) => ({
+            ...page,
+            comments: page.comments.map((comment) =>
+              comment.id === newComment.commentId
+                ? { ...comment, comment: newComment.payload.content }
+                : comment,
+            ),
+          })),
+        };
+
+        queryClient.setQueryData<InfiniteCommentsData>(
           storyKeys.commentsInfinite(newComment.storyId),
-          updatedComments,
+          updatedData,
         );
       }
-      return { previousComments };
+      return { previousData };
     },
     onError: (error, variables, context) => {
-      queryClient.setQueryData(
-        storyKeys.commentsInfinite(variables.storyId),
-        context?.previousComments,
-      );
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          storyKeys.commentsInfinite(variables.storyId),
+          context.previousData,
+        );
+      }
       toast.error("Failed to update comment", {
         description: error.message || "Your changes were not saved",
         action: {

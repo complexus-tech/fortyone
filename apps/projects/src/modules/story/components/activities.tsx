@@ -100,8 +100,7 @@ export const Activities = ({
           )}
         </Tabs.Panel>
         <Tabs.Panel value="comments">
-          <Comments storyId={storyId} teamId={teamId} />
-          <Flex align="start">
+          <Flex align="start" className="mb-3">
             <Box className="z-[1] flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
               <Avatar
                 name={session?.user?.name ?? undefined}
@@ -111,6 +110,7 @@ export const Activities = ({
             </Box>
             <CommentInput storyId={storyId} teamId={teamId} />
           </Flex>
+          <Comments storyId={storyId} teamId={teamId} />
         </Tabs.Panel>
       </Tabs>
     </Box>
