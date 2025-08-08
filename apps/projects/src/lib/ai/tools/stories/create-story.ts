@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const createStory = tool({
   description:
     "Create a new story. Guests cannot create stories. Members and admins can create stories for teams they belong to.",
-  parameters: z.object({
+  inputSchema: z.object({
     title: z.string().describe("Story title (required)"),
     description: z.string().optional().describe("Story description"),
     descriptionHTML: z.string().optional().describe("Story description HTML"),

@@ -12,7 +12,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const objectiveStatusesTool = tool({
   description:
     "View, create, update, and manage WORKFLOW STATUSES for objectives (e.g., 'Backlog', 'In Progress', 'Review', 'Done'). These are workspace-level statuses only (no team-specific statuses). IMPORTANT: This is different from objective HEALTH ('On Track', 'At Risk', 'Off Track') which is managed by the objectives tool. Use this tool to list objective workflow statuses, create new workflow states for objectives, or modify existing objective statuses.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum([
         "list-objective-statuses",

@@ -9,7 +9,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const labelsTool = tool({
   description: "Manage workspace/team labels: list, create, edit, delete.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z.enum([
       "list-labels",
       "create-label",

@@ -6,7 +6,7 @@ import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints
 export const listRunningSprints = tool({
   description:
     "List all currently running sprints. Returns active sprints with their details.",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
 
   execute: async () => {
     try {

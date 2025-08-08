@@ -6,7 +6,7 @@ import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
 export const joinTeam = tool({
   description:
     "Join a public team using its team code. Only works for public teams.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamCode: z.string().describe("Team code to join (required)"),
   }),
 

@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const deleteKeyResultTool = tool({
   description:
     "Delete key results from objectives. This action cannot be undone.",
-  parameters: z.object({
+  inputSchema: z.object({
     keyResultId: z.string().describe("Key result ID to delete"),
   }),
 

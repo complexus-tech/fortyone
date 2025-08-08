@@ -6,7 +6,7 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 export const getTeamDetails = tool({
   description:
     "Get detailed information about a specific team including its members and settings.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to get details for (required)"),
   }),
 

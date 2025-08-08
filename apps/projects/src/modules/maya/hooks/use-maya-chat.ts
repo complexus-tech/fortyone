@@ -100,7 +100,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
       terminology,
       id: idRef.current,
     },
-    sendExtraMessageFields: true,
+
     onFinish: (message) => {
       message.parts?.forEach((part) => {
         if (part.type === "tool-invocation") {
@@ -186,7 +186,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
         }
       });
     },
-    initialMessages: aiChatMessages,
+
+    initialMessages: aiChatMessages
   });
 
   // Sync messages when aiChatMessages changes (when selecting a different chat)

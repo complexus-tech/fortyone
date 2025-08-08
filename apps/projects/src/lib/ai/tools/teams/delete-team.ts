@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const deleteTeam = tool({
   description:
     "Delete a team. Only admins can delete teams. This action cannot be undone.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to delete (required)"),
   }),
 

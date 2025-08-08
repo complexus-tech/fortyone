@@ -6,7 +6,7 @@ import { getTeamObjectives } from "@/modules/objectives/queries/get-team-objecti
 export const listTeamObjectivesTool = tool({
   description:
     "List objectives from a specific team. Works for all user roles including guests, as long as they belong to the specified team.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to get objectives from (required)"),
   }),
 

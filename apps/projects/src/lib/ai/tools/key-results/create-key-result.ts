@@ -8,7 +8,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const createKeyResultTool = tool({
   description:
     "Create new key results within objectives. Requires objective ID and key result details.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z
       .string()
       .describe("Objective ID where the key result will be created"),

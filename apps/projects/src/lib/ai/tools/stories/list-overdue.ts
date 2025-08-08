@@ -9,7 +9,7 @@ import type { GroupedStoryParams } from "@/modules/stories/types";
 export const listOverdue = tool({
   description:
     "List stories that are overdue (past their deadline), grouped by status. Returns stories with their details and deadlines.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().optional().describe("Team ID to filter stories by team"),
     filters: z
       .object({

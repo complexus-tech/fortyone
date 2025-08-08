@@ -6,7 +6,7 @@ import { getObjective } from "@/modules/objectives/queries/get-objective";
 export const getObjectiveDetailsTool = tool({
   description:
     "Get detailed information about a specific objective. Requires appropriate permissions to access the objective. Use objective-statuses tool to get status names.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z
       .string()
       .describe("Objective ID to get details for (required)"),

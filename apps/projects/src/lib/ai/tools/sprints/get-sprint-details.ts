@@ -7,7 +7,7 @@ import { getSprintAnalytics } from "@/modules/sprints/queries/get-sprint-analyti
 export const getSprintDetailsTool = tool({
   description:
     "Get detailed information about a specific sprint including its stories, progress, and metadata.",
-  parameters: z.object({
+  inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get details for (required)"),
     includeStats: z
       .boolean()

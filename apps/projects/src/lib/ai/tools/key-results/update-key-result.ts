@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const updateKeyResultTool = tool({
   description:
     "Update existing key results. Can update name, measurement type, and values.",
-  parameters: z.object({
+  inputSchema: z.object({
     keyResultId: z.string().describe("Key result ID to update"),
     objectiveId: z.string().describe("Objective ID to update"),
     name: z.string().optional().describe("Updated key result name"),

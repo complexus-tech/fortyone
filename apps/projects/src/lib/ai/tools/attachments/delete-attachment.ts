@@ -8,7 +8,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const deleteAttachment = tool({
   description:
     "Delete a specific attachment from a story. Only admins or the attachment uploader can delete attachments.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z
       .string()
       .describe("Story ID that contains the attachment (required)"),

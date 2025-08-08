@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const storyLabelsTool = tool({
   description: "Manage story labels: get, add, remove, set labels on stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z.enum([
       "get-story-labels",
       "set-story-labels",

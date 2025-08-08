@@ -4,7 +4,7 @@ import { tool } from "ai";
 export const navigation = tool({
   description:
     "Navigate to different pages of the application, including parameterized routes for specific users, teams, sprints, objectives, and stories",
-  parameters: z.object({
+  inputSchema: z.object({
     // Simple navigation (existing functionality)
     destination: z
       .enum([

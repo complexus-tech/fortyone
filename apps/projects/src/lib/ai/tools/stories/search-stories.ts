@@ -8,7 +8,7 @@ import type { SearchQueryParams } from "@/modules/search/types";
 export const searchStories = tool({
   description:
     "Search stories using full-text search across titles and descriptions. Supports filtering by team, status, assignee, and priority.",
-  parameters: z.object({
+  inputSchema: z.object({
     searchQuery: z
       .string()
       .describe(

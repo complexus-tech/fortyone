@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const updateTeam = tool({
   description:
     "Update an existing team. Only admins or team creators can update teams.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to update (required)"),
     name: z.string().optional().describe("Updated team name"),
     color: z.string().optional().describe("Updated team color"),

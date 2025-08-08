@@ -8,7 +8,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const deleteObjectiveTool = tool({
   description:
     "Delete an objective. Only admins or objective creators can delete objectives. This action cannot be undone.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z.string().describe("Objective ID to delete (required)"),
   }),
 

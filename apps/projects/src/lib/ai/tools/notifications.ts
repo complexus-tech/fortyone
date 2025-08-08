@@ -14,7 +14,7 @@ import type { AppNotification } from "@/modules/notifications/types";
 export const notificationsTool = tool({
   description:
     "Manage user notifications including viewing, marking as read/unread, deleting, and managing notification preferences. Helps users stay on top of important updates.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum([
         "list-notifications",

@@ -9,7 +9,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const attachmentsTool = tool({
   description:
     "Manage story attachments: list, upload, delete files associated with stories. Supports images and PDFs.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum(["list-attachments", "delete-attachment"])
       .describe("The attachment operation to perform"),

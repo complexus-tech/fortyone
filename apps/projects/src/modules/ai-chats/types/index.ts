@@ -1,4 +1,4 @@
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 
 export type AiChatSession = {
   id: string;
@@ -12,7 +12,7 @@ export type AiChatSession = {
 export type CreateAiChatPayload = {
   id: string;
   title: string;
-  messages: Message[];
+  messages: UIMessage[];
 };
 
 export type UpdateAiChatPayload = {
@@ -21,5 +21,5 @@ export type UpdateAiChatPayload = {
 
 export type SaveMessagesPayload = {
   id: string;
-  messages: Message[];
+  messages: UIMessage[];
 };

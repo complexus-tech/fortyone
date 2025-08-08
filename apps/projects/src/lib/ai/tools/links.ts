@@ -10,7 +10,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const linksTool = tool({
   description:
     "Manage story links: list, add, update, delete URLs associated with stories. Supports metadata extraction and link organization.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum(["list-links", "add-link", "update-link", "delete-link"])
       .describe("The link operation to perform"),

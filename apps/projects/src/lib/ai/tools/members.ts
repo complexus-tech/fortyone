@@ -7,7 +7,7 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 export const membersTool = tool({
   description:
     "Manage and view workspace members and team members based on user permissions",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum([
         "list-all-members",

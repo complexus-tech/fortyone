@@ -5,7 +5,7 @@ import { removeTeamMemberAction } from "@/modules/teams/actions/remove-team-memb
 
 export const leaveTeam = tool({
   description: "Leave a team. Users can leave teams they are members of.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to leave (required)"),
   }),
 

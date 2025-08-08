@@ -12,7 +12,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const keyResultsListTool = tool({
   description:
     "List and filter key results across the workspace with team-based permissions and flexible filtering options.",
-  parameters: z.object({
+  inputSchema: z.object({
     filters: z
       .object({
         objectiveIds: z.array(z.string()).optional(),
@@ -91,7 +91,7 @@ export const keyResultsListTool = tool({
 export const keyResultsCreateTool = tool({
   description:
     "Create new key results within objectives. Requires objective ID and key result details.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z
       .string()
       .describe("Objective ID where the key result will be created"),
@@ -176,7 +176,7 @@ export const keyResultsCreateTool = tool({
 export const keyResultsUpdateTool = tool({
   description:
     "Update existing key results. Can update name, measurement type, and values.",
-  parameters: z.object({
+  inputSchema: z.object({
     keyResultId: z.string().describe("Key result ID to update"),
     objectiveId: z.string().describe("Objective ID to update"),
     name: z.string().optional().describe("Updated key result name"),
@@ -241,7 +241,7 @@ export const keyResultsUpdateTool = tool({
 export const keyResultsDeleteTool = tool({
   description:
     "Delete key results from objectives. This action cannot be undone.",
-  parameters: z.object({
+  inputSchema: z.object({
     keyResultId: z.string().describe("Key result ID to delete"),
   }),
 

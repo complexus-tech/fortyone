@@ -8,7 +8,7 @@ import { getTeamSprints } from "@/modules/sprints/queries/get-team-sprints";
 export const listSprints = tool({
   description:
     "List all sprints accessible to the user. Returns sprints with their details, team information, and optional statistics.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().optional().describe("Team ID to filter sprints by team"),
   }),
 

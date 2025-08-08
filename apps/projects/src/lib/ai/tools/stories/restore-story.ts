@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const restoreStory = tool({
   description:
     "Restore a deleted story. Only admins and members can restore deleted stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to restore (required)"),
   }),
 

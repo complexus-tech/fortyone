@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const listKeyResultsTool = tool({
   description:
     "List and filter key results across the workspace with team-based permissions and flexible filtering options.",
-  parameters: z.object({
+  inputSchema: z.object({
     filters: z
       .object({
         objectiveIds: z.array(z.string()).optional(),

@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const updateStory = tool({
   description:
     "Update an existing story. Only admins and members can update stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to update (required)"),
     title: z.string().optional().describe("Updated title"),
     description: z.string().optional().describe("Updated description"),

@@ -6,7 +6,7 @@ import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 export const listObjectivesTool = tool({
   description:
     "List all objectives accessible to the user. For guests, shows only objectives from teams they belong to. For members and admins, shows all objectives in the workspace.",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
 
   execute: async () => {
     try {

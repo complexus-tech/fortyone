@@ -6,7 +6,7 @@ import { getObjectiveAnalytics } from "@/modules/objectives/queries/get-objectiv
 export const objectiveAnalyticsTool = tool({
   description:
     "Get analytics and progress data for a specific objective, progress chart, team allocation, priority breakdown, progress breakdown, and health metrics.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z
       .string()
       .describe("Objective ID to get analytics for (required)"),

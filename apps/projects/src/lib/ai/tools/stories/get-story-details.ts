@@ -6,7 +6,7 @@ import { getStory } from "@/modules/story/queries/get-story";
 export const getStoryDetails = tool({
   description:
     "Get detailed information about a specific story including its metadata, assignments, and relationships.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to get details for (required)"),
   }),
 

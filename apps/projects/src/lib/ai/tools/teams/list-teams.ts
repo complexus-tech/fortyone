@@ -6,7 +6,7 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 export const listTeams = tool({
   description:
     "List all teams that the current user is a member of. Returns team details including member count and privacy settings.",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
 
   execute: async () => {
     try {

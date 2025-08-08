@@ -6,7 +6,7 @@ import { getTeamMembers } from "@/lib/queries/members/get-members";
 export const listTeamMembers = tool({
   description:
     "List all members of a specific team. Returns member details including roles and contact information.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to list members for (required)"),
   }),
 

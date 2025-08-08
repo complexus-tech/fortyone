@@ -6,7 +6,7 @@ import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 export const listAttachments = tool({
   description:
     "List all attachments for a specific story. Returns file information, uploader details, and summary statistics.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to list attachments for (required)"),
   }),
 

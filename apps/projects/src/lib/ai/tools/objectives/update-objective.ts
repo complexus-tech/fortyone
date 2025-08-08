@@ -8,7 +8,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const updateObjectiveTool = tool({
   description:
     "Update an existing objective. Only admins, objective creators, or assigned lead users can update objectives.",
-  parameters: z.object({
+  inputSchema: z.object({
     objectiveId: z.string().describe("Objective ID to update (required)"),
     name: z.string().optional().describe("Updated objective name"),
     description: z

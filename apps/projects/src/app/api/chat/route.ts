@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { appendResponseMessages, streamText } from "ai";
+import type { UIMessage } from "ai";
+import { convertToModelMessages, streamText } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
 import {
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
   } = await req.json();
+  const modelMessages = convertToModelMessages(messages as UIMessage[]);
 
   // Get user context for "me" resolution
   const userContext = await getUserContext({
@@ -109,7 +111,6 @@ export async function POST(req: NextRequest) {
   const openaiClient = createOpenAI({
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
     apiKey: process.env.OPENAI_API_KEY,
-    compatibility: "strict",
   });
 
   const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
@@ -123,11 +124,9 @@ export async function POST(req: NextRequest) {
   try {
     const result = streamText({
       model,
-      messages,
-      maxSteps: 10,
-      maxTokens: 4000,
+      messages: modelMessages,
+      maxOutputTokens: 4000,
       temperature: 0.5,
-      maxRetries: 2,
       tools: {
         navigation,
         theme,
@@ -193,20 +192,11 @@ export async function POST(req: NextRequest) {
         storyLabels: storyLabelsTool,
       },
       system: systemPrompt + userContext,
-
-      async onFinish({ response }) {
-        await saveChat({
-          id,
-          messages: appendResponseMessages({
-            messages,
-            responseMessages: response.messages,
-          }),
-        });
-      },
     });
-    return result.toDataStreamResponse({
-      getErrorMessage: () => {
-        return "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.";
+    return result.toUIMessageStreamResponse({
+      originalMessages: messages,
+      onFinish: ({ messages }) => {
+        saveChat({ id, messages });
       },
     });
   } catch {

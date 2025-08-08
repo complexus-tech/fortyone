@@ -10,7 +10,7 @@ import type { SearchQueryParams } from "@/modules/search/types";
 export const searchTool = tool({
   description:
     "Search across all content types (stories, objectives) with advanced filtering and role-based permissions. Provides unified search across the entire workspace.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum([
         "search-all",

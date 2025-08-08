@@ -6,7 +6,7 @@ import { getStoryActivities } from "@/modules/story/queries/get-activities";
 export const storyActivitiesTool = tool({
   description:
     "View story activity timeline and changes: track who made what changes, when they happened, and provide detailed history of story modifications. Perfect for understanding story evolution and accountability.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum(["list-activities", "get-story-timeline", "get-recent-changes"])
       .describe("The activity operation to perform"),

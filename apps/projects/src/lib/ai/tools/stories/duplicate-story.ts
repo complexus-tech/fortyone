@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const duplicateStory = tool({
   description:
     "Duplicate an existing story. Only admins and members can duplicate stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to duplicate (required)"),
   }),
 

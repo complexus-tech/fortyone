@@ -14,7 +14,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const statusesTool = tool({
   description:
     "View, create, update, and manage workflow statuses for teams. Use this tool to answer questions about statuses, count statuses, list team statuses, create new workflow states, or modify existing statuses. For team-specific operations, get the team ID from the teams tool first.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum([
         "list-all-statuses",

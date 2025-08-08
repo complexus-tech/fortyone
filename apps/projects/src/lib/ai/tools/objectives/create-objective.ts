@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const createObjectiveTool = tool({
   description:
     "Create a new objective with optional key results. Guests cannot create objectives. Members and admins can create objectives for teams they belong to.",
-  parameters: z.object({
+  inputSchema: z.object({
     name: z.string().describe("Objective name (required)"),
     description: z
       .string()

@@ -8,7 +8,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const deleteStory = tool({
   description:
     "Delete a story. Only admins or story creators can delete stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyId: z.string().describe("Story ID to delete (required)"),
   }),
 

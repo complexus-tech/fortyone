@@ -8,7 +8,7 @@ import type { GroupedStoryParams } from "@/modules/stories/types";
 export const listTeamStories = tool({
   description:
     "List all stories from a specific team, grouped by status. Returns stories with their details, assignments, and metadata.",
-  parameters: z.object({
+  inputSchema: z.object({
     teamId: z.string().describe("Team ID to get stories from (required)"),
     filters: z
       .object({

@@ -7,7 +7,7 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 export const listPublicTeams = tool({
   description:
     "List all public teams that the current user can join. Returns teams that are not private and that the user is not already a member of.",
-  parameters: z.object({}),
+  inputSchema: z.object({}),
 
   execute: async () => {
     try {

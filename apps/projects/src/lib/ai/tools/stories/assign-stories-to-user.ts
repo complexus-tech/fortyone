@@ -7,7 +7,7 @@ import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories"
 export const assignStoriesToUser = tool({
   description:
     "Assign multiple stories to a specific user. Only admins or members can assign stories.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyIds: z
       .array(z.string())
       .describe("Array of story IDs to assign (required)"),

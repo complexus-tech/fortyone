@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const bulkUpdateStories = tool({
   description:
     "Bulk update multiple stories at once. Only admins and members can perform bulk operations.",
-  parameters: z.object({
+  inputSchema: z.object({
     storyIds: z
       .array(z.string())
       .describe("Array of story IDs to update (required)"),

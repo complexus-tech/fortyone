@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const createTeamTool = tool({
   description:
     "Create a new team. Only admins and members can create teams. Guests cannot create teams.",
-  parameters: z.object({
+  inputSchema: z.object({
     name: z.string().describe("Team name (required)"),
     code: z
       .string()

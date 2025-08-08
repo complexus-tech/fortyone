@@ -7,7 +7,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const createSprint = tool({
   description:
     "Create a new sprint. Guests cannot create sprints. Members and admins can create sprints for teams they belong to.",
-  parameters: z.object({
+  inputSchema: z.object({
     name: z.string().describe("Sprint name (required)"),
     goal: z.string().optional().describe("Sprint goal or description"),
     teamId: z.string().describe("Team ID where sprint belongs (required)"),

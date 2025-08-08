@@ -9,7 +9,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const commentsTool = tool({
   description:
     "Manage story comments: read, add, edit, delete comments, and handle threaded replies with user mentions. Supports full comment lifecycle management.",
-  parameters: z.object({
+  inputSchema: z.object({
     action: z
       .enum(["list-comments", "add-comment", "reply-to-comment"])
       .describe("The comment operation to perform"),
