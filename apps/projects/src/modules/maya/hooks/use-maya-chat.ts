@@ -3,7 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { generateId } from "ai";
+import { DefaultChatTransport, generateId } from "ai";
 import { useSession } from "next-auth/react";
 import {
   notificationKeys,
@@ -43,6 +43,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { getTermDisplay } = useTerminology();
   const idRef = useRef(config.currentChatId);
   const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
+  const [input, setInput] = useState("");
 
   const terminology = {
     stories: getTermDisplay("storyTerm", { variant: "plural" }),
@@ -75,130 +76,124 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
   const {
     messages,
-    input,
     status,
-    setInput,
-    append,
+    sendMessage,
     stop: handleStop,
-    reload,
+    regenerate: reload,
     error,
     setMessages,
   } = useChat({
-    body: {
-      currentPath: pathname,
-      currentTheme: theme,
-      resolvedTheme,
-      subscription: {
-        tier: subscription?.tier,
-        billingInterval: subscription?.billingInterval,
-        billingEndsAt: subscription?.billingEndsAt,
-        status: subscription?.status,
-        username: profile?.username,
-      },
-      teams,
-      workspace,
-      terminology,
-      id: idRef.current,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+    }),
+    onToolCall: ({ toolCall }) => {
+      console.log(toolCall);
+      if (toolCall.toolName === "navigation") {
+        // console.log(toolCall);
+      }
+    },
+    onFinish: (t) => {
+      console.log(t);
     },
 
-    onFinish: (message) => {
-      message.parts?.forEach((part) => {
-        if (part.type === "tool-invocation") {
-          if (part.toolInvocation.toolName === "navigation") {
-            if (part.toolInvocation.state === "result") {
-              const result = part.toolInvocation.result;
-              if (result.route) {
-                router.push(result.route as string);
-              }
-            }
-          } else if (part.toolInvocation.toolName === "theme") {
-            if (part.toolInvocation.state === "result") {
-              const requestedTheme = part.toolInvocation.result.theme as string;
-              if (requestedTheme === "toggle") {
-                const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-                setTheme(newTheme);
-              } else {
-                setTheme(requestedTheme);
-              }
-            }
-          } else if (part.toolInvocation.toolName === "quickCreate") {
-            if (part.toolInvocation.state === "result") {
-              const action = part.toolInvocation.result.action as string;
-              switch (action) {
-                case "story":
-                  setIsStoryOpen(true);
-                  break;
-                case "objective":
-                  setIsObjectiveOpen(true);
-                  break;
-                case "sprint":
-                  setIsSprintOpen(true);
-                  break;
-              }
-            }
-          } else if (part.toolInvocation.toolName === "teams") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: teamKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "notifications") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: notificationKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "statuses") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: statusKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "stories") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: storyKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "sprints") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: sprintKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "objectives") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: objectiveKeys.all,
-              });
-            }
-          } else if (part.toolInvocation.toolName === "objectiveStatuses") {
-            if (part.toolInvocation.state === "result") {
-              queryClient.invalidateQueries({
-                queryKey: objectiveKeys.statuses(),
-              });
-            }
-          }
-        } else if (part.type === "text") {
-          queryClient.invalidateQueries({
-            queryKey: aiChatKeys.lists(),
-          });
-        }
-      });
-    },
+    // onFinish: ({ message }) => {
+    //   message.parts.forEach((part) => {
+    //     if (part.type === "tool-invocation") {
+    //       if (part.toolInvocation.toolName === "navigation") {
+    //         if (part.toolInvocation.state === "result") {
+    //           const result = part.toolInvocation.result;
+    //           if (result.route) {
+    //             router.push(result.route as string);
+    //           }
+    //         }
+    //       } else if (part.toolInvocation.toolName === "theme") {
+    //         if (part.toolInvocation.state === "result") {
+    //           const requestedTheme = part.toolInvocation.result.theme as string;
+    //           if (requestedTheme === "toggle") {
+    //             const newTheme = resolvedTheme === "dark" ? "light" : "dark";
+    //             setTheme(newTheme);
+    //           } else {
+    //             setTheme(requestedTheme);
+    //           }
+    //         }
+    //       } else if (part.toolInvocation.toolName === "quickCreate") {
+    //         if (part.toolInvocation.state === "result") {
+    //           const action = part.toolInvocation.result.action as string;
+    //           switch (action) {
+    //             case "story":
+    //               setIsStoryOpen(true);
+    //               break;
+    //             case "objective":
+    //               setIsObjectiveOpen(true);
+    //               break;
+    //             case "sprint":
+    //               setIsSprintOpen(true);
+    //               break;
+    //           }
+    //         }
+    //       } else if (part.toolInvocation.toolName === "teams") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: teamKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "notifications") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: notificationKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "statuses") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: statusKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "stories") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: storyKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "sprints") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: sprintKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "objectives") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: objectiveKeys.all,
+    //           });
+    //         }
+    //       } else if (part.toolInvocation.toolName === "objectiveStatuses") {
+    //         if (part.toolInvocation.state === "result") {
+    //           queryClient.invalidateQueries({
+    //             queryKey: objectiveKeys.statuses(),
+    //           });
+    //         }
+    //       }
+    //     } else if (part.type === "text") {
+    //       queryClient.invalidateQueries({
+    //         queryKey: aiChatKeys.lists(),
+    //       });
+    //     }
+    //   });
+    // },
 
-    initialMessages: aiChatMessages
+    // initialMessages: aiChatMessages,
   });
 
   // Sync messages when aiChatMessages changes (when selecting a different chat)
-  useEffect(() => {
-    if (aiChatMessages.length > 0) {
-      setMessages(aiChatMessages);
-    } else if (aiChatMessages.length === 0) {
-      // Clear messages when no messages are available
-      setMessages([]);
-    }
-  }, [aiChatMessages, setMessages]);
+  // useEffect(() => {
+  //   if (aiChatMessages.length > 0) {
+  //     setMessages(aiChatMessages);
+  //   } else if (aiChatMessages.length === 0) {
+  //     // Clear messages when no messages are available
+  //     setMessages([]);
+  //   }
+  // }, [aiChatMessages, setMessages]);
 
   // Clear messages when starting a new chat (no chatRef)
   useEffect(() => {
@@ -223,14 +218,39 @@ export const useMayaChat = (config: MayaChatConfig) => {
       })),
     );
 
-    append({
-      role: "user",
-      content:
-        content ||
-        `Analyze the attached file${attachmentData.length > 1 ? "s" : ""}.`,
-      experimental_attachments:
-        attachmentData.length > 0 ? attachmentData : undefined,
-    });
+    sendMessage(
+      {
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text:
+              content ||
+              `Analyze the attached file${attachmentData.length > 1 ? "s" : ""}.`,
+          },
+        ],
+        // experimental_attachments:
+        //   attachmentData.length > 0 ? attachmentData : undefined,
+      },
+      {
+        body: {
+          currentPath: pathname,
+          currentTheme: theme,
+          resolvedTheme,
+          subscription: {
+            tier: subscription?.tier,
+            billingInterval: subscription?.billingInterval,
+            billingEndsAt: subscription?.billingEndsAt,
+            status: subscription?.status,
+            username: profile?.username,
+          },
+          teams,
+          workspace,
+          terminology,
+          id: idRef.current,
+        },
+      },
+    );
 
     setInput("");
     setAttachments([]);

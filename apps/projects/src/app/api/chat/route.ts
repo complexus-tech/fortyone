@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
-import { convertToModelMessages, streamText } from "ai";
+import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
 import {
@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
       messages: modelMessages,
       maxOutputTokens: 4000,
       temperature: 0.5,
+      stopWhen: [stepCountIs(10)],
       tools: {
         navigation,
         theme,

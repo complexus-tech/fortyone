@@ -1,13 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
-import type { Message } from "@ai-sdk/react";
-import type { ChatRequestOptions } from "ai";
+import type { UIMessage, ChatRequestOptions } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import { ChatMessage } from "./chat-message";
 import { ChatLoading } from "./chat-loading";
 
 type ChatMessagesProps = {
-  messages: Message[];
+  messages: UIMessage[];
   isLoading: boolean;
   isStreaming?: boolean;
   value: string;

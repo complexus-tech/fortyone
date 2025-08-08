@@ -3,22 +3,21 @@ import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage, ChatRequestOptions } from "ai";
 import { useEffect, useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
-import type { ChatRequestOptions } from "ai";
-import { usePathname } from "next/navigation";
+// import { usePathname } from "next/navigation";
 import type { User } from "@/types";
-import { BurndownChart } from "@/modules/sprints/stories/burndown";
+// import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
-import { AttachmentsDisplay } from "./attachments-display";
+// import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
   isLast: boolean;
-  message: Message;
+  message: UIMessage;
   profile: User | undefined;
   isStreaming?: boolean;
   reload: (
@@ -29,38 +28,33 @@ type ChatMessageProps = {
 };
 
 const RenderMessage = ({
-  isLast,
   message,
-  isStreaming,
-  onPromptSelect,
-  isOnPage,
 }: {
   isLast: boolean;
-  message: Message;
+  message: UIMessage;
   isStreaming?: boolean;
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 }) => {
   const [hasText, setHasText] = useState(false);
-  const pathname = usePathname();
 
   useEffect(() => {
-    if (message.parts?.some((p) => p.type === "text")) {
+    if (message.parts.some((p) => p.type === "text")) {
       setHasText(true);
     }
   }, [message.parts]);
 
   const isProcessing =
     !hasText &&
-    message.parts?.some((p) => p.type === "step-start") &&
+    message.parts.some((p) => p.type === "step-start") &&
     !message.parts.some(
-      (p) => p.type === "tool-invocation" && p.toolInvocation.state === "call",
+      (p) => p.type === "tool-invocation" && p.state === "input-available",
     );
 
   return (
     <>
       {isProcessing ? <Thinking /> : null}
-      {message.parts?.map((part, index) => {
+      {message.parts.map((part, index) => {
         if (part.type === "text") {
           return (
             <Box
@@ -78,71 +72,73 @@ const RenderMessage = ({
             </Box>
           );
         } else if (part.type === "tool-invocation") {
-          const toolInvocation = part.toolInvocation;
-          if (toolInvocation.state === "call") {
-            return (
-              <Thinking
-                key={index}
-                message={`Invoking ${toolInvocation.toolName}`}
-              />
-            );
+          if (part.state === "input-available") {
+            return <Thinking key={index} message={`Invoking  `} />;
           }
         }
         return null;
       })}
 
-      {message.parts?.map((part, index) => {
-        if (part.type === "tool-invocation") {
-          const toolInvocation = part.toolInvocation;
-          if (toolInvocation.state === "result") {
-            if (toolInvocation.toolName === "sprints") {
-              const { result } = toolInvocation;
-              if (result?.analytics?.burndown && !isStreaming) {
-                return (
-                  <Box className="mb-3" key={index}>
-                    <Text
-                      as="h3"
-                      className="mb-1 mt-4 text-xl font-semibold antialiased"
-                    >
-                      Burndown graph
-                    </Text>
-                    <BurndownChart
-                      burndownData={result?.analytics?.burndown}
-                      className={cn("h-72", {
-                        "h-80": pathname === "/maya",
-                      })}
-                    />
-                  </Box>
-                );
-              }
-            } else if (toolInvocation.toolName === "suggestions") {
-              const { result } = toolInvocation;
-              if (result?.suggestions && isLast && !isStreaming) {
-                return (
-                  <Flex
-                    className="mt-2"
-                    gap={2}
-                    key={`${index}-suggestions`}
-                    wrap
+      {message.parts.map((part, index) => {
+        if (part.type === "tool-sprints") {
+          switch (part.state) {
+            case "input-available":
+              return <Thinking key={index} message={`Invoking  `} />;
+            case "output-available":
+              return (
+                <Box className="mb-3" key={index}>
+                  <Text
+                    as="h3"
+                    className="mb-1 mt-4 text-xl font-semibold antialiased"
                   >
-                    {result.suggestions.map(
-                      (suggestion: string, index: number) => (
-                        <Button
-                          color="tertiary"
-                          key={index}
-                          onClick={() => {
-                            onPromptSelect(suggestion);
-                          }}
-                          size={isOnPage ? "md" : "sm"}
-                        >
-                          {suggestion}
-                        </Button>
-                      ),
-                    )}
-                  </Flex>
-                );
-              }
-            }
+                    Burndown graph
+                  </Text>
+                  {/* <BurndownChart
+                    burndownData={part.output}
+                    className={cn("h-72", {
+                      "h-80": pathname === "/maya",
+                    })}
+                  /> */}
+                </Box>
+              );
+            case "output-error":
+              return <Box>There was an error</Box>;
+            default:
+              return null;
+          }
+        }
+        if (part.type === "tool-suggestions") {
+          switch (part.state) {
+            case "input-available":
+              return <Thinking key={index} message={`Invoking  `} />;
+            case "output-available":
+              return (
+                <Flex
+                  className="mt-2"
+                  gap={2}
+                  key={`${index}-suggestions`}
+                  wrap
+                >
+                  {/* {result.suggestions.map(
+                    (suggestion: string, index: number) => (
+                      <Button
+                        color="tertiary"
+                        key={index}
+                        onClick={() => {
+                          onPromptSelect(suggestion);
+                        }}
+                        size={isOnPage ? "md" : "sm"}
+                      >
+                        {suggestion}
+                      </Button>
+                    ),
+                  )} */}
+                </Flex>
+              );
+            case "output-error":
+              return <Box>There was an error</Box>;
+            default:
+              return null;
           }
         }
         return null;
@@ -164,6 +160,7 @@ export const ChatMessage = ({
   const [hasCopied, setHasCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { getTermDisplay } = useTerminology();
+  const content = message.parts.find((p) => p.type === "text")?.text ?? "";
   return (
     <>
       <Flex
@@ -202,7 +199,7 @@ export const ChatMessage = ({
               onPromptSelect={onPromptSelect}
             />
           </Box>
-          <AttachmentsDisplay attachments={message.experimental_attachments} />
+          {/* <AttachmentsDisplay attachments={message.experimental_attachments} /> */}
           <Flex className="mt-2 px-0.5" justify="between">
             {message.role === "assistant" && !isStreaming && (
               <Flex gap={2} justify="end">
@@ -224,7 +221,7 @@ export const ChatMessage = ({
                     asIcon
                     color="tertiary"
                     onClick={() => {
-                      copy(message.content).then(() => {
+                      copy(content).then(() => {
                         setHasCopied(true);
                         setTimeout(() => {
                           setHasCopied(false);
@@ -258,7 +255,7 @@ export const ChatMessage = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        description={message.content}
+        description={content}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
