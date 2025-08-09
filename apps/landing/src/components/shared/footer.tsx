@@ -27,7 +27,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "3xl:text-lg mb-4 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
+      "3xl:text-lg mb-3 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:text-primary hover:opacity-80 dark:opacity-60",
       className,
     )}
     href={href}
@@ -84,56 +84,50 @@ const Copyright = () => {
           © {new Date().getFullYear()} Complexus LLC &bull; All rights
           reserved.
         </Text>
-        <div className="flex gap-0.5 rounded-full border border-gray-200 p-1 dark:border-dark-50">
+        <div className="flex gap-5">
           <Tooltip title="System">
             <button
-              className={cn(
-                "rounded-full border-0 bg-opacity-0 p-1 opacity-60 hover:opacity-100 dark:bg-opacity-0",
-                {
-                  "border border-gray-200 border-opacity-100 opacity-100 dark:border dark:border-gray-300/40":
-                    theme === "system",
-                },
-              )}
               onClick={() => {
                 setTheme("system");
               }}
               type="button"
             >
-              <SystemIcon className="h-4 w-auto" />
+              <SystemIcon
+                className={cn("h-4", {
+                  "text-dark dark:text-white": theme === "system",
+                })}
+              />
             </button>
           </Tooltip>
           <Tooltip title="Light">
             <button
-              className={cn(
-                "rounded-full border-0 p-1 opacity-60 hover:opacity-100",
-                {
-                  "border border-gray-200 border-opacity-100 opacity-100 dark:border dark:border-gray-300/40":
-                    theme === "light",
-                },
-              )}
               onClick={() => {
                 setTheme("light");
               }}
               type="button"
             >
-              <SunIcon className="h-4 w-auto" />
+              <SunIcon
+                className={cn("h-4", {
+                  "text-dark dark:text-white": theme === "light",
+                })}
+              />
             </button>
           </Tooltip>
           <Tooltip title="Dark">
             <button
-              className={cn(
-                "rounded-full border-0 p-1 opacity-60 hover:opacity-100",
-                {
-                  "border border-gray-200 border-opacity-100 opacity-100 dark:border dark:border-gray-300/40":
-                    theme === "dark",
-                },
-              )}
+              className={cn("", {
+                "text-dark dark:text-white": theme === "dark",
+              })}
               onClick={() => {
                 setTheme("dark");
               }}
               type="button"
             >
-              <MoonIcon className="h-4 w-auto" />
+              <MoonIcon
+                className={cn("h-4", {
+                  "text-dark dark:text-white": theme === "dark",
+                })}
+              />
             </button>
           </Tooltip>
         </div>
@@ -198,18 +192,9 @@ export const Footer = () => {
       <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-28">
         <Box className="col-span-2">
           <Logo className="-left-1 h-8 md:-left-4 md:h-7" />
-          <Text className="mt-2 w-11/12">
-            Project management software that adapts to your team&apos;s
-            workflow, not the other way around.
-          </Text>
         </Box>
         <Box>
-          <Text
-            className="mb-6 tracking-wide"
-            fontSize="sm"
-            fontWeight="semibold"
-            transform="uppercase"
-          >
+          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
             Product
           </Text>
           {product.map(({ href, title }) => (
@@ -219,12 +204,7 @@ export const Footer = () => {
           ))}
         </Box>
         <Box>
-          <Text
-            className="mb-6 tracking-wide"
-            fontSize="sm"
-            fontWeight="semibold"
-            transform="uppercase"
-          >
+          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
             Company
           </Text>
           {company.map(({ href, title }) => (
@@ -234,12 +214,7 @@ export const Footer = () => {
           ))}
         </Box>
         <Box>
-          <Text
-            className="mb-6 tracking-wide"
-            fontSize="sm"
-            fontWeight="semibold"
-            transform="uppercase"
-          >
+          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
             Legal
           </Text>
           {legal.map(({ href, title }) => (
@@ -249,12 +224,7 @@ export const Footer = () => {
           ))}
         </Box>
         <Box>
-          <Text
-            className="mb-6 tracking-wide"
-            fontSize="sm"
-            fontWeight="semibold"
-            transform="uppercase"
-          >
+          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
             Resources
           </Text>
           {resources.map(({ href, title }) => (

@@ -46,7 +46,7 @@ export const Navigation = () => {
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
     { title: "Blog", href: "/blog" },
-    { title: "Help center", href: "https://docs.complexus.app" },
+    { title: "Docs", href: "https://docs.complexus.app" },
   ];
 
   const features = [
