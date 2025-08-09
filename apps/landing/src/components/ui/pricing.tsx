@@ -182,17 +182,6 @@ export const Pricing = ({ className }: { className?: string }) => {
           })}
           direction="column"
         >
-          {pathname === "/pricing" && (
-            <Button
-              className="cursor-text px-3 text-sm md:text-base"
-              color="tertiary"
-              rounded="lg"
-              size="sm"
-            >
-              Pricing
-            </Button>
-          )}
-
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -204,12 +193,15 @@ export const Pricing = ({ className }: { className?: string }) => {
           >
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
-              className="mt-6 max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
+              className="mt-6 max-w-4xl pb-2 text-5xl font-bold md:text-6xl"
             >
-              Simple pricing for ambitious teams
+              Start for free. Get used to hitting your{" "}
+              <Text as="span" className="text-stroke-white">
+                goals.
+              </Text>
             </Text>
           </motion.div>
-          <Text className="mt-3 max-w-2xl text-center text-xl opacity-80">
+          <Text className="mt-4 max-w-2xl text-center text-xl opacity-70">
             Choose a plan that fits your needs with transparent pricing - no
             hidden fees, no unexpected charges, just clear value.
           </Text>

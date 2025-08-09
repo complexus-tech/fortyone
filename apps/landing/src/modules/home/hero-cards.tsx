@@ -51,7 +51,7 @@ export const HeroCards = () => {
   return (
     <Box className="relative">
       <Container className="relative mt-12 max-w-[85rem]">
-        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[600px] w-[800px] -translate-x-1/2 bg-warning/15 dark:bg-white/15" />
+        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[600px] w-[800px] -translate-x-1/2 dark:bg-white/15" />
         <Box
           className="relative"
           onMouseEnter={() => {
@@ -66,6 +66,9 @@ export const HeroCards = () => {
               delay: 1000,
               disableOnInteraction: false,
             }}
+            cardsEffect={{
+              slideShadows: false,
+            }}
             effect="cards"
             grabCursor
             initialSlide={1}
@@ -73,7 +76,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-[0.6rem] border border-gray-200/80 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.4rem]"
+                className="relative rounded-[0.6rem] border border-gray-100 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.3rem]"
                 key={card.id}
               >
                 <Image
@@ -85,7 +88,7 @@ export const HeroCards = () => {
                 />
                 <Image
                   alt={card.title}
-                  className="relative rounded border border-gray-200/80 dark:hidden md:rounded-[1.2rem]"
+                  className="relative rounded border border-gray-100 dark:hidden md:rounded-[1.2rem]"
                   placeholder="blur"
                   priority
                   src={card.image.srcLight}
@@ -95,7 +98,7 @@ export const HeroCards = () => {
           </Swiper>
         </Box>
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t dark:from-black dark:via-black/80" />
+      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-white via-white/70 dark:from-black dark:via-black/80" />
     </Box>
   );
 };
