@@ -27,15 +27,13 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-200/50"
+    className="flex w-[17rem] gap-2 rounded-[0.5rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-50/50"
     href={href}
   >
     {icon}
     <Box>
-      <Text>{name}</Text>
-      <Text className="text-[0.9rem]" color="muted">
-        {description}
-      </Text>
+      <Text className="dark:text-white">{name}</Text>
+      <Text className="text-[0.85rem]">{description}</Text>
     </Box>
   </Link>
 );
@@ -56,36 +54,37 @@ export const Navigation = () => {
       id: 1,
       name: "Stories",
       href: "/features/stories",
-      description: "Manage and Track Tasks",
+      description: "Turn ideas into clear, actionable work.",
       icon: (
-        <StoryIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+        <StoryIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
       ),
     },
     {
       id: 2,
       name: "Objectives",
       href: "/features/objectives",
-      description: "Set and Achieve Goals",
+      description: "Focus teams on the outcomes that matter most.",
       icon: (
-        <ObjectiveIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+        <ObjectiveIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
       ),
     },
     {
       id: 3,
       name: "OKRs",
       href: "/features/okrs",
-      description: "Align and Achieve",
+      description: "Align everyone on shared goals and see progress.",
       icon: (
-        <OKRIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+        <OKRIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
       ),
     },
     {
       id: 4,
       name: "Sprints",
       href: "/features/sprints",
-      description: "Iterate and Deliver",
+      description:
+        "Build momentum with short cycles that turn plans into progress.",
       icon: (
-        <SprintsIcon className="relative h-6 w-auto shrink-0 md:top-1 md:h-4" />
+        <SprintsIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
       ),
     },
   ];
@@ -141,7 +140,7 @@ export const Navigation = () => {
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content className="p-1">
                       <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
-                        <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50">
+                        <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark-50/30">
                           {features.map(
                             ({ id, name, description, icon, href }) => (
                               <MenuItem
