@@ -1,5 +1,5 @@
 import { Flex, Text, Box, Button } from "ui";
-import { ErrorIcon, SuccessIcon } from "icons";
+import { CloseIcon, SuccessIcon } from "icons";
 import { cn } from "lib";
 import { plans, featureLabels } from "../../lib/plan-data";
 import { Container } from "./container";
@@ -7,9 +7,9 @@ import { Container } from "./container";
 const FeatureCheck = ({ available }: { available: boolean }) => (
   <Box className="flex">
     {available ? (
-      <SuccessIcon className="text-primary dark:text-primary" />
+      <SuccessIcon className="text-dark dark:text-white" />
     ) : (
-      <ErrorIcon className="dark:text-white" />
+      <CloseIcon className="h-[1.15rem]" strokeWidth={2} />
     )}
   </Box>
 );
@@ -21,7 +21,7 @@ const FeatureValue = ({
   value: boolean | string | undefined | null;
 }) => {
   if (value === undefined || value === null) {
-    return <ErrorIcon className="dark:text-white" />;
+    return <CloseIcon className="h-[1.15rem]" strokeWidth={2.3} />;
   }
 
   if (typeof value === "boolean") {

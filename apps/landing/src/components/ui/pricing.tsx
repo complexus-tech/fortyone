@@ -1,9 +1,9 @@
 "use client";
-import { Flex, Text, Box, Button, Badge } from "ui";
+import { Flex, Text, Box, Button, Badge, Divider } from "ui";
 import { motion } from "framer-motion";
 import { cn } from "lib";
 import { useState } from "react";
-import { SuccessIcon } from "icons";
+import { CheckIcon } from "icons";
 import { usePathname } from "next/navigation";
 import { Container } from "./container";
 
@@ -11,11 +11,9 @@ type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
-    description: "Track your personal objectives",
     cta: "Start for free",
     href: "/signup",
-    overview:
-      "Start your Hobby projects with our free plan. No credit card required.",
+    overview: "Plan and track personal work with essential features.",
     price: 0,
     features: [
       "1 team",
@@ -28,10 +26,9 @@ const packages = [
   },
   {
     name: "Professional",
-    description: "For small teams",
-    cta: "Upgrade now",
+    cta: "Try Professional",
     href: "/signup",
-    overview: "Everything in Hobby, plus more features for small teams.",
+    overview: "Everything in Hobby, plus collaboration and OKR tracking.",
     price: 7,
     features: [
       "Up to 3 teams",
@@ -44,11 +41,9 @@ const packages = [
   },
   {
     name: "Business",
-    description: "For mid-sized teams",
-    cta: "Upgrade now",
+    cta: "Try Business",
     href: "/signup",
-    overview:
-      "Everything in Professional, plus more features for mid-sized teams.",
+    overview: "Everything in Professional, with advanced controls and support.",
     price: 10,
     features: [
       "Unlimited teams",
@@ -62,10 +57,9 @@ const packages = [
   },
   {
     name: "Enterprise",
-    description: "For large teams",
     cta: "Contact sales",
     href: "mailto:info@complexus.app",
-    overview: "Everything in Professional, plus more features for large teams.",
+    overview: "Tailored deployment and support for complex environments.",
     features: [
       "Custom onboarding",
       "Custom integrations",
@@ -77,15 +71,14 @@ const packages = [
 ];
 
 const Feature = ({ feature }: { feature: string }) => (
-  <Flex align="center" gap={2} key={feature}>
-    <SuccessIcon className="h-[1.35rem] text-primary dark:text-primary" />
-    <Text className="opacity-90">{feature}</Text>
+  <Flex align="center" className="gap-1.5" key={feature}>
+    <CheckIcon />
+    <Text className="text-[0.95rem] opacity-90">{feature}</Text>
   </Flex>
 );
 
 const Package = ({
   name,
-  description,
   overview,
   price,
   features,
@@ -95,7 +88,6 @@ const Package = ({
   href,
 }: {
   name: string;
-  description: string;
   overview: string;
   cta: string;
   price?: number;
@@ -110,60 +102,54 @@ const Package = ({
     finalPrice = price * 0.8;
   }
   return (
-    <Box className="min-h-[65vh]">
-      <Box
-        className={cn("h-full px-6 py-8 shadow-2xl dark:bg-dark", {
-          "border-2 border-primary bg-gray-50 shadow-primary/20 dark:bg-dark-300":
-            recommended,
-        })}
-      >
-        <Text className="mb-2 flex items-center justify-center gap-1.5 text-2xl">
-          {name} {recommended ? <Badge>Most Popular</Badge> : null}
-        </Text>
-        <Text className="text-center text-lg opacity-80">{description}</Text>
-        {name !== "Enterprise" ? (
-          <Text
-            align="center"
-            className="mt-4"
-            fontSize="4xl"
-            fontWeight="semibold"
-          >
-            ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
-            <Text as="span" color="muted" fontSize="lg" fontWeight="normal">
-              {" "}
-              {finalPrice > 0 ? "per user/month" : ""}
-            </Text>
-          </Text>
-        ) : (
-          <Text
-            align="center"
-            className="mt-4"
-            fontSize="4xl"
-            fontWeight="semibold"
-          >
-            Custom Pricing
-          </Text>
-        )}
+    <Box
+      className={cn(
+        "h-full rounded-3xl border border-gray-200 px-6 pb-8 pt-6 shadow-2xl shadow-gray-200 dark:border-dark-100 dark:bg-dark dark:shadow-dark",
+        {
+          "border-2 border-dark dark:border-white": recommended,
+        },
+      )}
+    >
+      <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
+        {name}{" "}
+        {recommended ? (
+          <Badge color="invert" rounded="full">
+            Most Popular
+          </Badge>
+        ) : null}
+      </Text>
 
-        <Button
-          align="center"
-          className="mt-6 md:h-11"
-          color={recommended ? "primary" : "tertiary"}
-          fullWidth
-          href={href}
-          rounded="lg"
-        >
-          {cta}
-        </Button>
-        <Text className="my-6" color="muted">
-          {overview}
+      {name !== "Enterprise" ? (
+        <Text className="mt-4 text-4xl font-semibold">
+          ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
+          <Text as="span" className="text-base opacity-60">
+            {" "}
+            {finalPrice > 0 ? "user/month" : ""}
+          </Text>
         </Text>
-        <Flex className="gap-4 md:gap-5" direction="column">
-          {features.map((feature) => (
-            <Feature feature={feature} key={feature} />
-          ))}
-        </Flex>
-      </Box>
+      ) : (
+        <Text className="mt-4" fontSize="4xl" fontWeight="semibold">
+          Custom
+        </Text>
+      )}
+
+      <Button
+        align="center"
+        className="mt-6 border-dark/30"
+        color={recommended ? "invert" : "tertiary"}
+        fullWidth
+        href={href}
+        variant={recommended ? "solid" : "outline"}
+      >
+        {cta}
+      </Button>
+      <Text className="mt-4">{overview}</Text>
+      <Divider className="mb-5 mt-6 border-gray-200" />
+      <Flex className="gap-4" direction="column">
+        {features.map((feature) => (
+          <Feature feature={feature} key={feature} />
+        ))}
+      </Flex>
     </Box>
   );
 };
@@ -207,7 +193,7 @@ export const Pricing = ({ className }: { className?: string }) => {
           </Text>
         </Flex>
 
-        <Flex align="center" className="mb-6 mt-12" direction="column">
+        <Flex align="center" className="my-10" direction="column">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -217,17 +203,18 @@ export const Pricing = ({ className }: { className?: string }) => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-[0.8rem] border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
+            <Box className="flex w-max gap-1 rounded-full border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
               {["annual", "monthly"].map((option) => (
                 <Button
-                  className={cn("px-2.5 capitalize", {
+                  className={cn("px-3 capitalize", {
                     "opacity-80": option !== billing,
                   })}
-                  color={option === billing ? "primary" : "tertiary"}
+                  color={option === billing ? "invert" : "tertiary"}
                   key={option}
                   onClick={() => {
                     setBilling(option as Billing);
                   }}
+                  rounded="full"
                   size="sm"
                   variant={option === billing ? "solid" : "naked"}
                 >
@@ -236,29 +223,12 @@ export const Pricing = ({ className }: { className?: string }) => {
               ))}
             </Box>
           </motion.div>
-          <Box className="mt-2">
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              transition={{
-                duration: 1,
-                delay: 0.6,
-              }}
-              viewport={{ once: true, amount: 0.5 }}
-              whileInView={{ y: 0, opacity: 1 }}
-            >
-              <Text as="span" color="primary" fontWeight="semibold">
-                Save 20%
-              </Text>{" "}
-              with annual billing 🎉
-            </motion.p>
-          </Box>
         </Flex>
-        <Box className="grid grid-cols-1 divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-100 bg-white dark:divide-dark-100 dark:border-dark-100 dark:bg-dark md:grid-cols-4 md:divide-x md:divide-y-0">
+        <Box className="grid grid-cols-1 gap-6 md:grid-cols-4">
           {packages.map((pkg) => (
             <Package
               billing={billing}
               cta={pkg.cta}
-              description={pkg.description}
               features={pkg.features}
               href={pkg.href}
               key={pkg.name}
