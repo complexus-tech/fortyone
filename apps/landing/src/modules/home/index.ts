@@ -5,3 +5,4 @@ export * from "./features";
 export * from "./integrations";
 export * from "./reviews";
 export * from "./transform";
+export * from "./maya";
