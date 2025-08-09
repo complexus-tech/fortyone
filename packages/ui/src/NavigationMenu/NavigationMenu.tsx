@@ -12,7 +12,7 @@ const NavigationMenuViewport = forwardRef<
   <div className={cn("absolute top-full flex justify-center", className)}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-2xl dark:bg-dark-300 bg-white backdrop-blur border border-gray-100 dark:border-dark-50 shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] rounded-2xl w-full dark:bg-dark-300 bg-white backdrop-blur border border-gray-100 dark:border-dark-50 shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
         className
       )}
       ref={ref}
@@ -27,11 +27,13 @@ type NavigationMenu = ComponentPropsWithoutRef<
   typeof NavigationMenuPrimitive.Root
 > & {
   align?: "start" | "end";
+  viewPortClassName?: string;
 };
 export const NavigationMenu = ({
   className,
   children,
   align = "start",
+  viewPortClassName,
   ...props
 }: NavigationMenu) => (
   <NavigationMenuPrimitive.Root
@@ -43,10 +45,13 @@ export const NavigationMenu = ({
   >
     {children}
     <NavigationMenuViewport
-      className={cn({
-        "left-0": align === "start",
-        "right-0": align === "end",
-      })}
+      className={cn(
+        {
+          "left-0": align === "start",
+          "right-0": align === "end",
+        },
+        viewPortClassName
+      )}
     />
   </NavigationMenuPrimitive.Root>
 );
@@ -121,7 +126,7 @@ const NavigationMenuIndicator = forwardRef<
     )}
     {...props}
   >
-    <div className="relative top-[60%] h-2 w-2 rotate-45 rounded-tl-sm bg-border shadow-md" />
+    <div className="relative top-[60%] h-2 w-2 rotate-45 rounded-tl-sm shadow-md" />
   </NavigationMenuPrimitive.Indicator>
 ));
 NavigationMenuIndicator.displayName =

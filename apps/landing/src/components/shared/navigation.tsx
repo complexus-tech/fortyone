@@ -27,7 +27,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-gray-100 hover:dark:bg-dark-200"
+    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-200/50"
     href={href}
   >
     {icon}
@@ -124,33 +124,36 @@ export const Navigation = () => {
           <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/40 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
             <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
             <Flex align="center" className="hidden md:flex" gap={1}>
-              <NavigationMenu>
+              <NavigationMenu viewPortClassName="rounded-xl">
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-full py-1.5 pl-3 pr-2.5 opacity-75 transition hover:opacity-100",
+                        "px-3 py-1.5 opacity-75 transition hover:opacity-100 dark:opacity-90",
                         {
-                          "opacity-100": pathname?.startsWith("/features"),
+                          "opacity-100 dark:text-white dark:opacity-100":
+                            pathname?.startsWith("/features"),
                         },
                       )}
                       hideArrow
                     >
                       Product
                     </NavigationMenu.Trigger>
-                    <NavigationMenu.Content>
-                      <Box className="grid w-max grid-cols-2 gap-2 p-2 pb-3 pr-2.5">
-                        {features.map(
-                          ({ id, name, description, icon, href }) => (
-                            <MenuItem
-                              description={description}
-                              href={href}
-                              icon={icon}
-                              key={id}
-                              name={name}
-                            />
-                          ),
-                        )}
+                    <NavigationMenu.Content className="p-1">
+                      <Box className="mb-[0.17rem] mr-[0.17rem]">
+                        <Box className="grid w-max grid-cols-2 gap-2 rounded-lg border border-gray-100 p-2 dark:border-dark-50">
+                          {features.map(
+                            ({ id, name, description, icon, href }) => (
+                              <MenuItem
+                                description={description}
+                                href={href}
+                                icon={icon}
+                                key={id}
+                                name={name}
+                              />
+                            ),
+                          )}
+                        </Box>
                       </Box>
                     </NavigationMenu.Content>
                   </NavigationMenu.Item>
@@ -161,22 +164,13 @@ export const Navigation = () => {
                   className={cn(
                     "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100 dark:opacity-90",
                     {
-                      "opacity-100": pathname === href,
+                      "opacity-100 dark:text-white dark:opacity-100":
+                        pathname === href,
                     },
                   )}
                   href={href}
                   key={title}
                 >
-                  <span
-                    className={cn(
-                      "relative -top-px mr-1 text-lg opacity-0 transition",
-                      {
-                        "opacity-100": pathname === href,
-                      },
-                    )}
-                  >
-                    &bull;
-                  </span>
                   {title}
                 </NavLink>
               ))}
