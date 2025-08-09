@@ -124,7 +124,7 @@ export const Navigation = () => {
           <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/40 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
             <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
             <Flex align="center" className="hidden md:flex" gap={1}>
-              <NavigationMenu viewPortClassName="rounded-xl">
+              <NavigationMenu>
                 <NavigationMenu.List>
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
@@ -140,8 +140,8 @@ export const Navigation = () => {
                       Product
                     </NavigationMenu.Trigger>
                     <NavigationMenu.Content className="p-1">
-                      <Box className="mb-[0.17rem] mr-[0.17rem]">
-                        <Box className="grid w-max grid-cols-2 gap-2 rounded-lg border border-gray-100 p-2 dark:border-dark-50">
+                      <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
+                        <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50">
                           {features.map(
                             ({ id, name, description, icon, href }) => (
                               <MenuItem
