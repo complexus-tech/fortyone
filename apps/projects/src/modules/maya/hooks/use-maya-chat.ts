@@ -22,6 +22,7 @@ import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { useProfile } from "@/lib/hooks/profile";
 import { useTerminology } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
 
@@ -82,18 +83,14 @@ export const useMayaChat = (config: MayaChatConfig) => {
     regenerate: reload,
     error,
     setMessages,
-  } = useChat({
+  } = useChat<MayaUIMessage>({
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
-    onToolCall: ({ toolCall }) => {
-      console.log(toolCall);
-      if (toolCall.toolName === "navigation") {
-        // console.log(toolCall);
+    onData: ({ data, type }) => {
+      if (type === "data-tool-invocation") {
+        console.log(data);
       }
-    },
-    onFinish: (t) => {
-      console.log(t);
     },
 
     // onFinish: ({ message }) => {

@@ -1,76 +1,17 @@
+/* eslint-disable turbo/no-undeclared-env-vars -- this is ok */
 import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
-import { convertToModelMessages, stepCountIs, streamText } from "ai";
+import {
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  smoothStream,
+} from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
-import {
-  navigation,
-  theme,
-  quickCreate,
-  membersTool,
-  statusesTool,
-  objectiveStatusesTool,
-  searchTool,
-  notificationsTool,
-  commentsTool,
-  storyActivitiesTool,
-  linksTool,
-  labelsTool,
-  storyLabelsTool,
-} from "@/lib/ai/tools";
+import { tools } from "@/lib/ai/tools";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
-import { listAttachments, deleteAttachment } from "@/lib/ai/tools/attachments";
-import {
-  createObjectiveTool,
-  deleteObjectiveTool,
-  listObjectivesTool,
-  listTeamObjectivesTool,
-  updateObjectiveTool,
-  getObjectiveDetailsTool,
-  objectiveAnalyticsTool,
-} from "@/lib/ai/tools/objectives";
-import {
-  listKeyResultsTool,
-  createKeyResultTool,
-  updateKeyResultTool,
-  deleteKeyResultTool,
-} from "@/lib/ai/tools/key-results";
-import {
-  listTeamStories,
-  searchStories,
-  getStoryDetails,
-  createStory,
-  updateStory,
-  deleteStory,
-  bulkUpdateStories,
-  bulkDeleteStories,
-  bulkCreateStories,
-  assignStoriesToUser,
-  duplicateStory,
-  restoreStory,
-  listDueSoon,
-  listOverdue,
-  listDueToday,
-  listDueTomorrow,
-} from "@/lib/ai/tools/stories";
-import {
-  listSprints,
-  listRunningSprints,
-  getSprintDetailsTool,
-  createSprint,
-} from "@/lib/ai/tools/sprints";
-import {
-  listTeams,
-  listPublicTeams,
-  getTeamDetails,
-  listTeamMembers,
-  createTeamTool,
-  updateTeam,
-  joinTeam,
-  deleteTeam,
-  leaveTeam,
-} from "@/lib/ai/tools/teams";
 import { systemPrompt } from "./system-xml";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
@@ -109,7 +50,6 @@ export async function POST(req: NextRequest) {
   const phClient = posthogServer();
 
   const openaiClient = createOpenAI({
-    // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
     apiKey: process.env.OPENAI_API_KEY,
   });
 
@@ -128,71 +68,12 @@ export async function POST(req: NextRequest) {
       maxOutputTokens: 4000,
       temperature: 0.5,
       stopWhen: [stepCountIs(10)],
-      tools: {
-        navigation,
-        theme,
-        quickCreate,
-        members: membersTool,
-        search: searchTool,
-        notifications: notificationsTool,
-        comments: commentsTool,
-        // Teams
-        listTeams,
-        listPublicTeams,
-        getTeamDetails,
-        listTeamMembers,
-        createTeamTool,
-        updateTeam,
-        joinTeam,
-        deleteTeam,
-        leaveTeam,
-        // Stories
-        listTeamStories,
-        searchStories,
-        getStoryDetails,
-        createStory,
-        updateStory,
-        deleteStory,
-        bulkUpdateStories,
-        bulkDeleteStories,
-        bulkCreateStories,
-        assignStoriesToUser,
-        duplicateStory,
-        restoreStory,
-        listDueSoon,
-        listOverdue,
-        listDueToday,
-        listDueTomorrow,
-        statuses: statusesTool,
-        // Sprints
-        listSprints,
-        listRunningSprints,
-        getSprintDetailsTool,
-        createSprint,
-        objectiveStatuses: objectiveStatusesTool,
-        // Key Results
-        listKeyResultsTool,
-        createKeyResultTool,
-        updateKeyResultTool,
-        deleteKeyResultTool,
-        // Attachments
-        listAttachments,
-        deleteAttachment,
-        // Objectives
-        listObjectivesTool,
-        listTeamObjectivesTool,
-        createObjectiveTool,
-        updateObjectiveTool,
-        deleteObjectiveTool,
-        objectiveAnalyticsTool,
-        getObjectiveDetailsTool,
-        // Links
-        links: linksTool,
-        labels: labelsTool,
-        storyActivities: storyActivitiesTool,
-        storyLabels: storyLabelsTool,
-      },
+      tools,
       system: systemPrompt + userContext,
+      experimental_transform: smoothStream({
+        delayInMs: 20,
+        chunking: "word",
+      }),
     });
     return result.toUIMessageStreamResponse({
       originalMessages: messages,
