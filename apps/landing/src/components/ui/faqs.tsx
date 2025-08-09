@@ -52,30 +52,32 @@ const AccordionItem = ({
   isOpen: boolean;
   onToggle: () => void;
 }) => (
-  <Box className="rounded-2xl border border-gray-200/60 bg-white px-5 py-6 shadow-lg shadow-gray-100 dark:border-dark-200 dark:bg-dark/60 dark:shadow-none">
+  <Box className="border-b border-gray-100 last:border-b-0 dark:border-dark-200">
     <button
       className={cn(
-        "group flex w-full justify-between text-left text-xl font-semibold tracking-tight outline-none transition-all",
+        "group flex w-full items-center justify-between py-5 text-left text-2xl outline-none",
       )}
       onClick={onToggle}
       type="button"
     >
       {item.question}
       <ArrowRight2Icon
-        className={cn(
-          "mt-1 h-5 shrink-0 transition-transform duration-300",
-          isOpen && "rotate-90",
-        )}
+        className={cn("h-6 shrink-0 transition-transform duration-300", {
+          "rotate-90": isOpen,
+        })}
+        strokeWidth={2}
       />
     </button>
     <Box
       className={cn(
-        "grid transition-all duration-300 ease-in-out",
-        isOpen ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]",
+        "grid grid-rows-[0fr] transition-all duration-300 ease-in-out",
+        {
+          "grid-rows-1": isOpen,
+        },
       )}
     >
       <Box className="overflow-hidden">
-        <Text className="text-base opacity-70">
+        <Text className="mb-10 max-w-2xl text-xl opacity-70">
           <span dangerouslySetInnerHTML={{ __html: item.answer }} />
         </Text>
       </Box>
@@ -91,18 +93,12 @@ export const Faqs = () => {
   };
 
   return (
-    <Box className="bg-gray-50/80 py-16 dark:bg-dark/80 md:pb-20 md:pt-24 md:dark:bg-dark">
-      <Container className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
-        <Box className="mx-auto max-w-3xl">
-          <Text className="mb-6 text-4xl font-semibold leading-[1.1] md:text-[3.5rem]">
-            Frequently Asked Questions
-          </Text>
-          <Text className="w-11/12 text-lg opacity-60">
-            Everything you need to know about getting started with Complexus and
-            our pricing plans.
-          </Text>
-        </Box>
-        <Flex className="gap-4 pb-4" direction="column">
+    <Box className="py-16 md:pb-20 md:pt-24">
+      <Container>
+        <Text className="mb-12 text-5xl font-semibold leading-[1.1] md:text-5xl">
+          Frequently Asked Questions
+        </Text>
+        <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (
             <AccordionItem
               isOpen={openIndex === index}

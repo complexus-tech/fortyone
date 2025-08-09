@@ -1,4 +1,5 @@
 import { CallToAction } from "@/components/shared";
+import { Faqs } from "@/components/ui/faqs";
 import {
   Hero,
   HeroCards,
@@ -18,9 +19,9 @@ export default function Page() {
       <SampleClients />
       <Maya />
       <Features />
-      <Transform />
       <Integrations />
-      <Testimonials />
+      {/* <Testimonials /> */}
+      <Faqs />
       <CallToAction />
     </>
   );

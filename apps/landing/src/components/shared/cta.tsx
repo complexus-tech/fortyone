@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative bg-gradient-to-b from-gray-50 via-40% to-gray-50 dark:bg-gray-50 dark:from-dark-300 dark:via-black dark:to-dark">
+    <Box className="relative bg-gray-50 dark:bg-dark-300/70">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -28,8 +28,7 @@ export const CallToAction = () => {
               as="h2"
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
-              Set <span className="text-stroke-white">Objectives</span>. Drive{" "}
-              <Text as="span">Outcomes.</Text>
+              Work smarter with AI that’s in the loop, not on the sidelines.
             </Text>
           </motion.div>
           <motion.div
