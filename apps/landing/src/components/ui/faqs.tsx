@@ -55,7 +55,7 @@ const AccordionItem = ({
   <Box className="border-b border-gray-100 last:border-b-0 dark:border-dark-200">
     <button
       className={cn(
-        "group flex w-full items-center justify-between py-5 text-left text-2xl outline-none",
+        "group flex w-full items-center justify-between py-6 text-left text-2xl outline-none",
       )}
       onClick={onToggle}
       type="button"

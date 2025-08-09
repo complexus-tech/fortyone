@@ -22,7 +22,7 @@ export default function Page() {
       <Integrations />
       {/* <Testimonials /> */}
       <Faqs />
-      <CallToAction />
+      {/* <CallToAction /> */}
     </>
   );
 }
