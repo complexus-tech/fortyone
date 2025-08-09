@@ -22,7 +22,7 @@ export const Support = () => {
       <Box className="relative">
         <Box className="mb-16 grid grid-cols-1 gap-5 md:mb-32 md:grid-cols-2">
           {features.map(({ heading, description, email }) => (
-            <Wrapper className="rounded-2xl py-6 md:py-8" key={heading}>
+            <Wrapper className="rounded-3xl py-6 md:py-8" key={heading}>
               <Text align="center" as="h2" fontSize="2xl">
                 {heading}
               </Text>
