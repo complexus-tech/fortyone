@@ -29,7 +29,7 @@ export const SampleClients = () => {
   ];
   return (
     <Container className="relative">
-      <Box className="py-16 md:pb-32">
+      <Box className="py-16 md:pb-32 md:pt-10 md:dark:pt-20">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           transition={{

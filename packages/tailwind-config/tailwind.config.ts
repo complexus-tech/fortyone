@@ -22,6 +22,11 @@ const config: Omit<Config, "content"> = {
       sidebar: "#FCF5E5",
       light: "#fffff0",
       gray: {
+        // DEFAULT: "#4b5563",
+        // 50: "#f9fafb",
+        // 100: "#e5e7eb",
+        // 200: "#d1d5db",
+
         DEFAULT: "#6B665C",
         50: "#F8F6F2",
         100: "#ECE9E4",

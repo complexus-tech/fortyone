@@ -76,7 +76,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-[0.6rem] border border-gray-100 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.3rem]"
+                className="relative rounded-[0.6rem] border border-[#8080802a] bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Image
@@ -86,13 +86,16 @@ export const HeroCards = () => {
                   priority
                   src={card.image.src}
                 />
-                <Image
-                  alt={card.title}
-                  className="relative rounded border border-gray-100 dark:hidden md:rounded-[1.2rem]"
-                  placeholder="blur"
-                  priority
-                  src={card.image.srcLight}
-                />
+                <Box className="relative">
+                  <Image
+                    alt={card.title}
+                    className="relative rounded border border-[#8080802a] dark:hidden md:rounded-[1.2rem]"
+                    placeholder="blur"
+                    priority
+                    src={card.image.srcLight}
+                  />
+                  <Box className="absolute inset-0 bg-gradient-to-t from-white via-white/10 dark:hidden" />
+                </Box>
               </SwiperSlide>
             ))}
           </Swiper>

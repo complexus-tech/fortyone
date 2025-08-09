@@ -48,7 +48,7 @@ export const Navigation = () => {
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
     { title: "Blog", href: "/blog" },
-    { title: "Docs", href: "https://docs.complexus.app" },
+    { title: "Help center", href: "https://docs.complexus.app" },
   ];
 
   const features = [
@@ -121,7 +121,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-[15] w-screen md:top-5">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/80 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
+          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/40 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
             <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
             <Flex align="center" className="hidden md:flex" gap={1}>
               <NavigationMenu>
@@ -129,10 +129,9 @@ export const Navigation = () => {
                   <NavigationMenu.Item>
                     <NavigationMenu.Trigger
                       className={cn(
-                        "rounded-full py-1.5 pl-3 pr-2.5 transition hover:bg-gray-100 dark:hover:bg-dark-200",
+                        "rounded-full py-1.5 pl-3 pr-2.5 opacity-75 transition hover:opacity-100",
                         {
-                          "bg-gray-100 dark:bg-dark-200":
-                            pathname?.startsWith("/features"),
+                          "opacity-100": pathname?.startsWith("/features"),
                         },
                       )}
                       hideArrow
@@ -160,14 +159,24 @@ export const Navigation = () => {
               {navLinks.map(({ title, href }) => (
                 <NavLink
                   className={cn(
-                    "rounded-full px-3 py-1.5 transition hover:bg-gray-100 hover:dark:bg-dark-200",
+                    "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100 dark:opacity-90",
                     {
-                      "bg-gray-100 dark:bg-dark-200": pathname === href,
+                      "opacity-100": pathname === href,
                     },
                   )}
                   href={href}
                   key={title}
                 >
+                  <span
+                    className={cn(
+                      "relative -top-px mr-1 text-lg opacity-0 transition",
+                      {
+                        "opacity-100": pathname === href,
+                      },
+                    )}
+                  >
+                    &bull;
+                  </span>
                   {title}
                 </NavLink>
               ))}

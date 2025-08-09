@@ -68,7 +68,7 @@ export const Hero = () => {
               <Text
                 as="span"
                 className={cn(
-                  "text-stroke-white tracking-wide",
+                  "text-stroke-white tracking-wider",
                   heading.className,
                 )}
               >
@@ -77,10 +77,10 @@ export const Hero = () => {
               &{" "}
               <Text
                 as="span"
-                // className={cn(
-                //   "text-stroke-white tracking-wide",
-                //   heading.className,
-                // )}
+                className={cn(
+                  "text-stroke-white tracking-wide",
+                  heading.className,
+                )}
               >
                 OKRs
               </Text>
