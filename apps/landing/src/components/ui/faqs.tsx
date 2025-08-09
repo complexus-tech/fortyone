@@ -77,7 +77,7 @@ const AccordionItem = ({
       )}
     >
       <Box className="overflow-hidden">
-        <Text className="mb-10 max-w-2xl text-xl opacity-70">
+        <Text className="mb-10 max-w-2xl text-lg opacity-70">
           <span dangerouslySetInnerHTML={{ __html: item.answer }} />
         </Text>
       </Box>
