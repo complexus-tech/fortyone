@@ -33,7 +33,7 @@ const FeatureValue = ({
 
 export const ComparePlans = () => {
   return (
-    <Container className="md:py-24">
+    <Container className="md:py-32">
       <Box className="hidden overflow-x-auto md:block">
         <Box>
           <Flex className="border-b border-gray-100 dark:border-dark-100">
@@ -53,13 +53,13 @@ export const ComparePlans = () => {
 
           {/* Limits section */}
           <Box>
-            <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
-              <Box className="w-1/3 px-4 py-4">
+            <Flex className="border-b border-gray-100 dark:border-dark-100">
+              <Box className="w-1/3 px-4 py-3">
                 <Text fontWeight="semibold">Limits</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
-                  className={cn("w-1/6 px-4 py-4", {
+                  className={cn("w-1/6 px-4 py-3", {
                     "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.name === "Business",
                   })}
@@ -68,13 +68,13 @@ export const ComparePlans = () => {
               ))}
             </Flex>
             <Flex className="border-b border-gray-100 dark:border-dark-100">
-              <Box className="w-1/3 px-4 py-4">
+              <Box className="w-1/3 px-4 py-3">
                 <Text>Members</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn(
-                    "w-1/6 px-4 py-4",
+                    "w-1/6 px-4 py-3",
                     plan.highlighted &&
                       "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300",
                   )}
@@ -86,12 +86,12 @@ export const ComparePlans = () => {
             </Flex>
 
             <Flex className="border-b border-gray-100 dark:border-dark-100">
-              <Box className="w-1/3 px-4 py-4">
+              <Box className="w-1/3 px-4 py-3">
                 <Text>File uploads</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
-                  className={cn("w-1/6 px-4 py-4", {
+                  className={cn("w-1/6 px-4 py-3", {
                     "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.highlighted,
                   })}
@@ -103,12 +103,12 @@ export const ComparePlans = () => {
             </Flex>
 
             <Flex className="border-b border-gray-100 dark:border-dark-100">
-              <Box className="w-1/3 px-4 py-4">
+              <Box className="w-1/3 px-4 py-3">
                 <Text>Stories</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
-                  className={cn("w-1/6 px-4 py-4", {
+                  className={cn("w-1/6 px-4 py-3", {
                     "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.highlighted,
                   })}
@@ -122,13 +122,13 @@ export const ComparePlans = () => {
 
           {/* Features section */}
           <Box>
-            <Flex className="border-b border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300/50">
-              <Box className="w-1/3 px-4 py-4">
+            <Flex className="border-b border-gray-100 dark:border-dark-100">
+              <Box className="w-1/3 px-4 pb-3 pt-8">
                 <Text fontWeight="semibold">Features</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
-                  className={cn("w-1/6 px-4 py-4", {
+                  className={cn("w-1/6 px-4 py-3", {
                     "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                       plan.name === "Business",
                   })}
@@ -136,7 +136,6 @@ export const ComparePlans = () => {
                 />
               ))}
             </Flex>
-
             {/* Generate all possible feature rows */}
             {Object.entries(featureLabels).map(
               ([featureKey, featureLabel], index, array) => {
@@ -154,7 +153,7 @@ export const ComparePlans = () => {
                     }
                     key={featureKey}
                   >
-                    <Box className="w-1/3 px-4 py-4">
+                    <Box className="w-1/3 px-4 py-3">
                       <Text>{featureLabel}</Text>
                     </Box>
                     {plans.map((plan) => {
@@ -163,7 +162,7 @@ export const ComparePlans = () => {
                       const isHighlighted = plan.highlighted;
                       return (
                         <Box
-                          className={cn("w-1/6 px-4 py-4", {
+                          className={cn("w-1/6 px-4 py-3", {
                             "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
                               isHighlighted,
                           })}
@@ -180,23 +179,47 @@ export const ComparePlans = () => {
           </Box>
           <Flex className="border-t border-gray-100 dark:border-dark-100">
             <Box className="w-1/3" />
-            <Box className="w-1/6 px-4 py-4">
-              <Button align="center" color="tertiary" fullWidth href="/signup">
+            <Box className="w-1/6 px-4 py-3">
+              <Button
+                align="center"
+                color="tertiary"
+                fullWidth
+                href="/signup"
+                variant="outline"
+              >
                 Start for free
               </Button>
             </Box>
-            <Box className="w-1/6 px-4 py-4">
-              <Button align="center" color="tertiary" fullWidth href="/signup">
-                Upgrade now
+            <Box className="w-1/6 px-4 py-3">
+              <Button
+                align="center"
+                color="tertiary"
+                fullWidth
+                href="/signup"
+                variant="outline"
+              >
+                Try Proffesional
               </Button>
             </Box>
-            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-gray-100 bg-gray-50 px-4 py-4 dark:border-dark-100 dark:bg-dark-300">
-              <Button align="center" fullWidth href="/signup">
-                Upgrade now
+            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-gray-100 bg-gray-50 px-4 py-3 dark:border-dark-100 dark:bg-dark-300">
+              <Button
+                align="center"
+                color="invert"
+                fullWidth
+                href="/signup"
+                variant="outline"
+              >
+                Try Business
               </Button>
             </Box>
-            <Box className="w-1/6 px-4 py-4">
-              <Button align="center" color="tertiary" fullWidth href="/signup">
+            <Box className="w-1/6 px-4 py-3">
+              <Button
+                align="center"
+                color="tertiary"
+                fullWidth
+                href="/signup"
+                variant="outline"
+              >
                 Contact sales
               </Button>
             </Box>

@@ -104,7 +104,7 @@ const Package = ({
   return (
     <Box
       className={cn(
-        "h-full rounded-3xl border border-gray-200 px-6 pb-8 pt-6 shadow-2xl shadow-gray-200 dark:border-dark-100 dark:bg-dark dark:shadow-dark",
+        "h-full rounded-3xl border border-gray-200 px-6 pb-8 pt-6 shadow-2xl shadow-gray-200 dark:border-dark-50 dark:bg-dark dark:shadow-dark",
         {
           "border-2 border-dark dark:border-white": recommended,
         },

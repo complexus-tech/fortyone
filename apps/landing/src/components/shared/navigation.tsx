@@ -121,7 +121,7 @@ export const Navigation = () => {
     <Box className="fixed left-0 top-2 z-[15] w-screen md:top-5">
       <Container as="nav" className="md:w-max">
         <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/20 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-100/60 dark:bg-dark-50/40">
+          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/80 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
             <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
             <Flex align="center" className="hidden md:flex" gap={1}>
               <NavigationMenu>
