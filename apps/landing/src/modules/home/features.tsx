@@ -162,7 +162,7 @@ export const Features = () => {
     <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:py-16">
       <Container as="section">
         <Intro />
-        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-3">
+        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
           {features.map((feature) => (
             <Card key={feature.id} {...feature} />
           ))}
