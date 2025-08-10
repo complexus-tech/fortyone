@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { instrumentSans } from "@/styles/fonts";
+import { body } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { auth } from "@/auth";
@@ -88,7 +88,7 @@ export default async function RootLayout({
       <head>
         <JsonLd />
       </head>
-      <body className={cn(instrumentSans.className)}>
+      <body className={cn(body.className)}>
         <Providers session={session}>
           <HydrationBoundary state={dehydrate(queryClient)}>
             {children}

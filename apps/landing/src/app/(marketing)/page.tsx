@@ -19,10 +19,11 @@ export default function Page() {
       <SampleClients />
       <Maya />
       <Features />
+      <Transform />
       <Integrations />
-      {/* <Testimonials /> */}
+      <Testimonials />
       <Faqs />
-      {/* <CallToAction /> */}
+      <CallToAction />
     </>
   );
 }

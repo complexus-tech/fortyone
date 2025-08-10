@@ -1,10 +1,6 @@
-import {
-  // Instrument_Sans as InstrumentSans,
-  Englebert,
-  Inter,
-} from "next/font/google";
+import { Englebert, Inter } from "next/font/google";
 
-export const instrumentSans = Inter({
+export const body = Inter({
   variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
