@@ -5,7 +5,7 @@ import {
   convertToModelMessages,
   stepCountIs,
   streamText,
-  smoothStream,
+  hasToolCall,
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
@@ -67,13 +67,13 @@ export async function POST(req: NextRequest) {
       messages: modelMessages,
       maxOutputTokens: 4000,
       temperature: 0.5,
-      stopWhen: [stepCountIs(10)],
+      stopWhen: [stepCountIs(10), hasToolCall("suggestions")],
       tools,
       system: systemPrompt + userContext,
-      experimental_transform: smoothStream({
-        delayInMs: 20,
-        chunking: "word",
-      }),
+      // experimental_transform: smoothStream({
+      //   delayInMs: 20,
+      //   chunking: "word",
+      // }),
     });
     return result.toUIMessageStreamResponse({
       originalMessages: messages,
