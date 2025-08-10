@@ -141,7 +141,7 @@ importers:
         version: 15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       next-auth:
         specifier: 5.0.0-beta.28
-        version: 5.0.0-beta.28(next@15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1)
+        version: 5.0.0-beta.28(next@15.4.5(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1)
       next-mdx-remote:
         specifier: ^5.0.0
         version: 5.0.0(@types/react@19.1.9)(acorn@8.15.0)(react@19.1.1)
@@ -234,11 +234,11 @@ importers:
   apps/projects:
     dependencies:
       '@ai-sdk/openai':
-        specifier: ^2.0.6
-        version: 2.0.6(zod@4.0.15)
-      '@ai-sdk/react':
         specifier: ^2.0.8
-        version: 2.0.8(react@19.1.1)(zod@4.0.15)
+        version: 2.0.8(zod@4.0.15)
+      '@ai-sdk/react':
+        specifier: ^2.0.9
+        version: 2.0.9(react@19.1.1)(zod@4.0.15)
       '@dnd-kit/core':
         specifier: ^6.1.0
         version: 6.1.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -315,8 +315,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2(@babel/runtime@7.26.7)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       ai:
-        specifier: ^5.0.8
-        version: 5.0.8(zod@4.0.15)
+        specifier: ^5.0.9
+        version: 5.0.9(zod@4.0.15)
       babel-plugin-react-compiler:
         specifier: 19.0.0-beta-21e868a-20250216
         version: 19.0.0-beta-21e868a-20250216
@@ -352,7 +352,7 @@ importers:
         version: 15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       next-auth:
         specifier: 5.0.0-beta.28
-        version: 5.0.0-beta.28(next@15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1)
+        version: 5.0.0-beta.28(next@15.4.5(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1)
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -838,8 +838,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4
 
-  '@ai-sdk/openai@2.0.6':
-    resolution: {integrity: sha512-YmnhiyqllxnGo0Jo23jfi7NCOK+8BhUPPV/Cm/8MGFgI9oX/s6xGIp6KqSK2GFlAz2vxyy+aAlpt0cv/a0SxYQ==}
+  '@ai-sdk/openai@2.0.8':
+    resolution: {integrity: sha512-D5AP65yCXL4GtTrWGhu3hTHhlKyYu8NBRtRZ1h5F8PYXFVLtuiQ0AypbDreXLphONehLf0zGN3Cm3Fob/DDMRw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -854,8 +854,8 @@ packages:
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/react@2.0.8':
-    resolution: {integrity: sha512-I9CI53lncv0nUy3TPW0lrnoHCZx4NUaAuFCgm6U0bId0PQKeYi61Z9XFrgo3mDByH2SSC3OVsPq6d5Db8kF1FQ==}
+  '@ai-sdk/react@2.0.9':
+    resolution: {integrity: sha512-Ehx4TfuUt/2tPUvGUK6qlTLRi0EOCnYLqswFsLnQBXMnels9kJok9rWA3JJyt5GR2NK8NDozL+7Uo2nj06T9sg==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
@@ -3568,8 +3568,8 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  ai@5.0.8:
-    resolution: {integrity: sha512-qbnhj046UvG30V1S5WhjBn+RBGEAmi8PSZWqMhRsE3EPxvO5BcePXTZFA23e9MYyWS9zr4Vm8Mv3wQXwLmtIBw==}
+  ai@5.0.9:
+    resolution: {integrity: sha512-l7YdzsCTId7CDNNQ+roC0m4uDMmVIO9NpDC3bI2RxNDss3XpGIvsbHq7bT+IZzMYIqGbHK17HI0eiOOvtwzN6Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -8043,7 +8043,7 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.1(zod@4.0.15)
       zod: 4.0.15
 
-  '@ai-sdk/openai@2.0.6(zod@4.0.15)':
+  '@ai-sdk/openai@2.0.8(zod@4.0.15)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.1(zod@4.0.15)
@@ -8069,10 +8069,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@2.0.8(react@19.1.1)(zod@4.0.15)':
+  '@ai-sdk/react@2.0.9(react@19.1.1)(zod@4.0.15)':
     dependencies:
       '@ai-sdk/provider-utils': 3.0.1(zod@4.0.15)
-      ai: 5.0.8(zod@4.0.15)
+      ai: 5.0.9(zod@4.0.15)
       react: 19.1.1
       swr: 2.3.4(react@19.1.1)
       throttleit: 2.1.0
@@ -9529,7 +9529,7 @@ snapshots:
       '@anthropic-ai/sdk': 0.36.3
       '@google/genai': 1.13.0
       '@langchain/core': 0.3.68(@opentelemetry/api@1.9.0)(openai@5.12.1(ws@8.18.3)(zod@4.0.15))
-      ai: 5.0.8(zod@3.25.76)
+      ai: 5.0.9(zod@3.25.76)
       langchain: 0.3.30(@langchain/core@0.3.68(@opentelemetry/api@1.9.0)(openai@5.12.1(ws@8.18.3)(zod@3.25.76)))(@opentelemetry/api@1.9.0)(axios@1.8.4)(openai@5.12.1(ws@8.18.3)(zod@3.25.76))(ws@8.18.3)
       openai: 5.12.1(ws@8.18.3)(zod@3.25.76)
       posthog-node: 4.17.2
@@ -11353,7 +11353,7 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ai@5.0.8(zod@3.25.76):
+  ai@5.0.9(zod@3.25.76):
     dependencies:
       '@ai-sdk/gateway': 1.0.4(zod@3.25.76)
       '@ai-sdk/provider': 2.0.0
@@ -11361,7 +11361,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 3.25.76
 
-  ai@5.0.8(zod@4.0.15):
+  ai@5.0.9(zod@4.0.15):
     dependencies:
       '@ai-sdk/gateway': 1.0.4(zod@4.0.15)
       '@ai-sdk/provider': 2.0.0
@@ -14918,7 +14918,7 @@ snapshots:
       next: 15.3.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
 
-  next-auth@5.0.0-beta.28(next@15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1):
+  next-auth@5.0.0-beta.28(next@15.4.5(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react@19.1.1):
     dependencies:
       '@auth/core': 0.39.1
       next: 15.4.5(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@19.0.0-beta-21e868a-20250216)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
