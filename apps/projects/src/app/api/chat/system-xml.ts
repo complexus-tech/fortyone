@@ -124,10 +124,6 @@ export const systemPrompt = `<assistant_identity>
     <tool name="theme">
       <purpose>Switch between light/dark/system themes</purpose>
     </tool>
-    
-    <tool name="quick_create">
-      <purpose>Open creation dialogs for stories, objectives, sprints</purpose>
-    </tool>
   </navigation_tools>
 
   <team_management_tools>
