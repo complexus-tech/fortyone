@@ -113,7 +113,7 @@ export const ChatInput = ({
     maxFiles: 5,
     maxSize: 5 * 1024 * 1024, // 5MB
     minSize: 100, // 100 bytes
-    onDrop: (acceptedFiles) => {
+    onDrop: async (acceptedFiles) => {
       onAttachmentsChange([...attachments, ...acceptedFiles]);
     },
     onDropRejected,

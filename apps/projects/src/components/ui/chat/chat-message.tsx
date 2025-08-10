@@ -14,7 +14,7 @@ import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
-// import { AttachmentsDisplay } from "./attachments-display";
+import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -172,7 +172,7 @@ export const ChatMessage = ({
           direction="column"
         >
           <Box
-            className={cn("rounded-2xl px-4 py-3", {
+            className={cn("mb-2 rounded-2xl px-4 py-3", {
               "rounded-tr-md bg-primary": message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}
@@ -184,7 +184,7 @@ export const ChatMessage = ({
               status={status}
             />
           </Box>
-          {/* <AttachmentsDisplay attachments={message.experimental_attachments} /> */}
+          <AttachmentsDisplay message={message} />
           <Flex className="mt-2 px-0.5" justify="between">
             {message.role === "assistant" && status !== "streaming" && (
               <Flex gap={2} justify="end">
