@@ -74,11 +74,11 @@ const RenderMessage = ({
           );
         } else if (part.type === "tool-getSprintDetailsTool") {
           if (part.state === "input-available") {
-            return <Thinking key={index} message="getting sprint details" />;
+            return <Thinking key={index} message="Getting sprint details" />;
           }
         } else if (part.type === "tool-listRunningSprints") {
           if (part.state === "input-available") {
-            return <Thinking key={index} message="getting active sprints" />;
+            return <Thinking key={index} message="Getting active sprints" />;
           }
         }
         return null;
