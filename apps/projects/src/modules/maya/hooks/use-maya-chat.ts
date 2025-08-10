@@ -176,8 +176,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
     }
   }, [config.isNewChat, setMessages, setInput, setAttachments]);
 
-  const isLoading = status === "submitted";
-
   const handleSendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
 
@@ -242,7 +240,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
     messages,
     input,
     status,
-    isLoading,
     error,
     attachments,
     currentChatId: idRef.current,

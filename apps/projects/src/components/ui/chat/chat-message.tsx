@@ -3,7 +3,7 @@ import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import type { ChatRequestOptions } from "ai";
+import type { ChatRequestOptions, ChatStatus } from "ai";
 import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
@@ -20,7 +20,7 @@ type ChatMessageProps = {
   isLast: boolean;
   message: MayaUIMessage;
   profile: User | undefined;
-  isStreaming?: boolean;
+  status: ChatStatus;
   reload: ({
     messageId,
     ...options
@@ -35,11 +35,11 @@ const RenderMessage = ({
   message,
   onPromptSelect,
   isOnPage,
-  isStreaming,
+  status,
 }: {
   isLast: boolean;
   message: MayaUIMessage;
-  isStreaming?: boolean;
+  status: ChatStatus;
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 }) => {
@@ -77,7 +77,7 @@ const RenderMessage = ({
           ) {
             return <Thinking key={index} message="Getting active sprints" />;
           }
-        } else if (part.type === "step-start" && isStreaming) {
+        } else if (part.type === "step-start" && status === "streaming") {
           return <Box key={index}>{JSON.stringify(part)}</Box>;
         }
         return null;
@@ -138,7 +138,7 @@ export const ChatMessage = ({
   isLast,
   message,
   profile,
-  isStreaming,
+  status,
   reload,
   onPromptSelect,
   isOnPage,
@@ -182,14 +182,14 @@ export const ChatMessage = ({
             <RenderMessage
               isLast={isLast}
               isOnPage={isOnPage}
-              isStreaming={isStreaming}
               message={message}
               onPromptSelect={onPromptSelect}
+              status={status}
             />
           </Box>
           {/* <AttachmentsDisplay attachments={message.experimental_attachments} /> */}
           <Flex className="mt-2 px-0.5" justify="between">
-            {message.role === "assistant" && !isStreaming && (
+            {message.role === "assistant" && status !== "streaming" && (
               <Flex gap={2} justify="end">
                 <Tooltip title={`Create ${getTermDisplay("storyTerm")}`}>
                   <Button

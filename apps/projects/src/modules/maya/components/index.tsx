@@ -20,7 +20,6 @@ export const MayaChat = ({ config }: MayaChatProps) => {
     messages,
     input,
     status,
-    isLoading,
     error,
     attachments,
     currentChatId,
@@ -53,12 +52,11 @@ export const MayaChat = ({ config }: MayaChatProps) => {
       />
       <BodyContainer className="mx-auto flex max-w-4xl flex-col">
         <ChatMessages
-          isLoading={isLoading}
           isOnPage
-          isStreaming={status === "streaming"}
           messages={messages}
           onPromptSelect={handleSuggestedPrompt}
           reload={reload}
+          status={status}
           value={input}
         />
         {error ? (
@@ -78,7 +76,6 @@ export const MayaChat = ({ config }: MayaChatProps) => {
         ) : null}
         <ChatInput
           attachments={attachments}
-          isLoading={isLoading}
           isOnPage
           messagesCount={messages.length}
           onAttachmentsChange={setAttachments}
@@ -87,6 +84,7 @@ export const MayaChat = ({ config }: MayaChatProps) => {
           }}
           onSend={handleSend}
           onStop={handleStop}
+          status={status}
           value={input}
         />
       </BodyContainer>

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
-import type { ChatRequestOptions } from "ai";
+import type { ChatRequestOptions, ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { ChatMessage } from "./chat-message";
@@ -8,8 +8,7 @@ import { ChatLoading } from "./chat-loading";
 
 type ChatMessagesProps = {
   messages: MayaUIMessage[];
-  isLoading: boolean;
-  isStreaming?: boolean;
+  status: ChatStatus;
   value: string;
   reload: ({
     messageId,
@@ -23,8 +22,7 @@ type ChatMessagesProps = {
 
 export const ChatMessages = ({
   messages,
-  isLoading,
-  isStreaming,
+  status,
   value,
   reload,
   onPromptSelect,
@@ -76,16 +74,16 @@ export const ChatMessages = ({
           <ChatMessage
             isLast={idx === messages.length - 1}
             isOnPage={isOnPage}
-            isStreaming={isStreaming}
             key={message.id}
             message={message}
             onPromptSelect={onPromptSelect}
             profile={profile}
             reload={reload}
+            status={status}
           />
         ))}
-        {isLoading ? <ChatLoading /> : null}
-        {isStreaming ? <div className="h-32" /> : null}
+        {status === "submitted" ? <ChatLoading /> : null}
+        {status === "streaming" ? <div className="h-32" /> : null}
         <div ref={messagesEndRef} />
       </Flex>
     </Box>

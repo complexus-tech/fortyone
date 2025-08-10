@@ -49,7 +49,6 @@ export const Chat = ({
     messages,
     input,
     status,
-    isLoading,
     error,
     attachments,
     currentChatId,
@@ -119,11 +118,10 @@ export const Chat = ({
           <Dialog.Body className="h-[80dvh] max-h-[80dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages
-                isLoading={isLoading}
-                isStreaming={status === "streaming"}
                 messages={messages}
                 onPromptSelect={handleSuggestedPrompt}
                 reload={reload}
+                status={status}
                 value={input}
               />
               {error ? (
@@ -145,7 +143,6 @@ export const Chat = ({
               )}
               <ChatInput
                 attachments={attachments}
-                isLoading={isLoading}
                 messagesCount={messages.length}
                 onAttachmentsChange={setAttachments}
                 onChange={(e) => {
@@ -153,6 +150,7 @@ export const Chat = ({
                 }}
                 onSend={handleSend}
                 onStop={handleStop}
+                status={status}
                 value={input}
               />
             </Flex>

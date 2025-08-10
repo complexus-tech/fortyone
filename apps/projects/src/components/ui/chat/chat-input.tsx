@@ -15,6 +15,7 @@ import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import ky from "ky";
+import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
@@ -23,7 +24,7 @@ type ChatInputProps = {
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
   onStop: () => void;
-  isLoading: boolean;
+  status: ChatStatus;
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
@@ -52,7 +53,7 @@ export const ChatInput = ({
   value,
   onChange,
   onSend,
-  isLoading,
+  status,
   onStop,
   attachments,
   onAttachmentsChange,
@@ -423,7 +424,7 @@ export const ChatInput = ({
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
-                } else if (isLoading) {
+                } else if (status === "submitted") {
                   onStop();
                 } else {
                   onSend();
@@ -433,7 +434,7 @@ export const ChatInput = ({
             >
               {isRecording ? (
                 <CheckIcon className="text-current dark:text-current" />
-              ) : isLoading ? (
+              ) : status === "submitted" ? (
                 <StopIcon className="text-current dark:text-current" />
               ) : (
                 <SendIcon />
