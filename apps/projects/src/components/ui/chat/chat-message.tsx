@@ -4,7 +4,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import type { ChatRequestOptions, ChatStatus } from "ai";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
 import type { User } from "@/types";
@@ -43,9 +43,21 @@ const RenderMessage = ({
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 }) => {
+  const [hasText, setHasText] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (message.parts.some((p) => p.type === "text")) {
+      setHasText(true);
+    }
+  }, [message.parts]);
+
+  const isProcessing =
+    !hasText && message.parts.some((p) => p.type === "step-start");
+
   return (
     <>
+      {isProcessing ? <Thinking /> : null}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -64,72 +76,68 @@ const RenderMessage = ({
             </Box>
           );
         } else if (part.type === "tool-getSprintDetailsTool") {
-          if (
-            part.state === "input-available" ||
-            part.state === "input-streaming"
-          ) {
-            return <Thinking key={index} message="Getting sprint details" />;
+          if (part.state === "input-available") {
+            return <Thinking key={index} message="getting sprint details" />;
           }
         } else if (part.type === "tool-listRunningSprints") {
-          if (
-            part.state === "input-available" ||
-            part.state === "input-streaming"
-          ) {
-            return <Thinking key={index} message="Getting active sprints" />;
+          if (part.state === "input-available") {
+            return <Thinking key={index} message="getting active sprints" />;
           }
-        } else if (part.type === "step-start" && status === "streaming") {
-          return <Thinking key={index} />;
         }
         return null;
       })}
 
-      {message.parts.map((part, index) => {
-        if (part.type === "tool-getSprintDetailsTool") {
-          if (part.state === "input-available") {
-            return <Thinking key={index} message="Getting sprint details" />;
-          }
-          if (part.state === "output-available") {
-            return (
-              <Box className="mb-3" key={index}>
-                <Text
-                  as="h3"
-                  className="mb-1 mt-4 text-xl font-semibold antialiased"
-                >
-                  Burndown graph
-                </Text>
-                <BurndownChart
-                  burndownData={part.output.analyticsReport?.burndown ?? []}
-                  className={cn("h-72", {
-                    "h-80": pathname === "/maya",
-                  })}
-                />
-              </Box>
-            );
-          }
-        } else if (part.type === "tool-suggestions") {
-          if (part.state === "output-available") {
-            return (
-              <Flex className="mt-2" gap={2} key={`${index}-suggestions`} wrap>
-                {part.output.suggestions.map(
-                  (suggestion: string, index: number) => (
-                    <Button
-                      color="tertiary"
-                      key={index}
-                      onClick={() => {
-                        onPromptSelect(suggestion);
-                      }}
-                      size={isOnPage ? "md" : "sm"}
+      {status === "ready" ? (
+        <>
+          {message.parts.map((part, index) => {
+            if (part.type === "tool-getSprintDetailsTool") {
+              if (part.state === "output-available") {
+                return (
+                  <Box className="mb-3" key={index}>
+                    <Text
+                      as="h3"
+                      className="mb-1 mt-4 text-xl font-semibold antialiased"
                     >
-                      {suggestion}
-                    </Button>
-                  ),
-                )}
-              </Flex>
-            );
-          }
-        }
-        return null;
-      })}
+                      Burndown graph
+                    </Text>
+                    <BurndownChart
+                      burndownData={part.output.analyticsReport?.burndown ?? []}
+                      className={cn("h-72", {
+                        "h-80": pathname === "/maya",
+                      })}
+                    />
+                  </Box>
+                );
+              }
+            } else if (part.type === "tool-suggestions") {
+              if (part.state === "output-available") {
+                return (
+                  <Flex
+                    className="mt-2"
+                    gap={2}
+                    key={`${index}-suggestions`}
+                    wrap
+                  >
+                    {part.output.suggestions.map((suggestion, index) => (
+                      <Button
+                        color="tertiary"
+                        key={index}
+                        onClick={() => {
+                          onPromptSelect(suggestion);
+                        }}
+                        size={isOnPage ? "md" : "sm"}
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </Flex>
+                );
+              }
+            }
+            return null;
+          })}
+        </>
+      ) : null}
     </>
   );
 };
@@ -150,7 +158,6 @@ export const ChatMessage = ({
   const content = message.parts.find((p) => p.type === "text")?.text ?? "";
   return (
     <>
-      {/* <Debug data={message} /> */}
       <Flex
         className={cn({
           "flex-row-reverse": message.role === "user",
