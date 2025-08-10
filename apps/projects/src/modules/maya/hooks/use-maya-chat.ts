@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { FileUIPart } from "ai";
 import { generateId } from "ai";
 import { useSession } from "next-auth/react";
 import { notificationKeys, sprintKeys, teamKeys } from "@/constants/keys";
@@ -202,27 +203,19 @@ export const useMayaChat = (config: MayaChatConfig) => {
     if (!content.trim() && attachments.length === 0) return;
 
     // Convert attachments to base64 for AI SDK
-    const attachmentData = await Promise.all(
+    const attachmentData: FileUIPart[] = await Promise.all(
       attachments.map(async (file) => ({
+        type: "file",
+        mediaType: file.type,
         name: file.name,
-        contentType: file.type,
         url: await fileToBase64(file),
       })),
     );
 
     sendMessage(
       {
-        role: "user",
-        parts: [
-          {
-            type: "text",
-            text:
-              content ||
-              `Analyze the attached file${attachmentData.length > 1 ? "s" : ""}.`,
-          },
-        ],
-        // experimental_attachments:
-        //   attachmentData.length > 0 ? attachmentData : undefined,
+        text: content,
+        files: attachmentData,
       },
       {
         body: {
