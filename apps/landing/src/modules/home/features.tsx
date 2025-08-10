@@ -14,7 +14,7 @@ import okrImg from "../../../public/features/okr.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="flex flex-col py-12 md:flex-row md:py-24">
+    <Box className="flex flex-col gap-12 py-12 md:flex-row md:py-24">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -26,10 +26,10 @@ const Intro = () => (
       >
         <Text
           as="h2"
-          className="text-5xl font-semibold md:max-w-5xl md:text-7xl"
+          className="text-5xl font-semibold md:max-w-2xl md:text-6xl"
         >
-          Built on <span className="text-stroke-white">strong</span>{" "}
-          foundations.
+          Built for ambitious teams who want{" "}
+          <span className="text-stroke-white">results</span>
         </Text>
       </motion.div>
       <motion.div
@@ -45,9 +45,9 @@ const Intro = () => (
           className="mt-6 max-w-xl font-normal opacity-80 md:mt-0"
           fontSize="xl"
         >
-          Complexus is so simple to use, it&apos;s easy to overlook the wealth
-          of complex technologies packed under the hood that keep it robust,
-          safe, and blazing fast.
+          Complexus puts an AI assistant at the heart of your workflow helping
+          you create stories, plan sprints, track OKRs, and keep everything
+          moving, so your team stays aligned and delivers without the chaos.
         </Text>
       </motion.div>
     </Box>
@@ -159,17 +159,15 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="dark">
-      <Box className="bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100 pb-20 dark:from-dark-200 dark:via-black dark:to-black md:py-28">
-        <Container as="section">
-          <Intro />
-          <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
-            {features.map((feature) => (
-              <Card key={feature.id} {...feature} />
-            ))}
-          </Box>
-        </Container>
-      </Box>
+    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:py-16">
+      <Container as="section">
+        <Intro />
+        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
+          {features.map((feature) => (
+            <Card key={feature.id} {...feature} />
+          ))}
+        </Box>
+      </Container>
     </Box>
   );
 };

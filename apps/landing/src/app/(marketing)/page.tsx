@@ -1,5 +1,5 @@
 import { CallToAction } from "@/components/shared";
-import { Pricing } from "@/components/ui";
+import { Faqs } from "@/components/ui/faqs";
 import {
   Hero,
   HeroCards,
@@ -8,6 +8,7 @@ import {
   Integrations,
   Testimonials,
   Transform,
+  Maya,
 } from "@/modules/home";
 
 export default function Page() {
@@ -16,12 +17,12 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
+      <Maya />
       <Features />
-      <Transform />
       <Integrations />
-      <Testimonials />
-      <Pricing className="pb-16 md:pb-28 md:pt-0" />
-      <CallToAction />
+      {/* <Testimonials /> */}
+      <Faqs />
+      {/* <CallToAction /> */}
     </>
   );
 }

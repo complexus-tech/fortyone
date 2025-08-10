@@ -28,6 +28,8 @@ const badge = cva(
         tertiary:
           "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-100/70 dark:border-dark-50 dark:text-gray-200",
         secondary: "text-white bg-secondary border-secondary",
+        invert:
+          "text-white bg-black border-black dark:bg-white dark:border-white dark:text-black",
       },
       size: {
         xs: "h-[1.15rem] min-w-[1rem] text-[70%] py-1 px-0.5",

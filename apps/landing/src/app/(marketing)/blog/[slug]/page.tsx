@@ -50,7 +50,7 @@ export default async function BlogPost({
           <ArrowLeft2Icon className="dark:text-white" />
           <span className="opacity-80">All blogs</span>
         </Link>
-        <Box className="mx-auto max-w-4xl">
+        <Box className="mx-auto max-w-3xl">
           <Flex gap={2}>
             <Text className="opacity-80">
               {new Date(post.metadata.date as string).toLocaleDateString(

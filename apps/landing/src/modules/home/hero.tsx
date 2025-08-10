@@ -5,14 +5,13 @@ import { useSession } from "next-auth/react";
 import { cn } from "lib";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
-import { heading } from "@/styles/fonts";
 
 export const Hero = () => {
   const { data: session } = useSession();
 
   return (
     <Box>
-      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px]" />
+      <Box className="absolute inset-0 hidden bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12 md:pt-8">
         <Flex
@@ -30,7 +29,7 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="border-0 bg-[#dddddd]/40 px-5 text-sm font-medium backdrop-blur-xl dark:bg-dark-100/40 md:text-[0.95rem]"
+              className="border-0 bg-[#dddddd]/40 px-5 text-sm backdrop-blur-xl dark:bg-dark-100/40 md:text-[0.95rem]"
               color="tertiary"
               href="/signup"
               rounded="full"
@@ -55,33 +54,15 @@ export const Hero = () => {
               )}
             >
               The{" "}
-              <Text
-                as="span"
-                className={cn(
-                  "text-stroke-white tracking-wider",
-                  heading.className,
-                )}
-              >
+              <Text as="span" className="text-stroke-white">
                 AI
               </Text>{" "}
               Everything App for{" "}
-              <Text
-                as="span"
-                className={cn(
-                  "text-stroke-white tracking-wide",
-                  heading.className,
-                )}
-              >
+              <Text as="span" className="text-stroke-white">
                 Projects
               </Text>{" "}
               &{" "}
-              <Text
-                as="span"
-                // className={cn(
-                //   "text-stroke-white tracking-wide",
-                //   heading.className,
-                // )}
-              >
+              <Text as="span" className="text-stroke-white">
                 OKRs
               </Text>
             </Text>
