@@ -1,7 +1,7 @@
-/* eslint-disable turbo/no-undeclared-env-vars -- ok for now */
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { experimental_transcribe as transcribe } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { auth } from "@/auth";
 
 export const maxDuration = 30;
@@ -38,21 +38,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     const arrayBuffer = await audioFile.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: new File([buffer], audioFile.name, { type: audioFile.type }),
-      model: "whisper-1",
-      language: "en",
+    const transcript = await transcribe({
+      model: openai.transcription("gpt-4o-mini-transcribe"),
+      audio: arrayBuffer,
     });
 
     return NextResponse.json({
-      text: transcription.text,
+      text: transcript.text,
     });
   } catch (error) {
     return NextResponse.json(
