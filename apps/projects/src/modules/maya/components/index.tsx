@@ -52,7 +52,6 @@ export const MayaChat = ({ config }: MayaChatProps) => {
       />
       <BodyContainer className="mx-auto flex max-w-4xl flex-col">
         <ChatMessages
-          isOnPage
           messages={messages}
           onPromptSelect={handleSuggestedPrompt}
           reload={reload}

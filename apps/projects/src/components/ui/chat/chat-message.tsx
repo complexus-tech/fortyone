@@ -28,20 +28,17 @@ type ChatMessageProps = {
     messageId?: string;
   } & ChatRequestOptions) => Promise<void>;
   onPromptSelect: (prompt: string) => void;
-  isOnPage?: boolean;
 };
 
 const RenderMessage = ({
   message,
   onPromptSelect,
-  isOnPage,
   status,
 }: {
   isLast: boolean;
   message: MayaUIMessage;
   status: ChatStatus;
   onPromptSelect: (prompt: string) => void;
-  isOnPage?: boolean;
 }) => {
   const [hasText, setHasText] = useState(false);
   const pathname = usePathname();
@@ -125,7 +122,7 @@ const RenderMessage = ({
                         onClick={() => {
                           onPromptSelect(suggestion);
                         }}
-                        size={isOnPage ? "md" : "sm"}
+                        size="sm"
                       >
                         {suggestion}
                       </Button>
@@ -149,7 +146,6 @@ export const ChatMessage = ({
   status,
   reload,
   onPromptSelect,
-  isOnPage,
 }: ChatMessageProps) => {
   const [_, copy] = useCopyToClipboard();
   const [hasCopied, setHasCopied] = useState(false);
@@ -188,7 +184,6 @@ export const ChatMessage = ({
           >
             <RenderMessage
               isLast={isLast}
-              isOnPage={isOnPage}
               message={message}
               onPromptSelect={onPromptSelect}
               status={status}

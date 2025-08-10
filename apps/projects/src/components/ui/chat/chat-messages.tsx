@@ -17,7 +17,6 @@ type ChatMessagesProps = {
     messageId?: string;
   } & ChatRequestOptions) => Promise<void>;
   onPromptSelect: (prompt: string) => void;
-  isOnPage?: boolean;
 };
 
 export const ChatMessages = ({
@@ -26,7 +25,6 @@ export const ChatMessages = ({
   value,
   reload,
   onPromptSelect,
-  isOnPage,
 }: ChatMessagesProps) => {
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -73,7 +71,6 @@ export const ChatMessages = ({
         {messages.map((message, idx) => (
           <ChatMessage
             isLast={idx === messages.length - 1}
-            isOnPage={isOnPage}
             key={message.id}
             message={message}
             onPromptSelect={onPromptSelect}
