@@ -35,6 +35,10 @@ module.exports = {
         protocol: "https",
         hostname: "www.complexus.app",
       },
+      {
+        protocol: "https",
+        hostname: "www.complexus.lc",
+      },
     ],
   },
   async rewrites() {
