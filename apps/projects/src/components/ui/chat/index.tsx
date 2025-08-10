@@ -57,7 +57,7 @@ export const Chat = ({
     setInput,
     handleSend,
     handleStop,
-    reload,
+    regenerate,
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,
@@ -120,7 +120,7 @@ export const Chat = ({
               <ChatMessages
                 messages={messages}
                 onPromptSelect={handleSuggestedPrompt}
-                reload={reload}
+                regenerate={regenerate}
                 status={status}
                 value={input}
               />
@@ -132,7 +132,9 @@ export const Chat = ({
                     leftIcon={
                       <ReloadIcon className="text-white dark:text-white" />
                     }
-                    onClick={() => reload()}
+                    onClick={() => {
+                      regenerate();
+                    }}
                   >
                     Retry
                   </Button>

@@ -28,7 +28,7 @@ export const MayaChat = ({ config }: MayaChatProps) => {
     setInput,
     handleSend,
     handleStop,
-    reload,
+    regenerate,
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,
@@ -54,7 +54,7 @@ export const MayaChat = ({ config }: MayaChatProps) => {
         <ChatMessages
           messages={messages}
           onPromptSelect={handleSuggestedPrompt}
-          reload={reload}
+          regenerate={regenerate}
           status={status}
           value={input}
         />
@@ -64,7 +64,9 @@ export const MayaChat = ({ config }: MayaChatProps) => {
             <Button
               className="mt-2"
               leftIcon={<ReloadIcon className="text-white dark:text-white" />}
-              onClick={() => reload()}
+              onClick={() => {
+                regenerate();
+              }}
             >
               Retry
             </Button>

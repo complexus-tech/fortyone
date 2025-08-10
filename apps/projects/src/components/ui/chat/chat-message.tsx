@@ -3,7 +3,7 @@ import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import type { ChatRequestOptions, ChatStatus } from "ai";
+import type { ChatStatus } from "ai";
 import { useEffect, useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
@@ -21,12 +21,7 @@ type ChatMessageProps = {
   message: MayaUIMessage;
   profile: User | undefined;
   status: ChatStatus;
-  reload: ({
-    messageId,
-    ...options
-  }?: {
-    messageId?: string;
-  } & ChatRequestOptions) => Promise<void>;
+  regenerate: (messageId?: string) => void;
   onPromptSelect: (prompt: string) => void;
 };
 
@@ -144,7 +139,7 @@ export const ChatMessage = ({
   message,
   profile,
   status,
-  reload,
+  regenerate,
   onPromptSelect,
 }: ChatMessageProps) => {
   const [_, copy] = useCopyToClipboard();
@@ -230,7 +225,7 @@ export const ChatMessage = ({
                       asIcon
                       color="tertiary"
                       onClick={() => {
-                        reload();
+                        regenerate();
                       }}
                       size="sm"
                       variant="naked"

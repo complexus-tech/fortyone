@@ -75,7 +75,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     status,
     sendMessage,
     stop: handleStop,
-    regenerate: reload,
+    regenerate,
     error,
     setMessages,
   } = useChat<MayaUIMessage>({
@@ -167,6 +167,28 @@ export const useMayaChat = (config: MayaChatConfig) => {
     messages: aiChatMessages,
   });
 
+  const handleRegenerate = (messageId?: string) => {
+    regenerate({
+      messageId,
+      body: {
+        currentPath: pathname,
+        currentTheme: theme,
+        resolvedTheme,
+        subscription: {
+          tier: subscription?.tier,
+          billingInterval: subscription?.billingInterval,
+          billingEndsAt: subscription?.billingEndsAt,
+          status: subscription?.status,
+          username: profile?.username,
+        },
+        teams,
+        workspace,
+        terminology,
+        id: idRef.current,
+      },
+    });
+  };
+
   // Clear messages when starting a new chat (no chatRef)
   useEffect(() => {
     if (config.isNewChat) {
@@ -248,7 +270,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     setInput,
     handleSend,
     handleStop,
-    reload,
+    regenerate: handleRegenerate,
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,

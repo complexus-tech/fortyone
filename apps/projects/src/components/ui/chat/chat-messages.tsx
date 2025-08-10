@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
-import type { ChatRequestOptions, ChatStatus } from "ai";
+import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { ChatMessage } from "./chat-message";
@@ -10,12 +10,7 @@ type ChatMessagesProps = {
   messages: MayaUIMessage[];
   status: ChatStatus;
   value: string;
-  reload: ({
-    messageId,
-    ...options
-  }?: {
-    messageId?: string;
-  } & ChatRequestOptions) => Promise<void>;
+  regenerate: (messageId?: string) => void;
   onPromptSelect: (prompt: string) => void;
 };
 
@@ -23,7 +18,7 @@ export const ChatMessages = ({
   messages,
   status,
   value,
-  reload,
+  regenerate,
   onPromptSelect,
 }: ChatMessagesProps) => {
   const { data: profile } = useProfile();
@@ -75,7 +70,7 @@ export const ChatMessages = ({
             message={message}
             onPromptSelect={onPromptSelect}
             profile={profile}
-            reload={reload}
+            regenerate={regenerate}
             status={status}
           />
         ))}
