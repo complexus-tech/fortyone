@@ -3,14 +3,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { DefaultChatTransport, generateId } from "ai";
+import { generateId } from "ai";
 import { useSession } from "next-auth/react";
-import {
-  notificationKeys,
-  sprintKeys,
-  statusKeys,
-  teamKeys,
-} from "@/constants/keys";
+import { notificationKeys, sprintKeys, teamKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
@@ -84,113 +79,93 @@ export const useMayaChat = (config: MayaChatConfig) => {
     error,
     setMessages,
   } = useChat<MayaUIMessage>({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-    }),
-    onData: ({ data, type }) => {
-      if (type === "data-tool-invocation") {
-        console.log(data);
-      }
+    onFinish: ({ message }) => {
+      message.parts.forEach((part) => {
+        if (part.type === "tool-navigation") {
+          if (part.state === "output-available") {
+            const route = part.output.route;
+            if (route) {
+              router.push(route);
+            }
+          }
+        } else if (part.type === "tool-theme") {
+          if (part.state === "output-available") {
+            const requestedTheme = part.output.theme;
+            if (requestedTheme === "toggle") {
+              const newTheme = resolvedTheme === "dark" ? "light" : "dark";
+              setTheme(newTheme);
+            } else {
+              setTheme(requestedTheme);
+            }
+          }
+        } else if (part.type === "text") {
+          queryClient.invalidateQueries({
+            queryKey: aiChatKeys.lists(),
+          });
+        } else if (
+          part.type === "tool-createTeamTool" ||
+          part.type === "tool-updateTeam" ||
+          part.type === "tool-joinTeam" ||
+          part.type === "tool-leaveTeam" ||
+          part.type === "tool-deleteTeam"
+        ) {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: teamKeys.all,
+            });
+          }
+        } else if (
+          part.type === "tool-createStory" ||
+          part.type === "tool-updateStory" ||
+          part.type === "tool-deleteStory" ||
+          part.type === "tool-bulkUpdateStories" ||
+          part.type === "tool-bulkDeleteStories" ||
+          part.type === "tool-bulkCreateStories" ||
+          part.type === "tool-assignStoriesToUser" ||
+          part.type === "tool-duplicateStory" ||
+          part.type === "tool-restoreStory"
+        ) {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: storyKeys.all,
+            });
+          }
+        } else if (part.type === "tool-createSprint") {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: sprintKeys.all,
+            });
+          }
+        } else if (
+          part.type === "tool-createKeyResultTool" ||
+          part.type === "tool-updateKeyResultTool" ||
+          part.type === "tool-deleteKeyResultTool" ||
+          part.type === "tool-createObjectiveTool" ||
+          part.type === "tool-updateObjectiveTool" ||
+          part.type === "tool-deleteObjectiveTool"
+        ) {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: objectiveKeys.all,
+            });
+          }
+        } else if (part.type === "tool-notifications") {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: notificationKeys.all,
+            });
+          }
+        } else if (part.type === "tool-objectiveStatuses") {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: objectiveKeys.statuses(),
+            });
+          }
+        }
+      });
     },
-
-    // onFinish: ({ message }) => {
-    //   message.parts.forEach((part) => {
-    //     if (part.type === "tool-invocation") {
-    //       if (part.toolInvocation.toolName === "navigation") {
-    //         if (part.toolInvocation.state === "result") {
-    //           const result = part.toolInvocation.result;
-    //           if (result.route) {
-    //             router.push(result.route as string);
-    //           }
-    //         }
-    //       } else if (part.toolInvocation.toolName === "theme") {
-    //         if (part.toolInvocation.state === "result") {
-    //           const requestedTheme = part.toolInvocation.result.theme as string;
-    //           if (requestedTheme === "toggle") {
-    //             const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-    //             setTheme(newTheme);
-    //           } else {
-    //             setTheme(requestedTheme);
-    //           }
-    //         }
-    //       } else if (part.toolInvocation.toolName === "quickCreate") {
-    //         if (part.toolInvocation.state === "result") {
-    //           const action = part.toolInvocation.result.action as string;
-    //           switch (action) {
-    //             case "story":
-    //               setIsStoryOpen(true);
-    //               break;
-    //             case "objective":
-    //               setIsObjectiveOpen(true);
-    //               break;
-    //             case "sprint":
-    //               setIsSprintOpen(true);
-    //               break;
-    //           }
-    //         }
-    //       } else if (part.toolInvocation.toolName === "teams") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: teamKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "notifications") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: notificationKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "statuses") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: statusKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "stories") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: storyKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "sprints") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: sprintKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "objectives") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: objectiveKeys.all,
-    //           });
-    //         }
-    //       } else if (part.toolInvocation.toolName === "objectiveStatuses") {
-    //         if (part.toolInvocation.state === "result") {
-    //           queryClient.invalidateQueries({
-    //             queryKey: objectiveKeys.statuses(),
-    //           });
-    //         }
-    //       }
-    //     } else if (part.type === "text") {
-    //       queryClient.invalidateQueries({
-    //         queryKey: aiChatKeys.lists(),
-    //       });
-    //     }
-    //   });
-    // },
-
-    // initialMessages: aiChatMessages,
+    messages: aiChatMessages,
   });
-
-  // Sync messages when aiChatMessages changes (when selecting a different chat)
-  // useEffect(() => {
-  //   if (aiChatMessages.length > 0) {
-  //     setMessages(aiChatMessages);
-  //   } else if (aiChatMessages.length === 0) {
-  //     // Clear messages when no messages are available
-  //     setMessages([]);
-  //   }
-  // }, [aiChatMessages, setMessages]);
 
   // Clear messages when starting a new chat (no chatRef)
   useEffect(() => {

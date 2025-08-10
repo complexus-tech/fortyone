@@ -9,7 +9,7 @@ export const suggestions = tool({
       .array(z.string())
       .describe("The suggestions to show the user max 3"),
   }),
-  execute: async ({ suggestions }: { suggestions: string[] }) => {
+  execute: async ({ suggestions }) => {
     return {
       suggestions,
       message:

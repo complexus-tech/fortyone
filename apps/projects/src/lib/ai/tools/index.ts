@@ -1,4 +1,3 @@
-import type { ToolSet } from "ai";
 import { listAttachments, deleteAttachment } from "@/lib/ai/tools/attachments";
 import {
   createObjectiveTool,
@@ -53,7 +52,6 @@ import {
 import { navigation } from "./navigation";
 import { membersTool } from "./members";
 import { theme } from "./theme";
-import { quickCreate } from "./quick-create";
 import { searchTool } from "./search";
 import { linksTool } from "./links";
 import { labelsTool } from "./labels";
@@ -63,6 +61,7 @@ import { objectiveStatusesTool } from "./objective-statuses";
 import { statusesTool } from "./statuses";
 import { commentsTool } from "./comments";
 import { notificationsTool } from "./notifications";
+import { suggestions } from "./suggestions";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -71,17 +70,16 @@ export { objectiveStatusesTool } from "./objective-statuses";
 export { searchTool } from "./search";
 export { notificationsTool } from "./notifications";
 export { theme } from "./theme";
-export { quickCreate } from "./quick-create";
 export { commentsTool } from "./comments";
 export { storyActivitiesTool } from "./story-activities";
 export { linksTool } from "./links";
 export { labelsTool } from "./labels";
 export { storyLabelsTool } from "./story-labels";
 
-export const tools: ToolSet = {
+export const tools = {
   navigation,
   theme,
-  quickCreate,
+  suggestions,
   members: membersTool,
   search: searchTool,
   notifications: notificationsTool,

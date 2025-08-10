@@ -3,57 +3,47 @@ import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import type { UIMessage, ChatRequestOptions } from "ai";
-import { useEffect, useState } from "react";
+import type { ChatRequestOptions } from "ai";
+import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
-// import { usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { User } from "@/types";
-// import { BurndownChart } from "@/modules/sprints/stories/burndown";
+import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
-import { Thinking } from "./thinking";
 // import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
   isLast: boolean;
-  message: UIMessage;
+  message: MayaUIMessage;
   profile: User | undefined;
   isStreaming?: boolean;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
+  reload: ({
+    messageId,
+    ...options
+  }?: {
+    messageId?: string;
+  } & ChatRequestOptions) => Promise<void>;
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 };
 
 const RenderMessage = ({
   message,
+  onPromptSelect,
+  isOnPage,
 }: {
   isLast: boolean;
-  message: UIMessage;
+  message: MayaUIMessage;
   isStreaming?: boolean;
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 }) => {
-  const [hasText, setHasText] = useState(false);
-
-  useEffect(() => {
-    if (message.parts.some((p) => p.type === "text")) {
-      setHasText(true);
-    }
-  }, [message.parts]);
-
-  const isProcessing =
-    !hasText &&
-    message.parts.some((p) => p.type === "step-start") &&
-    !message.parts.some(
-      (p) => p.type === "tool-invocation" && p.state === "input-available",
-    );
-
+  const pathname = usePathname();
   return (
     <>
-      {isProcessing ? <Thinking /> : null}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -64,81 +54,57 @@ const RenderMessage = ({
                   "text-white": message.role === "user",
                 },
               )}
-              key={part.text}
+              key={index}
             >
               <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
                 {part.text}
               </Markdown>
             </Box>
           );
-        } else if (part.type === "tool-invocation") {
-          if (part.state === "input-available") {
-            return <Thinking key={index} message={`Invoking  `} />;
-          }
         }
         return null;
       })}
 
       {message.parts.map((part, index) => {
-        if (part.type === "tool-sprints") {
-          switch (part.state) {
-            case "input-available":
-              return <Thinking key={index} message={`Invoking  `} />;
-            case "output-available":
-              return (
-                <Box className="mb-3" key={index}>
-                  <Text
-                    as="h3"
-                    className="mb-1 mt-4 text-xl font-semibold antialiased"
-                  >
-                    Burndown graph
-                  </Text>
-                  {/* <BurndownChart
-                    burndownData={part.output}
-                    className={cn("h-72", {
-                      "h-80": pathname === "/maya",
-                    })}
-                  /> */}
-                </Box>
-              );
-            case "output-error":
-              return <Box>There was an error</Box>;
-            default:
-              return null;
-          }
-        }
-        if (part.type === "tool-suggestions") {
-          switch (part.state) {
-            case "input-available":
-              return <Thinking key={index} message={`Invoking  `} />;
-            case "output-available":
-              return (
-                <Flex
-                  className="mt-2"
-                  gap={2}
-                  key={`${index}-suggestions`}
-                  wrap
+        if (part.type === "tool-getSprintDetailsTool") {
+          if (part.state === "output-available") {
+            return (
+              <Box className="mb-3" key={index}>
+                <Text
+                  as="h3"
+                  className="mb-1 mt-4 text-xl font-semibold antialiased"
                 >
-                  {/* {result.suggestions.map(
-                    (suggestion: string, index: number) => (
-                      <Button
-                        color="tertiary"
-                        key={index}
-                        onClick={() => {
-                          onPromptSelect(suggestion);
-                        }}
-                        size={isOnPage ? "md" : "sm"}
-                      >
-                        {suggestion}
-                      </Button>
-                    ),
-                  )} */}
-                </Flex>
-              );
-            case "output-error":
-              return <Box>There was an error</Box>;
-            default:
-              return null;
+                  Burndown graph
+                </Text>
+                <BurndownChart
+                  burndownData={part.output.analyticsReport?.burndown ?? []}
+                  className={cn("h-72", {
+                    "h-80": pathname === "/maya",
+                  })}
+                />
+              </Box>
+            );
+          }
+        } else if (part.type === "tool-suggestions") {
+          if (part.state === "output-available") {
+            return (
+              <Flex className="mt-2" gap={2} key={`${index}-suggestions`} wrap>
+                {part.output.suggestions.map(
+                  (suggestion: string, index: number) => (
+                    <Button
+                      color="tertiary"
+                      key={index}
+                      onClick={() => {
+                        onPromptSelect(suggestion);
+                      }}
+                      size={isOnPage ? "md" : "sm"}
+                    >
+                      {suggestion}
+                    </Button>
+                  ),
+                )}
+              </Flex>
+            );
           }
         }
         return null;

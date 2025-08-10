@@ -10,7 +10,7 @@ export const theme = tool({
         "The theme to set: light, dark, system, or toggle between light/dark",
       ),
   }),
-  execute: async ({ theme }: { theme: string }) => {
+  execute: async ({ theme }) => {
     return {
       theme,
     };

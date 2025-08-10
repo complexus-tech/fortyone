@@ -1,18 +1,22 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
-import type { UIMessage, ChatRequestOptions } from "ai";
+import type { ChatRequestOptions } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { ChatMessage } from "./chat-message";
 import { ChatLoading } from "./chat-loading";
 
 type ChatMessagesProps = {
-  messages: UIMessage[];
+  messages: MayaUIMessage[];
   isLoading: boolean;
   isStreaming?: boolean;
   value: string;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
+  reload: ({
+    messageId,
+    ...options
+  }?: {
+    messageId?: string;
+  } & ChatRequestOptions) => Promise<void>;
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
 };
