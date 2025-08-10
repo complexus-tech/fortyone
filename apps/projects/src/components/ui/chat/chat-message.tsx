@@ -13,6 +13,7 @@ import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
+import { Thinking } from "./thinking";
 // import { AttachmentsDisplay } from "./attachments-display";
 
 type ChatMessageProps = {
@@ -34,6 +35,7 @@ const RenderMessage = ({
   message,
   onPromptSelect,
   isOnPage,
+  isStreaming,
 }: {
   isLast: boolean;
   message: MayaUIMessage;
@@ -61,12 +63,31 @@ const RenderMessage = ({
               </Markdown>
             </Box>
           );
+        } else if (part.type === "tool-getSprintDetailsTool") {
+          if (
+            part.state === "input-available" ||
+            part.state === "input-streaming"
+          ) {
+            return <Thinking key={index} message="Getting sprint details" />;
+          }
+        } else if (part.type === "tool-listRunningSprints") {
+          if (
+            part.state === "input-available" ||
+            part.state === "input-streaming"
+          ) {
+            return <Thinking key={index} message="Getting active sprints" />;
+          }
+        } else if (part.type === "step-start" && isStreaming) {
+          return <Box key={index}>{JSON.stringify(part)}</Box>;
         }
         return null;
       })}
 
       {message.parts.map((part, index) => {
         if (part.type === "tool-getSprintDetailsTool") {
+          if (part.state === "input-available") {
+            return <Thinking key={index} message="Getting sprint details" />;
+          }
           if (part.state === "output-available") {
             return (
               <Box className="mb-3" key={index}>
@@ -129,6 +150,7 @@ export const ChatMessage = ({
   const content = message.parts.find((p) => p.type === "text")?.text ?? "";
   return (
     <>
+      {/* <Debug data={message} /> */}
       <Flex
         className={cn({
           "flex-row-reverse": message.role === "user",
