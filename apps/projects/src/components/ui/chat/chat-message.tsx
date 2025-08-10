@@ -78,7 +78,7 @@ const RenderMessage = ({
             return <Thinking key={index} message="Getting active sprints" />;
           }
         } else if (part.type === "step-start" && status === "streaming") {
-          return <Box key={index}>{JSON.stringify(part)}</Box>;
+          return <Thinking key={index} />;
         }
         return null;
       })}
