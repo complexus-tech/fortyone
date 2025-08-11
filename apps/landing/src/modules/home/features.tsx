@@ -42,7 +42,7 @@ const Intro = () => (
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text
-          className="mt-6 max-w-xl font-normal opacity-80 md:mt-0"
+          className="mt-6 max-w-xl font-normal opacity-80 md:mt-1"
           fontSize="xl"
         >
           Complexus puts an AI assistant at the heart of your workflow helping
