@@ -224,7 +224,7 @@ export const Pricing = ({ className }: { className?: string }) => {
             </Box>
           </motion.div>
         </Flex>
-        <Box className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <Box className="grid grid-cols-1 gap-5 md:grid-cols-4">
           {packages.map((pkg) => (
             <Package
               billing={billing}
