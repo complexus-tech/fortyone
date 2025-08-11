@@ -121,7 +121,7 @@ export const Overview = () => {
                 <Flex align="center" gap={6} justify="between">
                   <TextEditor
                     asTitle
-                    className="text-4xl font-medium"
+                    className="text-4xl font-semibold antialiased"
                     editor={nameEditor}
                   />
                   <Flex align="center" gap={2}>

@@ -66,10 +66,14 @@ const AccordionItem = ({
         type="button"
       >
         {item.question}
+
         <ArrowRight2Icon
-          className={cn("h-6 shrink-0 transition-transform duration-300", {
-            "rotate-90": isOpen,
-          })}
+          className={cn(
+            "h-6 shrink-0 text-dark transition-transform duration-300 dark:text-gray-200",
+            {
+              "rotate-90": isOpen,
+            },
+          )}
           strokeWidth={2}
         />
       </button>
@@ -85,7 +89,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl text-xl opacity-60">
+          <Text className="mb-10 max-w-3xl text-xl opacity-70">
             {item.answer}
           </Text>
         </Box>

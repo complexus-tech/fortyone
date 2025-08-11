@@ -159,10 +159,10 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:py-16">
+    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:pb-36">
       <Container as="section">
         <Intro />
-        <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">
+        <Box className="mx-auto grid grid-cols-1 gap-5 md:grid-cols-4">
           {features.map((feature) => (
             <Card key={feature.id} {...feature} />
           ))}

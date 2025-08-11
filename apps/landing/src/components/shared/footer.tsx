@@ -1,18 +1,10 @@
 "use client";
 import type { ReactNode } from "react";
 import { cn } from "lib";
-import { Box, Text, Tooltip } from "ui";
+import { Box, Text } from "ui";
 import Link from "next/link";
-import {
-  FacebookIcon,
-  InstagramIcon,
-  LinkedinIcon,
-  MoonIcon,
-  SunIcon,
-  SystemIcon,
-  TwitterIcon,
-} from "icons";
-import { useTheme } from "next-themes";
+import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
+// import { useTheme } from "next-themes";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui";
 
@@ -38,7 +30,7 @@ const FooterLink = ({
 );
 
 const Copyright = () => {
-  const { theme, setTheme } = useTheme();
+  // const { theme, setTheme } = useTheme();
   return (
     <Box className="flex flex-col justify-between gap-y-8 border-b border-gray-200 pb-4 dark:border-dark-200 md:flex-row md:items-center md:gap-y-0">
       <Box className="3xl:gap-16 flex gap-8">
@@ -84,7 +76,7 @@ const Copyright = () => {
           © {new Date().getFullYear()} Complexus LLC &bull; All rights
           reserved.
         </Text>
-        <div className="flex gap-5">
+        {/* <div className="flex gap-5">
           <Tooltip title="System">
             <button
               onClick={() => {
@@ -130,7 +122,7 @@ const Copyright = () => {
               />
             </button>
           </Tooltip>
-        </div>
+        </div> */}
       </Box>
     </Box>
   );
@@ -190,7 +182,7 @@ export const Footer = () => {
   return (
     <Box as="footer" className="relative">
       <Container>
-        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-gray-100 py-12 dark:border-dark-100 md:grid-cols-6 md:pt-20">
+        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
           <Box className="col-span-2">
             <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
           </Box>
