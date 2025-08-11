@@ -255,7 +255,7 @@ export const ChatInput = ({
   return (
     <Box
       className={cn(
-        "sticky bottom-0 bg-white px-6 pb-3 backdrop-blur-lg dark:bg-dark-300/90",
+        "sticky bottom-0 bg-white px-6 pb-3 backdrop-blur-lg dark:bg-dark-300/60",
         {
           "dark:bg-dark": isOnPage,
         },

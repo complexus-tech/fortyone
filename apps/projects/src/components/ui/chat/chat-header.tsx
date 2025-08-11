@@ -25,7 +25,12 @@ export const ChatHeader = ({
             <Button
               asIcon
               color="tertiary"
-              leftIcon={<PlusIcon className="h-[1.4rem]" strokeWidth={2.8} />}
+              leftIcon={
+                <PlusIcon
+                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  strokeWidth={2.8}
+                />
+              }
               onClick={handleNewChat}
               variant="naked"
             >
@@ -37,7 +42,10 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <HistoryIcon className="h-[1.4rem]" strokeWidth={2.8} />
+                <HistoryIcon
+                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  strokeWidth={2.8}
+                />
               }
               onClick={() => {
                 setIsHistoryOpen(true);
@@ -48,7 +56,7 @@ export const ChatHeader = ({
             </Button>
           </Tooltip>
         </Flex>
-        <Text className="antialiased" fontWeight="semibold">
+        <Text className="text-xl antialiased" fontWeight="semibold">
           Maya is your AI assistant
         </Text>
         <Flex align="center" gap={3}>
@@ -56,7 +64,12 @@ export const ChatHeader = ({
             <Button
               asIcon
               color="tertiary"
-              leftIcon={<NewTabIcon className="h-[1.4rem]" strokeWidth={2.6} />}
+              leftIcon={
+                <NewTabIcon
+                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  strokeWidth={2.6}
+                />
+              }
               onClick={() => {
                 router.push(`/maya?chatRef=${currentChatId}`);
                 setIsOpen(false);
@@ -70,7 +83,12 @@ export const ChatHeader = ({
             <Button
               asIcon
               color="tertiary"
-              leftIcon={<ArrowDown2Icon className="h-6" strokeWidth={2.8} />}
+              leftIcon={
+                <ArrowDown2Icon
+                  className="h-6 text-dark dark:text-gray-200"
+                  strokeWidth={2.8}
+                />
+              }
               onClick={() => {
                 setIsOpen(false);
               }}

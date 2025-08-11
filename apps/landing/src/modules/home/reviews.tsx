@@ -55,7 +55,7 @@ export const Testimonials = () => {
   }, [slide, slides, nextSlide]);
 
   return (
-    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-gray-50 via-40% to-gray-50 py-28 text-white dark:from-dark-300 dark:via-black dark:to-black md:grid md:h-[95vh] xl:py-36 2xl:py-52">
+    <Container className="3xl:py-48 relative grid-cols-5 overflow-hidden bg-gradient-to-b from-gray-50 via-40% to-gray-50 py-28 text-white dark:from-dark dark:via-black dark:to-black md:grid md:h-[95vh] xl:py-36 2xl:py-52">
       <Box className="pointer-events-none absolute inset-0 col-span-2 md:static md:col-span-1 lg:col-span-2">
         <Text
           as="h2"
