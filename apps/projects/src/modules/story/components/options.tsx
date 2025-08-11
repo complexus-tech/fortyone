@@ -65,7 +65,7 @@ export const Option = ({
   return (
     <Box
       className={cn(
-        "my-4 grid grid-cols-[9rem_auto] items-center gap-3",
+        "my-4 grid grid-cols-[7.5rem_auto] items-center gap-3",
         { "grid-cols-1": isNotifications },
         className,
       )}
