@@ -93,7 +93,7 @@ export const Faqs = () => {
   };
 
   return (
-    <Box className="py-16 md:pb-16 md:pt-24">
+    <Box className="py-16 md:pt-24">
       <Container>
         <Text className="mb-12 text-5xl font-semibold leading-[1.1] md:text-5xl">
           Frequently Asked Questions

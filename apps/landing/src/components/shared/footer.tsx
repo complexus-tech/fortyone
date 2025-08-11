@@ -48,7 +48,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Twitter</span>
-          <TwitterIcon className="h-5 w-auto" />
+          <TwitterIcon className="text-dark dark:text-gray-200" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -56,7 +56,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">LinkedIn</span>
-          <LinkedinIcon className="h-5 w-auto" />
+          <LinkedinIcon className="text-dark dark:text-gray-200" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -64,7 +64,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Instagram</span>
-          <InstagramIcon className="h-5 w-auto" />
+          <InstagramIcon className="text-dark dark:text-gray-200" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -72,7 +72,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Facebook</span>
-          <FacebookIcon className="h-5 w-auto" />
+          <FacebookIcon className="text-dark dark:text-gray-200" />
         </Link>
       </Box>
       <Box className="hidden items-center gap-5 opacity-70 md:flex">
@@ -189,49 +189,51 @@ export const Footer = () => {
   ];
   return (
     <Box as="footer" className="relative">
-      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 pb-12 pt-12 md:grid-cols-6 md:pt-28">
-        <Box className="col-span-2">
-          <Logo className="-left-1 h-8 md:-left-4 md:h-7" />
-        </Box>
-        <Box>
-          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-            Product
-          </Text>
-          {product.map(({ href, title }) => (
-            <FooterLink href={href} key={href}>
-              {title}
-            </FooterLink>
-          ))}
-        </Box>
-        <Box>
-          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-            Company
-          </Text>
-          {company.map(({ href, title }) => (
-            <FooterLink href={href} key={href}>
-              {title}
-            </FooterLink>
-          ))}
-        </Box>
-        <Box>
-          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-            Legal
-          </Text>
-          {legal.map(({ href, title }) => (
-            <FooterLink href={href} key={href}>
-              {title}
-            </FooterLink>
-          ))}
-        </Box>
-        <Box>
-          <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-            Resources
-          </Text>
-          {resources.map(({ href, title }) => (
-            <FooterLink href={href} key={href}>
-              {title}
-            </FooterLink>
-          ))}
+      <Container>
+        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-gray-100 py-12 dark:border-dark-100 md:grid-cols-6 md:pt-20">
+          <Box className="col-span-2">
+            <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
+          </Box>
+          <Box>
+            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
+              Product
+            </Text>
+            {product.map(({ href, title }) => (
+              <FooterLink href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
+          </Box>
+          <Box>
+            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
+              Company
+            </Text>
+            {company.map(({ href, title }) => (
+              <FooterLink href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
+          </Box>
+          <Box>
+            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
+              Legal
+            </Text>
+            {legal.map(({ href, title }) => (
+              <FooterLink href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
+          </Box>
+          <Box>
+            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
+              Resources
+            </Text>
+            {resources.map(({ href, title }) => (
+              <FooterLink href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
+          </Box>
         </Box>
       </Container>
       <Container className="pb-8 md:pb-16">
