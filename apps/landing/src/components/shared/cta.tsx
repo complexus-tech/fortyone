@@ -8,7 +8,7 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const CallToAction = () => {
   const { data: session } = useSession();
   return (
-    <Box className="relative bg-gray-50 dark:bg-dark-300/70">
+    <Box className="border-b border-gray-100 bg-gradient-to-t from-gray-50">
       <Container className="relative max-w-7xl py-16 md:py-32">
         <Flex
           align="center"
@@ -28,7 +28,7 @@ export const CallToAction = () => {
               as="h2"
               className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
             >
-              Work smarter with AI that’s in the loop, not on the sidelines.
+              Work smarter with AI that’s in the loop.
             </Text>
           </motion.div>
           <motion.div
@@ -41,12 +41,12 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[650px] md:mt-16"
+              className="mt-4 max-w-[650px] md:mt-10"
               color="muted"
               fontSize="xl"
             >
-              Bring your objectives, OKRs, and sprints together. The modern way
-              to align teams and deliver meaningful outcomes.
+              Plan with Maya, turn ideas into shippable stories, and watch
+              progress roll into OKRs automatically.
             </Text>
           </motion.div>
 
