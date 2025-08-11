@@ -72,6 +72,7 @@ export const HeroCards = () => {
             effect="cards"
             grabCursor
             initialSlide={1}
+            loop
             modules={[EffectCards, Autoplay]}
           >
             {cards.map((card) => (
