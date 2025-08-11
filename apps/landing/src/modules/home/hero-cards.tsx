@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "ui";
-import { EffectCards } from "swiper/modules";
+import { EffectCards, Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
@@ -63,7 +63,7 @@ export const HeroCards = () => {
         >
           <Swiper
             autoplay={{
-              delay: 1000,
+              delay: 6000,
               disableOnInteraction: false,
             }}
             cardsEffect={{
@@ -72,7 +72,7 @@ export const HeroCards = () => {
             effect="cards"
             grabCursor
             initialSlide={1}
-            modules={[EffectCards]}
+            modules={[EffectCards, Autoplay]}
           >
             {cards.map((card) => (
               <SwiperSlide
