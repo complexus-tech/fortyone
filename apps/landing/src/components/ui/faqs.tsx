@@ -13,33 +13,30 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "Can I use Complexus for free?",
-    answer: "Absolutely! Start with our free tier. No credit card required.",
+    question: "How does the AI assistant (Maya) help my team?",
+    answer:
+      "Maya accelerates planning and execution by drafting stories from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
   },
   {
-    question: "How many team members can I add on the free plan?",
+    question: "How does Complexus link OKRs to daily work?",
     answer:
-      "You can add up to 5 team members on our free plan, which is perfect just to get started.",
+      "Objectives and key results are first class. You can link stories and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
   },
   {
-    question: "How flexible are your pricing plans?",
+    question: "How is Complexus priced? Is there a free plan?",
     answer:
-      "Completely flexible. Upgrade when you need more features, downgrade when you don&apos;t, or cancel anytime with zero penalties or hidden fees. Your workspace, your terms.",
+      "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members to get started quickly. Paid plans are per user with monthly or annual billing, and annual saves 20%. Higher tiers unlock advanced workflows, custom terminology and permissions, unlimited teams, and priority support. You can upgrade, downgrade, or cancel at any time.",
   },
   {
-    question: "Are there special pricing options for startups or nonprofits?",
+    question:
+      "How does Complexus handle security and privacy? Is private cloud available?",
     answer:
-      "Yes! We&apos;re passionate about supporting emerging teams and impactful organizations. Startups, educational institutions, and nonprofits can qualify for special discounts - just reach out to our team.",
+      "We use industry standard encryption in transit and at rest, support SSO with Google, and provide role based permissions and private teams to control access. Audit friendly activity history and fine grained visibility help maintain compliance practices. For organizations with stricter controls, the Enterprise plan offers private cloud or on premise deployment with tailored onboarding.",
   },
   {
-    question: "What extra value do paid plans offer?",
+    question: "Can Complexus adapt to our workflow?",
     answer:
-      "Paid plans unlock our power features: Objectives, OKRs, Permission controls, Priority support, and Custom workflows. Scale up as your team grows and your needs evolve.",
-  },
-  {
-    question: "How quickly can my team get up and running?",
-    answer:
-      "Most teams are fully productive within minutes. Our intuitive interface requires minimal training, and we offer guided onboarding, templates, and documentation to accelerate your start.",
+      "Yes. Teams can customize statuses and workflows, define their own terminology, and set granular permissions by role or team. Automations help reduce repetitive work, and you can structure backlogs and boards to mirror how your org plans and executes. As needs evolve, you can adjust configurations without breaking historical data or reports.",
   },
 ];
 
@@ -47,43 +44,55 @@ const AccordionItem = ({
   item,
   isOpen,
   onToggle,
+  index,
 }: {
   item: FaqItem;
   isOpen: boolean;
   onToggle: () => void;
-}) => (
-  <Box className="border-b border-gray-100 last:border-b-0 dark:border-dark-200">
-    <button
-      className={cn(
-        "group flex w-full items-center justify-between py-6 text-left text-2xl opacity-90 outline-none",
-      )}
-      onClick={onToggle}
-      type="button"
-    >
-      {item.question}
-      <ArrowRight2Icon
-        className={cn("h-6 shrink-0 transition-transform duration-300", {
-          "rotate-90": isOpen,
-        })}
-        strokeWidth={2}
-      />
-    </button>
-    <Box
-      className={cn(
-        "grid grid-rows-[0fr] transition-all duration-300 ease-in-out",
-        {
-          "grid-rows-1": isOpen,
-        },
-      )}
-    >
-      <Box className="overflow-hidden">
-        <Text className="mb-10 max-w-2xl text-lg opacity-60">
-          <span dangerouslySetInnerHTML={{ __html: item.answer }} />
-        </Text>
+  index: number;
+}) => {
+  const buttonId = `faq-trigger-${index}`;
+  const panelId = `faq-panel-${index}`;
+  return (
+    <Box className="border-b border-gray-100 last:border-b-0 dark:border-dark-200">
+      <button
+        aria-controls={panelId}
+        aria-expanded={isOpen}
+        className={cn(
+          "group flex w-full items-center justify-between py-6 text-left text-2xl opacity-90 outline-none",
+        )}
+        id={buttonId}
+        onClick={onToggle}
+        type="button"
+      >
+        {item.question}
+        <ArrowRight2Icon
+          className={cn("h-6 shrink-0 transition-transform duration-300", {
+            "rotate-90": isOpen,
+          })}
+          strokeWidth={2}
+        />
+      </button>
+      <Box
+        aria-labelledby={buttonId}
+        className={cn(
+          "grid grid-rows-[0fr] transition-all duration-300 ease-in-out",
+          {
+            "grid-rows-1": isOpen,
+          },
+        )}
+        id={panelId}
+        role="region"
+      >
+        <Box className="overflow-hidden">
+          <Text className="mb-10 max-w-3xl text-xl opacity-60">
+            {item.answer}
+          </Text>
+        </Box>
       </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 export const Faqs = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -95,12 +104,16 @@ export const Faqs = () => {
   return (
     <Box className="py-16 md:pt-24">
       <Container>
-        <Text className="mb-12 text-5xl font-semibold leading-[1.1] md:text-5xl">
+        <Text
+          as="h2"
+          className="mb-12 text-5xl font-semibold leading-[1.1] md:text-5xl"
+        >
           Frequently Asked Questions
         </Text>
         <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (
             <AccordionItem
+              index={index}
               isOpen={openIndex === index}
               item={item}
               key={item.question}
