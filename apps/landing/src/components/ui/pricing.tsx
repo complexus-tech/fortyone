@@ -179,7 +179,7 @@ export const Pricing = ({ className }: { className?: string }) => {
           >
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
-              className="mt-6 max-w-4xl pb-2 text-5xl font-semibold md:text-6xl"
+              className="mt-6 max-w-3xl pb-2 text-5xl font-semibold md:text-6xl"
             >
               Start for free. Get used to hitting your{" "}
               <Text as="span" className="text-stroke-white">

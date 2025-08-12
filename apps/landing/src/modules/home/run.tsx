@@ -7,11 +7,9 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const RunEverything = () => {
   return (
-    <Box className="bg-gradient-to-b from-white to-gray-50 pb-10 pt-28 dark:from-dark dark:via-black dark:to-black">
+    <Box className="bg-gradient-to-b from-white to-gray-50 pb-24 pt-28 dark:from-dark dark:via-black dark:to-black dark:pb-10">
       <Container>
-        <Text className="mb-10 text-4xl font-normal">
-          It&apos;s time to ship
-        </Text>
+        <Text className="mb-10 text-3xl">It&apos;s time to ship</Text>
         <Text
           className="mb-10 text-5xl font-semibold md:text-[4.5rem] md:leading-[1.3]"
           color="gradientDark"
@@ -64,7 +62,7 @@ export const RunEverything = () => {
             </Button>
           </motion.span>
         </Flex>
-        <Divider className="mt-24" />
+        <Divider className="mt-24 hidden dark:block" />
       </Container>
     </Box>
   );

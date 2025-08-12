@@ -18,7 +18,7 @@ export const Hero = () => {
         <Text
           align="center"
           as="h1"
-          className="mx-auto my-8 max-w-xl pb-2 text-5xl font-bold md:text-6xl"
+          className="mx-auto my-8 max-w-xl pb-2 text-5xl font-semibold md:text-6xl"
         >
           How can we help you{" "}
           <Text as="span" className="text-stroke-white">
