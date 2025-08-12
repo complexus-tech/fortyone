@@ -1,20 +1,19 @@
 "use client";
-import { Box, Flex, Text } from "ui";
-import { CommandIcon, DashboardIcon, GitIcon, OKRIcon } from "icons";
+import { Box, Divider, Flex, Text } from "ui";
+import { DashboardIcon, GitIcon, OKRIcon } from "icons";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import type { StaticImageData } from "next/image";
 import Image from "next/image";
 import { cn } from "lib";
 import { Container } from "@/components/ui";
-import keyboardImg from "../../../public/features/keyboard.png";
 import analyticsImg from "../../../public/features/analytics.png";
 import workflowImg from "../../../public/features/workflow.png";
 import okrImg from "../../../public/features/okr.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="flex flex-col gap-8 pb-12 md:flex-row md:gap-12 md:py-24">
+    <Box className="flex flex-col gap-8 pb-12 md:flex-row md:gap-12 md:py-16">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -41,10 +40,7 @@ const Intro = () => (
         viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Text
-          className="mt-6 max-w-xl font-normal opacity-80 md:mt-1"
-          fontSize="xl"
-        >
+        <Text className="mt-6 max-w-xl md:mt-1" color="muted" fontSize="xl">
           Complexus puts an AI assistant at the heart of your workflow helping
           you create stories, plan sprints, track OKRs, and keep everything
           moving, so your team stays aligned and delivers without the chaos.
@@ -73,9 +69,6 @@ const Card = ({
       transition={{ type: "spring", stiffness: 100 }}
     >
       <Box
-        className={cn(
-          "relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 p-6 pb-8 dark:border-dark-50 dark:bg-dark md:h-[420px]",
-        )}
         onMouseEnter={() => {
           setIsActive(true);
         }}
@@ -83,28 +76,10 @@ const Card = ({
           setIsActive(false);
         }}
       >
-        <Flex className="mb-4" justify="between">
-          <Text as="h3" className="text-lg">
-            {name}
-          </Text>
-          {icon}
-        </Flex>
-        <Box>
-          <Box className="relative">
-            <Image
-              alt={alt}
-              className={cn(
-                "pointer-events-none mx-auto block aspect-[6/4] rounded-xl object-contain",
-              )}
-              placeholder="blur"
-              quality={100}
-              src={src}
-            />
-            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-gray-50/90 to-gray-50 dark:via-dark/90 dark:to-dark" />
-          </Box>
-          <Text className="mt-4 opacity-80">{description}</Text>
-        </Box>
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-70" />
+        <Box className="aspect-square rounded-2xl bg-gray-50" />
+        <Text className="mt-6 text-lg" color="muted">
+          {description}
+        </Text>
       </Box>
     </motion.div>
   );
@@ -145,28 +120,18 @@ export const Features = () => {
         alt: "OKR Tracking",
       },
     },
-    {
-      id: 4,
-      name: "Keyboard shortcuts",
-      description:
-        "Manage your work faster with intuitive keyboard shortcuts for enhanced productivity.",
-      icon: <CommandIcon className="h-6" />,
-      image: {
-        src: keyboardImg,
-        alt: "Keyboard Shortcuts",
-      },
-    },
   ];
 
   return (
     <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:pb-36">
       <Container as="section">
         <Intro />
-        <Box className="mx-auto grid grid-cols-1 gap-5 md:grid-cols-4">
+        <Box className="mx-auto grid grid-cols-1 gap-8 md:grid-cols-3">
           {features.map((feature) => (
             <Card key={feature.id} {...feature} />
           ))}
         </Box>
+        <Divider className="mt-24" />
       </Container>
     </Box>
   );

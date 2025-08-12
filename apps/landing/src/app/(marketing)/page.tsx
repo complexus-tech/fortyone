@@ -9,6 +9,7 @@ import {
   Testimonials,
   Transform,
   Maya,
+  RunEverything,
 } from "@/modules/home";
 
 export default function Page() {
@@ -17,10 +18,13 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
-      <Maya />
       <Features />
-      <Transform />
+      <Maya />
+      <RunEverything />
       <Integrations />
+
+      {/* <Transform /> */}
+
       <Testimonials />
       <Faqs />
       <CallToAction />
