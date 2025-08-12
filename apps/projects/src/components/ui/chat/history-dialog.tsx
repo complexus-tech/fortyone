@@ -25,11 +25,11 @@ export const HistoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="mr-0 max-w-[32rem] rounded-none border-0 border-l-[0.5px] font-medium outline-none dark:bg-dark-300 md:mt-auto"
+        className="mb-8 mr-6 max-w-[37rem] rounded-3xl border border-gray-100 font-medium shadow-2xl shadow-gray-200 outline-none dark:border-dark-100 dark:bg-dark-300 dark:shadow-none md:mt-auto"
         hideClose
-        overlayClassName="justify-end backdrop-blur-sm"
+        overlayClassName="justify-end bg-dark/5 dark:bg-dark/5"
       >
-        <Dialog.Header className="flex h-16 items-center border-b-[0.5px] border-gray-100 px-6 dark:border-dark-50">
+        <Dialog.Header className="flex h-16 items-center border-b border-gray-100/60 px-6 dark:border-dark-100">
           <Dialog.Title className="flex w-full items-center gap-2 text-lg font-semibold">
             <Button
               asIcon
@@ -51,7 +51,7 @@ export const HistoryDialog = ({
         <Dialog.Description className="sr-only">
           View and manage your chat history.
         </Dialog.Description>
-        <Dialog.Body className="h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] p-0 pt-6">
+        <Dialog.Body className="h-[calc(100dvh-8rem)] max-h-[calc(100dvh-8rem)] p-0 pt-6">
           <History
             currentChatId={currentChatId}
             handleChatSelect={handleChatSelectAndClose}

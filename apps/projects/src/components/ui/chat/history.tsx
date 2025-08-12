@@ -28,7 +28,7 @@ const Row = ({
 
   return (
     <>
-      <RowWrapper className="rounded-xl border-0 px-2 py-1.5 md:px-3">
+      <RowWrapper className="rounded-xl border-0 px-3 py-2 md:px-3">
         <Flex
           align="center"
           className="flex-1 cursor-pointer outline-none"
@@ -40,7 +40,7 @@ const Row = ({
           tabIndex={0}
           title={new Date(chat.createdAt).toLocaleString()}
         >
-          <Text className="line-clamp-1">{chat.title}</Text>
+          <Text className="line-clamp-1 opacity-80">{chat.title}</Text>
         </Flex>
         <Menu>
           <Menu.Button>
@@ -187,10 +187,7 @@ export const History = ({
     <Box className="px-4">
       {groupedChats.map((group) => (
         <Box className="mb-6" key={group.label}>
-          <Text
-            className="mb-1 px-2.5 text-[1.1rem] font-semibold antialiased"
-            color="muted"
-          >
+          <Text className="mb-1 px-2.5 text-[1.1rem] font-semibold">
             {group.label}
           </Text>
           {group.items.map((chat) => (
