@@ -33,7 +33,7 @@ export const Transform = () => {
           <Flex direction="column" justify="center">
             <Text
               as="h2"
-              className="mt-6 text-center text-5xl font-semibold md:text-left md:text-7xl"
+              className="mt-6 text-center text-5xl font-semibold md:text-left md:text-6xl"
             >
               <span className="text-stroke-white">Transform</span> how your team
               works <span className="text-stroke-white relative">today.</span>

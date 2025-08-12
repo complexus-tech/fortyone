@@ -8,7 +8,7 @@ import {
   Integrations,
   Testimonials,
   Transform,
-  // Maya,
+  Maya,
 } from "@/modules/home";
 
 export default function Page() {
@@ -17,7 +17,7 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
-      {/* <Maya /> */}
+      <Maya />
       <Features />
       <Transform />
       <Integrations />

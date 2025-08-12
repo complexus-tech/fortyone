@@ -13,7 +13,7 @@ export const Hero = () => {
     <Box>
       <Box className="absolute inset-0 hidden bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
-      <Container className="pt-12 md:pt-8">
+      <Container className="pt-12">
         <Flex
           align="center"
           className="mb-8 mt-12 text-center md:mt-20"
@@ -50,7 +50,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-bold md:max-w-5xl md:text-[4.1rem] md:leading-[1.1]",
+                "relative z-[1] mt-6 pb-2 text-5xl font-bold md:max-w-5xl md:text-[3.8rem] md:leading-[1.1]",
               )}
             >
               The{" "}

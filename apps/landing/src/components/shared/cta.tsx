@@ -26,7 +26,7 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-4xl pb-2 text-5xl font-semibold md:text-7xl"
+              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-semibold md:text-6xl md:leading-[1.1]"
             >
               Work <span className="text-stroke-white">smarter</span> with AI
               that’s in the loop.
@@ -58,10 +58,10 @@ export const CallToAction = () => {
           />
           <Image
             alt="CTA"
-            className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
+            className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
             src={ctaDark}
           />
-          <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100">
+          <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
             <Button
               className="px-3 md:pl-5 md:pr-4"
               color="invert"
