@@ -11,6 +11,7 @@ export const RunEverything = () => {
       <Container>
         <Text className="mb-10 text-3xl">It&apos;s time to ship</Text>
         <Text
+          as="h2"
           className="mb-10 text-5xl font-semibold md:text-[4.5rem] md:leading-[1.3]"
           color="gradientDark"
         >
