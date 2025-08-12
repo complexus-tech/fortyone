@@ -1,8 +1,8 @@
-import type { Message } from "@ai-sdk/react";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 
 export type MayaChatConfig = {
   currentChatId: string;
-  initialMessages?: Message[];
+  initialMessages?: MayaUIMessage[];
   hasSelectedChat?: boolean;
   isNewChat?: boolean;
 };
