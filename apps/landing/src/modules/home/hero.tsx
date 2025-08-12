@@ -50,7 +50,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[3.8rem] md:leading-[1.1]",
+                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4rem] md:leading-[1.1]",
               )}
             >
               The{" "}

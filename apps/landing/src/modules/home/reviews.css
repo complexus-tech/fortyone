@@ -1,5 +1,0 @@
-.introText {
-  @apply relative -left-2 bottom-[50%] top-[50%] z-10 dark:opacity-10 md:left-0 dark:md:opacity-40 xl:tracking-tighter;
-  writing-mode: vertical-lr;
-  transform: scale(-1) translate(-50%, 50%);
-}

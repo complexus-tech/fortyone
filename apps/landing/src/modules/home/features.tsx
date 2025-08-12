@@ -131,7 +131,6 @@ export const Features = () => {
             <Card key={feature.id} {...feature} />
           ))}
         </Box>
-        <Divider className="mt-24" />
       </Container>
     </Box>
   );

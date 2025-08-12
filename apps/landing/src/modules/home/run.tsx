@@ -1,21 +1,24 @@
 "use client";
 
-import { Text, Button, Flex, Box } from "ui";
+import { Text, Button, Flex, Box, Divider } from "ui";
 import { motion } from "framer-motion";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const RunEverything = () => {
   return (
-    <Box className="bg-gradient-to-b from-white to-gray-50 py-28">
+    <Box className="bg-gradient-to-b from-white to-gray-50 pb-10 pt-28 dark:from-dark dark:via-black dark:to-black">
       <Container>
-        <Text className="mb-10 text-5xl">It&apos;s time to ship</Text>
+        <Text className="mb-10 text-4xl font-normal">
+          It&apos;s time to ship
+        </Text>
         <Text
-          className="mb-10 text-5xl font-semibold md:text-[5rem] md:leading-[1.3]"
+          className="mb-10 text-5xl font-semibold md:text-[4.5rem] md:leading-[1.3]"
           color="gradientDark"
         >
-          Plan sprints. Track objectives. <br /> Hit OKRs. Deliver on time.{" "}
-          <br /> Work smarter with AI.
+          Plan sprints.
+          <br /> Track objectives. <br /> Deliver on time. <br /> Work smarter
+          with AI.
         </Text>
         <Flex align="center" className="gap-2 md:gap-4" wrap>
           <motion.span
@@ -61,6 +64,7 @@ export const RunEverything = () => {
             </Button>
           </motion.span>
         </Flex>
+        <Divider className="mt-24" />
       </Container>
     </Box>
   );

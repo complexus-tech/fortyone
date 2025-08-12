@@ -9,7 +9,13 @@ const config: Pick<
   theme: {
     fontFamily: {
       heading: ["var(--font-heading)"],
-      body: ["var(--font-body)"],
+      body: [
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "var(--font-body)",
+        "Segoe UI",
+        "sans-serif",
+      ],
     },
   },
   content: [

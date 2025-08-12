@@ -42,7 +42,7 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html className={font.className} lang="en" suppressHydrationWarning>
+    <html className={font.variable} lang="en" suppressHydrationWarning>
       <body>
         <SessionProvider session={session}>
           <Providers>
