@@ -14,7 +14,7 @@ import okrImg from "../../../public/features/okr.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="flex flex-col gap-12 py-12 md:flex-row md:py-24">
+    <Box className="flex flex-col gap-8 pb-12 md:flex-row md:gap-12 md:py-24">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{

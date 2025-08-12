@@ -17,7 +17,7 @@ export const RequestDemo = () => {
         buttonVariants({
           color: "tertiary",
           variant: "naked",
-          rounded: "full",
+          rounded: "lg",
         }),
         "hidden text-[0.93rem] opacity-75 dark:opacity-90 md:flex",
       )}

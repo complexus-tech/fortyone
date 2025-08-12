@@ -51,7 +51,7 @@ export const HeroCards = () => {
   return (
     <Box className="relative">
       <Container className="relative mt-12 max-w-[85rem]">
-        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[600px] w-[800px] -translate-x-1/2 dark:bg-white/15" />
+        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[100px] -translate-x-1/2 dark:bg-white/15 md:h-[600px] md:w-[800px]" />
         <Box
           className="relative"
           onMouseEnter={() => {
@@ -77,25 +77,25 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-[0.6rem] border border-dark/20 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-dark/20 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Box className="relative">
                   <Image
                     alt={card.title}
-                    className="relative hidden rounded border border-dark-50/70 dark:block md:rounded-[1.2rem]"
+                    className="relative hidden rounded-[0.4rem] border border-dark-50/70 dark:block md:rounded-[1.2rem]"
                     placeholder="blur"
                     priority
                     src={card.image.src}
                   />
                   <Image
                     alt={card.title}
-                    className="relative rounded border border-dark/20 dark:hidden md:rounded-[1.2rem]"
+                    className="relative rounded-[0.4rem] border border-dark/20 dark:hidden md:rounded-[1.2rem]"
                     placeholder="blur"
                     priority
                     src={card.image.srcLight}
                   />
-                  <Box className="absolute inset-0 bg-gradient-to-t from-white via-white/5 dark:from-black dark:via-black/50" />
+                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:from-black dark:via-black/50 md:block" />
                 </Box>
               </SwiperSlide>
             ))}

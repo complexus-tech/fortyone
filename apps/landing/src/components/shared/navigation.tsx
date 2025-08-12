@@ -27,13 +27,13 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.5rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-50/50"
+    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
     href={href}
   >
     {icon}
     <Box>
       <Text className="dark:text-white">{name}</Text>
-      <Text className="text-[0.85rem]">{description}</Text>
+      <Text className="text-[0.85rem] opacity-70">{description}</Text>
     </Box>
   </Link>
 );
@@ -46,7 +46,7 @@ export const Navigation = () => {
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
     { title: "Blog", href: "/blog" },
-    { title: "Docs", href: "https://docs.complexus.app" },
+    { title: "Help Center", href: "https://docs.complexus.app" },
   ];
 
   const features = [
@@ -116,158 +116,308 @@ export const Navigation = () => {
     return "/login";
   };
 
+  // return (
+  //   <Box className="fixed left-0 top-2 z-[15] w-screen md:top-5">
+  //     <Container as="nav" className="md:w-max">
+  //       <Box className="md:rounded-full">
+  //         <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 border border-gray-100/40 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40 md:rounded-full">
+  //           <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
+  //           <Flex align="center" className="hidden md:flex" gap={1}>
+  //             <NavigationMenu>
+  //               <NavigationMenu.List>
+  //                 <NavigationMenu.Item>
+  //                   <NavigationMenu.Trigger
+  //                     className={cn(
+  //                       "px-3 py-1.5 opacity-75 transition hover:opacity-100 dark:opacity-90",
+  //                       {
+  //                         "opacity-100 dark:text-white dark:opacity-100":
+  //                           pathname?.startsWith("/features"),
+  //                       },
+  //                     )}
+  //                     hideArrow
+  //                   >
+  //                     Product
+  //                   </NavigationMenu.Trigger>
+  //                   <NavigationMenu.Content className="p-1">
+  //                     <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
+  //                       <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark-50/30">
+  //                         {features.map(
+  //                           ({ id, name, description, icon, href }) => (
+  //                             <MenuItem
+  //                               description={description}
+  //                               href={href}
+  //                               icon={icon}
+  //                               key={id}
+  //                               name={name}
+  //                             />
+  //                           ),
+  //                         )}
+  //                       </Box>
+  //                     </Box>
+  //                   </NavigationMenu.Content>
+  //                 </NavigationMenu.Item>
+  //               </NavigationMenu.List>
+  //             </NavigationMenu>
+  //             {navLinks.map(({ title, href }) => (
+  //               <NavLink
+  //                 className={cn(
+  //                   "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100 dark:opacity-90",
+  //                   {
+  //                     "opacity-100 dark:text-white dark:opacity-100":
+  //                       pathname === href,
+  //                   },
+  //                 )}
+  //                 href={href}
+  //                 key={title}
+  //               >
+  //                 {title}
+  //               </NavLink>
+  //             ))}
+  //           </Flex>
+  //           <Flex align="center" className="ml-4 gap-2">
+  //             <RequestDemo />
+  //             <Button
+  //               className={cn("hidden px-5 text-[0.93rem] md:flex", {
+  //                 flex: session,
+  //               })}
+  //               color={session ? "invert" : "tertiary"}
+  //               href={getNextUrl()}
+  //               rounded="full"
+  //               variant={session ? "solid" : "naked"}
+  //             >
+  //               {session ? (
+  //                 <>
+  //                   {getNextUrl().includes("onboarding") ? (
+  //                     "Create workspace"
+  //                   ) : (
+  //                     <>
+  //                       <span className="md:hidden">Open app</span>
+  //                       <span className="hidden md:block">Open workspace</span>
+  //                     </>
+  //                   )}
+  //                 </>
+  //               ) : (
+  //                 "Login"
+  //               )}
+  //             </Button>
+  //             {!session && (
+  //               <Button
+  //                 className="px-5 text-[0.93rem]"
+  //                 color="invert"
+  //                 href="/signup"
+  //                 rounded="full"
+  //               >
+  //                 Sign up
+  //               </Button>
+  //             )}
+
+  //             <Box className="flex md:hidden">
+  //               <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
+  //                 <Menu.Button asChild>
+  //                   <button type="button">
+  //                     <MenuButton open={isMenuOpen} />
+  //                   </button>
+  //                 </Menu.Button>
+  //                 <Menu.Items
+  //                   align="end"
+  //                   className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
+  //                 >
+  //                   <Menu.Group className="px-4 py-2.5">
+  //                     <Text color="muted">Product</Text>
+  //                   </Menu.Group>
+  //                   <Menu.Group>
+  //                     {navLinks.map(({ title, href }) => (
+  //                       <Menu.Item
+  //                         className="block rounded-xl py-2.5"
+  //                         key={title}
+  //                         onClick={() => {
+  //                           setIsMenuOpen(false);
+  //                         }}
+  //                       >
+  //                         <NavLink className="flex text-xl" href={href}>
+  //                           {title}
+  //                         </NavLink>
+  //                       </Menu.Item>
+  //                     ))}
+  //                   </Menu.Group>
+  //                   <Menu.Separator />
+  //                   <Menu.Group className="px-4 py-2.5">
+  //                     <Text color="muted">Features</Text>
+  //                   </Menu.Group>
+  //                   <Menu.Group>
+  //                     {features.map(({ id, name, href }) => (
+  //                       <Menu.Item
+  //                         className="block rounded-xl py-2.5"
+  //                         key={id}
+  //                         onClick={() => {
+  //                           setIsMenuOpen(false);
+  //                         }}
+  //                       >
+  //                         <NavLink
+  //                           className="flex items-center gap-2 text-xl"
+  //                           href={href}
+  //                         >
+  //                           {name}
+  //                         </NavLink>
+  //                       </Menu.Item>
+  //                     ))}
+  //                   </Menu.Group>
+  //                 </Menu.Items>
+  //               </Menu>
+  //             </Box>
+  //           </Flex>
+  //         </Box>
+  //       </Box>
+  //     </Container>
+  //   </Box>
+  // );
+
   return (
-    <Box className="fixed left-0 top-2 z-[15] w-screen md:top-5">
-      <Container as="nav" className="md:w-max">
-        <Box className="rounded-full">
-          <Box className="z-10 flex h-[3.25rem] items-center justify-between gap-12 rounded-full border border-gray-100/40 bg-[#dddddd]/40 px-[0.35rem] font-medium backdrop-blur-xl dark:border-dark-50/80 dark:bg-dark-50/40">
-            <Logo className="relative -left-1 top-0.5 z-10 h-5 text-dark dark:text-gray-50 md:h-[1.5rem]" />
-            <Flex align="center" className="hidden md:flex" gap={1}>
-              <NavigationMenu>
-                <NavigationMenu.List>
-                  <NavigationMenu.Item>
-                    <NavigationMenu.Trigger
-                      className={cn(
-                        "px-3 py-1.5 opacity-75 transition hover:opacity-100 dark:opacity-90",
-                        {
-                          "opacity-100 dark:text-white dark:opacity-100":
-                            pathname?.startsWith("/features"),
-                        },
-                      )}
-                      hideArrow
-                    >
-                      Product
-                    </NavigationMenu.Trigger>
-                    <NavigationMenu.Content className="p-1">
-                      <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
-                        <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark-50/30">
-                          {features.map(
-                            ({ id, name, description, icon, href }) => (
-                              <MenuItem
-                                description={description}
-                                href={href}
-                                icon={icon}
-                                key={id}
-                                name={name}
-                              />
-                            ),
-                          )}
-                        </Box>
-                      </Box>
-                    </NavigationMenu.Content>
-                  </NavigationMenu.Item>
-                </NavigationMenu.List>
-              </NavigationMenu>
-              {navLinks.map(({ title, href }) => (
-                <NavLink
+    <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/40 bg-white/40 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
+      <Container className="flex h-16 items-center justify-between gap-12 font-medium">
+        <Logo className="relative top-0.5 h-6 pl-1 text-dark dark:text-gray-50 md:h-[1.65rem] md:pl-0" />
+        <Flex align="center" className="hidden md:flex" gap={1}>
+          <NavigationMenu viewPortClassName="dark:bg-dark">
+            <NavigationMenu.List>
+              <NavigationMenu.Item>
+                <NavigationMenu.Trigger
                   className={cn(
-                    "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100 dark:opacity-90",
+                    "px-3 py-1.5 opacity-75 transition hover:opacity-100",
                     {
                       "opacity-100 dark:text-white dark:opacity-100":
-                        pathname === href,
+                        pathname?.startsWith("/features"),
                     },
                   )}
-                  href={href}
-                  key={title}
+                  hideArrow
                 >
-                  {title}
-                </NavLink>
-              ))}
-            </Flex>
-            <Flex align="center" className="ml-4 gap-2">
-              <RequestDemo />
-              <Button
-                className={cn("hidden px-5 text-[0.93rem] md:flex", {
-                  flex: session,
-                })}
-                color={session ? "invert" : "tertiary"}
-                href={getNextUrl()}
-                rounded="full"
-                variant={session ? "solid" : "naked"}
-              >
-                {session ? (
-                  <>
-                    {getNextUrl().includes("onboarding") ? (
-                      "Create workspace"
-                    ) : (
-                      <>
-                        <span className="md:hidden">Open app</span>
-                        <span className="hidden md:block">Open workspace</span>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  "Login"
-                )}
-              </Button>
-              {!session && (
-                <Button
-                  className="px-5 text-[0.93rem]"
-                  color="invert"
-                  href="/signup"
-                  rounded="full"
-                >
-                  Sign up
-                </Button>
-              )}
-
-              <Box className="flex md:hidden">
-                <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
-                  <Menu.Button asChild>
-                    <button type="button">
-                      <MenuButton open={isMenuOpen} />
-                    </button>
-                  </Menu.Button>
-                  <Menu.Items
-                    align="end"
-                    className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
-                  >
-                    <Menu.Group className="px-4 py-2.5">
-                      <Text color="muted">Product</Text>
-                    </Menu.Group>
-                    <Menu.Group>
-                      {navLinks.map(({ title, href }) => (
-                        <Menu.Item
-                          className="block rounded-xl py-2.5"
-                          key={title}
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <NavLink className="flex text-xl" href={href}>
-                            {title}
-                          </NavLink>
-                        </Menu.Item>
-                      ))}
-                    </Menu.Group>
-                    <Menu.Separator />
-                    <Menu.Group className="px-4 py-2.5">
-                      <Text color="muted">Features</Text>
-                    </Menu.Group>
-                    <Menu.Group>
-                      {features.map(({ id, name, href }) => (
-                        <Menu.Item
-                          className="block rounded-xl py-2.5"
+                  Product
+                </NavigationMenu.Trigger>
+                <NavigationMenu.Content className="p-1">
+                  <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
+                    <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark">
+                      {features.map(({ id, name, description, icon, href }) => (
+                        <MenuItem
+                          description={description}
+                          href={href}
+                          icon={icon}
                           key={id}
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <NavLink
-                            className="flex items-center gap-2 text-xl"
-                            href={href}
-                          >
-                            {name}
-                          </NavLink>
-                        </Menu.Item>
+                          name={name}
+                        />
                       ))}
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              </Box>
-            </Flex>
+                    </Box>
+                  </Box>
+                </NavigationMenu.Content>
+              </NavigationMenu.Item>
+            </NavigationMenu.List>
+          </NavigationMenu>
+          {navLinks.map(({ title, href }) => (
+            <NavLink
+              className={cn(
+                "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100",
+                {
+                  "opacity-100 dark:text-white dark:opacity-100":
+                    pathname === href,
+                },
+              )}
+              href={href}
+              key={title}
+            >
+              {title}
+            </NavLink>
+          ))}
+        </Flex>
+        <Flex align="center" className="ml-4 gap-2">
+          <RequestDemo />
+          <Button
+            className={cn("hidden px-5 text-[0.93rem] md:flex", {
+              flex: session,
+            })}
+            color={session ? "invert" : "tertiary"}
+            href={getNextUrl()}
+            rounded="lg"
+            variant={session ? "solid" : "naked"}
+          >
+            {session ? (
+              <>
+                {getNextUrl().includes("onboarding") ? (
+                  "Create workspace"
+                ) : (
+                  <>
+                    <span className="md:hidden">Open app</span>
+                    <span className="hidden md:block">Open workspace</span>
+                  </>
+                )}
+              </>
+            ) : (
+              "Login"
+            )}
+          </Button>
+          {!session && (
+            <Button
+              className="px-5 text-[0.93rem]"
+              color="invert"
+              href="/signup"
+              rounded="lg"
+            >
+              Sign up
+            </Button>
+          )}
+
+          <Box className="flex md:hidden">
+            <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
+              <Menu.Button asChild>
+                <button type="button">
+                  <MenuButton open={isMenuOpen} />
+                </button>
+              </Menu.Button>
+              <Menu.Items
+                align="end"
+                className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
+              >
+                <Menu.Group className="px-4 py-2.5">
+                  <Text color="muted">Product</Text>
+                </Menu.Group>
+                <Menu.Group>
+                  {navLinks.map(({ title, href }) => (
+                    <Menu.Item
+                      className="block rounded-xl py-2.5"
+                      key={title}
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <NavLink className="flex text-xl" href={href}>
+                        {title}
+                      </NavLink>
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+                <Menu.Separator />
+                <Menu.Group className="px-4 py-2.5">
+                  <Text color="muted">Features</Text>
+                </Menu.Group>
+                <Menu.Group>
+                  {features.map(({ id, name, href }) => (
+                    <Menu.Item
+                      className="block rounded-xl py-2.5"
+                      key={id}
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <NavLink
+                        className="flex items-center gap-2 text-xl"
+                        href={href}
+                      >
+                        {name}
+                      </NavLink>
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
           </Box>
-        </Box>
+        </Flex>
       </Container>
     </Box>
   );

@@ -101,13 +101,10 @@ export const Hero = () => {
                 className="px-3 md:pl-5 md:pr-4"
                 color="invert"
                 href="/signup"
-                rounded="full"
+                rounded="lg"
                 size="lg"
               >
-                <span className="hidden md:inline">
-                  Get Started - It&apos;s free
-                </span>
-                <span className="md:hidden">Get Started</span>
+                Get Started - It&apos;s free
               </Button>
             </motion.span>
             <motion.span
@@ -126,7 +123,7 @@ export const Hero = () => {
                 onClick={async () => {
                   await signInWithGoogle();
                 }}
-                rounded="full"
+                rounded="lg"
                 size="lg"
                 variant="naked"
               >

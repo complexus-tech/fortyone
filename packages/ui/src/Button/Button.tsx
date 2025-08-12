@@ -41,7 +41,7 @@ export const buttonVariants = cva(
         xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
         sm: "px-2 h-[2.1rem] gap-1",
         md: "px-3 h-[2.4rem] md:h-[2.5rem]",
-        lg: "px-5 md:px-7 py-2.5 md:py-3",
+        lg: "px-5 md:px-7 py-2.5",
       },
       disabled: {
         true: "opacity-40 cursor-not-allowed",

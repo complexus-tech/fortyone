@@ -9,7 +9,7 @@ import ctaDark from "../../../public/images/product/cta-dark.webp";
 export const CallToAction = () => {
   return (
     <Box className="overflow-hidden border-b border-gray-100/70 bg-gradient-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
-      <Container className="relative max-w-7xl pt-16 md:pt-16">
+      <Container className="relative max-w-7xl pt-6 md:pt-16">
         <Flex
           align="center"
           className="mb-8 text-center md:mb-12"
@@ -42,24 +42,23 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[650px] md:mt-10"
+              className="mt-4 max-w-[650px] text-lg md:mt-10 md:text-lg"
               color="muted"
-              fontSize="xl"
             >
               Plan with Maya, turn ideas into shippable stories, and watch
               progress roll into OKRs automatically.
             </Text>
           </motion.div>
         </Flex>
-        <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pb-0 md:pt-1.5">
+        <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
           <Image
             alt="CTA"
-            className="rounded-t-[1.1rem] border border-b-0 border-gray-100 dark:hidden"
+            className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[1.1rem]"
             src={ctaLight}
           />
           <Image
             alt="CTA"
-            className="hidden rounded-t-[1.1rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100"
+            className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
             src={ctaDark}
           />
           <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100">
@@ -67,7 +66,7 @@ export const CallToAction = () => {
               className="px-3 md:pl-5 md:pr-4"
               color="invert"
               href="/signup"
-              rounded="full"
+              rounded="lg"
               size="lg"
             >
               Get Started - It&apos;s free

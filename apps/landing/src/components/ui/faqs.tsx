@@ -59,7 +59,7 @@ const AccordionItem = ({
         aria-controls={panelId}
         aria-expanded={isOpen}
         className={cn(
-          "group flex w-full items-center justify-between py-6 text-left text-2xl opacity-90 outline-none",
+          "group flex w-full items-start justify-between py-6 text-left text-xl opacity-90 outline-none md:text-2xl",
         )}
         id={buttonId}
         onClick={onToggle}
@@ -89,7 +89,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl text-xl opacity-70">
+          <Text className="mb-10 max-w-3xl pl-1 text-lg opacity-70 md:text-xl">
             {item.answer}
           </Text>
         </Box>
@@ -110,7 +110,7 @@ export const Faqs = () => {
       <Container>
         <Text
           as="h2"
-          className="mb-12 text-5xl font-semibold leading-[1.1] md:text-5xl"
+          className="mb-6 text-4xl font-semibold leading-[1.1] md:mb-12 md:text-5xl"
         >
           Frequently Asked Questions
         </Text>
