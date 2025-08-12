@@ -171,7 +171,7 @@ export const Footer = () => {
 
   const resources = [
     {
-      title: "Documentation",
+      title: "Help Center",
       href: "https://docs.complexus.app",
     },
     {
