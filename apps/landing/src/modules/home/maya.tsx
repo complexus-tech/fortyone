@@ -7,7 +7,7 @@ export const Maya = () => {
   return (
     <Container className="dark:py-10">
       <Text
-        className="mb-16 max-w-5xl text-5xl font-semibold leading-[1.15]"
+        className="mb-16 max-w-5xl text-5xl leading-[1.15] md:mb-20"
         color="gradientDark"
       >
         Maya, your AI assistant, helps your team plan sprints, track objectives,
