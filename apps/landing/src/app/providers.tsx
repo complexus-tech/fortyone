@@ -21,7 +21,7 @@ export default function Providers({
   session: Session | null;
 }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <SessionProvider session={session}>
         <QueryClientProvider client={getQueryClient()}>
           <PostHogProvider>

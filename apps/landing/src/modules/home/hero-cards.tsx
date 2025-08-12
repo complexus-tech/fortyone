@@ -77,7 +77,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-dark/20 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-gray-100 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Box className="relative">
@@ -90,7 +90,7 @@ export const HeroCards = () => {
                   />
                   <Image
                     alt={card.title}
-                    className="relative rounded-[0.4rem] border border-dark/20 dark:hidden md:rounded-[1.2rem]"
+                    className="relative rounded-[0.4rem] border border-gray-100 dark:hidden md:rounded-[1.2rem]"
                     placeholder="blur"
                     priority
                     src={card.image.srcLight}

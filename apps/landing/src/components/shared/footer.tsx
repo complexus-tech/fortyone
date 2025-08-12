@@ -1,10 +1,18 @@
 "use client";
 import type { ReactNode } from "react";
 import { cn } from "lib";
-import { Box, Text } from "ui";
+import { Box, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
-import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
-// import { useTheme } from "next-themes";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  LinkedinIcon,
+  MoonIcon,
+  SunIcon,
+  SystemIcon,
+  TwitterIcon,
+} from "icons";
+import { useTheme } from "next-themes";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui";
 
@@ -30,9 +38,8 @@ const FooterLink = ({
 );
 
 const Copyright = () => {
-  // const { theme, setTheme } = useTheme();
   return (
-    <Box className="flex flex-col justify-between gap-y-8 border-b border-gray-200 pb-4 dark:border-dark-200 md:flex-row md:items-center md:gap-y-0">
+    <Box className="flex flex-col justify-between gap-y-8 border-b border-gray-100 pb-4 dark:border-dark-100 md:flex-row md:items-center md:gap-y-0">
       <Box className="3xl:gap-16 flex gap-8">
         <Link
           className="hover:text-primary"
@@ -76,59 +83,13 @@ const Copyright = () => {
           © {new Date().getFullYear()} Complexus LLC &bull; All rights
           reserved.
         </Text>
-        {/* <div className="flex gap-5">
-          <Tooltip title="System">
-            <button
-              onClick={() => {
-                setTheme("system");
-              }}
-              type="button"
-            >
-              <SystemIcon
-                className={cn("h-4", {
-                  "text-dark dark:text-white": theme === "system",
-                })}
-              />
-            </button>
-          </Tooltip>
-          <Tooltip title="Light">
-            <button
-              onClick={() => {
-                setTheme("light");
-              }}
-              type="button"
-            >
-              <SunIcon
-                className={cn("h-4", {
-                  "text-dark dark:text-white": theme === "light",
-                })}
-              />
-            </button>
-          </Tooltip>
-          <Tooltip title="Dark">
-            <button
-              className={cn("", {
-                "text-dark dark:text-white": theme === "dark",
-              })}
-              onClick={() => {
-                setTheme("dark");
-              }}
-              type="button"
-            >
-              <MoonIcon
-                className={cn("h-4", {
-                  "text-dark dark:text-white": theme === "dark",
-                })}
-              />
-            </button>
-          </Tooltip>
-        </div> */}
       </Box>
     </Box>
   );
 };
 
 export const Footer = () => {
+  const { resolvedTheme, setTheme } = useTheme();
   const product = [
     {
       href: "/product/stories",
@@ -230,9 +191,58 @@ export const Footer = () => {
       </Container>
       <Container className="pb-8 md:pb-16">
         <Copyright />
-        <Text className="mt-6" color="muted" fontSize="sm">
-          Complexus is a product of Complexus LLC.
-        </Text>
+        <Flex className="mt-6" justify="between">
+          <Text color="muted" fontSize="sm">
+            Complexus is a product of Complexus LLC.
+          </Text>
+          <Flex className="flex gap-5">
+            <Tooltip title="System">
+              <button
+                onClick={() => {
+                  setTheme("system");
+                }}
+                type="button"
+              >
+                <SystemIcon
+                  className={cn("h-4", {
+                    "text-dark dark:text-white": resolvedTheme === "system",
+                  })}
+                />
+              </button>
+            </Tooltip>
+            <Tooltip title="Light">
+              <button
+                onClick={() => {
+                  setTheme("light");
+                }}
+                type="button"
+              >
+                <SunIcon
+                  className={cn("h-4", {
+                    "text-dark dark:text-white": resolvedTheme === "light",
+                  })}
+                />
+              </button>
+            </Tooltip>
+            <Tooltip title="Dark">
+              <button
+                className={cn("", {
+                  "text-dark dark:text-white": resolvedTheme === "dark",
+                })}
+                onClick={() => {
+                  setTheme("dark");
+                }}
+                type="button"
+              >
+                <MoonIcon
+                  className={cn("h-4", {
+                    "text-dark dark:text-white": resolvedTheme === "dark",
+                  })}
+                />
+              </button>
+            </Tooltip>
+          </Flex>
+        </Flex>
       </Container>
     </Box>
   );

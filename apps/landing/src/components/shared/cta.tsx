@@ -42,7 +42,7 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[650px] text-lg md:mt-10 md:text-lg"
+              className="mt-4 max-w-[650px] text-lg md:mt-6 md:text-lg"
               color="muted"
             >
               Plan with Maya, turn ideas into shippable stories, and watch
@@ -53,7 +53,7 @@ export const CallToAction = () => {
         <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
           <Image
             alt="CTA"
-            className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[1.1rem]"
+            className="rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:hidden md:rounded-t-[1.1rem]"
             src={ctaLight}
           />
           <Image
