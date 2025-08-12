@@ -57,7 +57,7 @@ const RenderMessage = ({
               className={cn(
                 "chat-tables prose prose-stone leading-normal dark:prose-invert prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
                 {
-                  "text-white": message.role === "user",
+                  "text-gray-200 dark:text-dark": message.role === "user",
                 },
               )}
               key={index}
@@ -173,7 +173,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "rounded-tr-md bg-primary": message.role === "user",
+              "rounded-tr-md bg-dark dark:bg-white": message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}
           >

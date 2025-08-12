@@ -6,10 +6,10 @@ export const AiIcon = () => {
   return (
     <Flex
       align="center"
-      className="size-8 rounded-full bg-primary"
+      className="size-8 rounded-full bg-dark dark:bg-white"
       justify="center"
     >
-      <ComplexusLogo className="h-4 text-white" />
+      <ComplexusLogo className="h-4 text-white dark:text-dark" />
     </Flex>
   );
 };
