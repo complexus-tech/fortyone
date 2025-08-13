@@ -69,9 +69,23 @@ const Card = ({
           setIsActive(false);
         }}
       >
-        <Box className="mb-6 aspect-square rounded-2xl bg-gray-50" />
+        <motion.div
+          animate={isActive ? { y: -6, x: 6 } : { y: 0, x: 0 }}
+          initial={{ y: 0, x: 0 }}
+          transition={{ type: "spring", stiffness: 100 }}
+        >
+          <Box
+            className="aspect-square overflow-hidden rounded-2xl bg-gray-100 dark:bg-dark-200"
+            onMouseEnter={() => {
+              setIsActive(true);
+            }}
+            onMouseLeave={() => {
+              setIsActive(false);
+            }}
+          />
+        </motion.div>
 
-        {description}
+        <Box className="mt-6">{description}</Box>
       </Box>
     </motion.div>
   );
@@ -82,8 +96,8 @@ export const Features = () => {
     {
       id: 1,
       description: (
-        <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="bold">
+        <Text color="muted" fontSize="lg">
+          <Text as="span" color="gradient" fontWeight="semibold">
             Turn goals into action.
           </Text>{" "}
           Set clear objectives and connect them to the tasks. Track progress in
@@ -98,8 +112,8 @@ export const Features = () => {
     {
       id: 2,
       description: (
-        <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="bold">
+        <Text color="muted" fontSize="lg">
+          <Text as="span" color="gradient" fontWeight="semibold">
             Plan with confidence.
           </Text>{" "}
           Organise sprints with clear priorities and owners. Spot risks early
@@ -114,8 +128,8 @@ export const Features = () => {
     {
       id: 3,
       description: (
-        <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="bold">
+        <Text color="muted" fontSize="lg">
+          <Text as="span" color="gradient" fontWeight="semibold">
             Keep everyone aligned.
           </Text>{" "}
           One shared plan for all your work. Less confusion, faster decisions,

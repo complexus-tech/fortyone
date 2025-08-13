@@ -25,7 +25,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
   return (
     <QueryClientProvider client={getQueryClient()}>
       <PostHogProvider>
-        <ThemeProvider attribute="class" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}
         </ThemeProvider>
       </PostHogProvider>

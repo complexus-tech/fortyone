@@ -64,7 +64,7 @@ export const Maya = () => {
               Maya keeps projects moving, anticipating next steps and removing
               blockers before they slow you down.
             </Text>
-            <Box className="mt-8 h-48 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
+            <Box className="mt-8 h-60 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
           </Box>
         </motion.div>
         <motion.div
@@ -82,7 +82,7 @@ export const Maya = () => {
               Turn rough ideas into fully scoped sprints in seconds, with AI
               handling the details.
             </Text>
-            <Box className="mt-8 h-48 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
+            <Box className="mt-8 h-60 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
           </Box>
         </motion.div>
       </Box>
