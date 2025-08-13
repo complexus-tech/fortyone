@@ -3,7 +3,6 @@ import { Box, Text } from "ui";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import type { StaticImageData } from "next/image";
-import Image from "next/image";
 import { Container } from "@/components/ui";
 import analyticsImg from "../../../public/features/analytics.png";
 import workflowImg from "../../../public/features/workflow.png";
@@ -71,6 +70,7 @@ const Card = ({
         }}
       >
         <Box className="mb-6 aspect-square rounded-2xl bg-gray-50" />
+
         {description}
       </Box>
     </motion.div>
@@ -83,7 +83,7 @@ export const Features = () => {
       id: 1,
       description: (
         <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="semibold">
+          <Text as="span" color="gradient" fontWeight="bold">
             Turn goals into action.
           </Text>{" "}
           Set clear objectives and connect them to the tasks. Track progress in
@@ -99,7 +99,7 @@ export const Features = () => {
       id: 2,
       description: (
         <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="semibold">
+          <Text as="span" color="gradient" fontWeight="bold">
             Plan with confidence.
           </Text>{" "}
           Organise sprints with clear priorities and owners. Spot risks early
@@ -115,7 +115,7 @@ export const Features = () => {
       id: 3,
       description: (
         <Text color="muted">
-          <Text as="span" color="gradient" fontWeight="semibold">
+          <Text as="span" color="gradient" fontWeight="bold">
             Keep everyone aligned.
           </Text>{" "}
           One shared plan for all your work. Less confusion, faster decisions,

@@ -69,12 +69,12 @@ export const CallToAction = () => {
           <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
             <Image
               alt="CTA"
-              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:hidden md:rounded-t-[1.1rem]"
+              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[1.1rem]"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
+              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
               src={ctaDark}
             />
             <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
