@@ -5,29 +5,63 @@ import { motion } from "framer-motion";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
+const viewport = { once: true, amount: 0.35 };
+const fadeUp = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.7, ease: "easeOut" } },
+};
+const scaleXIn = {
+  hidden: { scaleX: 0, opacity: 0, transformOrigin: "left" },
+  show: {
+    scaleX: 1,
+    opacity: 1,
+    transition: { duration: 0.7, ease: "easeOut" },
+  },
+};
+
 export const RunEverything = () => {
+  const phrases = [
+    "Plan sprints.",
+    "Track objectives.",
+    "Deliver on time.",
+    "Work smarter with AI.",
+  ];
+
   return (
     <Box className="bg-gradient-to-b from-white to-gray-50 pb-24 pt-28 dark:from-dark dark:via-black dark:to-black dark:pb-10">
       <Container>
-        <Text className="mb-10 text-3xl">It&apos;s time to ship</Text>
+        <motion.div
+          initial="hidden"
+          variants={fadeUp}
+          viewport={viewport}
+          whileInView="show"
+        >
+          <Text className="mb-10 text-3xl">It&apos;s time to ship</Text>
+        </motion.div>
         <Text
           as="h2"
           className="mb-10 text-5xl font-semibold md:text-[4.5rem] md:leading-[1.3]"
           color="gradientDark"
         >
-          Plan sprints.
-          <br /> Track objectives. <br /> Deliver on time. <br /> Work smarter
-          with AI.
+          {phrases.map((line, index) => (
+            <motion.span
+              initial="hidden"
+              key={line}
+              transition={{ delay: index * 0.3 }}
+              variants={fadeUp}
+              viewport={viewport}
+              whileInView="show"
+            >
+              <span className="block">{line}</span>
+            </motion.span>
+          ))}
         </Text>
         <Flex align="center" className="gap-2 md:gap-4" wrap>
           <motion.span
-            initial={{ y: -10, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.4,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
+            initial="hidden"
+            variants={fadeUp}
+            viewport={viewport}
+            whileInView="show"
           >
             <Button
               className="px-3 md:pl-5 md:pr-4"
@@ -40,13 +74,11 @@ export const RunEverything = () => {
             </Button>
           </motion.span>
           <motion.span
-            initial={{ y: -5, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.6,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
+            initial="hidden"
+            transition={{ delay: 0.15 }}
+            variants={fadeUp}
+            viewport={viewport}
+            whileInView="show"
           >
             <Button
               className="px-3 md:pl-3.5 md:pr-4"
@@ -63,7 +95,16 @@ export const RunEverything = () => {
             </Button>
           </motion.span>
         </Flex>
-        <Divider className="mt-24 hidden dark:block" />
+        <motion.div
+          initial="hidden"
+          variants={scaleXIn}
+          viewport={viewport}
+          whileInView="show"
+        >
+          <Box className="mt-24 hidden dark:block">
+            <Divider />
+          </Box>
+        </motion.div>
       </Container>
     </Box>
   );

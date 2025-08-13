@@ -6,6 +6,16 @@ import { Container } from "@/components/ui";
 import ctaLight from "../../../public/images/product/cta.webp";
 import ctaDark from "../../../public/images/product/cta-dark.webp";
 
+const viewport = { once: true, amount: 0.35 };
+const scaleIn = {
+  hidden: { scale: 0.98, opacity: 0 },
+  show: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.7, ease: "easeOut" },
+  },
+};
+
 export const CallToAction = () => {
   return (
     <Box className="overflow-hidden border-b border-gray-100/70 bg-gradient-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
@@ -50,29 +60,36 @@ export const CallToAction = () => {
             </Text>
           </motion.div>
         </Flex>
-        <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
-          <Image
-            alt="CTA"
-            className="rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:hidden md:rounded-t-[1.1rem]"
-            src={ctaLight}
-          />
-          <Image
-            alt="CTA"
-            className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
-            src={ctaDark}
-          />
-          <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
-            <Button
-              className="px-3 md:pl-5 md:pr-4"
-              color="invert"
-              href="/signup"
-              rounded="lg"
-              size="lg"
-            >
-              Get Started - It&apos;s free
-            </Button>
+        <motion.div
+          initial="hidden"
+          variants={scaleIn}
+          viewport={viewport}
+          whileInView="show"
+        >
+          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
+            <Image
+              alt="CTA"
+              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:hidden md:rounded-t-[1.1rem]"
+              src={ctaLight}
+            />
+            <Image
+              alt="CTA"
+              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 grayscale dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
+              src={ctaDark}
+            />
+            <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
+              <Button
+                className="px-3 md:pl-5 md:pr-4"
+                color="invert"
+                href="/signup"
+                rounded="lg"
+                size="lg"
+              >
+                Get Started - It&apos;s free
+              </Button>
+            </Box>
           </Box>
-        </Box>
+        </motion.div>
       </Container>
     </Box>
   );

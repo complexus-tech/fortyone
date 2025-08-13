@@ -4,7 +4,14 @@ import { Box, Flex, Text } from "ui";
 import { ArrowRight2Icon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Container } from "./container";
+
+const viewport = { once: true, amount: 0.35 };
+const fadeUp = {
+  hidden: { y: 16, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: "easeOut" } },
+};
 
 type FaqItem = {
   question: string;
@@ -108,23 +115,38 @@ export const Faqs = () => {
   return (
     <Box className="py-16 md:pt-24">
       <Container>
-        <Text
-          as="h2"
-          className="mb-6 text-4xl font-semibold leading-[1.1] md:mb-12 md:text-5xl"
+        <motion.div
+          initial="hidden"
+          variants={fadeUp}
+          viewport={viewport}
+          whileInView="show"
         >
-          Frequently Asked Questions
-        </Text>
+          <Text
+            as="h2"
+            className="mb-6 text-4xl font-semibold leading-[1.1] md:mb-12 md:text-5xl"
+          >
+            Frequently Asked Questions
+          </Text>
+        </motion.div>
         <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (
-            <AccordionItem
-              index={index}
-              isOpen={openIndex === index}
-              item={item}
+            <motion.div
+              initial="hidden"
               key={item.question}
-              onToggle={() => {
-                handleToggle(index);
-              }}
-            />
+              transition={{ delay: index * 0.06 }}
+              variants={fadeUp}
+              viewport={viewport}
+              whileInView="show"
+            >
+              <AccordionItem
+                index={index}
+                isOpen={openIndex === index}
+                item={item}
+                onToggle={() => {
+                  handleToggle(index);
+                }}
+              />
+            </motion.div>
           ))}
         </Flex>
       </Container>
