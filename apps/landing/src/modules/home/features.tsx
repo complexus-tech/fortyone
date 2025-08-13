@@ -1,11 +1,9 @@
 "use client";
-import { Box, Divider, Flex, Text } from "ui";
-import { DashboardIcon, GitIcon, OKRIcon } from "icons";
+import { Box, Text } from "ui";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import type { StaticImageData } from "next/image";
 import Image from "next/image";
-import { cn } from "lib";
 import { Container } from "@/components/ui";
 import analyticsImg from "../../../public/features/analytics.png";
 import workflowImg from "../../../public/features/workflow.png";
@@ -51,14 +49,10 @@ const Intro = () => (
 );
 
 const Card = ({
-  name,
-  icon,
   description,
-  image: { src, alt },
+  image: { alt, src },
 }: {
-  name: string;
-  icon: ReactNode;
-  description: string;
+  description: ReactNode;
   image: { src: StaticImageData; alt: string };
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -76,10 +70,8 @@ const Card = ({
           setIsActive(false);
         }}
       >
-        <Box className="aspect-square rounded-2xl bg-gray-50" />
-        <Text className="mt-6 text-lg" color="muted">
-          {description}
-        </Text>
+        <Box className="mb-6 aspect-square rounded-2xl bg-gray-50" />
+        {description}
       </Box>
     </motion.div>
   );
@@ -89,10 +81,15 @@ export const Features = () => {
   const features = [
     {
       id: 1,
-      name: "Advanced workflows",
-      description:
-        "Define complex workflows. Customize statuses, and conditions to meet your team's needs.",
-      icon: <GitIcon className="h-6" />,
+      description: (
+        <Text color="muted">
+          <Text as="span" color="gradient" fontWeight="semibold">
+            Turn goals into action.
+          </Text>{" "}
+          Set clear objectives and connect them to the tasks. Track progress in
+          real time and adjust fast.
+        </Text>
+      ),
       image: {
         src: workflowImg,
         alt: "Kanban Board View",
@@ -100,10 +97,15 @@ export const Features = () => {
     },
     {
       id: 2,
-      name: "Analytics & Insights",
-      description:
-        "Track progress, identify bottlenecks, and optimize your workflow with detailed analytics.",
-      icon: <DashboardIcon className="h-6" />,
+      description: (
+        <Text color="muted">
+          <Text as="span" color="gradient" fontWeight="semibold">
+            Plan with confidence.
+          </Text>{" "}
+          Organise sprints with clear priorities and owners. Spot risks early
+          and keep deadlines on track.
+        </Text>
+      ),
       image: {
         src: analyticsImg,
         alt: "Analytics & Insights",
@@ -111,10 +113,15 @@ export const Features = () => {
     },
     {
       id: 3,
-      name: "Track OKRs",
-      description:
-        "Set and track OKRs to align your team and measure progress towards goals.",
-      icon: <OKRIcon className="h-6" />,
+      description: (
+        <Text color="muted">
+          <Text as="span" color="gradient" fontWeight="semibold">
+            Keep everyone aligned.
+          </Text>{" "}
+          One shared plan for all your work. Less confusion, faster decisions,
+          better results.
+        </Text>
+      ),
       image: {
         src: okrImg,
         alt: "OKR Tracking",
