@@ -63,7 +63,7 @@ const StoryOverlay = ({
     >
       {layout === "kanban" ? (
         <StoryCard
-          className="border-gray-100 shadow-lg dark:border-dark-50/60 dark:shadow-dark"
+          className="border-gray-200/80 shadow-lg dark:border-dark-50 dark:shadow-dark"
           handleStoryClick={() => {}}
           story={story!}
         />
