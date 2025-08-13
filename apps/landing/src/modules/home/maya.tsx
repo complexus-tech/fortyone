@@ -28,7 +28,7 @@ export const Maya = () => {
       >
         <Text
           className="mb-16 max-w-5xl text-6xl font-semibold leading-[1.15] md:mb-20"
-          color="gradientDark"
+          color="gradient"
         >
           Your AI assistant, helps your team plan sprints, track objectives, and
           catch bottlenecks before they slow you down.

@@ -130,23 +130,15 @@ export const Faqs = () => {
         </motion.div>
         <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (
-            <motion.div
-              initial="hidden"
+            <AccordionItem
+              index={index}
+              isOpen={openIndex === index}
+              item={item}
               key={item.question}
-              transition={{ delay: index * 0.06 }}
-              variants={fadeUp}
-              viewport={viewport}
-              whileInView="show"
-            >
-              <AccordionItem
-                index={index}
-                isOpen={openIndex === index}
-                item={item}
-                onToggle={() => {
-                  handleToggle(index);
-                }}
-              />
-            </motion.div>
+              onToggle={() => {
+                handleToggle(index);
+              }}
+            />
           ))}
         </Flex>
       </Container>
