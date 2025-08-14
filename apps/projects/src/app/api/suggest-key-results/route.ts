@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
+  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
     posthogDistinctId: session.user.email ?? "",
     posthogProperties: {
       action: "generate_key_results",
