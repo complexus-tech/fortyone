@@ -8,20 +8,25 @@ import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
-import { useCopyToClipboard, useTerminology, useLocalStorage } from "@/hooks";
+import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objective-stories-grouped";
 import { useObjective } from "@/modules/objectives/hooks";
 import { ObjectivePageSkeleton } from "@/modules/objectives/stories/objective-page-skeleton";
 import { Header } from "@/modules/objectives/stories/header";
 import { Overview } from "./overview";
 
-export const AllStories = ({ objectiveId }: { objectiveId: string }) => {
+export const AllStories = ({
+  objectiveId,
+  layout,
+  setLayout,
+}: {
+  objectiveId: string;
+  layout: StoriesLayout;
+  setLayout: (layout: StoriesLayout) => void;
+}) => {
   const { teamId } = useParams<{ teamId: string }>();
   const [isCopied, setIsCopied] = useState(false);
-  const [layout, setLayout] = useLocalStorage<StoriesLayout>(
-    "teams:objectives:stories:layout",
-    "list",
-  );
+
   const [_, copyText] = useCopyToClipboard();
   const { getTermDisplay } = useTerminology();
   const tabs = ["overview", "stories"] as const;

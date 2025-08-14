@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
+import type { StoriesLayout } from "@/components/ui";
 
 type MyWork = {
   viewOptions: StoriesViewOptions;
@@ -11,7 +12,13 @@ type MyWork = {
 
 const MyWorkContext = createContext<MyWork | undefined>(undefined);
 
-export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
+export const MyWorkProvider = ({
+  children,
+  layout,
+}: {
+  children: ReactNode;
+  layout: StoriesLayout;
+}) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
@@ -30,7 +37,7 @@ export const MyWorkProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "my-work:view-options-v2",
+    `my-work:view-options:${layout}`,
     initialOptions,
   );
   return (

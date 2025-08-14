@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { StoriesViewOptions } from "@/components/ui";
+import type { StoriesLayout, StoriesViewOptions } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 
 type SprintStories = {
@@ -15,8 +15,10 @@ const SprintStoriesContext = createContext<SprintStories | undefined>(
 
 export const SprintStoriesProvider = ({
   children,
+  layout,
 }: {
   children: ReactNode;
+  layout: StoriesLayout;
 }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
@@ -35,7 +37,7 @@ export const SprintStoriesProvider = ({
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "sprints:stories:view-options-v2",
+    `sprints:stories:view-options:${layout}`,
     initialOptions,
   );
   return (

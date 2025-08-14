@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesFilter } from "@/components/ui/stories-filter-button";
+import type { StoriesLayout } from "@/components/ui";
 
 type TeamOptions = {
   viewOptions: StoriesViewOptions;
@@ -16,7 +17,13 @@ type TeamOptions = {
 
 const TeamOptionsContext = createContext<TeamOptions | undefined>(undefined);
 
-export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
+export const TeamOptionsProvider = ({
+  children,
+  layout,
+}: {
+  children: ReactNode;
+  layout: StoriesLayout;
+}) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "priority",
     orderBy: "priority",
@@ -50,7 +57,7 @@ export const TeamOptionsProvider = ({ children }: { children: ReactNode }) => {
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:backlog:view-options-v2",
+    `teams:backlog:view-options:${layout}`,
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(

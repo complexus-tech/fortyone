@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
+import type { StoriesLayout } from "@/components/ui";
 
 type Profile = {
   viewOptions: StoriesViewOptions;
@@ -11,7 +12,13 @@ type Profile = {
 
 const ProfileContext = createContext<Profile | undefined>(undefined);
 
-export const ProfileProvider = ({ children }: { children: ReactNode }) => {
+export const ProfileProvider = ({
+  children,
+  layout,
+}: {
+  children: ReactNode;
+  layout: StoriesLayout;
+}) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
@@ -28,7 +35,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "profile:view-options-v2",
+    `profile:view-options:${layout}`,
     initialOptions,
   );
   return (

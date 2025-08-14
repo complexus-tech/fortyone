@@ -12,7 +12,7 @@ export const ListStories = () => {
   );
 
   return (
-    <TeamOptionsProvider>
+    <TeamOptionsProvider layout={layout}>
       <Header layout={layout} setLayout={setLayout} />
       <AllStories layout={layout} />
     </TeamOptionsProvider>

@@ -26,7 +26,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   }
 
   return (
-    <SprintStoriesProvider>
+    <SprintStoriesProvider layout={layout}>
       <Header
         isExpanded={isExpanded}
         layout={layout}

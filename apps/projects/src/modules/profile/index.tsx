@@ -12,7 +12,7 @@ export const ListUserStories = ({ stories }: { stories: Story[] }) => {
     "kanban",
   );
   return (
-    <ProfileProvider>
+    <ProfileProvider layout={layout}>
       <Header layout={layout} setLayout={setLayout} />
       <AllStories layout={layout} stories={stories} />
     </ProfileProvider>

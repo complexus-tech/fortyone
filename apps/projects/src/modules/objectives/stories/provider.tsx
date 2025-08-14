@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesFilter } from "@/components/ui/stories-filter-button";
+import type { StoriesLayout } from "@/components/ui";
 
 type ObjectiveOptions = {
   viewOptions: StoriesViewOptions;
@@ -19,8 +20,10 @@ const ObjectiveOptionsContext = createContext<ObjectiveOptions | undefined>(
 
 export const ObjectiveOptionsProvider = ({
   children,
+  layout,
 }: {
   children: ReactNode;
+  layout: StoriesLayout;
 }) => {
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
@@ -34,8 +37,8 @@ export const ObjectiveOptionsProvider = ({
       "Deadline",
       "Created",
       "Updated",
-      // "Sprint",
-      // "Labels",
+      "Sprint",
+      "Labels",
     ],
   };
   const initialFilters: StoriesFilter = {
@@ -55,7 +58,7 @@ export const ObjectiveOptionsProvider = ({
     createdByMe: false,
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    "teams:objectives:stories:view-options-v2",
+    `teams:objectives:stories:view-options:${layout}`,
     initialOptions,
   );
   const [filters, setFilters] = useLocalStorage<StoriesFilter>(
