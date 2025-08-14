@@ -42,10 +42,10 @@ export const Maya = () => {
       >
         <video
           autoPlay
-          className="aspect-[16/10] h-full w-full object-cover md:rounded-3xl"
+          className="aspect-video h-full w-full object-cover md:rounded-3xl"
           loop
           muted
-          src="/videos/test.mp4"
+          src="/videos/intro-dark.mp4"
         />
       </motion.div>
 
