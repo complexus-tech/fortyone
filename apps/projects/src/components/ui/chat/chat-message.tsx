@@ -49,7 +49,6 @@ const RenderMessage = ({
 
   return (
     <>
-      {JSON.stringify(message)}
       {isProcessing ? <Thinking /> : null}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
