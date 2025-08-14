@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
   const openaiClient = createOpenAI({
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.OPENAI_API_KEY,
   });
 
   const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
@@ -68,6 +68,11 @@ export async function POST(req: Request) {
       model,
       schema: substoryGenerationSchema,
       prompt: improvedPrompt,
+      providerOptions: {
+        openai: {
+          reasoningEffort: "low",
+        },
+      },
     });
 
     return result.toTextStreamResponse();
