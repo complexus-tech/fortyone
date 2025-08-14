@@ -42,7 +42,7 @@ export const listDueSoon = tool({
           .number()
           .min(1)
           .max(100)
-          .default(50)
+          .default(20)
           .optional()
           .describe("Number of stories to return per group (default: 50)"),
         page: z

@@ -90,9 +90,9 @@ export const listTeamStories = tool({
           .number()
           .min(1)
           .max(100)
-          .default(50)
+          .default(20)
           .optional()
-          .describe("Number of stories to return per group (default: 50)"),
+          .describe("Number of stories to return per group (default: 20)"),
         page: z
           .number()
           .min(1)

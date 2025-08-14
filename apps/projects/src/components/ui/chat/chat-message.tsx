@@ -49,6 +49,7 @@ const RenderMessage = ({
 
   return (
     <>
+      {JSON.stringify(message)}
       {isProcessing ? <Thinking /> : null}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
@@ -67,6 +68,8 @@ const RenderMessage = ({
               </Markdown>
             </Box>
           );
+        } else if (part.type === "reasoning") {
+          return <Box key={index}>{part.text}</Box>;
         } else if (part.type === "tool-getSprintDetailsTool") {
           if (part.state === "input-available") {
             return <Thinking key={index} message="Getting sprint details" />;

@@ -42,7 +42,7 @@ export const listOverdue = tool({
           .number()
           .min(1)
           .max(100)
-          .default(50)
+          .default(20)
           .optional()
           .describe("Number of stories to return per group (default: 10)"),
         page: z

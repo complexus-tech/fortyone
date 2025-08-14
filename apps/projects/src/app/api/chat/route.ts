@@ -5,7 +5,6 @@ import {
   convertToModelMessages,
   stepCountIs,
   streamText,
-  hasToolCall,
   smoothStream,
 } from "ai";
 import type { NextRequest } from "next/server";
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -67,19 +66,14 @@ export async function POST(req: NextRequest) {
       model,
       messages: modelMessages,
       maxOutputTokens: 4000,
-      temperature: 0.5,
-      stopWhen: [stepCountIs(10), hasToolCall("suggestions")],
+      // temperature: 0.5,
+      stopWhen: [stepCountIs(15)],
       tools,
       system: systemPrompt + userContext,
       experimental_transform: smoothStream({
         delayInMs: 20,
         chunking: "word",
       }),
-      providerOptions: {
-        openai: {
-          reasoningEffort: "low",
-        },
-      },
     });
     return result.toUIMessageStreamResponse({
       originalMessages: messages,
