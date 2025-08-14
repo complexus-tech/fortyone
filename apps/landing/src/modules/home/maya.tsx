@@ -27,7 +27,7 @@ export const Maya = () => {
         whileInView="show"
       >
         <Text
-          className="mb-16 max-w-5xl text-6xl font-semibold leading-[1.15] md:mb-20"
+          className="mb-16 max-w-5xl text-6xl font-semibold leading-[1.15]"
           color="gradient"
         >
           Your AI assistant, helps your team plan sprints, track objectives, and
@@ -40,13 +40,15 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <video
-          autoPlay
-          className="aspect-video h-full w-full object-cover md:rounded-3xl"
-          loop
-          muted
-          src="/videos/intro-dark.mp4"
-        />
+        <Box className="rounded-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-[1.3rem] md:p-2">
+          <video
+            autoPlay
+            className="aspect-video h-full w-full object-cover md:rounded-[0.8rem]"
+            loop
+            muted
+            src="/videos/intro-dark.mp4"
+          />
+        </Box>
       </motion.div>
 
       <Box className="mt-20 grid grid-cols-1 gap-16 md:grid-cols-2">
