@@ -154,7 +154,13 @@ const Package = ({
   );
 };
 
-export const Pricing = ({ className }: { className?: string }) => {
+export const Pricing = ({
+  className,
+  hideDescription,
+}: {
+  className?: string;
+  hideDescription?: boolean;
+}) => {
   const pathname = usePathname();
   const [billing, setBilling] = useState<Billing>("annual");
 
@@ -187,10 +193,12 @@ export const Pricing = ({ className }: { className?: string }) => {
               </Text>
             </Text>
           </motion.div>
-          <Text className="mt-4 max-w-2xl text-center text-xl opacity-70">
-            Choose a plan that fits your needs with transparent pricing - no
-            hidden fees, no unexpected charges, just clear value.
-          </Text>
+          {!hideDescription ? (
+            <Text className="mt-4 max-w-2xl text-center text-xl opacity-70">
+              Choose a plan that fits your needs with transparent pricing - no
+              hidden fees, no unexpected charges, just clear value.
+            </Text>
+          ) : null}
         </Flex>
 
         <Flex align="center" className="my-10" direction="column">

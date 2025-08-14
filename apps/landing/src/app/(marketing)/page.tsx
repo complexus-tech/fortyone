@@ -1,4 +1,5 @@
 import { CallToAction } from "@/components/shared";
+import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
 import {
   Hero,
@@ -21,6 +22,7 @@ export default function Page() {
       <Integrations />
       <RunEverything />
       <Faqs />
+      <Pricing className="md:pb-16 md:pt-0" hideDescription />
       <CallToAction />
     </>
   );
