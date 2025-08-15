@@ -22,7 +22,7 @@ const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/80 dark:bg-dark-200/80 backdrop-blur-[12px] z-50 border border-gray-50 dark:border-dark-50 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
+  "bg-white/70 dark:bg-dark-200/80 backdrop-blur-[12px] z-50 border border-gray-100 dark:border-dark-50 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
   {
     variants: {
       rounded: {

@@ -240,10 +240,10 @@ export const InviteMembersDialog = ({
         >
           <Dialog.Body className="mt-2 pb-6">
             <Text className="mb-2" color="muted">
-              Email addresses
+              Email addresses*
             </Text>
             <TextArea
-              className="border py-4 leading-normal dark:bg-transparent"
+              className="resize-none border py-4 leading-normal dark:bg-transparent"
               onChange={(e) => {
                 handleEmailsChange(e.target.value);
               }}
@@ -255,7 +255,7 @@ export const InviteMembersDialog = ({
               Role
             </Text>
             <Select onValueChange={handleRoleChange} value={formState.role}>
-              <Select.Trigger className="h-[2.8rem] border bg-transparent px-4 text-base dark:bg-transparent">
+              <Select.Trigger className="h-[2.8rem] border bg-white px-4 text-base dark:bg-transparent">
                 <Select.Input placeholder="Select role" />
               </Select.Trigger>
               <Select.Content>
@@ -284,11 +284,15 @@ export const InviteMembersDialog = ({
                   color="tertiary"
                   key={team.id}
                   leftIcon={
-                    <Checkbox checked={formState.teamIds.includes(team.id)} />
+                    <Checkbox
+                      checked={formState.teamIds.includes(team.id)}
+                      className="rounded-[0.4rem]"
+                    />
                   }
                   onClick={() => {
                     handleTeamToggle(team.id);
                   }}
+                  rounded="full"
                   title={team.name}
                   variant="outline"
                 >
