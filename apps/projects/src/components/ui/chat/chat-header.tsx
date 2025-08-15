@@ -37,29 +37,6 @@ export const ChatHeader = ({
               <span className="sr-only">New chat</span>
             </Button>
           </Tooltip>
-          <Tooltip title="History">
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={
-                <HistoryIcon
-                  className="text-dark dark:text-gray-200"
-                  strokeWidth={2.8}
-                />
-              }
-              onClick={() => {
-                setIsHistoryOpen(true);
-              }}
-              variant="naked"
-            >
-              <span className="sr-only">History</span>
-            </Button>
-          </Tooltip>
-        </Flex>
-        <Text className="text-xl antialiased" fontWeight="semibold">
-          Maya is your AI assistant
-        </Text>
-        <Flex align="center" gap={3}>
           <Tooltip title="Open on new page">
             <Button
               asIcon
@@ -77,6 +54,29 @@ export const ChatHeader = ({
               variant="naked"
             >
               <span className="sr-only">Open on new page</span>
+            </Button>
+          </Tooltip>
+        </Flex>
+        <Text className="text-xl antialiased" fontWeight="semibold">
+          Maya is your AI assistant
+        </Text>
+        <Flex align="center" gap={3}>
+          <Tooltip title="History">
+            <Button
+              asIcon
+              color="tertiary"
+              leftIcon={
+                <HistoryIcon
+                  className="text-dark dark:text-gray-200"
+                  strokeWidth={2.8}
+                />
+              }
+              onClick={() => {
+                setIsHistoryOpen(true);
+              }}
+              variant="naked"
+            >
+              <span className="sr-only">History</span>
             </Button>
           </Tooltip>
           <Tooltip title="Close">

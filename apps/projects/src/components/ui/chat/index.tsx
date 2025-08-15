@@ -102,7 +102,7 @@ export const Chat = ({
           hideClose
           overlayClassName="justify-end pr-[1.5vh] bg-dark/[0.07] dark:bg-dark/20"
         >
-          <Dialog.Header className="flex h-[4.5rem] items-center px-6">
+          <Dialog.Header className="flex h-[4.6rem] items-center px-6">
             <Dialog.Title className="w-full text-lg">
               <ChatHeader
                 currentChatId={currentChatId}
