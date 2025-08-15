@@ -412,7 +412,7 @@ export const NewObjectiveDialog = ({
               editor={titleEditor}
             />
             <TextEditor
-              className={cn("min-h-28", {
+              className={cn("min-h-20", {
                 "min-h-96": isExpanded,
               })}
               editor={editor}
