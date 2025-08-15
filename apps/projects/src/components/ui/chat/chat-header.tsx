@@ -1,4 +1,4 @@
-import { ArrowDown2Icon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
+import { HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
 import { Flex, Button, Text, Tooltip } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,7 +27,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <PlusIcon
-                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  className="text-dark dark:text-gray-200"
                   strokeWidth={2.8}
                 />
               }
@@ -43,7 +43,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <HistoryIcon
-                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  className="text-dark dark:text-gray-200"
                   strokeWidth={2.8}
                 />
               }
@@ -66,7 +66,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <NewTabIcon
-                  className="h-[1.4rem] text-dark dark:text-gray-200"
+                  className="text-dark dark:text-gray-200"
                   strokeWidth={2.6}
                 />
               }
@@ -84,8 +84,8 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <ArrowDown2Icon
-                  className="h-6 text-dark dark:text-gray-200"
+                <MinusIcon
+                  className="text-dark dark:text-gray-200"
                   strokeWidth={2.8}
                 />
               }

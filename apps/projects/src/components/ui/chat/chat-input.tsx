@@ -257,7 +257,7 @@ export const ChatInput = ({
       {recordingState !== "idle" && (
         <Flex
           align="center"
-          className={cn("mb-2 px-1 pt-1 text-sm", {
+          className={cn("mb-2 px-1 pt-2 text-sm", {
             "md:text-base": isOnPage,
           })}
           gap={2}
@@ -281,7 +281,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="rounded-[1.25rem] border border-gray-100 bg-gray-50/80 py-2 dark:border-dark-50/80 dark:bg-dark-200/70">
+      <Box className="rounded-[1.25rem] border border-gray-100 py-2 dark:border-dark-50/80">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -364,52 +364,46 @@ export const ChatInput = ({
         <Flex align="center" className="px-3" gap={2} justify="between">
           <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
             <Button
-              asIcon
-              className="mb-0.5 dark:hover:bg-dark-50 md:h-10"
+              className="mb-0.5 gap-1 md:h-[2.6rem]"
               color="tertiary"
               onClick={open}
-              rounded="full"
+              rounded="lg"
               variant="outline"
             >
-              <PlusIcon />
+              <PlusIcon /> Attach files
             </Button>
           </Tooltip>
 
           <Flex align="center" gap={2}>
-            <Tooltip
-              side="bottom"
-              title={isRecording ? "Stop dictation" : "Dictate"}
-            >
-              <Button
-                className="mb-0.5 gap-1 md:h-[2.6rem]"
-                color="tertiary"
-                leftIcon={
-                  isTranscribing ? (
-                    <LoadingIcon className="animate-spin" />
-                  ) : isRecording ? (
-                    <CloseIcon />
-                  ) : (
-                    <MicrophoneIcon />
-                  )
+            <Button
+              className="mb-0.5 gap-1 md:h-[2.6rem]"
+              color="tertiary"
+              leftIcon={
+                isTranscribing ? (
+                  <LoadingIcon className="animate-spin" />
+                ) : isRecording ? (
+                  <CloseIcon />
+                ) : (
+                  <MicrophoneIcon />
+                )
+              }
+              onClick={() => {
+                if (isRecording) {
+                  stopRecording();
+                  resetRecording();
+                } else {
+                  handleVoiceRecording();
                 }
-                onClick={() => {
-                  if (isRecording) {
-                    stopRecording();
-                    resetRecording();
-                  } else {
-                    handleVoiceRecording();
-                  }
-                }}
-                rounded="lg"
-                variant="outline"
-              >
-                {isTranscribing
-                  ? "Transcribing..."
-                  : isRecording
-                    ? "Cancel"
-                    : "Talk"}
-              </Button>
-            </Tooltip>
+              }}
+              rounded="lg"
+              variant="outline"
+            >
+              {isTranscribing
+                ? "Transcribing..."
+                : isRecording
+                  ? "Cancel"
+                  : "Talk"}
+            </Button>
             <Button
               asIcon
               className="mb-0.5 md:h-10"
