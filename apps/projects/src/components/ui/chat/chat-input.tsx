@@ -253,18 +253,11 @@ export const ChatInput = ({
         ];
 
   return (
-    <Box
-      className={cn(
-        "sticky bottom-0 bg-white px-6 pb-3 backdrop-blur-lg dark:bg-dark-300/60",
-        {
-          "dark:bg-dark": isOnPage,
-        },
-      )}
-    >
+    <Box className="sticky bottom-0 px-6 pb-3">
       {recordingState !== "idle" && (
         <Flex
           align="center"
-          className={cn("mb-2 px-1 text-sm", {
+          className={cn("mb-2 px-1 pt-1 text-sm", {
             "md:text-base": isOnPage,
           })}
           gap={2}
