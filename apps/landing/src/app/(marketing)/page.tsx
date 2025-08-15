@@ -8,7 +8,6 @@ import {
   Features,
   Integrations,
   Maya,
-  RunEverything,
 } from "@/modules/home";
 
 export default function Page() {
@@ -20,7 +19,6 @@ export default function Page() {
       <Features />
       <Maya />
       <Integrations />
-      <RunEverything />
       <Faqs />
       <Pricing className="md:pb-16 md:pt-0" hideDescription />
       <CallToAction />
