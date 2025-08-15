@@ -76,10 +76,10 @@ export const Sidebar = () => {
             </Tooltip>
           )}
 
-          <Flex align="center" className="mt-3 gap-3" justify="between">
+          <Flex align="center" className="mt-3" justify="between">
             {userRole === "admin" ? (
               <button
-                className="flex items-center gap-2 px-1"
+                className="flex items-center justify-start gap-2 px-1 text-left"
                 data-invite-button
                 onClick={() => {
                   setIsOpen(true);
@@ -87,7 +87,7 @@ export const Sidebar = () => {
                 type="button"
               >
                 <PlusIcon />
-                Invite members
+                <span className="line-clamp-1">Invite members</span>
               </button>
             ) : (
               <Button
