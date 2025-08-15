@@ -50,21 +50,10 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4rem] md:leading-[1.1]",
+                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-6xl md:leading-[1.1]",
               )}
             >
-              The{" "}
-              <Text as="span" className="text-stroke-white">
-                AI
-              </Text>{" "}
-              Everything App for{" "}
-              <Text as="span" className="text-stroke-white">
-                Projects
-              </Text>{" "}
-              &{" "}
-              <Text as="span" className="text-stroke-white">
-                OKRs
-              </Text>
+              The AI Everything App for Projects & OKRs
             </Text>
           </motion.span>
 
