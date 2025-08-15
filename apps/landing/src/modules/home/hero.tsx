@@ -16,7 +16,7 @@ export const Hero = () => {
       <Container className="pt-12">
         <Flex
           align="center"
-          className="mb-8 mt-12 text-center md:mt-20"
+          className="mb-8 mt-12 text-center md:mt-16"
           direction="column"
         >
           <motion.span
@@ -29,7 +29,7 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="border-0 bg-[#dddddd]/40 px-5 text-sm backdrop-blur-xl dark:bg-dark-100/40 md:text-[0.95rem]"
+              className="border-0 bg-[#dddddd]/30 px-5 text-sm backdrop-blur-xl dark:bg-dark-100/40 md:text-[0.95rem]"
               color="tertiary"
               href="/signup"
               rounded="full"
@@ -50,7 +50,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-6xl md:leading-[1.1]",
+                "relative z-[1] mt-6 pb-2 text-5xl font-semibold antialiased md:max-w-3xl md:text-6xl md:leading-[1.1]",
               )}
             >
               The AI Everything App for Projects & OKRs
@@ -66,7 +66,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-[1.4rem]">
+            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
               The only AI-powered project management system that connects daily
               work to strategic goals.
             </Text>

@@ -169,7 +169,7 @@ export const Pricing = ({
       <Container className="max-w-[85rem]">
         <Flex
           align="center"
-          className={cn("my-12 text-center", {
+          className={cn("mt-10 pb-6 text-center", {
             "md:mt-20": pathname === "/pricing",
           })}
           direction="column"
@@ -201,7 +201,7 @@ export const Pricing = ({
           ) : null}
         </Flex>
 
-        <Flex align="center" className="my-10" direction="column">
+        <Flex align="center" className="mb-10" direction="column">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{

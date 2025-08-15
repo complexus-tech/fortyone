@@ -19,7 +19,7 @@ export const RequestDemo = () => {
           variant: "naked",
           rounded: "lg",
         }),
-        "hidden text-[0.93rem] opacity-75 dark:opacity-90 md:flex",
+        "hidden text-[0.93rem] opacity-90 md:flex",
       )}
       data-cal-config='{"layout":"month_view"}'
       data-cal-link="complexus/30min"

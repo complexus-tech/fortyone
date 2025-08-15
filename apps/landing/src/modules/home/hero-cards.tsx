@@ -95,7 +95,7 @@ export const HeroCards = () => {
                     priority
                     src={card.image.srcLight}
                   />
-                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:from-black dark:via-black/50 md:block" />
+                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:from-black dark:via-black/10 md:block" />
                 </Box>
               </SwiperSlide>
             ))}

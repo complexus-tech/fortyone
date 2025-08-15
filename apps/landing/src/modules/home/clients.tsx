@@ -9,7 +9,7 @@ const Brand = ({ logo }: { logo: string }) => {
   return (
     <img
       alt="brand logo"
-      className="3xl:h-20 mr-8 block h-8 w-auto grayscale dark:invert md:mr-16 md:h-10 md:justify-self-center"
+      className="3xl:h-20 mr-8 block h-8 w-auto grayscale dark:invert md:mr-16 md:h-9 md:justify-self-center"
       key={logo}
       loading="lazy"
       src={logo}

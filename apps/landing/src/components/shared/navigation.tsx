@@ -117,7 +117,7 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/80 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
+    <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12 font-medium">
         <Logo className="relative top-0.5 h-6 pl-1 text-dark dark:text-gray-50 md:h-[1.65rem] md:pl-0" />
         <Flex align="center" className="hidden md:flex" gap={1}>
@@ -126,7 +126,7 @@ export const Navigation = () => {
               <NavigationMenu.Item>
                 <NavigationMenu.Trigger
                   className={cn(
-                    "px-3 py-1.5 opacity-75 transition hover:opacity-100",
+                    "px-3 py-1.5 opacity-90 transition hover:opacity-100",
                     {
                       "opacity-100 dark:text-white dark:opacity-100":
                         pathname?.startsWith("/features"),
@@ -157,7 +157,7 @@ export const Navigation = () => {
           {navLinks.map(({ title, href }) => (
             <NavLink
               className={cn(
-                "flex items-center rounded-full px-3 opacity-75 transition hover:opacity-100",
+                "flex items-center rounded-full px-3 opacity-90 transition hover:opacity-100",
                 {
                   "opacity-100 dark:text-white dark:opacity-100":
                     pathname === href,

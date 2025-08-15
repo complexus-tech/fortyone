@@ -36,13 +36,11 @@ export const RunEverything = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Text className="mb-8 w-max text-2xl font-semibold">
-            It&apos;s time to ship
-          </Text>
+          <Text className="mb-8 w-max text-xl">It&apos;s time to ship</Text>
         </motion.div>
         <Text
           as="h2"
-          className="mb-10 w-max text-5xl font-semibold md:text-[4.5rem] md:leading-[1.2]"
+          className="mb-10 w-max text-5xl font-semibold md:text-[4rem] md:leading-[1.2]"
           color="gradient"
         >
           {phrases.map((line, index) => (
