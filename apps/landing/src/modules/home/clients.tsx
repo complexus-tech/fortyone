@@ -29,10 +29,10 @@ export const SampleClients = () => {
   ];
 
   return (
-    <Container className="relative -top-4 z-10 mb-20 max-w-6xl md:-top-20">
+    <Container className="relative z-10 mb-20 max-w-6xl pt-24 dark:-top-4 dark:pt-0 dark:md:-top-20">
       <Text
         as="h2"
-        className="mb-10 text-center font-semibold opacity-80 md:mb-20"
+        className="mb-10 hidden text-center font-semibold opacity-80 dark:block md:mb-20"
       >
         Trusted by
       </Text>
