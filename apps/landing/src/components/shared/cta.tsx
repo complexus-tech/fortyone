@@ -88,7 +88,7 @@ export const CallToAction = () => {
             />
             <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-dark/5 md:rounded-t-2xl">
               <Button
-                className="px-3 opacity-0 transition-opacity group-hover:opacity-100 md:pl-5 md:pr-4"
+                className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pl-5 md:pr-4"
                 color="invert"
                 href="/signup"
                 rounded="lg"
