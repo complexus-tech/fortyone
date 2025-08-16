@@ -12,7 +12,7 @@ const NavigationMenuViewport = forwardRef<
   <div className={cn("absolute top-full flex justify-center", className)}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] rounded-2xl w-full dark:bg-dark-300 bg-white backdrop-blur border border-gray-100 dark:border-dark-50 shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] rounded-2xl w-full backdrop-blur shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
         className
       )}
       ref={ref}
