@@ -86,9 +86,9 @@ export const CallToAction = () => {
               className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[0.7rem]"
               src={ctaDark}
             />
-            <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
+            <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-dark/5 md:rounded-t-2xl">
               <Button
-                className="px-3 md:pl-5 md:pr-4"
+                className="px-3 opacity-0 transition-opacity group-hover:opacity-100 md:pl-5 md:pr-4"
                 color="invert"
                 href="/signup"
                 rounded="lg"
