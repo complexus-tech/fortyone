@@ -92,7 +92,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-gray-100 bg-white/50 p-0.5 shadow-xl shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-gray-100 bg-dark/5 p-0.5 shadow-xl shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Flex

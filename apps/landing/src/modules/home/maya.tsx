@@ -41,7 +41,7 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="rounded-[0.6rem] border border-b-0 border-gray-100 bg-white/50 p-0.5 shadow-2xl shadow-gray-200 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-1.5">
+        <Box className="rounded-[0.6rem] border border-b-0 border-gray-100 bg-dark/5 p-0.5 shadow-2xl shadow-gray-200 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-1.5">
           <Flex
             align="center"
             className="mb-2 mt-1 px-1.5 dark:mb-2.5"

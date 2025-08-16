@@ -67,7 +67,7 @@ export const CallToAction = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-gray-100 bg-dark/5 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
             <Flex align="center" className="mb-2 mt-1 px-1.5" justify="between">
               <Flex className="gap-1.5">
                 <Dot className="size-2.5 text-primary" />
