@@ -1,8 +1,9 @@
 "use client";
 
-import { Text, Box } from "ui";
+import { Text, Box, Flex } from "ui";
 import { motion } from "framer-motion";
-import { Container } from "@/components/ui";
+import { ArrowDown2Icon } from "icons";
+import { Container, Dot } from "@/components/ui";
 
 export const Maya = () => {
   const viewport = { once: true, amount: 0.35 };
@@ -40,10 +41,22 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="rounded-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-[1.3rem] md:p-1.5">
+        <Box className="rounded-[0.6rem] border border-b-0 border-gray-100 bg-white/50 p-0.5 shadow-2xl shadow-gray-200 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-1.5">
+          <Flex
+            align="center"
+            className="mb-2 mt-1 px-1.5 dark:mb-2.5"
+            justify="between"
+          >
+            <Flex className="gap-1.5">
+              <Dot className="size-2.5 text-primary" />
+              <Dot className="size-2.5 text-warning" />
+              <Dot className="size-2.5 text-success" />
+            </Flex>
+            <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
+          </Flex>
           <video
             autoPlay
-            className="aspect-video h-full w-full object-cover md:rounded-[0.9rem]"
+            className="aspect-video h-full w-full object-cover md:rounded-[0.7rem]"
             loop
             muted
             src="/videos/intro-dark.mp4"

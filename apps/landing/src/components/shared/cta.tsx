@@ -2,7 +2,8 @@
 import Image from "next/image";
 import { Box, Button, Flex, Text } from "ui";
 import { motion } from "framer-motion";
-import { Container } from "@/components/ui";
+import { ArrowDown2Icon } from "icons";
+import { Container, Dot } from "@/components/ui";
 import ctaLight from "../../../public/images/product/cta.webp";
 import ctaDark from "../../../public/images/product/cta-dark.webp";
 
@@ -66,15 +67,23 @@ export const CallToAction = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-3xl md:px-1.5 md:pt-1.5">
+          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-[#8080802a] bg-white/50 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+            <Flex align="center" className="mb-2 mt-1 px-1.5" justify="between">
+              <Flex className="gap-1.5">
+                <Dot className="size-2.5 text-primary" />
+                <Dot className="size-2.5 text-warning" />
+                <Dot className="size-2.5 text-success" />
+              </Flex>
+              <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
+            </Flex>
             <Image
               alt="CTA"
-              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[1.1rem]"
+              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[0.7rem]"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[1.1rem]"
+              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[0.7rem]"
               src={ctaDark}
             />
             <Box className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
