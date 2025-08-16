@@ -53,7 +53,7 @@ export const CallToAction = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text
-              className="mt-4 max-w-[650px] text-lg md:mt-6 md:text-lg"
+              className="mt-4 max-w-[650px] text-lg md:mt-5 md:text-lg"
               color="muted"
             >
               Plan with Maya, turn ideas into shippable stories, and watch

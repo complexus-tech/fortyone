@@ -66,10 +66,14 @@ export const HeroCards = () => {
         <Box
           className="relative"
           onMouseEnter={() => {
-            cursor.setText("←Drag→");
+            if (resolvedTheme === "dark") {
+              cursor.setText("←Drag→");
+            }
           }}
           onMouseLeave={() => {
-            cursor.removeText();
+            if (resolvedTheme === "dark") {
+              cursor.removeText();
+            }
           }}
         >
           <Swiper
