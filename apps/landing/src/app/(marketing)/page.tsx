@@ -19,8 +19,8 @@ export default function Page() {
       <Features />
       <Maya />
       <Integrations />
-      <Faqs />
       <Pricing className="md:pb-16 md:pt-0" hideDescription />
+      <Faqs />
       <CallToAction />
     </>
   );

@@ -166,7 +166,7 @@ export const Pricing = ({
 
   return (
     <Box className={cn("relative md:pt-12", className)}>
-      <Container className="max-w-[85rem]">
+      <Container className="max-w-[83rem]">
         <Flex
           align="center"
           className={cn("mt-10 pb-6 text-center", {

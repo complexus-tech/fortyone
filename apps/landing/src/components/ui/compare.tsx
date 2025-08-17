@@ -33,7 +33,7 @@ const FeatureValue = ({
 
 export const ComparePlans = () => {
   return (
-    <Container className="max-w-[85rem] md:py-36">
+    <Container className="max-w-[83rem] md:py-36">
       <Box className="hidden overflow-x-auto md:block">
         <Box>
           <Flex className="border-b border-gray-100 dark:border-dark-100">
