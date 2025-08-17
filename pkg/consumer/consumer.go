@@ -483,14 +483,22 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 		"workspace_id", payload.WorkspaceID)
 
 	// Calculate expiration duration
-	expiresIn := time.Until(payload.ExpiresAt).Round(time.Hour)
+	expiresIn := time.Until(payload.ExpiresAt)
+
+	var expiresInStr string
+	if expiresIn.Hours() >= 24 {
+		days := int(expiresIn.Hours() / 24)
+		expiresInStr = fmt.Sprintf("%d days", days)
+	} else {
+		expiresInStr = fmt.Sprintf("%d hours", int(expiresIn.Hours()))
+	}
 
 	// Prepare Brevo template parameters
 	brevoParams := map[string]any{
 		"INVITER_NAME":     payload.InviterName,
 		"WORKSPACE_NAME":   payload.WorkspaceName,
 		"ROLE":             payload.Role,
-		"EXPIRES_IN":       fmt.Sprintf("%d hours", int(expiresIn.Hours())),
+		"EXPIRES_IN":       expiresInStr,
 		"VERIFICATION_URL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
 	}
 
