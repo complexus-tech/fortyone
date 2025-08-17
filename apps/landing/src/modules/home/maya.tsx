@@ -56,10 +56,17 @@ export const Maya = () => {
           </Flex>
           <video
             autoPlay
-            className="aspect-[6/3.9] h-full w-full object-cover md:rounded-[0.7rem]"
+            className="hidden aspect-[6/4] h-full w-full object-cover dark:block md:rounded-[0.7rem]"
             loop
             muted
-            src="/videos/intro.mp4"
+            src="/videos/intro-dark.mp4"
+          />
+          <video
+            autoPlay
+            className="aspect-[6/4] h-full w-full object-cover dark:hidden md:rounded-[0.7rem]"
+            loop
+            muted
+            src="/videos/intro-light.mp4"
           />
         </Box>
       </motion.div>
