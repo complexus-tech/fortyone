@@ -196,7 +196,7 @@ export const Pricing = ({
             </Text>
           </motion.div>
           {!hideDescription ? (
-            <Text className="mt-4 max-w-2xl text-center text-xl opacity-70">
+            <Text className="mt-4 max-w-2xl text-center text-xl font-normal opacity-70">
               Choose a plan that fits your needs with transparent pricing - no
               hidden fees, no unexpected charges, just clear value.
             </Text>
