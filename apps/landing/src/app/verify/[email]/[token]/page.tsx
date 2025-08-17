@@ -8,12 +8,12 @@ import { EmailVerificationCallback } from "./client";
 
 export default async function Page() {
   const session = await auth();
-  const [invitations, workspaces, profile] = await Promise.all([
-    getMyInvitations(),
-    getWorkspaces(session?.token || ""),
-    getProfile(session!),
-  ]);
   if (session) {
+    const [invitations, workspaces, profile] = await Promise.all([
+      getMyInvitations(),
+      getWorkspaces(session?.token || ""),
+      getProfile(session),
+    ]);
     redirect(
       getRedirectUrl(
         workspaces,
