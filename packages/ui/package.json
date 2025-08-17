@@ -37,7 +37,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "19.1.1",
     "react-dropzone": "^14.2.3",
-    "react-resizable-panels": "^2.0.16",
+    "react-resizable-panels": "^3.0.4",
     "react-select": "^5.8.0",
     "react-time-ago": "^7.3.3"
   },
