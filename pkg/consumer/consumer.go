@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -487,7 +488,8 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 
 	var expiresInStr string
 	if expiresIn.Hours() >= 24 {
-		days := int(expiresIn.Hours() / 24)
+		// Use Ceil to round up to the next day
+		days := int(math.Ceil(expiresIn.Hours() / 24))
 		expiresInStr = fmt.Sprintf("%d days", days)
 	} else {
 		expiresInStr = fmt.Sprintf("%d hours", int(expiresIn.Hours()))
