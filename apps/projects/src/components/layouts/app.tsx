@@ -1,17 +1,17 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Box, ResizablePanel } from "ui";
 import { Sidebar } from "../shared/sidebar/sidebar";
 
 export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  // const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
-  const handleLayout = (sizes: number[]) => {
-    // Check if the first panel (index 0) is collapsed
-    // You can adjust the threshold as needed (e.g., < 5%)
-    const isCollapsed = sizes[0] < 12;
-    setIsPanelCollapsed(isCollapsed);
-  };
+  // const handleLayout = (sizes: number[]) => {
+  //   // Check if the first panel (index 0) is collapsed
+  //   // You can adjust the threshold as needed (e.g., < 5%)
+  //   const isCollapsed = sizes[0] < 12;
+  //   setIsPanelCollapsed(isCollapsed);
+  // };
 
   return (
     <>
@@ -20,16 +20,16 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
         <ResizablePanel
           autoSaveId="application:layout"
           direction="horizontal"
-          onLayout={handleLayout}
+          // onLayout={handleLayout}
         >
           <ResizablePanel.Panel
-            collapsedSize={5}
-            collapsible
+            // collapsedSize={5}
+            // collapsible
             defaultSize={15}
             maxSize={20}
             minSize={12}
           >
-            <Sidebar isCollapsed={isPanelCollapsed} />
+            <Sidebar />
           </ResizablePanel.Panel>
           <ResizablePanel.Handle className="z-[2] w-[0.5px]" />
           <ResizablePanel.Panel defaultSize={85}>
