@@ -89,7 +89,7 @@ const Copyright = () => {
 };
 
 export const Footer = () => {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const product = [
     {
       href: "/product/stories",
@@ -205,7 +205,7 @@ export const Footer = () => {
               >
                 <SystemIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": resolvedTheme === "system",
+                    "text-dark dark:text-white": theme === "system",
                   })}
                 />
               </button>
@@ -219,7 +219,7 @@ export const Footer = () => {
               >
                 <SunIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": resolvedTheme === "light",
+                    "text-dark dark:text-white": theme === "light",
                   })}
                 />
               </button>
@@ -227,7 +227,7 @@ export const Footer = () => {
             <Tooltip title="Dark">
               <button
                 className={cn("", {
-                  "text-dark dark:text-white": resolvedTheme === "dark",
+                  "text-dark dark:text-white": theme === "dark",
                 })}
                 onClick={() => {
                   setTheme("dark");
@@ -236,7 +236,7 @@ export const Footer = () => {
               >
                 <MoonIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": resolvedTheme === "dark",
+                    "text-dark dark:text-white": theme === "dark",
                   })}
                 />
               </button>

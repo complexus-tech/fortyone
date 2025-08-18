@@ -8,7 +8,6 @@ import { EmailVerificationCallback } from "./client";
 
 export default async function Page() {
   const session = await auth();
-
   if (session) {
     const [invitations, workspaces, profile] = await Promise.all([
       getMyInvitations(),

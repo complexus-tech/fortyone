@@ -10,16 +10,36 @@ export const createStory = tool({
   inputSchema: z.object({
     title: z.string().describe("Story title (required)"),
     description: z.string().optional().describe("Story description"),
-    descriptionHTML: z.string().optional().describe("Story description HTML"),
-    teamId: z.string().describe("Team ID where story belongs (required)"),
-    statusId: z.string().describe("Initial status ID (required)"),
-    assigneeId: z.string().optional().describe("Assignee user ID"),
+    descriptionHTML: z
+      .string()
+      .optional()
+      .describe(
+        "Story description HTML (Always provided and properly formatted if description is provided)",
+      ),
+    teamId: z
+      .string()
+      .describe("Team ID where story belongs (required) (UUID)"),
+    statusId: z
+      .string()
+      .describe(
+        "Initial status ID (required) (UUID) always use statuses tool to get the statuses",
+      ),
+    assigneeId: z.string().optional().describe("Assignee user ID (UUID)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .describe("Story priority (required)"),
-    sprintId: z.string().optional().describe("Sprint ID to assign story"),
-    objectiveId: z.string().optional().describe("Objective ID to assign story"),
-    parentId: z.string().optional().describe("Parent story ID for sub-stories"),
+    sprintId: z
+      .string()
+      .optional()
+      .describe("Sprint ID to assign story (UUID)"),
+    objectiveId: z
+      .string()
+      .optional()
+      .describe("Objective ID to assign story (UUID)"),
+    parentId: z
+      .string()
+      .optional()
+      .describe("Parent story ID for sub-stories (UUID)"),
     startDate: z.string().optional().describe("Story start date (ISO string)"),
     endDate: z.string().optional().describe("Story end date (ISO string)"),
   }),

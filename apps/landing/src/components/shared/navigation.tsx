@@ -27,7 +27,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.6rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
+    className="flex w-[17rem] gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
     href={href}
   >
     {icon}
@@ -136,19 +136,17 @@ export const Navigation = () => {
                 >
                   Product
                 </NavigationMenu.Trigger>
-                <NavigationMenu.Content className="p-1 backdrop-blur-2xl">
-                  <Box className="mb-1 ml-[0.1rem] mr-[0.3rem] mt-[0.1rem]">
-                    <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark">
-                      {features.map(({ id, name, description, icon, href }) => (
-                        <MenuItem
-                          description={description}
-                          href={href}
-                          icon={icon}
-                          key={id}
-                          name={name}
-                        />
-                      ))}
-                    </Box>
+                <NavigationMenu.Content className="rounded-2xl border border-gray-100 bg-white p-1.5 dark:border-dark-50 dark:bg-black">
+                  <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark/20">
+                    {features.map(({ id, name, description, icon, href }) => (
+                      <MenuItem
+                        description={description}
+                        href={href}
+                        icon={icon}
+                        key={id}
+                        name={name}
+                      />
+                    ))}
                   </Box>
                 </NavigationMenu.Content>
               </NavigationMenu.Item>

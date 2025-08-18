@@ -29,7 +29,7 @@ export const Hero = () => {
       <Text
         align="center"
         as="h2"
-        className="mx-auto mb-4 max-w-3xl text-lg leading-snug opacity-80 md:text-2xl"
+        className="mx-auto mb-4 max-w-3xl text-lg leading-snug opacity-80 md:text-xl"
         fontWeight="normal"
       >
         Connect with our team for product demos, implementation support, or any

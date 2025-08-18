@@ -3,228 +3,157 @@ import { tool } from "ai";
 
 export const navigation = tool({
   description:
-    "Navigate to different pages of the application, including parameterized routes for specific users, teams, sprints, objectives, and stories",
+    "Navigate to different pages in the application using proper entity resolution",
   inputSchema: z.object({
-    // Simple navigation (existing functionality)
-    destination: z
-      .enum([
-        "/my-work",
-        "/summary",
-        "/analytics",
-        "/sprints",
-        "/notifications",
-        "/settings",
-        "/roadmaps",
-      ])
-      .optional()
-      .describe("Simple destination to navigate to"),
-
-    // Parameterized navigation (new functionality)
+    // Navigation target type - required for all navigation
     targetType: z
       .enum([
         "user-profile",
-        "team-page",
-        "team-sprints",
-        "team-objectives",
-        "team-stories",
-        "team-backlog",
-        "sprint-details",
-        "objective-details",
-        "story-details",
+        "team",
+        "sprint",
+        "objective",
+        "story",
+        "my-work",
+        "summary",
+        "analytics",
+        "sprints",
+        "notifications",
+        "settings",
+        "roadmaps",
       ])
+      .describe("Type of navigation target"),
+
+    // Entity ID for dynamic routes
+    entityId: z
+      .string()
       .optional()
-      .describe("Type of parameterized navigation target"),
+      .describe(
+        "Entity UUID (required for user-profile, sprint, objective, story)",
+      ),
 
-    // Entity IDs for parameterized navigation
-    userId: z.string().optional().describe("User ID for profile navigation"),
-
+    // Team ID for team-scoped routes
     teamId: z
       .string()
       .optional()
-      .describe("Team ID for team-related navigation"),
+      .describe("Team UUID (required for team, sprint, objective)"),
 
-    sprintId: z
-      .string()
+    // Route within team context
+    route: z
+      .enum(["stories", "sprints", "objectives", "backlog"])
       .optional()
-      .describe("Sprint ID for sprint-specific navigation"),
-
-    objectiveId: z
-      .string()
-      .optional()
-      .describe("Objective ID for objective-specific navigation"),
-
-    storyId: z
-      .string()
-      .optional()
-      .describe("Story ID for story-specific navigation"),
-
-    // Additional context
-    context: z
-      .object({
-        targetName: z
-          .string()
-          .optional()
-          .describe("Human-readable name of the target"),
-        teamName: z
-          .string()
-          .optional()
-          .describe("Human-readable team name for context"),
-      })
-      .optional()
-      .describe("Additional context for user feedback"),
+      .describe("Specific route within team context (for team targetType)"),
   }),
 
-  execute: async ({
-    destination,
-    targetType,
-    userId,
-    teamId,
-    sprintId,
-    objectiveId,
-    storyId,
-    context,
-  }) => {
-    // Handle simple navigation (backward compatibility)
-    if (destination) {
-      return {
-        route: destination,
-        type: "simple",
-        message: `Navigating to ${destination}`,
-      };
-    }
+  execute: async ({ targetType, entityId, teamId, route }) => {
+    let routePath: string;
+    let message: string;
 
-    // Handle parameterized navigation
-    if (targetType) {
-      let route: string;
-      let message: string;
+    switch (targetType) {
+      case "my-work":
+        routePath = "/my-work";
+        message = "Navigating to my work";
+        break;
 
-      switch (targetType) {
-        case "user-profile":
-          if (!userId) {
-            return {
-              error: "User ID is required for profile navigation",
-            };
-          }
-          route = `/profile/${userId}`;
-          message = context?.targetName
-            ? `Navigating to ${context.targetName}'s profile`
-            : "Navigating to user profile";
-          break;
+      case "summary":
+        routePath = "/summary";
+        message = "Navigating to summary";
+        break;
 
-        case "team-page":
-          if (!teamId) {
-            return {
-              error: "Team ID is required for team navigation",
-            };
-          }
-          route = `/teams/${teamId}/stories`;
-          message = context?.teamName
-            ? `Navigating to ${context.teamName} stories`
-            : "Navigating to team stories";
-          break;
+      case "analytics":
+        routePath = "/analytics";
+        message = "Navigating to analytics";
+        break;
 
-        case "team-sprints":
-          if (!teamId) {
-            return {
-              error: "Team ID is required for team sprints navigation",
-            };
-          }
-          route = `/teams/${teamId}/sprints`;
-          message = context?.teamName
-            ? `Navigating to ${context.teamName} sprints`
-            : "Navigating to team sprints";
-          break;
+      case "sprints":
+        routePath = "/sprints";
+        message = "Navigating to sprints";
+        break;
 
-        case "team-objectives":
-          if (!teamId) {
-            return {
-              error: "Team ID is required for team objectives navigation",
-            };
-          }
-          route = `/teams/${teamId}/objectives`;
-          message = context?.teamName
-            ? `Navigating to ${context.teamName} objectives`
-            : "Navigating to team objectives";
-          break;
+      case "notifications":
+        routePath = "/notifications";
+        message = "Navigating to notifications";
+        break;
 
-        case "team-stories":
-          if (!teamId) {
-            return {
-              error: "Team ID is required for team stories navigation",
-            };
-          }
-          route = `/teams/${teamId}/stories`;
-          message = context?.teamName
-            ? `Navigating to ${context.teamName} stories`
-            : "Navigating to team stories";
-          break;
+      case "settings":
+        routePath = "/settings";
+        message = "Navigating to settings";
+        break;
 
-        case "team-backlog":
-          if (!teamId) {
-            return {
-              error: "Team ID is required for team backlog navigation",
-            };
-          }
-          route = `/teams/${teamId}/backlog`;
-          message = context?.teamName
-            ? `Navigating to ${context.teamName} backlog`
-            : "Navigating to team backlog";
-          break;
+      case "roadmaps":
+        routePath = "/roadmaps";
+        message = "Navigating to roadmaps";
+        break;
 
-        case "sprint-details":
-          if (!teamId || !sprintId) {
-            return {
-              error: "Team ID and Sprint ID are required for sprint navigation",
-            };
-          }
-          route = `/teams/${teamId}/sprints/${sprintId}/stories`;
-          message = context?.targetName
-            ? `Navigating to ${context.targetName} sprint`
-            : "Navigating to sprint details";
-          break;
-
-        case "objective-details":
-          if (!teamId || !objectiveId) {
-            return {
-              error:
-                "Team ID and Objective ID are required for objective navigation",
-            };
-          }
-          route = `/teams/${teamId}/objectives/${objectiveId}`;
-          message = context?.targetName
-            ? `Navigating to ${context.targetName} objective`
-            : "Navigating to objective details";
-          break;
-
-        case "story-details":
-          if (!storyId) {
-            return {
-              error: "Story ID is required for story navigation",
-            };
-          }
-          route = `/story/${storyId}`;
-          message = context?.targetName
-            ? `Navigating to story: ${context.targetName}`
-            : "Navigating to story details";
-          break;
-
-        default:
+      case "user-profile":
+        if (!entityId) {
           return {
-            error: "Invalid target type specified",
+            error: "Entity ID is required for user profile navigation",
           };
-      }
+        }
+        routePath = `/profile/${entityId}`;
+        message = "Navigating to user profile";
+        break;
 
-      return {
-        route,
-        type: "parameterized",
-        targetType,
-        message,
-        context,
-      };
+      case "story":
+        if (!entityId) {
+          return {
+            error: "Entity ID is required for story navigation",
+          };
+        }
+        routePath = `/story/${entityId}`;
+        message = "Navigating to story details";
+        break;
+
+      // Team-scoped routes requiring both teamId and entityId
+      case "sprint":
+        if (!teamId || !entityId) {
+          return {
+            error: "Team ID and Entity ID are required for sprint navigation",
+          };
+        }
+        routePath = `/teams/${teamId}/sprints/${entityId}/stories`;
+        message = "Navigating to sprint details";
+        break;
+
+      case "objective":
+        if (!teamId || !entityId) {
+          return {
+            error:
+              "Team ID and Entity ID are required for objective navigation",
+          };
+        }
+        routePath = `/teams/${teamId}/objectives/${entityId}`;
+        message = "Navigating to objective details";
+        break;
+
+      // Team routes requiring only teamId
+      case "team":
+        if (!teamId) {
+          return {
+            error: "Team ID is required for team navigation",
+          };
+        }
+
+        if (route) {
+          routePath = `/teams/${teamId}/${route}`;
+          message = `Navigating to team ${route}`;
+        } else {
+          routePath = `/teams/${teamId}/stories`;
+          message = "Navigating to team stories";
+        }
+        break;
+
+      default:
+        return {
+          error: "Invalid target type specified",
+        };
     }
 
     return {
-      error: "Either destination or targetType must be specified",
+      route: routePath,
+      type: "navigation",
+      targetType,
+      message,
     };
   },
 });

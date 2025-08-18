@@ -4,7 +4,7 @@ import { InviteTeam } from "@/modules/onboarding/invite";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { auth } from "@/auth";
 import { getTeams } from "@/lib/queries/get-teams";
-import type { Workspace } from "@/types";
+import { getProfile } from "@/lib/queries/profile";
 
 export const metadata: Metadata = {
   title: "Invite Team - Complexus",
@@ -13,14 +13,13 @@ export const metadata: Metadata = {
 
 export default async function InvitePage() {
   const session = await auth();
-  const workspaces = await getWorkspaces(session!.token);
-  const sortedWorkspaces = workspaces.sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  const [workspaces, profile] = await Promise.all([
+    getWorkspaces(session!.token),
+    getProfile(session!),
+  ]);
+  const activeWorkspace = workspaces.find(
+    (workspace) => workspace.id === profile.lastUsedWorkspaceId,
   );
-  let activeWorkspace: Workspace | null = null;
-  if (sortedWorkspaces.length > 0) {
-    activeWorkspace = sortedWorkspaces[0];
-  }
   if (!activeWorkspace || activeWorkspace?.userRole !== "admin") {
     return redirect("/onboarding/welcome");
   }

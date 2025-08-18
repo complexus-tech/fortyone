@@ -1,12 +1,14 @@
 "use client";
 
-import { Box } from "ui";
+import { Box, Flex } from "ui";
 import { EffectCards } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
 import "swiper/css/effect-cards";
-import { Blur, Container } from "@/components/ui";
+import { useTheme } from "next-themes";
+import { ArrowDown2Icon } from "icons";
+import { Blur, Container, Dot } from "@/components/ui";
 import { useCursor } from "@/hooks";
 import listImg from "../../../public/images/product/list.webp";
 import objectiveImg from "../../../public/images/product/objective.webp";
@@ -17,17 +19,22 @@ import objectiveImgLight from "../../../public/images/product/objective-light.we
 
 export const HeroCards = () => {
   const cursor = useCursor();
+  const { resolvedTheme } = useTheme();
 
   const cards = [
-    {
-      id: 1,
-      title: "List stories",
-      image: {
-        src: listImg,
-        srcLight: listImgLight,
-        alt: "List stories",
-      },
-    },
+    ...(resolvedTheme === "dark"
+      ? [
+          {
+            id: 1,
+            title: "List stories",
+            image: {
+              src: listImg,
+              srcLight: listImgLight,
+              alt: "List stories",
+            },
+          },
+        ]
+      : []),
     {
       id: 2,
       title: "Kanban",
@@ -37,15 +44,19 @@ export const HeroCards = () => {
         alt: "Kanban",
       },
     },
-    {
-      id: 3,
-      title: "Objective",
-      image: {
-        src: objectiveImg,
-        srcLight: objectiveImgLight,
-        alt: "Objective",
-      },
-    },
+    ...(resolvedTheme === "dark"
+      ? [
+          {
+            id: 3,
+            title: "Objective",
+            image: {
+              src: objectiveImg,
+              srcLight: objectiveImgLight,
+              alt: "Objective",
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -55,10 +66,14 @@ export const HeroCards = () => {
         <Box
           className="relative"
           onMouseEnter={() => {
-            cursor.setText("←Drag→");
+            if (resolvedTheme === "dark") {
+              cursor.setText("←Drag→");
+            }
           }}
           onMouseLeave={() => {
-            cursor.removeText();
+            if (resolvedTheme === "dark") {
+              cursor.removeText();
+            }
           }}
         >
           <Swiper
@@ -77,32 +92,44 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-gray-100 bg-white/50 p-0.5 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-3xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-gray-100 bg-dark/5 p-0.5 shadow-xl shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
                 key={card.id}
               >
+                <Flex
+                  align="center"
+                  className="mb-2 mt-1 px-1.5"
+                  justify="between"
+                >
+                  <Flex className="gap-1.5">
+                    <Dot className="size-2.5 text-primary" />
+                    <Dot className="size-2.5 text-warning" />
+                    <Dot className="size-2.5 text-success" />
+                  </Flex>
+                  <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
+                </Flex>
                 <Box className="relative">
                   <Image
                     alt={card.title}
-                    className="relative hidden rounded-[0.4rem] border border-dark-50/70 dark:block md:rounded-[1.2rem]"
+                    className="relative hidden rounded-[0.4rem] border border-dark-50/70 dark:block md:rounded-[0.7rem]"
                     placeholder="blur"
                     priority
                     src={card.image.src}
                   />
                   <Image
                     alt={card.title}
-                    className="relative rounded-[0.4rem] border border-gray-100 dark:hidden md:rounded-[1.2rem]"
+                    className="relative rounded-[0.4rem] border border-gray-100 dark:hidden md:rounded-[0.7rem]"
                     placeholder="blur"
                     priority
                     src={card.image.srcLight}
                   />
-                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:from-black dark:via-black/10 md:block" />
+                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:block dark:from-black dark:via-black/10" />
                 </Box>
               </SwiperSlide>
             ))}
           </Swiper>
         </Box>
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-white via-white/70 dark:from-black dark:via-black/80" />
+      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-gradient-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
     </Box>
   );
 };

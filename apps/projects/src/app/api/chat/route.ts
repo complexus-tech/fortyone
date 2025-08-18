@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
+  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -74,6 +74,9 @@ export async function POST(req: NextRequest) {
         delayInMs: 20,
         chunking: "word",
       }),
+      // providerOptions: {
+      //   openai: { reasoningEffort: "low" },
+      // },
     });
     return result.toUIMessageStreamResponse({
       originalMessages: messages,

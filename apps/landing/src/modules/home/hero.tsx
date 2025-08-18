@@ -50,7 +50,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold antialiased md:max-w-3xl md:text-6xl md:leading-[1.1]",
+                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-6xl md:leading-[1.1]",
               )}
             >
               The AI Everything App for Projects & OKRs
@@ -67,14 +67,14 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              The only AI-powered project management system that connects daily
-              work to strategic goals.
+              Connect every task, sprint, and project directly to your goals so
+              your team always knows what matters most.
             </Text>
           </motion.span>
 
           <Flex
             align="center"
-            className="relative mt-6 justify-center gap-2 md:mt-6 md:gap-4"
+            className="relative mt-6 justify-center gap-2 md:mt-8 md:gap-4"
             wrap
           >
             <motion.span

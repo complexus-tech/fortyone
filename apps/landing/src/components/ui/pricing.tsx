@@ -166,7 +166,7 @@ export const Pricing = ({
 
   return (
     <Box className={cn("relative md:pt-12", className)}>
-      <Container className="max-w-[85rem]">
+      <Container className="max-w-[83rem]">
         <Flex
           align="center"
           className={cn("mt-10 pb-6 text-center", {
@@ -196,7 +196,7 @@ export const Pricing = ({
             </Text>
           </motion.div>
           {!hideDescription ? (
-            <Text className="mt-4 max-w-2xl text-center text-xl opacity-70">
+            <Text className="mt-4 max-w-2xl text-center text-xl font-normal opacity-70">
               Choose a plan that fits your needs with transparent pricing - no
               hidden fees, no unexpected charges, just clear value.
             </Text>
