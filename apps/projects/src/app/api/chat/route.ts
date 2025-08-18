@@ -74,6 +74,9 @@ export async function POST(req: NextRequest) {
         delayInMs: 20,
         chunking: "word",
       }),
+      // providerOptions: {
+      //   openai: { reasoningEffort: "low" },
+      // },
     });
     return result.toUIMessageStreamResponse({
       originalMessages: messages,

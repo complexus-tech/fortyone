@@ -12,8 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.10",
-    "@ai-sdk/react": "^2.0.10",
+    "@ai-sdk/openai": "^2.0.15",
+    "@ai-sdk/react": "^2.0.15",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@posthog/ai": "^6.0.1",
@@ -39,7 +39,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/qs": "^6.9.15",
     "@uiw/react-heat-map": "^2.2.2",
-    "ai": "^5.0.10",
+    "ai": "^5.0.15",
     "babel-plugin-react-compiler": "19.0.0-beta-21e868a-20250216",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^2.30.0",
