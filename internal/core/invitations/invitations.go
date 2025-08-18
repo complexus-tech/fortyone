@@ -283,6 +283,11 @@ func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uui
 		}
 	}
 
+	// Update user's last used workspace
+	if err := s.users.UpdateUserWorkspace(ctx, userID, invitation.WorkspaceID); err != nil {
+		s.logger.Error(ctx, "failed to update user's last used workspace", err)
+	}
+
 	// Mark invitation as used
 	if err := s.repo.MarkInvitationUsed(ctx, invitation.ID); err != nil {
 		s.logger.Error(ctx, "failed to mark invitation as used", "err", err)
