@@ -20,7 +20,7 @@ export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const {
-    messages,
+    messages: messagesFromRequest,
     currentPath,
     currentTheme,
     resolvedTheme,
@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
   } = await req.json();
-  const modelMessages = convertToModelMessages(messages as UIMessage[]);
+  const modelMessages = convertToModelMessages(
+    messagesFromRequest as UIMessage[],
+  );
 
   // Get user context for "me" resolution
   const userContext = await getUserContext({
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
       // },
     });
     return result.toUIMessageStreamResponse({
-      originalMessages: messages,
+      originalMessages: messagesFromRequest,
       onFinish: ({ messages }) => {
         saveChat({ id, messages });
       },
