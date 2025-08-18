@@ -2,6 +2,7 @@ import { HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
 import { Flex, Button, Text, Tooltip } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { HistoryDialog } from "./history-dialog";
 
 export const ChatHeader = ({
@@ -17,6 +18,7 @@ export const ChatHeader = ({
 }) => {
   const router = useRouter();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const { data: chats = [] } = useAiChats();
   return (
     <>
       <Flex align="center" justify="between">
@@ -61,24 +63,27 @@ export const ChatHeader = ({
           Maya is your AI assistant
         </Text>
         <Flex align="center" gap={3}>
-          <Tooltip title="History">
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={
-                <HistoryIcon
-                  className="text-dark dark:text-gray-200"
-                  strokeWidth={2.8}
-                />
-              }
-              onClick={() => {
-                setIsHistoryOpen(true);
-              }}
-              variant="naked"
-            >
-              <span className="sr-only">History</span>
-            </Button>
-          </Tooltip>
+          {chats.length > 0 && (
+            <Tooltip title="History">
+              <Button
+                asIcon
+                color="tertiary"
+                leftIcon={
+                  <HistoryIcon
+                    className="text-dark dark:text-gray-200"
+                    strokeWidth={2.8}
+                  />
+                }
+                onClick={() => {
+                  setIsHistoryOpen(true);
+                }}
+                variant="naked"
+              >
+                <span className="sr-only">History</span>
+              </Button>
+            </Tooltip>
+          )}
+
           <Tooltip title="Close">
             <Button
               asIcon
