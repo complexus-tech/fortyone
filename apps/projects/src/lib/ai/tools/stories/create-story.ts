@@ -94,28 +94,20 @@ export const createStory = tool({
         endDate,
       };
 
-      console.log("storyData", storyData);
+      const result = await createStoryAction(storyData);
+
+      if (result.error?.message) {
+        return {
+          success: false,
+          error: result.error.message || "Failed to create story",
+        };
+      }
 
       return {
         success: true,
-        story: storyData,
+        story: result.data,
         message: `Story "${title}" created successfully.`,
       };
-
-      // const result = await createStoryAction(storyData);
-
-      // if (result.error?.message) {
-      //   return {
-      //     success: false,
-      //     error: result.error.message || "Failed to create story",
-      //   };
-      // }
-
-      // return {
-      //   success: true,
-      //   story: result.data,
-      //   message: `Story "${title}" created successfully.`,
-      // };
     } catch (error) {
       return {
         success: false,
