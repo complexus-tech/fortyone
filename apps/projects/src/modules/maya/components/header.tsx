@@ -1,3 +1,4 @@
+"use client";
 import { HistoryIcon, PlusIcon } from "icons";
 import { Flex, Button } from "ui";
 import { useState } from "react";

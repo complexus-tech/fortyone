@@ -1,3 +1,4 @@
+"use client";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Box, Flex } from "ui";
 import type { ChatStatus } from "ai";

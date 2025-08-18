@@ -1,3 +1,4 @@
+"use client";
 import { Box, Button, Text } from "ui";
 import { ReloadIcon } from "icons";
 import { NewStoryDialog, NewObjectiveDialog } from "@/components/ui";
@@ -6,15 +7,18 @@ import { ChatMessages } from "@/components/ui/chat/chat-messages";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
 import { BodyContainer } from "@/components/shared";
-import type { MayaChatConfig } from "../types";
 import { useMayaChat } from "../hooks/use-maya-chat";
+import { useMayaNavigation } from "../hooks/use-maya-navigation";
+import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
 
-type MayaChatProps = {
-  config: MayaChatConfig;
-};
-
-export const MayaChat = ({ config }: MayaChatProps) => {
+export const MayaChat = () => {
+  const { chatRef, getInitialChatId, isNewChat } = useMayaNavigation();
+  const config: MayaChatConfig = {
+    currentChatId: getInitialChatId(),
+    hasSelectedChat: Boolean(chatRef),
+    isNewChat: isNewChat(),
+  };
   const {
     // Chat state
     messages,

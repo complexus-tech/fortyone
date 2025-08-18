@@ -1,3 +1,4 @@
+"use client";
 import { Box, Button, Dialog, Flex, Input, Menu, Skeleton, Text } from "ui";
 import { DeleteIcon, EditIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
