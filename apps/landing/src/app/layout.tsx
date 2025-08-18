@@ -84,7 +84,6 @@ export default async function RootLayout({
     ]);
   }
 
-  error;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

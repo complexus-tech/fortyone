@@ -49,7 +49,7 @@ const Intro = () => (
 
 const Card = ({
   description,
-  // image: { alt, src },
+  image: { alt, src },
 }: {
   description: ReactNode;
   image: { src: StaticImageData; alt: string };
