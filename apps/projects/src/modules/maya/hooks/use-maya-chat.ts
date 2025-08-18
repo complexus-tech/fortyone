@@ -80,6 +80,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     error,
     setMessages,
   } = useChat<MayaUIMessage>({
+    id: idRef.current,
     onFinish: ({ message }) => {
       message.parts.forEach((part) => {
         if (part.type === "tool-navigation") {
