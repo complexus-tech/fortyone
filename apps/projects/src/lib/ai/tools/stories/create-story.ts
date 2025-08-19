@@ -93,9 +93,7 @@ export const createStory = tool({
         startDate,
         endDate,
       };
-
       const result = await createStoryAction(storyData);
-
       if (result.error?.message) {
         return {
           success: false,
