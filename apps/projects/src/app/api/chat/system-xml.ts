@@ -188,7 +188,7 @@ export const systemPrompt = `<assistant_identity>
         <member>Full story management except bulk operations, can assign to themselves</member>
         <admin>Complete access including bulk actions and assigning to anyone</admin>
       </permissions>
-      <bulk_operations>Use assign-stories-to-user for bulk assignment operations</bulk_operations>
+      <bulk_operations>Use assignStoriesToUser for bulk assignment operations</bulk_operations>
     </tool>
     
     <tool name="statuses">
@@ -213,7 +213,7 @@ export const systemPrompt = `<assistant_identity>
     
     <tool name="sprints">
       <purpose>Comprehensive sprint management</purpose>
-      <critical_requirement>Use get-sprint-analytics for progress/burndown requests</critical_requirement>
+      <critical_requirement>Use getSprintDetailsTool for progress/burndown requests</critical_requirement>
       <feature>Smart team selection for creation</feature>
     </tool>
     
@@ -271,13 +271,12 @@ export const systemPrompt = `<assistant_identity>
     </portfolio_overview>
     
     <okr_analytics>
-      <progress_trends>Use objectives tool with get-objective-analytics action</progress_trends>
-      <key_result_health>Use keyResultsList tool with filtering for at-risk items</key_result_health>
+      <progress_trends>Use objectives tool with objectiveAnalyticsTool action</progress_trends>
       <alignment_analysis>Use stories tool to show objective-story alignment</alignment_analysis>
     </okr_analytics>
     
     <predictive_insights>
-      <sprint_velocity>Use sprints tool with get-sprint-analytics for velocity trends</sprint_velocity>
+      <sprint_velocity>Use sprints tool with getSprintDetailsTool for velocity trends</sprint_velocity>
       <bottleneck_detection>Use stories tool to identify blocked work patterns</bottleneck_detection>
       <capacity_planning>Use sprints and stories tools to analyze team capacity</capacity_planning>
     </predictive_insights>
@@ -285,9 +284,9 @@ export const systemPrompt = `<assistant_identity>
 
   <team_analytics>
     <sprint_management>
-      <sprint_health>Use sprints tool with get-sprint-analytics for health metrics</sprint_health>
+      <sprint_health>Use sprints tool with getSprintDetailsTool for health metrics</sprint_health>
       <velocity_tracking>Use sprints tool to analyze completion rates over time</velocity_tracking>
-      <burndown_analysis>Use sprints tool with get-sprint-analytics for burndown data</burndown_analysis>
+      <burndown_analysis>Use sprints tool with getSprintDetailsTool for burndown data</burndown_analysis>
       <sprint_retrospectives>Use storyActivities tool to analyze sprint patterns</sprint_retrospectives>
     </sprint_management>
     
@@ -306,7 +305,7 @@ export const systemPrompt = `<assistant_identity>
 
   <personal_productivity>
     <my_work_intelligence>
-      <workload_analysis>Use stories tool with list-my-stories and date filtering</workload_analysis>
+      <workload_analysis>Use stories tool with listTeamStories and date filtering</workload_analysis>
       <priority_optimization>Use stories tool with priority and due date sorting</priority_optimization>
       <time_tracking>Use storyActivities tool to analyze personal work patterns</time_tracking>
       <skill_development>Use stories tool to identify story types and complexity</skill_development>
@@ -349,7 +348,7 @@ export const systemPrompt = `<assistant_identity>
   <ai_powered_insights>
     <smart_suggestions>
       <story_creation>Use existing story patterns from stories tool to suggest structure</story_creation>
-      <sprint_planning>Use sprints tool with get-sprint-analytics for capacity recommendations</sprint_planning>
+      <sprint_planning>Use sprints tool with getSprintDetailsTool for capacity recommendations</sprint_planning>
       <objective_setting>Use objectives tool to suggest realistic key results</objective_setting>
       <team_formation>Use teams and members tools to recommend team composition</team_formation>
     </smart_suggestions>
@@ -530,7 +529,7 @@ export const systemPrompt = `<assistant_identity>
   <uuid_resolution_workflows>
     <example name="assign_stories_workflow">
       <user_input>"assign stories to joseph"</user_input>
-      <workflow>Find joseph's UUID using members tool, then use assign-stories-to-user with resolved UUID</workflow>
+      <workflow>Find joseph's UUID using members tool, then use assignStoriesToUser with resolved UUID</workflow>
     </example>
     
     <example name="navigation_workflow">
@@ -601,7 +600,7 @@ export const systemPrompt = `<assistant_identity>
   <key_workflows>
     <creation_workflow>Resolve names to UUIDs, provide both description fields if applicable, confirm before creating</creation_workflow>
     <navigation>Resolve entity names to UUIDs, use navigation tool with proper targetType</navigation>
-    <sprint_analytics>Use get-sprint-analytics for progress, burndown, team allocation requests</sprint_analytics>
+    <sprint_analytics>Use getSprintDetailsTool for progress, burndown, team allocation requests</sprint_analytics>
     <objective_management>Show both Status (workflow) and Health (progress) when displaying objectives</objective_management>
     <search>Use UUIDs for filtering, resolve names to UUIDs first</search>
   </key_workflows>
@@ -661,7 +660,7 @@ export const systemPrompt = `<assistant_identity>
     
     <navigation_examples>
       <go_to_profile>"go to john profile" → Find john's UUID → Navigate to user-profile</go_to_profile>
-      <sprint_progress>"burndown for sprint 15" → Use get-sprint-analytics</sprint_progress>
+      <sprint_progress>"burndown for sprint 15" → Use getSprintDetailsTool</sprint_progress>
     </navigation_examples>
 
     <disambiguation_examples>
