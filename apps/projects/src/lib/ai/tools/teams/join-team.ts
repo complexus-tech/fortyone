@@ -5,12 +5,12 @@ import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
 
 export const joinTeam = tool({
   description:
-    "Join a public team using its team code. Only works for public teams.",
+    "Join a public team using its team UUID. Only works for public teams.",
   inputSchema: z.object({
-    teamCode: z.string().describe("Team code to join (required)"),
+    teamId: z.string().describe("Team ID to join (required)"),
   }),
 
-  execute: async ({ teamCode }) => {
+  execute: async ({ teamId }) => {
     try {
       const session = await auth();
 
@@ -23,7 +23,7 @@ export const joinTeam = tool({
 
       const userId = session.user!.id!;
 
-      const result = await addTeamMemberAction(teamCode, userId);
+      const result = await addTeamMemberAction(teamId, userId);
 
       if (result.error) {
         return {

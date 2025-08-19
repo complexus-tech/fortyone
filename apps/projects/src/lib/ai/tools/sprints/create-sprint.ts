@@ -9,7 +9,10 @@ export const createSprint = tool({
     "Create a new sprint. Guests cannot create sprints. Members and admins can create sprints for teams they belong to.",
   inputSchema: z.object({
     name: z.string().describe("Sprint name (required)"),
-    goal: z.string().optional().describe("Sprint goal or description"),
+    goal: z
+      .string()
+      .optional()
+      .describe("Sprint goal or description (HTML format)"),
     teamId: z.string().describe("Team ID where sprint belongs (required)"),
     objectiveId: z.string().optional().describe("Objective ID to link sprint"),
     startDate: z.string().describe("Sprint start date (ISO string) (required)"),

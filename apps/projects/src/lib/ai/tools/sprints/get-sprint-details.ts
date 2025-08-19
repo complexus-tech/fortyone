@@ -9,10 +9,6 @@ export const getSprintDetailsTool = tool({
     "Get detailed information about a specific sprint including its stories, progress, and metadata.",
   inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get details for (required)"),
-    includeStats: z
-      .boolean()
-      .optional()
-      .describe("Include story statistics in sprint response (default: true)"),
   }),
 
   execute: async ({ sprintId }) => {
