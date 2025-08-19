@@ -268,7 +268,6 @@ export const NewStoryDialog = ({
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
-      reporterId: session.data?.user?.id,
       assigneeId: storyForm.assigneeId,
       objectiveId: storyForm.objectiveId,
       sprintId: storyForm.sprintId,

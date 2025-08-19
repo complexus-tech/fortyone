@@ -16,7 +16,6 @@ import { CalendarIcon, CloseIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
 import { addDays, format } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "next-auth/react";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
@@ -43,7 +42,6 @@ export const NewSubStory = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const session = useSession();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useTeamMembers(teamId);
   const defaultStatus =
@@ -114,7 +112,6 @@ export const NewSubStory = ({
       statusId: storyForm.statusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
-      reporterId: session.data?.user?.id,
       parentId,
       assigneeId: storyForm.assigneeId,
     };
