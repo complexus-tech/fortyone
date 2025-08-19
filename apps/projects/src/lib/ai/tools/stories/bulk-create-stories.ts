@@ -6,7 +6,7 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const bulkCreateStories = tool({
   description:
-    "Bulk create multiple stories at once. Only admins and members can perform bulk operations.",
+    "Bulk create multiple stories at once. Only admins and members can perform bulk operations. always use this tool when creating multiple stories at once.",
   inputSchema: z.object({
     storiesData: z
       .array(
