@@ -245,7 +245,6 @@ type AppNewStory struct {
 	Objective       *uuid.UUID `json:"objectiveId"`
 	Status          *uuid.UUID `json:"statusId"`
 	Assignee        *uuid.UUID `json:"assigneeId"`
-	Reporter        *uuid.UUID `json:"reporterId"`
 	Priority        string     `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
 	Sprint          *uuid.UUID `json:"sprintId"`
 	KeyResult       *uuid.UUID `json:"keyResultId"`
@@ -413,7 +412,7 @@ func toAppComments(i []comments.CoreComment) []AppComment {
 	return appComments
 }
 
-func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
+func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 	return stories.CoreNewStory{
 		Title:           a.Title,
 		Description:     a.Description,
@@ -422,7 +421,7 @@ func toCoreNewStory(a AppNewStory) stories.CoreNewStory {
 		Objective:       a.Objective,
 		Status:          a.Status,
 		Assignee:        a.Assignee,
-		Reporter:        a.Reporter,
+		Reporter:        &userID,
 		Priority:        a.Priority,
 		Sprint:          a.Sprint,
 		KeyResult:       a.KeyResult,

@@ -364,7 +364,13 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	story, err := h.stories.Create(ctx, toCoreNewStory(ns), workspace.ID)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	story, err := h.stories.Create(ctx, toCoreNewStory(ns, userID), workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
