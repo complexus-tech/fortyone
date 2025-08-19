@@ -7,6 +7,7 @@ import {
   ArchiveIcon,
   ArrowRight2Icon,
   BacklogIcon,
+  DeleteIcon,
   LogoutIcon,
   ObjectiveIcon,
   SettingsIcon,
@@ -150,6 +151,15 @@ export const Team = ({
             >
               <ArchiveIcon />
               Archived {getTermDisplay("storyTerm", { variant: "plural" })}
+            </Link>
+          </ContextMenu.Item>
+          <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
+            <Link
+              className="flex items-center gap-1.5 py-1.5"
+              href={`/teams/${id}/deleted`}
+            >
+              <DeleteIcon />
+              Deleted {getTermDisplay("storyTerm", { variant: "plural" })}
             </Link>
           </ContextMenu.Item>
         </ContextMenu.Group>
