@@ -23,6 +23,7 @@ export const OnlineStatusMonitor = () => {
         description: "Please check your internet connection",
         duration: Infinity,
         id: "offline-toast",
+        dismissible: false,
       });
     } else {
       if (toastIdsRef.current.offline) {
@@ -37,7 +38,7 @@ export const OnlineStatusMonitor = () => {
         toastIdsRef.current.online = toast.success("Back online", {
           description: "Your internet connection has been restored",
           id: "online-toast",
-          duration: 5000,
+          duration: 1000,
         });
         setWasOffline(false);
       }
