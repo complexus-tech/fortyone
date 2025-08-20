@@ -32,6 +32,7 @@ type Repository interface {
 	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
 	GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error)
@@ -441,6 +442,27 @@ func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId 
 		span.RecordError(err)
 		return err
 	}
+	return nil
+}
+
+// BulkUnarchive unarchives the stories with the specified IDs.
+func (s *Service) BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+	s.log.Info(ctx, fmt.Sprintf("Bulk unarchiving stories: %v", ids), "story_ids", ids)
+	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkUnarchive")
+	defer span.End()
+
+	if err := s.repo.BulkUnarchive(ctx, ids, workspaceId); err != nil {
+		s.log.Error(ctx, fmt.Sprintf("Failed to bulk unarchive stories: %s", err),
+			"story_ids", ids, "error", err)
+		span.RecordError(err)
+		return err
+	}
+
+	s.log.Info(ctx, fmt.Sprintf("Successfully bulk unarchived stories: %v", ids),
+		"story_ids", ids)
+	span.AddEvent("Stories bulk unarchived.", trace.WithAttributes(
+		attribute.Int("stories.count", len(ids))))
+
 	return nil
 }
 

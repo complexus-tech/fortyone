@@ -293,6 +293,49 @@ func (h *Handlers) BulkRestore(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
+func (h *Handlers) BulkUnarchive(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkUnarchive")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	var req AppBulkUnarchiveRequest
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	for _, storyId := range req.StoryIDs {
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
+		for _, key := range cacheKeys {
+			if strings.Contains(key, "*") {
+				h.cache.DeleteByPattern(ctx, key)
+			} else {
+				h.cache.Delete(ctx, key)
+			}
+		}
+	}
+
+	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
+	h.cache.DeleteByPattern(ctx, listCachePattern)
+
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
+	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
+
+	if err := h.stories.BulkUnarchive(ctx, req.StoryIDs, workspace.ID); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
+	web.Respond(ctx, w, data, http.StatusOK)
+	return nil
+}
+
 func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.BulkUpdate")
 	defer span.End()

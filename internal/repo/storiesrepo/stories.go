@@ -879,6 +879,49 @@ func (r *repo) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uui
 	return nil
 }
 
+// BulkUnarchive unarchives the stories with the specified IDs.
+func (r *repo) BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkUnarchive")
+	defer span.End()
+
+	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
+
+	query := `
+		UPDATE stories
+		SET archived_at = NULL, updated_at = NOW()
+		WHERE id = ANY(:ids)
+			AND workspace_id = :workspace_id
+			AND archived_at IS NOT NULL;
+	`
+
+	r.log.Info(ctx, fmt.Sprintf("Bulk unarchiving stories: %v", ids), "ids", ids)
+
+	result, err := r.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to bulk unarchive stories: %s", err)
+		r.log.Error(ctx, errMsg, "ids", ids)
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to get rows affected: %s", err), "ids", ids)
+		return err
+	}
+	if rowsAffected == 0 {
+		r.log.Warn(ctx, "No stories found to unarchive", "ids", ids)
+		return fmt.Errorf("no stories found to unarchive")
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Stories unarchived successfully: %v (%d rows)", ids, rowsAffected),
+		"ids", ids, "rows_affected", rowsAffected)
+	span.AddEvent("Stories unarchived.", trace.WithAttributes(
+		attribute.Int("stories.length", len(ids)),
+		attribute.Int64("rows.affected", rowsAffected)))
+
+	return nil
+}
+
 // Update updates the story with the specified ID.
 func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
 	r.log.Info(ctx, "business.repository.stories.Update")

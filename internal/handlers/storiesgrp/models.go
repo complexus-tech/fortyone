@@ -90,6 +90,11 @@ type AppBulkRestoreRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`
 }
 
+// AppBulkUnarchiveRequest represents a request to unarchive multiple stories.
+type AppBulkUnarchiveRequest struct {
+	StoryIDs []uuid.UUID `json:"storyIds"`
+}
+
 // AppBulkUpdateRequest represents a request to update multiple stories.
 type AppBulkUpdateRequest struct {
 	StoryIDs []uuid.UUID    `json:"storyIds" validate:"required,min=1"`
