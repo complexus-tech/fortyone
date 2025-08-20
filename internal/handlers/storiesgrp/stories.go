@@ -192,9 +192,18 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
-		return nil
+	isHardDelete := req.HardDelete != nil && *req.HardDelete
+
+	if isHardDelete {
+		if err := h.stories.HardBulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
+			web.RespondError(ctx, w, err, http.StatusBadRequest)
+			return nil
+		}
+	} else {
+		if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
+			web.RespondError(ctx, w, err, http.StatusBadRequest)
+			return nil
+		}
 	}
 	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
 	web.Respond(ctx, w, data, http.StatusOK)

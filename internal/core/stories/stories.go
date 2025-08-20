@@ -29,6 +29,7 @@ type Repository interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error)
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
@@ -393,6 +394,27 @@ func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId u
 		span.RecordError(err)
 		return err
 	}
+	return nil
+}
+
+// HardBulkDelete performs permanent removal of the stories with the specified IDs.
+func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+	s.log.Info(ctx, fmt.Sprintf("Hard bulk deleting stories: %v", ids), "story_ids", ids)
+	ctx, span := web.AddSpan(ctx, "business.core.stories.HardBulkDelete")
+	defer span.End()
+
+	if err := s.repo.HardBulkDelete(ctx, ids, workspaceId); err != nil {
+		s.log.Error(ctx, fmt.Sprintf("Failed to hard bulk delete stories: %s", err),
+			"story_ids", ids, "error", err)
+		span.RecordError(err)
+		return err
+	}
+
+	s.log.Info(ctx, fmt.Sprintf("Successfully hard bulk deleted stories: %v", ids),
+		"story_ids", ids)
+	span.AddEvent("Stories hard bulk deleted.", trace.WithAttributes(
+		attribute.Int("stories.count", len(ids))))
+
 	return nil
 }
 

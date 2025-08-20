@@ -81,7 +81,8 @@ type CommentsResponse struct {
 
 // AppBulkDeleteRequest represents a request to delete multiple stories.
 type AppBulkDeleteRequest struct {
-	StoryIDs []uuid.UUID `json:"storyIds"`
+	StoryIDs   []uuid.UUID `json:"storyIds"`
+	HardDelete *bool       `json:"hardDelete,omitempty"`
 }
 
 // AppBulkRestoreRequest represents a request to restore multiple stories.

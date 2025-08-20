@@ -760,8 +760,8 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
 
 	query := `
-        UPDATE stories 
-        SET deleted_at = NOW(), updated_at = NOW() 
+        UPDATE stories
+        SET deleted_at = NOW(), updated_at = NOW()
         WHERE id = ANY(:ids) AND workspace_id = :workspace_id;
     `
 
@@ -774,6 +774,46 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 
 	r.log.Info(ctx, fmt.Sprintf("Stories: %v deleted successfully", ids), "ids", ids)
 	span.AddEvent("Stories deleted.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+
+	return nil
+}
+
+// HardBulkDelete performs permanent removal of the stories with the specified IDs.
+func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.HardBulkDelete")
+	defer span.End()
+
+	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
+	query := `
+		DELETE FROM stories
+		WHERE id = ANY(:ids)
+			AND workspace_id = :workspace_id;
+	`
+
+	r.log.Info(ctx, fmt.Sprintf("Hard deleting stories: %v", ids), "ids", ids)
+
+	result, err := r.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to hard delete stories: %s", err)
+		r.log.Error(ctx, errMsg, "ids", ids)
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("Failed to get rows affected: %s", err), "ids", ids)
+		return err
+	}
+	if rowsAffected == 0 {
+		r.log.Warn(ctx, "No stories found to hard delete", "ids", ids)
+		return fmt.Errorf("no stories found to delete")
+	}
+
+	r.log.Info(ctx, fmt.Sprintf("Stories hard deleted successfully: %v (%d rows)", ids, rowsAffected),
+		"ids", ids, "rows_affected", rowsAffected)
+	span.AddEvent("Stories hard deleted.", trace.WithAttributes(
+		attribute.Int("stories.length", len(ids)),
+		attribute.Int64("rows.affected", rowsAffected)))
 
 	return nil
 }
