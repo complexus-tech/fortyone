@@ -309,6 +309,8 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
+			s.deleted_at,
+			s.archived_at,
 			COALESCE(
 				(
 					SELECT
@@ -330,13 +332,15 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
 								'completed_at', sub.completed_at,
-								'labels', '[]'		
+								'deleted_at', sub.deleted_at,
+								'archived_at', sub.archived_at,
+								'labels', '[]'
 							)
 						)
 					FROM
 						stories sub
 					WHERE
-						sub.parent_id = s.id 
+						sub.parent_id = s.id
 						AND sub.deleted_at IS NULL
 				), '[]'
 			) AS sub_stories,
@@ -424,6 +428,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.created_at,
 					s.updated_at,
 					s.deleted_at,
+					s.archived_at,
 					s.completed_at,
 					COALESCE(
 							(
@@ -582,6 +587,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.created_at,
 			s.updated_at,
 			s.completed_at,
+			s.deleted_at,
+			s.archived_at,
 			COALESCE(
 				(
 					SELECT
@@ -603,6 +610,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
 								'completed_at', sub.completed_at,
+								'deleted_at', sub.deleted_at,
+								'archived_at', sub.archived_at,
 								'labels', '[]'
 							)
 						)
@@ -1104,7 +1113,9 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 					reporter_id,
 					created_at,
 					updated_at,
-					completed_at
+					completed_at,
+					deleted_at,
+					archived_at
         FROM
             stories
         WHERE
@@ -1701,6 +1712,8 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.created_at,
 				s.updated_at,
 				s.completed_at,
+				s.deleted_at,
+				s.archived_at,
 				COALESCE(CAST(%s AS text), 'null') as group_key,
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
@@ -1735,6 +1748,8 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'created_at', ls.created_at,
 						'updated_at', ls.updated_at,
 						'completed_at', ls.completed_at,
+						'deleted_at', ls.deleted_at,
+						'archived_at', ls.archived_at,
 						'sub_stories', COALESCE(
 							(
 								SELECT
@@ -1756,6 +1771,8 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 											'created_at', sub.created_at,
 											'updated_at', sub.updated_at,
 											'completed_at', sub.completed_at,
+											'deleted_at', sub.deleted_at,
+											'archived_at', sub.archived_at,
 											'labels', '[]'
 										)
 									)
@@ -2472,6 +2489,8 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.created_at,
 			s.updated_at,
 			s.completed_at,
+			s.deleted_at,
+			s.archived_at,
 			COALESCE(
 				(
 					SELECT
@@ -2492,13 +2511,15 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at
+								'completed_at', sub.completed_at,
+								'deleted_at', sub.deleted_at,
+								'archived_at', sub.archived_at
 							)
 						)
 					FROM
 						stories sub
 					WHERE
-						sub.parent_id = s.id 
+						sub.parent_id = s.id
 						AND sub.deleted_at IS NULL
 				), CAST('[]' AS json)
 			) AS sub_stories,
@@ -2986,6 +3007,8 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.created_at,
 			s.updated_at,
 			s.completed_at,
+			s.deleted_at,
+			s.archived_at,
 			COALESCE(
 				(
 					SELECT
@@ -3007,6 +3030,8 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
 								'completed_at', sub.completed_at,
+								'deleted_at', sub.deleted_at,
+								'archived_at', sub.archived_at,
 								'labels', '[]'
 							)
 						)
@@ -3204,6 +3229,8 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.created_at,
 			s.updated_at,
 			s.completed_at,
+			s.deleted_at,
+			s.archived_at,
 			COALESCE(
 				(
 					SELECT
@@ -3225,6 +3252,8 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
 								'completed_at', sub.completed_at,
+								'deleted_at', sub.deleted_at,
+								'archived_at', sub.archived_at,
 								'labels', '[]'
 							)
 						)
@@ -3339,6 +3368,8 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 					s.created_at,
 					s.updated_at,
 					s.deleted_at,
+					s.archived_at,
+					s.completed_at,
 					COALESCE(
 							(
 									SELECT

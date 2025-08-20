@@ -38,6 +38,8 @@ type CoreStoryList struct {
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
 	CompletedAt *time.Time      `json:"completed_at"`
+	DeletedAt   *time.Time      `json:"deleted_at"`
+	ArchivedAt  *time.Time      `json:"archived_at"`
 	Labels      []uuid.UUID     `json:"labels"`
 	SubStories  []CoreStoryList `json:"subStories"`
 }
@@ -68,6 +70,7 @@ type CoreSingleStory struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time
+	ArchivedAt      *time.Time
 	CompletedAt     *time.Time
 	SubStories      []CoreStoryList
 	Labels          []uuid.UUID

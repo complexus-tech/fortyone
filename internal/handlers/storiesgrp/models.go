@@ -143,6 +143,7 @@ type AppSingleStory struct {
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       *time.Time     `json:"deletedAt"`
+	ArchivedAt      *time.Time     `json:"archivedAt"`
 	CompletedAt     *time.Time     `json:"completedAt"`
 	SubStories      []AppStoryList `json:"subStories"`
 	Labels          []uuid.UUID    `json:"labels"`
@@ -167,6 +168,8 @@ type AppStoryList struct {
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	CompletedAt *time.Time     `json:"completedAt"`
+	DeletedAt   *time.Time     `json:"deletedAt"`
+	ArchivedAt  *time.Time     `json:"archivedAt"`
 	Labels      []uuid.UUID    `json:"labels"`
 	SubStories  []AppStoryList `json:"subStories"`
 }
@@ -193,6 +196,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+		ArchivedAt:      i.ArchivedAt,
 		CompletedAt:     i.CompletedAt,
 		BlockedBy:       i.BlockedBy,
 		Blocking:        i.Blocking,
@@ -224,6 +228,8 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 			CreatedAt:   story.CreatedAt,
 			UpdatedAt:   story.UpdatedAt,
 			CompletedAt: story.CompletedAt,
+			DeletedAt:   story.DeletedAt,
+			ArchivedAt:  story.ArchivedAt,
 			Labels:      story.Labels,
 			SubStories:  toAppStories(story.SubStories),
 		}

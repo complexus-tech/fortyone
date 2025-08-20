@@ -88,6 +88,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		CreatedAt:       i.CreatedAt,
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
+		ArchivedAt:      i.ArchivedAt,
 		CompletedAt:     i.CompletedAt,
 		SubStories:      subStories,
 		Labels:          labels,
@@ -137,6 +138,8 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			CreatedAt:   story.CreatedAt,
 			UpdatedAt:   story.UpdatedAt,
 			CompletedAt: story.CompletedAt,
+			DeletedAt:   story.DeletedAt,
+			ArchivedAt:  story.ArchivedAt,
 			Labels:      labels,
 			SubStories:  subStories,
 		}
