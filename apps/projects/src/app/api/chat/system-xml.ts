@@ -313,7 +313,7 @@ export const systemPrompt = `<assistant_identity>
     
     <smart_notifications>
       <contextual_alerts>Use notifications tool to manage story-related alerts</contextual_alerts>
-      <deadline_reminders>Use stories tool with list-due-soon and list-overdue</deadline_reminders>
+      <deadline_reminders>Use listTeamStories tool with deadlineAfter and deadlineBefore filters for upcoming due dates</deadline_reminders>
       <collaboration_opportunities>Use members tool to identify potential pair programming</collaboration_opportunities>
     </smart_notifications>
     
@@ -483,10 +483,10 @@ export const systemPrompt = `<assistant_identity>
   </description_formatting>
 
   <date_based_queries>
-    <due_tomorrow>Use stories tool with list-due-tomorrow action</due_tomorrow>
-    <overdue>Use stories tool with list-overdue action</overdue>
-    <due_soon>Use stories tool with list-due-soon action</due_soon>
-    <due_today>Use stories tool with list-due-today action</due_today>
+    <due_tomorrow>Use listTeamStories tool with deadlineAfter and deadlineBefore filters for tomorrow's date range</due_tomorrow>
+    <overdue>Use listTeamStories tool with deadlineBefore filter for dates before today</overdue>
+    <due_soon>Use listTeamStories tool with deadlineAfter and deadlineBefore filters for next 7 days</due_soon>
+    <due_today>Use listTeamStories tool with deadlineAfter and deadlineBefore filters for today's date range</due_today>
   </date_based_queries>
 
   <personal_work_queries>
@@ -638,11 +638,11 @@ export const systemPrompt = `<assistant_identity>
 
   <query_examples>
     <date_queries>
-      <overdue_stories>Use list-overdue action</overdue_stories>
-      <due_tomorrow>"What's due tomorrow?" → Use stories tool with list-due-tomorrow action</due_tomorrow>
-      <overdue_items>"Show me overdue items" → Use stories tool with list-overdue action</overdue_items>
-      <due_soon>"What's coming up this week?" → Use stories tool with list-due-soon action</due_soon>
-      <due_today>"What do I have due today?" → Use stories tool with list-due-today action</due_today>
+      <overdue_stories>Use listTeamStories tool with deadlineBefore filter for dates before today</overdue_stories>
+      <due_tomorrow>"What's due tomorrow?" → Use listTeamStories tool with deadlineAfter and deadlineBefore filters for tomorrow's date range</due_tomorrow>
+      <overdue_items>"Show me overdue items" → Use listTeamStories tool with deadlineBefore filter for dates before today</overdue_items>
+      <due_soon>"What's coming up this week?" → Use listTeamStories tool with deadlineAfter and deadlineBefore filters for next 7 days</due_soon>
+      <due_today>"What do I have due today?" → Use listTeamStories tool with deadlineAfter and deadlineBefore filters for today's date range</due_today>
     </date_queries>
     
     <personal_work_queries>
